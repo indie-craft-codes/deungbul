@@ -65,6 +65,22 @@ export type MsgKey =
   | 'skillUp' // [기술 id, 단계]
   | 'skillMax' // []
   | 'skillNeedLv' // [필요한 레벨]
+  | 'guildGuest' // [] 손님은 길드에 들 수 없다
+  | 'guildNeedLv' // [필요한 레벨]
+  | 'guildNameBad' // []
+  | 'guildNameTaken' // []
+  | 'guildCreated' // [길드 이름]
+  | 'guildNotLeader' // []
+  | 'guildBusy' // [상대 이름] 초대할 수 없는 상대
+  | 'guildFull' // []
+  | 'guildInvited' // [상대 이름]
+  | 'guildJoined' // [들어온 사람]
+  | 'guildLeft' // [나간 사람]
+  | 'guildYouLeft' // []
+  | 'guildKicked' // [] 내가 추방됐다
+  | 'guildGave' // [골드]
+  | 'guildLevelUp' // [길드 레벨]
+  | 'guildNone' // [] 길드가 없는데 길드 대화를 했다
   | 'awayBack' // [자리를 비운 분, 얻은 불씨, 얻은 골드, 오른 레벨] 자리를 비운 동안 자동 사냥을 했다
   | 'loot' // [재료 id] 재료를 주웠다
   | 'crafted' // [아이템 id, 직업 id]

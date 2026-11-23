@@ -402,3 +402,11 @@ html:lang(en) body { overflow-wrap: break-word; }
 #soundBtn { padding: 1px 8px; font-size: 11px; white-space: nowrap; flex: none; }
 @media (pointer: coarse) { #soundBtn { font-size: 14px; padding: 3px 10px; } }
 .mrow.made { border-left-color: var(--gold); } .mrow.made .iname { color: var(--gold); }
+
+/* 메뉴 안의 글 칸 (길드 이름, 공지) */
+.mfield { display: flex; gap: 4px; }
+.mfield input { flex: 1; min-width: 0; }
+.mfield button { flex: none; white-space: nowrap; padding: 4px 10px; }
+#log .gchat { color: #9fe0a8; }
+#menuTabs { flex-wrap: wrap; }
+#menuTabs button { flex: 1 1 22%; }

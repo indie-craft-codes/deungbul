@@ -19,7 +19,7 @@ import { hideGate, hudFrame, hudSlow, initPanels, renderTexts, renderWorld, setM
 import { initQuest, questFrame, renderQuest } from './hud/quest';
 import { initShop, renderShop, shopFrame, shopSlow } from './hud/shop';
 import { speak, updateFloats } from './hud/tags';
-import { applyDom, onLangChange } from './i18n';
+import { applyDom, onLangChange, t } from './i18n';
 import { axis, initInput } from './input';
 import { connect, initNet, send } from './net';
 import { isBlocked } from './social';
@@ -46,7 +46,13 @@ onMsg('gear', (m) => setGear(m.id, m.weapon, m.cls, m.armor));
 onMsg('world', (m, now) => { S.world = m.s; S.worldAt = now; syncNpcs(); renderWorld(); renderShop(); renderForge(); hudSlow(now); });
 onMsg('cd', (m, now) => { S.cdEnd[m.n] = now + m.ms; S.cdLen[m.n] = m.ms; });
 onMsg('name', (m) => { renameEntity(m.id, m.name); if (S.me && m.id === S.me.id) setMyName(m.name); });
-onMsg('chat', (m) => { if (isBlocked(m.name)) return; logChat(m.name, m.text); const tag = tagOf(m.id); if (tag) speak(tag, m.text); });
+onMsg('chat', (m) => {
+  if (isBlocked(m.name)) return;
+  if (m.ch === 'g') { logChat(`${t('guildChatTag')} ${m.name}`, m.text, true); return; } // 길드 대화는 말풍선으로 띄우지 않는다
+  logChat(m.name, m.text);
+  const tag = tagOf(m.id);
+  if (tag) speak(tag, m.text);
+});
 onMsg('sys', (m) => notifySys(m.k, m.a));
 onMsg('party', (m) => setParty(m.m));
 onMsg('pinv', (m) => showInvite(m.name, m.s));

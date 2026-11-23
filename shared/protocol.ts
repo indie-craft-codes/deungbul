@@ -1,6 +1,7 @@
 // 서버와 클라이언트가 주고받는 메시지. 지금은 JSON이고, 트래픽이 문제가 되면 이진 형식으로 바꾼다.
 // 화면에 보일 문장은 싣지 않는다: 종류와 값만 보내고 문장은 클라이언트가 언어에 맞게 만든다.
 import type { Gear, Mail, RankRow } from './content/growth';
+import type { GuildView } from './content/social';
 import type { RaidPhase } from './content/raid';
 import type { MsgArg, MsgKey } from './messages';
 
@@ -20,6 +21,8 @@ export interface EnterInfo {
   w: string;
   /** 입은 갑옷 (플레이어만, 없으면 생략) */
   a?: string;
+  /** 길드 이름 (플레이어만, 없으면 생략) */
+  g?: string;
   /** 플레이어의 직업 (CLASSES의 키). 아직 고르지 않았거나 몬스터면 빈 문자열 */
   c: string;
   x: number; z: number; face: number; hp: number; maxHp: number;
@@ -78,6 +81,10 @@ export type ClientMsg =
   | { t: 'stat'; k: string }
   | { t: 'statReset' }
   | { t: 'skillUp'; id: string }
+  /** 길드: a는 create(name), invite(id: 상대 엔티티), accept, decline, leave, kick(pid), give(n: 골드), notice(text) */
+  | { t: 'guild'; a: string; name?: string; id?: number; pid?: string; n?: number; text?: string }
+  /** 길드 대화 */
+  | { t: 'gchat'; text: string }
   /** 순위표를 달라 */
   | { t: 'rank' }
   /** 자동 사냥을 켰다/껐다. 켠 채 접속이 끊기면 서버가 이어서 사냥한다 */
@@ -154,7 +161,12 @@ export type ServerMsg =
   | { t: 'cd'; n: number; ms: number }
   /** 누군가 이름을 바꿨다 */
   | { t: 'name'; id: number; name: string }
-  | { t: 'chat'; id: number; name: string; text: string }
+  /** ch가 'g'면 길드 대화다 */
+  | { t: 'chat'; id: number; name: string; text: string; ch?: 'g' }
+  /** 내 길드(없으면 null)와 받은 초대 */
+  | { t: 'guild'; g: GuildView | null; invite?: { name: string; from: string } }
+  /** 누군가의 길드 이름이 바뀌었다 (이름표) */
+  | { t: 'gtag'; id: number; g: string }
   /** 안내문: 종류와 값 (shared/messages.ts) */
   | { t: 'sys'; k: MsgKey; a?: MsgArg[] }
   | { t: 'pong'; c: number }

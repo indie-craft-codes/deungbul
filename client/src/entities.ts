@@ -35,6 +35,17 @@ export function spawnMerchant(): void {
   }
 }
 
+/** 이름표에 적는 글: 길드가 있으면 이름 뒤에 붙인다 */
+const withGuild = (id: number, name: string): string => { const g = S.gtags.get(id); return g ? `${name} 〈${g}〉` : name; };
+/** 누군가의 길드 이름이 바뀌었다: 이름표를 다시 적는다 */
+export function setGuildTag(id: number, guild: string): void {
+  if (guild) S.gtags.set(id, guild); else S.gtags.delete(id);
+  const me = S.me;
+  if (me && id === me.id) { setTagName(me.tag, withGuild(id, me.name)); return; }
+  const r = S.others.get(id);
+  if (r && r.kind === 'p') setTagName(r.tag, withGuild(id, r.name));
+}
+
 /** 몬스터의 이름. 습격으로 온 적은 앞에 '안개'가 붙어서 평소의 몬스터와 구별된다 */
 const monsterName = (type: string, raid = false): string => {
   const name = isMonsterId(type) ? L().monsters[type] : type;
@@ -59,7 +70,8 @@ function addRemote(e: EnterInfo): void {
   view.scene.add(model.root);
   const name = monster ? monsterName(e.type, e.r === 1) : e.name;
   const boss = monster && isMonsterId(e.type) && !!monsterDef(e.type).boss;
-  const tag = makeTag(name, monster ? (boss ? 'mon boss' : e.r === 1 ? 'mon raid' : 'mon') : '', monster);
+  if (!monster && e.g) S.gtags.set(e.id, e.g);
+  const tag = makeTag(monster ? name : withGuild(e.id, name), monster ? (boss ? 'mon boss' : e.r === 1 ? 'mon raid' : 'mon') : '', monster);
   setTagHp(tag, e.hp, e.maxHp);
   if (!monster) { setBlade(model, e.w); setArmor(model, e.a ?? ''); tag.el.classList.toggle('ally', S.party.some((m) => m.id === e.id)); }
   S.others.set(e.id, {
@@ -132,9 +144,9 @@ export function setGear(id: number, weapon: string, cls: string, armor: string):
 
 export function renameEntity(id: number, name: string): void {
   const me = S.me;
-  if (me && id === me.id) { me.name = name; setTagName(me.tag, name); return; }
+  if (me && id === me.id) { me.name = name; setTagName(me.tag, withGuild(id, name)); return; }
   const r = S.others.get(id);
-  if (r) { r.name = name; setTagName(r.tag, name); }
+  if (r) { r.name = name; setTagName(r.tag, withGuild(id, name)); }
 }
 
 export function tagOf(id: number): Tag | undefined {

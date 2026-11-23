@@ -9,4 +9,5 @@ export * from './content/party';
 export * from './content/quests';
 export * from './content/raid';
 export * from './content/residents';
+export * from './content/social';
 export * from './content/tower';

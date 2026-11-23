@@ -24,6 +24,7 @@ import { Craft } from './systems/craft';
 import { Daily } from './systems/daily';
 import { Dungeon } from './systems/dungeon';
 import { GearSys } from './systems/gear';
+import { Guild } from './systems/guild';
 import { Idle } from './systems/idle';
 import { MailSys } from './systems/mail';
 import { Rank } from './systems/rank';
@@ -84,11 +85,11 @@ export interface Rules {
 export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void }
 
 /** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (주민 혜택, 나중의 장비와 버프). */
-export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp';
+export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp';
 export class Modifiers {
   private list = new Map<ModName, ((p?: Ent) => number)[]>();
   /**
-   * damage, guard, regen은 곱하는 값(1이 기본), sparkBonus, crit(치명타 확률), hp(최대 체력)는 더하는 값(0이 기본)을 돌려주는 함수를 등록한다.
+   * damage, guard, regen은 곱하는 값(1이 기본), sparkBonus, crit(치명타 확률), hp(최대 체력), exp(처치 경험치를 더 받는 비율)는 더하는 값(0이 기본)을 돌려주는 함수를 등록한다.
    * 함수는 대상 플레이어를 받는다: 모두에게 같은 보정이면 무시하고, 사람마다 다르면(장비) 보고 정한다.
    */
   provide(name: ModName, fn: (p?: Ent) => number): void {
@@ -130,6 +131,8 @@ export class Game {
   gears: { id: number; weapon: string; armor: string; cls: string }[] = [];
   /** 파티 소식: 특정 플레이어에게만 보내는 메시지 */
   partyOut: { id: number; msg: Extract<ServerMsg, { t: 'party' | 'pinv' }> }[] = [];
+  /** 모두에게 보내는 그 밖의 메시지 */
+  casts: ServerMsg[] = [];
   /** 그 밖에 특정 플레이어에게만 보내는 메시지 (새 시스템은 이 통로를 쓴다) */
   out: { id: number; msg: ServerMsg }[] = [];
   /** 공유 상태가 바뀌었다: 모두에게 다시 보낸다 */
@@ -180,6 +183,7 @@ export class Game {
   readonly rank: Rank;
   readonly dungeon: Dungeon;
   readonly build: Build;
+  readonly guild: Guild;
 
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
@@ -205,6 +209,7 @@ export class Game {
     this.rank = new Rank(this);
     this.dungeon = new Dungeon(this);
     this.build = new Build(this);
+    this.guild = new Guild(this);
   }
 
   // ---- 시스템이 쓰는 공용 통로 ----
@@ -221,7 +226,7 @@ export class Game {
     const e: Ent = {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, path: null, pgx: x, pgz: z, pat: 0,
       hp, maxHp: hp, dead: false, layer: 0, targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
-      bot: false, auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
+      bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
       gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), raid: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
     };

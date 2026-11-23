@@ -16,6 +16,10 @@ export interface Ent {
 
   // ---- 플레이어 ----
   bot: boolean;
+  /** 사람을 가리키는 변하지 않는 값(저장 키). 손님과 봇, 몬스터는 빈 문자열. 길드처럼 접속과 무관하게 사람을 기억해야 하는 곳에 쓴다 */
+  pid: string;
+  /** 속한 길드의 이름 (없으면 빈 문자열). 이름표에 쓴다 */
+  guild: string;
   /** 자동 사냥을 켜 두었다. 이대로 접속이 끊기면 서버가 이어서 사냥한다 (systems/away.ts) */
   auto: boolean;
   lv: number; exp: number; need: number; sparks: number; cds: number[];

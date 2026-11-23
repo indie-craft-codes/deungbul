@@ -1,5 +1,5 @@
 // 클라이언트가 아는 게임 상태. 모듈들은 이것을 읽고, 서버 메시지를 처리하는 쪽만 고친다.
-import { GLOW_START, RESIDENTS, SKILL_SLOTS, maxHpFor, stageOf, type Gear, type Mail, type RankRow, type Stage } from '../../shared/defs';
+import { GLOW_START, RESIDENTS, SKILL_SLOTS, maxHpFor, stageOf, type Gear, type GuildView, type Mail, type RankRow, type Stage } from '../../shared/defs';
 import type { Point } from '../../shared/nav';
 import type { Kind, PartyMember, WorldState } from '../../shared/protocol';
 import { AREAS, TOWERS, areaAt, zoneOf } from '../../shared/world';
@@ -70,6 +70,11 @@ export const S = {
   itemCdEnd: 0,
   /** 내 드롭 장비, 우편, 일일 임무, 전투력 (서버의 meta 메시지) */
   meta: { gear: [] as Gear[], worn: {} as Record<string, number>, mail: [] as Mail[], daily: { prog: {} as Record<string, number>, got: [] as string[], streak: 0 }, power: 0, build: { stats: {} as Record<string, number>, skillLv: {} as Record<string, number>, left: 0 } },
+  /** 내 길드(없으면 null)와 받은 초대 */
+  guild: null as GuildView | null,
+  guildInvite: null as { name: string; from: string } | null,
+  /** 엔티티별 길드 이름 (이름표에 붙인다) */
+  gtags: new Map<number, string>(),
   /** 마지막으로 받은 순위표 */
   rank: { list: [] as RankRow[], me: -1 },
   /** 들어가 있는 던전 (id가 빈 문자열이면 밖). at은 이 상태를 받은 시각 */

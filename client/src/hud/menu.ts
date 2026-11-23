@@ -1,7 +1,8 @@
 // 메뉴 창: 드롭 장비(끼기·강화·팔기), 우편, 일일 임무와 출석, 순위를 탭으로 나눠 보여 준다. (단축키 M)
 // 새 탭을 더하려면 TABS에 이름과 그리는 함수를 더한다.
-import { BUILD, BUILD_STATS, DAILIES, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, RARITIES, baseOpt, enhanceMax, classOf, isItemId, isSupply, optValue, sellPrice, type Gear, type Reward } from '../../../shared/defs';
+import { BUILD, BUILD_STATS, GUILD, DAILIES, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, RARITIES, baseOpt, enhanceMax, classOf, isItemId, isSupply, optValue, sellPrice, type Gear, type Reward } from '../../../shared/defs';
 import { $ } from '../app';
+import { setGuildTag } from '../entities';
 import { onMsg } from '../bus';
 import { L, itemName, onLangChange, t } from '../i18n';
 import type { UiKey } from '../i18n/ko';
@@ -14,6 +15,7 @@ const TABS: readonly { key: UiKey; draw: () => void }[] = [
   { key: 'tabBuild', draw: drawBuild },
   { key: 'tabMail', draw: drawMail },
   { key: 'tabDaily', draw: drawDaily },
+  { key: 'tabGuild', draw: drawGuild },
   { key: 'tabRank', draw: drawRank },
 ];
 let tab = 0;
@@ -112,6 +114,43 @@ function drawDaily(): void {
   ui.list.append(el('note', t('dailyNote')));
 }
 
+/** 글을 받는 칸과 단추 한 줄 */
+function field(placeholder: string, max: number, label: string, on: (text: string) => void, value = ''): HTMLDivElement {
+  const box = el('mfield'), input = document.createElement('input');
+  input.type = 'text'; input.maxLength = max; input.placeholder = placeholder; input.value = value;
+  input.addEventListener('keydown', (e) => e.stopPropagation()); // 글을 치는 동안 단축키가 눌리지 않게
+  box.append(input, button(label, () => { if (input.value.trim()) on(input.value.trim()); }));
+  return box;
+}
+
+function drawGuild(): void {
+  const loc = L(), me = S.me, g = S.guild, inv = S.guildInvite;
+  if (!me) return;
+  if (!g) {
+    if (inv) {
+      ui.list.append(row(loc.fmt.guildInviteFrom(inv.name, inv.from), '', [
+        button(t('partyAccept'), () => send({ t: 'guild', a: 'accept' })),
+        button(t('partyDecline'), () => send({ t: 'guild', a: 'decline' })),
+      ]));
+    }
+    ui.list.append(el('note', loc.fmt.guildCreateInfo(GUILD.createLv, GUILD.createGold)));
+    ui.list.append(field(t('guildNameHint'), GUILD.nameMax, t('guildCreate'), (name) => send({ t: 'guild', a: 'create', name })));
+    return;
+  }
+  ui.list.append(el('baghead', loc.fmt.guildHead(g.name, g.lv, Math.round(g.lv * GUILD.expPerLevel * 100))));
+  ui.list.append(row(g.max ? t('guildMaxLv') : loc.fmt.guildExp(g.exp, g.need), t('guildGiveInfo'),
+    GUILD.gives.map((n) => button(loc.fmt.guildGive(n), () => send({ t: 'guild', a: 'give', n }), me.gold < n))));
+  if (g.notice) ui.list.append(el('note', g.notice));
+  if (g.leader) ui.list.append(field(t('guildNoticeHint'), GUILD.noticeMax, t('guildNoticeSet'), (text) => send({ t: 'guild', a: 'notice', text }), g.notice));
+  ui.list.append(el('baghead', loc.fmt.guildMembers(g.members.length, GUILD.maxMembers)));
+  for (const m of [...g.members].sort((a, b) => Number(b.on) - Number(a.on) || b.gave - a.gave)) {
+    const buttons = g.leader && !m.me && m.pid ? [button(t('guildKick'), () => send({ t: 'guild', a: 'kick', pid: m.pid }))] : [];
+    ui.list.append(row(`${m.on ? '● ' : '○ '}${m.name}${m.leader ? ` (${t('guildLeader')})` : ''}`, `${loc.fmt.level(m.lv, loc.classes[m.cls as keyof typeof loc.classes]?.name ?? '')} · ${loc.fmt.guildGave(m.gave)}`, buttons, m.me ? 'mine' : m.on ? '' : 'done'));
+  }
+  ui.list.append(el('note', t('guildChatHint')));
+  ui.list.append(button(t('guildLeave'), () => send({ t: 'guild', a: 'leave' })));
+}
+
 function drawRank(): void {
   const loc = L(), r = S.rank;
   if (!r.list.length) { ui.list.append(el('note', t('rankEmpty'))); return; }
@@ -122,8 +161,9 @@ function drawRank(): void {
 export function renderMenu(): void {
   const n = S.meta.mail.length;
   ui.btn.textContent = n ? `${t('menu')} ${n}` : t('menu');
-  ui.btn.classList.toggle('alert', n > 0 || S.meta.build.left > 0); // 받을 우편이나 찍을 점수가 있으면 눈에 띄게
+  ui.btn.classList.toggle('alert', n > 0 || S.meta.build.left > 0 || !!S.guildInvite); // 받을 우편이나 찍을 점수가 있으면 눈에 띄게
   if (ui.panel.hidden || !S.me) return;
+  if (document.activeElement instanceof HTMLInputElement && ui.list.contains(document.activeElement)) { ui.gold.textContent = L().fmt.gold(S.me.gold); return; } // 글을 치는 중에는 다시 그리지 않는다
   ui.gold.textContent = L().fmt.gold(S.me.gold);
   ui.tabs.textContent = '';
   TABS.forEach((x, i) => {
@@ -148,6 +188,8 @@ export function initMenu(): void {
   ui.btn.addEventListener('click', (e) => { toggleMenu(); (e.currentTarget as HTMLElement).blur(); });
   $('menuClose').addEventListener('click', () => { ui.panel.hidden = true; });
   onMsg('meta', (m) => { S.meta = { gear: m.gear, worn: m.worn, mail: m.mail, daily: m.daily, power: m.power, build: m.build }; renderMenu(); });
+  onMsg('guild', (m) => { S.guild = m.g; S.guildInvite = m.invite ?? null; renderMenu(); });
+  onMsg('gtag', (m) => setGuildTag(m.id, m.g));
   onMsg('rank', (m) => { S.rank = { list: m.list, me: m.me }; renderMenu(); });
   onMsg('stat', renderMenu); // 골드가 바뀌면 강화 단추의 상태도 바뀐다
   onLangChange(renderMenu);

@@ -20,6 +20,7 @@ let inviteFrom = '';
 
 export function initParty(): void {
   $('pcardInvite').addEventListener('click', () => { if (cardId) send({ t: 'party', a: 'invite', id: cardId }); hideCard(); });
+  $('pcardGuild').addEventListener('click', () => { if (cardId) send({ t: 'guild', a: 'invite', id: cardId }); hideCard(); });
   $('pcardReport').addEventListener('click', () => {
     // 잘못 누르지 않게, 처음 누르면 확인 문구로 바뀌고 한 번 더 눌러야 접수된다
     if (!reportArmed) { reportArmed = true; $('pcardReport').textContent = L().ui.reportConfirm; return; }
@@ -44,6 +45,8 @@ export function showCard(id: number, name: string, sx: number, sy: number): void
   $('pcardBlock').textContent = L().ui[isBlocked(name) ? 'unblock' : 'block'];
   // 이미 같은 파티면 초대할 필요가 없다
   $('pcardInvite').hidden = S.party.some((m) => m.id === id);
+  // 내가 길드장이고 상대가 아직 길드가 없을 때만 길드 초대를 보인다
+  $('pcardGuild').hidden = !S.guild?.leader || S.gtags.has(id);
   ui.card.hidden = false;
   // 화면 밖으로 나가지 않게 한다
   const w = ui.card.offsetWidth, h = ui.card.offsetHeight;

@@ -23,17 +23,20 @@ export class Players {
         const bonus = Math.min(def.exp, p.rested);
         p.rested -= bonus;
         p.gold += gold;
-        g.notify(p, 'kill', m.type, def.exp + bonus, sparks, gold);
-        this.grant(p, def.exp + bonus, sparks);
+        g.notify(p, 'kill', m.type, def.exp + bonus + Math.round(def.exp * g.mods.sum('exp', p)), sparks, gold);
+        // 길드 같은 보정으로 더 받는 경험치
+        const extra = Math.round(def.exp * g.mods.sum('exp', p));
+        this.grant(p, def.exp + bonus + extra, sparks);
       }
     });
   }
 
-  spawn(name: string, bot: boolean, save: PlayerSave | null = null): Ent {
+  /** pid: 그 사람을 가리키는 저장 키 (손님과 봇은 빈 문자열) */
+  spawn(name: string, bot: boolean, save: PlayerSave | null = null, pid = ''): Ent {
     const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 3;
     const at = (!bot && this.devSpawn) || SPAWN;
     const p = this.g.create('p', '', name, at.x + Math.cos(a) * r, at.z + Math.sin(a) * r, maxHpFor('', 1));
-    p.bot = bot; p.wait = Math.random() * 3; p.cds = Array.from({ length: SKILL_SLOTS }, () => 0); p.dirty = true; p.questDirty = true; p.metaDirty = true; p.weapon = START_WEAPON; p.armor = '';
+    p.bot = bot; p.pid = bot ? '' : pid; p.wait = Math.random() * 3; p.cds = Array.from({ length: SKILL_SLOTS }, () => 0); p.dirty = true; p.questDirty = true; p.metaDirty = true; p.weapon = START_WEAPON; p.armor = '';
     if (save) {
       // 저장된 값은 믿되, 깨진 값이 섞여 있어도 서버가 죽지 않게 범위를 잡는다
       const n = (v: unknown, min: number, max: number, def: number) => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), min, max) : def);

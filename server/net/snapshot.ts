@@ -60,6 +60,7 @@ export function snapshotFor(me: Ent, known: Set<number>, frame: Frame, events: r
         if (!was) {
           const info: EnterInfo = { id: e.id, kind: e.kind, type: e.type, name: e.name, w: e.weapon, a: e.armor || undefined, c: e.cls, x: r2(e.x), z: r2(e.z), face: r2(e.face), hp: Math.ceil(e.hp), maxHp: e.maxHp };
           if (e.raid) info.r = 1;
+          if (e.guild) info.g = e.guild;
           enter.push(info);
         }
         // 새로 보이거나 상태가 달라진 것만 보낸다

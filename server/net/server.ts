@@ -131,7 +131,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     // 이름: 저장된 이름이 먼저다. 없으면 클라이언트가 제안한 이름, 그것도 없으면 중립적인 이름
     const ok = (s: string) => (isClean(s) ? s : ''); // 금칙어가 든 이름은 쓰지 않는다
     const name = ok(clean(save?.name, NAME_MAX)) || ok(clean(m.name, NAME_MAX)) || 'Keeper' + (1000 + Math.floor(Math.random() * 9000));
-    c.ent = game.players.spawn(name, false, save);
+    c.ent = game.players.spawn(name, false, save, c.key ?? '');
     byEnt.set(c.ent.id, c);
     send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: c.ent.auto || undefined });
     send(c, { t: 'world', s: game.state() });
@@ -253,9 +253,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (const a of game.itemCds) { const c = byEnt.get(a.id); if (c) send(c, { t: 'icd', ms: a.ms }); }
     for (const o of game.partyOut) { const c = byEnt.get(o.id); if (c) send(c, o.msg); }
     for (const o of game.out) { const c = byEnt.get(o.id); if (c) send(c, o.msg); }
+    for (const msg of game.casts) broadcast(msg);
     for (const a of game.gears) broadcast({ t: 'gear', id: a.id, weapon: a.weapon, armor: a.armor, cls: a.cls });
     for (const a of game.announces) broadcast({ t: 'sys', k: a.k, a: a.a });
-    game.notices = []; game.cdAcks = []; game.announces = []; game.itemCds = []; game.gears = []; game.partyOut = []; game.out = [];
+    game.notices = []; game.cdAcks = []; game.announces = []; game.itemCds = []; game.gears = []; game.partyOut = []; game.out = []; game.casts = [];
     if (game.stateDirty) { game.stateDirty = false; broadcast({ t: 'world', s: game.state() }); }
     if (game.saveDirty) { game.saveDirty = false; saveWorld(); }
     // 자리 비움 사냥이 끝난 캐릭터(시간이 다 됨)는 저장하고 내보낸다

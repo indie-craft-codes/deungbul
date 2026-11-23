@@ -11,8 +11,9 @@ function line(el: HTMLDivElement): void {
 }
 
 /** 누군가의 말 */
-export function logChat(who: string, text: string): void {
+export function logChat(who: string, text: string, guild = false): void {
   const d = document.createElement('div');
+  if (guild) d.className = 'gchat';
   const w = document.createElement('span');
   w.className = 'who';
   w.textContent = who + ': ';
@@ -35,7 +36,9 @@ export function initChat(): void {
   $('chatForm').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const text = input.value.trim();
-    if (text) send({ t: 'chat', text });
+    // '/g 내용'은 길드에만 보낸다
+    if (/^\/g\s+/i.test(text)) send({ t: 'gchat', text: text.replace(/^\/g\s+/i, '') });
+    else if (text) send({ t: 'chat', text });
     input.value = '';
     input.blur();
   });
