@@ -1,7 +1,7 @@
 // 서버와 클라이언트가 주고받는 메시지. 지금은 JSON이고, 트래픽이 문제가 되면 이진 형식으로 바꾼다.
 // 화면에 보일 문장은 싣지 않는다: 종류와 값만 보내고 문장은 클라이언트가 언어에 맞게 만든다.
 import type { Gear, Mail, RankRow } from './content/growth';
-import type { GuildView } from './content/social';
+import type { GuildView, MarketItem } from './content/social';
 import type { RaidPhase } from './content/raid';
 import type { MsgArg, MsgKey } from './messages';
 
@@ -85,6 +85,11 @@ export type ClientMsg =
   | { t: 'guild'; a: string; name?: string; id?: number; pid?: string; n?: number; text?: string }
   /** 길드 대화 */
   | { t: 'gchat'; text: string }
+  /**
+   * 거래소: a는 list(f: 거르는 종류, sort: 순서, page: 쪽 번호(0부터)), mine(내가 올린 것),
+   * post(uid: 장비 번호 또는 item: 재료 id와 n: 수량, price: 값), buy(id: 물건 번호), cancel(id: 물건 번호)
+   */
+  | { t: 'market'; a: string; f?: string; sort?: string; page?: number; uid?: number; item?: string; n?: number; price?: number; id?: number }
   /** 순위표를 달라 */
   | { t: 'rank' }
   /** 자동 사냥을 켰다/껐다. 켠 채 접속이 끊기면 서버가 이어서 사냥한다 */
@@ -165,6 +170,10 @@ export type ServerMsg =
   | { t: 'chat'; id: number; name: string; text: string; ch?: 'g' }
   /** 내 길드(없으면 null)와 받은 초대 */
   | { t: 'guild'; g: GuildView | null; invite?: { name: string; from: string } }
+  /** 거래소 목록의 한 쪽. total은 걸러진 물건의 수, guest는 손님이라 사고팔 수 없다는 뜻 */
+  | { t: 'market'; v: 'list'; list: MarketItem[]; f: string; sort: string; page: number; pages: number; total: number; guest?: true }
+  /** 내가 거래소에 올려 둔 것. 올리거나 내리거나 팔리거나 기간이 지나면 다시 온다 */
+  | { t: 'market'; v: 'mine'; list: MarketItem[]; guest?: true }
   /** 누군가의 길드 이름이 바뀌었다 (이름표) */
   | { t: 'gtag'; id: number; g: string }
   /** 안내문: 종류와 값 (shared/messages.ts) */

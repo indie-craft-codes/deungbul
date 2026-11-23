@@ -418,3 +418,10 @@ html:lang(en) body { overflow-wrap: break-word; }
   #questGo { display: none; }
   #quest { gap: 2px; }
 }
+
+/* 거래소: 화면과 거르는 종류를 고르는 단추 줄. 좁은 화면에서는 줄을 바꾼다 */
+.mchips { display: flex; gap: 4px; flex-wrap: wrap; }
+.mchips button { flex: 1 1 22%; padding: 5px 4px; white-space: nowrap; }
+.mchips button.on { background: var(--gold); color: #1c1405; border-color: var(--gold); font-weight: 700; }
+.mfield input.short { flex: 0 1 76px; }
+@media (pointer: coarse) { .mchips button { padding: 7px 4px; } }

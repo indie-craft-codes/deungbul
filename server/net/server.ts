@@ -258,7 +258,14 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (const a of game.announces) broadcast({ t: 'sys', k: a.k, a: a.a });
     game.notices = []; game.cdAcks = []; game.announces = []; game.itemCds = []; game.gears = []; game.partyOut = []; game.out = []; game.casts = [];
     if (game.stateDirty) { game.stateDirty = false; broadcast({ t: 'world', s: game.state() }); }
-    if (game.saveDirty) { game.saveDirty = false; saveWorld(); }
+    if (game.saveDirty) {
+      game.saveDirty = false;
+      saveWorld();
+      // 월드에 맡긴 것(거래소의 물건, 길드 기부)과 캐릭터의 소지품이 어긋난 채로 서버가 죽으면 물건이 복사되거나 사라진다.
+      // 그래서 월드를 저장할 때 바뀐 캐릭터도 함께 저장한다
+      for (const c of clients) if (c.ent?.unsaved) savePlayer(c);
+      for (const [key, e] of away) if (e.unsaved) saveEnt(key, e);
+    }
     // 자리 비움 사냥이 끝난 캐릭터(시간이 다 됨)는 저장하고 내보낸다
     for (const [key, e] of away) {
       if (e.auto) continue;
