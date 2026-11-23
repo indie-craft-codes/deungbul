@@ -17,7 +17,7 @@ export class Rank {
 
   /** 전투력: 순위와 화면 표시에 쓴다 */
   power(p: Ent): number {
-    let score = p.lv * 20 + (Shop.wornTier(p, 'weapon') + Shop.wornTier(p, 'armor')) * 15;
+    let score = Object.values(p.skillLv).reduce((s, lv) => s + (lv - 1) * 10, 0) + p.lv * 20 + (Shop.wornTier(p, 'weapon') + Shop.wornTier(p, 'armor')) * 15;
     for (const slot of GEAR_SLOTS) {
       const it = p.worn[slot] ? p.gear.find((x) => x.uid === p.worn[slot]) : undefined;
       if (it) score += gearScore(it);

@@ -33,19 +33,19 @@ export class Combat {
     }
     g.emit(['s', p.id, id, target?.id ?? 0]);
     // 기술 이름이 아니라 효과의 종류로 처리한다 (shared/content/combat.ts의 SkillEffect)
-    const fx = def.effect;
+    const fx = def.effect, up = g.build.skillScale(p, id); // 강화한 기술은 피해와 회복이 커진다
     switch (fx.kind) {
-      case 'hit': if (target) this.damage(p, target, ri(fx.dmg[0], fx.dmg[1]), true); break;
+      case 'hit': if (target) this.damage(p, target, Math.round(ri(fx.dmg[0], fx.dmg[1]) * up), true); break;
       case 'area': {
         const slow = fx.slow;
-        this.area(p, fx.at === 'target' && target ? target : p, def.radius ?? 0, fx.dmg[0], fx.dmg[1], slow ? (m) => { m.slowUntil = g.clock + slow; } : undefined);
+        this.area(p, fx.at === 'target' && target ? target : p, def.radius ?? 0, Math.round(fx.dmg[0] * up), Math.round(fx.dmg[1] * up), slow ? (m) => { m.slowUntil = g.clock + slow; } : undefined);
         break;
       }
       case 'heal': {
         // allies면 나와 주변의 사람들을 함께 살린다
         for (const e of fx.allies ? [...g.ents.values()] : [p]) {
           if (e.kind !== 'p' || e.layer !== p.layer || (e !== p && dist(p, e) > (def.radius ?? 0))) continue;
-          const amount = Math.round(Math.min(fx.amount, e.maxHp - e.hp));
+          const amount = Math.round(Math.min(fx.amount * up, e.maxHp - e.hp));
           if (amount < 1 && e !== p) continue;
           e.hp += amount;
           g.emit(['heal', e.id, amount]);

@@ -60,6 +60,11 @@ export type MsgKey =
   | 'dungeonClear' // [던전 id, 밖으로 나가기까지 남은 초]
   | 'dungeonFail' // [] 제한 시간을 넘겼다
   | 'dungeonLeft' // [] 스스로 나왔다
+  | 'statNone' // [] 찍을 점수가 없다
+  | 'statReset' // [] 능력치를 모두 돌려받았다
+  | 'skillUp' // [기술 id, 단계]
+  | 'skillMax' // []
+  | 'skillNeedLv' // [필요한 레벨]
   | 'awayBack' // [자리를 비운 분, 얻은 불씨, 얻은 골드, 오른 레벨] 자리를 비운 동안 자동 사냥을 했다
   | 'loot' // [재료 id] 재료를 주웠다
   | 'crafted' // [아이템 id, 직업 id]

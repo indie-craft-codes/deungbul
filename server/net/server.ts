@@ -241,7 +241,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       }
       if (me.metaDirty) {
         me.metaDirty = false;
-        send(c, { t: 'meta', gear: me.gear, worn: me.worn, mail: me.mail, daily: { prog: me.daily.prog, got: me.daily.got, streak: me.daily.streak }, power: game.rank.power(me) });
+        send(c, { t: 'meta', gear: me.gear, worn: me.worn, mail: me.mail, daily: { prog: me.daily.prog, got: me.daily.got, streak: me.daily.streak }, power: game.rank.power(me), build: { stats: me.stats, skillLv: me.skillLv, left: game.build.left(me) } });
       }
       if (me.questDirty) {
         me.questDirty = false;

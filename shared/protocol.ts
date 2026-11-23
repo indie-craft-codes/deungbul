@@ -74,6 +74,10 @@ export type ClientMsg =
   /** 던전에 들어간다 (문 가까이에서) / 던전에서 나온다 */
   | { t: 'dungeon'; id: string }
   | { t: 'dungeonLeave' }
+  /** 능력치 점수 하나를 찍는다 / 모두 돌려받는다 / 기술을 한 단계 강화한다 */
+  | { t: 'stat'; k: string }
+  | { t: 'statReset' }
+  | { t: 'skillUp'; id: string }
   /** 순위표를 달라 */
   | { t: 'rank' }
   /** 자동 사냥을 켰다/껐다. 켠 채 접속이 끊기면 서버가 이어서 사냥한다 */
@@ -133,7 +137,7 @@ export type ServerMsg =
       tier: number;
     }
   /** 내 장비·우편·일일 임무. 바뀔 때만 온다 */
-  | { t: 'meta'; gear: Gear[]; worn: Record<string, number>; mail: Mail[]; daily: { prog: Record<string, number>; got: string[]; streak: number }; power: number }
+  | { t: 'meta'; gear: Gear[]; worn: Record<string, number>; mail: Mail[]; daily: { prog: Record<string, number>; got: string[]; streak: number }; power: number; build: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
   /** 내가 들어가 있는 던전의 상태. id가 빈 문자열이면 밖이다. left는 남은 시간(초, 끝낸 뒤에는 나가기까지), foes는 남은 적 */
   | { t: 'dungeon'; id: string; left: number; foes: number; cleared: boolean }
   /** 순위표. me는 내 순위(0부터, 없으면 -1) */

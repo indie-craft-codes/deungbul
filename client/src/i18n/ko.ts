@@ -1,5 +1,5 @@
 // 한국어. 기준 언어다: 다른 언어 파일은 이 파일과 같은 모양을 갖춰야 컴파일된다.
-import type { ClassId, DailyId, DungeonId, GearSlot, ItemId, MonsterId, QuestId, ResidentId, SkillId, Stat } from '../../../shared/defs';
+import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemId, MonsterId, QuestId, ResidentId, SkillId, Stat } from '../../../shared/defs';
 import { handOf } from '../../../shared/defs';
 import type { MsgArg, MsgKey } from '../../../shared/messages';
 
@@ -95,6 +95,9 @@ export const ko = {
     tabMail: '우편',
     tabDaily: '일일',
     tabRank: '순위',
+    tabBuild: '성장',
+    skillUpHead: '기술 강화',
+    skillUpBtn: '강화',
     equip: '끼기',
     unequip: '빼기',
     enhanceMaxed: '강화 끝',
@@ -152,6 +155,14 @@ export const ko = {
   },
   monsters,
   dungeons,
+  /** 능력치의 이름과 지금 주는 것 */
+  build: {
+    stats: {
+      pow: { name: '힘', info: (v: number) => `공격 피해 +${v}%` },
+      vit: { name: '체력', info: (v: number) => `최대 체력 +${v}` },
+      luck: { name: '행운', info: (v: number) => `치명타 +${v}%` },
+    } satisfies Record<BuildStat, { name: string; info: (v: number) => string }>,
+  },
   /** 드롭 장비와 일일 임무의 이름 */
   gear: {
     slots: gearSlots,
@@ -226,6 +237,11 @@ export const ko = {
   fmt: {
     level: (lv: number, cls: string) => `Lv ${lv} ${cls}`.trim(),
     sparks: (n: number) => `불씨 ${n}`,
+    statLeft: (n: number) => `능력치 · 남은 점수 ${n} (레벨이 오를 때마다 3점)`,
+    statResetFor: (gold: number) => `모두 돌려받기 · ${gold}골드`,
+    skillLv: (lv: number, max: number) => `${lv} / ${max}단계`,
+    skillBonus: (pct: number) => `피해·회복 +${pct}%`,
+    skillNeed: (lv: number) => `레벨 ${lv} 필요`,
     dungeonRuns: (left: number, max: number) => `오늘 ${left} / ${max}번`,
     dungeonNeedLv: (lv: number) => `레벨 ${lv}부터 들어갈 수 있습니다.`,
     dungeonInfo: (minutes: number, info: string) => `${info} 제한 시간 ${minutes}분.`,
@@ -278,7 +294,7 @@ export const ko = {
     noTarget: () => '대상이 없습니다.',
     tooFar: () => '대상이 너무 멉니다.',
     kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} 처치. 경험치 +${a[1]}, 불씨 +${a[2]}, 골드 +${a[3]}`,
-    levelUp: (a) => `레벨이 올랐습니다. Lv ${a[0]}`,
+    levelUp: (a) => `레벨이 올랐습니다. Lv ${a[0]} · 능력치 3점 (메뉴의 성장)`,
     died: (a) => `쓰러졌습니다. ${towerName(a[0])}에서 다시 일어났습니다. 잃은 것은 없습니다.`,
     offerFar: () => '등탑 가까이에서 바칠 수 있습니다.',
     noSparks: () => '불씨가 없습니다.',
@@ -339,6 +355,11 @@ export const ko = {
     dungeonClear: (a) => `${dungeons[a[0] as DungeonId]?.name ?? a[0]}${josa(dungeons[a[0] as DungeonId]?.name ?? String(a[0]), '을', '를').slice((dungeons[a[0] as DungeonId]?.name ?? String(a[0])).length)} 끝냈습니다. 보상은 우편으로 왔습니다.`,
     dungeonFail: () => '제한 시간이 지나 밖으로 나왔습니다.',
     dungeonLeft: () => '던전에서 나왔습니다.',
+    statNone: () => '찍을 능력치 점수가 없습니다. 레벨이 오르면 3점씩 받습니다.',
+    statReset: () => '능력치를 모두 돌려받았습니다. 다시 찍을 수 있습니다.',
+    skillUp: (a) => `기술을 강화했습니다. ${a[1]}단계`,
+    skillMax: () => '더 강화할 수 없는 기술입니다.',
+    skillNeedLv: (a) => `레벨 ${a[0]}부터 강화할 수 있습니다.`,
     awayBack: (a) => `자리를 비운 ${a[0]}분 동안 자동 사냥을 이어 갔습니다. 불씨 +${a[1]}, 골드 +${a[2]}${Number(a[3]) > 0 ? `, 레벨 +${a[3]}` : ''}`,
     rested: (a) => `등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 ${a[0]} (처치 경험치 2배)`,
     questDone: (a) => { const title = questTitles[a[0] as QuestId] ?? String(a[0]); return `'${title}'${josa(title, '을', '를').slice(title.length)} 마쳤습니다.`; },

@@ -16,7 +16,7 @@ const BANNER: Partial<Record<MsgKey, Tone>> = {
   questDone: 'good', levelUp: 'good', residentBack: 'good', towerLit: 'good', stageChanged: '', bossUp: 'bad', bossDown: 'good', dungeonEnter: '', dungeonClear: 'good', dungeonFail: 'bad',
 };
 const FEED: ReadonlySet<MsgKey> = new Set<MsgKey>([
-  'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'awayBack', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
+  'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'awayBack', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
   'noTarget', 'tooFar', 'offerFar', 'noSparks', 'towerFull', 'noResident', 'shopFar', 'notStocked', 'alreadyBest',
   'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
 ]);

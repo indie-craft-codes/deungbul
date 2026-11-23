@@ -1,6 +1,6 @@
 // 메뉴 창: 드롭 장비(끼기·강화·팔기), 우편, 일일 임무와 출석, 순위를 탭으로 나눠 보여 준다. (단축키 M)
 // 새 탭을 더하려면 TABS에 이름과 그리는 함수를 더한다.
-import { DAILIES, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, RARITIES, baseOpt, enhanceMax, isItemId, isSupply, optValue, sellPrice, type Gear, type Reward } from '../../../shared/defs';
+import { BUILD, BUILD_STATS, DAILIES, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, RARITIES, baseOpt, enhanceMax, classOf, isItemId, isSupply, optValue, sellPrice, type Gear, type Reward } from '../../../shared/defs';
 import { $ } from '../app';
 import { onMsg } from '../bus';
 import { L, itemName, onLangChange, t } from '../i18n';
@@ -11,6 +11,7 @@ import { S } from '../state';
 const ui = { panel: $('menu'), tabs: $('menuTabs'), list: $('menuList'), gold: $('menuGold'), btn: $('menuBtn') };
 const TABS: readonly { key: UiKey; draw: () => void }[] = [
   { key: 'tabGear', draw: drawGear },
+  { key: 'tabBuild', draw: drawBuild },
   { key: 'tabMail', draw: drawMail },
   { key: 'tabDaily', draw: drawDaily },
   { key: 'tabRank', draw: drawRank },
@@ -74,6 +75,26 @@ function drawGear(): void {
   for (const g of rest) ui.list.append(gearRow(g, false));
 }
 
+function drawBuild(): void {
+  const loc = L(), me = S.me, b = S.meta.build;
+  if (!me) return;
+  // 능력치: 남은 점수를 나눠 찍는다
+  ui.list.append(el('baghead', loc.fmt.statLeft(b.left)));
+  for (const k of BUILD_STATS) {
+    const n = b.stats[k] ?? 0;
+    ui.list.append(row(`${loc.build.stats[k].name} ${n}`, loc.build.stats[k].info(Math.round(n * BUILD[k] * 10) / 10), [button('+1', () => send({ t: 'stat', k }), b.left < 1)]));
+  }
+  const spent = BUILD_STATS.reduce((s, k) => s + (b.stats[k] ?? 0), 0), cost = BUILD.resetGold(me.lv);
+  ui.list.append(button(loc.fmt.statResetFor(cost), () => send({ t: 'statReset' }), spent === 0 || me.gold < cost));
+  // 기술: 골드로 단계를 올린다
+  ui.list.append(el('baghead', t('skillUpHead')));
+  for (const id of classOf(me.cls).skills) {
+    const lv = b.skillLv[id] ?? 1, max = lv >= BUILD.skillMax, need = BUILD.skillNeedLv(lv), gold = BUILD.skillGold(lv);
+    const note = max ? loc.fmt.skillBonus(Math.round((lv - 1) * BUILD.skillPerLevel * 100)) : `${loc.fmt.skillBonus(Math.round((lv - 1) * BUILD.skillPerLevel * 100))} · ${me.lv < need ? loc.fmt.skillNeed(need) : loc.fmt.gold(gold)}`;
+    ui.list.append(row(`${loc.skills[id].name} ${loc.fmt.skillLv(lv, BUILD.skillMax)}`, note, [button(max ? t('enhanceMaxed') : t('skillUpBtn'), () => send({ t: 'skillUp', id }), max || me.lv < need || me.gold < gold)]));
+  }
+}
+
 function drawMail(): void {
   const loc = L(), mail = S.meta.mail;
   if (!mail.length) { ui.list.append(el('note', t('mailEmpty'))); return; }
@@ -101,12 +122,12 @@ function drawRank(): void {
 export function renderMenu(): void {
   const n = S.meta.mail.length;
   ui.btn.textContent = n ? `${t('menu')} ${n}` : t('menu');
-  ui.btn.classList.toggle('alert', n > 0);
+  ui.btn.classList.toggle('alert', n > 0 || S.meta.build.left > 0); // 받을 우편이나 찍을 점수가 있으면 눈에 띄게
   if (ui.panel.hidden || !S.me) return;
   ui.gold.textContent = L().fmt.gold(S.me.gold);
   ui.tabs.textContent = '';
   TABS.forEach((x, i) => {
-    const b = button(t(x.key), () => { tab = i; if (TABS[i].draw === drawRank) send({ t: 'rank' }); renderMenu(); });
+    const b = button(t(x.key) + (x.draw === drawBuild && S.meta.build.left > 0 ? ' •' : x.draw === drawMail && S.meta.mail.length ? ' •' : ''), () => { tab = i; if (TABS[i].draw === drawRank) send({ t: 'rank' }); renderMenu(); });
     b.classList.toggle('on', i === tab);
     ui.tabs.append(b);
   });
@@ -126,7 +147,7 @@ export function toggleMenu(): void {
 export function initMenu(): void {
   ui.btn.addEventListener('click', (e) => { toggleMenu(); (e.currentTarget as HTMLElement).blur(); });
   $('menuClose').addEventListener('click', () => { ui.panel.hidden = true; });
-  onMsg('meta', (m) => { S.meta = { gear: m.gear, worn: m.worn, mail: m.mail, daily: m.daily, power: m.power }; renderMenu(); });
+  onMsg('meta', (m) => { S.meta = { gear: m.gear, worn: m.worn, mail: m.mail, daily: m.daily, power: m.power, build: m.build }; renderMenu(); });
   onMsg('rank', (m) => { S.rank = { list: m.list, me: m.me }; renderMenu(); });
   onMsg('stat', renderMenu); // 골드가 바뀌면 강화 단추의 상태도 바뀐다
   onLangChange(renderMenu);

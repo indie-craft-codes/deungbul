@@ -102,6 +102,7 @@ export class Players {
     while (p.exp >= p.need) {
       p.exp -= p.need; p.need = Math.round(p.need * 1.35); p.lv++; this.refresh(p); p.hp = p.maxHp;
       this.g.notify(p, 'levelUp', p.lv);
+      p.metaDirty = true; // 찍을 능력치 점수가 생겼다
     }
   }
 }

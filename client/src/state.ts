@@ -69,7 +69,7 @@ export const S = {
   /** 물약을 다시 마실 수 있는 시각과 대기 길이(ms) */
   itemCdEnd: 0,
   /** 내 드롭 장비, 우편, 일일 임무, 전투력 (서버의 meta 메시지) */
-  meta: { gear: [] as Gear[], worn: {} as Record<string, number>, mail: [] as Mail[], daily: { prog: {} as Record<string, number>, got: [] as string[], streak: 0 }, power: 0 },
+  meta: { gear: [] as Gear[], worn: {} as Record<string, number>, mail: [] as Mail[], daily: { prog: {} as Record<string, number>, got: [] as string[], streak: 0 }, power: 0, build: { stats: {} as Record<string, number>, skillLv: {} as Record<string, number>, left: 0 } },
   /** 마지막으로 받은 순위표 */
   rank: { list: [] as RankRow[], me: -1 },
   /** 들어가 있는 던전 (id가 빈 문자열이면 밖). at은 이 상태를 받은 시각 */

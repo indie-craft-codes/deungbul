@@ -17,6 +17,7 @@ import type { Ent } from './entity';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
 import { Bots } from './systems/bots';
+import { Build } from './systems/build';
 import { Classes } from './systems/classes';
 import { Combat } from './systems/combat';
 import { Craft } from './systems/craft';
@@ -178,6 +179,7 @@ export class Game {
   readonly daily: Daily;
   readonly rank: Rank;
   readonly dungeon: Dungeon;
+  readonly build: Build;
 
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
@@ -202,6 +204,7 @@ export class Game {
     this.daily = new Daily(this);
     this.rank = new Rank(this);
     this.dungeon = new Dungeon(this);
+    this.build = new Build(this);
   }
 
   // ---- 시스템이 쓰는 공용 통로 ----
@@ -219,7 +222,7 @@ export class Game {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, path: null, pgx: x, pgz: z, pat: 0,
       hp, maxHp: hp, dead: false, layer: 0, targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
       bot: false, auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
-      gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, offMs: 0, metaDirty: false,
+      gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), raid: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
     };
     resolve(e, this.world.obstacles);

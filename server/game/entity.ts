@@ -46,6 +46,8 @@ export interface Ent {
   mail: Mail[]; mailSeq: number;
   /** 일일 임무와 출석 (systems/daily.ts) */
   daily: DailyState;
+  /** 찍은 능력치와 기술의 강화 단계 (systems/build.ts) */
+  stats: Record<string, number>; skillLv: Record<string, number>;
   /** 이번 접속 전에 비운 시간(ms). 방치 보상을 셈하는 데 쓴다 */
   offMs: number;
   /** 장비·우편·일일 임무가 바뀌었다: 본인에게 알려야 한다 */

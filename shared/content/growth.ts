@@ -97,6 +97,27 @@ export const gearStat = (g: Gear, stat: Stat): number => g.opts.reduce((s, [k, v
 export const gearScore = (g: Gear): number => Math.round(g.opts.reduce((s, [k, v]) => s + optValue(g, v) / STATS[k].base, 0) * 10);
 export const sellPrice = (g: Gear): number => 5 + gearScore(g) + baseTier(g) * 10;
 
+// ---------- 성장 선택: 능력치와 기술 강화 ----------
+/** 찍을 수 있는 능력치: 힘(공격 피해), 체력(최대 체력), 행운(치명타 확률) */
+export const BUILD_STATS = ['pow', 'vit', 'luck'] as const;
+export type BuildStat = (typeof BUILD_STATS)[number];
+export const isBuildStat = (v: unknown): v is BuildStat => typeof v === 'string' && (BUILD_STATS as readonly string[]).includes(v);
+
+export const BUILD = {
+  /** 레벨이 하나 오를 때마다 받는 점수 */
+  pointsPerLevel: 3,
+  /** 점수 하나가 주는 것: 공격 피해 +1%, 최대 체력 +8, 치명타 확률 +0.4%p */
+  pow: 1, vit: 8, luck: 0.4,
+  /** 찍은 점수를 모두 돌려받는 값 */
+  resetGold: (lv: number): number => 30 * lv,
+  /** 기술 강화: 가장 높은 단계, 단계마다 피해·회복이 늘어나는 비율 */
+  skillMax: 5,
+  skillPerLevel: 0.12,
+  /** 지금 단계(lv)에서 다음으로 올리는 데 필요한 캐릭터 레벨과 골드 */
+  skillNeedLv: (lv: number): number => lv * 4,
+  skillGold: (lv: number): number => 80 * lv * lv,
+};
+
 // ---------- 우편 ----------
 /** 우편의 종류. 제목과 내용은 언어 파일이 만든다 (fmt.mailTitle) */
 export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon';
