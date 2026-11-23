@@ -7,6 +7,7 @@ import { nav, view, world } from './app';
 import { ARROW_S, arrow, burst, hit, puff, recoilOf, shake } from './fx';
 import { floatText, makeTag, placeTag, setTagHp, setTagName, settleTags, type Tag } from './hud/tags';
 import { L } from './i18n';
+import { sfx } from './sound';
 import { animate, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
 import { S, newMe, stage, type Me, type Remote } from './state';
 
@@ -165,6 +166,7 @@ function onEvent(e: Ev, me: Me): void {
       // 타격감: 내가 때리거나 맞을 때는 크게(화면도 흔들린다), 남의 싸움은 작게
       if (p) {
         const mine = src === me.id, hurt = dst === me.id;
+        if (hurt) sfx.hurt(); else if (mine) sfx.hit(crit === 1);
         hit({
           id: dst, x: p.x, z: p.z, h: p.h, fromX: from?.x ?? p.x, fromZ: from?.z ?? p.z + 1,
           power: hurt ? 1.1 : mine ? (crit ? 1.6 : 1) : 0.55,
@@ -178,7 +180,7 @@ function onEvent(e: Ev, me: Me): void {
     case 'd': {
       const r = S.others.get(e[1]);
       if (r) { r.dying = DIE_S; puff(r.x, r.h * 0.4, r.z, 12, 0xe8e2d0); burst(r.x, r.z, 2.4, 0xe8e2d0, 0.35); }
-      if (me.attackId === e[1]) { me.attackId = 0; shake(0.12); }
+      if (me.attackId === e[1]) { me.attackId = 0; shake(0.12); sfx.kill(); }
       break;
     }
     case 'r': {

@@ -6,6 +6,8 @@ import { initDungeon } from './hud/dungeon';
 import { initMarks } from './hud/marks';
 import { initMenu } from './hud/menu';
 import { initMinimap } from './hud/minimap';
+import { initNear } from './hud/near';
+import { initSound } from './sound';
 
 export function initModules(): void {
   initAuto();
@@ -14,4 +16,6 @@ export function initModules(): void {
   initMarks();
   initMenu();
   initDungeon();
+  initNear();
+  initSound();
 }

@@ -5,9 +5,9 @@ import { randomName } from './i18n';
 let ws: WebSocket | null = null;
 let onMessage: (m: ServerMsg) => void = () => {};
 let onOpening: () => void = () => {};
-let onClosed: () => void = () => {};
+let onClosed: (code: number) => void = () => {};
 
-export function initNet(h: { message: (m: ServerMsg) => void; opening: () => void; closed: () => void }): void {
+export function initNet(h: { message: (m: ServerMsg) => void; opening: () => void; closed: (code: number) => void }): void {
   onMessage = h.message; onOpening = h.opening; onClosed = h.closed;
 }
 
@@ -70,9 +70,9 @@ function open(to: string, name?: string): void {
     try { m = JSON.parse(ev.data) as ServerMsg; } catch { return; }
     onMessage(m);
   };
-  sock.onclose = () => {
+  sock.onclose = (ev) => {
     if (ws !== sock) return;
     ws = null;
-    onClosed();
+    onClosed(ev.code);
   };
 }

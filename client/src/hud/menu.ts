@@ -45,7 +45,7 @@ function gearRow(g: Gear, worn: boolean): HTMLDivElement {
   const loc = L(), me = S.me;
   // 무기와 갑옷은 바탕 아이템의 이름을 쓴다 (직업에 따라 검/활/지팡이). 사거나 만든 것은 '보급형'이라고 붙인다
   const what = isItemId(g.base) ? itemName(g.base, me?.cls ?? '') : loc.gear.slots[g.slot];
-  const name = loc.fmt.gearName(what, isSupply(g) ? loc.gear.rarities.supply : loc.gear.rarities[RARITIES[g.rar].id], g.plus, g.lv);
+  const name = loc.fmt.gearName(what, isSupply(g) ? loc.gear.rarities.supply : g.made && !g.opts.length ? loc.gear.rarities.made : loc.gear.rarities[RARITIES[g.rar].id], g.plus, g.lv);
   const base = baseOpt(g);
   const lines = g.opts.map(([k, v]) => loc.gear.stats[k](optValue(g, v)));
   if (base && base[1] > 0) lines.unshift(loc.gear.stats[base[0]](optValue(g, base[1])));
@@ -57,7 +57,7 @@ function gearRow(g: Gear, worn: boolean): HTMLDivElement {
   ];
   if (!worn) buttons.push(button(loc.fmt.sellFor(sellPrice(g)), () => send({ t: 'sell', uid: g.uid })));
   if (worn && g.slot === 'weapon') buttons.shift(); // 무기는 빼지 못한다: 다른 무기를 끼면 바뀐다
-  return row(name, opts, buttons, isSupply(g) ? 'supply' : 'rar' + g.rar);
+  return row(name, opts, buttons, isSupply(g) ? 'supply' : g.made && !g.opts.length ? 'made' : 'rar' + g.rar);
 }
 
 function drawGear(): void {

@@ -33,7 +33,7 @@ export class Craft {
 
     for (const [mat, n] of mats) p.items[mat] -= n;
     p.gold -= recipe.gold;
-    if (!Shop.wear(g, p, id)) p.items[id] = (p.items[id] ?? 0) + 1;
+    if (!Shop.wear(g, p, id, true)) p.items[id] = (p.items[id] ?? 0) + 1;
     p.dirty = true; p.unsaved = true;
     g.notify(p, 'crafted', id, p.cls);
   }

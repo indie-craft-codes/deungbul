@@ -55,7 +55,7 @@ export class GearSys {
     const it = x as Gear;
     return typeof x === 'object' && x !== null && num(it.uid) && isGearSlot(it.slot) && num(it.rar) && it.rar >= 0 && it.rar < RARITIES.length
       && (it.base === undefined || (isItemId(it.base) && ITEMS[it.base].kind === it.slot)) && (it.base !== undefined) === (it.slot === 'weapon' || it.slot === 'armor')
-      && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]));
+      && (it.made === undefined || typeof it.made === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]));
   }
 
   /** 낀 장비들이 주는 수치의 합 */
@@ -98,10 +98,11 @@ export class GearSys {
   }
 
   /** 무기나 갑옷을 얻어 바로 낀다 (상점, 대장간). 산 것이 사라지지 않게 가방이 가득 차도 들어간다. 장비가 아니면 false */
-  acquire(p: Ent, id: ItemId): boolean {
+  acquire(p: Ent, id: ItemId, made = false): boolean {
     const kind = ITEMS[id].kind;
     if (kind !== 'weapon' && kind !== 'armor') return false;
     const it = this.plain(id);
+    if (made) it.made = true;
     it.uid = ++p.gearSeq;
     p.gear.push(it);
     this.equip(p, it.uid);

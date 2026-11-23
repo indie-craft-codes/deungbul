@@ -38,6 +38,8 @@ export interface Gear {
   slot: GearSlot;
   /** 무기와 갑옷: 바탕이 되는 아이템 (ITEMS의 키). 기본 수치와 겉모습, 이름이 여기서 나온다 */
   base?: string;
+  /** 대장간에서 만든 것: 옵션은 없지만 떨어진 장비처럼 끝까지 강화된다 */
+  made?: boolean;
   /** 등급 번호 (RARITIES) */
   rar: number;
   /** 장비 레벨: 떨어뜨린 몬스터가 셀수록 높다 */
@@ -62,7 +64,7 @@ export const GEAR = {
 
 export const ENHANCE = {
   max: 10,
-  /** 보급형(상점에서 사거나 대장간에서 만든 옵션 없는 장비)은 여기까지만 강화된다 */
+  /** 보급형(상점에서 산 옵션 없는 장비)은 여기까지만 강화된다 */
   supplyMax: 5,
   /** 강화 단계마다 옵션 값이 이만큼 커진다 */
   perPlus: 0.1,
@@ -82,8 +84,8 @@ export function baseOpt(g: Gear): [Stat, number] | null {
 /** 바탕 아이템의 등급 (없으면 0) */
 export const baseTier = (g: Gear): number => (isItemId(g.base) ? (ITEMS[g.base] as { tier?: number }).tier ?? 0 : 0);
 
-/** 보급형인가: 상점에서 사거나 대장간에서 만든 무기와 갑옷. 옵션이 없고 강화 한도가 낮다. 몬스터가 떨어뜨린 것은 옵션이 붙는다 */
-export const isSupply = (g: Gear): boolean => g.base !== undefined && g.opts.length === 0;
+/** 보급형인가: 상점에서 산 무기와 갑옷. 옵션이 없고 강화 한도가 낮다. 대장간에서 만든 것은 옵션은 없어도 끝까지 강화되고, 몬스터가 떨어뜨린 것은 옵션이 붙는다 */
+export const isSupply = (g: Gear): boolean => g.base !== undefined && g.opts.length === 0 && !g.made;
 /** 그 장비를 강화할 수 있는 한도 */
 export const enhanceMax = (g: Gear): number => (isSupply(g) ? ENHANCE.supplyMax : ENHANCE.max);
 

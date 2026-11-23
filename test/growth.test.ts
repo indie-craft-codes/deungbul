@@ -58,6 +58,13 @@ import { check } from './harness';
   p.gold = 1e6;
   for (let i = 0; i < 12; i++) { g.command(p, { t: 'enhance', uid: sword2.uid }); g.command(p, { t: 'enhance', uid: drop.uid }); }
   check(sword2.plus === 5 && drop.plus === 10 && drop.opts.length > 0, '보급형은 +5까지, 떨어진 장비는 +10까지 강화된다');
+  // 대장간에서 만든 것은 옵션은 없어도 끝까지 강화된다
+  g.gear.acquire(p, 'sword3', true);
+  const forged = p.gear[p.gear.length - 1];
+  for (let i = 0; i < 12; i++) g.command(p, { t: 'enhance', uid: forged.uid });
+  check(forged.made === true && forged.opts.length === 0 && forged.plus === 10 && p.weapon === 'sword3', '대장간에서 만든 장비는 +10까지 강화된다');
+  g.command(p, { t: 'equip', uid: p.gear[0].uid });
+  g.command(p, { t: 'sell', uid: forged.uid });
   p.gold = 10000;
   g.command(p, { t: 'equip', uid: p.gear[0].uid });
   const gold2 = p.gold, count = p.gear.length;

@@ -42,7 +42,7 @@ const count = (n: MsgArg, word: string) => `${n} ${word}${Number(n) === 1 ? '' :
 /** a Warrior, an Archer */
 const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`;
 const gearSlots = { weapon: 'Weapon', armor: 'Armor', ring: 'Ring', amulet: 'Amulet', charm: 'Charm' };
-const rarities: Record<string, string> = { supply: 'Standard', common: 'Plain', uncommon: 'Fine', rare: 'Rare', epic: 'Radiant' };
+const rarities: Record<string, string> = { supply: 'Standard', made: 'Crafted', common: 'Plain', uncommon: 'Fine', rare: 'Rare', epic: 'Radiant' };
 const dailies = { kill30: 'Defeat 30 monsters', offer10: 'Offer 10 sparks', enhance1: 'Enhance gear once' };
 const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 
@@ -53,6 +53,9 @@ export const en: Locale = {
     title: 'Lamp Tower',
     connecting: 'Connecting…',
     disconnected: 'Lost connection to the server.',
+    reconnecting: 'Connection lost. Reconnecting…',
+    soundOn: 'Sound on',
+    soundOff: 'Sound off',
     full: 'The server is full. Please try again shortly.',
     reconnect: 'Reconnect',
     renameTitle: 'Click to change your name',
@@ -86,7 +89,7 @@ export const en: Locale = {
     enhanceMaxed: 'Maxed',
     claim: 'Claim',
     claimAll: 'Claim all',
-    gearEmpty: 'No spare gear. Monsters drop some now and then. Bought or crafted gear is standard-issue: no bonuses, and it enhances only to +5.',
+    gearEmpty: 'No spare gear. Monsters drop some now and then. Shop gear is standard-issue: no bonuses, and it enhances only to +5.',
     mailEmpty: 'No mail to claim.',
     rankEmpty: 'No ranking yet.',
     dailyDone: 'Done',
@@ -310,7 +313,7 @@ export const en: Locale = {
     gearSold: (a) => `Gear sold. Gold +${a[0]}`,
     enhanceOk: (a) => `Enhancement succeeded. +${a[0]}`,
     enhanceFail: () => 'Enhancement failed. The gear is unchanged.',
-    enhanceMax: () => 'This cannot be enhanced further. (Standard gear stops at +5, dropped gear at +10.)',
+    enhanceMax: () => 'This cannot be enhanced further. (Standard gear stops at +5, crafted or dropped gear at +10.)',
     mailNew: () => 'You have mail. Claim it under Menu (M) > Mail.',
     mailGot: (a) => `Mail claimed.${Number(a[0]) ? ` Gold +${a[0]}` : ''}${Number(a[1]) ? ` Exp +${a[1]}` : ''}${Number(a[2]) ? ` Sparks +${a[2]}` : ''}`,
     dungeonFar: () => 'Move closer to the gate.',

@@ -69,10 +69,27 @@ initClasses();
 spawnMerchant();
 initInput();
 onLangChange(() => { relabel(); renderTexts(); renderQuest(); renderShop(); renderForge(); renderClasses(); renderParty(); });
+// 끊기면 스스로 다시 접속한다 (폰 화면이 꺼졌다 켜지거나 통신이 잠깐 끊긴 경우). 간격은 2초에서 시작해 15초까지 늘린다.
+// 다른 곳에서 접속해 밀려났거나(4000) 서버가 가득 찼으면(1013) 혼자 다시 붙지 않는다.
+let retryMs = 2000;
+let retryTimer = 0;
+function lost(code: number): void {
+  if (code === 4000 || code === 1013) { showGate(code === 1013 ? 'full' : 'disconnected', true); return; }
+  showGate('reconnecting', true);
+  const again = () => {
+    if (document.hidden) { document.addEventListener('visibilitychange', again, { once: true }); return; } // 화면이 꺼져 있으면 켜질 때까지 기다린다
+    connect();
+  };
+  clearTimeout(retryTimer);
+  retryTimer = window.setTimeout(again, retryMs);
+  retryMs = Math.min(15000, retryMs * 2);
+}
+onMsg('welcome', () => { retryMs = 2000; clearTimeout(retryTimer); });
+
 initNet({
   message: (m) => dispatch(m, performance.now()),
   opening: () => { clearEntities(); setParty([]); showGate('connecting', false); },
-  closed: () => { clearEntities(); showGate('disconnected', true); },
+  closed: (code) => { clearEntities(); lost(code); },
 });
 
 /**

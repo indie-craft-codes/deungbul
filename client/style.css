@@ -392,3 +392,13 @@ html:lang(en) body { overflow-wrap: break-word; }
 #dgBtn { padding: 7px; }
 
 .mrow.supply .iname { color: var(--dim); }
+
+/* 좁은 화면: 등탑·상점·대장간 창은 가장 가까운 것 하나만 보인다 (hud/near.ts가 data-near를 적는다) */
+@media (max-width: 720px) {
+  #rightcol[data-near="tower"] #shop, #rightcol[data-near="tower"] #forge,
+  #rightcol[data-near="shop"] #tower, #rightcol[data-near="shop"] #forge,
+  #rightcol[data-near="forge"] #tower, #rightcol[data-near="forge"] #shop { display: none; }
+}
+#soundBtn { padding: 1px 8px; font-size: 11px; white-space: nowrap; flex: none; }
+@media (pointer: coarse) { #soundBtn { font-size: 14px; padding: 3px 10px; } }
+.mrow.made { border-left-color: var(--gold); } .mrow.made .iname { color: var(--gold); }

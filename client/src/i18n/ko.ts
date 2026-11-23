@@ -53,7 +53,7 @@ const questTitles: Record<QuestId, string> = { bram: '1장 · 망치 소리', mi
 const zones: readonly string[] = ['등불 들판', '잿빛 숲'];
 const stages: readonly [string, string, string] = ['어스름', '보통', '환함'];
 const gearSlots: Record<GearSlot, string> = { weapon: '무기', armor: '갑옷', ring: '반지', amulet: '목걸이', charm: '부적' };
-const rarities: Record<string, string> = { supply: '보급형', common: '평범한', uncommon: '쓸 만한', rare: '희귀한', epic: '빛나는' };
+const rarities: Record<string, string> = { supply: '보급형', made: '제작', common: '평범한', uncommon: '쓸 만한', rare: '희귀한', epic: '빛나는' };
 const dailies: Record<DailyId, string> = { kill30: '몬스터 30마리 잡기', offer10: '불씨 10개 바치기', enhance1: '장비 강화 1번 하기' };
 const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 
@@ -64,6 +64,9 @@ export const ko = {
     title: '등불지기',
     connecting: '접속 중…',
     disconnected: '서버와 연결이 끊어졌습니다.',
+    reconnecting: '연결이 끊어져 다시 접속하는 중입니다…',
+    soundOn: '소리 켬',
+    soundOff: '소리 끔',
     full: '서버가 가득 찼습니다. 잠시 뒤에 다시 시도해 주세요.',
     reconnect: '다시 접속',
     renameTitle: '눌러서 이름 바꾸기',
@@ -97,7 +100,7 @@ export const ko = {
     enhanceMaxed: '강화 끝',
     claim: '받기',
     claimAll: '모두 받기',
-    gearEmpty: '남는 장비가 없습니다. 몬스터를 잡으면 가끔 떨어집니다. 사거나 만든 것은 보급형이라 옵션이 없고 +5까지만 강화됩니다.',
+    gearEmpty: '남는 장비가 없습니다. 몬스터를 잡으면 가끔 떨어집니다. 상점에서 산 것은 보급형이라 옵션이 없고 +5까지만 강화됩니다.',
     mailEmpty: '받을 우편이 없습니다.',
     rankEmpty: '아직 순위가 없습니다.',
     dailyDone: '완료',
@@ -326,7 +329,7 @@ export const ko = {
     gearSold: (a) => `장비를 팔았습니다. 골드 +${a[0]}`,
     enhanceOk: (a) => `강화에 성공했습니다. +${a[0]}`,
     enhanceFail: () => '강화에 실패했습니다. 장비는 그대로입니다.',
-    enhanceMax: () => '더 강화할 수 없습니다. (보급형은 +5, 몬스터가 떨어뜨린 장비는 +10까지)',
+    enhanceMax: () => '더 강화할 수 없습니다. (보급형은 +5, 만들거나 주운 장비는 +10까지)',
     mailNew: () => '우편이 왔습니다. 메뉴(M)의 우편에서 받으세요.',
     mailGot: (a) => `우편을 받았습니다.${Number(a[0]) ? ` 골드 +${a[0]}` : ''}${Number(a[1]) ? ` 경험치 +${a[1]}` : ''}${Number(a[2]) ? ` 불씨 +${a[2]}` : ''}`,
     dungeonFar: () => '문에 더 가까이 가세요.',
