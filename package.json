@@ -9,6 +9,7 @@
     "dev:client": "vite",
     "build": "vite build",
     "start": "tsx server/main.ts",
+    "pilot": "node scripts/pilot.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsx test/all.ts",
     "load": "tsx test/load.ts"

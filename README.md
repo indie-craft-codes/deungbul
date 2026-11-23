@@ -87,14 +87,18 @@ npm start          # http://localhost:3001
 
 ## 파일럿 배포
 
-GitHub Pages는 정적 파일만 내보내므로 **화면만** 올릴 수 있다. 게임 서버(Node, 웹소켓)는 다른 곳에서 돌아야 한다.
+지금 쓰는 방식: 화면은 GitHub Pages, 게임 서버는 이 PC(임시 터널).
 
-- 화면: `.github/workflows/pages.yml`이 `main`에 올릴 때마다 빌드해서 Pages에 올린다. 저장소 변수 `SERVER_URL`에 게임 서버의 주소(`wss://...`)를 넣는다. 직접 빌드하려면 `VITE_SERVER_URL=wss://서버주소 npm run build`.
-- 서버: `npm start`를 돌릴 수 있는 곳이면 된다. Pages는 https라서 서버도 `wss://`(TLS)여야 브라우저가 붙는다.
-  - 가장 간단한 길: 서버 한 곳에 화면까지 같이 올린다 (서버가 `dist/`를 직접 내보낸다). 이 경우 Pages가 필요 없다.
-  - 내 PC에서 잠깐 열기: 터널 프로그램(예: cloudflared)으로 3001 포트에 임시 https 주소를 붙인다. PC가 켜져 있는 동안만 열린다.
-- 저장은 서버의 `data/game.db` 파일이다. 디스크가 지워지는 호스팅이면 재배포할 때 캐릭터가 사라진다.
-- 계정이 없다: 브라우저에 저장된 비밀 값으로 캐릭터를 이어받는다. 브라우저 데이터를 지우면 캐릭터를 잃는다.
+- 화면 주소(바뀌지 않는다): https://indie-craft-codes.github.io/deungbul-play/
+- 켜는 법: 게임 서버를 켜 두고(`npm start`) `npm run pilot`을 돌린다 (`scripts/pilot.mjs`).
+  1. 화면을 빌드해 공개용 저장소 `indie-craft-codes/deungbul-play`(빌드 결과만 들어 있다)에 올린다. 소스 저장소 `indie-craft-codes/deungbul`은 비공개다.
+  2. cloudflared로 임시 주소(`https://....trycloudflare.com`)를 받는다.
+  3. 그 주소를 `server.json`에 적어 함께 올린다. 화면은 접속할 때마다 이 파일을 읽어 서버를 찾는다 (`client/src/net.ts`).
+- `npm run pilot` 창을 닫거나 PC를 끄면 외부 접속이 끊긴다. 다시 켜면 임시 주소는 바뀌지만 화면 주소는 그대로라서 폰의 홈 화면 아이콘은 계속 쓸 수 있다. 올린 뒤 반영까지 1~2분 걸린다.
+- 무료 요금제에서는 비공개 저장소로 Pages를 쓸 수 없어서 저장소를 둘로 나눴다.
+- 저장은 이 PC의 `data/game.db`다.
+- 계정이 없다: 브라우저에 저장된 비밀 값으로 캐릭터를 이어받는다. 홈 화면 아이콘으로 연 것과 사파리로 연 것은 저장 공간이 달라 서로 다른 캐릭터가 된다.
+- 다른 곳에 올릴 때: 서버가 `dist/`를 직접 내보내므로 Node 호스팅 한 곳이면 화면까지 함께 된다. 화면만 따로 빌드하려면 `VITE_SERVER_URL=wss://서버주소 npm run build`.
 
 ## 확인
 

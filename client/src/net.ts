@@ -20,6 +20,21 @@ function url(): string {
   return import.meta.env.DEV ? `${proto}://${location.hostname}:3001` : `${proto}://${location.host}`;
 }
 
+/**
+ * 접속할 게임 서버의 주소. 화면만 따로 올린 곳(GitHub Pages)에서는 옆에 놓인 server.json({ "url": "wss://..." })을 읽는다:
+ * 서버 주소가 바뀌어도 화면을 다시 빌드하지 않고 그 파일만 바꾸면 된다. 파일이 없으면 화면을 내보낸 곳이 곧 서버다.
+ */
+async function serverUrl(): Promise<string> {
+  if (!import.meta.env.DEV && !import.meta.env.VITE_SERVER_URL) {
+    try {
+      const r = await fetch('./server.json', { cache: 'no-store' });
+      const j = r.ok ? ((await r.json()) as { url?: unknown }) : null;
+      if (j && typeof j.url === 'string' && /^wss?:\/\//.test(j.url)) return j.url;
+    } catch { /* 파일이 없다: 아래의 기본 주소를 쓴다 */ }
+  }
+  return url();
+}
+
 /** 무작위 비밀 값. randomUUID는 https나 localhost에서만 있어서(와이파이 주소로 들어오면 없다) 직접 만든다. */
 function newToken(): string {
   const b = crypto.getRandomValues(new Uint8Array(16));
@@ -42,7 +57,11 @@ export function send(m: ClientMsg): void {
 /** 접속한다. 이름을 주지 않으면 현재 언어로 만든 무작위 이름을 제안한다 (저장된 이름이 있으면 서버가 그것을 쓴다). */
 export function connect(name?: string): void {
   onOpening();
-  const sock = new WebSocket(url());
+  void serverUrl().then((to) => open(to, name));
+}
+
+function open(to: string, name?: string): void {
+  const sock = new WebSocket(to);
   ws = sock;
   sock.onopen = () => send({ t: 'join', name: name || randomName(), token: token() });
   sock.onmessage = (ev) => {
