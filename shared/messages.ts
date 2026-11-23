@@ -52,7 +52,7 @@ export type MsgKey =
   | 'enhanceFail' // []
   | 'enhanceMax' // []
   | 'mailNew' // [] 우편이 왔다
-  | 'mailGot' // [골드, 경험치, 불씨] 우편의 보상을 받았다
+  | 'mailGot' // [골드, 경험치, 불씨, 장비 수, 아이템 수] 우편의 보상을 받았다
   | 'dungeonFar' // [] 문에서 멀다
   | 'dungeonLevel' // [필요한 레벨]
   | 'dungeonNoRuns' // [] 오늘 들어갈 수 있는 횟수를 다 썼다
@@ -65,6 +65,16 @@ export type MsgKey =
   | 'skillUp' // [기술 id, 단계]
   | 'skillMax' // []
   | 'skillNeedLv' // [필요한 레벨]
+  | 'mailLeft' // [] 가방이나 한도가 모자라 우편의 물건을 다 받지 못했다 (남은 것은 우편에 그대로 있다)
+  | 'marketGuest' // [] 손님은 거래소를 쓸 수 없다
+  | 'marketFull' // [한 사람이 올릴 수 있는 수]
+  | 'marketPriceBad' // [값의 한도]
+  | 'marketCant' // [] 올릴 수 없는 물건 (낀 장비, 보급형, 재료가 아닌 것)
+  | 'marketPosted' // [값]
+  | 'marketBought' // [값]
+  | 'marketGone' // [] 이미 팔렸거나 내려간 물건
+  | 'marketOwn' // [] 자기 물건은 살 수 없다
+  | 'marketCanceled' // [] 올린 물건을 내렸다
   | 'guildGuest' // [] 손님은 길드에 들 수 없다
   | 'guildNeedLv' // [필요한 레벨]
   | 'guildNameBad' // []

@@ -50,8 +50,8 @@ export class GearSys {
     });
   }
 
-  /** 저장된 값이 장비의 모양을 갖췄는가 */
-  private static valid(x: unknown): x is Gear {
+  /** 저장된 값이 장비의 모양을 갖췄는가 (우편과 거래소도 저장된 장비를 읽을 때 쓴다) */
+  static valid(x: unknown): x is Gear {
     const it = x as Gear;
     return typeof x === 'object' && x !== null && num(it.uid) && isGearSlot(it.slot) && num(it.rar) && it.rar >= 0 && it.rar < RARITIES.length
       && (it.base === undefined || (isItemId(it.base) && ITEMS[it.base].kind === it.slot)) && (it.base !== undefined) === (it.slot === 'weapon' || it.slot === 'armor')
@@ -135,6 +135,15 @@ export class GearSys {
     p.gear.push(it);
     p.metaDirty = true; p.unsaved = true;
     this.g.notify(p, 'gearDrop', it.slot, RARITIES[it.rar].id);
+    return true;
+  }
+
+  /** 알림 없이 가방에 넣는다 (우편에서 받거나 거래소에서 온 것). 가득 찼으면 넣지 않고 false: 부른 쪽이 물건을 다른 곳에 보관해야 한다 */
+  put(p: Ent, it: Gear): boolean {
+    if (p.gear.length >= GEAR.bagMax) return false;
+    it.uid = ++p.gearSeq;
+    p.gear.push(it);
+    p.metaDirty = true; p.unsaved = true;
     return true;
   }
 

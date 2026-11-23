@@ -27,6 +27,7 @@ import { GearSys } from './systems/gear';
 import { Guild } from './systems/guild';
 import { Idle } from './systems/idle';
 import { MailSys } from './systems/mail';
+import { Market } from './systems/market';
 import { Rank } from './systems/rank';
 import { Keepers } from './systems/keepers';
 import { Monsters } from './systems/monsters';
@@ -183,6 +184,7 @@ export class Game {
   readonly rank: Rank;
   readonly dungeon: Dungeon;
   readonly build: Build;
+  readonly market: Market;
   readonly guild: Guild;
 
   constructor(opts: GameOptions = {}) {
@@ -209,6 +211,7 @@ export class Game {
     this.rank = new Rank(this);
     this.dungeon = new Dungeon(this);
     this.build = new Build(this);
+    this.market = new Market(this);
     this.guild = new Guild(this);
   }
 

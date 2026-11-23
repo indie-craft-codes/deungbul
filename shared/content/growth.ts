@@ -119,17 +119,27 @@ export const BUILD = {
 };
 
 // ---------- 우편 ----------
-/** 우편의 종류. 제목과 내용은 언어 파일이 만든다 (fmt.mailTitle) */
-export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon';
-export interface Reward { gold?: number; exp?: number; sparks?: number }
+/**
+ * 우편의 종류. 제목과 내용은 언어 파일이 만든다 (fmt.mailTitle).
+ * 거래소: marketSold 팔린 값, marketExpired 기간이 지나 돌아온 물건, marketBought 산 물건(가방에 자리가 없었다), marketBack 내린 물건(가방에 자리가 없었다)
+ */
+export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack';
+/** 보상. gear와 items는 우편에 붙는 물건이다: 낱개 장비(uid는 받을 때 새로 붙는다)와 아이템 id별 개수 */
+export interface Reward { gold?: number; exp?: number; sparks?: number; gear?: Gear[]; items?: Record<string, number> }
 export interface Mail {
   id: number;
   k: MailKind;
-  /** 제목에 넣을 값 (방치: 분, 출석: 며칠째, 일일: 임무 id, 던전: 던전 id) */
+  /** 제목에 넣을 값 (방치: 분, 출석: 며칠째, 일일: 임무 id, 던전: 던전 id, 거래소: 물건(아이템 id나 장비 칸), 수량, 값, 수수료) */
   a: (string | number)[];
   r: Reward;
 }
+/** 우편함의 한도. 넘으면 오래된 것부터 밀려나지만, 거래로 생긴 우편은 밀어내지 않는다 (mailKept) */
 export const MAIL_MAX = 30;
+const TRADE_MAILS: readonly string[] = ['marketSold', 'marketExpired', 'marketBought', 'marketBack'];
+/** 우편에 물건(장비, 아이템)이 붙어 있는가 */
+export const hasGoods = (r: Reward): boolean => !!r.gear?.length || (!!r.items && Object.keys(r.items).length > 0);
+/** 밀어내면 안 되는 우편인가: 물건이 붙었거나 거래의 값이 든 우편은 다른 사람과 주고받은 것이라 사라지면 안 된다 */
+export const mailKept = (m: { k: string; r: Reward }): boolean => hasGoods(m.r) || TRADE_MAILS.includes(m.k);
 
 // ---------- 방치 보상 ----------
 export const IDLE = {
