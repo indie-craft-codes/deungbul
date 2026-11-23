@@ -24,6 +24,16 @@ export function moveTo(x: number, z: number): void {
   markMove(me.tx, me.tz);
 }
 
+/** 자동 사냥이 스스로 걷는다: 자동 사냥을 끄지 않고, 목적지 표시도 하지 않는다 */
+export function autoWalk(x: number, z: number): void {
+  const me = S.me;
+  if (!me) return;
+  const to = clampPoint(x, z);
+  me.tx = to.x; me.tz = to.z;
+  me.moving = true; me.stuck = 0; me.path = null; me.lastCmd = performance.now(); me.attackId = 0;
+  send({ t: 'move', x: me.tx, z: me.tz });
+}
+
 /** 첫불 마을의 등탑 앞까지 걸어간다 (물약을 사거나 불씨를 바치러 돌아갈 때). */
 export function goToTown(): void {
   if (!S.me) return;

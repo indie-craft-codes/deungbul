@@ -59,7 +59,9 @@ export const GEAR = {
   weaponFor: (lv: number): ItemId => (lv >= 6 ? 'sword4' : lv >= 4 ? 'sword3' : lv >= 2 ? 'sword2' : 'sword1'),
   armorFor: (lv: number): ItemId => (lv >= 3 ? 'armor2' : 'armor1'),
   /** 떨어뜨린 몬스터의 경험치로 장비 레벨을 정한다 */
-  levelOf: (monsterExp: number): number => Math.max(1, Math.min(6, 1 + Math.floor(monsterExp / 25))),
+  // 약한 몬스터(슬라임, 위습)는 1, 잿빛 숲의 몬스터는 2~4, 그림자와 보스는 5~6이 된다.
+  // 예전에는 25로 나눠 잿빛 숲에서도 거의 다 1레벨(낡은 검)이 나와, 주운 장비가 상점의 보급형보다 못했다
+  levelOf: (monsterExp: number): number => Math.max(1, Math.min(6, 1 + Math.floor(monsterExp / 15))),
 };
 
 export const ENHANCE = {

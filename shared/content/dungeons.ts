@@ -1,6 +1,7 @@
 // 던전: 문으로 들어가는 따로 떨어진 지역. 들어간 사람(과 그 파티)만의 인스턴스가 만들어진다.
 // 규칙은 server/game/systems/dungeon.ts가 맡는다. 수치는 모두 잠정값이다.
 import type { Reward } from './growth';
+import { PORTALS } from './map';
 import type { MonsterId } from './monsters';
 
 export interface DungeonDef {
@@ -28,7 +29,7 @@ export interface DungeonDef {
 
 export const DUNGEONS = {
   crypt: {
-    portal: { x: 128.5, z: 2 },
+    portal: PORTALS.crypt,
     entry: { x: 266, z: 0 },
     minLv: 8,
     perDay: 3,

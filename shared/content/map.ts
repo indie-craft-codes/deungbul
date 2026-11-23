@@ -25,6 +25,13 @@ export const GRID = {
   x0: Math.min(...AREAS.map((a) => a.x0)), x1: Math.max(...AREAS.map((a) => a.x1)),
   z0: Math.min(...AREAS.map((a) => a.z0)), z1: Math.max(...AREAS.map((a) => a.z1)),
 };
+/** 던전으로 들어가는 문의 자리 (들판). 이 둘레에는 나무와 바위를 두지 않는다 */
+export const PORTALS: Readonly<Record<string, { x: number; z: number }>> = {
+  crypt: { x: 128.5, z: 2 },
+};
+/** 문 둘레에서 나무와 바위를 치우는 반경 */
+export const PORTAL_CLEAR = 9;
+
 /** 던전 안의 기둥 (모든 인스턴스가 같은 지형을 쓴다) */
 export const PILLARS: readonly { x: number; z: number; r: number }[] = [
   { x: 276, z: -9, r: 1.6 }, { x: 276, z: 9, r: 1.6 }, { x: 290, z: -22, r: 1.6 }, { x: 290, z: 22, r: 1.6 },

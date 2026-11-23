@@ -1,7 +1,7 @@
 // 서버와 클라이언트가 함께 쓰는 월드: 엔진 상수와, 맵 정의로 장애물을 만드는 코드.
 // 같은 시드로 같은 장애물을 만들어서, 서버의 충돌 판정과 클라이언트의 그림이 항상 일치한다.
 // 맵 자체(범위, 구역, 등탑, 빈터, 길, 나무 뿌리는 규칙)는 shared/content/map.ts에 있고, 여기서 그대로 다시 내보낸다.
-import { AREAS, EDGE, HOUSES, MAP_SEED, MAX_X, MAX_Z, MIN_X, MIN_Z, PILLARS, POND, SCATTER, TOWERS, areaAt, isFree } from './content/map';
+import { AREAS, EDGE, HOUSES, MAP_SEED, MAX_X, MAX_Z, MIN_X, MIN_Z, PILLARS, POND, PORTALS, PORTAL_CLEAR, SCATTER, TOWERS, areaAt, isFree } from './content/map';
 
 export * from './content/map';
 
@@ -70,6 +70,10 @@ export function buildWorld(seed = MAP_SEED): World {
       if (isFree(x, z)) list.push({ x, z, s, rot });
     }
   }
+
+  // 던전의 문 둘레는 비운다. 뿌릴 때 거르면 난수열이 달라져 맵 전체의 배치가 바뀌므로, 다 뿌린 뒤에 가까운 것만 뺀다
+  const clearOf = (d: Deco) => Object.values(PORTALS).every((p) => Math.hypot(d.x - p.x, d.z - p.z) > PORTAL_CLEAR);
+  for (const list of [trees, rocks]) for (let i = list.length - 1; i >= 0; i--) if (!clearOf(list[i])) list.splice(i, 1);
 
   const inside = (d: Deco) => d.x > MIN_X - 2 && d.x < MAX_X + 2 && d.z > MIN_Z - 2 && d.z < MAX_Z + 2;
   for (const t of trees) if (inside(t)) obstacles.push({ x: t.x, z: t.z, r: 0.55 * t.s });

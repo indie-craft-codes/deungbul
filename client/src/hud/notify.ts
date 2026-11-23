@@ -13,10 +13,10 @@ import { logText } from './chat';
 type Tone = '' | 'good' | 'bad';
 const BANNER: Partial<Record<MsgKey, Tone>> = {
   raidSoon: 'bad', raidStart: 'bad', raidWon: 'good', raidLost: 'bad', died: 'bad',
-  questDone: 'good', levelUp: 'good', residentBack: 'good', towerLit: 'good', stageChanged: '', bossUp: 'bad', bossDown: 'good', dungeonEnter: '', dungeonClear: 'good', dungeonFail: 'bad',
+  questDone: 'good', levelUp: 'good', residentBack: 'good', towerLit: 'good', stageChanged: '', bossUp: 'bad', bossDown: 'good', dungeonEnter: '', dungeonClear: 'good', dungeonFail: 'bad', awayBack: 'good',
 };
 const FEED: ReadonlySet<MsgKey> = new Set<MsgKey>([
-  'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'awayBack', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildCreated', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildInvited', 'guildJoined', 'guildLeft', 'guildYouLeft', 'guildKicked', 'guildGave', 'guildLevelUp', 'guildNone', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
+  'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildCreated', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildInvited', 'guildJoined', 'guildLeft', 'guildYouLeft', 'guildKicked', 'guildGave', 'guildLevelUp', 'guildNone', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
   'noTarget', 'tooFar', 'offerFar', 'noSparks', 'towerFull', 'noResident', 'shopFar', 'notStocked', 'alreadyBest',
   'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
 ]);

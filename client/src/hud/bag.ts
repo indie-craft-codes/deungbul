@@ -1,9 +1,10 @@
-// 가방 창: 지금 든 무기와 입은 갑옷, 물약, 제작 재료를 어디서나 볼 수 있다. (단축키 B)
-import { ITEMS, MAT_MAX, POTION_MAX, isItemId, type ItemId } from '../../../shared/defs';
+// 가방 창: 물약과 제작 재료를 어디서나 볼 수 있다. 장비는 메뉴의 장비 탭에서 다룬다. (단축키 B)
+import { ITEMS, MAT_MAX, POTION_MAX, type ItemId } from '../../../shared/defs';
 import { $ } from '../app';
 import { onMsg } from '../bus';
-import { L, itemName, onLangChange, t } from '../i18n';
+import { L, onLangChange, t } from '../i18n';
 import { S } from '../state';
+import { openMenu } from './menu';
 
 const ui = { panel: $('bag'), gold: $('bagGold'), list: $('bagList') };
 const ids = Object.keys(ITEMS) as ItemId[];
@@ -38,9 +39,11 @@ export function renderBag(): void {
   const loc = L();
   ui.gold.textContent = loc.fmt.gold(me.gold);
   ui.list.textContent = '';
-  const weapon = isItemId(me.weapon) ? row(t('bagWeapon'), itemName(me.weapon, me.cls), loc.items[me.weapon].info) : row(t('bagWeapon'), t('none'), '');
-  const armor = isItemId(me.armor) ? row(t('bagArmor'), itemName(me.armor, me.cls), loc.items[me.armor].info) : row(t('bagArmor'), t('none'), t('bagArmorHint'));
-  ui.list.append(weapon, armor);
+  // 장비(무기, 갑옷, 장신구)는 메뉴의 장비 탭 한 곳에서만 다룬다
+  const gear = document.createElement('button');
+  gear.type = 'button'; gear.className = 'plain'; gear.textContent = t('bagToGear');
+  gear.addEventListener('click', () => { ui.panel.hidden = true; openMenu('tabGear'); });
+  ui.list.append(gear);
   ui.list.append(head(t('bagPotions')));
   for (const id of ids) if (ITEMS[id].kind === 'potion') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, POTION_MAX), ''));
   ui.list.append(head(t('bagMats')));

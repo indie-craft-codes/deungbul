@@ -19,6 +19,8 @@ const TABS: readonly { key: UiKey; draw: () => void }[] = [
   { key: 'tabRank', draw: drawRank },
 ];
 let tab = 0;
+/** 마지막으로 그린 내용의 지문 (같으면 다시 그리지 않는다) */
+let lastSig = '';
 
 function el(cls: string, text = ''): HTMLDivElement {
   const d = document.createElement('div');
@@ -164,6 +166,11 @@ export function renderMenu(): void {
   ui.btn.classList.toggle('alert', n > 0 || S.meta.build.left > 0 || !!S.guildInvite); // 받을 우편이나 찍을 점수가 있으면 눈에 띄게
   if (ui.panel.hidden || !S.me) return;
   if (document.activeElement instanceof HTMLInputElement && ui.list.contains(document.activeElement)) { ui.gold.textContent = L().fmt.gold(S.me.gold); return; } // 글을 치는 중에는 다시 그리지 않는다
+  // 전투 중에는 상태 메시지가 초당 여러 번 온다. 그때마다 단추를 새로 만들면 누르는 사이에 단추가 사라져 클릭이 먹지 않으므로,
+  // 화면에 영향을 주는 값이 그대로면 다시 그리지 않는다
+  const sig = JSON.stringify([tab, L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank]);
+  if (sig === lastSig) return;
+  lastSig = sig;
   ui.gold.textContent = L().fmt.gold(S.me.gold);
   ui.tabs.textContent = '';
   TABS.forEach((x, i) => {
@@ -177,9 +184,19 @@ export function renderMenu(): void {
   ui.list.scrollTop = top;
 }
 
+/** 메뉴를 열고 그 탭을 보여 준다 (다른 창의 단추에서 부른다) */
+export function openMenu(key: UiKey): void {
+  if (!S.me) return;
+  tab = Math.max(0, TABS.findIndex((x) => x.key === key));
+  ui.panel.hidden = false;
+  lastSig = '';
+  renderMenu();
+}
+
 export function toggleMenu(): void {
   if (!S.me) return;
   ui.panel.hidden = !ui.panel.hidden;
+  lastSig = '';
   if (!ui.panel.hidden && TABS[tab].draw === drawRank) send({ t: 'rank' });
   renderMenu();
 }
