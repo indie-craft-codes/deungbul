@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+data/
+
+# 이 PC에서만 쓰는 것
+.claude/
+start.ps1
+resume.ps1

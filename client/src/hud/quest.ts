@@ -1,0 +1,69 @@
+// 메인 퀘스트 표시: 지금 할 일, 진행 수치, 목적지 길잡이(빛기둥과 화면 가장자리 화살표).
+// 창을 누르면 목적지까지 걸어간다. 가는 것만 자동이고, 도착한 뒤의 일(전투, 구매, 바치기)은 직접 한다.
+import { QUESTS, goalCount, type QuestStep } from '../../../shared/defs';
+import { moveTo } from '../actions';
+import { $, view } from '../app';
+import { L, t } from '../i18n';
+import { S } from '../state';
+
+const ui = { panel: $('quest'), title: $('questTitle'), step: $('questStep'), prog: $('questProg'), dist: $('questDist'), arrow: $('goalArrow'), go: $('questGo') };
+
+let needSparks = false;
+
+function current(): QuestStep | null {
+  return QUESTS[S.quest.c]?.steps[S.quest.s] ?? null;
+}
+
+/** 지금 단계의 목적지로 걸어간다. 길은 길찾기가 알아서 잡고, 직접 움직이면 그만둔다. */
+export function goToQuest(): void {
+  const step = current();
+  if (S.me && step) moveTo(step.at.x, step.at.z);
+}
+
+export function initQuest(): void {
+  ui.panel.addEventListener('click', goToQuest);
+}
+
+/** 퀘스트 진행이나 언어가 바뀌었을 때 다시 쓴다. */
+export function renderQuest(): void {
+  const loc = L(), chapter = QUESTS[S.quest.c], step = current();
+  if (!chapter || !step) {
+    ui.title.textContent = t('quest');
+    ui.step.textContent = t('questAllDone');
+    ui.prog.textContent = '';
+    ui.dist.textContent = '';
+    ui.go.hidden = true;
+    return;
+  }
+  ui.go.hidden = false;
+  needSparks = step.goal.kind === 'offer' && (S.me?.sparks ?? 0) === 0;
+  ui.go.textContent = t(needSparks ? 'questNeedSparks' : matchMedia('(pointer: coarse)').matches ? 'questGoTouch' : 'questGo'); // 터치 화면에는 단축키 안내를 빼고 보여 준다
+  const text = loc.quests[chapter.id];
+  ui.title.textContent = text.title;
+  ui.step.textContent = text.steps[S.quest.s] ?? '';
+  const of = goalCount(step.goal);
+  ui.prog.textContent = of > 1 ? loc.fmt.questProgress(S.quest.n, of) : '';
+}
+
+/** 매 프레임: 목적지에 빛기둥을 세우고, 화면 밖이면 가장자리 화살표로 방향을 알린다. */
+export function questFrame(now: number): void {
+  const me = S.me, step = current();
+  if (!me || !step) { view.goalBeam.visible = false; ui.arrow.hidden = true; ui.dist.textContent = ''; return; }
+  if ((step.goal.kind === 'offer' && me.sparks === 0) !== needSparks) renderQuest(); // 불씨가 생기거나 떨어지면 안내를 바꾼다
+  const dx = step.at.x - me.x, dz = step.at.z - me.z, d = Math.hypot(dx, dz);
+  view.goalBeam.visible = true;
+  view.goalBeam.position.set(step.at.x, 7, step.at.z);
+  view.goalBeam.material.opacity = 0.24 + Math.sin(now / 400) * 0.08;
+  ui.dist.textContent = d > 6 ? L().fmt.distance(Math.round(d)) : '';
+
+  // 목적지가 화면 안에 보이면 화살표는 필요 없다
+  const p = view.project(step.at.x, 0, step.at.z);
+  const margin = 70;
+  if (d < 10 || (p && p.x > margin && p.x < view.width - margin && p.y > margin && p.y < view.height - margin)) { ui.arrow.hidden = true; return; }
+  // 고정 쿼터뷰에서 월드 방향을 화면 방향으로: 오른쪽은 (+x, -z), 아래쪽은 (+x, +z)
+  const sx = dx - dz, sy = dx + dz, angle = Math.atan2(sy, sx);
+  const r = Math.min(view.width, view.height) * 0.3;
+  const x = view.width / 2 + Math.cos(angle) * r, y = view.height / 2 + Math.sin(angle) * r;
+  ui.arrow.hidden = false;
+  ui.arrow.style.transform = `translate(${(x - 11).toFixed(1)}px,${(y - 11).toFixed(1)}px) rotate(${(angle + Math.PI / 2).toFixed(3)}rad)`;
+}

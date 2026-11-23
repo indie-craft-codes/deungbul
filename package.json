@@ -1,0 +1,29 @@
+{
+  "name": "deungbul",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n server,client -c yellow,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "tsx watch server/main.ts",
+    "dev:client": "vite",
+    "build": "vite build",
+    "start": "tsx server/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx test/all.ts",
+    "load": "tsx test/load.ts"
+  },
+  "dependencies": {
+    "three": "^0.187.0",
+    "ws": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/three": "^0.187.0",
+    "@types/ws": "^8.18.2",
+    "concurrently": "^10.0.7",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}
