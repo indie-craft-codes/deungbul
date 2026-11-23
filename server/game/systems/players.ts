@@ -74,7 +74,7 @@ export class Players {
     // 낀 무기와 갑옷을 낱개 장비와 맞춘다 (처음 온 사람은 기본 무기를 장비로 받는다)
     this.g.gear.adopt(p);
     // 봇은 직업을 섞는다
-    if (bot) { this.g.classes.apply(p, CLASS_IDS[Math.floor(Math.random() * CLASS_IDS.length)]); p.hp = p.maxHp; }
+    if (bot) { this.g.classes.apply(p, CLASS_IDS[Math.floor(Math.random() * CLASS_IDS.length)]); p.hp = p.maxHp; this.g.channels.seat(p); } // 봇은 접속 사건이 없으므로 채널을 여기서 정한다
     else this.g.fire('playerJoined', p);
     return p;
   }

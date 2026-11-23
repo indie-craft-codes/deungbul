@@ -410,3 +410,11 @@ html:lang(en) body { overflow-wrap: break-word; }
 #log .gchat { color: #9fe0a8; }
 #menuTabs { flex-wrap: wrap; }
 #menuTabs button { flex: 1 1 22%; }
+
+/* 채널 선택: 언어 선택과 같은 모양으로 그 옆에 둔다. 던전 안에서는 잠긴다 */
+#channel { font: inherit; font-size: 11px; color: var(--fg); background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 3px; padding: 1px 2px; max-width: 100%; }
+#channel:disabled { opacity: .5; }
+/* iOS는 16px보다 작은 선택 상자를 누르면 화면을 확대한다 */
+@media (pointer: coarse) { #channel { font-size: 16px; } }
+/* 폰: 내 정보 창이 길어지지 않게, 닫혀 있을 때는 채널 번호만 보일 만큼으로 줄인다 (펼치면 인원까지 다 보인다) */
+@media (max-width: 720px), (max-height: 480px) { #channel { width: 4.4em; text-overflow: ellipsis; } }

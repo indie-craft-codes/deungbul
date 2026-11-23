@@ -60,6 +60,12 @@ export type MsgKey =
   | 'dungeonClear' // [던전 id, 밖으로 나가기까지 남은 초]
   | 'dungeonFail' // [] 제한 시간을 넘겼다
   | 'dungeonLeft' // [] 스스로 나왔다
+  | 'channelMoved' // [채널 번호] 채널을 옮겼다
+  | 'channelDungeon' // [] 던전 안에서는 채널을 바꿀 수 없다
+  | 'channelFight' // [] 싸우는 중에는 바꿀 수 없다
+  | 'channelWait' // [남은 초] 방금 바꿨다
+  | 'channelFull' // [채널 번호] 그 채널이 가득 찼다
+  | 'raidElsewhere' // [채널 번호] 습격의 적이 내 채널에는 없고 그 채널에 있다
   | 'statNone' // [] 찍을 점수가 없다
   | 'statReset' // [] 능력치를 모두 돌려받았다
   | 'skillUp' // [기술 id, 단계]

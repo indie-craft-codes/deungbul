@@ -56,7 +56,11 @@ export interface WorldState {
 }
 
 /** 파티원 한 명의 상태 */
-export interface PartyMember { id: number; name: string; lv: number; cls: string; hp: number; maxHp: number; x: number; z: number }
+export interface PartyMember {
+  id: number; name: string; lv: number; cls: string; hp: number; maxHp: number; x: number; z: number;
+  /** 있는 채널 (1부터). 채널이 다르면 곁에 있어도 보이지 않으므로 화면이 알려 준다 */
+  ch?: number;
+}
 
 export type ClientMsg =
   /**
@@ -77,6 +81,8 @@ export type ClientMsg =
   /** 던전에 들어간다 (문 가까이에서) / 던전에서 나온다 */
   | { t: 'dungeon'; id: string }
   | { t: 'dungeonLeave' }
+  /** n번 채널로 옮긴다 (1부터) */
+  | { t: 'channel'; n: number }
   /** 능력치 점수 하나를 찍는다 / 모두 돌려받는다 / 기술을 한 단계 강화한다 */
   | { t: 'stat'; k: string }
   | { t: 'statReset' }
@@ -147,6 +153,8 @@ export type ServerMsg =
   | { t: 'meta'; gear: Gear[]; worn: Record<string, number>; mail: Mail[]; daily: { prog: Record<string, number>; got: string[]; streak: number }; power: number; build: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
   /** 내가 들어가 있는 던전의 상태. id가 빈 문자열이면 밖이다. left는 남은 시간(초, 끝낸 뒤에는 나가기까지), foes는 남은 적 */
   | { t: 'dungeon'; id: string; left: number; foes: number; cleared: boolean }
+  /** 채널: me는 내 채널 번호(1부터), list는 채널별 인원. foes는 습격 중일 때만 오는 채널별 남은 적의 수 */
+  | { t: 'channels'; me: number; list: number[]; foes?: number[] }
   /** 순위표. me는 내 순위(0부터, 없으면 -1) */
   | { t: 'rank'; list: RankRow[]; me: number }
   /** 물약을 마셨다: 다시 마실 수 있을 때까지(ms) */

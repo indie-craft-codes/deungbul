@@ -81,6 +81,7 @@ export function renderParty(): void {
   const loc = L(), me = S.me;
   if (inviteFrom) ui.inviteText.textContent = loc.fmt.partyInvite(inviteFrom);
   const others = S.party.filter((m) => m.id !== me?.id);
+  const myCh = S.party.find((m) => m.id === me?.id)?.ch;
   ui.box.hidden = others.length === 0;
   // 좁은 화면에서 이 목록 아래에 놓이는 것들이 그만큼 내려가게 높이를 알린다
   ui.list.textContent = '';
@@ -95,6 +96,8 @@ export function renderParty(): void {
     const lv = document.createElement('span');
     lv.className = 'num';
     lv.textContent = loc.fmt.level(m.lv, m.cls in loc.classes ? loc.classes[m.cls as keyof typeof loc.classes].name : '');
+    // 다른 채널에 있는 파티원은 곁에 있어도 보이지 않는다: 어느 채널인지 적어 준다
+    if (m.ch && myCh && m.ch !== myCh) lv.textContent += ' · ' + loc.fmt.channelShort(m.ch);
     head.append(name, lv);
     const bar = document.createElement('div');
     bar.className = 'bar hp';

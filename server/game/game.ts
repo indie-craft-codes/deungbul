@@ -18,6 +18,7 @@ import { Boss } from './systems/boss';
 import { Away } from './systems/away';
 import { Bots } from './systems/bots';
 import { Build } from './systems/build';
+import { Channels } from './systems/channels';
 import { Classes } from './systems/classes';
 import { Combat } from './systems/combat';
 import { Craft } from './systems/craft';
@@ -182,6 +183,7 @@ export class Game {
   readonly daily: Daily;
   readonly rank: Rank;
   readonly dungeon: Dungeon;
+  readonly channels: Channels;
   readonly build: Build;
   readonly guild: Guild;
 
@@ -208,6 +210,7 @@ export class Game {
     this.daily = new Daily(this);
     this.rank = new Rank(this);
     this.dungeon = new Dungeon(this);
+    this.channels = new Channels(this);
     this.build = new Build(this);
     this.guild = new Guild(this);
   }
