@@ -54,6 +54,11 @@ import { check } from './harness';
   const worn2 = g.mods.product('damage', p);
   g.command(p, { t: 'enhance', uid: sword2.uid });
   check(worn2 > before && g.mods.product('damage', p) > worn2 && sword2.plus === 1, '무기를 강화하면 기본 공격 피해도 커진다');
+  // 보급형(사거나 만든 것)은 +5까지만, 몬스터가 떨어뜨린 것은 +10까지 강화된다
+  p.gold = 1e6;
+  for (let i = 0; i < 12; i++) { g.command(p, { t: 'enhance', uid: sword2.uid }); g.command(p, { t: 'enhance', uid: drop.uid }); }
+  check(sword2.plus === 5 && drop.plus === 10 && drop.opts.length > 0, '보급형은 +5까지, 떨어진 장비는 +10까지 강화된다');
+  p.gold = 10000;
   g.command(p, { t: 'equip', uid: p.gear[0].uid });
   const gold2 = p.gold, count = p.gear.length;
   g.command(p, { t: 'sell', uid: sword2.uid });

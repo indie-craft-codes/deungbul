@@ -2,7 +2,7 @@
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
 // 수치는 shared/content/growth.ts에 있다.
-import { ENHANCE, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STATS, STAT_IDS, baseOpt, gearStat, isGearSlot, isItemId, isStat, sellPrice, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STATS, STAT_IDS, baseOpt, gearStat, isGearSlot, isItemId, isStat, sellPrice, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -181,7 +181,7 @@ export class GearSys {
   enhance(p: Ent, uid: number): void {
     const g = this.g, it = this.find(p, uid);
     if (!it) return;
-    if (it.plus >= ENHANCE.max) { g.notify(p, 'enhanceMax'); return; }
+    if (it.plus >= enhanceMax(it)) { g.notify(p, 'enhanceMax'); return; }
     const cost = ENHANCE.gold(it.plus, it.rar);
     if (p.gold < cost) { g.notify(p, 'noGold'); return; }
     p.gold -= cost;

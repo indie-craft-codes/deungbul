@@ -390,3 +390,5 @@ html:lang(en) body { overflow-wrap: break-word; }
 #dungeon[hidden] { display: none; }
 #dungeon .ttitle { color: #c9b8ff; }
 #dgBtn { padding: 7px; }
+
+.mrow.supply .iname { color: var(--dim); }

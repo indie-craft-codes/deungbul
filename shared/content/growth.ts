@@ -62,6 +62,8 @@ export const GEAR = {
 
 export const ENHANCE = {
   max: 10,
+  /** 보급형(상점에서 사거나 대장간에서 만든 옵션 없는 장비)은 여기까지만 강화된다 */
+  supplyMax: 5,
   /** 강화 단계마다 옵션 값이 이만큼 커진다 */
   perPlus: 0.1,
   /** 지금 단계에서 다음으로 갈 때의 성공 확률. 실패해도 잃는 것은 골드뿐이다 */
@@ -79,6 +81,11 @@ export function baseOpt(g: Gear): [Stat, number] | null {
 }
 /** 바탕 아이템의 등급 (없으면 0) */
 export const baseTier = (g: Gear): number => (isItemId(g.base) ? (ITEMS[g.base] as { tier?: number }).tier ?? 0 : 0);
+
+/** 보급형인가: 상점에서 사거나 대장간에서 만든 무기와 갑옷. 옵션이 없고 강화 한도가 낮다. 몬스터가 떨어뜨린 것은 옵션이 붙는다 */
+export const isSupply = (g: Gear): boolean => g.base !== undefined && g.opts.length === 0;
+/** 그 장비를 강화할 수 있는 한도 */
+export const enhanceMax = (g: Gear): number => (isSupply(g) ? ENHANCE.supplyMax : ENHANCE.max);
 
 /** 강화까지 반영한 옵션 값 */
 export const optValue = (g: Gear, v: number): number => Math.round(v * (1 + g.plus * ENHANCE.perPlus) * 10) / 10;

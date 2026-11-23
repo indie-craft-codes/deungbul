@@ -1,6 +1,6 @@
 // 메뉴 창: 드롭 장비(끼기·강화·팔기), 우편, 일일 임무와 출석, 순위를 탭으로 나눠 보여 준다. (단축키 M)
 // 새 탭을 더하려면 TABS에 이름과 그리는 함수를 더한다.
-import { DAILIES, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, RARITIES, baseOpt, isItemId, optValue, sellPrice, type Gear, type Reward } from '../../../shared/defs';
+import { DAILIES, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, RARITIES, baseOpt, enhanceMax, isItemId, isSupply, optValue, sellPrice, type Gear, type Reward } from '../../../shared/defs';
 import { $ } from '../app';
 import { onMsg } from '../bus';
 import { L, itemName, onLangChange, t } from '../i18n';
@@ -43,9 +43,9 @@ const rewardText = (r: Reward): string => L().fmt.reward(r.gold ?? 0, r.exp ?? 0
 
 function gearRow(g: Gear, worn: boolean): HTMLDivElement {
   const loc = L(), me = S.me;
-  // 무기와 갑옷은 바탕 아이템의 이름을 쓴다 (직업에 따라 검/활/지팡이). 옵션이 없는 기본 장비는 등급 말을 붙이지 않는다
+  // 무기와 갑옷은 바탕 아이템의 이름을 쓴다 (직업에 따라 검/활/지팡이). 사거나 만든 것은 '보급형'이라고 붙인다
   const what = isItemId(g.base) ? itemName(g.base, me?.cls ?? '') : loc.gear.slots[g.slot];
-  const name = loc.fmt.gearName(what, g.opts.length ? loc.gear.rarities[RARITIES[g.rar].id] : '', g.plus, g.lv);
+  const name = loc.fmt.gearName(what, isSupply(g) ? loc.gear.rarities.supply : loc.gear.rarities[RARITIES[g.rar].id], g.plus, g.lv);
   const base = baseOpt(g);
   const lines = g.opts.map(([k, v]) => loc.gear.stats[k](optValue(g, v)));
   if (base && base[1] > 0) lines.unshift(loc.gear.stats[base[0]](optValue(g, base[1])));
@@ -53,11 +53,11 @@ function gearRow(g: Gear, worn: boolean): HTMLDivElement {
   const cost = ENHANCE.gold(g.plus, g.rar);
   const buttons = [
     worn ? button(t('unequip'), () => send({ t: 'unequip', slot: g.slot })) : button(t('equip'), () => send({ t: 'equip', uid: g.uid })),
-    button(g.plus >= ENHANCE.max ? t('enhanceMaxed') : loc.fmt.enhanceCost(cost, Math.round(ENHANCE.rate(g.plus) * 100)), () => send({ t: 'enhance', uid: g.uid }), g.plus >= ENHANCE.max || !me || me.gold < cost),
+    button(g.plus >= enhanceMax(g) ? t('enhanceMaxed') : loc.fmt.enhanceCost(cost, Math.round(ENHANCE.rate(g.plus) * 100)), () => send({ t: 'enhance', uid: g.uid }), g.plus >= enhanceMax(g) || !me || me.gold < cost),
   ];
   if (!worn) buttons.push(button(loc.fmt.sellFor(sellPrice(g)), () => send({ t: 'sell', uid: g.uid })));
   if (worn && g.slot === 'weapon') buttons.shift(); // 무기는 빼지 못한다: 다른 무기를 끼면 바뀐다
-  return row(name, opts, buttons, 'rar' + (g.opts.length ? g.rar : 0));
+  return row(name, opts, buttons, isSupply(g) ? 'supply' : 'rar' + g.rar);
 }
 
 function drawGear(): void {
