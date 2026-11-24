@@ -82,3 +82,5 @@ export const ATTACK_CD = 1.0;
  */
 export const REJOIN_KEEP_S = 300;
 export const SPAWN = { x: 0, z: 3 }; // 등탑 앞: 접속과 부활 지점
+/** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 (뒤에 숫자 네 자리가 붙는다) */
+export const GUEST_NAME = 'Keeper';

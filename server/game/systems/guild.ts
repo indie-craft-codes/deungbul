@@ -3,7 +3,7 @@
 // 손님(저장 키가 없는 접속)은 가입할 수 없다. 규칙의 수치는 shared/content/social.ts의 GUILD에 있다.
 import { GUILD, PARTY, type GuildMember, type GuildView } from '../../../shared/defs';
 import { CHAT_MAX, NAME_MAX } from '../../../shared/world';
-import { isClean, mask, tidy } from '../../net/moderation';
+import { isClean, mask, tidy } from '../../text';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 

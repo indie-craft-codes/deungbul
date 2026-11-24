@@ -10,7 +10,6 @@ export class Daily {
   constructor(private g: Game) {
     g.on('playerJoined', (p) => this.roll(p));
     g.on('monsterKilled', (_m, hitters) => { for (const p of hitters) this.add(p, 'kill', 1); });
-    g.on('offered', (p, _to, n) => this.add(p, 'offer', n));
     g.on('enhanced', (p) => this.add(p, 'enhance', 1));
     g.saves.push({
       name: 'daily',
@@ -46,7 +45,7 @@ export class Daily {
     this.g.mail.send(p, 'attend', [d.streak], ATTEND[d.streak - 1]);
   }
 
-  /** 임무 진행을 더한다. 채운 임무는 보상을 우편으로 보낸다 */
+  /** 임무 진행을 더한다. 채운 임무는 보상을 우편으로 보낸다. 게임에만 있는 종류(이 게임의 'offer')는 그 규칙을 가진 시스템이 직접 부른다 */
   add(p: Ent, kind: DailyKind, n: number): void {
     if (p.bot) return;
     this.roll(p); // 접속한 채로 날이 바뀌었을 수 있다

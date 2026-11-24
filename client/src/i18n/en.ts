@@ -57,6 +57,8 @@ export const en: Locale = {
     title: 'Lamp Tower',
     connecting: 'Connecting…',
     disconnected: 'Lost connection to the server.',
+    stale: 'A new version is available. Please refresh the page.',
+    reload: 'Refresh',
     reconnecting: 'Connection lost. Reconnecting…',
     channel: 'Channel',
     soundOn: 'Sound on',

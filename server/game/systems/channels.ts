@@ -21,6 +21,12 @@ export class Channels {
   private hereAt = -1;
   private t = 0;
 
+  // 게임의 규칙이 채우는 접점. 비워 두면 그런 것이 없는 게임이다 (이 게임에서는 습격이 채운다: raid.ts)
+  /** 채널별로 남은, 평소의 몬스터 말고 따로 온 적의 수. 지금 그런 적이 없으면 undefined: 어느 채널에 적이 남았는지 화면이 보여 준다 */
+  extraFoes?: () => number[] | undefined;
+  /** 바쁜 때인가. 그동안은 채널 소식을 더 자주(CHANNEL.tellBusyS) 알린다 */
+  busy?: () => boolean;
+
   constructor(private g: Game) {
     // 1채널의 몬스터는 몬스터 시스템이 이미 놓았다. 나머지 채널에도 같은 무리를 놓는다
     for (let ch = 2; ch <= CHANNEL.count; ch++) g.monsters.populate(fieldLayer(ch));
@@ -131,11 +137,7 @@ export class Channels {
     this.tell(p);
   }
 
-  /** 습격 중이면 채널별로 남은 적의 수 (아니면 undefined): 어느 채널에 적이 남았는지 화면이 보여 준다 */
-  private foes(): number[] | undefined {
-    const g = this.g;
-    return g.raid.phase === 'active' ? Array.from({ length: CHANNEL.count }, (_, i) => g.raid.foesAt(i)) : undefined;
-  }
+  private foes(): number[] | undefined { return this.extraFoes?.(); }
 
   /** 그 사람에게 내 채널과 채널별 인원을 알린다 (접속했을 때, 바꿨을 때, 그리고 가끔) */
   tell(p: Ent, list = this.counts(), foes = this.foes()): void {
@@ -145,7 +147,7 @@ export class Channels {
   tick(dt: number): void {
     const g = this.g;
     this.t += dt;
-    if (this.t < (g.raid.phase === 'active' ? CHANNEL.tellRaidS : CHANNEL.tellS)) return;
+    if (this.t < (this.busy?.() ? CHANNEL.tellBusyS : CHANNEL.tellS)) return;
     this.t = 0;
     // 쓸모가 다한 기록을 지운다 (가장 긴 것이 채널 이동 대기다)
     const old = g.clock - Math.max(CHANNEL.switchCdS, CHANNEL.calmS);

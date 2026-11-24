@@ -6,6 +6,7 @@
 //   2. 생성자에서 필요한 것을 등록한다: commands(플레이어 명령), on(사건 구독), mods(수치 보정),
 //      ticks(주기 처리), saves(캐릭터 저장), worldSaves(월드 저장), shared(모두에게 보내는 공유 상태).
 //   3. 아래 Game 생성자에 한 줄 추가한다.
+// 이 게임에만 있는 규칙(등탑, 습격, 등탑지기, 퀘스트)은 생성자에 적지 않고 규칙 플러그인(GameOptions.plugins)으로 깐다: ./deungbul.ts
 import { SPAWN, type RaidConfig } from '../../shared/defs';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import { NavGrid } from '../../shared/nav';
@@ -14,6 +15,7 @@ import { resolve } from '../../shared/sim';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
 import type { WorldSave } from '../store';
 import type { Ent } from './entity';
+import { installDeungbul } from './deungbul';
 import { fieldLayer } from './layers';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
@@ -31,15 +33,11 @@ import { Idle } from './systems/idle';
 import { MailSys } from './systems/mail';
 import { Market } from './systems/market';
 import { Rank } from './systems/rank';
-import { Keepers } from './systems/keepers';
 import { Monsters } from './systems/monsters';
 import { Party } from './systems/party';
 import { Movement } from './systems/movement';
 import { Players } from './systems/players';
-import { Quests } from './systems/quests';
-import { Raid } from './systems/raid';
 import { Shop } from './systems/shop';
-import { Tower } from './systems/tower';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
 const NAV_VISITS_PER_TICK = 12000;
@@ -58,6 +56,8 @@ export interface Hooks {
   bought: (p: Ent, item: string) => void;
   /** 사람이 접속했다 (봇은 제외) */
   playerJoined: (p: Ent) => void;
+  /** 이름을 바꿨다: 이름을 적어 둔 곳(명단 같은 것)이 따라 고친다 */
+  playerRenamed: (p: Ent) => void;
   /** 주민이 마을로 돌아왔다 */
   residentReturned: (id: string) => void;
   /** 습격을 막아 냈다: 맞서 싸운 사람들 */
@@ -108,8 +108,17 @@ export class Modifiers {
   sum(name: ModName, p?: Ent): number { return (this.list.get(name) ?? []).reduce((v, fn) => v + fn(p), 0); }
 }
 
+/**
+ * 규칙 플러그인: 그 게임에만 있는 시스템을 만들어 Game에 단다 (예: g.tower = new Tower(g)).
+ * 바탕 시스템(이동, 플레이어, 전투, 몬스터, 봇, 자리 비움)이 만들어진 뒤, 나머지 표준 시스템(상점부터 길드까지)이 만들어지기 전에 불린다:
+ * 게임의 규칙(g.rules)이 먼저 자리를 잡고, 뒤의 시스템(던전)이 그것을 감싼다. 그래서 여기서는 등록만 하고, 뒤에 만들어지는 시스템을 써야 하는 일은 g.ready에 맡긴다.
+ */
+export type Plugin = (g: Game) => void;
+
 export interface GameOptions {
-  /** 습격 설정 덮어쓰기 (시험용) */
+  /** 규칙 플러그인들. 주지 않으면 이 게임(등불지기)의 규칙이 깔리고, 빈 목록이면 틀만으로 만들어진다 */
+  plugins?: Plugin[];
+  /** 습격 설정 덮어쓰기 (시험용). plugins를 주지 않았을 때만 쓰인다: 플러그인을 직접 줄 때는 installDeungbul의 인자로 넘긴다 */
   raid?: Partial<RaidConfig>;
   /** 현재 시각(ms). 시험에서 시간을 다루려고 바꿀 수 있다 */
   now?: () => number;
@@ -160,12 +169,16 @@ export class Game {
   /** 틱마다 불리는 시스템 처리. 등록한 순서대로 돈다 */
   readonly ticks: ((dt: number) => void)[] = [];
   /** 월드와 함께 저장할 것을 가진 시스템들 (WorldSave[name]) */
-  readonly worldSaves: { name: string; save: () => unknown; load: (raw: unknown) => void }[] = [];
+  /** legacy: 자기 칸이 없는 저장(칸 이름이 생기기 전의 옛 형식)에서 자기 몫을 찾아 돌려준다. 없으면 undefined */
+  readonly worldSaves: { name: string; save: () => unknown; load: (raw: unknown) => void; legacy?: (whole: WorldSave) => unknown }[] = [];
   /** 모두에게 보내는 공유 상태의 한 칸 (WorldState[name]) */
   readonly shared: { name: keyof WorldState; state: () => unknown }[] = [];
   /** 캐릭터와 함께 저장할 것을 가진 시스템들 */
   readonly saves: Saver[] = [];
-  private hooks: { [K in keyof Hooks]: Hooks[K][] } = { monsterKilled: [], playerDied: [], playerLeft: [], offered: [], bought: [], playerJoined: [], residentReturned: [], raidWon: [], enhanced: [], playerDropped: [], dungeonCleared: [], hit: [] };
+  /** 모든 시스템이 만들어진 뒤에 한 번 불린다. 자기보다 뒤에 만들어지는 시스템의 접점을 채울 때 쓴다 (예: 습격이 채널의 extraFoes를) */
+  readonly ready: (() => void)[] = [];
+  /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
+  private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;
 
   // ---- 시스템 ----
@@ -175,12 +188,8 @@ export class Game {
   readonly monsters: Monsters;
   readonly bots: Bots;
   readonly away: Away;
-  readonly tower: Tower;
-  readonly raid: Raid;
-  readonly quests: Quests;
   readonly shop: Shop;
   readonly classes: Classes;
-  readonly keepers: Keepers;
   readonly boss: Boss;
   readonly craft: Craft;
   readonly party: Party;
@@ -203,12 +212,10 @@ export class Game {
     this.monsters = new Monsters(this);
     this.bots = new Bots(this);
     this.away = new Away(this);
-    this.tower = new Tower(this);
-    this.raid = new Raid(this, opts.raid);
-    this.quests = new Quests(this);
+    // 게임의 규칙이 깔리는 자리 (Plugin의 설명). 기본값이 이 게임의 규칙인 것은 기존 코드와 시험이 new Game()으로 등불지기를 만들기 때문이다
+    for (const install of opts.plugins ?? [(g: Game) => installDeungbul(g, { raid: opts.raid })]) install(this);
     this.shop = new Shop(this);
     this.classes = new Classes(this);
-    this.keepers = new Keepers(this);
     this.boss = new Boss(this);
     this.craft = new Craft(this);
     this.party = new Party(this);
@@ -222,12 +229,13 @@ export class Game {
     this.build = new Build(this);
     this.market = new Market(this);
     this.guild = new Guild(this);
+    for (const fn of this.ready) fn();
   }
 
   // ---- 시스템이 쓰는 공용 통로 ----
-  on<K extends keyof Hooks>(name: K, fn: Hooks[K]): void { (this.hooks[name] as Hooks[K][]).push(fn); }
+  on<K extends keyof Hooks>(name: K, fn: Hooks[K]): void { ((this.hooks[name] ??= []) as Hooks[K][]).push(fn); }
   fire<K extends keyof Hooks>(name: K, ...args: Parameters<Hooks[K]>): void {
-    for (const fn of this.hooks[name]) (fn as (...a: Parameters<Hooks[K]>) => void)(...args);
+    for (const fn of this.hooks[name] ?? []) (fn as (...a: Parameters<Hooks[K]>) => void)(...args);
   }
   emit(ev: Ev): void { this.events.push(ev); }
   notify(p: Ent, k: MsgKey, ...a: MsgArg[]): void { if (!p.bot) this.notices.push({ id: p.id, k, a }); }
@@ -289,13 +297,15 @@ export class Game {
     return out;
   }
   importWorld(w: WorldSave): void {
-    // 예전 형식({ glow, residents })으로 저장된 파일은 통째로 등탑의 몫이다
-    const legacy = !('tower' in w);
     for (const s of this.worldSaves) {
       // 한 칸이 깨져 있어도 서버는 떠야 한다: 그 칸만 처음 상태로 둔다
       try {
         if (s.name in w) s.load(w[s.name]);
-        else if (legacy && s.name === 'tower') s.load(w);
+        else {
+          // 자기 칸이 없다: 칸 이름이 생기기 전의 옛 형식일 수 있으니, 그 시스템이 통째에서 자기 몫을 찾게 한다
+          const old = s.legacy?.(w);
+          if (old !== undefined) s.load(old);
+        }
       } catch (err) { console.error(`[game] 월드 저장의 '${s.name}' 칸을 읽지 못했습니다:`, err); }
     }
   }

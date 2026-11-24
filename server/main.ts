@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { installDeungbul } from './game/deungbul';
 import { startServer } from './net/server';
 import { MemoryStore, SqliteStore, type Store } from './store';
 
@@ -18,7 +19,8 @@ const dbFile = process.env.DB ?? path.join(root, 'data', 'game.db');
 const store: Store = dbFile === 'memory' ? new MemoryStore() : new SqliteStore(dbFile);
 const raidEvery = Number(process.env.RAID_EVERY_MIN ?? 0);
 
-startServer(port, { bots, store, game: raidEvery > 0 ? { raid: { everyMin: raidEvery } } : {} }).then((s) => {
+// 이 게임의 규칙을 깔고, 그 설정(습격 간격)은 플러그인에 넘긴다
+startServer(port, { bots, store, game: { plugins: [(g) => installDeungbul(g, { raid: raidEvery > 0 ? { everyMin: raidEvery } : {} })] } }).then((s) => {
   const at = (process.env.DEV_SPAWN ?? '').split(',').map(Number);
   if (at.length === 2 && at.every(Number.isFinite)) s.game.players.devSpawn = { x: at[0], z: at[1] };
 

@@ -243,6 +243,13 @@ test/
 
 **메뉴 창**: 높이와 탭 줄·닫기 단추의 자리는 고정이고 내용만 스크롤한다. 탭을 더하려면 `hud/menu.ts`의 `TABS`에 더한다. 장비를 보여 줄 때는 `gearLabel`·`gearTitle`·`optsEl`을 써서 칸 이름 표, 합친 수치, 끊기지 않는 옵션 줄을 똑같이 맞춘다. 재료의 출처는 `hud/sources.ts`가 `DROPS`에서 읽어 만든다.
 
+**틀과 이 게임의 규칙**: 서버의 게임 규칙은 틀과 이 게임의 것으로 나뉜다(전체 계획: `docs/framework-plan.md`). 틀은 `server/game/game.ts`와 표준 시스템(이동, 전투, 몬스터, 상점, 장비, 우편, 일일 임무, 순위, 던전, 채널, 거래소, 길드, 필드 보스 등)이고, 이 게임에만 있는 규칙(등탑, 습격, 등탑지기, 퀘스트)은 규칙 플러그인 `server/game/deungbul.ts`의 `installDeungbul`이 깐다. 틀의 파일은 그 네 시스템과 플러그인을 import하지 않고, `server/game`은 `server/net`을 import하지 않는다(`test/framework.test.ts`가 import 문을 읽어 검사한다). 금칙어와 글 다듬기는 통신과 게임 규칙이 함께 쓰므로 `server/text.ts`에 있다. `new Game({ plugins: [] })`는 틀만으로 만들어진다. 지금은 `plugins`를 주지 않으면 등불지기의 규칙이 깔린다.
+- 어느 게임에나 쓸 기능은 `server/game/systems/`에 시스템을 만들고 `Game` 생성자에 한 줄 더한다.
+- 이 게임에만 있는 규칙은 시스템을 만든 뒤 `installDeungbul`과 그 위의 `interface Game` 선언에 한 줄씩 더한다. 플러그인은 바탕 시스템 뒤, 상점 앞에서 불리므로 생성자에서는 등록만 한다. 뒤에 만들어지는 시스템의 접점을 채우는 일은 `g.ready.push(() => …)`에 넣는다.
+- 틀의 시스템이 게임의 규칙을 알아야 할 때는 직접 부르지 않고, 틀 쪽에 선택 접점을 두고 게임이 채운다(`g.rules`, `Channels.extraFoes`·`busy`, `worldSaves`의 `legacy`). 게임의 규칙이 틀을 부르는 것은 된다(예: 등탑이 `g.daily.add(p, 'offer', n)`).
+- 메시지의 모양이나 뜻을 바꾸면 `shared/protocol.ts`의 `PROTOCOL`을 올린다. 옛 화면은 접속할 때 새로고침 안내를 본다.
+- 맵이나 저장 형식을 고치면 `npm test`의 `framework`가 맵 지문과 저장 견본(`test/fixtures/`)으로 확인한다. 맵을 일부러 바꿨으면 지문 값을 새로 적는다.
+
 **도감** (`client/guide.html`, `client/src/guide/`): 게임의 수치와 규칙을 모두 보여 주는 따로 떨어진 페이지다. 게임 화면 왼쪽 가장자리의 '도감' 단추가 새 창으로 연다 (`hud/guidelink.ts`). 직업과 기술, 몬스터(한 마리당 기대 보상, 장비 확률), 아이템과 상점, 제작, 장비(등급 확률, 옵션 값 범위, 강화 성공률과 +N까지의 기대 골드, 파는 값), 성장, 퀘스트 전체, 등탑과 주민, 습격, 던전, 일일 임무·출석·방치 보상, 파티, 길드, 거래소, 채널.
 - 내용은 손으로 적지 않는다: `data.ts`가 `shared/content/*`를 돌며 표를 만들므로 수치를 바꾸거나 몬스터·아이템을 더하면 도감이 따라 바뀐다. 이름은 게임의 언어 파일에서 읽고, 도감에만 있는 문장은 `text.ko.ts`·`text.en.ts`에 둔다 (새 언어는 같은 모양의 파일을 만들고 `data.ts`의 `PACKS`에 더한다). 규칙을 설명하는 문장은 손으로 쓴 것이라 서버 규칙을 바꾸면 함께 고친다.
 - 서버에 접속하지 않는 정적 페이지다. `npm run build`가 게임 빌드 뒤에 도감을 따로 빌드해 `dist/guide.html`로 더하고(`vite.config.ts`), 개발 중에는 http://localhost:5173/guide.html 로 연다. `?lang=en`으로 언어를 고르고, 없으면 게임에서 고른 언어를 따른다.
