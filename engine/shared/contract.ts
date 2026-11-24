@@ -5,7 +5,7 @@
 // 빠뜨리거나 모양이 다르면 이 파일의 맨 아래 검사에서 컴파일 오류가 난다 (npm run typecheck).
 // 이 게임에만 있는 것(등탑, 주민, 습격, 퀘스트)은 계약에 없다: 틀이 읽지 않는다.
 //
-// 틀의 코드는 @game을 직접 읽지 않고 틀의 통로(engine/shared/defs.ts)를 거친다: 통로가 다시 내보내는 이름의 목록이 이 계약의 이름과 같다 (engine/test/framework.test.ts가 견준다).
+// 틀의 코드는 @game을 직접 읽지 않고 틀의 통로(engine/shared/defs.ts)를 거친다: 통로가 다시 내보내는 이름의 목록이 이 계약의 이름과 같다 (games/deungbul/test/split.test.ts가 견준다).
 // 계약의 타입들(ClassDef, ItemDef, MapDef 등)과 내용에서 값을 구하는 도우미는 engine/shared/defs/에 있다.
 import type { ClassDef, SkillDef } from './defs/combat';
 import type { ForgeDef } from './defs/craft';

@@ -376,7 +376,7 @@ for (const P of PACKS) {
 }
 
 // ---------- 언어 묶음: 틀의 문장과 이 게임의 문장을 합친 결과 (docs/framework-plan.md의 단계 8) ----------
-// 화면의 문장은 틀의 몫(engine/client/i18n)과 이 게임의 몫(games/deungbul/client/i18n)으로 나뉘어 있다. 틀만 보는 검사는 engine/test/framework.test.ts에 있고, 여기서는 합친 결과를 본다.
+// 화면의 문장은 틀의 몫(engine/client/i18n)과 이 게임의 몫(games/deungbul/client/i18n)으로 나뉘어 있다. 틀만 보는 검사는 games/deungbul/test/split.test.ts에 있고, 여기서는 합친 결과를 본다.
 {
   const base = { ko: koBase(koNames), en: enBase(enNames) }, game = { ko: koGame, en: enGame };
 
@@ -413,7 +413,7 @@ for (const P of PACKS) {
   check(OVERRIDES.every((at) => { const [b, k] = at.split('.'); const pick = (l: object) => (l as Record<string, Record<string, unknown>>)[b][k]; return pick(ko) === pick(koGame) && pick(en) === pick(enGame) && pick(ko) !== pick(base.ko); }),
     '겹친 키는 합친 묶음에서 게임의 문장이다');
 
-  // 두 언어의 모양: 틀끼리는 engine/test/framework.test.ts가 보고, 여기서는 게임끼리와 합친 것끼리 본다
+  // 두 언어의 모양: 틀끼리는 games/deungbul/test/split.test.ts가 보고, 여기서는 게임끼리와 합친 것끼리 본다
   const shapeDiff = (x: unknown, y: unknown, at: string): string[] => {
     if (typeof x !== typeof y || Array.isArray(x) !== Array.isArray(y)) return [`${at}: 종류가 다르다`];
     if (typeof x === 'function') return x.length === (y as () => void).length ? [] : [`${at}: 인자의 수가 다르다`];

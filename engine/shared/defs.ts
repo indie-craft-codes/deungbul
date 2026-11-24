@@ -2,7 +2,7 @@
 //   - 틀의 타입과 도우미 (defs/*.ts): 아이템·몬스터·직업·장비의 모양, 게임의 표에서 값을 꺼내는 함수
 //   - 게임의 내용 가운데 내용 계약(contract.ts)이 요구하는 것: 별칭 @game/shared/content에서 이름을 적어 다시 내보낸다
 // 계약에 없는 이름은 여기로 나오지 않으므로 틀의 코드가 쓸 수 없다 (그 게임에만 있는 것은 그 게임의 통로가 따로 내보낸다: games/deungbul/shared/defs.ts).
-// 틀이 게임의 내용을 새로 읽어야 하면 계약에 이름과 모양을 더하고 아래 목록에도 더한다 (두 목록이 같은지 engine/test/framework.test.ts가 견준다).
+// 틀이 게임의 내용을 새로 읽어야 하면 계약에 이름과 모양을 더하고 아래 목록에도 더한다 (두 목록이 같은지 games/deungbul/test/split.test.ts가 견준다).
 export * from './defs/combat';
 export * from './defs/craft';
 export * from './defs/dungeons';

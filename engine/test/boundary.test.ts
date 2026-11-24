@@ -1,15 +1,15 @@
 // 틀과 게임의 경계를 글자로 지키는 검사 (독립 점검 docs/framework-audit.md 3절에서 놓친 것들).
-// framework.test.ts가 import의 방향과 선언 병합을 본다면, 여기서는 import로는 안 보이는 새는 길을 본다:
+// 이 게임과의 경계(games/deungbul/test/split.test.ts)가 import의 방향과 선언 병합을 본다면, 여기서는 import로는 안 보이는 새는 길을 본다:
 //   1. 틀의 소스에 게임의 내용 id를 문자열로 적었는가 ('ash_troll', 'crypt')
 //   2. 틀의 소스의 문자열과 css에 이 게임의 낱말이 있는가 ('불씨를 등탑에', .raidwarn)
 //   3. 타입 검사를 피해 가는 캐스팅(as unknown as, as never, as any)이 늘었는가
 //   4. 층을 넘는 import: 화면 → 서버, 게임 규칙 → 저장소 구현
-// 모두 소스 글자를 읽는다. 주석은 보지 않는다.
+//   5. 게임이 틀을 입구로만 읽는가 (깊은 import 금지)
+//   6. 틀이 게임을 읽지 않는가: 틀의 소스가 engine/ 밖에서 읽는 것은 내용 통로(@game/shared/content) 하나뿐이고, 읽는 자리도 틀의 내용 통로뿐이다
+// 모두 소스 글자를 읽는다. 주석은 보지 않는다. 어느 게임에도 기대지 않는다: 저장소에 있는 게임(games/*)과 틀의 시험용 내용을 모두 본다.
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { BUILD_STAT_IDS, CLASS_IDS, DAILY_IDS, DUNGEON_IDS, GEAR_SLOTS, ITEMS, MONSTERS, RARITIES, SKILL_DEFS, STAT_IDS } from '../shared/defs';
-import { AREAS } from '../shared/world';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { check } from './harness';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -29,32 +29,44 @@ check(SRC.length >= 90 && CSS.length >= 1, `틀의 소스를 읽었다 (ts ${SRC
 
 // ---------- 1. 게임의 내용 id를 문자열로 ----------
 {
-  /** 이 게임(별칭 @game이 가리키는 게임)의 내용 id. 틀은 이것을 표로만 읽어야 하고, 글자로 적으면 다른 게임에서 조용히 틀린다 */
-  const ids = new Set<string>([
-    ...CLASS_IDS, ...Object.keys(MONSTERS), ...Object.keys(ITEMS), ...Object.keys(SKILL_DEFS), ...DUNGEON_IDS, ...DAILY_IDS,
-    ...AREAS.map((a) => a.id), ...RARITIES.map((r) => r.id), ...GEAR_SLOTS, ...STAT_IDS, ...BUILD_STAT_IDS,
-  ]);
+  /**
+   * 내용의 id: 저장소에 있는 모든 게임과 틀의 시험용 내용의 것. 틀은 이것을 표로만 읽어야 하고, 글자로 적으면 다른 게임에서 조용히 틀린다.
+   * 내용 파일을 직접 불러와 표의 키를 모은다 (내용 파일은 틀에서 타입과 기본값만 읽으므로 어느 별칭으로도 불러올 수 있다)
+   */
+  type Content = Record<string, unknown> & { MAP: { areas: readonly { id: string }[] }; RARITIES: readonly { id: string }[]; GEAR_SLOTS: readonly string[] };
+  const gameDirs = fs.existsSync(path.join(root, 'games')) ? fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }) : []; // 게임이 하나도 없는 저장소에서도 돈다
+  const CONTENTS = [...gameDirs.filter((e) => e.isDirectory()).map((e) => `games/${e.name}/shared/content/index.ts`), 'engine/test/fx/shared/content/index.ts']
+    .filter((f) => fs.existsSync(path.join(root, f)));
+  const keys = (o: unknown): string[] => (o && typeof o === 'object' ? Object.keys(o) : []);
+  const ids = new Set<string>();
+  for (const f of CONTENTS) {
+    const c = await import(pathToFileURL(path.join(root, f)).href) as Content;
+    for (const t of ['CLASSES', 'MONSTERS', 'ITEMS', 'SKILL_DEFS', 'DUNGEONS', 'DAILIES', 'STATS', 'BUILD_STATS']) keys(c[t]).forEach((k) => ids.add(k));
+    [...c.MAP.areas.map((a) => a.id), ...c.RARITIES.map((r) => r.id), ...c.GEAR_SLOTS].forEach((k) => ids.add(k));
+  }
+  check(CONTENTS.length >= 1 && CONTENTS.includes('engine/test/fx/shared/content/index.ts'), `내용의 id를 모은 곳: ${CONTENTS.join(', ')}`);
   /**
    * 내용의 id와 글자가 같지만 틀의 낱말인 것 → 까닭.
    * weapon, armor: ItemDef.kind의 종류이자 바탕 아이템이 끼는 칸의 이름 (계약에 적은 약속)
    * potion: ItemDef.kind의 종류 / guard, crit, hp: 틀의 효과(StatMod)와 수치 보정(ModName)의 이름 / ring: 미니맵 표시의 모양
-   * bolt: ClassDef.shot(날아가는 것의 모양) / dust: 자리 비움 동안 센 것의 칸 이름(away.tally)
+   * bolt: ClassDef.shot(날아가는 것의 모양) / dust: 자리 비움 동안 센 것의 칸 이름(away.tally) / log: 화면 요소의 id(대화 기록 창)
    */
-  const ENGINE_WORDS: Record<string, string> = { weapon: '아이템 종류·칸', armor: '아이템 종류·칸', potion: '아이템 종류', guard: '효과 이름', crit: '효과 이름', hp: '효과 이름', ring: '미니맵 모양', bolt: '쏘는 것의 모양', dust: '자리 비움의 셈 칸' };
+  const ENGINE_WORDS: Record<string, string> = { weapon: '아이템 종류·칸', armor: '아이템 종류·칸', potion: '아이템 종류', guard: '효과 이름', crit: '효과 이름', hp: '효과 이름', ring: '미니맵 모양', bolt: '쏘는 것의 모양', dust: '자리 비움의 셈 칸', log: '대화 기록 창의 id' };
   /** 기본값 묶음은 내용 그 자체다 (게임이 받아 쓰는 기본 칸·등급 id): 검사하지 않는다 */
   const CONTENT_FILES = ['engine/shared/defaults.ts'];
   const hits = SRC.filter((f) => !CONTENT_FILES.includes(f)).flatMap((f) => strings(body(f)).filter((s) => ids.has(s) && !(s in ENGINE_WORDS)).map((s) => `${f}: '${s}'`));
   for (const h of [...new Set(hits)]) console.log('  ' + h);
   check(ids.size >= 40 && hits.length === 0, `틀의 소스가 게임의 내용 id(${ids.size}개)를 문자열로 적지 않는다 (틀의 낱말 ${Object.keys(ENGINE_WORDS).length}개는 뺀다)`);
   // 검사가 실제로 잡아내는가: 몬스터 id를 견주는 줄은 잡고, 주석 속의 id와 id가 아닌 문자열은 잡지 않는다
-  const mon = Object.keys(MONSTERS)[0], probe = (src: string) => strings(stripComments(src)).filter((x) => ids.has(x) && !(x in ENGINE_WORDS));
-  check(probe(`if (m.type === '${mon}' && p.cls === "${CLASS_IDS[0]}") hit();`).length === 2 && probe(`// '${mon}'
+  const probe = (src: string) => strings(stripComments(src)).filter((x) => ids.has(x) && !(x in ENGINE_WORDS));
+  const mon = 'colossus', cls = 'knight'; // 시험용 내용의 id (어느 게임이 있든 없든 모인다)
+  check(probe(`if (m.type === '${mon}' && p.cls === "${cls}") hit();`).length === 2 && probe(`// '${mon}'
 const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 잡고, 주석과 다른 문자열은 잡지 않는다');
 }
 
 // ---------- 2. 이 게임의 낱말을 문자열과 css에 ----------
 {
-  /** framework.test.ts의 언어 파일 검사와 같은 낱말. 거기는 언어·알림·소리 파일의 본문 전체를, 여기는 틀의 모든 소스의 문자열과 css를 본다 */
+  /** games/deungbul/test/split.test.ts의 언어 파일 검사와 같은 낱말. 거기는 언어·알림·소리 파일의 본문 전체를, 여기는 틀의 모든 소스의 문자열과 css를 본다 */
   const WORDS_KO = ['등탑', '불씨', '등불', '습격', '주민', '안개', '첫불', '잿빛', '브람', '미라', '할멈', '퀘스트', '기여', '그림자', '지하묘'];
   const WORDS_EN = ['lamp', 'spark', 'raid', 'resident', 'mist', 'firstlight', 'ashwood', 'bram', 'mira', 'granny', 'quest', 'keeper', 'contribution', 'tower', 'ember', 'crypt', 'shade'];
   const find = (text: string): string[] => [
@@ -136,11 +148,34 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
   const found = GAMES.flatMap((f) => deep(f, read(f)));
   for (const x of found) console.log('  ' + x);
   const viaEntry = GAMES.filter((f) => specsIn(read(f)).some((s) => ['@engine/server', '@engine/client', '@engine/shared', '@engine/testing'].includes(s.spec)));
-  check(GAMES.some((f) => f.startsWith('games/sample/')) && viaEntry.length >= 40 && found.length === 0, `게임(${[...new Set(GAMES.map((f) => f.split('/')[1]))].join(', ')})은 틀을 입구로만 읽는다: 틀의 내부 파일을 깊게 import하지 않는다 (입구를 쓰는 파일 ${viaEntry.length}개)`);
+  check((GAMES.length === 0 || viaEntry.length > 0) && found.length === 0, `게임(${[...new Set(GAMES.map((f) => f.split('/')[1]))].join(', ')})은 틀을 입구로만 읽는다: 틀의 내부 파일을 깊게 import하지 않는다 (입구를 쓰는 파일 ${viaEntry.length}개)`);
   // 검사가 실제로 잡아내는가
   const probe = deep('games/x/client/hud.ts', "import { S } from '@engine/client/state';\nimport { $ } from '@engine/client';\nimport type { ItemDef } from '@engine/shared/defs/items';");
   const probeContent = deep('games/x/shared/content/items.ts', "import type { ItemDef } from '@engine/shared/defs/items';\nimport { GEAR_BASE } from '@engine/shared/defaults';\nimport { X } from '@engine/shared/defs/items';");
   check(probe.length === 2 && probeContent.length === 1, '검사의 모양: 깊은 import는 잡고, 입구와 내용 파일의 타입 import는 지나간다');
   // 입구 파일이 실제로 있다
   check(['engine/shared/index.ts', 'engine/server/index.ts', 'engine/client/index.ts', 'engine/testing.ts'].every((f) => fs.existsSync(path.join(root, f))), '틀의 입구 파일 넷이 있다 (engine/{shared,server,client}/index.ts, engine/testing.ts)');
+}
+
+// ---------- 6. 틀은 게임을 읽지 않는다 ----------
+{
+  /** 틀이 게임에서 읽는 유일한 것: 내용 통로. 읽어도 되는 자리도 틀의 내용 통로뿐이다 (그 밖의 틀 파일은 통로 engine/shared/defs.ts·world.ts를 거친다) */
+  const CONTENT = '@game/shared/content';
+  const PASSAGE = (f: string) => f === 'engine/shared/defs.ts' || f === 'engine/shared/contract.ts' || f === 'engine/shared/world.ts' || f.startsWith('engine/shared/defs/');
+  const specs = (src: string): string[] => [...stripComments(src).matchAll(/^\s*(?:import|export)\s+(?:type\s+)?[^'"]*?from\s+['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gm)].map((m) => m[1] ?? m[2] ?? m[3]);
+  /** 그 import가 engine/ 밖을 가리키는가: 상대 경로로 폴더를 넘거나, @game 별칭이거나 */
+  const outside = (f: string, spec: string): boolean => spec.startsWith('@game/') || (spec.startsWith('.') && !rel(path.resolve(path.join(root, path.dirname(f)), spec)).startsWith('engine/'));
+  const bad = (f: string, src: string): string[] => specs(src).filter((s) => outside(f, s) && !(s === CONTENT && PASSAGE(f))).map((s) => `${f} → ${s}`);
+  const found = SRC.flatMap((f) => bad(f, read(f)));
+  for (const x of found) console.log('  ' + x);
+  const reads = SRC.filter((f) => specs(read(f)).includes(CONTENT));
+  check(reads.length >= 8 && found.length === 0, `틀의 소스는 engine/ 밖에서 내용 통로(${CONTENT})만 읽고, 그것도 틀의 내용 통로(engine/shared/defs.ts, defs/, contract.ts, world.ts)에서만 읽는다 (${reads.length}곳)`);
+  // 검사가 실제로 잡아내는가
+  const probe = [
+    ...bad('engine/client/hud/x.ts', "import { TOWER } from '../../../games/deungbul/shared/world';"),
+    ...bad('engine/server/game/systems/x.ts', "import { RAID } from '@game/shared/content';"),
+    ...bad('engine/shared/defs/x.ts', "import { RESIDENTS } from '@game/shared/content/residents';"),
+    ...bad('engine/shared/defs/y.ts', "import { MAP } from '@game/shared/content';\nimport { x } from '../world';"),
+  ];
+  check(probe.length === 3, '검사의 모양: 폴더를 넘는 상대 경로, 통로가 아닌 곳의 @game, 내용 통로가 아닌 @game 경로는 잡고, 통로의 내용 통로 읽기는 지나간다');
 }

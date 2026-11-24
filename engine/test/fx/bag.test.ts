@@ -197,7 +197,8 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   const rel = (f: string) => path.relative(root, f).replaceAll('\\', '/');
   const walk = (dir: string): string[] => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : []);
   // 서버와 공용 코드만 본다 (틀과 모든 게임). 화면(client)이 들고 있는 값은 서버가 보낸 것의 사본이고, 시험(test)은 준비로 직접 고친다
-  const games = fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
+  // 게임이 하나도 없는 저장소(틀만 떼어 낸 것)에서도 돈다: 그때는 틀의 소스만 본다
+  const games = fs.existsSync(path.join(root, 'games')) ? fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name) : [];
   const dirs = ['engine/server', 'engine/shared', ...games.flatMap((n) => [`games/${n}/server`, `games/${n}/shared`])];
   const files = dirs.flatMap((d) => walk(path.join(root, d))).map(rel).filter((f) => !/\.test\.ts$/.test(f));
   /**
@@ -247,7 +248,7 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
     });
   }
   for (const s of stray) console.log('      ' + s);
-  check(files.length >= 60 && files.includes(BAG) && files.includes('engine/server/game/systems/gear.ts') && files.some((f) => f.startsWith('games/')) && writes >= ALLOWED.length,
+  check(files.length >= 40 && files.includes(BAG) && files.includes('engine/server/game/systems/gear.ts') && (games.length === 0 || files.some((f) => f.startsWith('games/'))) && writes >= ALLOWED.length,
     `서버와 공용 소스를 읽었다 (${files.length}개 파일: 틀과 게임 ${games.join(', ')})`);
   check(stray.length === 0, `아이템의 칸(.items)과 장비 목록(.gear)을 직접 고치는 코드가 가방과 허용 목록 밖에 없다${stray.length ? ` (${stray.length}곳: 위)` : ''}`);
   const unused = ALLOWED.filter((_, k) => !used.has(k));

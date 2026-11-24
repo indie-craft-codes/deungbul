@@ -10,7 +10,8 @@
 - 플레이어가 겪는 것, 저장 형식, 프로토콜은 0단계부터 지금까지 바뀌지 않았다(호환 코드는 2026-11-24 배포에서 껐고 `PROTOCOL`은 2다).
 - 장비 칸·옵션·등급·능력치의 id는 이제 게임이 짓는다(2026-11-24, 아래 '틀 수리의 진행'). 갑옷 칸 없이 칸 둘·옵션 둘·능력치 하나인 내용으로도 틀이 컴파일되는 것을 `games/sample/test/empty.test.ts`가 지킨다.
 - 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다(2026-11-24, 12단계 끝).
-- 남은 큰 일: 틀의 시험을 등불지기의 내용에서 떼기(13, 묶음 F), 서버에 남은 색(묶음 D). 아래 '이어 갈 것'.
+- 틀의 시험은 게임 없이 돈다(13단계, 2026-11-25): `games/`를 지운 복사본에서도 틀의 타입 검사와 시험 704개가 통과한다.
+- 남은 큰 일: 서버에 남은 색(묶음 D). 아래 '이어 갈 것'.
 
 ## 0. 이어 갈 것 (2026-11-24 마감)
 
@@ -31,7 +32,7 @@
 | B. 장비·능력치·이름의 고정 풀기 | **끝(2026-11-24).** `STATS[id] = { base, mod }`, `BUILD_STATS[id] = { mod, per }`(전에는 id 목록과 `BUILD.pow/vit/luck`). `mod`는 틀의 효과 넷(`StatMod`: `damage`, `guard`, `crit`, `hp`)이고 서버의 보정(`modValue`, `wornMod`)과 화면의 문장은 효과로 만든다. 칸·등급·능력치의 이름은 이름표(`ContentNames`)의 `gearSlots`, `rarities`, `buildStats`로 게임에. 무기·갑옷 바탕의 기본 수치는 그 효과에 드는 첫 옵션(`statFor`)으로 보인다. 저장을 읽을 때의 옵션 수·장비 레벨 상한도 내용에서(`OPTS_MAX`) 또는 넉넉하게(999). 화면의 문장은 견본과 글자까지 같다. 남은 것: 안내문 `rested`를 게임으로, 첫 번째 재화의 이름 '골드'를 이름표로(점검 13·26번) |
 | C. 빈 표와 낱개 | **거의 끝.** `ATTEND = []`면 출석을 세지 않는다, 처음 필요 경험치는 `needFor(1)`, 접속 전 카메라는 `MAP.spawn` 둘레, 대장간 창은 닿는 곳의 잠금 풀린 대장간이면 어느 것이나(서버와 같은 규칙), 직업의 기술 수는 `SKILL_SLOTS`를 따른다(`readonly SkillId[]`). `loc.items.potion`·`'field'`·개발 포트·`itemDef().kind`는 예제 작업 때 고쳤다. 남은 것: 상인 NPC를 게임에게(20번), 레벨·재화 상한을 `CURRENCIES.max`에서(24번) |
 | E. 경계 검사와 공개 표면 | **반쯤(2026-11-24).** 새 시험 `engine/test/boundary.test.ts`: (1) 틀의 소스가 게임의 내용 id를 문자열로 적는가(틀의 낱말 9개와 기본값 묶음은 뺀다), (2) 틀의 모든 소스의 문자열과 css에 이 게임의 낱말이 있는가(알고 남긴 것 4가지: `sparks`·`sparkBonus`(두 번째 재화의 칸), `raid`(점검 14번에서 지운다), `crypto`), (3) 타입 검사를 피하는 캐스팅이 지금(6개)보다 늘었는가, (4) 층을 넘는 import(화면 → 서버, 게임 규칙 → 저장소 구현, 공용 → 서버·화면). 지갑 검사는 `p['gold']`와 `Object.assign(p, { gold })`도 잡는다. 검사마다 스스로를 시험하고, 틀의 파일에 위반 넷을 일부러 넣어 넷 다 잡히는 것을 확인했다. 장부의 한 줄 요약은 재화를 `ECON_CURS`의 id로 찍는다(점검 10번의 반). **입구도 끝(같은 날)**: `engine/shared/index.ts`, `engine/server/index.ts`, `engine/client/index.ts`, `engine/testing.ts`가 이름을 하나씩 적어 내놓고(이것이 게임에 약속한 표면이다), 게임의 import 131줄을 입구로 옮겼다(67줄로 합쳐짐). `boundary.test.ts`의 5번이 깊은 import를 막는다: 허용은 입구, 언어 묶음(`i18n`, `i18n/ko·en·names·merge`), 내용 통로(`shared/defs`, `shared/world`), 확장 지점 셋, 그리고 내용 파일만 `shared/defs/*`의 `import type`과 `shared/defaults`. 구조 시험(`framework.test.ts`)의 경로 풀이는 폴더의 `index.ts`를 따라간다. 두 게임을 브라우저에서 띄워 콘솔 오류 없이 도는 것을 봤다(화면 모듈의 읽히는 차례가 바뀌었기 때문). 남은 것: `framework.test.ts`를 셋으로 가르기(F와 함께) |
-| F. 틀의 시험을 시험용 내용으로 | **진행 중(2026-11-24).** 틀의 시험용 내용 `engine/test/fx/shared/content`("시험 들판": 어느 게임의 것도 아니다. id와 맵은 등불지기·예제와 모두 다르고 수치는 시험의 기대값대로 등불지기를 따른다. 대장간·잠금·던전·필드 보스·두 번째 재화·분해·가방 넓히기를 모두 켠다)과 자기 tsconfig(`@game` → 그 폴더)를 두었다. `npm run typecheck`가 틀 전체를 이 내용으로도 검사하고(세 번째 내용), `npm test`가 그 위의 시험을 따로 된 프로세스로 돈다(`engine/test/fx/all.ts`, 이름은 `fx/…`). 옮긴 것 23개: monsters, move, nav, classes, shop, craft, party, build, guild, boss, combat, growth, dungeon, compare, bag, salvage, wallet, ledger, market, channel, security, harden, server. 틀의 기능을 도는 시험은 이제 모두 시험용 내용 위에서 돈다(검사 수는 옮기기 전과 같다: `npm test`의 통과 1085). 옮기며 시험이 등불지기의 맵에 기대던 곳(들판과 던전 사이의 벽, 들판의 경계, 지역 id 'field', 둘째 상인)은 지역의 경계와 시험용 내용에서 구하게 바꿨다. 남은 것: 소스를 읽는 구조 검사 둘(`framework.test.ts`, `boundary.test.ts`)이 아직 `games/deungbul`의 경로와 등불지기의 이름을 직접 안다. `framework.test.ts`를 셋으로 가르기(예전 식과 같다는 검사 → 게임으로, 틀만의 게임 → 시험용 내용으로, 폴더 검사 → 게임 폴더 이름을 받게) |
+| F. 틀의 시험을 시험용 내용으로 | **끝(2026-11-25).** 틀의 시험용 내용 `engine/test/fx/shared/content`("시험 들판": 어느 게임의 것도 아니다. id와 맵은 등불지기·예제와 모두 다르고 수치는 시험의 기대값대로 등불지기를 따른다. 대장간·잠금·던전·필드 보스·두 번째 재화·분해·가방 넓히기·상인 둘을 모두 켠다)과 자기 tsconfig(`@game` → 그 폴더). 틀의 기능 시험 24개(`bare`와 옮긴 23개)가 그 위에서 따로 된 프로세스로 돈다(`engine/test/fx/all.ts`, 이름은 `fx/…`). 그 프로세스가 끝에 "게임(games/ 아래)의 파일이 하나도 로드되지 않았다"를 확인한다. 옛 `engine/test/framework.test.ts`는 셋으로 갈랐다: 틀만의 게임·서버·프로토콜 → `engine/test/fx/bare.test.ts`, 예전과 같다는 검사(맵 지문, 옮긴 수치, 저장 견본) → `games/deungbul/test/baseline.test.ts`, 이 게임과 틀의 경계(폴더·import·확장 지점·언어·화면) → `games/deungbul/test/split.test.ts`. 어느 게임에나 맞는 규칙(틀은 내용 통로 말고는 게임을 읽지 않는다, 게임의 id는 저장소의 모든 게임과 시험용 내용에서 모은다)은 `engine/test/boundary.test.ts`로. **확인: 저장소를 복사해 `games/`를 통째로 지우고도 틀의 타입 검사(`tsc -p engine/test/fx`)가 0이고 틀의 시험 704개가 모두 통과했다.** 검사 수는 1089(옮기기 전 1085 + 새 경계 검사 셋 + 매번 도는 '틀만' 검사 하나) |
 | D | 아직 |
 
 ## 1. 단계별 상태
@@ -53,7 +54,7 @@
 | 10 | 시험 가르기, `new Game()`의 기본값을 틀만으로 | 끝 | `7c96900` |
 | 11 | 예제 게임 `games/sample`과 `docs/making-a-game.md`, 뼈대 올리기, 예제의 내용으로 드러난 틀의 수리 | 끝 (이 문서를 쓴 때) | `feat/fw11` |
 | 12 | 공개 표면(입구 넷 + 언어, 깊은 import 금지) | 끝 (2026-11-24) | |
-| 13 | 틀의 시험을 등불지기의 내용에서 떼기 | **남음** (선택) | |
+| 13 | 틀의 시험을 등불지기의 내용에서 떼기 | 끝 (2026-11-25, 묶음 F) | |
 
 ### 9단계에서 한 것
 

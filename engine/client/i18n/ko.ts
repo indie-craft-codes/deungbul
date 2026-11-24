@@ -2,7 +2,7 @@
 // 기준 언어다: 다른 언어의 틀 파일(en.ts)은 이 파일과 같은 모양을 갖춰야 컴파일된다.
 // 이 게임의 문장(등탑, 퀘스트 등)과 내용의 이름(몬스터, 아이템, 직업 …)은 여기 없다: 게임의 언어 파일(games/deungbul/client/i18n/)에 있고 mergeLocale로 합친다.
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
-// 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (engine/test/framework.test.ts가 검사한다).
+// 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
 import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, buildStatDef, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';

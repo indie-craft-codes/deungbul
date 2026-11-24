@@ -1,30 +1,10 @@
-// 틀과 게임을 가르는 작업의 안전망과 경계 (docs/framework-plan.md의 단계 0, 1, 2).
-// 구조를 고치다가 맵의 배치가 달라지거나 옛 저장이 다르게 읽히면 여기서 잡힌다.
-//   - 맵 지문: buildWorld()가 놓는 장애물·나무·바위와 길찾기 격자가 그대로인가
-//   - 저장 왕복: 견본(games/deungbul/test/fixtures/)을 읽어 캐릭터와 월드를 만든 뒤 다시 저장한 값이 견본과 같은가
-//   - 프로토콜 번호: 서버가 welcome에 번호를 싣는가
-//   - 틀만의 게임: 규칙 플러그인 없이(plugins: []) 만든 게임과 서버가 도는가
-//   - 의존 방향: 틀의 서버 파일과 공용 파일이 이 게임의 규칙과 선언을 import하지 않는가
-//   - 개인 상태: 틀만의 서버는 me 메시지를 보내지 않는가, 이 게임의 서버는 접속 직후에 전부, 그 뒤로는 바뀐 칸만 보내는가
-//   - 확장 지점: 게임이 선언으로 더한 칸(사건, 공유 상태, 명령)이 틀만의 게임에는 실행 중에도 없는가
-import { createHash } from 'node:crypto';
-import { AUTO, AWAY, POTIONS, pickPotion, potionOrder } from '../shared/auto';
-import { BOSS, COMBAT, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GUILD, LEVEL, MONSTERS, MONSTER_AI, POTION_MAX, POWER, RAID, RARITIES, STATS, STAT_IDS, baseTier, bossHp, clearRar, gearScore, guildLevel, needFor, nextNeed, powerOf, raidFoes, raidTowerHp, sellPrice, speedFor, type Gear, type GearSlot, type ItemId, type Stat } from '@game/shared/defs';
-import { AREAS, EDGE, MAP, MAX_X, MAX_Z, MIN_X, MIN_Z, PILLARS, POND, PORTALS, TOWERS, rng } from '@game/shared/world';
+// 틀(engine/)과 이 게임(games/deungbul/)의 경계: 의존 방향, 내용 통로, 확장 지점, 언어 파일, 화면의 틀과 뼈대를 소스와 실행으로 검사한다.
+// 예전에는 engine/test/framework.test.ts에 있었다. 이 게임의 파일 경로와 이름을 알아야 하므로 이 게임의 시험이다.
+// 어느 게임에나 맞는 틀의 규칙(깊은 import 금지, 틀이 games/를 읽지 않음, 게임의 낱말과 id, 층)은 engine/test/boundary.test.ts가 이 게임 없이도 지킨다.
 import fs from 'node:fs';
-import { WebSocket } from 'ws';
-import { CHANNEL, DUNGEONS, SHOP, SPAWN } from '@game/shared/defs';
-import { NavGrid } from '../shared/nav';
-import { PROTOCOL, type ServerMsg } from '../shared/protocol';
-import { PLAYER_SPEED, buildWorld } from '../shared/world';
-import type { Ent } from '../server/game/entity';
-import { Game } from '../server/game/game';
-import { channelOf, isField } from '../server/game/layers';
-import { startServer } from '../server/net/server';
-import { MemoryStore, type PlayerSave, type WorldSave } from '../server/store';
-import { check, sleep, until } from './harness';
+import { Game } from '@engine/server';
+import { check } from '@engine/testing';
 
-const fixture = <T>(name: string): T => JSON.parse(fs.readFileSync(new URL(`../../games/deungbul/test/fixtures/${name}.json`, import.meta.url), 'utf8')) as T;
 /**
  * import 문에 적힌 경로를 저장소 뿌리 기준의 파일 경로로 바꾼다: 상대 경로와 별칭(@engine, @game: tsconfig.json의 paths)을 따라간다.
  * 그 밖의 것(node:, 패키지)은 null
@@ -37,343 +17,6 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
   // 폴더를 가리키면 그 폴더의 입구(index.ts)다: 틀의 입구 '@engine/server', '@engine/client', '@engine/shared'
   return p !== null && !fs.existsSync(new URL(`${p}.ts`, root)) && fs.existsSync(new URL(`${p}/index.ts`, root)) ? `${p}/index` : p;
 }
-const hash = (data: string | Uint8Array): string => createHash('sha256').update(data).digest('hex').slice(0, 16);
-/** 'YYYY-M-D' 꼴 날짜의 낮 12시 (서버 현지 시간). 날짜를 못 읽으면 정해 둔 날 */
-function noonOf(day: unknown): number {
-  const m = typeof day === 'string' ? /^(\d+)-(\d+)-(\d+)$/.exec(day) : null;
-  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12).getTime() : new Date(2026, 0, 10, 12).getTime();
-}
-
-// ---------- 맵 지문 ----------
-// 값이 달라졌다면 맵이 달라진 것이다: 서버의 충돌 판정, 길찾기, 화면의 나무와 바위가 모두 바뀐다.
-// 맵을 일부러 고친 것이 아니라면(정의를 옮기기만 했다면) 장애물을 넣는 순서나 난수를 쓰는 횟수가 바뀌지 않았는지 본다.
-{
-  const w = buildWorld();
-  const f = (n: number) => n.toFixed(3);
-  const text = [
-    w.obstacles.map((o) => `${f(o.x)},${f(o.z)},${f(o.r)}`).join(';'),
-    w.trees.map((d) => `${f(d.x)},${f(d.z)},${f(d.s)},${f(d.rot)}`).join(';'),
-    w.rocks.map((d) => `${f(d.x)},${f(d.z)},${f(d.s)},${f(d.rot)}`).join(';'),
-  ].join('|');
-  const counts = `${w.obstacles.length}/${w.trees.length}/${w.rocks.length}`;
-  check(counts === '411/448/80', `맵의 장애물/나무/바위 수가 그대로다 (${counts})`);
-  check(hash(text) === '30280907b7a7711f', `맵 지문이 그대로다: 장애물·나무·바위의 좌표와 크기 (${hash(text)})`);
-  const blocked = (new NavGrid(w.obstacles) as unknown as { blocked: Uint8Array }).blocked;
-  const n = blocked.reduce((sum, v) => sum + v, 0);
-  check(n === 17461 && hash(blocked) === '03e74551f70ac7e0', `길찾기 격자의 막힌 칸이 그대로다 (${n}칸, ${hash(blocked)})`);
-}
-
-// ---------- 내용 계약 (docs/framework-plan.md의 단계 5) ----------
-// 틀이 게임의 낱말 대신 정의(MAP, FORGES, ITEMS)를 읽게 바꾼 것들이 예전과 똑같이 움직이는가.
-// 계약의 모양 자체(빠진 이름, 다른 타입)는 engine/shared/contract.ts가 컴파일할 때 검사한다.
-{
-  // 맵 정의: 손으로 놓은 장애물은 예전에 buildWorld가 이름으로 읽던 순서(연못, 등탑, 집, 던전의 기둥) 그대로다
-  const w = buildWorld();
-  const tags = MAP.obstacles.map((o) => o.tag).join(',');
-  check(tags === ['pond', ...TOWERS.map(() => 'tower'), 'house', 'house', 'house', 'house', ...PILLARS.map(() => 'pillar')].join(','), `맵 정의의 장애물이 연못, 등탑, 집, 기둥의 순서다 (${MAP.obstacles.length}개)`);
-  check(MAP.obstacles.every((o, i) => w.obstacles[i].x === o.x && w.obstacles[i].z === o.z && w.obstacles[i].r === o.r) && w.obstacles[0].x === POND.x && w.obstacles[0].r === POND.r, '월드의 장애물 목록은 맵 정의의 장애물로 시작한다');
-  const field = MAP.areas[0];
-  check(AREAS === MAP.areas && EDGE === MAP.edge && PORTALS === MAP.portals && field.x0 === MIN_X && field.x1 === MAX_X && field.z0 === MIN_Z && field.z1 === MAX_Z && MAP.spawn.x === SPAWN.x && MAP.spawn.z === SPAWN.z,
-    '예전 이름(AREAS, EDGE, PORTALS, SPAWN)은 맵 정의에서 꺼낸 값이고, 0번 지역이 들판이다');
-
-  // 물약 고르기: 아이템 id를 적어 두던 예전 규칙과, 정의(회복량)에서 고르는 지금 규칙이 모든 경우에 같은 답을 낸다
-  const oldPick = (ratio: number, items: Record<string, number>): 'tonic' | 'potion' | null => {
-    if (ratio >= 0.35) return null;
-    return (items.tonic ?? 0) > 0 ? 'tonic' : (items.potion ?? 0) > 0 ? 'potion' : null;
-  };
-  const oldOrder = (hurt: number): ItemId[] => (hurt >= 160 ? ['tonic', 'potion'] : ['potion', 'tonic']);
-  const ratios = [...Array.from({ length: 1001 }, (_, i) => i / 1000), AUTO.potionAt - 1e-9, AUTO.potionAt + 1e-9, -0.1, 1.5];
-  const counts: (number | undefined)[] = [undefined, ...Array.from({ length: POTION_MAX + 1 }, (_, i) => i)];
-  let cases = 0, wrong = 0;
-  for (const ratio of ratios) for (const tonic of counts) for (const potion of counts) {
-    // 재료처럼 물약이 아닌 것이 섞여 있어도 고르지 않는다
-    const items: Record<string, number> = { iron: 5, hide: 1 };
-    if (tonic !== undefined) items.tonic = tonic;
-    if (potion !== undefined) items.potion = potion;
-    cases++;
-    if (pickPotion(ratio, items) !== oldPick(ratio, items)) wrong++;
-  }
-  check(wrong === 0 && POTIONS.join(',') === 'tonic,potion', `자동으로 마실 물약이 예전 규칙과 모든 경우에 같다 (체력 비율 ${ratios.length}가지 × 보유 ${counts.length * counts.length}가지 = ${cases}가지)`);
-  let orderWrong = 0;
-  for (let hurt = -5; hurt <= 400; hurt += 0.5) if (potionOrder(hurt).join(',') !== oldOrder(hurt).join(',')) orderWrong++;
-  check(orderWrong === 0 && potionOrder(Infinity).join(',') === oldOrder(Infinity).join(','), '손으로 마실 때 살펴보는 순서도 예전과 같다 (많이 다쳤으면 진한 것부터, 아니면 약한 것부터)');
-
-  // 불씨를 주지 않는 몬스터: sparks 칸이 없는 정의도 잡을 수 있고, 불씨는 0이다
-  const g = new Game({ plugins: [] });
-  const p = g.players.spawn('계약검사', false);
-  const m = g.monsters.spawn('slime', 0, 20);
-  const { sparks: _sparks, ...bare } = MONSTERS.slime;
-  m.def = bare;
-  g.fire('monsterKilled', m, [p]);
-  check(p.sparks === 0 && p.exp === MONSTERS.slime.exp && p.gold >= MONSTERS.slime.gold[0], '불씨 칸이 없는 몬스터를 잡으면 경험치와 골드만 받는다');
-
-  // 봇이 돌아다니는 범위: 맵 정의의 들판에서 읽어도, 숫자로 적혀 있던 예전 식과 같은 자리를 고른다
-  for (const e of [...g.ents.values()]) if (e.kind === 'm') g.remove(e.id);
-  const bot = g.players.spawn('봇', true);
-  const seq: number[] = [], went: [number, number][] = [];
-  const real = Math.random, rnd = rng(5);
-  const goTo = g.movement.goTo.bind(g.movement);
-  g.movement.goTo = (e, x, z) => { if (e === bot) went.push([x, z]); return goTo(e, x, z); };
-  let same = 0, picks = 0;
-  try {
-    Math.random = () => { const v = rnd(); seq.push(v); return v; };
-    for (let i = 0; i < 300; i++) {
-      bot.moving = false; bot.targetId = 0; bot.wait = 0; went.length = 0; seq.length = 0;
-      g.bots.think(bot, 0.05);
-      if (went.length !== 1 || seq.length !== 3) continue; // 난수는 쉬는 시간, x, z의 순서로 세 번 쓴다
-      picks++;
-      if (went[0][0] === MIN_X + 12 + seq[1] * (MAX_X - MIN_X - 24) && went[0][1] === (seq[2] - 0.5) * 84) same++;
-    }
-  } finally { Math.random = real; g.movement.goTo = goTo; }
-  check(picks === 300 && same === 300, `봇이 고르는 자리가 예전 식과 같다 (${same}/${picks})`);
-}
-
-// ---------- 서버 코드에 박혀 있던 숫자를 내용 정의로 옮긴 것 ----------
-// 값과 식을 옮기기만 했다: 예전에 서버 코드에 적혀 있던 숫자와 식(아래에 그대로 적어 둔다)으로 셈한 것과 지금의 결과가 같아야 한다.
-// 수치를 일부러 바꿀 때는 여기의 옛 값도 함께 고친다.
-{
-  check(LEVEL.firstNeed === 60 && LEVEL.growth === 1.35 && COMBAT.critChance === 0.15 && COMBAT.critMult === 1.8 && COMBAT.regenAfterS === 5 && COMBAT.regenPerS === 4
-    && GLOW_BRIGHT_REGEN === 2 && GLOW_BRIGHT_SPEED === 1.1 && speedFor(2) === PLAYER_SPEED * 1.1 && speedFor(1) === PLAYER_SPEED && FULL_TOWER_OFFER === 5
-    && GEAR.guardCap === 60 && GEAR.optMin === 0.8 && GEAR.optSpan === 0.4 && GEAR.optPerLevel === 0.15 && GEAR.sellBase === 5 && GEAR.sellPerTier === 10
-    && POWER.perLevel === 20 && POWER.perTier === 15 && POWER.perSkillLevel === 10 && AWAY.roam === 60 && AWAY.maxS === 8 * 3600
-    && MONSTER_AI.loseRange === 26 && MONSTER_AI.homeSpeed === 1.5 && MONSTER_AI.wanderSpeed === 1.3 && GUILD.noticeGapS === 5 && GUILD.chatGapS === 0.7,
-    '옮긴 수치가 서버 코드에 적혀 있던 값 그대로다 (레벨, 치명타, 자연 회복, 등탑 혜택, 장비, 전투력, 자리 비움, 몬스터의 움직임, 길드)');
-
-  // 레벨: 서버는 레벨이 오를 때마다 필요 경험치에 1.35를 곱해 반올림한다. 그 수열을 정의의 함수가 그대로 낸다 (닫힌 식은 어긋난다)
-  const g = new Game({ plugins: [] });
-  const p = g.players.spawn('수열검사', false);
-  let old = 60, closedOff = 0;
-  const wrong: number[] = [];
-  for (let lv = 1; lv <= 60; lv++) {
-    if (p.lv !== lv || p.need !== old || needFor(lv) !== old) wrong.push(lv);
-    if (Math.round(60 * 1.35 ** (lv - 1)) !== old) closedOff++;
-    g.players.grant(p, p.need, 0);
-    old = Math.round(old * 1.35);
-    if (nextNeed(needFor(lv)) !== old) wrong.push(lv);
-  }
-  check(wrong.length === 0, `레벨 1부터 60까지의 필요 경험치가 서버가 실제로 셈하는 수열과 같다${wrong.length ? `: Lv ${wrong.join(', ')}` : ` (Lv 60: ${needFor(60)})`}`);
-  check(closedOff > 0, `닫힌 식(60 × 1.35^(n−1))은 반올림이 쌓여 이 수열과 어긋난다 (${closedOff}곳): 그래서 단계마다 되풀이한다`);
-
-  // 장비 굴림: 예전 식(서버의 roll에 숫자로 적혀 있던 것)과 지금의 굴림이 같은 난수열에서 같은 장비를 낸다. 난수를 쓰는 순서와 횟수도 같다
-  const oldRoll = (rnd: () => number, lv: number, rar?: number, slot?: GearSlot): Gear => {
-    if (rar === undefined) {
-      let r = rnd() * RARITIES.reduce((s, x) => s + x.weight, 0);
-      rar = RARITIES.findIndex((x) => (r -= x.weight) < 0);
-      if (rar < 0) rar = 0;
-    }
-    const def = RARITIES[rar], pool = [...STAT_IDS], opts: [Stat, number][] = [];
-    for (let i = 0; i < def.opts && pool.length; i++) {
-      const stat = pool.splice(Math.floor(rnd() * pool.length), 1)[0];
-      opts.push([stat, Math.max(1, Math.round(STATS[stat].base * def.mult * (0.8 + rnd() * 0.4) * (1 + (lv - 1) * 0.15)))]);
-    }
-    slot ??= GEAR_SLOTS[Math.floor(rnd() * GEAR_SLOTS.length)];
-    const base = slot === 'weapon' ? GEAR.weaponFor(lv) : slot === 'armor' ? GEAR.armorFor(lv) : undefined;
-    return { uid: 0, slot, base, rar, lv, plus: 0, opts };
-  };
-  const a = rng(20261124), b = rng(20261124);
-  g.gear.random = b;
-  let rolls = 0, differ = 0, sellDiffer = 0;
-  for (let i = 0; i < 1200; i++) {
-    const lv = 1 + (i % 6), rar = i % 3 === 0 ? undefined : (i >> 2) % RARITIES.length, slot = i % 5 === 0 ? GEAR_SLOTS[i % GEAR_SLOTS.length] : undefined;
-    const want = oldRoll(a, lv, rar, slot), got = g.gear.roll(lv, rar, slot);
-    rolls++;
-    if (JSON.stringify(want) !== JSON.stringify(got)) differ++;
-    got.plus = i % 4; // 파는 값은 강화 단계도 본다
-    if (sellPrice(got) !== 5 + gearScore(got) + baseTier(got) * 10) sellDiffer++;
-  }
-  check(differ === 0 && a() === b(), `장비 굴림이 예전 식과 같은 장비를 낸다 (같은 난수열로 ${rolls}점, 난수를 쓴 횟수도 같다)`);
-  check(sellDiffer === 0, '파는 값이 예전 식(5 + 값어치 + 바탕의 등급 × 10)과 같다');
-
-  // 전투력, 보스 체력, 습격, 던전 완료 장비의 등급, 길드 레벨: 서버와 도감이 함께 쓰는 함수가 예전에 서버에 적혀 있던 식과 같다
-  const ring: Gear = { uid: 1, slot: 'ring', rar: 2, lv: 4, plus: 3, opts: [['dmg', 7], ['hp', 31]] };
-  let same = powerOf(23, 5, [1, 4, 2], [ring]) === (0 + 3 + 1) * 10 + 23 * 20 + 5 * 15 + gearScore(ring) && powerOf(1, 0, [], []) === 20;
-  for (let n = 0; n <= 14; n++) {
-    same &&= bossHp(1600, n) === Math.round(1600 * (1 + BOSS.hpPerPlayer * Math.max(0, Math.min(BOSS.maxScale, n) - 1)));
-    same &&= raidFoes(n) === Math.min(RAID.max, RAID.base + RAID.perPlayer * n) && raidFoes(n, { base: 2, perPlayer: 5, max: 30 }) === Math.min(30, 2 + 5 * n);
-    same &&= raidTowerHp(n * 7) === RAID.towerHpBase + n * 7 * RAID.towerHpPerGlow;
-    same &&= guildLevel(n * 1500) === Math.min(GUILD.maxLevel, 1 + Math.floor((n * 1500) / GUILD.expPerGuildLevel));
-  }
-  for (let min = 0; min < RARITIES.length; min++) for (let r = 0; r < RARITIES.length; r++) same &&= clearRar({ dropRar: min }, r) === Math.max(min, r);
-  check(same, '전투력, 보스 체력, 습격 적의 수와 등탑 내구, 던전 완료 장비의 등급, 길드 레벨의 식이 예전과 같다');
-}
-
-// ---------- 저장 등록 (docs/framework-plan.md의 단계 3): 틀의 몫 ----------
-// 이 게임의 칸(퀘스트·기여·기여 단계·휴식)이 옛 형식과 새 형식에서 견본대로 읽히고 쓰이는지는 games/deungbul/test/framework.test.ts가 본다.
-{
-  const base = fixture<{ note: string; save: PlayerSave }[]>('players')[0].save, HOURS5 = 5 * 3600000;
-  // 틀만의 게임에는 이 칸들이 없다: 저장에도, 엔티티에도, 규칙에도. 옛 칸을 읽는 길(Saver.legacy)은 틀의 것이라 플러그인이 그대로 쓴다
-  {
-    const bare = new Game({ plugins: [], now: () => noonOf(null) });
-    const p = bare.players.spawn('맨저장', false, { ...structuredClone(base), seen: noonOf(null) - HOURS5 }, 'fx-bare');
-    const out = bare.players.export(p) as unknown as Record<string, unknown>, ext = out.ext as Record<string, unknown>;
-    check(['quest', 'contrib', 'tier', 'rested'].every((k) => !(k in out)) && ['quest', 'tower', 'keepers', 'rest'].every((k) => !(k in ext)) && ['qc', 'contrib', 'tier', 'rested', 'questDirty'].every((k) => !(k in p))
-      && bare.rules.touched === undefined && bare.killBonus.length === 0 && !bare.notices.some((n) => n.k === 'rested'),
-      '틀만의 게임은 퀘스트·기여·휴식의 칸을 읽지도 쓰지도 않는다 (저장, 엔티티, touched 규칙, 처치 덤 모두 없다)');
-    const calls: string[] = [];
-    const custom = new Game({ plugins: [(g) => { g.saves.push({ name: 'logs', save: () => 3, load: (_p, raw) => { calls.push(`load ${String(raw)}`); }, legacy: (whole) => whole.gold }); }] });
-    custom.players.spawn('옛칸', false, { ...structuredClone(base), gold: 41 }, 'fx-legacy-a');
-    custom.players.spawn('새칸', false, { ...structuredClone(base), gold: 41, ext: { logs: 9 } }, 'fx-legacy-b');
-    const made = custom.players.export(custom.players.spawn('쓰기', false, null, 'fx-legacy-c'));
-    check(calls.join() === 'load 41,load 9' && made.gold === 0 && made.ext?.logs === 3, `Saver.legacy: 자기 칸이 없으면 옛 형식에서 찾고, 있으면 자기 칸을 읽는다. 쓸 때는 자기 칸(ext)에만 적고 옛 칸은 건드리지 않는다 (${calls.join()})`);
-  }
-}
-
-// 아무것도 하지 않은 새 캐릭터는 저장하지 않는다 (engine/server/net/server.ts의 savePlayer). 틀의 칸(직업, 레벨, 경험치, 골드, 불씨)에 더해
-// 게임이 g.rules.touched로 '진행이 있다'고 답한다 (이 게임에서는 퀘스트). 칸을 옮기기 전과 같은 캐릭터가 저장되고 같은 캐릭터가 저장되지 않는다.
-// (게임의 진행만 있는 캐릭터가 저장되는지는 games/deungbul/test/framework.test.ts가 본다. 여기서는 틀만의 서버를 본다)
-{
-  const keyOf = (token: string) => createHash('sha256').update(token).digest('hex');
-  // 틀만의 서버: 게임의 규칙이 없으면 틀의 칸만 본다
-  const bareStore = new MemoryStore();
-  const b = await startServer(0, { store: bareStore, game: { plugins: [] } });
-  const bareVisit = async (token: string, touch: (e: Ent) => void): Promise<PlayerSave | null> => {
-    const ws = new WebSocket(`ws://127.0.0.1:${b.port}`);
-    const id = await new Promise<number>((done, fail) => {
-      ws.on('open', () => ws.send(JSON.stringify({ t: 'join', token })));
-      ws.on('message', (data) => { const m = JSON.parse(data.toString()) as { t: string; id?: number }; if (m.t === 'welcome') done(m.id!); });
-      ws.on('error', fail);
-    });
-    touch(b.game.ents.get(id)!);
-    ws.close();
-    await until(() => !b.game.ents.has(id));
-    return bareStore.loadPlayer(keyOf(token));
-  };
-  const bareIdle = await bareVisit('touch-token-bare-0009', () => {});
-  const bareGold = await bareVisit('touch-token-bare-0010', (e) => { e.gold = 2; });
-  check(bareIdle === null && bareGold?.gold === 2, '틀만의 서버도 아무것도 하지 않은 새 캐릭터는 저장하지 않고, 골드를 얻은 캐릭터는 저장한다');
-  await b.close();
-}
-
-// ---------- 프로토콜 번호 ----------
-{
-  const s = await startServer(0, { store: new MemoryStore() });
-  const ws = new WebSocket(`ws://127.0.0.1:${s.port}`);
-  const welcome = await new Promise<{ v?: unknown }>((done, fail) => {
-    ws.on('open', () => ws.send(JSON.stringify({ t: 'join', name: '번호확인' })));
-    ws.on('message', (data) => { const m = JSON.parse(data.toString()) as { t: string; v?: unknown }; if (m.t === 'welcome') done(m); });
-    ws.on('error', fail);
-  });
-  check(Number.isInteger(PROTOCOL) && welcome.v === PROTOCOL, `접속하면 서버가 프로토콜 번호를 알려 준다 (v=${String(welcome.v)})`);
-  ws.close();
-  await s.close();
-}
-
-// ---------- 틀만의 게임 (docs/framework-plan.md의 단계 1) ----------
-// 규칙 플러그인 없이(plugins: []) 만든 게임: 등탑·습격·등탑지기·퀘스트가 없어도 바탕 기능이 돈다.
-// 틀의 코드가 g.tower 같은 게임의 시스템을 건드리면 그 자리에서 예외가 나게 해 둔다.
-{
-  const now = noonOf(null);
-  const g = new Game({ plugins: [], now: () => now });
-  const bare = g as unknown as Record<string, unknown>;
-  const GAME_ONLY = ['tower', 'raid', 'quests', 'keepers'];
-  check(GAME_ONLY.every((k) => bare[k] === undefined), 'plugins: []로 만들면 등탑·습격·퀘스트·등탑지기 시스템이 없다');
-  const touched: string[] = [];
-  for (const k of GAME_ONLY) Object.defineProperty(g, k, { get() { touched.push(k); throw new Error(`틀이 게임의 시스템 g.${k}를 건드렸다`); } });
-  check(Object.keys(g.state()).length === 0 && !('tower' in g.exportWorld()) && !('keepers' in g.exportWorld()), `공유 상태에 등탑·습격 칸이 없고, 월드 저장에도 등탑 칸이 없다 (월드 저장: ${Object.keys(g.exportWorld()).join(', ')})`);
-
-  const run = (seconds: number) => { for (let i = 0; i < seconds * 20; i++) g.tick(0.05); };
-  const said = (p: Ent) => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
-  const cmd = (p: Ent, m: Record<string, unknown>) => { g.notices = []; g.out = []; g.command(p, m); };
-  const hero = (name: string, pid: string) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'warrior'); p.lv = 12; p.gold = 5000; g.players.refresh(p); p.hp = p.maxHp; return p; };
-  let threw = '';
-  try {
-    const p = hero('틀사람', 'bare-a'), mate = hero('틀동료', 'bare-b');
-    g.players.spawn('Bot1', true);
-    check(p.mail.some((m) => m.k === 'attend') && channelOf(p.layer) === 1, '접속하면 출석 우편을 받고 1채널에 선다');
-    check(g.rules.siege === null && g.rules.unlocked('bram') && g.rules.speed(p) === PLAYER_SPEED && g.rules.canChangeClass(p), '규칙의 기본값: 몰려갈 곳이 없고, 잠긴 것이 없고, 걸음은 기본 속도이고, 직업은 어디서나 바꾼다');
-
-    // 이동
-    // 처음 서는 자리는 무작위라 찍은 곳이 건물에 걸릴 수 있다: 길이 트인 정해진 자리에서 잰다
-    p.x = 0; p.z = 8;
-    const from = { x: p.x, z: p.z };
-    cmd(p, { t: 'move', x: p.x + 6, z: p.z + 4 });
-    run(3);
-    check(Math.hypot(p.x - from.x, p.z - from.z) > 5 && !p.moving, '이동: 찍은 곳까지 걸어간다');
-
-    // 전투와 처치, 장비 줍기
-    g.gear.random = () => 0; // 반드시 떨어뜨린다
-    const m = [...g.ents.values()].find((e) => e.type === 'slime' && !e.dead && e.layer === p.layer)!;
-    m.wait = 99; p.x = m.x + 1; p.z = m.z;
-    const exp0 = p.exp + p.lv * 1e6, bag0 = p.gear.length;
-    cmd(p, { t: 'attack', id: m.id });
-    for (let i = 0; i < 400 && !m.dead; i++) g.tick(0.05);
-    check(m.dead && p.exp + p.lv * 1e6 > exp0 && g.notices.some((n) => n.id === p.id && n.k === 'kill'), '전투: 몬스터를 쓰러뜨리면 경험치를 받는다');
-    check(p.gear.length === bag0 + 1 && p.daily.prog.kill30 === 1, '처치하면 장비가 떨어져 가방에 들어오고, 일일 임무가 세어진다');
-    g.gear.random = Math.random;
-
-    // 상점: 잠금 규칙이 없으므로 모든 물건이 열려 있다
-    p.x = SHOP.x + 1; p.z = SHOP.z;
-    cmd(p, { t: 'buy', id: 'potion' }); cmd(p, { t: 'buy', id: 'sword3' });
-    check(p.items.potion === 1 && p.weapon === 'sword3', '상점: 물약과 (이 게임에서는 주민이 돌아와야 풀리는) 등불검을 산다');
-
-    // 우편
-    const gold0 = p.gold;
-    cmd(p, { t: 'mailClaim', id: 0 });
-    check(p.mail.length === 0 && p.gold > gold0, '우편: 받은 우편을 열어 보상을 받는다');
-
-    // 길드
-    cmd(p, { t: 'guild', a: 'create', name: '틀모임' });
-    check(g.guild.count === 1 && p.guild === '틀모임', '길드를 만든다');
-    g.players.rename(p, '새이름');
-    check(p.name === '새이름', '이름을 바꾼다 (등탑지기 명단이 없어도 된다)');
-
-    // 거래소
-    const ring = g.gear.roll(3, 2, 'ring');
-    g.gear.put(p, ring);
-    cmd(p, { t: 'market', a: 'post', uid: ring.uid, price: 300 });
-    check(g.market.count === 1 && said(p).includes('marketPosted'), '거래소에 장비를 올린다');
-
-    // 채널
-    run(CHANNEL.switchCdS + CHANNEL.calmS + 1);
-    cmd(p, { t: 'channel', n: 2 });
-    const told = g.out.filter((o) => o.id === p.id && o.msg.t === 'channels').pop()?.msg as Extract<ServerMsg, { t: 'channels' }> | undefined;
-    check(channelOf(p.layer) === 2 && told?.me === 2 && told.foes === undefined, '채널을 바꾼다 (채널 소식에 습격의 적 칸은 없다)');
-
-    // 던전
-    const def = DUNGEONS.crypt;
-    p.x = def.portal.x + 1; p.z = def.portal.z;
-    cmd(p, { t: 'dungeon', id: 'crypt' });
-    check(!isField(p.layer) && said(p).includes('dungeonEnter') && g.dungeon.count === 1, '던전에 들어간다');
-    // 던전에서 쓰러지면 던전의 입구에서, 들판에서 쓰러지면 기본 자리(SPAWN)에서 일어난다
-    check(g.rules.respawn(p).x === def.entry.x && g.rules.respawn(mate).x === SPAWN.x && g.rules.respawn(mate).id === '', '일어나는 자리: 던전 안은 입구, 들판은 기본 자리');
-
-    // 수백 틱을 더 돈다 (봇, 몬스터, 주기 처리가 모두 도는 동안 예외가 없어야 한다)
-    g.daily.add(mate, 'offer', 10); // 게임의 임무 종류를 틀이 몰라도 세기만 하면 된다
-    run(30);
-    // 저장과 읽기: 캐릭터와 월드
-    const save = structuredClone(g.players.export(p)), world = structuredClone(g.exportWorld());
-    const g2 = new Game({ plugins: [], now: () => now });
-    g2.importWorld(world);
-    const again = g2.players.spawn(save.name, false, save, 'bare-a');
-    check(again.lv === p.lv && again.gear.length === p.gear.length && again.guild === '틀모임' && g2.market.count === 1, '틀만의 게임도 캐릭터와 월드를 저장하고 다시 읽는다');
-    // 이 게임(등불지기)의 월드 저장을 틀만의 게임이 읽어도 죽지 않는다: 모르는 칸은 건너뛴다
-    for (const { world: w } of fixture<{ world: WorldSave }[]>('worlds')) g2.importWorld(structuredClone(w));
-    check(!('tower' in g2.exportWorld()), '등탑이 든 월드 저장과 옛 형식의 월드 저장을 읽어도, 모르는 칸은 건너뛴다');
-  } catch (err) { threw = String(err); }
-  check(threw === '' && touched.length === 0, `틀만의 게임이 예외 없이 돌고, 틀의 코드가 게임의 시스템을 건드리지 않는다${threw ? ` (${threw})` : ''}`);
-}
-
-// 틀만의 서버: 접속, 공유 상태, 스냅샷, 끊고 저장하기까지 (통신 계층도 게임의 시스템 없이 돈다)
-{
-  const store = new MemoryStore();
-  const s = await startServer(0, { store, game: { plugins: [] } });
-  const ws = new WebSocket(`ws://127.0.0.1:${s.port}`);
-  const got: ServerMsg[] = [];
-  await new Promise<void>((done, fail) => {
-    ws.on('open', () => ws.send(JSON.stringify({ t: 'join', name: '틀접속', token: 'bare-token-0001' })));
-    ws.on('message', (data) => { got.push(JSON.parse(data.toString()) as ServerMsg); if (got.some((m) => m.t === 'snap') && got.some((m) => m.t === 'stat')) done(); });
-    ws.on('error', fail);
-  });
-  const world = got.find((m) => m.t === 'world') as Extract<ServerMsg, { t: 'world' }> | undefined;
-  check(got[0]?.t === 'welcome' && !!world && Object.keys(world.s).length === 0, '틀만의 서버에 접속하면 welcome, 빈 공유 상태, 스냅샷과 내 상태를 받는다');
-  ws.send(JSON.stringify({ t: 'class', id: 'warrior' }));
-  ws.send(JSON.stringify({ t: 'move', x: 5, z: 8 }));
-  await sleep(400);
-  ws.close();
-  await s.close();
-  const saved = store.loadWorld();
-  check(!!saved && !('tower' in saved) && 'mailbox' in saved, '틀만의 서버가 닫히며 저장한 월드에 등탑 칸이 없다');
-}
 
 // ---------- 의존 방향: 폴더 (docs/framework-plan.md의 단계 9) ----------
 // 틀은 engine/ 아래에, 이 게임은 games/deungbul/ 아래에 있다. 방향은 폴더로 본다 (아래의 블록들은 같은 것을 더 잘게, 가져오는 이름까지 본다):
@@ -385,7 +28,7 @@ function noonOf(day: unknown): number {
 //   6. 틀이 읽는 게임의 내용 파일(content/index.ts가 내보내는 것)은 틀에서 타입만 가져온다: 값을 읽으면 틀의 도우미와 서로 물려 초기화 순서가 꼬인다
 //   7. 틀만 타입 검사(tsconfig.engine.json: engine/의 소스만)해도 오류가 없다: 틀이 게임의 선언(시스템 칸, 안내문, 공유 상태)에 기대면 여기서 잡힌다
 {
-  const root = new URL('../../', import.meta.url);
+  const root = new URL('../../../', import.meta.url);
   const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8').replace(/\r\n/g, '\n');
   const list = (dir: string): string[] => fs.readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? list(`${dir}${d.name}/`) : d.name.endsWith('.ts') ? [`${dir}${d.name}`] : []));
   /** 그 파일의 import·export … from·declare module에 적힌 경로들. typeOnly: 문장 전체가 타입만 가져오는가 (import type) */
@@ -423,8 +66,8 @@ function noonOf(day: unknown): number {
   check(wanted.length >= 55 && wanted.includes('MAP') && wanted.includes('ECON_HUNT') && new Set(passed).size === passed.length && onlyContract.length === 0 && onlyChannel.length === 0,
     `틀의 통로가 게임에서 다시 내보내는 이름은 내용 계약의 이름과 같다 (${wanted.length}개)${onlyContract.length + onlyChannel.length ? `: 계약에만 ${onlyContract.join(', ') || '없음'}, 통로에만 ${onlyChannel.join(', ') || '없음'}` : ''}`);
   // 계약 밖의 것은 @game의 그 파일이 내보내더라도 틀의 통로로는 나오지 않는다 (실제로 불러 본다)
-  const engineDefs = await import('../shared/defs') as Record<string, unknown>, engineWorld = await import('../shared/world') as Record<string, unknown>;
-  const gameDefs = await import('@game/shared/defs') as Record<string, unknown>;
+  const engineDefs = await import('@engine/shared/defs') as Record<string, unknown>, engineWorld = await import('@engine/shared/world') as Record<string, unknown>;
+  const gameDefs = await import('../shared/defs') as Record<string, unknown>;
   const leaked = ['SMITH', 'SMITHY', 'SHOP', 'REST', 'restGain', 'RESIDENTS', 'QUESTS', 'RAID', 'GLOW_MAX', 'TOWER', 'TOWERS', 'POND', 'CLEARINGS', 'ZONE_SPLIT', 'MIN_X'].filter((n) => n in engineDefs || n in engineWorld);
   check(leaked.length === 0 && 'SMITHY' in gameDefs && 'RESIDENTS' in gameDefs && wanted.every((n) => n in engineDefs) && 'AREAS' in engineWorld && 'MAP' in engineWorld,
     `이 게임에만 있는 이름(SMITHY, RESIDENTS, TOWER, POND …)은 틀의 통로에 없고 게임의 통로에만 있다${leaked.length ? ': ' + leaked.join(', ') : ''}`);
@@ -462,7 +105,7 @@ function noonOf(day: unknown): number {
 // 게임 규칙(engine/server/game)은 통신 계층(engine/server/net)을 import하지 않는다. import 문을 읽어 검사한다 (타입만 가져오는 것도 센다).
 // 파일의 목록은 폴더에서 읽는다: 이 게임의 서버 파일은 games/deungbul/server/ 아래의 것이다 (main.ts는 이 게임의 서버를 띄우는 진입점이다: 플러그인을 고르는 자리).
 {
-  const root = new URL('../../', import.meta.url);
+  const root = new URL('../../../', import.meta.url);
   const list = (dir: string): string[] => fs.readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? list(`${dir}${d.name}/`) : d.name.endsWith('.ts') ? [`${dir}${d.name}`] : []));
   /** 이 게임의 규칙 파일: 플러그인(deungbul.ts)과 규칙 시스템들 */
   const GAME_FILES = list('games/deungbul/server/').filter((f) => f !== 'games/deungbul/server/main.ts');
@@ -573,15 +216,15 @@ function noonOf(day: unknown): number {
 // 여기서는 틀만 본다: 틀의 문장만으로 묶음이 완결되는가, 틀의 안내문에 모두 문장이 있는가, 합치는 규칙, 틀의 언어·알림·소리 파일에 이 게임의 낱말과 안내문이 남아 있지 않은가.
 // 게임의 문장과 합친 결과(문장이 예전과 글자까지 같은가, 덮어쓴 키의 목록)는 games/deungbul/test/guide.test.ts가 본다.
 {
-  const root = new URL('../../', import.meta.url);
+  const root = new URL('../../../', import.meta.url);
   const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
   /** 주석을 뺀 본문 (낱말 검사는 화면에 나갈 수 있는 글자와 코드만 본다) */
   const body = (file: string): string => read(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
-  const { koBase } = await import('../client/i18n/ko');
-  const { enBase } = await import('../client/i18n/en');
-  const { mergeLocale, overlaps } = await import('../client/i18n/merge');
-  const { idNames } = await import('../client/i18n/names');
-  type EngineLocale = import('../client/i18n/ko').EngineLocale;
+  const { koBase } = await import('@engine/client/i18n/ko');
+  const { enBase } = await import('@engine/client/i18n/en');
+  const { mergeLocale, overlaps } = await import('@engine/client/i18n/merge');
+  const { idNames } = await import('@engine/client/i18n/names');
+  type EngineLocale = import('@engine/client/i18n/ko').EngineLocale;
 
   // 틀만으로 완결: 게임의 문장 없이, 내용의 이름표만 넘기면 틀의 묶음이 채워진다 (타입으로도: 빠진 칸이 있으면 컴파일되지 않는다)
   const ko: EngineLocale = koBase(idNames()), en: EngineLocale = enBase(idNames());
@@ -654,7 +297,7 @@ function noonOf(day: unknown): number {
 // 내용은 통로(engine/shared/defs, engine/shared/world)로 들어오므로 파일 경로만으로는 알 수 없다: 가져오는 이름까지 본다.
 // 6b부터는 client/src 아래의 틀 쪽 파일 전부가 대상이다: 이 게임의 파일은 games/deungbul/client/ 한 폴더에 모였고, 틀을 시작시키는 것도 게임의 진입점(games/deungbul/client/main.ts)이다.
 {
-  const root = new URL('../../', import.meta.url);
+  const root = new URL('../../../', import.meta.url);
   const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
   const list = (dir: string): string[] => fs.readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? list(`${dir}${d.name}/`) : d.name.endsWith('.ts') ? [`${dir}${d.name}`] : []));
   /** 이 게임의 클라이언트 파일: game/ 아래 전부와 도감(guide/). 6b에서 옛 자리(hud/quest.ts, hud/marks.ts, scene/scenery.ts, deungbul/)의 것을 game/으로 모았다 */
@@ -708,7 +351,7 @@ function noonOf(day: unknown): number {
 // 내용 정의에서 이 게임에만 있는 이름(등탑·습격·주민·퀘스트의 정의, 맵의 등탑·연못·길·구역)을 가져오지 않는다. 반대 방향(게임이 틀을 import)은 된다.
 // 지형을 틀에 넘기는 자리는 게임의 진입점(games/deungbul/client/main.ts)이다: engine/client/app.ts도 이제 게임을 모른다 (위의 6a 블록이 함께 본다).
 {
-  const root = new URL('../../', import.meta.url);
+  const root = new URL('../../../', import.meta.url);
   const ENGINE = ['engine/client/scene/view.ts', 'engine/client/scene/models.ts', 'engine/client/hud/minimap.ts'];
   /** 이 게임의 클라이언트 파일: 폴더 하나 (6b에서 옛 자리의 것들을 모았다) */
   const isGameFile = (f: string): boolean => f.startsWith('games/deungbul/client/');
@@ -749,7 +392,7 @@ function noonOf(day: unknown): number {
 // 게임의 마크업(games/deungbul/client/markup.ts)이 틀의 빈 자리(hud/shell.ts의 mountPanel)에 붙이고, 모양은 게임의 스타일(games/deungbul/client/deungbul.css)에 있다.
 // 옮긴 창의 id는 게임의 마크업에서 읽어 낸다: 창을 더 옮기면 검사도 따라간다.
 {
-  const root = new URL('../../', import.meta.url);
+  const root = new URL('../../../', import.meta.url);
   const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
   /** css에서 주석을 뺀 것 (주석은 등탑·퀘스트를 말해도 된다) */
   const css = (file: string): string => read(file).replace(/\/\*[\s\S]*?\*\//g, '');

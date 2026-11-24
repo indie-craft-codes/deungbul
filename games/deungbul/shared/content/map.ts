@@ -90,7 +90,7 @@ const HOUSE_R = 3.3;
 
 /**
  * 이 게임의 맵 정의. 틀은 이것만 읽는다.
- * obstacles의 순서(연못, 등탑, 집, 던전의 기둥)와 scatter의 순서는 바꾸지 않는다: 맵 전체의 배치와 충돌 판정이 달라진다 (engine/test/framework.test.ts의 맵 지문)
+ * obstacles의 순서(연못, 등탑, 집, 던전의 기둥)와 scatter의 순서는 바꾸지 않는다: 맵 전체의 배치와 충돌 판정이 달라진다 (games/deungbul/test/split.test.ts의 맵 지문)
  */
 export const MAP: MapDef = {
   // 0번은 들판(위의 범위)이다
