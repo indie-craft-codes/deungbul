@@ -1,5 +1,6 @@
 // 성장의 틀: 드롭 장비와 강화, 우편, 방치 보상, 일일 임무와 출석, 순위 (서버 없이 게임 규칙만 돌린다)
 import { Game } from '../server/game/game';
+import { needFor } from '../shared/defs';
 import { check } from './harness';
 
 {
@@ -99,4 +100,34 @@ import { check } from './harness';
   clock += 24 * 3600000;
   const p3 = new Game({ now: () => clock }).players.spawn('수집가', false, save2);
   check(p3.daily.streak === 2 && p3.daily.got.length === 0 && p3.mail.some((m) => m.k === 'attend' && m.a[0] === 2), '다음 날 접속하면 출석이 2일째가 되고 임무가 새로 시작한다');
+}
+
+// 다음 레벨까지의 필요 경험치는 저장된 값이 아니라 레벨에서 다시 구한다 (engine/server/game/systems/players.ts의 spawn).
+// 전에는 저장 값을 1e9에서 잘라 읽어, 필요 경험치가 1e9를 넘는 레벨(57부터)에서 다시 접속하면 필요 경험치가 줄었다
+{
+  const TOP = 70, clock = new Date(2026, 0, 10, 12).getTime();
+  const g = new Game({ now: () => clock });
+  const p = g.players.spawn('오르는이', false, null, 'need-key');
+  g.classes.apply(p, 'warrior');
+  const bad: string[] = [];
+  let over = 0;
+  for (let lv = 1; lv <= TOP; lv++) {
+    if (p.lv !== lv || p.need !== needFor(lv)) bad.push(`Lv ${lv}: 오르는 중의 필요 경험치 ${p.need} ≠ ${needFor(lv)} (지금 Lv ${p.lv})`);
+    if (needFor(lv) > 1e9) over++;
+    // 경험치를 절반쯤 채운 채로 저장하고 다시 읽는다
+    g.players.grant(p, Math.floor(p.need / 2), 0);
+    const save = JSON.parse(JSON.stringify(g.players.export(p)));
+    const q = new Game({ now: () => clock }).players.spawn(save.name, false, save, 'need-key');
+    if (q.lv !== lv || q.need !== needFor(lv) || q.exp !== p.exp) bad.push(`Lv ${lv}: 다시 읽은 필요 경험치 ${q.need} ≠ ${needFor(lv)} (경험치 ${q.exp} / ${p.exp})`);
+    g.players.grant(p, p.need - p.exp, 0);
+  }
+  for (const line of bad.slice(0, 5)) console.log('  ' + line);
+  check(bad.length === 0 && p.lv === TOP + 1 && over >= 10, `Lv 1~${TOP}: 저장하고 다시 읽은 필요 경험치가 레벨의 필요 경험치(needFor)와 같고 경험치도 그대로다 (1e9를 넘는 레벨 ${over}개 포함)`);
+
+  // 저장에 든 need가 어긋나 있어도(잘렸던 값, 깨진 값, 없는 칸) 레벨에서 다시 구한다. 경험치는 그 범위 안으로 잡힌다
+  const base = JSON.parse(JSON.stringify(g.players.export(p)));
+  const read = (over: Record<string, unknown>) => new Game({ now: () => clock }).players.spawn('읽는이', false, { ...base, ...over }, 'need-key-2');
+  const cut = read({ lv: 60, need: 1e9, exp: 2e9 }), junk = read({ lv: 12, need: 'x', exp: 5 }), none = read({ lv: 3, need: undefined, exp: 1e12 }), low = read({ lv: 20, need: 1, exp: 100 });
+  check(cut.need === needFor(60) && cut.exp === 2e9 && junk.need === needFor(12) && junk.exp === 5 && none.need === needFor(3) && none.exp === needFor(3) && low.need === needFor(20) && low.exp === 100,
+    `저장의 필요 경험치가 어긋나 있어도 레벨에서 다시 구한다 (Lv 60: ${cut.need}, 잘렸던 값 1e9를 따르지 않는다)`);
 }

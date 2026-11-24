@@ -75,18 +75,18 @@
   "2 m"
  ],
  "fmt.dungeonExit": [
-  "16d826923c7aa13f",
-  "Cleared. Leaving in undefined s.",
-  "Cleared. Leaving in 0 s.",
-  "Cleared. Leaving in 1 s.",
-  "Cleared. Leaving in 2 s."
+  "5b7d6ed68be0f43c",
+  "Cleared. Leaving in undefineds.",
+  "Cleared. Leaving in 0s.",
+  "Cleared. Leaving in 1s.",
+  "Cleared. Leaving in 2s."
  ],
  "fmt.dungeonFoes": [
-  "0570b9d6eb66c32c",
-  "Enemies left: undefined",
-  "Enemies left: 0",
-  "Enemies left: 1",
-  "Enemies left: 2"
+  "f02c4de34a2b42bd",
+  "Foes left: undefined",
+  "Foes left: 0",
+  "Foes left: 1",
+  "Foes left: 2"
  ],
  "fmt.dungeonInfo": [
   "202b1dac390db39b",
@@ -173,11 +173,11 @@
   "2 / NaN to next level"
  ],
  "fmt.guildGave": [
-  "cd9dedc82969a87b",
-  "donated NaN",
-  "donated 0",
-  "donated 1",
-  "donated 2"
+  "2b9e55c217caaf1b",
+  "Donated NaN",
+  "Donated 0",
+  "Donated 1",
+  "Donated 2"
  ],
  "fmt.guildGive": [
   "2a264f9b2c15c2b5",
@@ -187,11 +187,11 @@
   "Donate 2"
  ],
  "fmt.guildHead": [
-  "19633f464349841c",
-  "undefined · guild Lv undefined · kill exp +undefined%",
-  "0 · guild Lv undefined · kill exp +undefined%",
-  "1 · guild Lv undefined · kill exp +undefined%",
-  "2 · guild Lv undefined · kill exp +undefined%"
+  "90c4b9c69e11bc68",
+  "undefined · Guild Lv undefined · Kill exp +undefined%",
+  "0 · Guild Lv undefined · Kill exp +undefined%",
+  "1 · Guild Lv undefined · Kill exp +undefined%",
+  "2 · Guild Lv undefined · Kill exp +undefined%"
  ],
  "fmt.guildInviteFrom": [
   "380ae600f1d0c53f",
@@ -304,13 +304,6 @@
   "Price 0 − fee NaN = you receive NaN gold",
   "Price 1 − fee NaN = you receive NaN gold",
   "Price 2 − fee NaN = you receive NaN gold"
- ],
- "fmt.marketPage": [
-  "2b0897622311aa24",
-  "Page undefined / undefined · undefined items",
-  "Page 0 / undefined · undefined items",
-  "Page 1 / undefined · undefined items",
-  "Page 2 / undefined · undefined items"
  ],
  "fmt.marketPageShort": [
   "3132675317693acc",
@@ -683,18 +676,18 @@
  "monsters.wolf": "Wolf",
  "msg.alreadyBest": "You already have equal or better gear.",
  "msg.awayBack": [
-  "d040f307df7e4064",
-  "Auto-hunt kept going for the undefined min you were away. Sparks +undefined, gold +NaN",
-  "Auto-hunt kept going for the 0 min you were away. Sparks +0, gold +0",
-  "Auto-hunt kept going for the 1 min you were away. Sparks +1, gold +1, level +1",
-  "Auto-hunt kept going for the 2 min you were away. Sparks +3, gold +4, level +5"
+  "d6e1d8cca9820991",
+  "Auto-hunt kept going for the undefined min you were away. +undefined sparks, +NaN gold",
+  "Auto-hunt kept going for the 0 min you were away. +0 sparks, +0 gold",
+  "Auto-hunt kept going for the 1 min you were away. +1 spark, +1 gold, +1 level",
+  "Auto-hunt kept going for the 2 min you were away. +3 sparks, +4 gold, +5 levels"
  ],
  "msg.bossDown": [
-  "197daa7df98e2c5b",
-  "undefined has fallen. undefined fought together.",
-  "0 has fallen. 0 fought together.",
-  "1 has fallen. 1 fought together.",
-  "2 has fallen. 3 fought together."
+  "b536eca0aa5a659b",
+  "undefined has fallen.",
+  "0 has fallen.",
+  "1 has fallen.",
+  "2 has fallen. 3 players fought together."
  ],
  "msg.bossUp": [
   "e1c720dfa8f52c36",
@@ -710,8 +703,8 @@
   "Bought 1.",
   "Bought 2."
  ],
- "msg.channelDungeon": "You can't change channels inside a dungeon.",
- "msg.channelFight": "You can't change channels while fighting. Try again once the fight is over.",
+ "msg.channelDungeon": "You cannot change channels inside a dungeon.",
+ "msg.channelFight": "You cannot change channels while fighting. Try again once the fight is over.",
  "msg.channelFull": [
   "003bf0a40d2e4869",
   "Channel undefined is full. Pick another one.",
@@ -797,8 +790,8 @@
   "Enhancement succeeded. +1",
   "Enhancement succeeded. +2"
  ],
- "msg.forgeClosed": "Bram the smith has not returned yet.",
- "msg.forgeFar": "Move closer to Bram the smith to forge.",
+ "msg.forgeClosed": "Bram the Smith has not returned yet.",
+ "msg.forgeFar": "Move closer to Bram the Smith to forge.",
  "msg.gearDrop": [
   "510ea14824e07d86",
   "You picked up a undefined undefined. Equip it under Menu[[ (M)|]] > Gear.",
@@ -901,11 +894,11 @@
   "2 left."
  ],
  "msg.levelUp": [
-  "713597ab64e89559",
-  "Level up! You are now Lv undefined.",
-  "Level up! You are now Lv 0.",
-  "Level up! You are now Lv 1.",
-  "Level up! You are now Lv 2."
+  "67dae0e5ae7837fa",
+  "Level up! Lv undefined · +3 attribute points (Menu > Growth)",
+  "Level up! Lv 0 · +3 attribute points (Menu > Growth)",
+  "Level up! Lv 1 · +3 attribute points (Menu > Growth)",
+  "Level up! Lv 2 · +3 attribute points (Menu > Growth)"
  ],
  "msg.loot": [
   "d8989e9af1210c96",
@@ -915,11 +908,11 @@
   "Picked up 2. Bram can use it at the forge."
  ],
  "msg.mailGot": [
-  "8f05c0fc892846ea",
+  "b7f15779d441793d",
   "Mail claimed.",
-  "Mail claimed. Gold +1 Exp +1 Sparks +1 Gear +1 Materials +1",
-  "Mail claimed. Gold +2 Exp +3 Sparks +4 Gear +5 Materials +6",
-  "Mail claimed. Gold +1,234,567 Exp +1,234,567 Sparks +1234567 Gear +1234567 Materials +1234567"
+  "Mail claimed. +1 gold, +1 exp, +1 spark, +1 gear, +1 material",
+  "Mail claimed. +2 gold, +3 exp, +4 sparks, +5 gear, +6 materials",
+  "Mail claimed. +1,234,567 gold, +1,234,567 exp, +1234567 sparks, +1234567 gear, +1234567 materials"
  ],
  "msg.mailLeft": "Some items did not fit and were left in your mail. Make room, then claim again.",
  "msg.mailNew": "You have mail. Claim it under Menu[[ (M)|]] > Mail.",
@@ -1064,11 +1057,11 @@
   "The lamp tower fell. Village tower light +2"
  ],
  "msg.raidReward": [
-  "39cb9391c940d753",
-  "Raid reward: +undefined sparks, +undefined exp",
-  "Raid reward: +0 sparks, +0 exp",
-  "Raid reward: +1 spark, +1 exp",
-  "Raid reward: +2 sparks, +3 exp"
+  "819205c737b4842c",
+  "Raid reward: +undefined exp, +undefined sparks",
+  "Raid reward: +0 exp, +0 sparks",
+  "Raid reward: +1 exp, +1 spark",
+  "Raid reward: +3 exp, +2 sparks"
  ],
  "msg.raidSoon": [
   "881d2871a49d88af",
@@ -1246,12 +1239,9 @@
  "ui.autoOff": "Auto-hunt off.",
  "ui.autoOn": "Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting (up to 8 hours).",
  "ui.bag": "Bag",
- "ui.bagArmor": "Armor",
- "ui.bagArmorHint": "Sold by the Road Merchant",
  "ui.bagMats": "Crafting materials",
  "ui.bagPotions": "Potions",
  "ui.bagToGear": "View gear (Menu > Gear)",
- "ui.bagWeapon": "Weapon",
  "ui.block": "Mute chat",
  "ui.changeClass": "Change class",
  "ui.channel": "Channel",
@@ -1267,7 +1257,7 @@
  "ui.count1": "1",
  "ui.count5": "5",
  "ui.countAll": "All",
- "ui.currentClass": "current",
+ "ui.currentClass": "Current",
  "ui.dailyDone": "Done",
  "ui.dailyNote": "Finish a task and the reward arrives by mail. Tasks reset at midnight.",
  "ui.disconnected": "Lost connection to the server.",
@@ -1288,7 +1278,7 @@
  "ui.guildGiveInfo": "Donated gold raises the guild level, which gives every member more exp.",
  "ui.guildInvite": "Invite to guild",
  "ui.guildKick": "Kick",
- "ui.guildLeader": "leader",
+ "ui.guildLeader": "Leader",
  "ui.guildLeave": "Leave guild",
  "ui.guildMaxLv": "The guild is at its highest level",
  "ui.guildNameHint": "Guild name (2–12 characters)",
@@ -1365,7 +1355,7 @@
  "ui.tabMail": "Mail",
  "ui.tabMarket": "Market",
  "ui.tabRank": "Rank",
- "ui.title": "Lamp Tower",
+ "ui.title": "Lampkeeper",
  "ui.toTown": "To town",
  "ui.tower": "Lamp tower",
  "ui.towerDark": "The lamp is out. Once everyone offers sparks to light it, you will rise here when you fall in these woods.",

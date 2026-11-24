@@ -19,7 +19,6 @@ export class Rest {
         if (gain > 0) g.notify(p, 'rested', p.rested);
       },
       legacy: (whole) => ({ left: whole.rested }),
-      legacySave: (p) => ({ rested: p.rested }),
     });
     // 본인에게 알리는 개인 상태: 쉬고 와서 쌓였거나 사냥으로 줄면 간다
     g.personal.push({ name: 'rested', state: (p): MeState['rested'] => p.rested });

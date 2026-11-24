@@ -2,7 +2,7 @@
 import { ITEMS, SHOPS, SHOP_REACH } from '@game/shared/content';
 
 export interface ItemDef {
-  /** mat: 제작 재료 (games/deungbul/shared/content/craft.ts) */
+  /** mat: 제작 재료 (제작법의 모양은 engine/shared/defs/craft.ts의 Recipe, 표는 게임의 내용에 있다) */
   kind: 'weapon' | 'armor' | 'potion' | 'mat';
   price: number;
   /** 무기: 공격 피해에 곱하는 값 */

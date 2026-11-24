@@ -6,7 +6,7 @@
 //   - 확장 지점: 게임이 선언으로 더한 것(사건, 공유 상태, 명령)이 등불지기에는 실행 중에 있고 틀만의 게임에는 없는가
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, restGain } from '../shared/defs';
+import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, needFor, restGain } from '../shared/defs';
 import { TOWER } from '../shared/world';
 import type { Ent } from '@engine/server/game/entity';
 import { Game } from '@engine/server/game/game';
@@ -15,7 +15,7 @@ import { check, connect, sleep, until } from '@engine/test/harness';
 import { newGame, startDeungbul } from './game';
 import { WebSocket } from 'ws';
 import type { ServerMsg } from '@engine/shared/protocol';
-import { SEND_OLD_MSGS, installDeungbul } from '../server/deungbul';
+import { installDeungbul } from '../server/deungbul';
 import { startServer } from '@engine/server/net/server';
 
 const fixture = <T>(name: string): T => JSON.parse(fs.readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8')) as T;
@@ -51,6 +51,8 @@ function noonOf(day: unknown): number {
 //   ext.build      비어 있던 능력치 칸이 0으로 채워진다 ({} → { pow: 0, … }). 0인 칸은 없는 것으로 보고 비교한다
 //   ext.gear       목록의 순서(낀 것이 앞으로 온다)는 따지지 않는다. 낀 무기가 없던 저장은 든 무기(weapon)를 낱개 장비로 새로 받으므로,
 //                  '견본의 장비가 모두 그대로 있고 끼고 있던 것을 그대로 끼고 있다'까지만 본다
+//   need           다음 레벨까지의 필요 경험치. 저장 값을 읽지 않고 레벨에서 다시 구한다 (needFor): 꾸민 견본 셋은 이 칸이 레벨과 맞지 않게 적혀 있다
+//   quest, contrib, tier, rested   옛 최상위 칸. 읽기만 하고 다시 적지 않는다: 견본의 옛 칸은 새로 쓴 저장의 새 칸(ext.quest, ext.tower, ext.keepers, ext.rest)과 견준다
 // 견본에 없던 칸(옛 저장의 ext, armor, at 등)은 새로 생기는 것이라 따지지 않는다. 대신 한 번 더 왕복해서 그대로인지 본다.
 {
   const samples = fixture<{ note: string; save: PlayerSave }[]>('players');
@@ -77,7 +79,9 @@ function noonOf(day: unknown): number {
     const out = roundTrip(save, now, `fx-${i}`);
     const was = norm(save), is = norm(out), wasExt = was.ext as Bag, isExt = is.ext as Bag;
     const d: string[] = [];
-    for (const k of Object.keys(was)) if (k !== 'ext') d.push(...diff(was[k], is[k], k));
+    const OLD_CELLS = ['quest', 'contrib', 'tier', 'rested'];
+    for (const k of Object.keys(was)) if (k !== 'ext' && k !== 'need' && !OLD_CELLS.includes(k)) d.push(...diff(was[k], is[k], k));
+    d.push(...diff(needFor(save.lv), out.need, 'need (레벨에서 다시 구한 값)'));
     for (const k of Object.keys(wasExt)) {
       if (k !== 'gear') { d.push(...diff(wasExt[k], isExt[k], `ext.${k}`)); continue; }
       const a = wasExt.gear as GearSave, b = isExt.gear as GearSave;
@@ -85,10 +89,13 @@ function noonOf(day: unknown): number {
       for (const slot of Object.keys(a.worn)) d.push(...diff(a.worn[slot], b.worn[slot], `ext.gear.worn.${slot}`));
       if (b.seq < a.seq) d.push(`ext.gear.seq: ${a.seq} > ${b.seq}`);
     }
-    // 게임의 칸(퀘스트, 기여, 기여 단계, 휴식)은 ext의 새 칸에 적히고, 이번 배포 동안은 옛 최상위 칸에도 같은 값으로 함께 적힌다 (위의 비교가 옛 칸을, 이 비교가 새 칸을 본다)
-    const oldCells = { quest: out.quest, tower: { contrib: out.contrib }, keepers: { tier: out.tier }, rest: { left: out.rested } };
-    d.push(...diff(oldCells, { quest: isExt.quest, tower: isExt.tower, keepers: isExt.keepers, rest: isExt.rest }, '옛 칸과 새 칸'));
-    if (!Array.isArray(out.quest) || [out.contrib, out.tier, out.rested].some((v) => typeof v !== 'number')) d.push('옛 최상위 칸(quest, contrib, tier, rested)이 함께 적히지 않았다');
+    // 게임의 칸(퀘스트, 기여, 기여 단계, 휴식)은 ext의 새 칸에만 적힌다. 옛 최상위 칸은 이제 적히지 않는다 (함께 적던 것은 배포 한 번 동안뿐이었다).
+    // 견본에 옛 칸으로만 있던 값은 새 칸에 그대로 있어야 한다 (견본에 새 칸도 있으면 위의 ext 비교가 본다: 그때는 새 칸이 이긴다)
+    if (OLD_CELLS.some((k) => k in out)) d.push(`옛 최상위 칸이 적혔다 (${OLD_CELLS.filter((k) => k in out).join()})`);
+    if ([isExt.quest, isExt.tower, isExt.keepers, isExt.rest].some((v) => v === undefined)) d.push('새 칸(ext.quest, ext.tower, ext.keepers, ext.rest)이 적히지 않았다');
+    const moved = { quest: 'quest' in wasExt ? undefined : save.quest, contrib: 'tower' in wasExt ? undefined : save.contrib, tier: 'keepers' in wasExt ? undefined : save.tier, rested: 'rest' in wasExt ? undefined : save.rested };
+    const cells = { quest: isExt.quest, contrib: (isExt.tower as { contrib?: unknown } | undefined)?.contrib, tier: (isExt.keepers as { tier?: unknown } | undefined)?.tier, rested: (isExt.rest as { left?: unknown } | undefined)?.left } as Bag;
+    for (const [k, v] of Object.entries(moved)) if (v !== undefined) d.push(...diff(v, cells[k], `옛 칸 ${k} → 새 칸`));
     // 한 번 더: 방금 저장한 값을 읽어 다시 저장하면 (시각과 몸 상태 말고는) 똑같아야 한다
     d.push(...diff(is, norm(roundTrip(out, now, `fx-${i}`))).map((x) => `다시 읽기 ${x}`));
     bad.push(...d.map((x) => `견본 ${i + 1} (${save.name}) ${x}`));
@@ -107,7 +114,7 @@ function noonOf(day: unknown): number {
 
 // ---------- 게임의 저장 칸을 저장 등록으로 (docs/framework-plan.md의 단계 3) ----------
 // 퀘스트·기여·기여 단계·휴식은 그 칸을 맡은 시스템이 ext에 쓰고 읽는다 (ext.quest, ext.tower, ext.keepers, ext.rest).
-// 옛 형식(최상위 quest, contrib, tier, rested)도 계속 읽고, 이번 배포 동안은 옛 칸에도 함께 쓴다.
+// 옛 형식(최상위 quest, contrib, tier, rested)도 계속 읽는다. 쓸 때는 새 칸에만 쓴다 (옛 칸에 함께 쓰던 것은 칸을 옮긴 배포 한 번 동안뿐이었다).
 // 기대값(games/deungbul/test/fixtures/players-read.json)은 칸을 옮기기 전의 코드가 각 견본을 읽은 상태다: rested5h는 5시간 떠나 있다 왔을 때의 휴식 보너스.
 {
   const samples = fixture<{ note: string; save: PlayerSave }[]>('players');
@@ -121,8 +128,10 @@ function noonOf(day: unknown): number {
     return { quest: [p.qc, p.qs, p.qn], contrib: p.contrib, tier: p.tier, rested: p.rested, told: g.notices.some((n) => n.id === p.id && n.k === 'rested'), out: structuredClone(g.players.export(p)) };
   };
   const same = (r: Read, e: { quest: number[]; contrib: number; tier: number; rested: number }) => r.quest.join() === e.quest.join() && r.contrib === e.contrib && r.tier === e.tier && r.rested === e.rested;
-  /** 옛 최상위 칸을 지운 저장: 옛 칸 쓰기를 멈춘 뒤(다음 배포)의 모양 */
+  /** 옛 최상위 칸을 지운 저장: 지금 코드가 쓰는 모양 */
   const newOnly = (save: PlayerSave): PlayerSave => { const { quest: _q, contrib: _c, tier: _t, rested: _r, ...rest } = structuredClone(save); return rest; };
+  /** 새 칸의 값을 옛 최상위 칸에도 적은 저장: 옛 칸을 함께 쓰던 배포가 남긴 모양 */
+  const both = (save: PlayerSave): PlayerSave => { const e = (save.ext ?? {}) as { quest?: [number, number, number]; tower?: { contrib?: number }; keepers?: { tier?: number }; rest?: { left?: number } }; return { ...structuredClone(save), quest: e.quest, contrib: e.tower?.contrib, tier: e.keepers?.tier, rested: e.rest?.left }; };
   const HOURS5 = 5 * 3600000;
   /** 방금 쓴 저장(저장한 시각이 적혀 있다)을 5시간 뒤에 읽었을 때의 휴식 보너스 */
   const after5h = (rested: number) => Math.min(REST.cap, rested + restGain(HOURS5));
@@ -133,21 +142,23 @@ function noonOf(day: unknown): number {
     if (!same(first, e)) bad.push(`${at}: 옛 형식을 읽은 상태가 다르다 ${JSON.stringify([first.quest, first.contrib, first.tier, first.rested])}`);
     const later = read(save, HOURS5);
     if (later.rested !== e.rested5h || later.told !== (typeof save.seen === 'number')) bad.push(`${at}: 5시간 쉰 뒤의 휴식 보너스가 다르다 (${later.rested}, 안내 ${later.told})`);
-    // 새 코드가 쓴 저장을 다시 읽는다. 이전 코드가 읽는 옛 최상위 칸도 같은 값이다 (되돌려도 진행이 남는다)
+    // 새 코드가 쓴 저장을 다시 읽는다. 옛 최상위 칸은 적히지 않고 새 칸만 적힌다
     const w = first.out;
     if (!same(read(w), e) || read(w, HOURS5).rested !== after5h(e.rested)) bad.push(`${at}: 새로 쓴 저장을 다시 읽은 상태가 다르다`);
-    if (!same({ ...first, quest: w.quest ?? [], contrib: w.contrib ?? -1, tier: w.tier ?? -1, rested: w.rested ?? -1 }, e)) bad.push(`${at}: 함께 쓴 옛 칸의 값이 다르다`);
-    // 새 칸만 있는 저장
-    const only = newOnly(w);
-    if (!same(read(only), e) || read(only, HOURS5).rested !== after5h(e.rested)) bad.push(`${at}: 새 칸만 있는 저장을 읽은 상태가 다르다`);
+    if (['quest', 'contrib', 'tier', 'rested'].some((k) => k in w)) bad.push(`${at}: 옛 최상위 칸이 적혔다`);
+    if (JSON.stringify(w) !== JSON.stringify(newOnly(w))) bad.push(`${at}: 새로 쓴 저장이 새 칸만 있는 모양이 아니다`);
+    // 옛 칸을 함께 쓰던 배포가 남긴 저장(두 칸에 같은 값)도 같은 상태로 읽히고, 다시 쓰면 옛 칸이 사라진다
+    const kept = read(both(w));
+    if (!same(kept, e) || read(both(w), HOURS5).rested !== after5h(e.rested)) bad.push(`${at}: 옛 칸과 새 칸이 함께 있는 저장을 읽은 상태가 다르다`);
+    if (['quest', 'contrib', 'tier', 'rested'].some((k) => k in kept.out)) bad.push(`${at}: 옛 칸이 함께 있던 저장을 다시 썼는데 옛 칸이 남았다`);
     // 둘 다 있고 값이 다르면 새 칸이 이긴다
-    const stale = read({ ...structuredClone(w), quest: [1, 1, 1], contrib: 777777, tier: 9, rested: 123 });
+    const stale = read({ ...both(w), quest: [1, 1, 1], contrib: 777777, tier: 9, rested: 123 });
     if (!same(stale, e)) bad.push(`${at}: 옛 칸의 값이 새 칸을 이겼다 ${JSON.stringify([stale.quest, stale.contrib, stale.tier, stale.rested])}`);
     const fresh = read({ ...structuredClone(w), ext: { ...w.ext, quest: [1, 2, 0], tower: { contrib: 4321 }, keepers: { tier: 3 }, rest: { left: 77 } } });
     if (!same(fresh, { quest: [1, 2, 0], contrib: 4321, tier: 3, rested: 77 })) bad.push(`${at}: 새 칸의 값이 읽히지 않았다`);
   });
   for (const line of bad) console.log('  ' + line);
-  check(expected.length === samples.length && bad.length === 0, `캐릭터 저장 견본 ${samples.length}개: 옛 형식, 새로 쓴 저장, 새 칸만 있는 저장이 모두 칸을 옮기기 전과 같은 상태로 읽히고, 값이 다르면 새 칸이 이긴다`);
+  check(expected.length === samples.length && bad.length === 0, `캐릭터 저장 견본 ${samples.length}개: 옛 형식, 새로 쓴 저장(옛 칸은 적히지 않고 새 칸만 적힌다), 두 칸이 함께 있는 저장이 모두 칸을 옮기기 전과 같은 상태로 읽히고, 값이 다르면 새 칸이 이긴다`);
 
   // 깨진 값: 옛 칸에 있든 새 칸에 있든 서버가 죽지 않고, 같은 범위 잡기가 적용된다
   const base = samples[0].save, lastStep = QUESTS[0].steps.length - 1;
@@ -224,11 +235,12 @@ function noonOf(day: unknown): number {
   const contrib = await visit('touch-token-contr-008', (e) => { e.contrib = 5; e.tier = 1; e.rested = 40; });
   check(idle === null && contrib === null, '아무것도 하지 않은 새 캐릭터는 저장하지 않는다 (기여·기여 단계·휴식 칸만 있는 것도 전과 같이 세지 않는다)');
   check(renamed?.name === '이름만바꿈', '이름만 바꾼 캐릭터는 저장한다');
-  check(quest?.quest?.[2] === 1 && step?.quest?.[1] === 1 && chapter?.quest?.[0] === 1 && (quest?.ext?.quest as number[] | undefined)?.[2] === 1, '퀘스트만 진행한 캐릭터는 저장한다 (진행 수치, 단계, 장 가운데 하나만 있어도)');
+  const q = (s: PlayerSave | null) => (s?.ext?.quest ?? []) as number[];
+  check(q(quest)[2] === 1 && q(step)[1] === 1 && q(chapter)[0] === 1 && quest?.quest === undefined && step?.quest === undefined && chapter?.quest === undefined, '퀘스트만 진행한 캐릭터는 저장한다 (진행 수치, 단계, 장 가운데 하나만 있어도. 새 칸에만 적힌다)');
   check(sparks?.sparks === 3 && gold?.gold === 1, '불씨만 얻은 캐릭터와 골드만 얻은 캐릭터는 저장한다');
   // 한 번 저장된 캐릭터는 그 뒤로 계속 저장한다: 불씨를 다 바쳐 틀의 칸이 비어도 기여가 남는다
   const offered = await visit('touch-token-spark-006', (e) => { e.contrib += e.sparks; e.sparks = 0; e.unsaved = true; });
-  check(offered?.sparks === 0 && offered.contrib === 3 && (offered.ext?.tower as { contrib?: number } | undefined)?.contrib === 3, '불씨를 모두 바친 캐릭터의 기여가 저장된다 (옛 칸과 새 칸 모두)');
+  check(offered?.sparks === 0 && offered.contrib === undefined && (offered.ext?.tower as { contrib?: number } | undefined)?.contrib === 3, '불씨를 모두 바친 캐릭터의 기여가 저장된다 (새 칸에만: 옛 최상위 칸은 적히지 않는다)');
   await s.close();
 }
 
@@ -294,8 +306,7 @@ function noonOf(day: unknown): number {
 // ---------- 개인 상태 통로 (docs/framework-plan.md의 단계 4) ----------
 // 본인에게만 보내는 값(이 게임에서는 퀘스트 진행, 기여, 기여 단계, 휴식 보너스)은 그 칸을 맡은 시스템이 g.personal에 등록하고,
 // 통신 계층이 { t: 'me', k: 칸의 이름, s: 값 }으로 보낸다: 접속 직후에 전부, 그 뒤로는 바뀐 칸만. 틀은 칸의 이름도 모양도 모른다.
-// 옮긴 배포 한 번 동안은 옛 화면이 읽던 모양(quest 메시지, stat의 contrib·rested·tier 칸)도 전과 같은 때에 함께 간다 (games/deungbul/server/deungbul.ts의 SEND_OLD_MSGS).
-// 그 상수를 끄면 아래의 호환 검사는 '옛 것이 가지 않는다'를 본다 (검사를 고칠 필요는 없다).
+// 옛 화면이 읽던 모양(quest 메시지, stat의 contrib·rested·tier 칸)은 옮긴 배포 한 번 동안만 함께 보냈고, 이제 보내지 않는다 (PROTOCOL 2: 옛 화면은 새로고침 안내를 본다).
 {
   type Me = Extract<ServerMsg, { t: 'me' }>;
   /** 접속해서 받은 메시지를 차례로 모은다 (스냅샷은 뺀다) */
@@ -311,12 +322,11 @@ function noonOf(day: unknown): number {
       id: (got[0] as Extract<ServerMsg, { t: 'welcome' }>).id,
       mine: (from = 0) => got.slice(from).filter((m): m is Me => m.t === 'me'),
       stats: (from = 0) => got.slice(from).filter((m) => m.t === 'stat') as unknown as Record<string, unknown>[],
-      olds: (from = 0) => got.slice(from).filter((m) => m.t === 'quest'),
+      /** 이제는 오지 않아야 하는 옛 quest 메시지 (프로토콜에서 빠졌으므로 글자로 견준다) */
+      olds: (from = 0) => got.slice(from).filter((m) => (m.t as string) === 'quest'),
     };
   };
   const BARE_STAT = 't,maxHp,lv,exp,need,sparks,gold,weapon,armor,cls,items';
-  /** 개인 상태로 옮기기 전의 stat: 칸의 순서까지 이대로였다 */
-  const OLD_STAT = 't,maxHp,lv,exp,need,sparks,contrib,gold,weapon,armor,cls,items,rested,tier';
   /** 서버가 몇 번 내보낼 만큼 기다린다 (0.1초마다 내보낸다) */
   const settle = () => sleep(350);
 
@@ -330,7 +340,7 @@ function noonOf(day: unknown): number {
     p.gold += 3; p.dirty = true;
     await until(() => c.stats().some((m) => m.gold === 3 && m.cls === 'warrior'));
     await settle();
-    check(s.game.personal.length === 0 && s.game.oldMsgs === null && c.mine().length === 0 && c.olds().length === 0, '틀만의 서버는 개인 상태(me)도 옛 quest 메시지도 보내지 않는다');
+    check(s.game.personal.length === 0 && c.mine().length === 0 && c.olds().length === 0, '틀만의 서버는 개인 상태(me)도 옛 quest 메시지도 보내지 않는다');
     check(c.stats().length >= 2 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), `틀만의 서버의 stat에는 게임의 칸(기여, 휴식, 기여 단계)이 없다 (${Object.keys(c.stats()[0]).join()})`);
     c.ws.close();
     await s.close();
@@ -352,11 +362,8 @@ function noonOf(day: unknown): number {
     const order = c.got.map((m) => m.t).filter((t) => t === 'stat' || t === 'meta' || t === 'me');
     check(order.slice(0, 3).join() === 'stat,meta,me', `한 번 내보낼 때 stat, meta, 개인 상태의 순서다 (${order.slice(0, 3).join()})`);
 
-    // 호환: 옛 화면이 읽던 것이 전과 같은 모양으로, 전과 같은 자리(stat은 그대로, quest는 퀘스트 칸이 갈 때)에 함께 간다
-    const iq = c.got.findIndex((m) => m.t === 'me' && m.k === 'quest');
-    if (SEND_OLD_MSGS) check(Object.keys(c.stats()[0]).join() === OLD_STAT && c.stats()[0].contrib === 0 && c.stats()[0].rested === 0 && c.stats()[0].tier === 0 && c.olds().length === 1 && JSON.stringify(c.got[iq + 1]) === '{"t":"quest","c":0,"s":0,"n":0}',
-      '호환: 옛 quest 메시지와 stat의 옛 칸(contrib, rested, tier)이 전과 같은 모양과 순서로 함께 간다');
-    else check(Object.keys(c.stats()[0]).join() === BARE_STAT && c.olds().length === 0, '옛 메시지를 끈 뒤: quest 메시지와 stat의 옛 칸은 가지 않는다');
+    // 옛 화면이 읽던 것(quest 메시지, stat의 contrib·rested·tier 칸)은 더 가지 않는다: stat은 틀의 칸뿐이다
+    check(Object.keys(c.stats()[0]).join() === BARE_STAT && c.olds().length === 0, '옛 메시지를 끈 뒤: quest 메시지와 stat의 옛 칸은 가지 않는다');
 
     /** 그 사이에 값이 바뀐 칸만, 한 번씩, 지금 값으로 왔는가 */
     const now = () => ({ contrib: p.contrib, quest: { c: p.qc, s: p.qs, n: p.qn }, tier: p.tier, rested: p.rested }) as Record<string, unknown>;
@@ -380,7 +387,7 @@ function noonOf(day: unknown): number {
     await until(() => c.mine(at).some((m) => m.k === 'contrib'));
     await settle();
     check(p.contrib === 4 && c.mine(at).some((m) => m.k === 'contrib' && m.s === 4) && onlyChanged(before, at), `불씨를 바치면 바뀐 칸만 한 번 온다 (${c.mine(at).map((m) => `${m.k}=${JSON.stringify(m.s)}`).join(' ')})`);
-    if (SEND_OLD_MSGS) check(c.stats(at).some((m) => m.contrib === 4 && m.sparks === 296) && c.olds(at).length === c.mine(at).filter((m) => m.k === 'quest').length, '호환: 바뀐 기여가 stat의 옛 칸으로도 가고, 옛 quest 메시지는 퀘스트 칸이 갈 때만 간다');
+    check(c.stats(at).some((m) => m.sparks === 296) && c.stats(at).every((m) => Object.keys(m).join() === BARE_STAT) && c.olds(at).length === 0, '바뀐 기여는 개인 상태로만 간다: stat에는 옛 칸이 없고(줄어든 불씨만 실린다) 옛 quest 메시지도 가지 않는다');
 
     // 기여 단계: 등탑지기 할멈이 돌아와 있으면, 기여가 문턱을 넘을 때 단계가 오른다
     s.game.tower.load({ glow: 55, residents: RESIDENTS.map((r) => r.need) });
@@ -396,7 +403,7 @@ function noonOf(day: unknown): number {
     await until(() => c.mine(at).length >= 2);
     await settle();
     check(onlyChanged(before, at) && c.mine(at).map((m) => m.k).join() === 'quest,rested' && !p.questDirty, '휴식 보너스와 퀘스트 진행도 바뀐 때에 한 번씩 오고, 보낸 뒤에는 퀘스트의 더러움 표시가 지워진다');
-    if (SEND_OLD_MSGS) check(c.olds(at).length === 1 && JSON.stringify(c.olds(at)[0]) === JSON.stringify({ t: 'quest', c: p.qc, s: p.qs, n: p.qn }), '호환: 퀘스트 진행이 바뀌면 옛 quest 메시지도 한 번 간다');
+    check(c.olds().length === 0 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), '퀘스트 진행이 바뀌어도 옛 quest 메시지는 가지 않는다 (접속한 뒤 지금까지 한 번도, stat의 옛 칸도)');
 
     // 다시 접속하면 저장된 값으로 전부 다시 온다
     const want = JSON.stringify([p.contrib, { c: p.qc, s: p.qs, n: p.qn }, p.tier, p.rested]);
@@ -432,7 +439,7 @@ function noonOf(day: unknown): number {
     await until(() => c.mine(at).length > 0);
     await settle();
     check(JSON.stringify(c.mine(at)) === '[{"t":"me","k":"note","s":{"lv":1,"at":"camp"}}]' && cleared === 2 && !flag, 'dirty를 준 칸은 그것이 참일 때 한 번 가고, 보낸 뒤 sent가 불려 표시를 지운다');
-    check(c.olds().length === 0 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), '게임이 옛 모양을 만들지 않으면(g.oldMsgs가 없다) 옛 메시지는 가지 않는다');
+    check(c.olds().length === 0 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), '시험용 플러그인의 서버도 옛 메시지를 보내지 않는다 (옛 모양을 만드는 접점 g.oldMsgs는 없어졌다)');
     c.ws.close();
     await s.close();
   }

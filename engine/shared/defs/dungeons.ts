@@ -32,7 +32,7 @@ export const isDungeonId = (v: unknown): v is DungeonId => typeof v === 'string'
 export const dungeonDef = (id: DungeonId): DungeonDef => DUNGEONS[id];
 /**
  * 끝냈을 때 받는 장비의 등급: 평소처럼 굴린 등급(rolled)이 그 던전의 가장 낮은 등급보다 낮으면 그 등급으로 올린다.
- * 서버의 systems/dungeon.ts와 도감(등급별 확률)이 함께 쓴다
+ * 서버의 engine/server/game/systems/dungeon.ts와 도감(등급별 확률)이 함께 쓴다
  */
 export const clearRar = (def: Pick<DungeonDef, 'dropRar'>, rolled: number): number => Math.max(def.dropRar, rolled);
 /** 하루 입장 횟수를 일일 진행(DailyState.prog)에 적는 이름 */

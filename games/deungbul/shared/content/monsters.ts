@@ -55,7 +55,7 @@ export const CAMPS: readonly { x: number; z: number; types: readonly MonsterId[]
   { ...CLEARINGS[11], types: ['ash_troll'] },
 ];
 
-/** 몬스터의 움직임 (서버의 systems/monsters.ts가 읽는다) */
+/** 몬스터의 움직임 (서버의 engine/server/game/systems/monsters.ts가 읽는다) */
 export const MONSTER_AI = {
   /** 쫓던 대상이 이만큼 멀어지면 놓는다 */
   loseRange: 26,

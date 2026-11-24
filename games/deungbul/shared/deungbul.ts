@@ -34,14 +34,6 @@ declare module '@engine/shared/ext' {
     raidAbandoned: [channel: number];
   }
 
-  interface ServerMsgs {
-    /**
-     * 호환: 다음 배포에서 뺀다 (서버는 games/deungbul/server/deungbul.ts의 SEND_OLD_MSGS가 켜져 있는 동안만 보낸다. 화면이 옛 서버의 것을 받는 길은 games/deungbul/client/deungbul.ts).
-     * 내 메인 퀘스트 진행의 옛 통로. 지금은 개인 상태(me 메시지의 quest 칸)로 간다
-     */
-    quest: { c: number; s: number; n: number };
-  }
-
   interface ClientMsgs {
     /** 등탑 가까이에서 불씨를 바친다: 등탑 밝기에, 또는 다음 주민을 되돌리는 데 */
     offer: { to: 'tower' | 'resident'; n: number };
@@ -65,15 +57,13 @@ declare module '@engine/shared/ext' {
 
 /** 이 게임의 개인 상태 (me 메시지): 칸의 이름(k) → 값(s). 서버에서는 그 칸을 맡은 시스템이 g.personal에 같은 이름으로 등록한다 */
 export interface MeState {
-  /** 메인 퀘스트 진행: c번째 장의 s번째 단계, 진행 수치 n. 장을 다 마쳤으면 c가 장의 수와 같다 (systems/quests.ts) */
+  /** 메인 퀘스트 진행: c번째 장의 s번째 단계, 진행 수치 n. 장을 다 마쳤으면 c가 장의 수와 같다 (games/deungbul/server/systems/quests.ts) */
   quest: { c: number; s: number; n: number };
-  /** 지금까지 바친 불씨 (systems/tower.ts) */
+  /** 지금까지 바친 불씨 (games/deungbul/server/systems/tower.ts) */
   contrib: number;
-  /** 받은 기여 단계 보상의 수 (systems/keepers.ts) */
+  /** 받은 기여 단계 보상의 수 (games/deungbul/server/systems/keepers.ts) */
   tier: number;
-  /** 남은 휴식 보너스 (systems/rest.ts) */
+  /** 남은 휴식 보너스 (games/deungbul/server/systems/rest.ts) */
   rested: number;
 }
 
-/** 호환: 다음 배포에서 뺀다. 개인 상태로 옮기기 전에 stat 메시지에 실려 가던 이 게임의 칸 */
-export interface OldStatCells { contrib: number; rested: number; tier: number }

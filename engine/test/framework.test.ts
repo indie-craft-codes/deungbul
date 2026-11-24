@@ -208,11 +208,11 @@ function noonOf(day: unknown): number {
       && bare.rules.touched === undefined && bare.killBonus.length === 0 && !bare.notices.some((n) => n.k === 'rested'),
       '틀만의 게임은 퀘스트·기여·휴식의 칸을 읽지도 쓰지도 않는다 (저장, 엔티티, touched 규칙, 처치 덤 모두 없다)');
     const calls: string[] = [];
-    const custom = new Game({ plugins: [(g) => { g.saves.push({ name: 'logs', save: () => 3, load: (_p, raw) => { calls.push(`load ${String(raw)}`); }, legacy: (whole) => whole.gold, legacySave: () => ({ gold: 5 }) }); }] });
+    const custom = new Game({ plugins: [(g) => { g.saves.push({ name: 'logs', save: () => 3, load: (_p, raw) => { calls.push(`load ${String(raw)}`); }, legacy: (whole) => whole.gold }); }] });
     custom.players.spawn('옛칸', false, { ...structuredClone(base), gold: 41 }, 'fx-legacy-a');
     custom.players.spawn('새칸', false, { ...structuredClone(base), gold: 41, ext: { logs: 9 } }, 'fx-legacy-b');
     const made = custom.players.export(custom.players.spawn('쓰기', false, null, 'fx-legacy-c'));
-    check(calls.join() === 'load 41,load 9' && made.gold === 5 && made.ext?.logs === 3, `Saver.legacy: 자기 칸이 없으면 옛 형식에서 찾고, 있으면 자기 칸을 읽는다. legacySave는 옛 칸에 함께 적는다 (${calls.join()})`);
+    check(calls.join() === 'load 41,load 9' && made.gold === 0 && made.ext?.logs === 3, `Saver.legacy: 자기 칸이 없으면 옛 형식에서 찾고, 있으면 자기 칸을 읽는다. 쓸 때는 자기 칸(ext)에만 적고 옛 칸은 건드리지 않는다 (${calls.join()})`);
   }
 }
 

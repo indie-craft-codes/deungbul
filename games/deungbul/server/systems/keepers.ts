@@ -26,7 +26,6 @@ export class Keepers {
       save: (p) => ({ tier: p.tier }),
       load: (p, raw) => { p.tier = readInt((raw as { tier?: unknown } | null)?.tier, 0, 99, 0); },
       legacy: (whole) => (whole.tier === undefined ? undefined : { tier: whole.tier }),
-      legacySave: (p) => ({ tier: p.tier }),
     });
     // 본인에게 알리는 개인 상태: 단계가 오르면 간다
     g.personal.push({ name: 'tier', state: (p): MeState['tier'] => p.tier });

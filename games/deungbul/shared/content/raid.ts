@@ -59,7 +59,7 @@ export const RAID: RaidConfig = {
 
 export type RaidPhase = 'idle' | 'soon' | 'active';
 
-// 서버의 systems/raid.ts와 도감이 함께 쓰는 식. 서버는 덮어쓴 설정(시험, RAID_EVERY_MIN)을 넘긴다
+// 서버의 games/deungbul/server/systems/raid.ts와 도감이 함께 쓰는 식. 서버는 덮어쓴 설정(시험, RAID_EVERY_MIN)을 넘긴다
 /** players명이 맞설 때 한 채널에 오는 적의 수 */
 export const raidFoes = (players: number, cfg: Pick<RaidConfig, 'base' | 'perPlayer' | 'max'> = RAID): number => Math.min(cfg.max, cfg.base + cfg.perPlayer * players);
 /** 그 밝기에서 시작할 때의 등탑 내구 (싸우는 채널 하나당) */

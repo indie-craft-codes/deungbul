@@ -24,5 +24,5 @@ export type MonsterId = keyof typeof MONSTERS;
 export const isMonsterId = (v: string): v is MonsterId => Object.hasOwn(MONSTERS, v);
 export const monsterDef = (id: MonsterId): MonsterDef => MONSTERS[id];
 
-/** 필드 보스의 최대 체력: fighters명이 맞설 때 (한 명이면 기본 체력). 서버의 systems/boss.ts와 도감이 함께 쓴다 */
+/** 필드 보스의 최대 체력: fighters명이 맞설 때 (한 명이면 기본 체력). 서버의 engine/server/game/systems/boss.ts와 도감이 함께 쓴다 */
 export const bossHp = (base: number, fighters: number): number => Math.round(base * (1 + BOSS.hpPerPlayer * Math.max(0, Math.min(BOSS.maxScale, fighters) - 1)));
