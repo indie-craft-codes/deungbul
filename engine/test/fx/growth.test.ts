@@ -1,19 +1,19 @@
-// 성장의 틀: 드롭 장비와 강화, 우편, 방치 보상, 일일 임무와 출석, 순위 (서버 없이 게임 규칙만 돌린다)
-import { Game } from '../server/game/game';
-import { needFor } from '../shared/defs';
-import { check } from './harness';
+// 성장의 틀: 드롭 장비와 강화, 우편, 방치 보상, 일일 임무와 출석, 순위 (서버 없이 게임 규칙만 돌린다. 시험용 내용 위에서)
+import { Game } from '../../server/game/game';
+import { needFor } from '../../shared/defs';
+import { check } from '../harness';
 
 {
   let clock = new Date(2026, 0, 10, 12).getTime();
   const g = new Game({ now: () => clock });
   const p = g.players.spawn('수집가', false, null, 'collector-key'); // 순위는 저장 키로 사람을 구분한다 (손님은 오르지 않는다)
-  g.classes.apply(p, 'warrior');
+  g.classes.apply(p, 'knight');
   check(p.mail.length === 1 && p.mail[0].k === 'attend' && p.mail[0].a[0] === 1, '그날 처음 접속하면 출석 1일째 보상이 우편으로 온다');
 
   // 장비: 줍고, 끼면 수치가 오른다
   const hp0 = p.maxHp, dmg0 = g.mods.product('damage', p);
   g.gear.random = () => 0.5;
-  check(p.gear.length === 1 && p.gear[0].base === 'sword1' && p.worn.weapon === p.gear[0].uid, '처음 든 무기도 낱개 장비로 가방에 있고 끼고 있다');
+  check(p.gear.length === 1 && p.gear[0].base === 'blade1' && p.worn.weapon === p.gear[0].uid, '처음 든 무기도 낱개 장비로 가방에 있고 끼고 있다');
   const n0 = p.gear.length;
   check(g.gear.give(p, g.gear.roll(3, 3, 'ring')) && p.gear.length === n0 + 1 && p.gear[n0].opts.length === 4, '빛나는 등급 장비는 옵션이 네 개다');
   const it = p.gear[n0];
@@ -30,7 +30,7 @@ import { check } from './harness';
   g.gear.random = () => 0.999;
   g.command(p, { t: 'enhance', uid: it.uid });
   check(it.plus === 1 && p.gold < gold1, '강화에 실패하면 골드만 들고 장비는 그대로다');
-  check(p.daily.got.includes('enhance1') && p.mail.some((m) => m.k === 'daily' && m.a[0] === 'enhance1'), '일일 임무(강화 1번)를 채우면 보상이 우편으로 온다');
+  check(p.daily.got.includes('forge1') && p.mail.some((m) => m.k === 'daily' && m.a[0] === 'forge1'), '일일 임무(강화 1번)를 채우면 보상이 우편으로 온다');
 
   // 몬스터가 장비를 떨어뜨린다
   g.gear.random = () => 0;
@@ -49,7 +49,7 @@ import { check } from './harness';
   g.command(p, { t: 'equip', uid: p.gear[0].uid });
   const before = g.mods.product('damage', p);
   g.gear.random = () => 0;
-  const sword2 = g.gear.plain('sword2');
+  const sword2 = g.gear.plain('blade2');
   g.gear.give(p, sword2);
   g.command(p, { t: 'equip', uid: sword2.uid });
   const worn2 = g.mods.product('damage', p);
@@ -60,10 +60,10 @@ import { check } from './harness';
   for (let i = 0; i < 12; i++) { g.command(p, { t: 'enhance', uid: sword2.uid }); g.command(p, { t: 'enhance', uid: drop.uid }); }
   check(sword2.plus === 5 && drop.plus === 10 && drop.opts.length > 0, '보급형은 +5까지, 떨어진 장비는 +10까지 강화된다');
   // 대장간에서 만든 것은 옵션은 없어도 끝까지 강화된다
-  g.gear.acquire(p, 'sword3', true);
+  g.gear.acquire(p, 'blade3', true);
   const forged = p.gear[p.gear.length - 1];
   for (let i = 0; i < 12; i++) g.command(p, { t: 'enhance', uid: forged.uid });
-  check(forged.made === true && forged.opts.length === 0 && forged.plus === 10 && p.weapon === 'sword3', '대장간에서 만든 장비는 +10까지 강화된다');
+  check(forged.made === true && forged.opts.length === 0 && forged.plus === 10 && p.weapon === 'blade3', '대장간에서 만든 장비는 +10까지 강화된다');
   g.command(p, { t: 'equip', uid: p.gear[0].uid });
   g.command(p, { t: 'sell', uid: forged.uid });
   p.gold = 10000;
@@ -75,7 +75,7 @@ import { check } from './harness';
 
   // 일일 임무: 30마리
   g.daily.add(p, 'kill', 29);
-  check(p.daily.got.includes('kill30') && p.daily.prog.kill30 === 30, '일일 임무(30마리)의 진행이 쌓여 완료된다');
+  check(p.daily.got.includes('hunt30') && p.daily.prog.hunt30 === 30, '일일 임무(30마리)의 진행이 쌓여 완료된다');
 
   // 우편: 모두 받기
   const gold3 = p.gold, mails = p.mail.length;
@@ -91,9 +91,9 @@ import { check } from './harness';
   clock += 3 * 3600000;
   const g2 = new Game({ now: () => clock });
   const p2 = g2.players.spawn('수집가', false, save);
-  check(p2.gear.length === p.gear.length && p2.gear.find((x) => x.uid === it.uid)?.plus === 1 && p2.worn[it.slot] === it.uid && p2.worn.weapon === p.worn.weapon && p2.weapon === 'sword1' && p2.maxHp === p.maxHp, '장비와 강화 단계, 낀 상태가 저장되고 다시 읽힌다');
+  check(p2.gear.length === p.gear.length && p2.gear.find((x) => x.uid === it.uid)?.plus === 1 && p2.worn[it.slot] === it.uid && p2.worn.weapon === p.worn.weapon && p2.weapon === 'blade1' && p2.maxHp === p.maxHp, '장비와 강화 단계, 낀 상태가 저장되고 다시 읽힌다');
   check(p2.mail.length === 1 && p2.mail[0].k === 'idle' && p2.mail[0].a[0] === 180 && (p2.mail[0].r.gold ?? 0) > 0, '세 시간 쉬고 돌아오면 방치 보상이 우편으로 온다');
-  check(p2.daily.got.includes('kill30'), '일일 임무의 진행이 저장된다');
+  check(p2.daily.got.includes('hunt30'), '일일 임무의 진행이 저장된다');
 
   // 다음 날: 출석이 이어지고 임무가 새로 시작한다
   const save2 = JSON.parse(JSON.stringify(g2.players.export(p2)));
@@ -108,7 +108,7 @@ import { check } from './harness';
   const TOP = 70, clock = new Date(2026, 0, 10, 12).getTime();
   const g = new Game({ now: () => clock });
   const p = g.players.spawn('오르는이', false, null, 'need-key');
-  g.classes.apply(p, 'warrior');
+  g.classes.apply(p, 'knight');
   const bad: string[] = [];
   let over = 0;
   for (let lv = 1; lv <= TOP; lv++) {

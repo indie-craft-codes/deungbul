@@ -1,17 +1,20 @@
-// 가방(g.bag): 아이템(재료, 물약)과 낱개 장비를 넣고 빼는 한 통로 (서버 없이 게임 규칙만 돌린다. 규칙 플러그인 없는 틀만의 게임이다).
+// 가방(g.bag): 아이템(재료, 물약)과 낱개 장비를 넣고 빼는 한 통로 (서버 없이 게임 규칙만 돌린다. 규칙 플러그인 없는 틀만의 게임이다). (시험용 내용 위에서)
 // 넣기·빼기·한도·깨진 값, 가방 칸 수, 장부와의 관계(가방이 원인을 직접 알린다, 가방 밖의 변화는 other·tick으로 드러난다),
 // 그리고 "아이템의 칸과 장비 목록을 직접 고치는 코드가 가방 밖에 없다"를 소스를 읽어 검사한다 (wallet.test.ts와 같은 방식).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SHOP, SMITHY } from '@game/shared/defs';
-import { CAMPS, ECON_HUNT, ECON_LOST_FULL, GEAR, MAT_MAX, POTION_MAX, itemCap, type MarketItem } from '../shared/defs';
-import type { Ent } from '../server/game/entity';
-import { Game } from '../server/game/game';
-import { gearCur, itemCur } from '../server/game/systems/bag';
-import { WHY } from '../server/game/systems/wallet';
-import type { EconRow } from '../server/store';
-import { check } from './harness';
+import { FORGES, SHOPS } from '../../shared/defs';
+import { CAMPS, ECON_HUNT, ECON_LOST_FULL, GEAR, MAT_MAX, POTION_MAX, itemCap, type MarketItem } from '../../shared/defs';
+import type { Ent } from '../../server/game/entity';
+import { Game } from '../../server/game/game';
+import { gearCur, itemCur } from '../../server/game/systems/bag';
+import { WHY } from '../../server/game/systems/wallet';
+import type { EconRow } from '../../server/store';
+import { check } from '../harness';
+
+/** 시험용 내용의 상인과 대장간 */
+const SHOP = SHOPS[0], SMITHY = FORGES[0];
 
 type MonsterType = Parameters<Game['monsters']['spawn']>[0];
 
@@ -22,7 +25,7 @@ function bench() {
   const kill = (p: Ent, type: MonsterType) => { const m = g.monsters.spawn(type, p.x + 1, p.z); m.layer = p.layer; g.combat.damage(p, m, 1e6, false); };
   const cmd = (p: Ent, m: Record<string, unknown>) => g.command(p, m);
   const run = (s: number) => { for (let i = 0, n = Math.round(s * 20); i < n; i++) { g.tick(0.05); t.clock += 50; } };
-  const hero = (name: string, pid: string) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'warrior'); while (p.lv < 12) g.players.grant(p, 400, 0); p.hp = p.maxHp; g.ledger.note(p, 'setup'); return p; };
+  const hero = (name: string, pid: string) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'knight'); while (p.lv < 12) g.players.grant(p, 400, 0); p.hp = p.maxHp; g.ledger.note(p, 'setup'); return p; };
   /** 마지막으로 부른 뒤에 장부에 새로 적힌 것: '재화 원인 방향양'과, 그 줄의 건수 */
   let seen = new Map<string, number>(), seenN = new Map<string, number>();
   const fresh = (): string[] => {
@@ -50,15 +53,15 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   const heard: string[] = [];
   b.seen.push((q, cur, d, why) => { if (q === p) heard.push(`${cur} ${d} ${why}`); });
   p.dirty = false; p.unsaved = false;
-  check(b.count(p, 'iron') === 0 && b.putItem(p, 'iron', 5, 'test') === 5 && has(p, 'iron') === 5 && p.dirty && p.unsaved, '넣으면 받은 수를 돌려주고, 저장하고 알릴 것으로 표시한다');
-  check(b.takeItem(p, 'iron', 2, 'test') && has(p, 'iron') === 3 && !b.takeItem(p, 'iron', 4, 'test') && has(p, 'iron') === 3, '가진 만큼만 뺀다: 모자라면 false를 돌려주고 아무것도 바꾸지 않는다');
-  check(same(heard, ['item:iron 5 test', 'item:iron -2 test']) && itemCur('iron') === 'item:iron', '가방을 지난 변화는 듣는 쪽(seen)에 원인과 함께 알린다: 넣었으면 +, 뺐으면 −. 바뀐 것이 없으면 알리지 않는다');
-  check(itemCap('iron') === MAT_MAX && itemCap('potion') === POTION_MAX && itemCap('sword2') === 0, '한도: 재료와 물약은 종류마다의 한도, 낱개 장비로 다루는 무기와 갑옷은 0');
-  check(b.room(p, 'iron') === MAT_MAX - 3 && b.putItem(p, 'iron', MAT_MAX, 'test') === MAT_MAX - 3 && has(p, 'iron') === MAT_MAX && b.putItem(p, 'iron', 1, 'test') === 0, `한도(${MAT_MAX})까지만 들어가고, 실제로 받은 수를 돌려준다`);
-  check(b.putItem(p, 'potion', POTION_MAX + 5, 'test') === POTION_MAX && b.putItem(p, 'sword2', 1, 'test') === 0 && !('sword2' in p.items), '물약도 제 한도를 따르고, 무기는 아이템 칸에 들어가지 않는다');
+  check(b.count(p, 'ore') === 0 && b.putItem(p, 'ore', 5, 'test') === 5 && has(p, 'ore') === 5 && p.dirty && p.unsaved, '넣으면 받은 수를 돌려주고, 저장하고 알릴 것으로 표시한다');
+  check(b.takeItem(p, 'ore', 2, 'test') && has(p, 'ore') === 3 && !b.takeItem(p, 'ore', 4, 'test') && has(p, 'ore') === 3, '가진 만큼만 뺀다: 모자라면 false를 돌려주고 아무것도 바꾸지 않는다');
+  check(same(heard, ['item:ore 5 test', 'item:ore -2 test']) && itemCur('ore') === 'item:ore', '가방을 지난 변화는 듣는 쪽(seen)에 원인과 함께 알린다: 넣었으면 +, 뺐으면 −. 바뀐 것이 없으면 알리지 않는다');
+  check(itemCap('ore') === MAT_MAX && itemCap('draught') === POTION_MAX && itemCap('blade2') === 0, '한도: 재료와 물약은 종류마다의 한도, 낱개 장비로 다루는 무기와 갑옷은 0');
+  check(b.room(p, 'ore') === MAT_MAX - 3 && b.putItem(p, 'ore', MAT_MAX, 'test') === MAT_MAX - 3 && has(p, 'ore') === MAT_MAX && b.putItem(p, 'ore', 1, 'test') === 0, `한도(${MAT_MAX})까지만 들어가고, 실제로 받은 수를 돌려준다`);
+  check(b.putItem(p, 'draught', POTION_MAX + 5, 'test') === POTION_MAX && b.putItem(p, 'blade2', 1, 'test') === 0 && !('blade2' in p.items), '물약도 제 한도를 따르고, 무기는 아이템 칸에 들어가지 않는다');
   const bad = [NaN, Infinity, -1, 0, 1.5, undefined as unknown as number, '2' as unknown as number];
-  check(bad.every((n) => b.putItem(p, 'hide', n, 'test') === 0 && !b.takeItem(p, 'iron', n, 'test')) && has(p, 'iron') === MAT_MAX && !has(p, 'hide'), '깨진 수(NaN, 무한대, 음수, 0, 소수, 수가 아닌 값)는 넣지도 빼지도 않는다');
-  check(b.putItem(p, 'nothing' as 'iron', 1, 'test') === 0, '없는 아이템은 넣지 않는다');
+  check(bad.every((n) => b.putItem(p, 'pelt', n, 'test') === 0 && !b.takeItem(p, 'ore', n, 'test')) && has(p, 'ore') === MAT_MAX && !has(p, 'pelt'), '깨진 수(NaN, 무한대, 음수, 0, 소수, 수가 아닌 값)는 넣지도 빼지도 않는다');
+  check(b.putItem(p, 'nothing' as 'ore', 1, 'test') === 0, '없는 아이템은 넣지 않는다');
 }
 
 // ---------- 장비: 넣기, 빼기, 가방 칸 수 ----------
@@ -89,33 +92,33 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   const b = g.bag, p = hero('장부', 'key-l'), mate = hero('동료', 'key-m');
   g.wallet.add(p, 'gold', 30000, 'setup'); g.wallet.add(mate, 'gold', 5000, 'setup');
   fresh();
-  b.putItem(p, 'iron', 30, 'gift'); b.putItem(p, 'hide', 20, 'gift'); b.takeItem(p, 'iron', 1, 'fee');
+  b.putItem(p, 'ore', 30, 'gift'); b.putItem(p, 'pelt', 20, 'gift'); b.takeItem(p, 'ore', 1, 'fee');
   const ring = g.gear.roll(3, 1, 'ring'), junk = g.gear.roll(1, 0, 'charm');
   b.giveGear(p, ring, 'gift'); b.giveGear(p, junk, 'gift');
-  check(same(fresh(), ['item:iron gift +30', 'item:hide gift +20', 'item:iron fee -1', 'gear:uncommon gift +1', 'gear:common gift +1']), '원인의 이름을 넘기면 경계(명령, 틱)를 기다리지 않고 그 이름으로 바로 적힌다');
+  check(same(fresh(), ['item:ore gift +30', 'item:pelt gift +20', 'item:ore fee -1', 'gear:uncommon gift +1', 'gear:common gift +1']), '원인의 이름을 넘기면 경계(명령, 틱)를 기다리지 않고 그 이름으로 바로 적힌다');
   run(1.1); cmd(p, { t: 'stop' });
   check(fresh().length === 0, '가방이 알린 것은 뒤따르는 경계(틱의 전수 조사, 명령)에서 한 번 더 적히지 않는다');
 
   // 이름 없이 넣은 것: 경계의 차이로 드러난다
-  b.putItem(p, 'hide', 2, ''); b.giveGear(p, g.gear.roll(1, 0), '');
+  b.putItem(p, 'pelt', 2, ''); b.giveGear(p, g.gear.roll(1, 0), '');
   check(fresh().length === 0, "이름을 비우면('') 바로 적지 않는다");
   g.ledger.note(p, 'setup');
-  check(same(fresh(), ['item:hide setup +2', 'gear:common setup +1']), 'note가 붙인 이름으로 적힌다 (시험의 준비, 운영 도구)');
-  b.putItem(p, 'hide', 1, ''); run(1.1);
-  check(same(fresh(), ['item:hide tick +1']), '이름도 없고 note도 없으면 other·tick으로 남는다');
+  check(same(fresh(), ['item:pelt setup +2', 'gear:common setup +1']), 'note가 붙인 이름으로 적힌다 (시험의 준비, 운영 도구)');
+  b.putItem(p, 'pelt', 1, ''); run(1.1);
+  check(same(fresh(), ['item:pelt tick +1']), '이름도 없고 note도 없으면 other·tick으로 남는다');
 
   // 가방 밖에서 고친 것은 어디서 드러나든 other·tick이다: 명령의 이름으로 숨지 않는다
-  g.commands.set('cheat', (q) => { q.items.iron = (q.items.iron ?? 0) + 3; q.gear.push({ ...g.gear.roll(1, 3), uid: ++q.gearSeq }); b.putItem(q, 'hide', 1, 'cmd:cheat'); });
+  g.commands.set('cheat', (q) => { q.items.ore = (q.items.ore ?? 0) + 3; q.gear.push({ ...g.gear.roll(1, 3), uid: ++q.gearSeq }); b.putItem(q, 'pelt', 1, 'cmd:cheat'); });
   cmd(p, { t: 'cheat' });
-  check(same(fresh(), ['item:iron other +3', 'gear:epic other +1', 'item:hide cmd:cheat +1']), '명령 안에서 아이템 칸과 장비 목록을 직접 고치면 그 명령의 이름이 아니라 other로 적히고, 같은 명령이 가방으로 넣은 것은 제 이름으로 적힌다');
+  check(same(fresh(), ['item:ore other +3', 'gear:epic other +1', 'item:pelt cmd:cheat +1']), '명령 안에서 아이템 칸과 장비 목록을 직접 고치면 그 명령의 이름이 아니라 other로 적히고, 같은 명령이 가방으로 넣은 것은 제 이름으로 적힌다');
   const orig = g.party.tick.bind(g.party);
-  g.party.tick = (dt) => { p.items.iron--; b.putItem(p, 'hide', 1, 'drip'); orig(dt); };
+  g.party.tick = (dt) => { p.items.ore--; b.putItem(p, 'pelt', 1, 'drip'); orig(dt); };
   run(0.05);
   g.party.tick = orig;
   run(1.1);
-  check(same(fresh(), ['item:iron tick -1', 'item:hide drip +1']), '틱 안에서 직접 고친 것은 tick으로(길어야 1초 뒤), 같은 틱에 가방으로 넣은 것은 제 이름으로 적힌다');
-  b.putItem(p, 'hide', 1, 'a|b'); run(1.1);
-  check(same(fresh(), ['item:hide tick +1']), '줄을 가르는 글자가 섞인 이름은 받지 않는다 (other·tick으로 남는다)');
+  check(same(fresh(), ['item:ore tick -1', 'item:pelt drip +1']), '틱 안에서 직접 고친 것은 tick으로(길어야 1초 뒤), 같은 틱에 가방으로 넣은 것은 제 이름으로 적힌다');
+  b.putItem(p, 'pelt', 1, 'a|b'); run(1.1);
+  check(same(fresh(), ['item:pelt tick +1']), '줄을 가르는 글자가 섞인 이름은 받지 않는다 (other·tick으로 남는다)');
   p.gear.splice(p.gear.findIndex((x) => x.rar === 3), 1); g.ledger.note(p, 'setup'); fresh(); counts();
 
   // 틀의 시스템이 넘기는 원인의 이름: 장부가 명령에 붙이는 이름과 같고, 건수는 경계마다 하나다
@@ -123,46 +126,46 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   const rnd = Math.random;
   Math.random = () => 0; // 재료는 반드시 떨어진다
   at(p, CAMPS[2].x, CAMPS[2].z);
-  kill(p, 'boar');
-  check(fresh().includes(`item:hide ${ECON_HUNT.live} +1`), '처치로 얻은 재료: hunt');
-  p.auto = true; g.away.start(p); kill(p, 'boar'); g.away.stop(p); p.auto = false;
-  check(fresh().includes(`item:hide ${ECON_HUNT.away} +1`), '서버가 대신 사냥하는 동안 얻은 재료: huntAway');
+  kill(p, 'tusk');
+  check(fresh().includes(`item:pelt ${ECON_HUNT.live} +1`), '처치로 얻은 재료: hunt');
+  p.auto = true; g.away.start(p); kill(p, 'tusk'); g.away.stop(p); p.auto = false;
+  check(fresh().includes(`item:pelt ${ECON_HUNT.away} +1`), '서버가 대신 사냥하는 동안 얻은 재료: huntAway');
   Math.random = () => 0.5;
   g.gear.random = () => 0; // 장비가 반드시 떨어진다 (일반 등급)
-  kill(p, 'wolf');
+  kill(p, 'hound');
   check(fresh().some((r) => r.startsWith('gear:') && r.endsWith(` ${ECON_HUNT.live} +1`)), '처치로 얻은 장비: hunt');
   g.gear.random = () => 0.999;
   const dropped = p.gear[p.gear.length - 1];
   counts();
 
   at(p, SHOP.x + 1, SHOP.z);
-  cmd(p, { t: 'buy', id: 'potion' }); cmd(p, { t: 'buy', id: 'sword2' });
-  check(same(fresh().filter((r) => !r.startsWith('gold')), [`item:potion ${WHY.buy} +1`, `gear:common ${WHY.buy} +1`]), '상점: 받은 물약과 장비가 낸 골드와 같은 이름 cmd:buy에 놓인다');
-  p.hp = 1; cmd(p, { t: 'use', id: 'potion' });
-  check(same(fresh(), [`item:potion ${WHY.use} -1`]) && WHY.use === 'cmd:use', '물약 마시기: cmd:use');
+  cmd(p, { t: 'buy', id: 'draught' }); cmd(p, { t: 'buy', id: 'blade2' });
+  check(same(fresh().filter((r) => !r.startsWith('gold')), [`item:draught ${WHY.buy} +1`, `gear:common ${WHY.buy} +1`]), '상점: 받은 물약과 장비가 낸 골드와 같은 이름 cmd:buy에 놓인다');
+  p.hp = 1; cmd(p, { t: 'use', id: 'draught' });
+  check(same(fresh(), [`item:draught ${WHY.use} -1`]) && WHY.use === 'cmd:use', '물약 마시기: cmd:use');
   at(p, SMITHY.x + 1, SMITHY.z + 1);
-  cmd(p, { t: 'craft', id: 'sword3' });
+  cmd(p, { t: 'craft', id: 'blade3' });
   const crafted = fresh().filter((r) => !r.startsWith('gold'));
-  check(same(crafted, [`item:iron ${WHY.craft} -4`, `item:hide ${WHY.craft} -2`, `gear:common ${WHY.craft} +1`]), `제작: 쓴 재료와 만든 장비가 cmd:craft (${crafted.join(', ')})`);
+  check(same(crafted, [`item:ore ${WHY.craft} -4`, `item:pelt ${WHY.craft} -2`, `gear:common ${WHY.craft} +1`]), `제작: 쓴 재료와 만든 장비가 cmd:craft (${crafted.join(', ')})`);
   cmd(p, { t: 'sell', uid: junk.uid });
   check(fresh().includes(`gear:common ${WHY.sell} -1`), '판매: cmd:sell');
-  cmd(p, { t: 'market', a: 'post', uid: ring.uid, price: 200 }); cmd(p, { t: 'market', a: 'post', item: 'iron', n: 3, price: 30 });
-  check(same(fresh(), [`gear:uncommon ${WHY.marketPost} -1`, `item:iron ${WHY.marketPost} -3`]) && WHY.marketPost === 'cmd:market:post', '거래소에 올리기: cmd:market:post');
+  cmd(p, { t: 'market', a: 'post', uid: ring.uid, price: 200 }); cmd(p, { t: 'market', a: 'post', item: 'ore', n: 3, price: 30 });
+  check(same(fresh(), [`gear:uncommon ${WHY.marketPost} -1`, `item:ore ${WHY.marketPost} -3`]) && WHY.marketPost === 'cmd:market:post', '거래소에 올리기: cmd:market:post');
   g.out = []; cmd(p, { t: 'market', a: 'mine' });
   const mine = (g.out.filter((o) => o.id === p.id && o.msg.t === 'market').pop()?.msg as { list: MarketItem[] }).list;
   cmd(mate, { t: 'market', a: 'buy', id: mine.find((l) => l.gear)!.id });
   check(fresh().includes(`gear:uncommon ${WHY.marketBuy} +1`), '거래소에서 사기: cmd:market:buy');
   cmd(p, { t: 'market', a: 'cancel', id: mine.find((l) => !l.gear)!.id });
-  check(same(fresh(), [`item:iron ${WHY.marketCancel} +3`]) && WHY.marketCancel === 'cmd:market:cancel', '거래소에서 내리기: cmd:market:cancel');
+  check(same(fresh(), [`item:ore ${WHY.marketCancel} +3`]) && WHY.marketCancel === 'cmd:market:cancel', '거래소에서 내리기: cmd:market:cancel');
   const n = [...counts()].filter(([k]) => !k.startsWith('gold')).map(([, v]) => v);
   check(n.length >= 10 && n.every((v) => v === 1), `명령 하나가 바꾼 장비와 아이템은 재화와 원인마다 한 건으로 적힌다 (${n.join(',')})`);
 
   // 우편: 우편마다 mail:종류로, 물건마다 한 건
-  g.mail.send(p, 'marketBack', ['iron', 2, 0], { items: { iron: 2 }, gear: [g.gear.roll(1, 0), g.gear.roll(1, 0)] });
-  g.mail.send(p, 'marketBack', ['iron', 1, 0], { items: { iron: 1 } });
+  g.mail.send(p, 'marketBack', ['ore', 2, 0], { items: { ore: 2 }, gear: [g.gear.roll(1, 0), g.gear.roll(1, 0)] });
+  g.mail.send(p, 'marketBack', ['ore', 1, 0], { items: { ore: 1 } });
   cmd(p, { t: 'mailClaim', id: 0 });
   const mail = fresh().filter((r) => !r.startsWith('gold')), mailN = counts();
-  check(same(mail, ['item:iron mail:marketBack +3', 'gear:common mail:marketBack +2']) && mailN.get('item:iron mail:marketBack +') === 2 && mailN.get('gear:common mail:marketBack +') === 2, '우편으로 받은 물건: mail:종류로, 우편의 물건마다 한 건');
+  check(same(mail, ['item:ore mail:marketBack +3', 'gear:common mail:marketBack +2']) && mailN.get('item:ore mail:marketBack +') === 2 && mailN.get('gear:common mail:marketBack +') === 2, '우편으로 받은 물건: mail:종류로, 우편의 물건마다 한 건');
 
   // 가방이 가득 차 버려진 장비: 생겼다가 사라진 것으로 적힌다
   while (!b.full(p)) b.giveGear(p, g.gear.roll(1, 0), '');
@@ -171,26 +174,26 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   g.notices = [];
   at(p, CAMPS[2].x, CAMPS[2].z);
   const before = p.gear.length;
-  kill(p, 'wolf');
+  kill(p, 'hound');
   const lost = fresh().filter((r) => r.startsWith('gear:'));
   check(p.gear.length === before && same(lost, [`gear:common ${ECON_HUNT.live} +1`, `gear:common ${ECON_LOST_FULL} -1`]) && g.notices.some((x) => x.id === p.id && x.k === 'gearFull'), '가득 찬 가방에 떨어진 장비는 버려지고, 장부에는 hunt로 생겼다가 lostFull로 사라진 것으로 적힌다');
   g.gear.random = () => 0.999;
   Math.random = rnd;
-  check(dropped.uid > 0 && g.ledger.rows().filter((r) => r.why === 'other' || r.why === 'tick').every((r) => ['item:iron', 'item:hide', 'gear:epic'].includes(r.cur)), '이 흐름에서 원인을 가리지 못한 줄은 위에서 일부러 직접 고친 것뿐이다');
+  check(dropped.uid > 0 && g.ledger.rows().filter((r) => r.why === 'other' || r.why === 'tick').every((r) => ['item:ore', 'item:pelt', 'gear:epic'].includes(r.cur)), '이 흐름에서 원인을 가리지 못한 줄은 위에서 일부러 직접 고친 것뿐이다');
 }
 
 // ---------- 저장을 읽을 때의 한도 ----------
 {
   const { g } = bench();
   const list = Array.from({ length: GEAR.bagMax + 6 }, (_, i) => ({ ...g.gear.roll(1, 0, 'ring'), uid: i + 1 }));
-  const p = g.players.spawn('가득', false, { name: '가득', lv: 5, exp: 0, need: 100, maxHp: 100, sparks: 0, gold: 10, items: { iron: 5000, potion: 500, sword2: 3 }, ext: { gear: { list, worn: { ring: GEAR.bagMax + 5 }, seq: 99 } } }, 'key-full');
+  const p = g.players.spawn('가득', false, { name: '가득', lv: 5, exp: 0, need: 100, maxHp: 100, sparks: 0, gold: 10, items: { ore: 5000, draught: 500, blade2: 3 }, ext: { gear: { list, worn: { ring: GEAR.bagMax + 5 }, seq: 99 } } }, 'key-full');
   check(p.gear.filter((x) => x.slot === 'ring').length === g.bag.slots(p) && p.worn.ring === GEAR.bagMax + 5 && p.gear[0].uid === GEAR.bagMax + 5, '저장을 읽을 때 장비는 그 캐릭터의 가방 칸 수로 자르고, 끼고 있던 것부터 남긴다');
-  check(p.items.iron === MAT_MAX && p.items.potion === POTION_MAX && !('sword2' in p.items), '아이템은 가방과 같은 한도(itemCap)로 자른다');
+  check(p.items.ore === MAT_MAX && p.items.draught === POTION_MAX && !('blade2' in p.items), '아이템은 가방과 같은 한도(itemCap)로 자른다');
 }
 
 // ---------- 아이템의 칸과 장비 목록을 직접 고치는 코드가 가방 밖에 없다 (소스를 읽는다) ----------
 {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
   const rel = (f: string) => path.relative(root, f).replaceAll('\\', '/');
   const walk = (dir: string): string[] => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : []);
   // 서버와 공용 코드만 본다 (틀과 모든 게임). 화면(client)이 들고 있는 값은 서버가 보낸 것의 사본이고, 시험(test)은 준비로 직접 고친다
@@ -250,8 +253,8 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   const unused = ALLOWED.filter((_, k) => !used.has(k));
   check(unused.length === 0, `허용 목록의 줄이 모두 실제로 있다 (${ALLOWED.length}곳)${unused.length ? ': 없는 것 ' + unused.map((a) => `${a.file} ${a.line}`).join(', ') : ''}`);
   // 검사가 실제로 잡아내는가
-  const hits = ['p.items[id] = (p.items[id] ?? 0) + 1;', 'p.items[mat] -= n;', 'p.items[id]--;', 'p.items.iron = 20', 'q.items = {}', 'delete p.items[id]', 'p.gear.push(it);', 'p.gear.splice(p.gear.indexOf(it), 1);', 'p.gear.length = 0', 'p.gear[0] = it', 'p.gear = []', 'e.gear.pop()'].filter((s) => WRITE.test(s));
-  const misses = ['if (p.items[id] > 0)', '(p.items[id] ?? 0) >= n', 'const n = p.items.iron;', '{ items: {}, gear: [] }', 'p.gear.length >= max', 'p.gear.find((x) => x.uid === uid)', 'p.gear.filter((x) => x.rar === 0)', 'g.gear.give(p, it)', 'this.g.gears.push({ id })', '(p) => p.items', 'p.gear.length === t.nGear', 'items: { ...p.items }'].filter((s) => WRITE.test(s));
+  const hits = ['p.items[id] = (p.items[id] ?? 0) + 1;', 'p.items[mat] -= n;', 'p.items[id]--;', 'p.items.ore = 20', 'q.items = {}', 'delete p.items[id]', 'p.gear.push(it);', 'p.gear.splice(p.gear.indexOf(it), 1);', 'p.gear.length = 0', 'p.gear[0] = it', 'p.gear = []', 'e.gear.pop()'].filter((s) => WRITE.test(s));
+  const misses = ['if (p.items[id] > 0)', '(p.items[id] ?? 0) >= n', 'const n = p.items.ore;', '{ items: {}, gear: [] }', 'p.gear.length >= max', 'p.gear.find((x) => x.uid === uid)', 'p.gear.filter((x) => x.rar === 0)', 'g.gear.give(p, it)', 'this.g.gears.push({ id })', '(p) => p.items', 'p.gear.length === t.nGear', 'items: { ...p.items }'].filter((s) => WRITE.test(s));
   check(hits.length === 12 && misses.length === 0, `검사의 모양: 값을 넣는 줄은 잡고, 읽거나 견주는 줄은 잡지 않는다${misses.length ? ' (잘못 잡은 것: ' + misses.join(' / ') + ')' : ''}`);
   // 가방의 통로를 실제로 쓰고 있는가
   const uses = files.filter((f) => f !== BAG && /\.bag\.(putItem|takeItem|giveGear|removeGear|lost)\(/.test(fs.readFileSync(path.join(root, f), 'utf8')));

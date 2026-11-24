@@ -1,15 +1,15 @@
-// 재화 흐름 지표(경제 장부): 서버 없이 게임 규칙만 돌려, 장부에 적힌 것이 실제로 바뀐 것과 맞는지 센다.
+// 재화 흐름 지표(경제 장부): 서버 없이 게임 규칙만 돌려, 장부에 적힌 것이 실제로 바뀐 것과 맞는지 센다. (시험용 내용 위에서)
 // 가장 중요한 것은 대조 검사다: 긴 시나리오를 돌린 뒤 재화마다 "장부의 생김 − 사라짐 = 모든 캐릭터가 가진 것의 실제 변화"가 정확히 맞아야 한다.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { CAMPS, ECON_HUNT, ECON_LEVEL_MARKS, GEAR, RARITIES, SHOPS, type MarketItem } from '../shared/defs';
-import type { Ent } from '../server/game/entity';
-import { Game } from '../server/game/game';
-import { median, quantile, type EconSnapshot } from '../server/game/systems/ledger';
-import { startServer } from '../server/net/server';
-import { MemoryStore, SqliteStore, type EconRow, type PlayerSave, type Store } from '../server/store';
-import { check } from './harness';
+import { CAMPS, ECON_HUNT, ECON_LEVEL_MARKS, GEAR, RARITIES, SHOPS, type MarketItem } from '../../shared/defs';
+import type { Ent } from '../../server/game/entity';
+import { Game } from '../../server/game/game';
+import { median, quantile, type EconSnapshot } from '../../server/game/systems/ledger';
+import { startServer } from '../../server/net/server';
+import { MemoryStore, SqliteStore, type EconRow, type PlayerSave, type Store } from '../../server/store';
+import { check } from '../harness';
 
 const DAY = 24 * 3600000;
 type MonsterType = Parameters<Game['monsters']['spawn']>[0];
@@ -41,7 +41,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
 {
   const { t, g, run, at, mob, kill, cmd, setup } = bench();
   const p = g.players.spawn('사냥꾼', false, null, 'key-h');
-  g.classes.apply(p, 'warrior');
+  g.classes.apply(p, 'knight');
   setup(p, () => { while (p.lv < 10) g.players.grant(p, 400, 0); });
   at(p, CAMPS[2].x, CAMPS[2].z);
   g.gear.random = () => 0.999;
@@ -50,7 +50,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
 
   // 기술 명령 하나로 쓰러뜨린다: 처치 보상은 사냥으로 한 번만 적힌다
   const gold0 = p.gold, exp0 = expTotal(p), sparks0 = p.sparks;
-  const m = mob(p, 'wolf'); m.hp = 1;
+  const m = mob(p, 'hound'); m.hp = 1;
   cmd(p, { t: 'attack', id: m.id }); cmd(p, { t: 'skill', n: 0 });
   const r1 = rows();
   check(m.dead && p.gold > gold0 && sum(r1, 'gold', ECON_HUNT.live, '+') === p.gold - gold0 && sum(r1, 'exp', ECON_HUNT.live, '+') === expTotal(p) - exp0 && sum(r1, 'sparks', ECON_HUNT.live, '+') === p.sparks - sparks0,
@@ -60,17 +60,17 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   // 자리 비움 사냥은 다른 원인으로 적힌다
   p.auto = true; g.away.start(p);
   const gold1 = p.gold;
-  kill(p, 'wolf');
+  kill(p, 'hound');
   check(sum(rows(), 'gold', ECON_HUNT.away, '+') === p.gold - gold1 && sum(rows(), 'gold', ECON_HUNT.live, '+') === gold1 - gold0, '서버가 대신 사냥하는 동안 번 것은 huntAway로, 접속 중에 번 것은 hunt로 적힌다');
   g.away.stop(p); p.auto = false;
-  kill(p, 'wolf');
+  kill(p, 'hound');
   check(sum(rows(), 'gold', ECON_HUNT.live, '+') + sum(rows(), 'gold', ECON_HUNT.away, '+') === p.gold - gold0 && sum(rows(), 'gold', ECON_HUNT.live, '+') > gold1 - gold0, '돌아온 뒤에는 다시 hunt로 적힌다');
 
   // 가방이 가득 차 버려진 장비
   setup(p, () => { while (p.gear.length < GEAR.bagMax) g.gear.put(p, g.gear.roll(1, 0, 'ring')); });
   const had = p.gear.length;
   g.gear.random = () => 0; // 반드시 떨어지고, 등급은 가장 낮다
-  kill(p, 'wolf'); kill(p, 'wolf');
+  kill(p, 'hound'); kill(p, 'hound');
   const cur = `gear:${RARITIES[0].id}`;
   check(p.gear.length === had && sum(rows(), cur, 'lostFull', '-') === 2 && sum(rows(), cur, ECON_HUNT.live, '+') === 2, '가방이 가득 차 버려진 장비가 세어진다 (떨어진 것 2, 버려진 것 2, 가방은 그대로)');
   check(/버려진 장비 2/.test(g.ledger.line()) && /gold \+0 -0/.test(g.ledger.line()), '지표 로그 한 줄에 구간의 합계가 찍히고, 찍은 뒤에는 구간이 새로 시작된다');
@@ -79,10 +79,10 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   t.clock = new Date(2026, 0, 11, 0, 0, 5).getTime();
   g.gear.random = () => 0.999;
   const gold2 = p.gold;
-  kill(p, 'wolf');
+  kill(p, 'hound');
   const day2 = g.ledger.today();
   check(day1 === '2026-01-10' && day2 === '2026-01-11' && sum(g.ledger.rows(day2), 'gold', ECON_HUNT.live, '+') === p.gold - gold2 && sum(g.ledger.rows(day1), 'gold', ECON_HUNT.live, '+') === gold2 - gold0 - sum(rows(), 'gold', ECON_HUNT.away, '+'), '날짜가 바뀌면 새 날짜의 줄에 적힌다 (지난 날의 줄은 그대로)');
-  t.clock += 2 * DAY; kill(p, 'wolf');
+  t.clock += 2 * DAY; kill(p, 'hound');
   check(g.ledger.rows(day1).length === 0 && g.ledger.rows(day2).length === 0 && g.ledger.drain().some((r) => r.day === day1), '메모리의 합계는 오늘과 어제 것만 남기고, 저장할 줄은 내어 줄 때까지 남는다');
 
   // 원인을 가리지 못한 변화는 other(틱 밖)와 tick(틱 안)으로 드러난다
@@ -95,10 +95,10 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   const today = g.ledger.rows(g.ledger.today());
   check(sum(today, 'gold', 'other', '+') === 777 && sum(today, 'sparks', 'tick', '+') === 3, '어느 경계에도 잡히지 않은 변화는 other(틱 밖)와 tick(틱 안)으로 드러난다: 재화 복사 버그의 경보');
   // 재료나 장비의 구성만 바뀐 것은 틱마다가 아니라 돌아가며 세므로(1초에 한 번) 조금 늦게 드러난다
-  p.items.iron = (p.items.iron ?? 0) + 4; p.gear[p.gear.length - 1].rar = 3;
+  p.items.ore = (p.items.ore ?? 0) + 4; p.gear[p.gear.length - 1].rar = 3;
   run(1);
   const late = g.ledger.rows(g.ledger.today()).filter((r) => r.why === 'tick');
-  check(sum(late, 'item:iron', 'tick', '+') === 4 && sum(late, 'gear:epic', 'tick', '+') === 1 && sum(late, `gear:${RARITIES[0].id}`, 'tick', '-') === 1, '명령 밖에서 재료나 장비의 등급만 바뀌어도 1초 안에 tick으로 드러난다');
+  check(sum(late, 'item:ore', 'tick', '+') === 4 && sum(late, 'gear:epic', 'tick', '+') === 1 && sum(late, `gear:${RARITIES[0].id}`, 'tick', '-') === 1, '명령 밖에서 재료나 장비의 등급만 바뀌어도 1초 안에 tick으로 드러난다');
   // 장부의 잘못이 게임을 멈추지 않는다
   const err = console.error; let logged = 0; console.error = () => { logged++; };
   (p as { gear: unknown }).gear = null;
@@ -151,7 +151,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   const { t, g, run, at, kill, cmd } = bench();
   const p = g.players.spawn('새내기', false, null, 'key-n');
   const born = t.clock;
-  g.classes.apply(p, 'warrior');
+  g.classes.apply(p, 'knight');
   run(30);
   g.players.grant(p, 600, 0); // 레벨 5를 넘긴다
   run(10);
@@ -160,9 +160,9 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   run(1);
   at(p, CAMPS[0].x, CAMPS[0].z);
   g.gear.random = () => 0.999;
-  for (let i = 0; i < 5; i++) kill(p, 'slime');
+  for (let i = 0; i < 5; i++) kill(p, 'mite');
   const hunted = p.gold; // 처음부터 지금까지 사냥으로 번 것 (자리를 비운 동안 번 것 포함)
-  at(p, SHOPS[0].x, SHOPS[0].z + 1); cmd(p, { t: 'mailClaim', id: 0 }); cmd(p, { t: 'buy', id: 'potion' });
+  at(p, SHOPS[0].x, SHOPS[0].z + 1); cmd(p, { t: 'mailClaim', id: 0 }); cmd(p, { t: 'buy', id: 'draught' });
   const earned = hunted + 30, spent = earned - p.gold; // 출석 우편의 30골드를 받고, 물약을 하나 샀다
   const st = g.ledger.statsOf(p)!;
   check(st.born === born && st.play === 41 && st.away === 20, `접속 플레이 시간과 자리 비움 사냥 시간을 따로 센다 (접속 ${st.play}초, 자리 비움 ${st.away}초)`);
@@ -174,7 +174,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   t.clock += DAY;
   const p2 = g.players.spawn('새내기', false, save, 'key-n');
   run(5);
-  kill(p2, 'slime');
+  kill(p2, 'mite');
   const st2 = g.ledger.statsOf(p2)!;
   check(st2.born === born && st2.play === 46 && st2.away === 20 && JSON.stringify(st2.reach) === JSON.stringify(st.reach) && st2.y[0] === '2026-01-10' && st2.y[1] === earned && st2.y[2] === spent && st2.d[0] === '2026-01-11' && st2.d[1] > 0, '캐릭터별 기록이 저장되고 다시 읽혀 이어진다 (다음 날의 수입은 새 칸에, 어제 것은 남는다)');
   // 이 칸이 없는 옛 저장
@@ -198,7 +198,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   const yesterday = g.daily.dayOf(now - DAY), today = g.daily.dayOf(now);
   const plusOf = (i: number) => [0, 3, 10, 10, 5, 10, 0, 7, 10, 2, 10, 1][i];
   golds.forEach((gold, i) => {
-    const list = [{ uid: 1, slot: 'weapon', base: 'sword1', rar: i % 4, lv: 1, plus: plusOf(i), opts: [] }, { uid: 2, slot: 'ring', rar: 1, lv: 1, plus: 0, opts: [['dmg', 3]] }, { uid: 3, slot: 'charm', rar: 3, lv: 1, plus: 9, opts: [] }];
+    const list = [{ uid: 1, slot: 'weapon', base: 'blade1', rar: i % 4, lv: 1, plus: plusOf(i), opts: [] }, { uid: 2, slot: 'ring', rar: 1, lv: 1, plus: 0, opts: [['dmg', 3]] }, { uid: 3, slot: 'charm', rar: 3, lv: 1, plus: 9, opts: [] }];
     // 새로 온 사람 넷(0~3): 레벨 5에는 넷 다, 10에는 둘이 닿았다. 수입은 어제 것만 센다
     const stats = i < 4 ? { born: now - (i + 1) * DAY, play: 5000, away: 100, reach: { 5: [100 * (i + 1), 10 * i], ...(i < 2 ? { 10: [1000 * (i + 1), 500] } : {}) }, d: i % 2 ? [today, 999, 0] : [yesterday, 100 * (i + 1), 5], y: i % 2 ? [yesterday, 100 * (i + 1), 5] : ['2026-01-01', 12345, 0] }
       : i === 4 ? { born: now - 30 * DAY, play: 9, away: 0, reach: { 5: [1, 1] }, d: ['2026-01-02', 4444, 0], y: ['', 0, 0] } : undefined;
@@ -208,10 +208,10 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   store.savePlayer('secret-key-blank2', { name: '빈이름둘', lv: 1, exp: 10, need: 60, maxHp: 100, sparks: 3, contrib: 0, seen: now });
   // 거래소: 반지 둘(100, 300)과 철 10개 묶음(50)
   const seller = g.players.spawn('장수', false, null, 'key-s');
-  g.classes.apply(seller, 'warrior');
-  setup(seller, () => { while (seller.lv < 10) g.players.grant(seller, 400, 0); seller.items.iron = 10; });
+  g.classes.apply(seller, 'knight');
+  setup(seller, () => { while (seller.lv < 10) g.players.grant(seller, 400, 0); seller.items.ore = 10; });
   for (const price of [100, 300]) { const it = g.gear.roll(3, 2, 'ring'); g.gear.put(seller, it); cmd(seller, { t: 'market', a: 'post', uid: it.uid, price }); }
-  cmd(seller, { t: 'market', a: 'post', item: 'iron', n: 10, price: 50 });
+  cmd(seller, { t: 'market', a: 'post', item: 'ore', n: 10, price: 50 });
 
   const snap: EconSnapshot = g.ledger.snapshot((fn) => store.eachPlayer(fn));
   const sorted = [...golds].sort((x, y) => x - y), total = golds.reduce((x, y) => x + y, 0);
@@ -220,13 +220,13 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   check(snap.gold.sum === total && snap.gold.median === (sorted[5] + sorted[6]) / 2 && snap.gold.median === 55 && snap.gold.p90 === sorted[10] && snap.gold.p90 === 100 && snap.gold.p99 === 5000 && snap.gold.max === 5000 && median([3, 1, 2]) === 2 && quantile([], 0.9) === 0,
     `골드 보유: 합계 ${snap.gold.sum}, 중간값 ${snap.gold.median}, 상위 10% 경계 ${snap.gold.p90}, 상위 1% 경계 ${snap.gold.p99}, 최대 ${snap.gold.max}`);
   check(Math.abs(snap.gold.top10Share - (total - 7 - 10) / total) < 0.0001, `상위 10명이 가진 몫 ${(snap.gold.top10Share * 100).toFixed(1)}%`);
-  check(snap.sparks.sum === 10 * (11 * 12) / 2 && snap.levels[2] === 4 && snap.levels[3] === 4 && snap.levels[4] === 4, '불씨 합계와 레벨 분포');
+  check(snap.sparks.sum === 10 * (11 * 12) / 2 && snap.levels[2] === 4 && snap.levels[3] === 4 && snap.levels[4] === 4, '두 번째 재화의 합계와 레벨 분포');
   const plus = Array.from({ length: 11 }, () => 0); for (let i = 0; i < 11; i++) { plus[plusOf(i)]++; plus[0]++; }
   check(snap.worn.n === 22 && JSON.stringify(snap.worn.plus) === JSON.stringify(plus) && snap.worn.plus[10] === 5 && snap.worn.rar.uncommon === 11 + 3 && snap.worn.rar.common === 3 && snap.worn.rar.epic === 2, `낀 장비의 강화 단계 분포(+10이 ${snap.worn.plus[10]}점)와 등급 분포: 가방에만 있는 것은 세지 않는다`);
   check(snap.income.day === yesterday && snap.income.n === 4 && snap.income.median === 250, `어제 하루 수입의 중간값 ${snap.income.median} (어제 번 사람 ${snap.income.n}명)`);
   check(snap.fresh.n === 4 && snap.fresh.reach[5].n === 4 && snap.fresh.reach[5].play === 250 && snap.fresh.reach[5].total === 265 && snap.fresh.reach[10].n === 2 && snap.fresh.reach[10].play === 1500 && snap.fresh.reach[10].total === 2000 && snap.fresh.reach[20] === undefined,
     `최근 7일에 만든 캐릭터 ${snap.fresh.n}명의 레벨 도달 시간(중간값): 5레벨 ${snap.fresh.reach[5].play}초, 10레벨 ${snap.fresh.reach[10].play}초`);
-  check(snap.market.n === 3 && snap.market.kinds.ring.n === 2 && snap.market.kinds.ring.median === 200 && snap.market.kinds['item:iron'].median === 5, '거래소의 물건 수와 종류별 값의 중간값 (재료는 낱개 값)');
+  check(snap.market.n === 3 && snap.market.kinds.ring.n === 2 && snap.market.kinds.ring.median === 200 && snap.market.kinds['item:ore'].median === 5, '거래소의 물건 수와 종류별 값의 중간값 (재료는 낱개 값)');
   const text = JSON.stringify(snap);
   check(!/이름|secret|key-|장수/.test(text), '스냅샷에 이름이나 저장 키가 들어 있지 않다');
   // 깨진 저장이 섞여 있어도 만들어진다
@@ -243,8 +243,8 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   const snap = store.econSnapshot(day)?.data as EconSnapshot | undefined;
   check(snap?.chars === 1 && snap.gold.sum === 120, '서버가 켜질 때 그날의 분포 스냅샷이 없으면 남긴다');
   const p = server.game.players.spawn('잠깐', false, null, 'key-z');
-  server.game.classes.apply(p, 'warrior');
-  const m = server.game.monsters.spawn('slime', p.x + 1, p.z); m.layer = p.layer;
+  server.game.classes.apply(p, 'knight');
+  const m = server.game.monsters.spawn('mite', p.x + 1, p.z); m.layer = p.layer;
   server.game.combat.damage(p, m, 1e6, false);
   await server.close();
   const rows = store.econ(day);

@@ -1,8 +1,8 @@
-// 장비 비교: 가방의 장비를 지금 낀 같은 칸의 장비와 견주는 공용 계산 (engine/shared/defs/growth.ts의 compareGear).
+// 장비 비교: 가방의 장비를 지금 낀 같은 칸의 장비와 견주는 공용 계산 (engine/shared/defs/growth.ts의 compareGear). 시험용 내용 위에서.
 // 화면은 이 함수의 결과만 그린다. 여기서는 (1) 그 셈이 서버가 실제로 쓰는 보정과 같은지, (2) 두 기준(지금 그대로 / 강화 단계를 맞췄을 때)의 결론을 본다.
-import { ENHANCE, GEAR, ITEMS, atPlus, compareGear, deltaSigns, enhanceExpected, enhanceMax, gearDelta, gearEffect, gearPower, gearVerdict, isSupply, wornTotal, type Gear, type GearSlot, type Stat } from '../shared/defs';
-import { Game } from '../server/game/game';
-import { check } from './harness';
+import { ENHANCE, GEAR, ITEMS, atPlus, compareGear, deltaSigns, enhanceExpected, enhanceMax, gearDelta, gearEffect, gearPower, gearVerdict, isSupply, wornTotal, type Gear, type GearSlot, type Stat } from '../../shared/defs';
+import { Game } from '../../server/game/game';
+import { check } from '../harness';
 
 let uid = 100;
 const mk = (slot: GearSlot, rar: number, plus: number, opts: [Stat, number][], base?: string, made = false): Gear => ({ uid: uid++, slot, base, rar, lv: 3, plus, opts, ...(made ? { made: true } : {}) });
@@ -12,10 +12,10 @@ const near = (a: number, b: number, eps = 1e-9): boolean => Math.abs(a - b) <= e
 {
   const g = new Game();
   const p = g.players.spawn('비교', false, null, 'key-c');
-  g.classes.apply(p, 'warrior');
+  g.classes.apply(p, 'knight');
   const put = (it: Gear): Gear => { g.bag.giveGear(p, it, ''); g.gear.equip(p, it.uid); return it; };
-  put(mk('weapon', 2, 6, [['dmg', 9], ['crit', 3]], 'sword3'));
-  put(mk('armor', 1, 4, [['guard', 5], ['hp', 20]], 'armor2'));
+  put(mk('weapon', 2, 6, [['dmg', 9], ['crit', 3]], 'blade3'));
+  put(mk('armor', 1, 4, [['guard', 5], ['hp', 20]], 'plate2'));
   put(mk('ring', 2, 3, [['dmg', 6], ['hp', 15], ['crit', 2]]));
   const worn = g.gear.worn(p), fx = gearEffect(worn);
   const hp0 = g.mods.sum('hp', undefined);
@@ -24,8 +24,8 @@ const near = (a: number, b: number, eps = 1e-9): boolean => Math.abs(a - b) <= e
   check(near(fx.crit, g.mods.sum('crit', p)) && near(fx.hp, g.mods.sum('hp', p) - hp0), '치명타와 체력에 더해지는 값이 서버의 보정과 같다');
   check((['dmg', 'guard', 'crit', 'hp'] as Stat[]).every((s) => near(wornTotal(worn, s), g.gear.total(p, s))), '서버의 장비 합(gear.total)이 공용 함수(wornTotal)를 쓴다');
   // 강화가 옵션의 합에 더해지고 바탕의 배율과 곱해진다 (README의 예: +75% 무기를 +5로 → 1.75 × 1.375 = 2.41배)
-  const w = mk('weapon', 0, 5, [], 'sword4');
-  check(near(gearEffect([w]).dmg, (ITEMS.sword4.damage ?? 1) * (1 + Math.round(((ITEMS.sword4.damage ?? 1) - 1) * 100) * 5 * ENHANCE.perPlus / 100)), '무기의 강화: 바탕의 기본 수치 × 단계 × 10%가 옵션의 합에 더해지고 바탕의 배율과 곱해진다');
+  const w = mk('weapon', 0, 5, [], 'blade4');
+  check(near(gearEffect([w]).dmg, (ITEMS.blade4.damage ?? 1) * (1 + Math.round(((ITEMS.blade4.damage ?? 1) - 1) * 100) * 5 * ENHANCE.perPlus / 100)), '무기의 강화: 바탕의 기본 수치 × 단계 × 10%가 옵션의 합에 더해지고 바탕의 배율과 곱해진다');
   // 바꿔 끼기 전에 낸 차이 = 실제로 바꿔 낀 뒤의 차이
   const cand = mk('ring', 3, 0, [['dmg', 10], ['guard', 4], ['hp', 40], ['crit', 4]]);
   const d = gearDelta(worn, cand), before = { dmg: g.mods.product('damage', p), guard: g.mods.product('guard', p), crit: g.mods.sum('crit', p), hp: g.mods.sum('hp', p), power: g.rank.power(p) };
@@ -41,7 +41,7 @@ const near = (a: number, b: number, eps = 1e-9): boolean => Math.abs(a - b) <= e
 
 // ---------- 두 기준의 결론이 갈리는 경우: 낀 것은 +7 고급, 주운 것은 +0 희귀 ----------
 {
-  const worn = [mk('weapon', 0, 5, [], 'sword3'), mk('ring', 1, 7, [['dmg', 5], ['hp', 12]])];
+  const worn = [mk('weapon', 0, 5, [], 'blade3'), mk('ring', 1, 7, [['dmg', 5], ['hp', 12]])];
   const cand = mk('ring', 2, 0, [['dmg', 7], ['hp', 16], ['crit', 2]]);
   const c = compareGear(worn, cand);
   check(c.worn === worn[1] && c.now.dmg < 0 && c.now.hp < 0 && c.now.crit > 0 && gearVerdict(c.now) === 'mixed', `지금 그대로: 강화한 쪽이 공격과 체력에서 앞선다 (공격 ${c.now.dmg}%, 체력 ${c.now.hp}, 치명타 ${c.now.crit}%p)`);
@@ -59,20 +59,20 @@ const near = (a: number, b: number, eps = 1e-9): boolean => Math.abs(a - b) <= e
 
 // ---------- 낀 것이 없는 칸 ----------
 {
-  const worn = [mk('weapon', 0, 0, [], 'sword2')];
+  const worn = [mk('weapon', 0, 0, [], 'blade2')];
   const c = compareGear(worn, mk('amulet', 1, 2, [['hp', 20], ['crit', 3]]));
   check(c.worn === null && c.even === null && c.now.hp > 0 && c.now.crit > 0 && c.now.dmg === 0 && c.now.guard === 0 && gearVerdict(c.now) === 'better' && c.now.power > 0, '낀 것이 없는 칸: 전부 증가이고 "더 좋음", 맞춘 비교는 없다');
-  const a = compareGear([], mk('armor', 0, 0, [], 'armor1'));
+  const a = compareGear([], mk('armor', 0, 0, [], 'plate1'));
   check(a.now.guard < 0 && deltaSigns(a.now).guard === 1 && gearVerdict(a.now) === 'better', `갑옷이 없다가 입으면 받는 피해가 준다: 수는 음수이고(${a.now.guard}%) 좋아진 것으로 센다`);
 }
 
 // ---------- 강화 한도가 다른 경우: 보급형은 +5까지 ----------
 {
-  const drop = mk('weapon', 2, 8, [['dmg', 8]], 'sword3'), supply = mk('weapon', 0, 0, [], 'sword4');
+  const drop = mk('weapon', 2, 8, [['dmg', 8]], 'blade3'), supply = mk('weapon', 0, 0, [], 'blade4');
   check(isSupply(supply) && enhanceMax(supply) === ENHANCE.supplyMax && enhanceMax(drop) === ENHANCE.max && atPlus(supply, 8).plus === ENHANCE.supplyMax && atPlus(drop, 3).plus === 8, '보급형은 제 한도까지만 올린 것으로 친다. 이미 더 높은 단계는 내리지 않는다');
   const c = compareGear([drop], supply);
   check(c.even !== null && c.even.plus === 8 && c.even.cand.to === ENHANCE.supplyMax && c.even.cand.capped && c.even.cand.cost === Math.round(enhanceExpected(ENHANCE.supplyMax, 0, 0)), `맞추려는 단계(+8)보다 한도가 낮으면 한도(+${ENHANCE.supplyMax})까지로 하고 그렇게 알린다`);
-  const full = compareGear([mk('weapon', 0, ENHANCE.supplyMax, [], 'sword2')], mk('weapon', 0, ENHANCE.supplyMax, [], 'sword3'));
+  const full = compareGear([mk('weapon', 0, ENHANCE.supplyMax, [], 'blade2')], mk('weapon', 0, ENHANCE.supplyMax, [], 'blade3'));
   check(full.even === null && gearVerdict(full.now) === 'better', '둘 다 한도까지 올린 보급형: 맞출 것이 없다');
 }
 

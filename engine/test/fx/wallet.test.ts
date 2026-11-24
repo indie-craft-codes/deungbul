@@ -1,16 +1,19 @@
-// 지갑(g.wallet): 재화를 더하고 빼는 한 통로 (서버 없이 게임 규칙만 돌린다. 규칙 플러그인 없는 틀만의 게임이다).
+// 지갑(g.wallet): 재화를 더하고 빼는 한 통로 (서버 없이 게임 규칙만 돌린다. 규칙 플러그인 없는 틀만의 게임이다). (시험용 내용 위에서)
 // 더하기·빼기·잔액 부족·깨진 값·상한, 수급 배율의 등록, 장부와의 관계(지갑이 원인을 직접 알린다, 지갑 밖의 변화는 other·tick으로 드러난다),
 // 그리고 "재화의 칸을 직접 고치는 코드가 지갑 밖에 없다"를 소스를 읽어 검사한다.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SHOP, SMITHY } from '@game/shared/defs';
-import { ATTEND, CAMPS, CURRENCIES, DAILIES, ECON_HUNT, ENHANCE, GUILD, ITEMS, MONSTERS, RECIPES, marketFee, type CurrencyDef, type MarketItem } from '../shared/defs';
-import type { Ent } from '../server/game/entity';
-import { Game } from '../server/game/game';
-import { WHY, mailWhy, type Cur } from '../server/game/systems/wallet';
-import type { EconRow, PlayerSave } from '../server/store';
-import { check } from './harness';
+import { FORGES, SHOPS } from '../../shared/defs';
+import { ATTEND, CAMPS, CURRENCIES, DAILIES, ECON_HUNT, ENHANCE, GUILD, ITEMS, MONSTERS, RECIPES, marketFee, type CurrencyDef, type MarketItem } from '../../shared/defs';
+import type { Ent } from '../../server/game/entity';
+import { Game } from '../../server/game/game';
+import { WHY, mailWhy, type Cur } from '../../server/game/systems/wallet';
+import type { EconRow, PlayerSave } from '../../server/store';
+import { check } from '../harness';
+
+/** 시험용 내용의 상인과 대장간 */
+const SHOP = SHOPS[0], SMITHY = FORGES[0];
 
 const DEFS: Readonly<Record<string, CurrencyDef>> = CURRENCIES;
 const GOLD_MAX = DEFS.gold?.max ?? Infinity, SPARKS_MAX = DEFS.sparks?.max ?? Infinity;
@@ -23,7 +26,7 @@ function bench() {
   const kill = (p: Ent, type: MonsterType) => { const m = g.monsters.spawn(type, p.x + 1, p.z); m.layer = p.layer; g.combat.damage(p, m, 1e6, false); };
   const cmd = (p: Ent, m: Record<string, unknown>) => g.command(p, m);
   const run = (s: number) => { for (let i = 0, n = Math.round(s * 20); i < n; i++) { g.tick(0.05); t.clock += 50; } };
-  const hero = (name: string, pid: string) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'warrior'); while (p.lv < 12) g.players.grant(p, 400, 0); p.hp = p.maxHp; g.ledger.note(p, 'setup'); return p; };
+  const hero = (name: string, pid: string) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'knight'); while (p.lv < 12) g.players.grant(p, 400, 0); p.hp = p.maxHp; g.ledger.note(p, 'setup'); return p; };
   /** 마지막으로 부른 뒤에 장부에 새로 적힌 것: '재화 원인 방향양' */
   let seen = new Map<string, number>();
   const fresh = (): string[] => {
@@ -101,9 +104,9 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   check(same(fresh(), ['gold other +1']), '이름도 없고 note도 없으면 other로 남는다');
 
   // 지갑 밖에서 고친 것은 어디서 드러나든 other·tick이다: 명령의 이름으로 숨지 않는다
-  g.commands.set('cheat', (q) => { q.gold += 55; q.sparks += 2; q.items.iron = (q.items.iron ?? 0) + 1; });
+  g.commands.set('cheat', (q) => { q.gold += 55; q.sparks += 2; q.items.ore = (q.items.ore ?? 0) + 1; });
   cmd(p, { t: 'cheat' });
-  check(same(fresh(), ['gold other +55', 'sparks other +2', 'item:iron other +1']), '명령 안에서 재화의 칸을 직접 고치면 그 명령의 이름이 아니라 other로 적힌다 (재료도 같다: 가방 통로 밖의 변화다. bag.test.ts)');
+  check(same(fresh(), ['gold other +55', 'sparks other +2', 'item:ore other +1']), '명령 안에서 재화의 칸을 직접 고치면 그 명령의 이름이 아니라 other로 적힌다 (재료도 같다: 가방 통로 밖의 변화다. bag.test.ts)');
   const orig = g.party.tick.bind(g.party);
   g.party.tick = (dt) => { p.gold += 9; w.add(p, 'gold', 4, 'drip'); orig(dt); };
   run(0.05);
@@ -122,26 +125,26 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   const { g, at, kill, cmd, hero, fresh } = bench();
   const w = g.wallet, p = hero('이름', 'key-n'), mate = hero('동료', 'key-m');
   w.add(p, 'gold', 30000, 'setup'); w.add(mate, 'gold', 5000, 'setup');
-  p.items.iron = 30; p.items.hide = 20; g.ledger.note(p, 'setup');
+  p.items.ore = 30; p.items.pelt = 20; g.ledger.note(p, 'setup');
   g.gear.random = () => 0.999; // 장비는 떨어지지 않는다
   const rnd = Math.random;
   Math.random = () => 0.5; // 처치 보상의 굴림을 고정한다
   fresh();
 
   at(p, CAMPS[2].x, CAMPS[2].z);
-  kill(p, 'wolf');
-  const wolf = fresh();
-  check(wolf.length === 3 && wolf.every((r) => r.includes(` ${ECON_HUNT.live} +`)), `처치 보상(골드, 경험치, 불씨)은 hunt로 적힌다 (${wolf.join(', ')})`);
-  p.auto = true; g.away.start(p); kill(p, 'wolf'); g.away.stop(p); p.auto = false;
+  kill(p, 'hound');
+  const hound = fresh();
+  check(hound.length === 3 && hound.every((r) => r.includes(` ${ECON_HUNT.live} +`)), `처치 보상(골드, 경험치, 두 번째 재화)은 hunt로 적힌다 (${hound.join(', ')})`);
+  p.auto = true; g.away.start(p); kill(p, 'hound'); g.away.stop(p); p.auto = false;
   check(fresh().every((r) => r.includes(` ${ECON_HUNT.away} +`)), '서버가 대신 사냥하는 동안은 huntAway로 적힌다');
 
   at(p, SHOP.x + 1, SHOP.z);
-  cmd(p, { t: 'buy', id: 'potion' });
-  check(same(fresh(), [`gold ${WHY.buy} -${ITEMS.potion.price}`, `item:potion ${WHY.buy} +1`]) && WHY.buy === 'cmd:buy', '상점: 낸 골드(지갑)와 받은 물약(가방)이 같은 이름 cmd:buy에 놓인다');
+  cmd(p, { t: 'buy', id: 'draught' });
+  check(same(fresh(), [`gold ${WHY.buy} -${ITEMS.draught.price}`, `item:draught ${WHY.buy} +1`]) && WHY.buy === 'cmd:buy', '상점: 낸 골드(지갑)와 받은 물약(가방)이 같은 이름 cmd:buy에 놓인다');
   at(p, SMITHY.x + 1, SMITHY.z + 1);
-  const recipe = RECIPES.find((r) => r.id === 'sword3')!;
-  cmd(p, { t: 'craft', id: 'sword3' });
-  check(fresh().includes(`gold ${WHY.craft} -${recipe.gold}`) && p.weapon === 'sword3', '제작: cmd:craft');
+  const recipe = RECIPES.find((r) => r.id === 'blade3')!;
+  cmd(p, { t: 'craft', id: 'blade3' });
+  check(fresh().includes(`gold ${WHY.craft} -${recipe.gold}`) && p.weapon === 'blade3', '제작: cmd:craft');
   const ring = g.gear.roll(3, 1, 'ring'), junk = g.gear.roll(1, 0, 'charm');
   g.gear.put(p, ring); g.gear.put(p, junk); g.ledger.note(p, 'setup'); fresh();
   g.gear.random = () => 0;
@@ -150,13 +153,13 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   const gold0 = p.gold;
   cmd(p, { t: 'sell', uid: junk.uid });
   check(same(fresh(), [`gold ${WHY.sell} +${p.gold - gold0}`, `gear:common ${WHY.sell} -1`]) && p.gold > gold0, '판매: cmd:sell');
-  cmd(p, { t: 'skillUp', id: 'smash' }); cmd(p, { t: 'stat', k: 'pow' }); cmd(p, { t: 'statReset' });
+  cmd(p, { t: 'skillUp', id: 'strike' }); cmd(p, { t: 'stat', k: 'pow' }); cmd(p, { t: 'statReset' });
   const build = fresh();
   check(build.length === 2 && build.some((r) => r.startsWith(`gold ${WHY.skillUp} -`)) && build.some((r) => r.startsWith(`gold ${WHY.statReset} -`)), '기술 강화와 능력치 돌려받기: cmd:skillUp, cmd:statReset');
   cmd(p, { t: 'guild', a: 'create', name: '지갑길드' }); cmd(p, { t: 'guild', a: 'give', n: 100 });
   check(same(fresh(), [`gold ${WHY.guildCreate} -${GUILD.createGold}`, `gold ${WHY.guildGive} -100`]), '길드: cmd:guild:create, cmd:guild:give');
   cmd(p, { t: 'mailClaim', id: 0 });
-  check(same(fresh(), [`gold mail:attend +${ATTEND[0].gold}`, `gold mail:daily +${DAILIES.enhance1.r.gold}`]), '우편: 우편마다 mail:종류로 적힌다 (출석 첫날, 일일 임무: 강화 한 번)');
+  check(same(fresh(), [`gold mail:attend +${ATTEND[0].gold}`, `gold mail:daily +${DAILIES.forge1.r.gold}`]), '우편: 우편마다 mail:종류로 적힌다 (출석 첫날, 일일 임무: 강화 한 번)');
 
   // 거래소: 사는 사람이 낸 값은 이동(market:out)으로, 파는 사람이 우편으로 받은 값도 이동(market:in)으로 적힌다
   cmd(p, { t: 'market', a: 'post', uid: ring.uid, price: 200 }); fresh();
@@ -182,16 +185,16 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   const kills = (): { gold: number; exp: number; sparks: number; said: number[] } => {
     const a = { gold: p.gold, sparks: p.sparks };
     g.notices = []; fresh();
-    kill(p, 'wolf');
+    kill(p, 'hound');
     const rows = fresh(), n = (cur: string) => Number(rows.find((r) => r.startsWith(`${cur} ${ECON_HUNT.live} +`))?.split('+')[1] ?? 0);
     const note = g.notices.find((x) => x.id === p.id && x.k === 'kill')!;
     return { gold: p.gold - a.gold === n('gold') ? n('gold') : NaN, exp: n('exp'), sparks: p.sparks - a.sparks === n('sparks') ? n('sparks') : NaN, said: [Number(note.a[3]), Number(note.a[1]), Number(note.a[2])] };
   };
   const plain = kills();
   // 굴림을 0.5로 고정했으므로 범위의 가운데 값이 나온다
-  const mid = (r: readonly [number, number]) => r[0] + Math.floor(0.5 * (r[1] - r[0] + 1)), wolf = MONSTERS.wolf;
-  check(w.scale.length === 0 && plain.gold === mid(wolf.gold) && plain.gold === 7 && plain.exp === wolf.exp && plain.sparks === mid(wolf.sparks) && plain.said.join() === [plain.gold, plain.exp, plain.sparks].join(),
-    `등록된 배율이 없으면 그대로 받는다 (늑대: 골드 ${plain.gold}, 경험치 ${plain.exp}, 불씨 ${plain.sparks})`);
+  const mid = (r: readonly [number, number]) => r[0] + Math.floor(0.5 * (r[1] - r[0] + 1)), hound = MONSTERS.hound;
+  check(w.scale.length === 0 && plain.gold === mid(hound.gold) && plain.gold === 7 && plain.exp === hound.exp && plain.sparks === mid(hound.sparks) && plain.said.join() === [plain.gold, plain.exp, plain.sparks].join(),
+    `등록된 배율이 없으면 그대로 받는다 (사냥개: 골드 ${plain.gold}, 경험치 ${plain.exp}, 두 번째 재화 ${plain.sparks})`);
 
   // 시험용 배율: 사냥으로 받는 골드만 절반
   const calls: string[] = [];
@@ -199,7 +202,7 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   w.scale.push(half);
   const halved = kills();
   check(halved.gold === Math.floor(plain.gold * 0.5) && halved.gold === 3, `배율 0.5를 등록하면 처치 골드가 절반이 되고(${plain.gold} → ${halved.gold}, 내림), 장부에도 절반으로 적힌다`);
-  check(halved.exp === plain.exp && halved.sparks === plain.sparks, '배율 함수가 1을 돌려준 재화(경험치, 불씨)는 그대로다');
+  check(halved.exp === plain.exp && halved.sparks === plain.sparks, '배율 함수가 1을 돌려준 재화(경험치, 두 번째 재화)는 그대로다');
   check(halved.said.join() === [3, plain.exp, plain.sparks].join(), '처치 안내문에도 실제로 받은 양이 적힌다');
   check(calls.includes(`배율 gold ${plain.gold} ${ECON_HUNT.live}`), '배율 함수는 받는 사람, 재화, 배율을 걸기 전의 양, 원인의 이름을 받는다');
 
@@ -207,8 +210,8 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   calls.length = 0;
   at(p, SHOP.x + 1, SHOP.z);
   const gold = p.gold;
-  cmd(p, { t: 'buy', id: 'potion' });
-  check(p.gold === gold - ITEMS.potion.price && calls.length === 0 && same(fresh(), [`gold ${WHY.buy} -${ITEMS.potion.price}`, `item:potion ${WHY.buy} +1`]), '빼기(값 치르기)에는 배율이 걸리지 않는다: 배율 함수가 불리지도 않는다');
+  cmd(p, { t: 'buy', id: 'draught' });
+  check(p.gold === gold - ITEMS.draught.price && calls.length === 0 && same(fresh(), [`gold ${WHY.buy} -${ITEMS.draught.price}`, `item:draught ${WHY.buy} +1`]), '빼기(값 치르기)에는 배율이 걸리지 않는다: 배율 함수가 불리지도 않는다');
   // 다른 원인에는 걸리지 않고, 여럿이면 곱한다
   check(w.add(p, 'gold', 10, 'gift') === 10, '배율 함수가 가리지 않은 원인은 그대로 받는다');
   w.scale.push((_q, cur) => (cur === 'gold' ? 0.5 : 1));
@@ -228,7 +231,7 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
 
 // ---------- 재화의 칸을 직접 고치는 코드가 지갑 밖에 없다 (소스를 읽는다) ----------
 {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
   const rel = (f: string) => path.relative(root, f).replaceAll('\\', '/');
   const walk = (dir: string): string[] => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : []);
   // 서버와 공용 코드만 본다 (틀과 모든 게임). 화면(client)이 들고 있는 값은 서버가 보낸 것의 사본이고, 시험(test)은 준비로 직접 고친다

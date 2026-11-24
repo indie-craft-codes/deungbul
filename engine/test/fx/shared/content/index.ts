@@ -127,8 +127,8 @@ export const GEAR = {
   armorFor: (lv: number): ItemId => (lv >= 6 ? 'plate2' : 'plate1'),
 };
 /** 분해와 가방 넓히기도 켠다 (기본값 묶음에서는 꺼져 있다) */
-export const SALVAGE = { item: 'powder', dust: [2, 5, 12, 30], perPlus: 1, maxBatch: 50, autoMaxRar: 2, tellS: 10 };
-export const BAG_UP = { step: 5, prices: [3000, 6000, 12000] };
+export const SALVAGE = { item: 'powder', dust: [1, 3, 8, 25], perPlus: 1, maxBatch: 60, autoMaxRar: 2, tellS: 10 };
+export const BAG_UP = { step: 5, prices: [3000, 6000, 12000, 24000, 48000, 96000] };
 
 // ---------- 일일 임무와 던전 ----------
 export const DAILIES = {

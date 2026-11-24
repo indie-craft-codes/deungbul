@@ -1,12 +1,15 @@
-// 분해, 장비 가루, 잠금, 자동 분해, 가방 넓히기 (서버 없이 게임 규칙만 돌린다. 규칙 플러그인 없는 틀만의 게임이다).
+// 분해, 장비 가루, 잠금, 자동 분해, 가방 넓히기 (서버 없이 게임 규칙만 돌린다. 규칙 플러그인 없는 틀만의 게임이다). (시험용 내용 위에서)
 // 규칙의 수치는 게임의 내용(SALVAGE, BAG_UP)에서 읽는다: 수치를 바꿔도 이 시험은 그대로 돈다.
-import { SHOP, SMITHY } from '@game/shared/defs';
-import { BAG_UP, CAMPS, DUNGEONS, ECON_HUNT, ECON_LOST_FULL, ENHANCE, GEAR, ITEMS, MAT_MAX, RARITIES, SALVAGE, autoSalvageChoices, bagSlots, bagUpPrice, canSalvage, dustFor, isItemId, isSupply, itemCap, salvageOn, sellPrice, type Gear, type ItemId, type MarketItem } from '../shared/defs';
-import type { Ent } from '../server/game/entity';
-import { Game } from '../server/game/game';
-import { WHY } from '../server/game/systems/wallet';
-import type { EconRow, PlayerSave } from '../server/store';
-import { check } from './harness';
+import { FORGES, SHOPS } from '../../shared/defs';
+import { BAG_UP, CAMPS, DUNGEONS, ECON_HUNT, ECON_LOST_FULL, ENHANCE, GEAR, ITEMS, MAT_MAX, RARITIES, SALVAGE, autoSalvageChoices, bagSlots, bagUpPrice, canSalvage, dustFor, isItemId, isSupply, itemCap, salvageOn, sellPrice, type Gear, type ItemId, type MarketItem } from '../../shared/defs';
+import type { Ent } from '../../server/game/entity';
+import { Game } from '../../server/game/game';
+import { WHY } from '../../server/game/systems/wallet';
+import type { EconRow, PlayerSave } from '../../server/store';
+import { check } from '../harness';
+
+/** 시험용 내용의 상인과 대장간 */
+const SHOP = SHOPS[0], SMITHY = FORGES[0];
 
 type MonsterType = Parameters<Game['monsters']['spawn']>[0];
 const DUST = SALVAGE.item as ItemId;
@@ -18,7 +21,7 @@ function bench() {
   const kill = (p: Ent, type: MonsterType) => { const m = g.monsters.spawn(type, p.x + 1, p.z); m.layer = p.layer; g.combat.damage(p, m, 1e6, false); };
   const cmd = (p: Ent, m: Record<string, unknown>) => g.command(p, m);
   const run = (s: number) => { for (let i = 0, n = Math.round(s * 20); i < n; i++) { g.tick(0.05); t.clock += 50; } };
-  const hero = (name: string, pid: string) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'warrior'); while (p.lv < 12) g.players.grant(p, 400, 0); p.hp = p.maxHp; g.ledger.note(p, 'setup'); return p; };
+  const hero = (name: string, pid: string) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'knight'); while (p.lv < 12) g.players.grant(p, 400, 0); p.hp = p.maxHp; g.ledger.note(p, 'setup'); return p; };
   /** 장비 한 점을 가방에 넣는다 (시험의 준비) */
   const gear = (p: Ent, rar: number, plus = 0, slot: Gear['slot'] = 'ring'): Gear => { const it = g.gear.roll(3, rar, slot); it.plus = plus; g.bag.giveGear(p, it, 'setup'); return it; };
   let seen = new Map<string, number>();
@@ -43,7 +46,7 @@ const goldOf = (p: Ent): number => p.gold;
 // ---------- 정의: 가루 아이템과 수치 ----------
 {
   check(salvageOn() && isItemId(SALVAGE.item) && ITEMS[DUST].kind === 'mat' && SALVAGE.dust.length === RARITIES.length, `분해의 표가 등급마다 차 있고, 나오는 것(${SALVAGE.item})은 재료 아이템이다`);
-  check(itemCap(DUST) > MAT_MAX && itemCap('iron') === MAT_MAX, `가루의 한도(${itemCap(DUST)})는 다른 재료(${MAT_MAX})보다 크고, 다른 재료의 한도는 그대로다`);
+  check(itemCap(DUST) > MAT_MAX && itemCap('ore') === MAT_MAX, `가루의 한도(${itemCap(DUST)})는 다른 재료(${MAT_MAX})보다 크고, 다른 재료의 한도는 그대로다`);
   check(SALVAGE.dust.every((n, i) => n > 0 && (i === 0 || n > SALVAGE.dust[i - 1])), `등급이 높을수록 가루가 많다 (${SALVAGE.dust.join(', ')})`);
   check(dustFor({ rar: 0, plus: 0 }) === SALVAGE.dust[0] && dustFor({ rar: 2, plus: 4 }) === SALVAGE.dust[2] + 4 * SALVAGE.perPlus && dustFor({ rar: 3, plus: ENHANCE.max }) === SALVAGE.dust[3] + ENHANCE.max * SALVAGE.perPlus, '나오는 가루 = 등급별 양 + 강화 단계 × 덤');
   check(same(autoSalvageChoices().map(String), ['-1', ...RARITIES.map((_, i) => i).filter((i) => i <= SALVAGE.autoMaxRar).map(String)]) && SALVAGE.autoMaxRar < RARITIES.length - 1, '자동 분해의 선택지: 끔과, 가장 높은 등급을 뺀 등급들');
@@ -69,8 +72,8 @@ const goldOf = (p: Ent): number => p.gold;
   // 거절: 낀 것, 보급형, 잠근 것, 없는 번호, 남의 번호, 겹친 번호, 모양이 깨진 값
   const worn = gear(p, 1, 0, 'charm'), locked = gear(p, 0), ok = gear(p, 0);
   g.gear.equip(p, worn.uid);
-  at(p, SHOP.x + 1, SHOP.z); g.wallet.add(p, 'gold', 1000, 'setup'); cmd(p, { t: 'buy', id: 'sword2' });
-  const supply = p.gear.find((x) => isSupply(x) && x.base === 'sword2')!, weapon = p.gear.find((x) => x.uid === p.worn.weapon)!;
+  at(p, SHOP.x + 1, SHOP.z); g.wallet.add(p, 'gold', 1000, 'setup'); cmd(p, { t: 'buy', id: 'blade2' });
+  const supply = p.gear.find((x) => isSupply(x) && x.base === 'blade2')!, weapon = p.gear.find((x) => x.uid === p.worn.weapon)!;
   cmd(p, { t: 'gearLock', uid: locked.uid, on: true });
   said(p);
   const n0 = p.gear.length, d0 = dustOf(p);
@@ -152,7 +155,7 @@ const goldOf = (p: Ent): number => p.gold;
     let first = true;
     g.gear.random = () => { if (first) { first = false; return 0; } return (from + RARITIES[rar].weight / 2) / total; };
   };
-  const drop = (rar: number): void => { dropRar(rar); kill(p, 'wolf'); };
+  const drop = (rar: number): void => { dropRar(rar); kill(p, 'hound'); };
 
   check(p.autoSalvage === -1 && mine<{ on: boolean; auto: number }>(p, 'salvage').on && mine<{ auto: number }>(p, 'salvage').auto === -1, '처음에는 꺼져 있다');
   const n0 = p.gear.length;
@@ -193,10 +196,10 @@ const goldOf = (p: Ent): number => p.gold;
   g.out = []; cmd(seller, { t: 'market', a: 'mine' });
   const id = (g.out.filter((o) => o.id === seller.id && o.msg.t === 'market').pop()?.msg as { list: MarketItem[] }).list[0].id;
   cmd(p, { t: 'market', a: 'buy', id });
-  at(p, SHOP.x + 1, SHOP.z); cmd(p, { t: 'buy', id: 'armor1' });
-  g.bag.putItem(p, 'iron', 10, 'setup'); g.bag.putItem(p, 'hide', 10, 'setup');
-  at(p, SMITHY.x + 1, SMITHY.z + 1); cmd(p, { t: 'craft', id: 'sword3' });
-  g.gear.give(p, g.gear.roll(DUNGEONS.crypt.dropLv, 0), ECON_HUNT.inst); // 던전 완료 보상이 주는 길 (dungeon.ts의 clear)
+  at(p, SHOP.x + 1, SHOP.z); cmd(p, { t: 'buy', id: 'plate1' });
+  g.bag.putItem(p, 'ore', 10, 'setup'); g.bag.putItem(p, 'pelt', 10, 'setup');
+  at(p, SMITHY.x + 1, SMITHY.z + 1); cmd(p, { t: 'craft', id: 'blade3' });
+  g.gear.give(p, g.gear.roll(DUNGEONS.vault.dropLv, 0), ECON_HUNT.inst); // 던전 완료 보상이 주는 길 (dungeon.ts의 clear)
   check(p.gear.length === n2 + 5 && dustOf(p) === d1, '우편·거래소·상점·제작·던전 완료 보상으로 받은 일반 장비는 자동 분해되지 않는다');
 
   // 설정은 저장된다
@@ -242,7 +245,7 @@ const goldOf = (p: Ent): number => p.gold;
   cmd(p, { t: 'autoSalvage', rar: 1 });
   at(p, CAMPS[0].x, CAMPS[0].z);
   while (!g.bag.full(p)) gear(p, 0);
-  g.bag.putItem(p, 'potion', 10, 'setup');
+  g.bag.putItem(p, 'draught', 10, 'setup');
   g.ledger.note(p, 'setup'); fresh();
   // 서버가 대신 사냥한다 (틱 안의 진짜 전투). 떨어지는 장비의 등급을 번갈아 정한다: 일반(분해), 희귀(가방이 가득 차 버려짐)
   const total = RARITIES.reduce((s, x) => s + x.weight, 0), mid = (rar: number) => (RARITIES.slice(0, rar).reduce((s, x) => s + x.weight, 0) + RARITIES[rar].weight / 2) / total;
@@ -329,7 +332,7 @@ const goldOf = (p: Ent): number => p.gold;
   const n = MAT_MAX + 51;
   cmd(p, { t: 'market', a: 'post', item: DUST, n, price: 400 });
   check(dustOf(p) === 300 - n && g.market.count === 1 && g.market.held().items[DUST] === n, `가루 ${n}개를 한 묶음으로 올린다 (다른 재료의 한도 ${MAT_MAX}보다 많이)`);
-  cmd(p, { t: 'market', a: 'post', item: 'iron', n: MAT_MAX + 1, price: 400 });
+  cmd(p, { t: 'market', a: 'post', item: 'ore', n: MAT_MAX + 1, price: 400 });
   check(g.market.count === 1 && said(p).includes('marketCant'), '다른 재료는 전처럼 제 한도까지만 올린다');
   // 월드 저장 왕복: 큰 묶음이 그대로 남는다
   const g2 = new Game();
@@ -340,8 +343,8 @@ const goldOf = (p: Ent): number => p.gold;
   cmd(buyer, { t: 'market', a: 'buy', id });
   check(dustOf(buyer) === n && goldOf(buyer) === 5000 - 400 && g.market.count === 0, '다른 사람이 사면 가루가 건너간다');
   // 저장을 읽을 때의 한도
-  const rich = g.players.spawn('부자', false, { name: '부자', lv: 5, exp: 0, need: 100, maxHp: 100, sparks: 0, gold: 10, items: { [DUST]: 5e6, iron: 5000 } }, 'key-rich');
-  check(dustOf(rich) === itemCap(DUST) && rich.items.iron === MAT_MAX, '저장을 읽을 때 가루는 제 한도로, 다른 재료는 재료의 한도로 자른다');
+  const rich = g.players.spawn('부자', false, { name: '부자', lv: 5, exp: 0, need: 100, maxHp: 100, sparks: 0, gold: 10, items: { [DUST]: 5e6, ore: 5000 } }, 'key-rich');
+  check(dustOf(rich) === itemCap(DUST) && rich.items.ore === MAT_MAX, '저장을 읽을 때 가루는 제 한도로, 다른 재료는 재료의 한도로 자른다');
   check(sellPrice(g.gear.roll(1, 0)) > 0, '파는 길은 그대로 있다 (분해와 고른다)');
 }
 
@@ -361,7 +364,7 @@ const goldOf = (p: Ent): number => p.gold;
   const n0 = p.gear.length;
   g.gear.random = () => 0;
   at(p, CAMPS[2].x, CAMPS[2].z);
-  kill(p, 'wolf');
+  kill(p, 'hound');
   check(p.gear.length === n0 + 1 && dustOf(p) === 0 && mine<{ auto: number }>(p, 'salvage').auto === -1, '설정이 남아 있어도 주운 장비는 분해되지 않고 가방에 들어온다');
   cmd(p, { t: 'gearLock', uid: a.uid, on: true });
   check(a.lock === true, '잠금은 분해와 무관하게 쓸 수 있다 (팔기와 거래소를 막는다)');
