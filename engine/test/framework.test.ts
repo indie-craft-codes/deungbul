@@ -418,7 +418,7 @@ function noonOf(day: unknown): number {
   const wanted = [...contract.matchAll(/^ {2}([A-Z][A-Z_0-9]*):/gm)].map((m) => m[1]);
   const passed = (/export \{([^}]*)\} from '@game\/shared\/content';/.exec(read('engine/shared/defs.ts'))?.[1] ?? '').replace(/\/\/.*$/gm, '').split(',').map((s) => s.trim()).filter(Boolean);
   const onlyContract = wanted.filter((n) => !passed.includes(n)), onlyChannel = passed.filter((n) => !wanted.includes(n));
-  check(wanted.length >= 55 && wanted.includes('MAP') && wanted.includes('ECON_NOTICES') && new Set(passed).size === passed.length && onlyContract.length === 0 && onlyChannel.length === 0,
+  check(wanted.length >= 55 && wanted.includes('MAP') && wanted.includes('ECON_HUNT') && new Set(passed).size === passed.length && onlyContract.length === 0 && onlyChannel.length === 0,
     `틀의 통로가 게임에서 다시 내보내는 이름은 내용 계약의 이름과 같다 (${wanted.length}개)${onlyContract.length + onlyChannel.length ? `: 계약에만 ${onlyContract.join(', ') || '없음'}, 통로에만 ${onlyChannel.join(', ') || '없음'}` : ''}`);
   // 계약 밖의 것은 @game의 그 파일이 내보내더라도 틀의 통로로는 나오지 않는다 (실제로 불러 본다)
   const engineDefs = await import('../shared/defs') as Record<string, unknown>, engineWorld = await import('../shared/world') as Record<string, unknown>;

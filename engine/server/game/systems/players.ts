@@ -1,10 +1,11 @@
 // 플레이어: 생성, 저장 값 주고받기, 성장(경험치와 불씨).
-import { CLASS_IDS, ITEMS, LEVEL, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, nextNeed } from '../../../shared/defs';
+import { CLASS_IDS, ECON_HUNT, ITEMS, LEVEL, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, nextNeed } from '../../../shared/defs';
 import type { PlayerSave } from '../../store';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { clamp, type Ent } from '../entity';
 import type { Game } from '../game';
+import { isField } from '../layers';
 import { Shop } from './shop';
 
 /**
@@ -43,11 +44,13 @@ export class Players {
         const sparks = (def.sparks ? roll(def.sparks) : 0) + g.mods.sum('sparkBonus', p), gold = roll(def.gold);
         // 덤으로 받는 경험치 (휴식 보너스 같은 것: 그 규칙을 가진 시스템이 killBonus에 등록한다)
         const bonus = g.killBonus.reduce((sum, fn) => sum + fn(p, m), 0);
-        p.gold += gold;
-        g.notify(p, 'kill', m.type, def.exp + bonus + Math.round(def.exp * g.mods.sum('exp', p)), sparks, gold);
         // 길드 같은 보정으로 더 받는 경험치
         const extra = Math.round(def.exp * g.mods.sum('exp', p));
-        this.grant(p, def.exp + bonus + extra, sparks);
+        const why = this.huntWhy(p, m), exp = def.exp + bonus + extra;
+        const got = g.wallet.add(p, 'gold', gold, why);
+        // 안내문에는 실제로 받는 양을 넣는다 (배율이 걸려 있으면 그만큼 준다). 레벨 업 안내가 이 뒤에 오도록 경험치와 불씨는 안내문 다음에 준다
+        g.notify(p, 'kill', m.type, g.wallet.amount(p, 'exp', exp, why), g.wallet.amount(p, 'sparks', sparks, why), got);
+        this.grant(p, exp, sparks, why);
       }
     });
   }
@@ -136,9 +139,21 @@ export class Players {
     p.dirty = true;
   }
 
-  /** 경험치와 불씨를 준다. 레벨이 오르면 체력이 늘고 가득 찬다. */
-  grant(p: Ent, exp: number, sparks: number): void {
-    p.exp += exp; p.sparks += sparks; p.dirty = true; p.unsaved = true;
+  /** 처치로 얻은 것의 원인 이름: 던전 인스턴스 안, 자리 비움 사냥 중, 접속 중. 지갑에 넘기는 이름과 장부가 처치의 앞뒤 차이(장비, 재료)에 붙이는 이름이 이것 하나다 */
+  huntWhy(p: Ent, m: Ent): string { return !isField(m.layer) ? ECON_HUNT.inst : this.g.away.active(p) ? ECON_HUNT.away : ECON_HUNT.live; }
+
+  /**
+   * 경험치와 불씨를 준다 (지갑을 거친다). 레벨이 오르면 체력이 늘고 가득 찬다.
+   * why: 원인의 이름 (장부에 그 이름으로 적힌다. 이름의 체계는 systems/wallet.ts). 비워 두면 장부가 그때의 경계(명령, 사건)로 가려 적는다
+   */
+  grant(p: Ent, exp: number, sparks: number, why = ''): void {
+    this.g.wallet.add(p, 'sparks', sparks, why); this.g.wallet.add(p, 'exp', exp, why);
+    p.dirty = true; p.unsaved = true;
+    this.levelUp(p); // 받은 경험치가 없어도 확인한다 (전과 같게: 저장에서 필요치를 꽉 채운 채 읽힌 캐릭터)
+  }
+
+  /** 경험치가 찼으면 레벨을 올린다. 경험치가 늘어난 뒤에 불린다 (지갑이 부른다) */
+  levelUp(p: Ent): void {
     while (p.exp >= p.need) {
       p.exp -= p.need; p.need = nextNeed(p.need); p.lv++; this.refresh(p); p.hp = p.maxHp;
       this.g.notify(p, 'levelUp', p.lv);

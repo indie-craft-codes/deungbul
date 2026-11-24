@@ -3,8 +3,6 @@
 // 아래의 MeState처럼 이름 붙은 타입은 이 게임의 파일(규칙 시스템, games/deungbul/client/)만 가져다 쓴다.
 // 틀의 파일(engine/shared/protocol.ts, messages.ts 등과 틀의 서버 파일)은 이 파일을 import하지 않는다 (engine/test/framework.test.ts가 검사한다).
 // 서버 쪽의 짝(시스템 칸, 사건)은 games/deungbul/server/deungbul.ts에 있다.
-import type { MsgKey } from '@engine/shared/messages';
-import type { EconNoticeKey } from './content/economy';
 import type { RaidPhase } from './content/raid';
 
 declare module '@engine/shared/ext' {
@@ -79,7 +77,3 @@ export interface MeState {
 
 /** 호환: 다음 배포에서 뺀다. 개인 상태로 옮기기 전에 stat 메시지에 실려 가던 이 게임의 칸 */
 export interface OldStatCells { contrib: number; rested: number; tier: number }
-
-/** 장부가 안내문으로 원인을 가리는 보상(content/economy.ts의 ECON_NOTICES)은 모두 실제 안내문의 종류여야 한다: 오타가 있으면 여기서 컴파일되지 않는다 */
-export type EconNoticesAreMsgs = [EconNoticeKey] extends [MsgKey] ? true : { 안내문이_아닌_키: Exclude<EconNoticeKey, MsgKey> };
-true satisfies EconNoticesAreMsgs;

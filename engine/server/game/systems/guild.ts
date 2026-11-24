@@ -6,6 +6,7 @@ import { CHAT_MAX, NAME_MAX } from '../../../shared/world';
 import { isClean, mask, tidy } from '../../text';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
+import { WHY } from './wallet';
 
 interface Member { pid: string; name: string; lv: number; cls: string; gave: number }
 interface GuildRec { id: number; name: string; leader: string; exp: number; notice: string; members: Member[] }
@@ -112,8 +113,8 @@ export class Guild {
     if (p.lv < GUILD.createLv) { g.notify(p, 'guildNeedLv', GUILD.createLv); return; }
     if ([...name].length < GUILD.nameMin || !isClean(name)) { g.notify(p, 'guildNameBad'); return; }
     if ([...this.guilds.values()].some((x) => x.name.toLowerCase() === name.toLowerCase())) { g.notify(p, 'guildNameTaken'); return; }
-    if (p.gold < GUILD.createGold) { g.notify(p, 'noGold'); return; }
-    p.gold -= GUILD.createGold; p.dirty = true; p.unsaved = true;
+    if (!g.wallet.take(p, 'gold', GUILD.createGold, WHY.guildCreate)) { g.notify(p, 'noGold'); return; }
+    p.dirty = true; p.unsaved = true;
     const rec: GuildRec = { id: this.nextId++, name, leader: p.pid, exp: 0, notice: '', members: [{ pid: p.pid, name: p.name, lv: p.lv, cls: p.cls, gave: 0 }] };
     this.guilds.set(rec.id, rec);
     this.of.set(p.pid, rec);
@@ -187,9 +188,9 @@ export class Guild {
     const g = this.g, rec = this.of.get(p.pid);
     n = Math.floor(n);
     if (!rec || !(n > 0)) return;
-    if (p.gold < n) { g.notify(p, 'noGold'); return; }
+    if (!g.wallet.take(p, 'gold', n, WHY.guildGive)) { g.notify(p, 'noGold'); return; }
     const before = this.level(rec);
-    p.gold -= n; p.dirty = true; p.unsaved = true;
+    p.dirty = true; p.unsaved = true;
     rec.exp += n;
     const m = rec.members.find((x) => x.pid === p.pid);
     if (m) m.gave += n;

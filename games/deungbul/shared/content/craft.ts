@@ -1,6 +1,6 @@
 // 제작: 잿빛 숲의 몬스터가 떨어뜨린 재료를 브람의 대장간에 가져가 무기를 만든다. 수치는 모두 잠정값이다.
 // 모양(ForgeDef, Recipe)은 틀에 있다: engine/shared/defs/craft.ts
-import type { ForgeDef, Recipe } from '@engine/shared/defs/craft';
+import type { ForgeDef } from '@engine/shared/defs/craft';
 import type { ItemId } from '@engine/shared/defs/items';
 import type { MonsterId } from '@engine/shared/defs/monsters';
 import { RESIDENTS, type ResidentId } from './residents';
@@ -15,14 +15,8 @@ export const FORGES: readonly ForgeDef[] = [
 export const SMITHY: { x: number; z: number } = FORGES[0];
 /** 대장간에 이만큼 다가가야 제작할 수 있다 */
 export const SMITHY_REACH = 4;
-export const RECIPES: readonly Recipe[] = [
-  // 등불검은 상점에서 골드로 살 수도 있다. 재료를 모으면 훨씬 싸다
-  { id: 'sword3', gold: 40, mats: { iron: 4, hide: 2 } },
-  // 쇠 갑옷도 재료를 모으면 싸게 만든다
-  { id: 'armor2', gold: 60, mats: { iron: 5, hide: 6 } },
-  // 잿불검은 제작으로만 얻는다. 잿빛 핵은 필드 보스가 준다
-  { id: 'sword4', gold: 100, mats: { iron: 8, hide: 5, ashcore: 1 } },
-];
+// 제작에 드는 골드와 재료(RECIPES)는 economy.ts에 있다
+export { RECIPES } from './economy';
 
 /** 몬스터가 떨어뜨리는 재료. 피해를 준 사람 각자가 따로 굴린다 */
 export const DROPS: Partial<Record<MonsterId, { id: ItemId; chance: number }>> = {

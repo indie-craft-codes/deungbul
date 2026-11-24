@@ -1,5 +1,6 @@
 // 안개 습격: 정해진 시각에 안개에서 나온 것들이 등탑으로 몰려온다. 수치는 모두 잠정값이다.
 import type { MonsterId } from '@engine/shared/defs/monsters';
+import { RAID_REWARD } from './economy';
 
 export interface RaidConfig {
   /** 습격이 시작되는 시각 (서버 현지 시간의 시). 매시 정각에 시작한다 */
@@ -52,7 +53,7 @@ export const RAID: RaidConfig = {
   towerHpBase: 240, towerHpPerGlow: 3, // 밝기가 바닥이어도 혼자 막아 볼 시간이 있게 넉넉히 잡는다
   drainPerS: 0.6, // 적 6마리가 붙어도 아무도 안 막으면 1분쯤 버틴다
   winGlow: 10, loseGlow: -10, // 한 번 진다고 여러 번 바친 것이 사라지지 않게 한다
-  rewardSparks: 5, rewardExp: 40,
+  rewardSparks: RAID_REWARD.sparks, rewardExp: RAID_REWARD.exp, // 값은 economy.ts에 있다
   types: ['slime', 'slime', 'wisp', 'wolf'],
 };
 

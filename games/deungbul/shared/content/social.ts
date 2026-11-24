@@ -1,5 +1,7 @@
 // 사람들 사이의 것: 길드와 거래소, 채널의 수치. 모두 잠정값이다.
 // 화면에 보이는 모양(GuildView, MarketItem)과 도우미(guildLevel, marketFee 등)는 틀에 있다: engine/shared/defs/social.ts
+// 골드에 닿는 수치(길드를 만드는 값·기부·레벨의 대가, 거래소의 값 범위와 수수료)는 economy.ts에 있고 아래 묶음이 거기서 읽는다
+import { GUILD_ECON, MARKET_ECON } from './economy';
 
 // ---------- 채널 ----------
 // 같은 들판을 여러 벌로 돌린다. 채널이 다르면 서로 보이지 않고 몬스터도 따로다 (engine/server/game/systems/channels.ts).
@@ -26,7 +28,7 @@ export const CHANNEL = {
 export const GUILD = {
   /** 만들 수 있는 레벨과 드는 골드 */
   createLv: 5,
-  createGold: 500,
+  createGold: GUILD_ECON.createGold,
   nameMin: 2,
   nameMax: 12,
   noticeMax: 60,
@@ -36,12 +38,12 @@ export const GUILD = {
   /** 초대가 거절되거나 받지 않은 채 사라진 뒤, 같은 사람이 같은 상대를 다시 초대할 수 있을 때까지(초). 초대를 되풀이해 남의 초대가 들어올 자리를 붙들지 못하게 한다 */
   reinviteS: 30,
   /** 길드 레벨 하나에 필요한 기부(골드)와 가장 높은 레벨 */
-  expPerGuildLevel: 2000,
-  maxLevel: 10,
+  expPerGuildLevel: GUILD_ECON.expPerGuildLevel,
+  maxLevel: GUILD_ECON.maxLevel,
   /** 길드 레벨 하나마다 길드원이 더 받는 처치 경험치 (비율) */
-  expPerLevel: 0.02,
+  expPerLevel: GUILD_ECON.expPerLevel,
   /** 한 번에 기부하는 단위 (화면의 단추) */
-  gives: [100, 1000] as readonly number[],
+  gives: GUILD_ECON.gives,
   /** 공지를 다시 올릴 수 있는 간격(초): 올릴 때마다 월드를 저장하므로 간격을 둔다 */
   noticeGapS: 5,
   /** 길드 대화를 다시 보낼 수 있는 간격(초) */
@@ -51,9 +53,9 @@ export const GUILD = {
 // ---------- 거래소 ----------
 export const MARKET = {
   /** 값의 한도(골드). 값은 minPrice 이상 이 값 이하의 정수다 */
-  maxPrice: 1_000_000,
+  maxPrice: MARKET_ECON.maxPrice,
   /** 가장 싼 값. 수수료가 적어도 1골드라서 1골드짜리는 팔아도 남는 것이 없다 */
-  minPrice: 2,
+  minPrice: MARKET_ECON.minPrice,
   /** 이 레벨부터 올리고 살 수 있다. 막 만든 부캐의 출석·방치 골드를 거래로 한 캐릭터에 모으지 못하게 한다 */
   minLv: 8,
   /** 목록을 다시 달라고 할 수 있는 간격(초) */
@@ -65,7 +67,7 @@ export const MARKET = {
   /** 올려 두는 기간(시간). 지나면 물건이 우편으로 돌아간다 */
   hours: 48,
   /** 팔린 값에서 떼는 수수료 (비율, 올림: 아래 marketFee). 뗀 골드는 사라진다 */
-  tax: 0.05,
+  tax: MARKET_ECON.tax,
   /** 목록 한 쪽에 보이는 수 */
   pageSize: 20,
   /** 기간이 지난 물건을 거두는 주기(초) */

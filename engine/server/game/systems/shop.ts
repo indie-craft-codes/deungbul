@@ -3,6 +3,7 @@
 import { ITEMS, MAT_MAX, POTION_CD, POTION_MAX, nearShop, isItemId, itemDef, type ItemId } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
+import { WHY } from './wallet';
 
 export class Shop {
   constructor(private g: Game) {
@@ -27,9 +28,8 @@ export class Shop {
     if (def.kind === 'weapon' || def.kind === 'armor') {
       if ((def.tier ?? 0) <= Shop.wornTier(p, def.kind)) { g.notify(p, 'alreadyBest'); return; }
     } else if ((p.items[id] ?? 0) >= POTION_MAX) { g.notify(p, 'potionFull'); return; }
-    if (p.gold < def.price) { g.notify(p, 'noGold'); return; }
+    if (!g.wallet.take(p, 'gold', def.price, WHY.buy)) { g.notify(p, 'noGold'); return; }
 
-    p.gold -= def.price;
     if (!Shop.wear(g, p, id)) p.items[id] = (p.items[id] ?? 0) + 1;
     p.dirty = true; p.unsaved = true;
     g.notify(p, 'bought', id, p.cls);

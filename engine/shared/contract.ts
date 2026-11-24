@@ -10,7 +10,7 @@
 import type { ClassDef, SkillDef } from './defs/combat';
 import type { ForgeDef } from './defs/craft';
 import type { DungeonDef } from './defs/dungeons';
-import type { EconNotice } from './defs/economy';
+import type { CurrencyDef } from './defs/economy';
 import type { DailyDef, Reward } from './defs/growth';
 import type { ItemDef } from './defs/items';
 import type { MapDef } from './defs/map';
@@ -100,11 +100,13 @@ export interface ContentContract {
   GUILD: { createLv: number; createGold: number; nameMin: number; nameMax: number; noticeMax: number; maxMembers: number; inviteS: number; reinviteS: number; expPerGuildLevel: number; maxLevel: number; expPerLevel: number; gives: readonly number[]; noticeGapS: number; chatGapS: number };
   MARKET: { maxPrice: number; minPrice: number; minLv: number; listGapS: number; maxListings: number; maxTotal: number; hours: number; tax: number; pageSize: number; sweepS: number };
 
+  // ---------- 재화 ----------
+  /** 재화의 표: 재화의 id → 이름표 칸, 거래 가능 여부, 상한. 틀이 아는 칸은 gold, sparks, exp다 (없는 재화는 한도 없이 다룬다) */
+  CURRENCIES: Readonly<Record<string, CurrencyDef>>;
+
   // ---------- 재화 흐름 지표 (경제 장부: engine/server/game/systems/ledger.ts, scripts/econ.ts) ----------
   /** 장부가 적는 재화 */
   ECON_CURS: readonly string[];
-  /** 안내문으로 원인을 가리는 보상: 안내문의 종류 → 원인의 이름과, 몇 번째 값이 어느 재화인지. 없으면 빈 객체 */
-  ECON_NOTICES: Readonly<Partial<Record<string, EconNotice>>>;
   /** 생성도 소멸도 아닌 이동으로 바꿔 적을 원인들과, 이동으로 치는 원인의 머리말 */
   ECON_MOVES: readonly { cur: string; why: string; dir: '+' | '-'; as: string }[];
   ECON_MOVE_PREFIXES: readonly string[];

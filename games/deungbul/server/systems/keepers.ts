@@ -1,7 +1,7 @@
 // 등탑지기의 일: 오늘 등탑을 지킨 사람의 명단과, 누적 기여에 따른 단계 보상.
 // 등탑지기 할멈이 마을로 돌아오면 열린다. 그 전의 기여도 모두 세어 두었다가 돌아오는 순간 한꺼번에 인정한다.
 // 순위를 겨루게 하지 않으려고, 명단은 오늘 하루치만 보여 주고 날이 바뀌면 비운다.
-import { CONTRIB_TIERS, KEEPERS_SHOWN, RAID_KEEP_POINTS } from '../../shared/defs';
+import { CONTRIB_TIERS, ECON_WHY, KEEPERS_SHOWN, RAID_KEEP_POINTS } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
 import type { WorldState } from '@engine/shared/protocol';
 import { NAME_MAX } from '../../shared/world';
@@ -76,8 +76,9 @@ export class Keepers {
   claim(p: Ent): void {
     if (!this.open || p.bot) return;
     while (p.tier < CONTRIB_TIERS.length && p.contrib >= CONTRIB_TIERS[p.tier].need) {
-      const gold = CONTRIB_TIERS[p.tier].gold;
-      p.tier++; p.gold += gold; p.dirty = true; p.unsaved = true;
+      p.tier++;
+      const gold = this.g.wallet.add(p, 'gold', CONTRIB_TIERS[p.tier - 1].gold, ECON_WHY.tier);
+      p.dirty = true; p.unsaved = true;
       this.g.notify(p, 'tierUp', p.tier, gold);
     }
   }

@@ -3,6 +3,7 @@ import { DROPS, FORGES, MAT_MAX, RECIPES, SMITHY_REACH, isItemId, isMonsterId, i
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { Shop } from './shop';
+import { WHY } from './wallet';
 
 export class Craft {
   constructor(private g: Game) {
@@ -31,10 +32,9 @@ export class Craft {
     if ((def.kind === 'weapon' || def.kind === 'armor') && (def.tier ?? 0) <= Shop.wornTier(p, def.kind)) { g.notify(p, 'alreadyBest'); return; }
     const mats = Object.entries(recipe.mats) as [ItemId, number][];
     if (mats.some(([mat, n]) => (p.items[mat] ?? 0) < n)) { g.notify(p, 'noMats'); return; }
-    if (p.gold < recipe.gold) { g.notify(p, 'noGold'); return; }
+    if (!g.wallet.take(p, 'gold', recipe.gold, WHY.craft)) { g.notify(p, 'noGold'); return; }
 
     for (const [mat, n] of mats) p.items[mat] -= n;
-    p.gold -= recipe.gold;
     if (!Shop.wear(g, p, id, true)) p.items[id] = (p.items[id] ?? 0) + 1;
     p.dirty = true; p.unsaved = true;
     g.notify(p, 'crafted', id, p.cls);
