@@ -1,7 +1,7 @@
 // 사람을 눌렀을 때 뜨는 창(파티 초대, 차단, 신고), 받은 초대, 파티원 목록.
 import type { PartyMember } from '../../../shared/protocol';
 import { $ } from '../app';
-import { L, t } from '../i18n';
+import { L, onLangChange, t } from '../i18n';
 import { send } from '../net';
 import { isBlocked, toggleBlock } from '../social';
 import { S } from '../state';
@@ -34,6 +34,7 @@ export function initParty(): void {
   $('partyLeave').addEventListener('click', () => send({ t: 'party', a: 'leave' }));
   $('inviteYes').addEventListener('click', () => { send({ t: 'party', a: 'accept' }); closeInvite(); });
   $('inviteNo').addEventListener('click', () => { send({ t: 'party', a: 'decline' }); closeInvite(); });
+  onLangChange(renderParty);
 }
 
 /** 다른 사람을 눌렀다: 그 자리에 이름과 초대 단추를 띄운다. */

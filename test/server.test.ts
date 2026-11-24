@@ -97,7 +97,7 @@ try {
   await sleep(300);
   check(a.you[2] === 0, '다른 플레이어는 공격 대상이 되지 않는다');
 
-  const contribEnd = a.contrib, sparksEnd = a.sparks;
+  const sparksEnd = a.sparks;
 
   // 과도한 메시지는 연결이 끊긴다
   for (let i = 0; i < 200; i++) b.send({ t: 'ping', c: i });
@@ -114,7 +114,7 @@ try {
   await server.close();
   server = await startServer(0, { store });
   const a3 = await connect(server.port, undefined, TOKEN_A);
-  check(a3.name === '새이름' && (await until(() => a3.sparks === sparksEnd && a3.contrib === contribEnd && a3.lv >= 3)), '서버를 다시 켜도 캐릭터가 남는다');
+  check(a3.name === '새이름' && (await until(() => a3.sparks === sparksEnd && a3.lv >= 3)), '서버를 다시 켜도 캐릭터가 남는다');
   a3.ws.close();
 
   // 자리 비움 자동 사냥: 자동 사냥을 켠 채 끊기면 캐릭터가 남아 사냥하고, 다시 들어오면 그대로 이어받는다

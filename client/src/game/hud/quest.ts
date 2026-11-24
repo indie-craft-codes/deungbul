@@ -1,14 +1,16 @@
 // 메인 퀘스트 표시: 지금 할 일, 진행 수치, 목적지 길잡이(빛기둥과 화면 가장자리 화살표).
 // 창을 누르면 목적지까지 걸어간다. 가는 것만 자동이고, 도착한 뒤의 일(전투, 구매, 바치기)은 직접 한다.
-import { QUESTS, goalCount, type QuestStep } from '../../../shared/defs';
-import { moveTo } from '../actions';
-import { $, view } from '../app';
-import { goalBeam } from '../deungbul/scene';
-import { G } from '../game/state';
-import { L, t } from '../i18n';
-import { S, inDungeon } from '../state';
+import { QUESTS, goalCount, type QuestStep } from '../../../../shared/defs';
+import { moveTo } from '../../actions';
+import { $, view } from '../../app';
+import { onFrame } from '../../bus';
+import { L, onLangChange, t } from '../../i18n';
+import { S, inDungeon } from '../../state';
+import { goalBeam } from '../scene/scene';
+import { G } from '../state';
 
-const ui = { panel: $('quest'), title: $('questTitle'), step: $('questStep'), prog: $('questProg'), dist: $('questDist'), arrow: $('goalArrow'), go: $('questGo') };
+/** 화면의 요소들. initQuest에서 잡는다 (이 게임의 창이 화면에 붙은 뒤다) */
+let ui: Record<'panel' | 'title' | 'step' | 'prog' | 'dist' | 'arrow' | 'go', HTMLElement>;
 
 let needSparks = false;
 
@@ -23,7 +25,10 @@ export function goToQuest(): void {
 }
 
 export function initQuest(): void {
+  ui = { panel: $('quest'), title: $('questTitle'), step: $('questStep'), prog: $('questProg'), dist: $('questDist'), arrow: $('goalArrow'), go: $('questGo') };
   ui.panel.addEventListener('click', goToQuest);
+  onFrame(questFrame);
+  onLangChange(renderQuest);
 }
 
 /** 퀘스트 진행이나 언어가 바뀌었을 때 다시 쓴다. */

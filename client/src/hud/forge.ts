@@ -2,13 +2,26 @@
 import { RECIPES, SMITH, SMITHY, SMITHY_REACH, itemDef, isItemId, type ItemId } from '../../../shared/defs';
 import { craft } from '../actions';
 import { $ } from '../app';
-import { L, itemInfo, itemName, t } from '../i18n';
+import { onMsg, onSlow } from '../bus';
+import { L, itemInfo, itemName, onLangChange, t } from '../i18n';
 import { rules } from '../rules';
 import { S } from '../state';
+import { addPlace } from './near';
 import { sourceLine } from './sources';
 
-const ui = { panel: $('forge'), gold: $('forgeGold'), list: $('forgeList') };
+let ui: Record<'panel' | 'gold' | 'list', HTMLElement>;
 const open = (): boolean => rules.unlocked(SMITH);
+
+export function initForge(): void {
+  ui = { panel: $('forge'), gold: $('forgeGold'), list: $('forgeList') };
+  renderForge();
+  addPlace('forge', [SMITHY]);
+  // 내 소지품(stat)이 바뀌면 다시 그린다. 공유 상태가 올 때도 전부터 다시 그렸다
+  onMsg('stat', renderForge);
+  onMsg('world', renderForge);
+  onSlow(forgeSlow);
+  onLangChange(renderForge);
+}
 
 /** 내 소지품, 언어가 바뀌면 다시 그린다. */
 export function renderForge(): void {

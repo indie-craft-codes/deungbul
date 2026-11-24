@@ -4,7 +4,8 @@ import { createHash } from 'node:crypto';
 import { FORGE, GLOW_START, RAID, nextRaidAt } from '../../shared/defs';
 import { TOWER } from '../../shared/world';
 import { MemoryStore } from '../../server/store';
-import { check, until, sleep, connect } from '../harness';
+import { check, until, sleep } from '../harness';
+import { connectDeungbul as connect } from './peer';
 import { startDeungbul } from './game';
 
 // A는 저장된 캐릭터가 있는 상태로 시작한다 (불씨 5개, 레벨 3)
