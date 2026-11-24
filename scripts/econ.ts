@@ -10,9 +10,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { ECON_HUNT, ECON_LOST_FULL, ECON_UNKNOWN, ECON_WATCH, ENHANCE, RARITIES, isEconMove } from '../shared/defs';
-import type { EconSnapshot } from '../server/game/systems/ledger';
-import type { EconRow } from '../server/store';
+import { ECON_HUNT, ECON_LOST_FULL, ECON_UNKNOWN, ECON_WATCH, ENHANCE, RARITIES, isEconMove } from '../engine/shared/defs';
+import type { EconSnapshot } from '../engine/server/game/systems/ledger';
+import type { EconRow } from '../engine/server/store';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);

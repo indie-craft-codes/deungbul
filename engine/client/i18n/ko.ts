@@ -1,0 +1,385 @@
+// 한국어, 틀의 몫: 어느 게임에서나 쓰는 화면의 문장이다 (접속, 내 정보, 전투, 상점·제작·장비·우편·일일·순위·길드·거래소·채널·던전·자동 사냥, 틀의 안내문).
+// 기준 언어다: 다른 언어의 틀 파일(en.ts)은 이 파일과 같은 모양을 갖춰야 컴파일된다.
+// 이 게임의 문장(등탑, 퀘스트 등)과 내용의 이름(몬스터, 아이템, 직업 …)은 여기 없다: 게임의 언어 파일(client/src/game/i18n/)에 있고 mergeLocale로 합친다.
+// 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
+// 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (test/framework.test.ts가 검사한다).
+import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemDef, ItemId, MonsterId, Stat } from '../../shared/defs';
+import { ITEMS } from '../../shared/defs';
+import type { MsgMap } from '../../shared/ext';
+import type { MsgArg, MsgKey } from '../../shared/messages';
+import type { LocaleExt } from './ext';
+import { itemNameOf, type ContentNames } from './names';
+
+/** 틀의 안내문 종류: 게임이 확장 지점(shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
+export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
+
+/** 받침이 있으면 a, 없으면 b를 붙인다 (예: 검이 / 활이, 방패가). 한글이 아니면 둘 다 적는다. */
+export function josa(word: string, a: string, b: string): string {
+  const code = word.charCodeAt(word.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return `${word}${a}(${b})`;
+  return word + ((code - 0xac00) % 28 ? a : b);
+}
+
+/** '~(으)로': 받침이 없거나 ㄹ받침이면 '로', 아니면 '으로'. 한글이 아니면 둘 다 적는다. */
+export function ro(word: string): string {
+  const code = word.charCodeAt(word.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return `${word}(으)로`;
+  const jong = (code - 0xac00) % 28;
+  return word + (jong === 0 || jong === 8 ? '로' : '으로');
+}
+
+const gearSlots: Record<GearSlot, string> = { weapon: '무기', armor: '갑옷', ring: '반지', amulet: '목걸이', charm: '부적' };
+const rarities: Record<string, string> = { supply: '보급형', made: '제작', common: '평범한', uncommon: '쓸 만한', rare: '희귀한', epic: '빛나는' };
+/** 조작 안내의 항목들을 한 줄로 잇는다. 항목 안의 빈칸은 줄이 바뀌지 않는 빈칸으로 바꿔서, 줄이 넘어갈 때 항목 사이에서만 끊기게 한다 */
+export const keyHints = (items: string[]) => items.map((s) => s.replace(/ /g, ' ')).join(' · ');
+export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
+/** 큰 수에 자릿수 구분을 넣는다 (1,000,000). 골드와 값은 모두 이것을 거친다 */
+export const num = (n: MsgArg) => Number(n).toLocaleString('ko-KR');
+
+/**
+ * 틀의 문장 묶음. 내용의 이름표(n)를 받아 만든다: 게임마다 몬스터·아이템·직업의 이름이 다르고, 틀의 안내문이 그 이름을 문장에 넣는다.
+ * 게임은 mergeLocale(koBase(이름표), 게임의 문장)으로 자기 언어 묶음을 만든다 (이 게임: client/src/game/i18n/index.ts)
+ */
+export const koBase = (n: ContentNames) => {
+  const { monsters, items, classes, dungeons, dailies } = n;
+  /** 두 번째 재화의 이름 (처치·우편·자리 비움 보상에 적힌다) */
+  const coin = n.currency2;
+  const itemName = itemNameOf(items);
+  /** 쓰러진 뒤 다시 일어나는 곳의 이름 */
+  const place = (id: MsgArg) => n.places[String(id)] ?? String(id);
+  /** 거래소 우편 제목에 넣을 물건의 이름: [아이템 id나 장비 칸, 수량] */
+  const tradeWhat = (a: (string | number)[]) => { const name = items[a[0] as ItemId]?.name ?? gearSlots[a[0] as GearSlot] ?? String(a[0]); return Number(a[1]) > 1 ? `${name} ×${a[1]}` : name; };
+  return {
+    code: 'ko',
+    label: '한국어',
+    ui: {
+      title: '게임', // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      connecting: '접속 중…',
+      disconnected: '서버와 연결이 끊어졌습니다.',
+      stale: '새 버전이 나왔습니다. 새로고침해 주세요.',
+      reload: '새로고침',
+      reconnecting: '연결이 끊어져 다시 접속하는 중입니다…',
+      channel: '채널',
+      soundOn: '소리 켬',
+      soundOff: '소리 끔',
+      full: '서버가 가득 찼습니다. 잠시 뒤에 다시 시도해 주세요.',
+      reconnect: '다시 접속',
+      renameTitle: '눌러서 이름 바꾸기',
+      renameLabel: '새 이름',
+      renameSubmit: '변경',
+      chatPlaceholder: '[[Enter로 대화|대화 입력]]',
+      chatLabel: '대화 입력',
+      stickLabel: '이동 조이스틱',
+      hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 물약', 'R: 자동 사냥', 'B: 가방', 'M: 메뉴', 'Tab: 대상', 'Enter: 대화']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      attackNearest: '가까운 대상 공격',
+      auto: '자동 사냥',
+      bag: '가방',
+      minimap: '미니맵',
+      mapLegendDungeon: '붉은 ○ 우두머리 · 하늘색 파티원',
+      bagWeapon: '무기',
+      bagArmor: '갑옷',
+      bagArmorHint: '길 상인에게서 살 수 있습니다',
+      bagPotions: '물약',
+      bagMats: '제작 재료',
+      dungeonEnter: '들어가기',
+      dungeonLeave: '던전 나가기',
+      dungeonLeaveConfirm: '한 번 더 누르면 나갑니다 (오늘 횟수는 돌아오지 않습니다)',
+      bagToGear: '장비 보기 (메뉴의 장비)',
+      dungeonNoRuns: '오늘은 더 들어갈 수 없습니다. 자정에 다시 열립니다.',
+      menu: '메뉴',
+      tabGear: '장비',
+      tabMail: '우편',
+      tabDaily: '일일',
+      tabRank: '순위',
+      tabMarket: '거래소',
+      marketBrowse: '둘러보기',
+      marketMine: '내 물건',
+      marketPost: '올리기',
+      marketAll: '전체',
+      marketMat: '재료',
+      marketSortNew: '최신순',
+      marketSortCheap: '싼 순',
+      marketSortCostly: '비싼 순',
+      marketRefresh: '새로 고침',
+      marketPrev: '이전',
+      marketNext: '다음',
+      marketFilter: '종류',
+      marketSort: '정렬',
+      marketCancel: '내리기',
+      marketPick: '고르기',
+      marketPriceHint: '묶음 전체의 값 (골드)',
+      marketCountHint: '수량',
+      marketEmpty: '올라온 물건이 없습니다.',
+      marketMineEmpty: '올려 둔 물건이 없습니다.',
+      marketPostEmpty: '올릴 수 있는 물건이 없습니다. 끼고 있는 장비와 보급형, 물약은 올릴 수 없습니다.',
+      marketPickHint: '아래에서 올릴 물건을 고르고 값을 적어 주세요.',
+      marketGuestNote: '이 브라우저에서는 캐릭터가 저장되지 않아 거래소에서 사고팔 수 없습니다.',
+      tabGuild: '길드',
+      guildInvite: '길드 초대',
+      guildCreate: '만들기',
+      guildNameHint: '길드 이름 (2~12자)',
+      guildNoticeHint: '길드 공지',
+      guildNoticeSet: '공지 올리기',
+      guildKick: '추방',
+      guildLeader: '길드장',
+      guildLeave: '길드 나가기',
+      guildMaxLv: '길드가 가장 높은 레벨입니다',
+      guildGiveInfo: '골드를 기부하면 길드 레벨이 오르고, 길드원 모두의 경험치가 늘어납니다.',
+      guildChatHint: "대화창에 '/g 내용'이라고 치면 길드원에게만 보입니다. 초대는 길드장이 상대를 눌러서 합니다.",
+      guildChatTag: '[길드]',
+      tabBuild: '성장',
+      skillUpHead: '기술 강화',
+      skillUpBtn: '강화',
+      equip: '끼기',
+      unequip: '빼기',
+      enhanceMaxed: '강화 끝',
+      enhanceFailed: '강화 실패 · 장비는 그대로입니다',
+      claim: '받기',
+      claimAll: '모두 받기',
+      gearEmpty: '남는 장비가 없습니다. 몬스터를 잡으면 가끔 떨어집니다.',
+      mailEmpty: '받을 우편이 없습니다.',
+      rankEmpty: '아직 순위가 없습니다.',
+      dailyDone: '완료',
+      dailyNote: '임무를 채우면 보상이 우편으로 옵니다. 자정에 새로 시작합니다.',
+      none: '없음',
+      autoOn: '자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. 켠 채로 창을 닫으면 캐릭터가 남아 계속 사냥합니다(최대 8시간).',
+      autoOff: '자동 사냥을 껐습니다.',
+      noTargetNearby: '주변에 대상이 없습니다.',
+      language: '언어',
+      chooseClass: '직업을 고르세요',
+      changeClass: '직업 바꾸기',
+      close: '닫기',
+      shop: '길 상인',
+      forge: '대장간', // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      party: '파티',
+      partyInvite: '파티 초대',
+      partyLeave: '나가기',
+      partyAccept: '수락',
+      partyDecline: '거절',
+      report: '신고',
+      reportConfirm: '한 번 더 누르면 신고',
+      currentClass: '지금 직업',
+      block: '대화 차단',
+      unblock: '차단 풀기',
+      owned: '보유 중',
+      chatOpen: '대화하기',
+    },
+    monsters,
+    dungeons,
+    /** 능력치의 이름과 지금 주는 것 */
+    build: {
+      stats: {
+        pow: { name: '힘', info: (v: number) => `공격 피해 +${v}%` },
+        vit: { name: '체력', info: (v: number) => `최대 체력 +${v}` },
+        luck: { name: '행운', info: (v: number) => `치명타 +${v}%` },
+      } satisfies Record<BuildStat, { name: string; info: (v: number) => string }>,
+    },
+    /** 드롭 장비와 일일 임무의 이름 */
+    gear: {
+      slots: gearSlots,
+      rarities,
+      stats: {
+        dmg: (v: number) => `공격 피해 +${v}%`,
+        guard: (v: number) => `받는 피해 -${v}%`,
+        crit: (v: number) => `치명타 +${v}%`,
+        hp: (v: number) => `체력 +${v}`,
+      } satisfies Record<Stat, (v: number) => string>,
+      dailies,
+    },
+    skills: n.skills,
+    items,
+    classes,
+    /** 값이 들어가는 화면 문구 */
+    fmt: {
+      level: (lv: number, cls: string) => `Lv ${lv} ${cls}`.trim(),
+      autoOnEarly: (lv: number) => `자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. (창을 닫아도 이어지는 것은 직업을 고르고 레벨 ${lv}부터입니다.)`,
+      marketBuy: (gold: number) => `사기 ${num(gold)}골드`,
+      marketConfirm: (gold: number) => `확인 · ${num(gold)}골드`,
+      marketSeller: (name: string) => `판매자 ${name}`,
+      marketLeft: (h: number, m: number) => (h > 0 ? `${h}시간 ${m}분 남음` : `${m}분 남음`),
+      marketPage: (page: number, pages: number, total: number) => `${page} / ${pages}쪽 · 물건 ${total}개`,
+      marketMineHead: (n: number, max: number) => `내 물건 ${n} / ${max}`,
+      marketPrice: (gold: number) => `값 ${num(gold)}골드`,
+      marketStack: (name: string, n: number) => (n > 1 ? `${name} ×${n}` : name),
+      marketPicked: (name: string) => `올릴 물건: ${name}`,
+      marketFeeInfo: (pct: number, hours: number) => `팔리면 수수료 ${pct}%를 뗀 금액이 우편으로 옵니다. ${hours}시간 안에 팔리지 않으면 물건이 우편으로 돌아옵니다.`,
+      marketNet: (price: number, fee: number, net: number) => `값 ${num(price)} − 수수료 ${num(fee)} = 받는 금액 ${num(net)}골드`,
+      marketPriceRange: (max: number) => `값은 2~${num(max)} 사이의 정수로 적어 주세요. 재료는 낱개 값이 아니라 묶음 전체의 값입니다.`,
+      marketCountRange: (max: number) => `수량은 1~${max} 사이로 적어 주세요.`,
+      guildCreateInfo: (lv: number, gold: number) => `길드를 만들려면 레벨 ${lv} 이상, 골드 ${num(gold)}이 필요합니다. 다른 길드에 들어가려면 그 길드장의 초대를 받으세요.`,
+      guildInviteFrom: (guild: string, from: string) => `${from} 님이 '${guild}' 길드에 초대했습니다`,
+      guildHead: (name: string, lv: number, pct: number) => `${name} · 길드 Lv ${lv} · 처치 경험치 +${pct}%`,
+      guildExp: (exp: number, need: number) => `다음 레벨까지 ${num(exp)} / ${num(need)}`,
+      guildGive: (n: number) => `기부 ${num(n)}`,
+      guildMembers: (n: number, max: number) => `길드원 ${n} / ${max}`,
+      guildGave: (n: number) => `기부 ${num(n)}`,
+      channelShort: (n: number) => `${n}채널`,
+      channelOpt: (n: number, people: number, foes: number) => `${n}채널 · ${people}명${foes > 0 ? ` · 적 ${foes}` : ''}`,
+      statLeft: (n: number, perLevel: number) => `능력치 · 남은 점수 ${n} (레벨이 오를 때마다 ${perLevel}점)`,
+      statResetFor: (gold: number) => `모두 돌려받기 · ${num(gold)}골드`,
+      skillLv: (lv: number, max: number) => `${lv} / ${max}단계`,
+      skillBonus: (pct: number) => `피해·회복 +${pct}%`,
+      skillNeed: (lv: number) => `레벨 ${lv} 필요`,
+      dungeonRuns: (left: number, max: number) => `오늘 ${left} / ${max}번`,
+      dungeonNeedLv: (lv: number) => `레벨 ${lv}부터 들어갈 수 있습니다.`,
+      dungeonInfo: (minutes: number, info: string) => `${info} 제한 시간 ${minutes}분.`,
+      dungeonFoes: (n: number) => `남은 적 ${n}`,
+      dungeonExit: (s: number) => `끝냈습니다. ${s}초 뒤에 밖으로 나갑니다.`,
+      gearName: (what: string, rarity: string, plus: number, lv: number) => `${rarity ? rarity + ' ' : ''}${what}${plus > 0 ? ` +${plus}` : ''} (Lv ${lv})`,
+      enhanceCost: (gold: number, pct: number) => `강화 ${num(gold)}골드 · ${pct}%`,
+      sellFor: (gold: number) => `팔기 ${num(gold)}골드`,
+      power: (n: number) => `전투력 ${num(n)}`,
+      streak: (n: number) => `출석 ${n}일째`,
+      reward: (gold: number, exp: number, second: number) => [gold ? `골드 ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
+      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeons[a[0] as DungeonId]?.name ?? a[0]} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : String(k)),
+      status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
+      itemDamage: (pct: number) => `공격 피해 +${pct}%`,
+      itemGuard: (pct: number) => `받는 피해 -${pct}%`,
+      itemHeal: (n: number) => `체력 ${n} 회복`,
+      skillLabel: (name: string, info: string, key: number) => `${name}: ${info} (단축키 ${key})`,
+      raidFoe: (name: string) => name, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      short: (n: number) => `골드 ${num(n)} 모자람`,
+      mat: (name: string, have: number, need: number) => `${name} ${have}/${need}`,
+      blocked: (name: string) => `${name} 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다.`,
+      unblocked: (name: string) => `${name} 님의 차단을 풀었습니다.`,
+      partyInvite: (name: string) => `${name} 님이 파티에 초대했습니다. 함께 잡으면 보상을 같이 받습니다.`,
+      gold: (n: number) => `골드 ${num(n)}`,
+      price: (n: number) => `${num(n)}골드`,
+      have: (n: number, max: number) => `${n} / ${max}`,
+      potions: (n: number) => `물약 ${n}`,
+      distance: (m: number) => `${m}m`,
+      /** 큰 수의 자릿수 구분 */
+      num: (n: number) => num(n),
+      sellConfirm: (gold: number) => `확인 · ${num(gold)}골드`,
+      enhanceDone: (plus: number) => `강화 성공 · +${plus}`,
+      gearHint: (supplyMax: number, max: number) => `강화: 보급형(상점에서 산 것)은 +${supplyMax}까지, 만들거나 주운 장비는 +${max}까지. 실패해도 장비는 그대로이고 골드만 듭니다.`,
+      marketPageShort: (page: number, pages: number, total: number) => `${page}/${pages} · ${num(total)}개`,
+      matFrom: (names: string[]) => `얻는 곳: ${names.join(', ')}`,
+      matSource: (mat: string, names: string[]) => `${mat} 얻는 곳: ${names.join(', ')}`,
+      dungeonMateIn: (names: string) => `파티원(${names})이 안에 있습니다. 들어가면 같은 곳으로 갑니다.`,
+    },
+    /** 서버 안내문 (shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
+    msg: {
+      joined: (a) => `${a[0]} 님이 들어왔습니다.`,
+      left: (a) => `${a[0]} 님이 나갔습니다.`,
+      renamed: (a) => `${a[0]} 님이 이름을 ${ro(String(a[1]))} 바꿨습니다.`,
+      renameWait: () => '이름은 잠시 뒤에 다시 바꿀 수 있습니다.',
+      replaced: () => '다른 곳에서 접속해 연결을 끊습니다.',
+      noTarget: () => '대상이 없습니다.',
+      tooFar: () => '대상이 너무 멉니다.',
+      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} 처치. 경험치 +${a[1]}, ${coin.name} +${a[2]}, 골드 +${num(a[3])}`,
+      levelUp: (a) => `레벨이 올랐습니다. Lv ${a[0]} · 능력치 3점 (메뉴의 성장)`,
+      died: (a) => `쓰러졌습니다. ${place(a[0])}에서 다시 일어났습니다. 잃은 것은 없습니다.`,
+      bought: (a) => `${josa(itemName(a[0], a[1]), '을', '를')} 샀습니다.`,
+      classChanged: (a) => `직업이 ${ro(classes[a[0] as ClassId]?.name ?? String(a[0]))} 정해졌습니다.`,
+      classFar: () => '여기서는 직업을 바꿀 수 없습니다.', // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      bossUp: (a) => `${josa(monsters[a[0] as MonsterId] ?? String(a[0]), '이', '가')} 나타났습니다.`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      bossDown: (a) => `${josa(monsters[a[0] as MonsterId] ?? String(a[0]), '이', '가')} 쓰러졌습니다. ${Number(a[1]) > 1 ? `${a[1]}명이 함께 싸웠습니다.` : ''}`,
+      shopFar: () => '길 상인 가까이에서 살 수 있습니다.',
+      notStocked: () => '아직 상점에 없는 물건입니다.',
+      alreadyBest: () => '이미 같거나 더 좋은 장비를 갖추고 있습니다.',
+      potionFull: () => '더 들 수 없습니다.',
+      noGold: () => '골드가 모자랍니다.',
+      noPotion: () => '물약이 없습니다.',
+      hpFull: () => '체력이 가득합니다.',
+      loot: (a) => `${josa(itemName(a[0]), '을', '를')} 주웠습니다. 대장간에서 쓸 수 있습니다.`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      crafted: (a) => `${josa(itemName(a[0], a[1]), '을', '를')} 만들었습니다.`,
+      forgeFar: () => '대장간 가까이에서 만들 수 있습니다.', // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      forgeClosed: () => '대장간이 아직 열리지 않았습니다.', // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      noMats: () => '재료가 모자랍니다.',
+      nameBad: () => '쓸 수 없는 이름입니다.',
+      nameTaken: () => '지금 다른 사람이 쓰고 있는 이름입니다.',
+      reported: (a) => `${a[0]} 님을 신고했습니다. 최근 대화와 함께 운영진에게 전달됩니다.`,
+      reportWait: () => '같은 사람은 잠시 뒤에 다시 신고할 수 있습니다.',
+      partyInvited: (a) => `${a[0]} 님에게 파티 초대를 보냈습니다.`,
+      partyBusy: (a) => `${a[0]} 님은 지금 초대할 수 없습니다.`,
+      partyFull: () => '파티가 가득 찼습니다. (최대 4명)',
+      partyGone: () => '초대가 이미 사라졌습니다.',
+      partyDeclined: (a) => `${a[0]} 님이 초대를 거절했습니다.`,
+      partyJoined: (a) => `${a[0]} 님이 파티에 들어왔습니다.`,
+      partyLeft: (a) => `${a[0]} 님이 파티에서 나갔습니다.`,
+      partyYouLeft: () => '파티에서 나왔습니다.',
+      partyEnded: () => '혼자 남아 파티가 풀렸습니다.',
+      gearDrop: (a) => { const slot = gearSlots[a[0] as GearSlot] ?? String(a[0]); return `${rarities[String(a[1])] ?? a[1]} ${josa(slot, '을', '를')} 주웠습니다. 메뉴[[(M)|]]의 장비에서 낄 수 있습니다.`; },
+      gearFull: () => '장비 가방이 가득 차서 줍지 못했습니다. 메뉴에서 안 쓰는 장비를 파세요.',
+      gearSold: (a) => `장비를 팔았습니다. 골드 +${num(a[0])}`,
+      enhanceOk: (a) => `강화에 성공했습니다. +${a[0]}`,
+      enhanceFail: () => '강화에 실패했습니다. 장비는 그대로입니다.',
+      enhanceMax: () => '더 강화할 수 없습니다. (보급형은 +5, 만들거나 주운 장비는 +10까지)',
+      mailNew: () => '우편이 왔습니다. 메뉴[[(M)|]]의 우편에서 받으세요.',
+      mailGot: (a) => `우편을 받았습니다.${Number(a[0]) ? ` 골드 +${num(a[0])}` : ''}${Number(a[1]) ? ` 경험치 +${num(a[1])}` : ''}${Number(a[2]) ? ` ${coin.name} +${a[2]}` : ''}${Number(a[3]) ? ` 장비 +${a[3]}` : ''}${Number(a[4]) ? ` 재료 +${a[4]}` : ''}`,
+      dungeonMate: (a) => `${a[0]} 님이 ${dungeons[a[1] as DungeonId]?.name ?? a[1]}에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다.`,
+      dungeonFar: () => '문에 더 가까이 가세요.',
+      dungeonLevel: (a) => `레벨 ${a[0]}부터 들어갈 수 있습니다.`,
+      dungeonNoRuns: () => '오늘은 더 들어갈 수 없습니다. 자정에 다시 열립니다.',
+      dungeonEnter: (a) => `${dungeons[a[0] as DungeonId]?.name ?? a[0]}에 들어왔습니다. 우두머리를 쓰러뜨리면 끝납니다.`,
+      dungeonClear: (a) => `${dungeons[a[0] as DungeonId]?.name ?? a[0]}${josa(dungeons[a[0] as DungeonId]?.name ?? String(a[0]), '을', '를').slice((dungeons[a[0] as DungeonId]?.name ?? String(a[0])).length)} 끝냈습니다. 보상은 우편으로 왔습니다.`,
+      dungeonFail: () => '제한 시간이 지나 밖으로 나왔습니다.',
+      dungeonLeft: () => '던전에서 나왔습니다.',
+      channelMoved: (a) => `${a[0]}채널로 옮겼습니다.`,
+      channelDungeon: () => '던전 안에서는 채널을 바꿀 수 없습니다.',
+      channelFight: () => '싸우는 중에는 채널을 바꿀 수 없습니다. 싸움이 멎은 뒤에 다시 골라 주세요.',
+      channelWait: (a) => `채널은 ${a[0]}초 뒤에 다시 바꿀 수 있습니다.`,
+      channelFull: (a) => `${a[0]}채널이 가득 찼습니다. 다른 채널을 골라 주세요.`,
+      statNone: () => '찍을 능력치 점수가 없습니다. 레벨이 오르면 3점씩 받습니다.',
+      statReset: () => '능력치를 모두 돌려받았습니다. 다시 찍을 수 있습니다.',
+      skillUp: (a) => `기술을 강화했습니다. ${a[1]}단계`,
+      skillMax: () => '더 강화할 수 없는 기술입니다.',
+      skillNeedLv: (a) => `레벨 ${a[0]}부터 강화할 수 있습니다.`,
+      mailLeft: () => '자리가 모자라 받지 못한 물건은 우편에 남겨 두었습니다. 가방을 비운 뒤 다시 받으세요.',
+      marketGuest: () => '이 브라우저에서는 캐릭터가 저장되지 않아 거래소를 쓸 수 없습니다.',
+      marketFull: (a) => `거래소에는 한 번에 ${a[0]}개까지만 올릴 수 있습니다. 올려 둔 물건을 내리거나 팔리기를 기다려 주세요.`,
+      marketPriceBad: (a) => `값은 2골드 이상 ${a[0]}골드 이하의 정수여야 합니다.`,
+      marketMailFull: (a) => `우편함에 물건이 든 우편이 ${a[0]}통 넘게 쌓여 있습니다. 우편을 먼저 받아 주세요. 올려 둔 물건을 내리는 것은 지금도 됩니다.`,
+      marketCrowded: () => '거래소가 가득 찼습니다. 잠시 뒤에 다시 올려 주세요.',
+      chatWait: () => '대화가 너무 몰려 방금 한 말이 전해지지 않았습니다. 잠시 뒤에 다시 말해 주세요.',
+      marketNeedLv: (a) => `거래소에서 사고팔려면 레벨 ${a[0]}이 되어야 합니다. 둘러보기는 지금도 됩니다.`,
+      marketCant: () => '거래소에 올릴 수 없는 물건입니다. 끼고 있는 장비와 보급형은 올릴 수 없습니다.',
+      marketPosted: (a) => `거래소에 올렸습니다. 값 ${num(a[0])}골드`,
+      marketBought: (a) => `거래소에서 샀습니다. 골드 -${num(a[0])}`,
+      marketGone: () => '이미 팔렸거나 내려간 물건입니다.',
+      marketOwn: () => '자기가 올린 물건은 살 수 없습니다. 내 물건에서 내릴 수 있습니다.',
+      marketCanceled: () => '올린 물건을 내렸습니다.',
+      guildGuest: () => '이 브라우저에서는 캐릭터가 저장되지 않아 길드에 들 수 없습니다.',
+      guildNeedLv: (a) => `길드는 레벨 ${a[0]}부터 만들 수 있습니다.`,
+      guildNameBad: () => '쓸 수 없는 길드 이름입니다. 2~12자로 지어 주세요.',
+      guildNameTaken: () => '이미 있는 길드 이름입니다.',
+      guildCreated: (a) => `'${a[0]}' 길드를 만들었습니다.`,
+      guildNotLeader: () => '길드장만 할 수 있습니다.',
+      guildBusy: (a) => `${a[0]} 님은 초대할 수 없습니다. 이미 길드가 있거나 손님입니다.`,
+      guildFull: () => '길드가 가득 찼습니다.',
+      guildInvited: (a) => `${a[0]} 님을 길드에 초대했습니다.`,
+      guildJoined: (a) => `${a[0]} 님이 길드에 들어왔습니다.`,
+      guildLeft: (a) => `${a[0]} 님이 길드를 떠났습니다.`,
+      guildYouLeft: () => '길드에서 나왔습니다.',
+      guildKicked: () => '길드에서 추방됐습니다.',
+      guildGave: (a) => `길드에 골드 ${num(a[0])}을 기부했습니다.`,
+      guildLevelUp: (a) => `길드 레벨이 올랐습니다. Lv ${a[0]}`,
+      guildNone: () => '길드가 없습니다. 메뉴의 길드에서 만들거나 초대를 받으세요.',
+      awayBack: (a) => `자리를 비운 ${a[0]}분 동안 자동 사냥을 이어 갔습니다. ${coin.name} +${a[1]}, 골드 +${num(a[2])}${Number(a[3]) > 0 ? `, 레벨 +${a[3]}` : ''}`,
+      rested: (a) => `쉬는 동안 휴식 보너스가 쌓였습니다. 휴식 보너스 ${a[0]} (처치 경험치 2배)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+    } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
+    /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
+    nameA: n.nameA,
+    nameB: n.nameB,
+  };
+};
+
+/** 틀의 언어 묶음의 모양 */
+export type EngineLocale = ReturnType<typeof koBase>;
+/** 언어 묶음의 모양: 틀의 것에 게임이 더한 것(ext.ts의 LocaleExt)을 묶음별로 합친 것. 게임이 없으면 틀의 모양 그대로다 */
+export type Locale = EngineLocale & LocaleExt;
+
+/**
+ * 아이템의 한 줄 설명 (상점, 대장간). 수치로 된 효과는 아이템 정의에서 읽어 문장을 만든다: 정의의 값을 바꾸면 설명이 따라 바뀐다.
+ * 무기는 공격 피해가 느는 비율, 갑옷은 받는 피해가 주는 비율, 물약은 회복량이고, 그런 효과가 없으면 언어 파일에 적힌 설명이다
+ */
+export function itemInfo(loc: Pick<EngineLocale, 'items' | 'fmt'>, id: ItemId): string {
+  const def: ItemDef = ITEMS[id], text = loc.items[id].info;
+  if (text) return text;
+  if (def.damage !== undefined && def.damage !== 1) return loc.fmt.itemDamage(Math.round((def.damage - 1) * 100));
+  if (def.guard !== undefined) return loc.fmt.itemGuard(Math.round((1 - def.guard) * 100));
+  if (def.heal !== undefined) return loc.fmt.itemHeal(def.heal);
+  return '';
+}
+export type UiKey = keyof Locale['ui'];

@@ -5,17 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n server,client -c yellow,cyan \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "tsx watch server/main.ts",
+    "dev:server": "tsx watch games/deungbul/server/main.ts",
     "dev:client": "vite",
     "build": "vite build",
-    "start": "tsx server/main.ts",
+    "start": "tsx games/deungbul/server/main.ts",
     "pilot": "node scripts/pilot.mjs",
     "typecheck": "tsc --noEmit",
-    "typecheck:engine": "node scripts/typecheck-engine.mjs",
+    "typecheck:engine": "tsc --noEmit -p tsconfig.engine.json",
     "test": "tsx test/all.ts",
     "test:engine": "tsx test/all.ts --engine",
     "test:game": "tsx test/all.ts --game",
-    "load": "tsx test/load.ts",
+    "load": "tsx games/deungbul/test/load.ts",
     "econ": "tsx scripts/econ.ts"
   },
   "dependencies": {

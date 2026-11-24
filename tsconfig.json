@@ -9,7 +9,11 @@
     "noEmit": true,
     "skipLibCheck": true,
     "noUnusedLocals": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@engine/*": ["./engine/*"],
+      "@game/*": ["./games/deungbul/*"]
+    }
   },
-  "include": ["shared", "server", "client/src", "test", "scripts", "vite.config.ts"]
+  "include": ["engine", "games/deungbul", "test", "scripts", "vite.config.ts"]
 }
