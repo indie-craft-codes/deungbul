@@ -86,6 +86,12 @@ export interface Rules extends RulesExt {
   siege: { x: number; z: number } | null;
   /** 이 캐릭터에게 게임의 진행(틀이 모르는 칸)이 있는가. 아무것도 하지 않은 새 캐릭터를 저장하지 않는 규칙이 틀의 칸(직업, 레벨, 골드 등)에 더해 묻는다. 없으면 '없다' */
   touched?: (p: Ent) => boolean;
+  /**
+   * 이 몬스터의 처치를 때린 사람들의 것으로 칠 것인가. 거짓이면 monsterKilled가 받는 사람 없이(hitters가 빈 채로) 불린다:
+   * 처치 보상(골드·경험치·불씨), 장비와 재료 드롭, 일일 임무와 퀘스트의 처치 수처럼 '잡은 사람'에게 가는 것이 모두 생기지 않는다.
+   * 처치 보상 없이 판의 보상만 주는 인스턴스 놀이가 쓴다 (이 게임의 안개 균열). 없으면 '친다'
+   */
+  credit?: (m: Ent) => boolean;
 }
 
 /**
@@ -95,11 +101,11 @@ export interface Rules extends RulesExt {
 export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: PlayerSave) => unknown }
 
 /** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (주민 혜택, 나중의 장비와 버프). */
-export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp' | keyof ModsExt;
+export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp' | 'area' | 'cooldown' | keyof ModsExt;
 export class Modifiers {
   private list = new Map<ModName, ((p?: Ent) => number)[]>();
   /**
-   * damage, guard, regen은 곱하는 값(1이 기본), sparkBonus, crit(치명타 확률), hp(최대 체력), exp(처치 경험치를 더 받는 비율)는 더하는 값(0이 기본)을 돌려주는 함수를 등록한다.
+   * damage, guard, regen, area(범위 기술의 반경), cooldown(기술 대기 시간)은 곱하는 값(1이 기본), sparkBonus, crit(치명타 확률), hp(최대 체력), exp(처치 경험치를 더 받는 비율)는 더하는 값(0이 기본)을 돌려주는 함수를 등록한다.
    * 함수는 대상 플레이어를 받는다: 모두에게 같은 보정이면 무시하고, 사람마다 다르면(장비) 보고 정한다.
    */
   provide(name: ModName, fn: (p?: Ent) => number): void {

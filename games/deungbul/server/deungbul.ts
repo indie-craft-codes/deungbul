@@ -10,6 +10,7 @@ import { Keepers } from './systems/keepers';
 import { Quests } from './systems/quests';
 import { Raid } from './systems/raid';
 import { Rest } from './systems/rest';
+import { Rift } from './systems/rift';
 import { Tower } from './systems/tower';
 
 declare module '@engine/server/game/ext' {
@@ -20,6 +21,8 @@ declare module '@engine/server/game/ext' {
     quests: Quests;
     keepers: Keepers;
     rest: Rest;
+    /** 안개 균열 (인스턴스 생존전): systems/rift.ts. 엔티티 칸(기록)은 그 파일이 선언한다 */
+    rift: Rift;
   }
   /** 이 게임의 엔티티 칸. 처음 값은 그 칸을 맡은 시스템이 g.entInit으로 채우고, 저장도 그 시스템이 한다 (g.saves) */
   interface EntExt {
@@ -56,4 +59,6 @@ export function installDeungbul(g: Game, cfg: DeungbulConfig = {}): void {
   g.quests = new Quests(g);
   g.keepers = new Keepers(g);
   g.rest = new Rest(g);
+  // 등탑 뒤에 둔다: 등탑이 정한 이동 속도와 다시 일어나는 자리(g.rules)를 균열이 감싼다
+  g.rift = new Rift(g);
 }

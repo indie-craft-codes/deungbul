@@ -1,8 +1,8 @@
 // 이 게임의 건물: 연못, 마을의 집과 등탑, 던전의 문과 던전 안의 바닥·기둥. 화면의 틀(scene/view.ts)과 나눠 두어, 다른 게임은 이 파일만 바꾸면 된다.
 // 놓이는 자리는 맵 정의(games/deungbul/shared/content/map.ts)에서 읽는다.
 import * as THREE from 'three';
-import { DUNGEONS, stageOf } from '../../shared/defs';
-import { AREAS, HOUSES, PILLARS, POND, TOWERS } from '../../shared/world';
+import { DUNGEONS, RIFT, stageOf } from '../../shared/defs';
+import { AREAS, HOUSES, PILLARS, POND, RIFT_STONES, TOWERS } from '../../shared/world';
 import { mat, part } from '@engine/client/scene/models';
 
 /** 등탑 하나의 빛나는 부분: 등불, 빛무리, 실제 광원 */
@@ -16,6 +16,7 @@ export class Scenery {
     this.buildVillage();
     this.buildTowers();
     this.buildDungeons();
+    this.buildRift();
     TOWERS.forEach((t, i) => this.setTowerGlow(i, t.start));
   }
 
@@ -96,6 +97,30 @@ export class Scenery {
     for (const c of PILLARS) {
       const m = part(pillar, stone, c.x, 2.5, c.z);
       m.scale.set(c.r, 1, c.r);
+      this.scene.add(m);
+    }
+  }
+
+  /** 안개 균열: 들판에는 갈라진 틈(기울어진 선돌 둘과 그 사이의 푸른 안개)을 세우고, 전장에는 선돌을 놓는다. 바닥과 둘레의 벽은 buildDungeons가 지역마다 깐다 */
+  private buildRift(): void {
+    const stone = mat(0x6f7f86);
+    const g = new THREE.Group();
+    const slab = new THREE.BoxGeometry(0.8, 4.6, 0.8);
+    const left = part(slab, stone, -1.5, 2.1, 0), right = part(slab, stone, 1.5, 2.1, 0);
+    left.rotation.z = 0.22; right.rotation.z = -0.22;
+    const veil = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 3.8), new THREE.MeshBasicMaterial({ color: 0x9fe3f5, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }));
+    veil.position.y = 2;
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(2.6, 20), new THREE.MeshBasicMaterial({ color: 0x9fe3f5, transparent: true, opacity: 0.18, depthWrite: false }));
+    glow.rotation.x = -Math.PI / 2; glow.position.y = 0.07;
+    g.add(left, right, veil, glow);
+    g.position.set(RIFT.portal.x, 0, RIFT.portal.z);
+    g.rotation.y = Math.PI / 4; // 카메라를 마주 보게 돌려 세운다
+    this.scene.add(g);
+    const rock = new THREE.DodecahedronGeometry(1, 0);
+    for (const c of RIFT_STONES) {
+      const m = part(rock, stone, c.x, c.r * 0.7, c.z);
+      m.scale.set(c.r, c.r * 1.5, c.r);
+      m.rotation.y = c.x * 0.7 + c.z;
       this.scene.add(m);
     }
   }

@@ -104,3 +104,92 @@
   #questGo { display: none; }
   #quest { gap: 2px; }
 }
+
+/* ---------- 안개 균열 (hud/rift.ts) ---------- */
+#riftGate { display: flex; flex-direction: column; gap: 5px; border-color: #7fc7d9; }
+#riftGate[hidden] { display: none; }
+#riftGate .ttitle { color: #bfe9ff; }
+#riftGate .note.warn { color: var(--gold); }
+#rgBest { white-space: pre-line; font-size: 12px; }
+#rgBtn:disabled { opacity: .4; cursor: default; }
+/* 판 안의 표시: 남은 시간을 크게, 나머지는 한 줄씩 */
+#riftHud { width: 250px; max-width: 100%; display: flex; flex-direction: column; gap: 3px; border-color: #7fc7d9; }
+#riftHud[hidden] { display: none; }
+#rhClock { font-family: var(--mono); font-size: 22px; font-weight: 800; color: #bfe9ff; line-height: 1; }
+#riftHud.late #rhClock { color: #ffb3a8; }
+#rhLeave { padding: 3px 8px; }
+#rhLives.last { color: #ffb3a8; }
+#rhUps { color: var(--fg); }
+/* 판 안에서는 떼의 이름을 지운다: 다친 것의 체력 막대만 남는다 (우두머리는 그대로). 어느 것을 보일지는 hud/rift.ts의 rules.showTag */
+.rift-on .tag.mon:not(.boss) > div:not(.hpw) { display: none; }
+.rift-on .tag.mon:not(.boss) .hpw { width: 34px; height: 4px; }
+/* 화면 밖에서 오는 떼의 방향: 가장자리의 작은 화살표 */
+#riftArrows { position: fixed; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+#riftArrows[hidden] { display: none; }
+#riftArrows i {
+  position: absolute; left: -9px; top: -9px; width: 0; height: 0;
+  border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 16px solid #ff8376;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .7));
+}
+/* 강화 고르기: 큰 단추 셋. 싸움터(화면 가운데)를 가리지 않게 아래쪽, 기술 단추 위에 둔다 */
+#riftPick {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(176px + env(safe-area-inset-bottom, 0px)); z-index: 4;
+  width: min(640px, calc(100vw - 16px)); display: flex; flex-direction: column; gap: 4px; pointer-events: auto;
+  background: rgba(14, 34, 39, .78); border: 1px solid #7fc7d9; border-radius: 6px; padding: 6px 8px 8px;
+}
+#riftPick[hidden] { display: none; }
+#riftPick .rpHead { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; color: #bfe9ff; font-size: 12.5px; }
+#riftPick .bar { height: 3px; }
+#riftPick .bar i { background: #7fc7d9; }
+#rpList { display: flex; gap: 6px; }
+.rpOpt {
+  position: relative; flex: 1 1 0; min-width: 0; min-height: 76px; padding: 7px 8px; text-align: left; display: flex; flex-direction: column; gap: 2px;
+  background: var(--ink); color: var(--fg); border: 1px solid var(--line); font-weight: 400;
+}
+.rpOpt:hover, .rpOpt:active { border-color: var(--gold); }
+.rpOpt b { color: var(--gold); font-size: 14px; }
+.rpOpt i { font-style: normal; font-size: 11px; color: #bfe9ff; }
+.rpOpt .d { font-size: 12px; line-height: 1.3; }
+.rpOpt .k { position: absolute; right: 6px; top: 4px; font-family: var(--mono); font-size: 10px; color: var(--dim); }
+@media (pointer: coarse) { .rpOpt .k { display: none; } }
+/* 결과 창 */
+#riftEnd {
+  left: 50%; top: 46%; transform: translate(-50%, -50%); width: 330px; max-width: 94%; z-index: 5;
+  display: flex; flex-direction: column; gap: 7px; background: #0e2227; border-color: #7fc7d9; text-align: center;
+}
+#riftEnd[hidden] { display: none; }
+#riftEnd .ttitle { font-size: 18px; color: #ffb3a8; }
+#riftEnd.done .ttitle { color: #b9f0c0; }
+#reResult { font-size: 16px; font-weight: 700; }
+#reBest { white-space: pre-line; }
+#reUps { color: var(--fg); }
+#reReward { color: #ffe08a; font-weight: 700; font-size: 12.5px; }
+@media (max-width: 720px) {
+  /* 폰 세로: 판의 표시는 내 정보 아래의 좁은 자리에 놓인다. 조이스틱과 기술 단추 바로 위에 고르기 창을 둔다 */
+  #riftHud { width: 168px; padding: 6px 8px; }
+  #rhClock { font-size: 19px; }
+  #rhText, #rhUps, #rhLives { font-size: 11px; }
+  #riftPick { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+  .rpOpt { min-height: 92px; padding: 7px 6px; }
+  .rpOpt b { font-size: 13px; }
+  .rpOpt .d { font-size: 11.5px; }
+}
+/* 폰 가로: 높이가 모자라다. 고르기 창은 조이스틱과 기술 단추 사이(대화창 자리)에 낮게 깔고, 판의 표시는 줄인다 */
+@media (max-height: 480px) {
+  #riftHud { width: 230px; padding: 4px 8px; gap: 1px; }
+  #rhClock { font-size: 17px; }
+  #rhLives { display: none; }
+  #riftPick {
+    left: calc(max(16px, env(safe-area-inset-left, 0px)) + 124px); right: calc(max(16px, env(safe-area-inset-right, 0px)) + 196px); transform: none; width: auto;
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px)); padding: 4px 6px 6px;
+  }
+  .rpOpt { min-height: 66px; padding: 5px 6px; }
+  .rpOpt b { font-size: 12.5px; }
+  .rpOpt .d { font-size: 11px; line-height: 1.25; }
+  #riftEnd { top: 50%; width: 420px; gap: 4px; padding: 8px 12px; }
+  #riftEnd .ttitle { font-size: 15px; }
+}
+/* 판 안에서는 퀘스트 창을 접는다: 들판의 할 일은 여기서 할 수 없고, 좁은 화면에서 싸움터를 가린다. 폰에서는 대상 창도 접는다 (떼의 체력은 머리 위 막대로 본다) */
+.rift-on #quest { display: none; }
+@media (max-width: 720px), (max-height: 480px) { .rift-on #tgt { display: none; } }
+#rhWave { white-space: nowrap; }

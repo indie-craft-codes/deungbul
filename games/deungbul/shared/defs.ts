@@ -8,4 +8,5 @@ export * from './content';
 export * from './content/quests';
 export * from './content/raid';
 export * from './content/residents';
+export * from './content/rift';
 export * from './content/tower';

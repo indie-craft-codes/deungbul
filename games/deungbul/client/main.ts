@@ -8,6 +8,7 @@ import { initMarks } from './hud/marks';
 import { mountMarkup } from './markup';
 import { initQuest } from './hud/quest';
 import { initRaid } from './hud/raid';
+import { initRift } from './hud/rift';
 import { initTower } from './hud/tower';
 import { initZone } from './hud/zone';
 import { initModels } from './scene/models';
@@ -30,6 +31,7 @@ startClient({
     initQuest,
     initMarks,
     initGuideLink,
+    initRift, // 등탑의 규칙(initDeungbul이 채운 이동 속도) 뒤: 그것을 감싼다
     initModels,
     initScene,
   ],

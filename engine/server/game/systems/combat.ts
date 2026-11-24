@@ -38,7 +38,7 @@ export class Combat {
       case 'hit': if (target) this.damage(p, target, Math.round(ri(fx.dmg[0], fx.dmg[1]) * up), true); break;
       case 'area': {
         const slow = fx.slow;
-        this.area(p, fx.at === 'target' && target ? target : p, def.radius ?? 0, Math.round(fx.dmg[0] * up), Math.round(fx.dmg[1] * up), slow ? (m) => { m.slowUntil = g.clock + slow; } : undefined);
+        this.area(p, fx.at === 'target' && target ? target : p, (def.radius ?? 0) * g.mods.product('area', p), Math.round(fx.dmg[0] * up), Math.round(fx.dmg[1] * up), slow ? (m) => { m.slowUntil = g.clock + slow; } : undefined);
         break;
       }
       case 'heal': {
@@ -53,8 +53,9 @@ export class Combat {
         break;
       }
     }
-    p.cds[n] = def.cd;
-    g.cdAcks.push({ id: p.id, n, ms: def.cd * 1000 });
+    const cd = def.cd * g.mods.product('cooldown', p); // 대기 시간 보정 (화면에도 줄어든 시간을 알린다)
+    p.cds[n] = cd;
+    g.cdAcks.push({ id: p.id, n, ms: cd * 1000 });
   }
 
   /** center 주변 radius 안의 몬스터 모두에게 피해를 준다. also가 있으면 맞은 몬스터마다 부른다. */
@@ -91,8 +92,8 @@ export class Combat {
     }
     m.hitters.clear();
     for (const e of g.ents.values()) if (e.targetId === m.id) e.targetId = 0;
-    // 곁에 있던 파티원도 함께 잡은 것으로 친다
-    g.fire('monsterKilled', m, g.party.share(hitters, m));
+    // 곁에 있던 파티원도 함께 잡은 것으로 친다. 누구의 처치로도 치지 않는 몬스터(g.rules.credit)는 받는 사람 없이 사건만 알린다
+    g.fire('monsterKilled', m, g.rules.credit?.(m) === false ? [] : g.party.share(hitters, m));
   }
 
   private killPlayer(p: Ent): void {

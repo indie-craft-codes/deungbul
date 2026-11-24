@@ -18,9 +18,10 @@ export function initWords(): void {
       // 장을 마쳤는데 그 장의 이름으로 된 잠금이 아직 안 풀렸으면(주민이 돌아오지 않았으면), 어떻게 푸는지 덧붙인다
       questDone: { tone: 'good', sub: (a) => rules.lockHint(String(a[0])) },
       residentBack: 'good', towerLit: 'good', stageChanged: '',
+      riftEnter: '', riftRevive: 'bad', riftBoss: 'bad', riftMate: '',
     },
     // 흘러가는 알림: 방금 한 일의 결과와 거절 사유
-    feed: ['offered', 'questStep', 'raidReward', 'tierUp', 'offerFar', 'noSparks', 'towerFull', 'noResident'],
+    feed: ['offered', 'questStep', 'raidReward', 'tierUp', 'offerFar', 'noSparks', 'towerFull', 'noResident', 'riftFar', 'riftLevel', 'riftNoRuns', 'riftLeft'],
   });
   addMsgSounds({ questDone: sfx.fanfare, raidWon: sfx.fanfare, residentBack: sfx.fanfare, raidStart: sfx.bad, raidLost: sfx.bad });
 }

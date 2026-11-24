@@ -2,8 +2,8 @@
 // 틀의 문장(engine/client/i18n/ko.ts의 koBase)과 합쳐 한 언어 묶음이 된다 (index.ts). 같은 키가 양쪽에 있으면 여기 것이 이긴다:
 // 틀의 기본 문장을 이 게임의 말로 덮어쓴 것이고, 그 목록은 games/deungbul/test/guide.test.ts에 고정해 두었다 (뜻하지 않은 겹침을 잡는다).
 // 기준 언어다: en.ts는 이 파일과 같은 모양을 갖춰야 컴파일된다.
-import type { ClassId, DailyId, DungeonId, ItemId, MonsterId, QuestId, ResidentId, SkillId } from '../../shared/defs';
-import type { MsgMap } from '@engine/shared/ext';
+import type { ClassId, DailyId, DungeonId, ItemId, MonsterId, QuestId, ResidentId, RiftUpId, SkillId } from '../../shared/defs';
+import type { MailKinds, MsgMap } from '@engine/shared/ext';
 import type { MsgArg, MsgKey } from '@engine/shared/messages';
 import { josa, keyHints, num, signed } from '@engine/client/i18n/ko';
 import { itemNameOf, type ContentNames } from '@engine/client/i18n/names';
@@ -35,6 +35,8 @@ const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?:
   tonic: { name: '진한 물약' },
 };
 const itemName = itemNameOf(items);
+/** 초를 m:ss로 (안개 균열의 버틴 시간) */
+const clockOf = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const towers: Record<string, string> = { first: '첫불 마을 등탑', ash: '잿빛 숲 등탑', crypt: '지하묘 입구' };
 const dungeons: Record<DungeonId, { name: string; info: string }> = {
   crypt: { name: '잿빛 지하묘', info: '고블린과 잊힌 병사를 뚫고 지하묘의 주인을 쓰러뜨리세요. 여럿이 가는 편이 좋습니다.' },
@@ -63,7 +65,7 @@ export const koNames: ContentNames = {
   dungeons,
   dailies,
   /** 쓰러진 뒤 다시 일어나는 곳: 등탑 */
-  places: towers,
+  places: { ...towers, rift: '균열 안' },
   currency2: { name: '불씨', one: '불씨' },
   /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
   nameA: ['졸린', '용감한', '느긋한', '수줍은', '씩씩한', '배고픈', '반짝이는', '조용한', '엉뚱한', '다정한'],
@@ -98,6 +100,23 @@ export const koGame = {
     zoneDark: '등탑이 꺼진 곳입니다. 몬스터가 강하고 먼저 덤벼듭니다. 쓰러지면 첫불 마을에서 일어납니다.',
     offerNote: '등탑을 밝힙니다. 밝을수록 습격을 오래 버팁니다.',
     questAllDone: '지금까지의 이야기를 모두 마쳤습니다.',
+    // ---------- 안개 균열 ----------
+    rift: '안개 균열',
+    riftShared: '오늘 남은 횟수는 던전과 함께 씁니다.',
+    riftInfo: '5분 동안 사방에서 몰려오는 안개 떼를 버티세요. 30초마다 셋 중 하나를 골라 그 판에서만 강해집니다. 한 번은 쓰러져도 다시 일어납니다.',
+    riftNoKillReward: '안의 몬스터는 아무것도 주지 않습니다. 보상은 끝난 뒤 우편으로 옵니다.',
+    riftEnterBtn: '들어가기',
+    riftLeave: '나가기',
+    riftLeaveConfirm: '한 번 더: 끝내기',
+    riftPickTitle: '강화를 고르세요',
+    riftDoneTitle: '끝까지 버텼습니다!',
+    riftOverTitle: '쓰러졌습니다',
+    riftQuitTitle: '균열에서 나왔습니다',
+    riftNewBest: '새 기록!',
+    riftMailNote: '보상은 우편으로 왔습니다. 메뉴의 우편에서 받으세요.',
+    riftNoReward: '1분을 버티지 못해 보상이 없습니다.',
+    riftClose: '닫기',
+    riftNoUps: '고른 강화 없음',
   },
   residents,
   towers,
@@ -166,6 +185,23 @@ export const koGame = {
     keeper: (name: string, n: number) => `${name} ${n}`,
     residentHint: (name: string, left: number) => `${josa(name, '은', '는')} 아직 돌아오지 못했습니다. 등탑에서 불씨를 보태면 돌아옵니다 (앞으로 ${left}개).`,
     needsResident: (name: string) => `${josa(name, '이', '가')} 돌아오면 들어옵니다`,
+    // ---------- 안개 균열 ----------
+    /** 틀의 던전 창 문장을 덮어쓴다: 하루 횟수를 안개 균열과 함께 쓴다는 것이 던전 문 앞에서도 보이게 */
+    dungeonRuns: (left: number, max: number) => `오늘 ${left} / ${max}번 (균열과 함께 씀)`,
+    riftRuns: (left: number, max: number) => `오늘 ${left} / ${max}번`,
+    riftNeedLv: (lv: number) => `레벨 ${lv}부터 들어갈 수 있습니다.`,
+    riftBest: (time: string, kills: number, clears: number) => `최고 기록 ${time} · 처치 ${kills}${clears > 0 ? ` · 완주 ${clears}번` : ''}`,
+    riftToday: (time: string, kills: number) => `오늘의 최고 ${time} · 처치 ${kills}`,
+    riftNoBest: () => '아직 기록이 없습니다.',
+    riftMateIn: (names: string) => `파티원(${names})이 안에 있습니다. 들어가면 같은 판으로 갑니다.`,
+    riftWave: (wave: number, waves: number) => `물결 ${wave}/${waves}`,
+    riftCount: (kills: number, foes: number) => `처치 ${kills} · 적 ${foes}`,
+    riftLives: (left: number) => (left > 0 ? `다시 일어나기 ${left}번 남음` : '다음에 쓰러지면 끝납니다'),
+    riftUpLv: (name: string, lv: number) => `${name}${lv}`,
+    riftPickLv: (lv: number, max: number) => (lv >= max ? `${lv}단계 (끝)` : `${lv}단계`),
+    riftPickLeft: (sec: number) => `${sec}초`,
+    riftResult: (time: string, kills: number) => `버틴 시간 ${time} · 처치 ${kills}`,
+    riftReward: (gold: number, exp: number, sparks: number, gear: boolean, bonus: number) => `우편: 골드 ${num(gold)} · 경험치 ${num(exp)} · 불씨 ${num(sparks)}${gear ? ' · 장비 1점' : ''}${bonus > 0 ? ` · 첫 완주 덤 골드 ${num(bonus)}` : ''}`,
   },
   /** 이 게임이 더한 서버 안내문(games/deungbul/shared/deungbul.ts의 MsgMap)과, 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것 */
   msg: {
@@ -194,7 +230,34 @@ export const koGame = {
     raidAbandoned: (a) => `${a[0]}채널을 지키는 사람이 없어, 그곳의 적이 등탑을 치고 안개로 돌아갔습니다.`,
     rested: (a) => `등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 ${a[0]} (처치 경험치 2배)`,
     questDone: (a) => { const title = questTitles[a[0] as QuestId] ?? String(a[0]); return `'${title}'${josa(title, '을', '를').slice(title.length)} 마쳤습니다.`; },
+    // ---------- 안개 균열 ----------
+    riftFar: () => '균열의 문 가까이에서 들어갈 수 있습니다.',
+    riftLevel: (a) => `안개 균열은 레벨 ${a[0]}부터 들어갈 수 있습니다.`,
+    riftNoRuns: () => '오늘은 더 들어갈 수 없습니다. 횟수는 던전과 함께 쓰고, 자정에 다시 열립니다.',
+    riftEnter: () => '안개 균열에 들어왔습니다. 5분을 버티세요.',
+    riftMate: (a) => `${josa(String(a[0]), '이', '가')} 안개 균열에 들어갔습니다. 문에서 들어가면 같은 판으로 갑니다.`,
+    riftRevive: (a) => `다시 일어났습니다. ${a[0]}초 동안 피해를 받지 않습니다. 다음에 쓰러지면 끝납니다.`,
+    riftBoss: (a) => `안개 속에서 ${josa(monsters[a[0] as MonsterId] ?? String(a[0]), '이', '가')} 걸어 나옵니다. 붉은 고리가 차기 전에 벗어나세요.`,
+    riftResult: (a) => (Number(a[2]) === 1 ? `안개 균열을 끝까지 버텼습니다. 처치 ${a[1]}` : `안개 균열에서 ${clockOf(Number(a[0]))} 버텼습니다. 처치 ${a[1]}`),
+    riftLeft: () => '안개 균열에서 나왔습니다.',
   } satisfies Record<keyof MsgMap, (a: MsgArg[]) => string> & Partial<Record<MsgKey, (a: MsgArg[]) => string>>,
+  /** 안개 균열의 강화: 짧은 이름(판 안의 좁은 표시에 단계와 붙여 쓴다), 이름, 설명. 설명의 수는 내용 정의에서 구해 넘긴다 (games/deungbul/shared/content/rift.ts의 riftUpNums) */
+  riftUps: {
+    might: { tag: '일격', name: '거센 일격', info: (n: number[]) => `공격 피해 +${n[0]}%` },
+    reach: { tag: '범위', name: '넓은 안개', info: (n: number[]) => `범위 기술·고리·번짐의 범위 +${n[0]}%` },
+    haste: { tag: '빠른손', name: '빠른 손', info: (n: number[]) => `기술 대기 시간 −${n[0]}%` },
+    swift: { tag: '발', name: '가벼운 발', info: (n: number[]) => `이동 속도 +${n[0]}%` },
+    vigor: { tag: '체력', name: '굳센 몸', info: (n: number[]) => `최대 체력 +${n[0]}%, 고를 때 체력 ${n[1]}% 회복` },
+    leech: { tag: '삼키기', name: '불씨 삼키기', info: (n: number[]) => `적을 쓰러뜨릴 때마다 체력 +${n[0]}` },
+    keen: { tag: '치명', name: '날 선 눈', info: (n: number[]) => `기본 공격 치명타 확률 +${n[0]}%p` },
+    ward: { tag: '가죽', name: '두꺼운 가죽', info: (n: number[]) => `받는 피해 −${n[0]}%` },
+    ring: { tag: '고리', name: '안개 고리', info: (n: number[]) => `${n[1]}초마다 둘레 ${n[2]}m의 적 모두에게 피해 ${n[0]}` },
+    chain: { tag: '번짐', name: '번지는 일격', info: (n: number[]) => `기본 공격이 둘레 ${n[1]}m의 다른 적에게 ${n[0]}% 번짐` },
+  } satisfies Record<RiftUpId, { tag: string; name: string; info: (n: number[]) => string }>,
+  /** 이 게임이 더한 우편 종류(games/deungbul/shared/deungbul.ts의 MailKinds)의 제목. index.ts가 틀의 제목 함수(fmt.mailTitle) 앞에 끼운다 */
+  mails: {
+    rift: (a: (string | number)[]) => `안개 균열 보상 (${Number(a[1]) === 1 ? '완주' : `${clockOf(Number(a[0]))} 버팀`}${Number(a[2]) === 1 ? ' · 첫 완주 덤' : ''})`,
+  } satisfies Record<keyof MailKinds, (a: (string | number)[]) => string>,
 };
 
 /** 이 게임이 언어 묶음에 더하는 것의 모양 */

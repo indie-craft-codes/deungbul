@@ -32,11 +32,49 @@ declare module '@engine/shared/ext' {
     raidElsewhere: [channel: number];
     /** 그 채널을 지키는 사람이 없어, 남은 적이 등탑을 치고 사라졌다 */
     raidAbandoned: [channel: number];
+    // ---------- 안개 균열 (games/deungbul/server/systems/rift.ts) ----------
+    /** 균열의 문에서 멀다 */
+    riftFar: [];
+    riftLevel: [minLv: number];
+    /** 오늘 들어갈 수 있는 횟수(던전과 함께 쓴다)를 다 썼다 */
+    riftNoRuns: [];
+    riftEnter: [];
+    /** 파티원이 균열에 들어갔다 */
+    riftMate: [name: string];
+    /** 쓰러졌지만 제자리에서 다시 일어났다: 피해를 받지 않는 시간(초) */
+    riftRevive: [safeS: number];
+    /** 우두머리가 나타났다 */
+    riftBoss: [monster: string];
+    /** 내 판이 끝났다: 버틴 시간(초), 처치 수, 완주했으면 1 */
+    riftResult: [timeS: number, kills: number, done: number];
+    /** 스스로 나왔다 */
+    riftLeft: [];
+  }
+
+  interface MailKinds {
+    /** 안개 균열의 보상 우편. 제목의 값: [버틴 시간(초), 완주했으면 1, 처음 완주 덤이 붙었으면 1] */
+    rift: true;
+  }
+
+  interface ServerMsgs {
+    /**
+     * 내가 들어가 있는 균열의 상태. on이 거짓이면 밖이다. left 남은 시간(초), kills 판의 처치 수, wave 물결 번호(1부터), foes 살아 있는 적,
+     * ups 내가 고른 강화의 단계, downs 내가 쓰러진 횟수, n 판 안의 사람 수, over 내 판이 끝났다(결과를 보는 중)
+     */
+    rift: { on: boolean; left: number; kills: number; wave: number; foes: number; ups: Record<string, number>; downs: number; n: number; over: boolean };
+    /** 강화를 고를 차례다: 고를 것들(강화 id)과 남은 시간(초). opts가 비어 있으면 고르기가 끝났다 */
+    riftPick: { opts: string[]; s: number };
+    /** 내 판의 결과. 우편으로 간 보상도 함께 알린다 (gear: 장비가 붙었는가, bonus: 처음 완주 덤) */
+    riftEnd: { timeS: number; kills: number; done: boolean; ups: Record<string, number>; best: RiftBest; reward: { gold: number; exp: number; sparks: number; gear: boolean; bonus: number }; newBest: boolean };
+    /** 판 안의 연출: 누군가의 안개 고리가 퍼졌다 (반경 r) */
+    riftFx: { k: 'ring'; id: number; r: number };
   }
 
   interface ClientMsgs {
     /** 등탑 가까이에서 불씨를 바친다: 등탑 밝기에, 또는 다음 주민을 되돌리는 데 */
     offer: { to: 'tower' | 'resident'; n: number };
+    /** 안개 균열: enter 문 가까이에서 들어간다, leave 나온다, pick 강화를 고른다 (n: 보여 준 것 가운데 몇째인가, 0부터) */
+    rift: { a: 'enter' | 'leave' | 'pick'; n?: number };
   }
 
   interface WorldState {
@@ -65,5 +103,10 @@ export interface MeState {
   tier: number;
   /** 남은 휴식 보너스 (games/deungbul/server/systems/rest.ts) */
   rested: number;
+  /** 안개 균열의 내 기록 (games/deungbul/server/systems/rift.ts) */
+  rift: RiftBest;
 }
+
+/** 안개 균열의 기록: 가장 오래 버틴 시간(초)과 그때의 처치 수, 오늘의 것(오늘 한 적이 없으면 0), 완주한 횟수 */
+export interface RiftBest { s: number; k: number; dayS: number; dayK: number; clears: number }
 

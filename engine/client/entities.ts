@@ -205,7 +205,7 @@ function onEvent(e: Ev, me: Me): void {
       const def = isSkillId(e[2]) ? skillDef(e[2]) : undefined;
       const self = def?.effect.kind === 'heal' || (def?.effect.kind === 'area' && def.effect.at === 'self');
       const at2 = self ? posOf(e[1]) : at; // 치유와 내 주변 기술은 쓴 사람을 중심으로 퍼진다
-      if (radius && at2) { burst(at2.x, at2.z, radius, def?.color ?? 0xf0bb55); if (e[1] === me.id && def?.effect.kind === 'area') shake(0.16); }
+      if (radius && at2) { burst(at2.x, at2.z, radius * (e[1] === me.id && def?.effect.kind === 'area' ? rules.area() : 1), def?.color ?? 0xf0bb55); if (e[1] === me.id && def?.effect.kind === 'area') shake(0.16); }
       break;
     }
     case 'mh': {
@@ -309,7 +309,7 @@ export function updateEntities(dt: number, now: number): void {
 /** 카메라를 옮긴 뒤에 불러야 이름표가 제자리에 붙는다. */
 export function placeTags(now: number): void {
   if (S.me) placeTag(S.me.tag, S.me.x, 2.5, S.me.z, now);
-  for (const r of S.others.values()) placeTag(r.tag, r.x, r.h, r.z, now, r.dying <= 0 && !r.gone && r.model.root.visible);
+  for (const r of S.others.values()) placeTag(r.tag, r.x, r.h, r.z, now, r.dying <= 0 && !r.gone && r.model.root.visible && rules.showTag(r));
   for (const n of npcs) placeTag(n.tag, n.x, 2.5, n.z, now);
   settleTags();
 }

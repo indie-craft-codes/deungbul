@@ -1,6 +1,7 @@
 // 성장의 틀: 장비·우편·보상·일일 임무·순위의 모양과, 게임의 수치에서 값을 구하는 도우미.
 // 수치(STATS, GEAR, ENHANCE, LEVEL 등)는 게임의 내용에 있다 (@game/shared/content). 규칙은 engine/server/game/systems/의 gear, mail, idle, daily, rank가 맡는다.
 import { BUILD_STATS, DAILIES, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, LEVEL, POWER, RARITIES, STATS } from '@game/shared/content';
+import type { MailKinds } from '../ext';
 import { isItemId } from './items';
 
 // ---------- 장비 ----------
@@ -81,7 +82,7 @@ export const isBuildStat = (v: unknown): v is BuildStat => typeof v === 'string'
  * 우편의 종류. 제목과 내용은 언어 파일이 만든다 (fmt.mailTitle).
  * 거래소: marketSold 팔린 값, marketExpired 기간이 지나 돌아온 물건, marketBought 산 물건(가방에 자리가 없었다), marketBack 내린 물건(가방에 자리가 없었다)
  */
-export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack';
+export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack' | keyof MailKinds;
 /** 보상. gear와 items는 우편에 붙는 물건이다: 낱개 장비(uid는 받을 때 새로 붙는다)와 아이템 id별 개수 */
 export interface Reward { gold?: number; exp?: number; sparks?: number; gear?: Gear[]; items?: Record<string, number> }
 export interface Mail {

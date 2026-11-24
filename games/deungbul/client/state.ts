@@ -13,6 +13,7 @@ export const G: MeState = {
   contrib: 0,
   tier: 0,
   rested: 0,
+  rift: { s: 0, k: 0, dayS: 0, dayK: 0, clears: 0 },
 };
 
 export const GS = {

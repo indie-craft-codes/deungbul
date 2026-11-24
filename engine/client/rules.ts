@@ -14,6 +14,10 @@ export interface Rules {
   lockHint: (key: string) => string;
   /** '마을로'(H 키)가 데려가는 곳. 채우지 않으면 맵의 처음 자리(MAP.spawn) */
   home: () => { x: number; z: number };
+  /** 내 범위 기술의 반경에 곱하는 값 (이펙트의 크기). 서버의 g.mods 'area' 보정과 같은 값을 내야 고리가 실제 범위와 맞는다 */
+  area: () => number;
+  /** 그 엔티티의 이름표를 지금 보여 줄 것인가. 떼가 몰리는 놀이에서 이름표가 화면을 덮지 않게 게임이 줄인다 */
+  showTag: (e: { kind: 'p' | 'm'; type: string; hp: number; maxHp: number }) => boolean;
 }
 
 export const rules: Rules = {
@@ -22,4 +26,6 @@ export const rules: Rules = {
   lockNote: () => '',
   lockHint: () => '',
   home: () => MAP.spawn,
+  area: () => 1,
+  showTag: () => true,
 };

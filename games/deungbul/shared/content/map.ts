@@ -17,6 +17,16 @@ export const PILLARS: readonly { x: number; z: number; r: number }[] = [
   { x: 304, z: -9, r: 1.6 }, { x: 304, z: 9, r: 1.6 }, { x: 318, z: -14, r: 2 }, { x: 318, z: 14, r: 2 },
 ];
 
+/**
+ * 안개 균열의 전장(본 맵 밖의 네모)과 그 안의 선돌. 모든 판이 같은 지형을 쓴다 (규칙과 수치는 content/rift.ts).
+ * 자리를 들판·지하묘의 가로 범위 안, 남쪽 바깥에 잡은 까닭: 길찾기 격자(engine/shared/nav.ts)가 세로로만 늘어 기존 칸의 번호가 그대로다
+ */
+export const RIFT_AREA = { id: 'rift', x0: 260, x1: 330, z0: 100, z1: 170 } as const;
+export const RIFT_STONES: readonly { x: number; z: number; r: number }[] = [
+  { x: 283, z: 123, r: 1.8 }, { x: 307, z: 123, r: 1.8 }, { x: 283, z: 147, r: 1.8 }, { x: 307, z: 147, r: 1.8 },
+  { x: 295, z: 111, r: 2.2 }, { x: 295, z: 159, r: 2.2 },
+];
+
 /** 구역: 0 등불 들판(첫불 마을 포함), 1 잿빛 숲 (그 너머의 던전도 잿빛 숲의 구역으로 친다). x가 이 값보다 작으면 첫 구역이다 */
 export const ZONE_SPLIT = 62;
 export const ZONE_COUNT = 2;
@@ -90,13 +100,14 @@ const HOUSE_R = 3.3;
 
 /**
  * 이 게임의 맵 정의. 틀은 이것만 읽는다.
- * obstacles의 순서(연못, 등탑, 집, 던전의 기둥)와 scatter의 순서는 바꾸지 않는다: 맵 전체의 배치와 충돌 판정이 달라진다 (engine/test/framework.test.ts의 맵 지문)
+ * obstacles의 순서(연못, 등탑, 집, 던전의 기둥, 균열의 선돌)와 scatter의 순서는 바꾸지 않는다: 새 장애물은 맨 뒤에 더한다: 맵 전체의 배치와 충돌 판정이 달라진다 (engine/test/framework.test.ts의 맵 지문)
  */
 export const MAP: MapDef = {
   // 0번은 들판(위의 범위)이다
   areas: [
     { id: 'field', x0: MIN_X, x1: MAX_X, z0: MIN_Z, z1: MAX_Z },
     { id: 'crypt', x0: 260, x1: 340, z0: -40, z1: 40 }, // 잿빛 지하묘 (던전)
+    RIFT_AREA, // 안개 균열의 전장
   ],
   edge,
   seed: 20261123,
@@ -106,6 +117,7 @@ export const MAP: MapDef = {
     ...TOWERS.map((t) => ({ x: t.x, z: t.z, r: t.r, tag: 'tower' })),
     ...HOUSES.map((h) => ({ x: h[0], z: h[1], r: HOUSE_R, tag: 'house' })),
     ...PILLARS.map((c) => ({ x: c.x, z: c.z, r: c.r, tag: 'pillar' })),
+    ...RIFT_STONES.map((c) => ({ x: c.x, z: c.z, r: c.r, tag: 'stone' })),
   ],
   scatter: [
     // 나무는 화면 밖까지 이어지도록 범위보다 조금 넓게, 바위는 범위 안에만
@@ -117,6 +129,8 @@ export const MAP: MapDef = {
   isFree,
   portals: {
     crypt: { x: 128.5, z: 2 },
+    // 안개 균열의 문: 첫불 마을 남쪽, 남북 길에서 조금 비켜난 풀밭. 둘레 9m 안에 나무·바위가 하나도 없는 자리라 문을 더해도 들판의 배치가 그대로다
+    rift: { x: 6, z: 18 },
   },
   portalClear: 9,
 };

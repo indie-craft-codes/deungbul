@@ -19,3 +19,7 @@ export interface ClientMsgs {}
 
 /** 서버 전체가 공유하는 상태. 시스템마다 한 칸씩 갖는다 (g.shared에 같은 이름으로 등록한다). 틀의 시스템은 칸을 갖지 않는다 */
 export interface WorldState {}
+
+
+/** 게임이 더하는 우편의 종류: 이름만 쓰이고 값의 타입은 쓰이지 않는다 ({ rift: true }). MailKind(engine/shared/defs/growth.ts)에 더해지고, 장부에는 mail:종류로 적힌다. 제목은 게임의 언어 묶음이 만든다 */
+export interface MailKinds {}

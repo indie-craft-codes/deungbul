@@ -12,7 +12,16 @@ declare module '@engine/client/i18n/ext' {
   interface LocaleExt extends GameLocale {}
 }
 
-export const ko: Locale = mergeLocale(koBase(koNames), koGame);
-export const en: Locale = mergeLocale(enBase(enNames), enGame);
+/**
+ * 이 게임이 더한 우편 종류(MailKinds)의 제목을 틀의 제목 함수 앞에 끼운다: 그 종류면 이 게임의 문장(mails)으로, 아니면 틀의 것 그대로.
+ * 틀의 언어 파일을 고치지 않고, 게임의 묶음에 fmt.mailTitle을 적어 틀의 것을 통째로 덮지도 않는다 (겹친 키의 목록이 늘지 않는다)
+ */
+function withMails(l: Locale): Locale {
+  const base = l.fmt.mailTitle, mails: Record<string, ((a: (string | number)[]) => string) | undefined> = l.mails;
+  return { ...l, fmt: { ...l.fmt, mailTitle: (k, a) => mails[k]?.(a) ?? base(k, a) } };
+}
+
+export const ko: Locale = withMails(mergeLocale(koBase(koNames), koGame));
+export const en: Locale = withMails(mergeLocale(enBase(enNames), enGame));
 /** 이 게임이 갖춘 언어들. 맨 앞이 기본 언어다 */
 export const LOCALES: readonly Locale[] = [ko, en];

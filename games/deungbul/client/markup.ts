@@ -71,4 +71,42 @@ export function mountMarkup(): void {
 
   // 단추 줄: 마을(첫 등탑)로 걸어가기
   mountPanel('actions', `\n        <button id="townBtn" type="button" data-i18n="toTown"></button>`);
+
+  // ---------- 안개 균열 (hud/rift.ts) ----------
+  // 오른쪽 위, 등탑 창 다음: 균열의 문 가까이에서만 열린다 (조건, 남은 횟수, 내 기록)
+  mountPanel('rightTop', `
+    <div class="panel" id="riftGate" hidden>
+      <div class="row"><span class="ttitle" data-i18n="rift"></span><span class="num" id="rgRuns"></span></div>
+      <div class="note warn" data-i18n="riftShared"></div>
+      <div class="note" id="rgMates" hidden></div>
+      <div class="note" id="rgInfo"></div>
+      <div class="note" data-i18n="riftNoKillReward"></div>
+      <div class="num" id="rgBest"></div>
+      <button type="button" id="rgBtn" data-i18n="riftEnterBtn"></button>
+    </div>\n`);
+  // 가운데 위: 판 안의 표시 (남은 시간, 물결과 처치 수, 고른 강화)
+  mountPanel('topmid', `
+      <div class="panel" id="riftHud" hidden>
+        <div class="row"><span id="rhClock"></span><span class="num" id="rhWave"></span><button type="button" class="plain" id="rhLeave"></button></div>
+        <div class="num" id="rhText"></div>
+        <div class="note" id="rhLives"></div>
+        <div class="note" id="rhUps"></div>
+      </div>`);
+  // 화면에 떠 있는 것: 떼가 오는 방향의 화살표, 강화 고르기, 결과 창
+  mountPanel('hud', `
+    <div id="riftArrows" hidden></div>
+    <div id="riftPick" hidden>
+      <div class="rpHead"><span data-i18n="riftPickTitle"></span><span class="num" id="rpLeft"></span></div>
+      <div class="bar"><i id="rpBar"></i></div>
+      <div id="rpList"></div>
+    </div>
+    <div class="panel" id="riftEnd" hidden>
+      <div class="ttitle" id="reTitle"></div>
+      <div id="reResult"></div>
+      <div class="note" id="reBest"></div>
+      <div class="note" id="reUps"></div>
+      <div id="reReward"></div>
+      <div class="note" id="reMail" data-i18n="riftMailNote"></div>
+      <button type="button" id="reBtn"></button>
+    </div>`);
 }
