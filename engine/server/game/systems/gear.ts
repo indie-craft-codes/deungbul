@@ -26,7 +26,9 @@ export class GearSys {
       if (!def) return;
       for (const p of hitters) {
         if (p.bot || (!def.boss && this.random() >= GEAR.dropChance)) continue;
-        this.give(p, this.roll(GEAR.levelOf(def.exp)), g.players.huntWhy(p, m));
+        // 떨어진 장비: 자동 분해를 켜 둔 등급이면 가방에 넣지 않고 그 자리에서 가루로 바꾼다 (systems/salvage.ts)
+        const it = this.roll(GEAR.levelOf(def.exp)), why = g.players.huntWhy(p, m);
+        if (!g.salvage.auto(p, it, why)) this.give(p, it, why);
       }
     });
 
@@ -61,7 +63,7 @@ export class GearSys {
     const it = x as Gear;
     return typeof x === 'object' && x !== null && num(it.uid) && isGearSlot(it.slot) && num(it.rar) && it.rar >= 0 && it.rar < RARITIES.length
       && (it.base === undefined || (isItemId(it.base) && ITEMS[it.base].kind === it.slot)) && (it.base !== undefined) === (it.slot === 'weapon' || it.slot === 'armor')
-      && (it.made === undefined || typeof it.made === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= 4 && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
+      && (it.made === undefined || typeof it.made === 'boolean') && (it.lock === undefined || typeof it.lock === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= 4 && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
       && Number.isInteger(it.lv) && it.lv >= 1 && it.lv <= 20 && Number.isInteger(it.plus) && Number.isInteger(it.uid);
   }
 
@@ -138,7 +140,7 @@ export class GearSys {
 
   /** 가방에 넣는다. 가득 찼으면 넣지 못하고 알린다: 그 장비는 버려진다. why: 원인의 이름 (systems/bag.ts) */
   give(p: Ent, it: Gear, why = ''): boolean {
-    if (!this.g.bag.giveGear(p, it, why)) { this.g.notify(p, 'gearFull'); this.g.bag.lost(p, it, why); return false; }
+    if (!this.g.bag.giveGear(p, it, why)) { this.g.notify(p, 'gearFull'); this.g.bag.lost(p, it, why); this.g.away.tally(p, 'lost', 1); return false; }
     this.g.notify(p, 'gearDrop', it.slot, RARITIES[it.rar].id);
     return true;
   }
@@ -175,6 +177,7 @@ export class GearSys {
   sell(p: Ent, uid: number): void {
     const it = this.find(p, uid);
     if (!it) return;
+    if (it.lock) { this.g.notify(p, 'gearLocked'); return; }
     if (p.worn[it.slot] === uid) {
       if (it.slot === 'weapon') return; // 들고 있는 무기는 팔 수 없다
       delete p.worn[it.slot];

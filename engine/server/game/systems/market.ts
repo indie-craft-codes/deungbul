@@ -1,7 +1,7 @@
 // 거래소: 플레이어끼리 장비와 제작 재료를 골드로 사고판다. 올린 물건은 판매자에게서 빠져 거래소가 맡는다(복사가 생기지 않게).
 // 판 값과 돌아오는 물건은 우편으로 간다: 판매자가 접속해 있지 않아도 받아야 하므로 사람을 저장 키(Ent.pid)로 가리킨다.
 // 손님(저장 키가 없는 접속)은 쓸 수 없다. 거래소는 월드와 함께 저장되고, 규칙의 수치는 games/deungbul/shared/content/social.ts의 MARKET에 있다.
-import { ITEMS, MAIL_MAX, MARKET, MAT_MAX, hasGoods, isItemId, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward } from '../../../shared/defs';
+import { ITEMS, MAIL_MAX, MARKET, hasGoods, isItemId, itemCap, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward } from '../../../shared/defs';
 import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
@@ -61,7 +61,7 @@ export class Market {
       if (typeof raw.seller !== 'string' || !raw.seller || typeof raw.name !== 'string' || !int(raw.price, 1, MARKET.maxPrice) || typeof raw.until !== 'number' || !Number.isFinite(raw.until)) continue;
       const l: Listing = { id: raw.id, seller: raw.seller, name: raw.name.slice(0, NAME_MAX), n: 1, price: raw.price, until: raw.until };
       if (GearSys.valid(raw.gear)) l.gear = raw.gear;
-      else if (isMat(raw.item) && int(raw.n, 1, MAT_MAX)) { l.item = raw.item; l.n = raw.n; }
+      else if (isMat(raw.item) && int(raw.n, 1, itemCap(raw.item))) { l.item = raw.item; l.n = raw.n; }
       else continue;
       this.listings.set(l.id, l);
       this.nextId = Math.max(this.nextId, l.id + 1);
@@ -128,12 +128,13 @@ export class Market {
       const it = int(m.uid, 1, Number.MAX_SAFE_INTEGER) ? p.gear.find((x) => x.uid === m.uid) : undefined;
       // 낀 장비와 보급형(상점에서 산 것)은 올릴 수 없다
       if (!it || p.worn[it.slot] === it.uid || isSupply(it)) { g.notify(p, 'marketCant'); return; }
+      if (it.lock) { g.notify(p, 'gearLocked'); return; }
       g.bag.removeGear(p, it.uid, WHY.marketPost);
       it.uid = 0; // 장비 번호는 캐릭터 안에서만 뜻이 있다. 받는 사람의 가방에 들어갈 때 새로 붙는다
       l.gear = it;
       p.metaDirty = true;
     } else {
-      if (!isMat(m.item) || !int(m.n, 1, MAT_MAX)) { g.notify(p, 'marketCant'); return; }
+      if (!isMat(m.item) || !int(m.n, 1, itemCap(m.item))) { g.notify(p, 'marketCant'); return; }
       if (!g.bag.takeItem(p, m.item, m.n, WHY.marketPost)) { g.notify(p, 'noMats'); return; }
       l.item = m.item; l.n = m.n;
       p.dirty = true;

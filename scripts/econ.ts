@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { ECON_HUNT, ECON_LOST_FULL, ECON_UNKNOWN, ECON_WATCH, ENHANCE, RARITIES, isEconMove } from '../engine/shared/defs';
 import type { EconSnapshot } from '../engine/server/game/systems/ledger';
+import { WHY } from '../engine/server/game/systems/wallet';
 import type { EconRow } from '../engine/server/store';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -76,11 +77,12 @@ const daily = dayList.map((day) => { const f = flow('gold', rows.filter((r) => r
 const share = (f: Flow, why: string): number | null => (f.made > 0 ? (f.top.made.find((l) => l.why === why)?.amount ?? 0) / f.made : null);
 const awayShare = share(gold, ECON_HUNT.away);
 
-// 장비: 등급별로 생긴 것, 사라진 것, 가방이 차서 버려진 것, 거래소를 오간 것
+// 장비: 등급별로 생긴 것, 사라진 것, 가방이 차서 버려진 것, 분해한 것(직접 + 자동), 거래소를 오간 것
+const SALVAGED: readonly string[] = [WHY.salvage, WHY.autoSalvage];
 const gear = RARITIES.map((r) => {
   const mine = of(`gear:${r.id}`), real = mine.filter((x) => !isEconMove(x.why));
-  const lost = total(real, '-', (w) => w === ECON_LOST_FULL);
-  return { rar: r.id as string, made: total(real, '+'), gone: total(real, '-') - lost, lost, listed: total(mine, '-', isEconMove), received: total(mine, '+', isEconMove) };
+  const lost = total(real, '-', (w) => w === ECON_LOST_FULL), salvaged = total(real, '-', (w) => SALVAGED.includes(w)), auto = total(real, '-', (w) => w === WHY.autoSalvage);
+  return { rar: r.id as string, made: total(real, '+'), gone: total(real, '-') - lost - salvaged, lost, salvaged, auto, listed: total(mine, '-', isEconMove), received: total(mine, '+', isEconMove) };
 });
 const items = [...new Set(rows.filter((r) => r.cur.startsWith('item:')).map((r) => r.cur))].sort().map((cur) => {
   const mine = of(cur), real = mine.filter((x) => !isEconMove(x.why));
@@ -161,11 +163,13 @@ console.log(`  자리 비움 사냥(${ECON_HUNT.away})의 비중: ${pct(awayShar
 printFlow('불씨', sparks);
 printFlow('경험치', exp);
 
-if (gear.some((g) => g.made || g.gone || g.lost || g.listed)) {
+if (gear.some((g) => g.made || g.gone || g.lost || g.salvaged || g.listed)) {
   title('장비 (등급별 개수)');
-  table(['등급', '생김', '사라짐', '버려짐(가방 가득)', '거래소에 올림', '거래소에서 받음'], gear.map((g) => [g.rar, num(g.made), num(g.gone), num(g.lost), num(g.listed), num(g.received)]));
+  table(['등급', '생김', '사라짐', '버려짐(가방 가득)', '분해', '(자동 분해)', '거래소에 올림', '거래소에서 받음'], gear.map((g) => [g.rar, num(g.made), num(g.gone), num(g.lost), num(g.salvaged), num(g.auto), num(g.listed), num(g.received)]));
   const made = gear.reduce((s, g) => s + g.made, 0), lost = gear.reduce((s, g) => s + g.lost, 0);
   console.log(`  떨어진 장비 가운데 버려진 것: ${num(lost)} / ${num(made)} (${pct(made > 0 ? lost / made : null)})`);
+  const salvaged = gear.reduce((s, g) => s + g.salvaged, 0);
+  if (salvaged) console.log(`  분해한 것: ${num(salvaged)} (그 가운데 자동 분해 ${num(gear.reduce((s, g) => s + g.auto, 0))})`);
 }
 if (items.length) {
   title('재료와 물약 (개수)');

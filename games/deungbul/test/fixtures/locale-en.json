@@ -651,6 +651,8 @@
  "items.armor2.name": "Iron Armor",
  "items.ashcore.info": "Material dropped by the Ash Troll",
  "items.ashcore.name": "Ash Core",
+ "items.dust.info": "Material you get by salvaging gear",
+ "items.dust.name": "Gear Dust",
  "items.hide.info": "Material dropped by boars",
  "items.hide.name": "Tough Hide",
  "items.iron.info": "Material dropped by goblins and lost soldiers",
@@ -682,6 +684,13 @@
  "monsters.wisp": "Wisp",
  "monsters.wolf": "Wolf",
  "msg.alreadyBest": "You already have equal or better gear.",
+ "msg.autoSalvaged": [
+  "5b324cb0e8a18622",
+  "Auto-salvaged undefined drops. Gear Dust +NaN",
+  "Auto-salvaged 0 drops. Gear Dust +0",
+  "Auto-salvaged 1 drop. Gear Dust +1",
+  "Auto-salvaged 2 drops. Gear Dust +3"
+ ],
  "msg.awayBack": [
   "d040f307df7e4064",
   "Auto-hunt kept going for the undefined min you were away. Sparks +undefined, gold +NaN",
@@ -689,6 +698,21 @@
   "Auto-hunt kept going for the 1 min you were away. Sparks +1, gold +1, level +1",
   "Auto-hunt kept going for the 2 min you were away. Sparks +3, gold +4, level +5"
  ],
+ "msg.awayGear": [
+  "5927ea59b53a400e",
+  "While you were away:",
+  "While you were away: 1 drop left behind because your bag was full. 1 drop auto-salvaged. Gear Dust +1",
+  "While you were away: 2 drops left behind because your bag was full. 3 drops auto-salvaged. Gear Dust +4",
+  "While you were away: 1,234,567 drops left behind because your bag was full. 1,234,567 drops auto-salvaged. Gear Dust +1,234,567"
+ ],
+ "msg.bagUpDone": [
+  "bedfa6e890997c83",
+  "Bag expanded. undefined gear slots",
+  "Bag expanded. 0 gear slots",
+  "Bag expanded. 1 gear slots",
+  "Bag expanded. 2 gear slots"
+ ],
+ "msg.bagUpMax": "Your bag cannot be expanded any further.",
  "msg.bossDown": [
   "197daa7df98e2c5b",
   "undefined has fallen. undefined fought together.",
@@ -807,6 +831,7 @@
   "You picked up a 3 2. Equip it under Menu[[ (M)|]] > Gear."
  ],
  "msg.gearFull": "Your gear bag is full, so the drop was left behind. Sell spare gear in the menu.",
+ "msg.gearLocked": "That gear is locked. Unlock it to sell, salvage or list it.",
  "msg.gearSold": [
   "69c2acaf783089b8",
   "Gear sold. +NaN gold",
@@ -1121,6 +1146,21 @@
   "Your lamp gathered light at the tower while you were away. Rested bonus 0 (double exp from kills)",
   "Your lamp gathered light at the tower while you were away. Rested bonus 1 (double exp from kills)",
   "Your lamp gathered light at the tower while you were away. Rested bonus 2 (double exp from kills)"
+ ],
+ "msg.salvageCant": "Some of that gear cannot be salvaged. Equipped, Standard and locked gear cannot be salvaged.",
+ "msg.salvageFull": [
+  "9ee2ca13c6d983d2",
+  "You cannot hold that much Gear Dust, so nothing was salvaged. Would give NaN, room for NaN",
+  "You cannot hold that much Gear Dust, so nothing was salvaged. Would give 0, room for 0",
+  "You cannot hold that much Gear Dust, so nothing was salvaged. Would give 1, room for 1",
+  "You cannot hold that much Gear Dust, so nothing was salvaged. Would give 2, room for 3"
+ ],
+ "msg.salvaged": [
+  "4606ec6bba4d3585",
+  "Salvaged undefined items. Gear Dust +NaN",
+  "Salvaged 0 items. Gear Dust +0",
+  "Salvaged 1 item. Gear Dust +1",
+  "Salvaged 2 items. Gear Dust +3"
  ],
  "msg.shopFar": "Move closer to the road merchant to buy.",
  "msg.skillMax": "This skill is at its highest rank.",

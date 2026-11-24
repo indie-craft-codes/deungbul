@@ -1,6 +1,6 @@
 // 성장의 틀: 장비·우편·보상·일일 임무·순위의 모양과, 게임의 수치에서 값을 구하는 도우미.
 // 수치(STATS, GEAR, ENHANCE, LEVEL 등)는 게임의 내용에 있다 (@game/shared/content). 규칙은 engine/server/game/systems/의 gear, mail, idle, daily, rank가 맡는다.
-import { BUILD_STATS, DAILIES, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, LEVEL, POWER, RARITIES, STATS } from '@game/shared/content';
+import { BAG_UP, BUILD_STATS, DAILIES, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, LEVEL, POWER, RARITIES, SALVAGE, STATS } from '@game/shared/content';
 import { isItemId } from './items';
 
 // ---------- 장비 ----------
@@ -27,6 +27,8 @@ export interface Gear {
   plus: number;
   /** 옵션: [종류, 값] */
   opts: [Stat, number][];
+  /** 잠갔다: 팔기, 분해, 거래소 올리기가 막힌다 (일괄 분해의 사고를 막는 장치). 잠그지 않은 장비에는 이 칸이 없다 */
+  lock?: boolean;
 }
 
 /**
@@ -58,6 +60,22 @@ export const gearStat = (g: Gear, stat: Stat): number => g.opts.reduce((s, [k, v
 /** 장비의 값어치: 순위의 전투력과 파는 값에 쓴다 */
 export const gearScore = (g: Gear): number => Math.round(g.opts.reduce((s, [k, v]) => s + optValue(g, v) / STATS[k].base, 0) * 10);
 export const sellPrice = (g: Gear): number => GEAR.sellBase + gearScore(g) + baseTier(g) * GEAR.sellPerTier;
+
+// ---------- 분해와 가방 넓히기 ----------
+/** 분해의 표 (게임의 SALVAGE). 서버의 시험이 다른 표를 넣어 볼 수 있게 모양을 따로 둔다 */
+export interface SalvageDef { item: string; dust: readonly number[]; perPlus: number; maxBatch: number; autoMaxRar: number; tellS: number }
+/** 이 게임에 분해가 있는가: 등급별 가루의 표가 차 있고, 나오는 아이템이 아이템의 표에 있다 */
+export const salvageOn = (def: SalvageDef = SALVAGE): boolean => def.dust.length > 0 && isItemId(def.item);
+/** 그 장비를 분해하면 나오는 가루: 등급별 양 + 강화 단계 × perPlus (서버의 systems/salvage.ts, 화면, 도감이 함께 쓴다) */
+export const dustFor = (g: Pick<Gear, 'rar' | 'plus'>, def: SalvageDef = SALVAGE): number => (def.dust[g.rar] ?? 0) + Math.max(0, g.plus) * def.perPlus;
+/** 분해할 수 있는 장비인가: 보급형(상점에서 산 것)과 잠근 것은 안 된다. 끼고 있는지는 부른 쪽이 본다 (캐릭터의 일이다) */
+export const canSalvage = (g: Gear): boolean => !isSupply(g) && !g.lock;
+/** 자동 분해로 고를 수 있는 값: -1은 끔, 0부터는 '이 등급 이하' (RARITIES의 번호). 가장 높은 것은 SALVAGE.autoMaxRar */
+export const autoSalvageChoices = (def: SalvageDef = SALVAGE): number[] => (salvageOn(def) ? [-1, ...RARITIES.map((_, i) => i).filter((i) => i <= def.autoMaxRar)] : [-1]);
+/** 가방을 n번 넓힌 캐릭터의 가방 칸 수 */
+export const bagSlots = (ups: number): number => GEAR.bagMax + Math.max(0, Math.min(BAG_UP.prices.length, ups)) * BAG_UP.step;
+/** n번 넓힌 캐릭터가 한 번 더 넓히는 값. 더 넓힐 수 없으면 null */
+export const bagUpPrice = (ups: number): number | null => BAG_UP.prices[ups] ?? null;
 
 // ---------- 레벨 ----------
 /** 레벨이 올랐을 때의 새 필요 경험치: 지금 값에서 구한다 (서버의 systems/players.ts가 레벨이 오를 때 부른다) */

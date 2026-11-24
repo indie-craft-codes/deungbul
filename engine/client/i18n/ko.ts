@@ -5,6 +5,7 @@
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (engine/test/framework.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemDef, ItemId, MonsterId, Stat } from '../../shared/defs';
 import { ITEMS } from '../../shared/defs';
+import { SALVAGE } from '../../shared/defs';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { LocaleExt } from './ext';
@@ -360,6 +361,15 @@ export const koBase = (n: ContentNames) => {
       guildNone: () => '길드가 없습니다. 메뉴의 길드에서 만들거나 초대를 받으세요.',
       awayBack: (a) => `자리를 비운 ${a[0]}분 동안 자동 사냥을 이어 갔습니다. ${coin.name} +${a[1]}, 골드 +${num(a[2])}${Number(a[3]) > 0 ? `, 레벨 +${a[3]}` : ''}`,
       rested: (a) => `쉬는 동안 휴식 보너스가 쌓였습니다. 휴식 보너스 ${a[0]} (처치 경험치 2배)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      // ---- 분해, 잠금, 자동 분해, 가방 넓히기 (경제 2단계). 가루의 이름은 게임의 아이템 이름에서 읽는다 ----
+      salvaged: (a) => `장비 ${a[0]}점을 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      salvageCant: () => '분해할 수 없는 장비가 섞여 있습니다. 낀 장비, 보급형, 잠근 장비는 분해할 수 없습니다.',
+      salvageFull: (a) => `${itemName(SALVAGE.item)}${josa(itemName(SALVAGE.item), '을', '를')} 더 들 수 없어 분해하지 않았습니다. 나올 양 ${num(a[0])}, 남은 자리 ${num(a[1])}`,
+      gearLocked: () => '잠근 장비입니다. 잠금을 풀어야 팔거나 분해하거나 거래소에 올릴 수 있습니다.',
+      autoSalvaged: (a) => `주운 장비 ${a[0]}점을 자동으로 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      awayGear: (a) => ['자리를 비운 동안:', Number(a[0]) > 0 ? `가방이 가득 차 장비 ${num(a[0])}점을 줍지 못했습니다.` : '', Number(a[1]) > 0 ? `장비 ${num(a[1])}점을 자동으로 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[2])}` : ''].filter(Boolean).join(' '),
+      bagUpDone: (a) => `가방을 넓혔습니다. 장비 ${a[0]}칸`,
+      bagUpMax: () => '가방을 더 넓힐 수 없습니다.',
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

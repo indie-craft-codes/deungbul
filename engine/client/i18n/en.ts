@@ -3,6 +3,7 @@
 import type { ClassId, ItemId, MonsterId } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { keyHints, type EngineLocale } from './ko';
+import { SALVAGE } from '../../shared/defs';
 import { itemNameOf, type ContentNames } from './names';
 
 /** 1 item, 2 items */
@@ -330,6 +331,15 @@ export const enBase = (n: ContentNames): EngineLocale => {
       guildNone: () => 'You are not in a guild. Create one or get invited under Menu > Guild.',
       awayBack: (a) => `Auto-hunt kept going for the ${a[0]} min you were away. ${coin.name} +${a[1]}, gold +${num(a[2])}${Number(a[3]) > 0 ? `, level +${a[3]}` : ''}`,
       rested: (a) => `A rest bonus built up while you were away. Rested bonus ${a[0]} (double exp from kills)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      // ---- Salvage, lock, auto-salvage, bag expansion (economy stage 2). The dust's name comes from the game's item names ----
+      salvaged: (a) => `Salvaged ${count(a[0], 'item')}. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      salvageCant: () => 'Some of that gear cannot be salvaged. Equipped, Standard and locked gear cannot be salvaged.',
+      salvageFull: (a) => `You cannot hold that much ${itemName(SALVAGE.item)}, so nothing was salvaged. Would give ${num(a[0])}, room for ${num(a[1])}`,
+      gearLocked: () => 'That gear is locked. Unlock it to sell, salvage or list it.',
+      autoSalvaged: (a) => `Auto-salvaged ${count(a[0], 'drop')}. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      awayGear: (a) => ['While you were away:', Number(a[0]) > 0 ? `${count(num(a[0]), 'drop')} left behind because your bag was full.` : '', Number(a[1]) > 0 ? `${count(num(a[1]), 'drop')} auto-salvaged. ${itemName(SALVAGE.item)} +${num(a[2])}` : ''].filter(Boolean).join(' '),
+      bagUpDone: (a) => `Bag expanded. ${a[0]} gear slots`,
+      bagUpMax: () => 'Your bag cannot be expanded any further.',
     },
     nameA: n.nameA,
     nameB: n.nameB,

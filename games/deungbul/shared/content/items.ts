@@ -1,11 +1,11 @@
 // 아이템과 상점, 그리고 등불 맡기기(휴식 보너스). 이름과 설명은 언어 파일에 있다. 수치는 모두 잠정값이다.
 // 모양(ItemDef)과 도우미(itemDef, nearShop 등)는 틀에 있다: engine/shared/defs/items.ts
 import type { ItemDef, ItemId } from '@engine/shared/defs/items';
-import { PRICES, REST } from './economy';
+import { DUST_MAX, PRICES, REST } from './economy';
 import type { ResidentId } from './residents';
 
 // 경제 수치는 economy.ts에 모았다: 상점의 값(PRICES)은 아래 표가 거기서 읽고, 들 수 있는 한도(POTION_MAX, MAT_MAX)와 휴식 보너스(REST)는 거기에 있고 여기서 다시 내보낸다
-export { MAT_MAX, POTION_MAX, REST } from './economy';
+export { DUST_MAX, MAT_MAX, POTION_MAX, REST } from './economy';
 
 export const ITEMS = {
   sword1: { kind: 'weapon', price: 0, damage: 1, tier: 1 },
@@ -22,6 +22,8 @@ export const ITEMS = {
   hide: { kind: 'mat', price: 0 },
   iron: { kind: 'mat', price: 0 },
   ashcore: { kind: 'mat', price: 0 },
+  // 장비 가루: 장비를 분해하면 나온다 (economy.ts의 SALVAGE). 다른 재료처럼 거래소에 올릴 수 있고, 한도만 따로 크다
+  dust: { kind: 'mat', price: 0, max: DUST_MAX },
 } as const satisfies Record<string, ItemDef>;
 
 /** 처음 들고 있는 무기 */

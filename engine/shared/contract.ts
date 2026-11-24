@@ -77,6 +77,10 @@ export interface ContentContract {
     weaponFor: (lv: number) => string; armorFor: (lv: number) => string; levelOf: (monsterExp: number) => number;
   };
   ENHANCE: { max: number; supplyMax: number; perPlus: number; rate: (plus: number) => number; gold: (plus: number, rar: number) => number };
+  /** 장비 분해: 나오는 아이템, 등급별 양(RARITIES의 순서), 강화 단계마다의 덤, 한 번에 분해하는 수, 자동 분해의 가장 높은 등급, 안내를 묶는 시간(초). dust가 비어 있으면 분해가 없는 게임이다 */
+  SALVAGE: { item: string; dust: readonly number[]; perPlus: number; maxBatch: number; autoMaxRar: number; tellS: number };
+  /** 가방 넓히기: 한 번에 늘어나는 칸 수와 차례대로의 값. prices가 비어 있으면 넓히기가 없는 게임이다 */
+  BAG_UP: { step: number; prices: readonly number[] };
   /** 찍을 수 있는 능력치의 종류 */
   BUILD_STATS: readonly string[];
   BUILD: { pointsPerLevel: number; pow: number; vit: number; luck: number; resetGold: (lv: number) => number; skillMax: number; skillPerLevel: number; skillNeedLv: (lv: number) => number; skillGold: (lv: number) => number };

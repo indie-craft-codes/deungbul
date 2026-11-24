@@ -298,6 +298,8 @@ function noonOf(day: unknown): number {
 // 그 상수를 끄면 아래의 호환 검사는 '옛 것이 가지 않는다'를 본다 (검사를 고칠 필요는 없다).
 {
   type Me = Extract<ServerMsg, { t: 'me' }>;
+  /** 틀의 시스템이 등록한 개인 상태의 칸: 가방(systems/bag.ts)과 분해(systems/salvage.ts) */
+  const ENGINE_CELLS: readonly string[] = ['bag', 'salvage'];
   /** 접속해서 받은 메시지를 차례로 모은다 (스냅샷은 뺀다) */
   const join = async (port: number, name: string, token?: string) => {
     const ws = new WebSocket(`ws://127.0.0.1:${port}`), got: ServerMsg[] = [];
@@ -309,7 +311,9 @@ function noonOf(day: unknown): number {
     return {
       ws, got,
       id: (got[0] as Extract<ServerMsg, { t: 'welcome' }>).id,
-      mine: (from = 0) => got.slice(from).filter((m): m is Me => m.t === 'me'),
+      // 틀이 스스로 등록한 칸(가방, 분해)은 따로 본다: 아래 검사는 게임과 플러그인이 등록한 칸을 본다
+      mine: (from = 0) => got.slice(from).filter((m): m is Me => m.t === 'me' && !ENGINE_CELLS.includes(m.k)),
+      own: (from = 0) => got.slice(from).filter((m): m is Me => m.t === 'me' && ENGINE_CELLS.includes(m.k)),
       stats: (from = 0) => got.slice(from).filter((m) => m.t === 'stat') as unknown as Record<string, unknown>[],
       olds: (from = 0) => got.slice(from).filter((m) => m.t === 'quest'),
     };
@@ -330,7 +334,7 @@ function noonOf(day: unknown): number {
     p.gold += 3; p.dirty = true;
     await until(() => c.stats().some((m) => m.gold === 3 && m.cls === 'warrior'));
     await settle();
-    check(s.game.personal.length === 0 && s.game.oldMsgs === null && c.mine().length === 0 && c.olds().length === 0, '틀만의 서버는 개인 상태(me)도 옛 quest 메시지도 보내지 않는다');
+    check(s.game.personal.map((x) => x.name).join() === ENGINE_CELLS.join() && c.own().map((m) => m.k).join() === ENGINE_CELLS.join() && s.game.oldMsgs === null && c.mine().length === 0 && c.olds().length === 0, `틀만의 서버는 틀의 개인 상태(${ENGINE_CELLS.join(', ')})만 보내고, 게임의 칸도 옛 quest 메시지도 보내지 않는다`);
     check(c.stats().length >= 2 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), `틀만의 서버의 stat에는 게임의 칸(기여, 휴식, 기여 단계)이 없다 (${Object.keys(c.stats()[0]).join()})`);
     c.ws.close();
     await s.close();
@@ -346,7 +350,7 @@ function noonOf(day: unknown): number {
     await settle();
     const p = s.game.ents.get(c.id)!;
     const first = c.mine();
-    check(s.game.personal.map((x) => x.name).join() === 'contrib,quest,tier,rested' && first.map((m) => m.k).join() === 'contrib,quest,tier,rested' && JSON.stringify(first.map((m) => m.s)) === '[0,{"c":0,"s":0,"n":0},0,0]',
+    check(s.game.personal.map((x) => x.name).filter((k) => !ENGINE_CELLS.includes(k)).join() === 'contrib,quest,tier,rested' && first.map((m) => m.k).join() === 'contrib,quest,tier,rested' && JSON.stringify(first.map((m) => m.s)) === '[0,{"c":0,"s":0,"n":0},0,0]',
       `접속 직후에 등록된 개인 상태를 전부 한 번씩 받는다 (${first.map((m) => m.k).join()})`);
     // stat, meta가 먼저 가고 개인 상태가 그 뒤다: 화면이 퀘스트 창을 다시 쓸 때 불씨 수가 이미 새 값이다 (전에도 quest는 stat 뒤에 갔다)
     const order = c.got.map((m) => m.t).filter((t) => t === 'stat' || t === 'meta' || t === 'me');

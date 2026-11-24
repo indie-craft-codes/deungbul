@@ -33,6 +33,7 @@ const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?:
   ashcore: { name: '잿빛 핵', info: '잿빛 트롤이 떨어뜨리는 재료' },
   potion: { name: '물약' },
   tonic: { name: '진한 물약' },
+  dust: { name: '장비 가루', info: '장비를 분해하면 나오는 재료' },
 };
 const itemName = itemNameOf(items);
 const towers: Record<string, string> = { first: '첫불 마을 등탑', ash: '잿빛 숲 등탑', crypt: '지하묘 입구' };

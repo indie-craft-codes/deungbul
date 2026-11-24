@@ -30,6 +30,7 @@ const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?:
   ashcore: { name: 'Ash Core', info: 'Material dropped by the Ash Troll' },
   potion: { name: 'Potion' },
   tonic: { name: 'Strong Potion' },
+  dust: { name: 'Gear Dust', info: 'Material you get by salvaging gear' },
 };
 const itemName = itemNameOf(items);
 const towers: Record<string, string> = { first: 'Firstlight Village Tower', ash: 'Ashwood Tower', crypt: 'the crypt entrance' };
