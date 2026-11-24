@@ -28,6 +28,12 @@ export interface PlayerSave {
 /** 신고 한 건 (server/net/moderation.ts의 Report와 같은 모양) */
 export interface ReportSave { at: number; by: string; byKey: string | null; target: string; targetKey: string | null; lines: string[] }
 
+/**
+ * 재화 흐름 지표의 한 줄 (server/game/systems/ledger.ts): 그날, 그 재화가, 그 원인으로, 생겼거나(+) 사라진(-) 양과 건수.
+ * 재화는 gold, sparks, exp, gear:등급, item:아이템 id. 같은 (day, cur, why, dir)은 한 줄로 합쳐진다
+ */
+export interface EconRow { day: string; cur: string; why: string; dir: '+' | '-'; amount: number; n: number }
+
 /** 시스템마다 자기 이름의 칸에 저장할 것을 넣는다 (예: { tower: {...} }) */
 export type WorldSave = Record<string, unknown>;
 
@@ -43,5 +49,15 @@ export interface Store {
   saveReport(r: ReportSave): void;
   /** 최근 신고부터 limit건 */
   reports(limit: number): ReportSave[];
+  /** 저장된 모든 캐릭터를 훑는다 (지표의 분포 스냅샷용). 저장 키는 넘기지 않는다 */
+  eachPlayer(fn: (p: PlayerSave) => void): void;
+  /** 재화 흐름 지표의 줄을 얹는다: 같은 (day, cur, why, dir)이 이미 있으면 양과 건수를 더한다 */
+  addEcon(rows: EconRow[]): void;
+  /** 그 날짜(YYYY-MM-DD)부터의 지표 줄 */
+  econ(fromDay: string): EconRow[];
+  /** 그날의 분포 스냅샷을 적는다 (하루에 하나. 다시 적으면 덮어쓴다) */
+  saveEconSnapshot(day: string, data: unknown): void;
+  /** 그날의 분포 스냅샷. 날짜를 주지 않으면 가장 최근 것. 없으면 null */
+  econSnapshot(day?: string): { day: string; data: unknown } | null;
   close(): void;
 }

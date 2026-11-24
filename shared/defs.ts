@@ -2,6 +2,7 @@
 export * from './content/combat';
 export * from './content/craft';
 export * from './content/dungeons';
+export * from './content/economy';
 export * from './content/growth';
 export * from './content/items';
 export * from './content/monsters';

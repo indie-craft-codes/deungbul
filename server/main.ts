@@ -37,6 +37,7 @@ startServer(port, { bots, store, game: { plugins: [(g) => installDeungbul(g, { r
     setInterval(() => {
       const x = s.metrics(), f = (v: number) => v.toFixed(2);
       console.log(`[metrics] 접속 ${x.clients} 엔티티 ${x.entities} | 틱 ${f(x.tickAvg)}/${f(x.tickP95)}/${f(x.tickMax)}ms | 전송 ${f(x.flushAvg)}/${f(x.flushP95)}/${f(x.flushMax)}ms | 지연 ${f(x.lagAvg)}/${f(x.lagMax)}ms | ${(x.bytesPerS / 1024).toFixed(1)}KB/s`);
+      console.log(s.game.ledger.line()); // 같은 간격으로 재화 흐름 한 줄 (systems/ledger.ts)
     }, every * 1000).unref();
   }
   // 어디선가 놓친 예외 하나로 모두의 게임이 꺼지지 않게 한다: 적어 두고 계속 돈다
