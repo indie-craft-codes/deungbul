@@ -1,0 +1,1379 @@
+{
+ "build.stats.luck.info": [
+  "9653af8174b2f8e6",
+  "치명타 +undefined%",
+  "치명타 +0%",
+  "치명타 +1%",
+  "치명타 +2%"
+ ],
+ "build.stats.luck.name": "행운",
+ "build.stats.pow.info": [
+  "4d4bff0baaef82e2",
+  "공격 피해 +undefined%",
+  "공격 피해 +0%",
+  "공격 피해 +1%",
+  "공격 피해 +2%"
+ ],
+ "build.stats.pow.name": "힘",
+ "build.stats.vit.info": [
+  "411303226e619770",
+  "최대 체력 +undefined",
+  "최대 체력 +0",
+  "최대 체력 +1",
+  "최대 체력 +2"
+ ],
+ "build.stats.vit.name": "체력",
+ "classes.archer.info": "멀리서 활을 쏩니다. 체력이 적습니다.",
+ "classes.archer.name": "궁수",
+ "classes.mage.info": "멀리서 마법을 씁니다. 적을 느리게 하고 곁의 사람을 치유합니다. 체력이 가장 적습니다.",
+ "classes.mage.name": "마법사",
+ "classes.warrior.info": "가까이 붙어 싸웁니다. 체력이 많습니다.",
+ "classes.warrior.name": "전사",
+ "code": "ko",
+ "dungeons.crypt.info": "고블린과 잊힌 병사를 뚫고 지하묘의 주인을 쓰러뜨리세요. 여럿이 가는 편이 좋습니다.",
+ "dungeons.crypt.name": "잿빛 지하묘",
+ "fmt.autoOnEarly": [
+  "1b48c4158a296e47",
+  "자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. (창을 닫아도 이어지는 것은 직업을 고르고 레벨 undefined부터입니다.)",
+  "자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. (창을 닫아도 이어지는 것은 직업을 고르고 레벨 0부터입니다.)",
+  "자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. (창을 닫아도 이어지는 것은 직업을 고르고 레벨 1부터입니다.)",
+  "자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. (창을 닫아도 이어지는 것은 직업을 고르고 레벨 2부터입니다.)"
+ ],
+ "fmt.blocked": [
+  "2bb131e53534a617",
+  "undefined 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다.",
+  "0 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다.",
+  "1 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다.",
+  "2 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다."
+ ],
+ "fmt.channelOpt": [
+  "6cd4d502c289b51c",
+  "undefined채널 · undefined명",
+  "0채널 · undefined명",
+  "1채널 · undefined명",
+  "2채널 · undefined명"
+ ],
+ "fmt.channelShort": [
+  "5307730ab7fd255a",
+  "undefined채널",
+  "0채널",
+  "1채널",
+  "2채널"
+ ],
+ "fmt.contrib": [
+  "504546cb805bfcdc",
+  "기여 undefined",
+  "기여 0",
+  "기여 1",
+  "기여 2"
+ ],
+ "fmt.distance": [
+  "2a6886a34a11566f",
+  "undefinedm",
+  "0m",
+  "1m",
+  "2m"
+ ],
+ "fmt.dungeonExit": [
+  "11433f3b9fa68ba6",
+  "끝냈습니다. undefined초 뒤에 밖으로 나갑니다.",
+  "끝냈습니다. 0초 뒤에 밖으로 나갑니다.",
+  "끝냈습니다. 1초 뒤에 밖으로 나갑니다.",
+  "끝냈습니다. 2초 뒤에 밖으로 나갑니다."
+ ],
+ "fmt.dungeonFoes": [
+  "715903e3ff028503",
+  "남은 적 undefined",
+  "남은 적 0",
+  "남은 적 1",
+  "남은 적 2"
+ ],
+ "fmt.dungeonInfo": [
+  "7f51a8fd98950baa",
+  "undefined 제한 시간 undefined분.",
+  "undefined 제한 시간 0분.",
+  "undefined 제한 시간 1분.",
+  "undefined 제한 시간 2분."
+ ],
+ "fmt.dungeonMateIn": [
+  "6dfb8f4515a75451",
+  "파티원(undefined)이 안에 있습니다. 들어가면 같은 곳으로 갑니다.",
+  "파티원(0)이 안에 있습니다. 들어가면 같은 곳으로 갑니다.",
+  "파티원(1)이 안에 있습니다. 들어가면 같은 곳으로 갑니다.",
+  "파티원(2)이 안에 있습니다. 들어가면 같은 곳으로 갑니다."
+ ],
+ "fmt.dungeonNeedLv": [
+  "34c9daccf42e326b",
+  "레벨 undefined부터 들어갈 수 있습니다.",
+  "레벨 0부터 들어갈 수 있습니다.",
+  "레벨 1부터 들어갈 수 있습니다.",
+  "레벨 2부터 들어갈 수 있습니다."
+ ],
+ "fmt.dungeonRuns": [
+  "b0f645523a0a0906",
+  "오늘 undefined / undefined번",
+  "오늘 0 / undefined번",
+  "오늘 1 / undefined번",
+  "오늘 2 / undefined번"
+ ],
+ "fmt.enhanceCost": [
+  "4be03323027f529e",
+  "강화 NaN골드 · undefined%",
+  "강화 0골드 · undefined%",
+  "강화 1골드 · undefined%",
+  "강화 2골드 · undefined%"
+ ],
+ "fmt.enhanceDone": [
+  "6a2b587f30c99980",
+  "강화 성공 · +undefined",
+  "강화 성공 · +0",
+  "강화 성공 · +1",
+  "강화 성공 · +2"
+ ],
+ "fmt.gearHint": [
+  "0083d62ed89ee2f3",
+  "강화: 보급형(상점에서 산 것)은 +undefined까지, 만들거나 주운 장비는 +undefined까지. 실패해도 장비는 그대로이고 골드만 듭니다.",
+  "강화: 보급형(상점에서 산 것)은 +0까지, 만들거나 주운 장비는 +undefined까지. 실패해도 장비는 그대로이고 골드만 듭니다.",
+  "강화: 보급형(상점에서 산 것)은 +1까지, 만들거나 주운 장비는 +undefined까지. 실패해도 장비는 그대로이고 골드만 듭니다.",
+  "강화: 보급형(상점에서 산 것)은 +2까지, 만들거나 주운 장비는 +undefined까지. 실패해도 장비는 그대로이고 골드만 듭니다."
+ ],
+ "fmt.gearName": [
+  "fb2e0f39631a37e0",
+  "undefined (Lv undefined)",
+  "0 (Lv undefined)",
+  "1 (Lv undefined)",
+  "2 (Lv undefined)"
+ ],
+ "fmt.glow": [
+  "38cf827fe7134e68",
+  "undefined · undefined / undefined",
+  "어스름 · undefined / undefined",
+  "보통 · undefined / undefined",
+  "환함 · undefined / undefined"
+ ],
+ "fmt.gold": [
+  "cf7ee3bf7c213970",
+  "골드 NaN",
+  "골드 0",
+  "골드 1",
+  "골드 2"
+ ],
+ "fmt.guildCreateInfo": [
+  "73aafad1b521fa32",
+  "길드를 만들려면 레벨 undefined 이상, 골드 NaN이 필요합니다. 다른 길드에 들어가려면 그 길드장의 초대를 받으세요.",
+  "길드를 만들려면 레벨 0 이상, 골드 NaN이 필요합니다. 다른 길드에 들어가려면 그 길드장의 초대를 받으세요.",
+  "길드를 만들려면 레벨 1 이상, 골드 NaN이 필요합니다. 다른 길드에 들어가려면 그 길드장의 초대를 받으세요.",
+  "길드를 만들려면 레벨 2 이상, 골드 NaN이 필요합니다. 다른 길드에 들어가려면 그 길드장의 초대를 받으세요."
+ ],
+ "fmt.guildExp": [
+  "b5fc591ca1aedfa5",
+  "다음 레벨까지 NaN / NaN",
+  "다음 레벨까지 0 / NaN",
+  "다음 레벨까지 1 / NaN",
+  "다음 레벨까지 2 / NaN"
+ ],
+ "fmt.guildGave": [
+  "8e27ab8d94db2eb8",
+  "기부 NaN",
+  "기부 0",
+  "기부 1",
+  "기부 2"
+ ],
+ "fmt.guildGive": [
+  "8e27ab8d94db2eb8",
+  "기부 NaN",
+  "기부 0",
+  "기부 1",
+  "기부 2"
+ ],
+ "fmt.guildHead": [
+  "edf833c89aa16d09",
+  "undefined · 길드 Lv undefined · 처치 경험치 +undefined%",
+  "0 · 길드 Lv undefined · 처치 경험치 +undefined%",
+  "1 · 길드 Lv undefined · 처치 경험치 +undefined%",
+  "2 · 길드 Lv undefined · 처치 경험치 +undefined%"
+ ],
+ "fmt.guildInviteFrom": [
+  "9883b9007ea201eb",
+  "undefined 님이 'undefined' 길드에 초대했습니다",
+  "undefined 님이 '0' 길드에 초대했습니다",
+  "undefined 님이 '1' 길드에 초대했습니다",
+  "undefined 님이 '2' 길드에 초대했습니다"
+ ],
+ "fmt.guildMembers": [
+  "32d2648439482be9",
+  "길드원 undefined / undefined",
+  "길드원 0 / undefined",
+  "길드원 1 / undefined",
+  "길드원 2 / undefined"
+ ],
+ "fmt.have": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.itemDamage": [
+  "4d4bff0baaef82e2",
+  "공격 피해 +undefined%",
+  "공격 피해 +0%",
+  "공격 피해 +1%",
+  "공격 피해 +2%"
+ ],
+ "fmt.itemGuard": [
+  "faeaec8c098cb687",
+  "받는 피해 -undefined%",
+  "받는 피해 -0%",
+  "받는 피해 -1%",
+  "받는 피해 -2%"
+ ],
+ "fmt.itemHeal": [
+  "2229518a20080808",
+  "체력 undefined 회복",
+  "체력 0 회복",
+  "체력 1 회복",
+  "체력 2 회복"
+ ],
+ "fmt.keeper": [
+  "ea6ab0cb2b2ddb92",
+  "undefined undefined",
+  "0 undefined",
+  "1 undefined",
+  "2 undefined"
+ ],
+ "fmt.level": [
+  "7be2f6ffa034b5d9",
+  "Lv undefined undefined",
+  "Lv 0 undefined",
+  "Lv 1 undefined",
+  "Lv 2 undefined"
+ ],
+ "fmt.mailTitle": [
+  "8f232c00bb9fefec",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.marketBuy": [
+  "ff83ca031369db27",
+  "사기 NaN골드",
+  "사기 0골드",
+  "사기 1골드",
+  "사기 2골드"
+ ],
+ "fmt.marketConfirm": [
+  "4d5ecbc6a231a30e",
+  "확인 · NaN골드",
+  "확인 · 0골드",
+  "확인 · 1골드",
+  "확인 · 2골드"
+ ],
+ "fmt.marketCountRange": [
+  "0c4c4c40b2e1ff53",
+  "수량은 1~undefined 사이로 적어 주세요.",
+  "수량은 1~0 사이로 적어 주세요.",
+  "수량은 1~1 사이로 적어 주세요.",
+  "수량은 1~2 사이로 적어 주세요."
+ ],
+ "fmt.marketFeeInfo": [
+  "fe1bd31af0461a07",
+  "팔리면 수수료 undefined%를 뗀 금액이 우편으로 옵니다. undefined시간 안에 팔리지 않으면 물건이 우편으로 돌아옵니다.",
+  "팔리면 수수료 0%를 뗀 금액이 우편으로 옵니다. undefined시간 안에 팔리지 않으면 물건이 우편으로 돌아옵니다.",
+  "팔리면 수수료 1%를 뗀 금액이 우편으로 옵니다. undefined시간 안에 팔리지 않으면 물건이 우편으로 돌아옵니다.",
+  "팔리면 수수료 2%를 뗀 금액이 우편으로 옵니다. undefined시간 안에 팔리지 않으면 물건이 우편으로 돌아옵니다."
+ ],
+ "fmt.marketLeft": [
+  "445cca120c8a8225",
+  "undefined분 남음",
+  "1시간 undefined분 남음",
+  "2시간 undefined분 남음",
+  "5시간 undefined분 남음"
+ ],
+ "fmt.marketMineHead": [
+  "94eaf47e58073d2f",
+  "내 물건 undefined / undefined",
+  "내 물건 0 / undefined",
+  "내 물건 1 / undefined",
+  "내 물건 2 / undefined"
+ ],
+ "fmt.marketNet": [
+  "bfe62cebb7acc17c",
+  "값 NaN − 수수료 NaN = 받는 금액 NaN골드",
+  "값 0 − 수수료 NaN = 받는 금액 NaN골드",
+  "값 1 − 수수료 NaN = 받는 금액 NaN골드",
+  "값 2 − 수수료 NaN = 받는 금액 NaN골드"
+ ],
+ "fmt.marketPage": [
+  "9434cadc224307ea",
+  "undefined / undefined쪽 · 물건 undefined개",
+  "0 / undefined쪽 · 물건 undefined개",
+  "1 / undefined쪽 · 물건 undefined개",
+  "2 / undefined쪽 · 물건 undefined개"
+ ],
+ "fmt.marketPageShort": [
+  "6b549387dae84381",
+  "undefined/undefined · NaN개",
+  "0/undefined · NaN개",
+  "1/undefined · NaN개",
+  "2/undefined · NaN개"
+ ],
+ "fmt.marketPicked": [
+  "80b027d427fdb152",
+  "올릴 물건: undefined",
+  "올릴 물건: 0",
+  "올릴 물건: 1",
+  "올릴 물건: 2"
+ ],
+ "fmt.marketPrice": [
+  "87971b6cce6d9d9f",
+  "값 NaN골드",
+  "값 0골드",
+  "값 1골드",
+  "값 2골드"
+ ],
+ "fmt.marketPriceRange": [
+  "309cc37a30be8f59",
+  "값은 2~NaN 사이의 정수로 적어 주세요. 재료는 낱개 값이 아니라 묶음 전체의 값입니다.",
+  "값은 2~0 사이의 정수로 적어 주세요. 재료는 낱개 값이 아니라 묶음 전체의 값입니다.",
+  "값은 2~1 사이의 정수로 적어 주세요. 재료는 낱개 값이 아니라 묶음 전체의 값입니다.",
+  "값은 2~2 사이의 정수로 적어 주세요. 재료는 낱개 값이 아니라 묶음 전체의 값입니다."
+ ],
+ "fmt.marketSeller": [
+  "27949723e507ed36",
+  "판매자 undefined",
+  "판매자 0",
+  "판매자 1",
+  "판매자 2"
+ ],
+ "fmt.marketStack": [
+  "96d8413451feab3f",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.mat": [
+  "ebd0159f0f1be222",
+  "undefined undefined/undefined",
+  "0 undefined/undefined",
+  "1 undefined/undefined",
+  "2 undefined/undefined"
+ ],
+ "fmt.matFrom": [
+  "226154ff9cd6fdba",
+  "(던짐) TypeError",
+  "얻는 곳: 슬라임, 위습",
+  "얻는 곳: "
+ ],
+ "fmt.matSource": [
+  "ee2005ef95e92dcf",
+  "(던짐) TypeError",
+  "쇳조각 얻는 곳: 고블린, 잊힌 병사",
+  "Iron Scrap 얻는 곳: Goblin",
+  "idle 얻는 곳: 35"
+ ],
+ "fmt.needsResident": [
+  "86a09c433c7eda75",
+  "(던짐) TypeError",
+  "아주긴이름을가진모험가가 돌아오면 들어옵니다",
+  "Zed이(가) 돌아오면 들어옵니다",
+  "브람이 돌아오면 들어옵니다"
+ ],
+ "fmt.nextResident": [
+  "20ef5eb80582c8c3",
+  "되돌릴 주민: undefined",
+  "되돌릴 주민: 0",
+  "되돌릴 주민: 1",
+  "되돌릴 주민: 2"
+ ],
+ "fmt.num": [
+  "4b8d4903240717c5",
+  "NaN",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.partyInvite": [
+  "e4df19338b73fe26",
+  "undefined 님이 파티에 초대했습니다. 함께 잡으면 보상을 같이 받습니다.",
+  "0 님이 파티에 초대했습니다. 함께 잡으면 보상을 같이 받습니다.",
+  "1 님이 파티에 초대했습니다. 함께 잡으면 보상을 같이 받습니다.",
+  "2 님이 파티에 초대했습니다. 함께 잡으면 보상을 같이 받습니다."
+ ],
+ "fmt.potions": [
+  "d3edf08ec1a147f9",
+  "물약 undefined",
+  "물약 0",
+  "물약 1",
+  "물약 2"
+ ],
+ "fmt.power": [
+  "64264cc173513add",
+  "전투력 NaN",
+  "전투력 0",
+  "전투력 1",
+  "전투력 2"
+ ],
+ "fmt.price": [
+  "47a0c166d8fd00df",
+  "NaN골드",
+  "0골드",
+  "1골드",
+  "2골드"
+ ],
+ "fmt.questProgress": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.raidActive": [
+  "3e2075c0c29ae0e2",
+  "첫불 마을 습격 · 남은 적 undefined · undefined",
+  "첫불 마을 습격 · 남은 적 0 · undefined",
+  "첫불 마을 습격 · 남은 적 1 · undefined",
+  "첫불 마을 습격 · 남은 적 2 · undefined"
+ ],
+ "fmt.raidFoe": [
+  "93c2c822c7413ad8",
+  "안개 undefined",
+  "안개 0",
+  "안개 1",
+  "안개 2"
+ ],
+ "fmt.raidNext": [
+  "bd85c55cad487e9b",
+  "다음 습격 undefined · 하루 undefined번",
+  "다음 습격 0 · 하루 undefined번",
+  "다음 습격 1 · 하루 undefined번",
+  "다음 습격 2 · 하루 undefined번"
+ ],
+ "fmt.raidSoon": [
+  "69ca32615a818094",
+  "첫불 마을에 안개가 몰려옵니다 · undefined초 뒤",
+  "첫불 마을에 안개가 몰려옵니다 · 0초 뒤",
+  "첫불 마을에 안개가 몰려옵니다 · 1초 뒤",
+  "첫불 마을에 안개가 몰려옵니다 · 2초 뒤"
+ ],
+ "fmt.residentHint": [
+  "1566157cbc049ba6",
+  "(던짐) TypeError",
+  "아주긴이름을가진모험가는 아직 돌아오지 못했습니다. 등탑에서 불씨를 보태면 돌아옵니다 (앞으로 undefined개).",
+  "Zed은(는) 아직 돌아오지 못했습니다. 등탑에서 불씨를 보태면 돌아옵니다 (앞으로 undefined개).",
+  "아주긴이름을가진모험가는 아직 돌아오지 못했습니다. 등탑에서 불씨를 보태면 돌아옵니다 (앞으로 3개)."
+ ],
+ "fmt.rested": [
+  "70d24e4df32487f4",
+  "휴식 보너스 undefined",
+  "휴식 보너스 0",
+  "휴식 보너스 1",
+  "휴식 보너스 2"
+ ],
+ "fmt.reward": [
+  "2bf995c145790f6d",
+  "",
+  "골드 1",
+  "골드 2",
+  "골드 5"
+ ],
+ "fmt.sellConfirm": [
+  "4d5ecbc6a231a30e",
+  "확인 · NaN골드",
+  "확인 · 0골드",
+  "확인 · 1골드",
+  "확인 · 2골드"
+ ],
+ "fmt.sellFor": [
+  "3d66859d9ef6a367",
+  "팔기 NaN골드",
+  "팔기 0골드",
+  "팔기 1골드",
+  "팔기 2골드"
+ ],
+ "fmt.short": [
+  "97080f753d77544f",
+  "골드 NaN 모자람",
+  "골드 0 모자람",
+  "골드 1 모자람",
+  "골드 2 모자람"
+ ],
+ "fmt.skillBonus": [
+  "9728fe176c437371",
+  "피해·회복 +undefined%",
+  "피해·회복 +0%",
+  "피해·회복 +1%",
+  "피해·회복 +2%"
+ ],
+ "fmt.skillLabel": [
+  "52b0fb3882278fb2",
+  "undefined: undefined (단축키 undefined)",
+  "0: undefined (단축키 undefined)",
+  "1: undefined (단축키 undefined)",
+  "2: undefined (단축키 undefined)"
+ ],
+ "fmt.skillLv": [
+  "6b47180ffb795fc0",
+  "undefined / undefined단계",
+  "0 / undefined단계",
+  "1 / undefined단계",
+  "2 / undefined단계"
+ ],
+ "fmt.skillNeed": [
+  "1287d3a5cb72b86c",
+  "레벨 undefined 필요",
+  "레벨 0 필요",
+  "레벨 1 필요",
+  "레벨 2 필요"
+ ],
+ "fmt.sparks": [
+  "6e2b40bf42d07ba2",
+  "불씨 undefined",
+  "불씨 0",
+  "불씨 1",
+  "불씨 2"
+ ],
+ "fmt.stageNote": [
+  "1f729b252c72ff31",
+  "undefined",
+  "빛이 약합니다. 혜택이 없습니다.",
+  "undefined 이상이면 환해집니다: 이동 속도 +undefined%, 회복 undefined배",
+  "환합니다: 이동 속도 +undefined%, 회복 undefined배"
+ ],
+ "fmt.statLeft": [
+  "277c21348274a558",
+  "능력치 · 남은 점수 undefined (레벨이 오를 때마다 undefined점)",
+  "능력치 · 남은 점수 0 (레벨이 오를 때마다 undefined점)",
+  "능력치 · 남은 점수 1 (레벨이 오를 때마다 undefined점)",
+  "능력치 · 남은 점수 2 (레벨이 오를 때마다 undefined점)"
+ ],
+ "fmt.statResetFor": [
+  "9c0a4291e8b7faa3",
+  "모두 돌려받기 · NaN골드",
+  "모두 돌려받기 · 0골드",
+  "모두 돌려받기 · 1골드",
+  "모두 돌려받기 · 2골드"
+ ],
+ "fmt.status": [
+  "c071af0d645ffbb5",
+  "접속자 undefined · 주변 undefined · 지연 undefined",
+  "접속자 0 · 주변 undefined · 지연 undefined",
+  "접속자 1 · 주변 undefined · 지연 undefined",
+  "접속자 2 · 주변 undefined · 지연 undefined"
+ ],
+ "fmt.streak": [
+  "348e955b3da3a08d",
+  "출석 undefined일째",
+  "출석 0일째",
+  "출석 1일째",
+  "출석 2일째"
+ ],
+ "fmt.tier": [
+  "548c4980b100c96a",
+  "기여 undefined단계 · 다음 undefined",
+  "기여 0단계 · 다음 undefined",
+  "기여 1단계 · 다음 undefined",
+  "기여 2단계 · 다음 undefined"
+ ],
+ "fmt.towerHp": [
+  "9c935fa224efdea8",
+  "등탑 내구 undefined / undefined",
+  "등탑 내구 0 / undefined",
+  "등탑 내구 1 / undefined",
+  "등탑 내구 2 / undefined"
+ ],
+ "fmt.towerMini": [
+  "d99dbcf5cc1549f1",
+  "등탑 undefined undefined",
+  "등탑 어스름 undefined",
+  "등탑 보통 undefined",
+  "등탑 환함 undefined"
+ ],
+ "fmt.unblocked": [
+  "02b62aa8f9d0c611",
+  "undefined 님의 차단을 풀었습니다.",
+  "0 님의 차단을 풀었습니다.",
+  "1 님의 차단을 풀었습니다.",
+  "2 님의 차단을 풀었습니다."
+ ],
+ "fmt.whenBack": [
+  "8001ccc956128895",
+  "돌아오면: undefined",
+  "돌아오면: 0",
+  "돌아오면: 1",
+  "돌아오면: 2"
+ ],
+ "gear.dailies.enhance1": "장비 강화 1번 하기",
+ "gear.dailies.kill30": "몬스터 30마리 잡기",
+ "gear.dailies.offer10": "불씨 10개 바치기",
+ "gear.rarities.common": "평범한",
+ "gear.rarities.epic": "빛나는",
+ "gear.rarities.made": "제작",
+ "gear.rarities.rare": "희귀한",
+ "gear.rarities.supply": "보급형",
+ "gear.rarities.uncommon": "쓸 만한",
+ "gear.slots.amulet": "목걸이",
+ "gear.slots.armor": "갑옷",
+ "gear.slots.charm": "부적",
+ "gear.slots.ring": "반지",
+ "gear.slots.weapon": "무기",
+ "gear.stats.crit": [
+  "9653af8174b2f8e6",
+  "치명타 +undefined%",
+  "치명타 +0%",
+  "치명타 +1%",
+  "치명타 +2%"
+ ],
+ "gear.stats.dmg": [
+  "4d4bff0baaef82e2",
+  "공격 피해 +undefined%",
+  "공격 피해 +0%",
+  "공격 피해 +1%",
+  "공격 피해 +2%"
+ ],
+ "gear.stats.guard": [
+  "faeaec8c098cb687",
+  "받는 피해 -undefined%",
+  "받는 피해 -0%",
+  "받는 피해 -1%",
+  "받는 피해 -2%"
+ ],
+ "gear.stats.hp": [
+  "83db8871573408f1",
+  "체력 +undefined",
+  "체력 +0",
+  "체력 +1",
+  "체력 +2"
+ ],
+ "items.armor1.name": "가죽 갑옷",
+ "items.armor2.name": "쇠 갑옷",
+ "items.ashcore.info": "잿빛 트롤이 떨어뜨리는 재료",
+ "items.ashcore.name": "잿빛 핵",
+ "items.hide.info": "멧돼지가 떨어뜨리는 재료",
+ "items.hide.name": "질긴 가죽",
+ "items.iron.info": "고블린과 잊힌 병사가 떨어뜨리는 재료",
+ "items.iron.name": "쇳조각",
+ "items.potion.name": "물약",
+ "items.sword1.bow": "낡은 활",
+ "items.sword1.info": "기본 무기",
+ "items.sword1.name": "낡은 검",
+ "items.sword1.staff": "낡은 지팡이",
+ "items.sword2.bow": "단단한 활",
+ "items.sword2.name": "철검",
+ "items.sword2.staff": "단단한 지팡이",
+ "items.sword3.bow": "등불활",
+ "items.sword3.name": "등불검",
+ "items.sword3.staff": "등불 지팡이",
+ "items.sword4.bow": "잿불활",
+ "items.sword4.name": "잿불검",
+ "items.sword4.staff": "잿불 지팡이",
+ "items.tonic.name": "진한 물약",
+ "label": "한국어",
+ "monsters.ash_troll": "잿빛 트롤",
+ "monsters.boar": "멧돼지",
+ "monsters.crypt_lord": "지하묘의 주인",
+ "monsters.goblin": "고블린",
+ "monsters.lost_soldier": "잊힌 병사",
+ "monsters.shade_bram": "브람의 그림자",
+ "monsters.shade_mira": "미라의 그림자",
+ "monsters.slime": "슬라임",
+ "monsters.wisp": "위습",
+ "monsters.wolf": "늑대",
+ "msg.alreadyBest": "이미 같거나 더 좋은 장비를 갖추고 있습니다.",
+ "msg.awayBack": [
+  "55f02ac4f461d93b",
+  "자리를 비운 undefined분 동안 자동 사냥을 이어 갔습니다. 불씨 +undefined, 골드 +NaN",
+  "자리를 비운 0분 동안 자동 사냥을 이어 갔습니다. 불씨 +0, 골드 +0",
+  "자리를 비운 1분 동안 자동 사냥을 이어 갔습니다. 불씨 +1, 골드 +1, 레벨 +1",
+  "자리를 비운 2분 동안 자동 사냥을 이어 갔습니다. 불씨 +3, 골드 +4, 레벨 +5"
+ ],
+ "msg.bossDown": [
+  "39e0117d35fa5312",
+  "undefined이(가) 쓰러졌습니다. ",
+  "0이(가) 쓰러졌습니다. ",
+  "1이(가) 쓰러졌습니다. ",
+  "2이(가) 쓰러졌습니다. 3명이 함께 싸웠습니다."
+ ],
+ "msg.bossUp": [
+  "a06890755fb17886",
+  "undefined이(가) 잿빛 숲 깊은 곳에 나타났습니다.",
+  "0이(가) 잿빛 숲 깊은 곳에 나타났습니다.",
+  "1이(가) 잿빛 숲 깊은 곳에 나타났습니다.",
+  "2이(가) 잿빛 숲 깊은 곳에 나타났습니다."
+ ],
+ "msg.bought": [
+  "3c7755c206a2eb7d",
+  "undefined을(를) 샀습니다.",
+  "0을(를) 샀습니다.",
+  "1을(를) 샀습니다.",
+  "2을(를) 샀습니다."
+ ],
+ "msg.channelDungeon": "던전 안에서는 채널을 바꿀 수 없습니다.",
+ "msg.channelFight": "싸우는 중에는 채널을 바꿀 수 없습니다. 싸움이 멎은 뒤에 다시 골라 주세요.",
+ "msg.channelFull": [
+  "c6276edd66ecbcc8",
+  "undefined채널이 가득 찼습니다. 다른 채널을 골라 주세요.",
+  "0채널이 가득 찼습니다. 다른 채널을 골라 주세요.",
+  "1채널이 가득 찼습니다. 다른 채널을 골라 주세요.",
+  "2채널이 가득 찼습니다. 다른 채널을 골라 주세요."
+ ],
+ "msg.channelMoved": [
+  "1080a3c8b253f5f0",
+  "undefined채널로 옮겼습니다.",
+  "0채널로 옮겼습니다.",
+  "1채널로 옮겼습니다.",
+  "2채널로 옮겼습니다."
+ ],
+ "msg.channelWait": [
+  "8d5e7ddd6963063c",
+  "채널은 undefined초 뒤에 다시 바꿀 수 있습니다.",
+  "채널은 0초 뒤에 다시 바꿀 수 있습니다.",
+  "채널은 1초 뒤에 다시 바꿀 수 있습니다.",
+  "채널은 2초 뒤에 다시 바꿀 수 있습니다."
+ ],
+ "msg.chatWait": "대화가 너무 몰려 방금 한 말이 전해지지 않았습니다. 잠시 뒤에 다시 말해 주세요.",
+ "msg.classChanged": [
+  "397661100f24019c",
+  "직업이 undefined(으)로 정해졌습니다.",
+  "직업이 0(으)로 정해졌습니다.",
+  "직업이 1(으)로 정해졌습니다.",
+  "직업이 2(으)로 정해졌습니다."
+ ],
+ "msg.classFar": "직업은 등탑 가까이에서 바꿀 수 있습니다.",
+ "msg.crafted": [
+  "6392ca0c56c07af8",
+  "undefined을(를) 만들었습니다.",
+  "0을(를) 만들었습니다.",
+  "1을(를) 만들었습니다.",
+  "2을(를) 만들었습니다."
+ ],
+ "msg.died": [
+  "1e6523f9831181e6",
+  "쓰러졌습니다. undefined에서 다시 일어났습니다. 잃은 것은 없습니다.",
+  "쓰러졌습니다. 0에서 다시 일어났습니다. 잃은 것은 없습니다.",
+  "쓰러졌습니다. 1에서 다시 일어났습니다. 잃은 것은 없습니다.",
+  "쓰러졌습니다. 2에서 다시 일어났습니다. 잃은 것은 없습니다."
+ ],
+ "msg.dungeonClear": [
+  "b195134f9dc11910",
+  "undefined을(를) 끝냈습니다. 보상은 우편으로 왔습니다.",
+  "0을(를) 끝냈습니다. 보상은 우편으로 왔습니다.",
+  "1을(를) 끝냈습니다. 보상은 우편으로 왔습니다.",
+  "2을(를) 끝냈습니다. 보상은 우편으로 왔습니다."
+ ],
+ "msg.dungeonEnter": [
+  "4b26594a215a0206",
+  "undefined에 들어왔습니다. 우두머리를 쓰러뜨리면 끝납니다.",
+  "0에 들어왔습니다. 우두머리를 쓰러뜨리면 끝납니다.",
+  "1에 들어왔습니다. 우두머리를 쓰러뜨리면 끝납니다.",
+  "2에 들어왔습니다. 우두머리를 쓰러뜨리면 끝납니다."
+ ],
+ "msg.dungeonFail": "제한 시간이 지나 밖으로 나왔습니다.",
+ "msg.dungeonFar": "문에 더 가까이 가세요.",
+ "msg.dungeonLeft": "던전에서 나왔습니다.",
+ "msg.dungeonLevel": [
+  "912828b3b77b72d7",
+  "레벨 undefined부터 들어갈 수 있습니다.",
+  "레벨 0부터 들어갈 수 있습니다.",
+  "레벨 1부터 들어갈 수 있습니다.",
+  "레벨 2부터 들어갈 수 있습니다."
+ ],
+ "msg.dungeonMate": [
+  "e9f60705b3a4b388",
+  "undefined 님이 undefined에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다.",
+  "0 님이 0에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다.",
+  "1 님이 1에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다.",
+  "2 님이 3에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다."
+ ],
+ "msg.dungeonNoRuns": "오늘은 더 들어갈 수 없습니다. 자정에 다시 열립니다.",
+ "msg.enhanceFail": "강화에 실패했습니다. 장비는 그대로입니다.",
+ "msg.enhanceMax": "더 강화할 수 없습니다. (보급형은 +5, 만들거나 주운 장비는 +10까지)",
+ "msg.enhanceOk": [
+  "3a03f272400edaea",
+  "강화에 성공했습니다. +undefined",
+  "강화에 성공했습니다. +0",
+  "강화에 성공했습니다. +1",
+  "강화에 성공했습니다. +2"
+ ],
+ "msg.forgeClosed": "대장장이 브람이 아직 돌아오지 않았습니다.",
+ "msg.forgeFar": "대장장이 브람 가까이에서 만들 수 있습니다.",
+ "msg.gearDrop": [
+  "4f244d1ff5fbf175",
+  "undefined undefined을(를) 주웠습니다. 메뉴[[(M)|]]의 장비에서 낄 수 있습니다.",
+  "0 0을(를) 주웠습니다. 메뉴[[(M)|]]의 장비에서 낄 수 있습니다.",
+  "1 1을(를) 주웠습니다. 메뉴[[(M)|]]의 장비에서 낄 수 있습니다.",
+  "3 2을(를) 주웠습니다. 메뉴[[(M)|]]의 장비에서 낄 수 있습니다."
+ ],
+ "msg.gearFull": "장비 가방이 가득 차서 줍지 못했습니다. 메뉴에서 안 쓰는 장비를 파세요.",
+ "msg.gearSold": [
+  "d38369b277b5f012",
+  "장비를 팔았습니다. 골드 +NaN",
+  "장비를 팔았습니다. 골드 +0",
+  "장비를 팔았습니다. 골드 +1",
+  "장비를 팔았습니다. 골드 +2"
+ ],
+ "msg.guildBusy": [
+  "08a0a107e6209e49",
+  "undefined 님은 초대할 수 없습니다. 이미 길드가 있거나 손님입니다.",
+  "0 님은 초대할 수 없습니다. 이미 길드가 있거나 손님입니다.",
+  "1 님은 초대할 수 없습니다. 이미 길드가 있거나 손님입니다.",
+  "2 님은 초대할 수 없습니다. 이미 길드가 있거나 손님입니다."
+ ],
+ "msg.guildCreated": [
+  "69211e51dc315cb2",
+  "'undefined' 길드를 만들었습니다.",
+  "'0' 길드를 만들었습니다.",
+  "'1' 길드를 만들었습니다.",
+  "'2' 길드를 만들었습니다."
+ ],
+ "msg.guildFull": "길드가 가득 찼습니다.",
+ "msg.guildGave": [
+  "f1af33b7e91e7dbe",
+  "길드에 골드 NaN을 기부했습니다.",
+  "길드에 골드 0을 기부했습니다.",
+  "길드에 골드 1을 기부했습니다.",
+  "길드에 골드 2을 기부했습니다."
+ ],
+ "msg.guildGuest": "이 브라우저에서는 캐릭터가 저장되지 않아 길드에 들 수 없습니다.",
+ "msg.guildInvited": [
+  "6eaa5927deec3ea6",
+  "undefined 님을 길드에 초대했습니다.",
+  "0 님을 길드에 초대했습니다.",
+  "1 님을 길드에 초대했습니다.",
+  "2 님을 길드에 초대했습니다."
+ ],
+ "msg.guildJoined": [
+  "b166e33f4ab0a81e",
+  "undefined 님이 길드에 들어왔습니다.",
+  "0 님이 길드에 들어왔습니다.",
+  "1 님이 길드에 들어왔습니다.",
+  "2 님이 길드에 들어왔습니다."
+ ],
+ "msg.guildKicked": "길드에서 추방됐습니다.",
+ "msg.guildLeft": [
+  "833640b8251d21d0",
+  "undefined 님이 길드를 떠났습니다.",
+  "0 님이 길드를 떠났습니다.",
+  "1 님이 길드를 떠났습니다.",
+  "2 님이 길드를 떠났습니다."
+ ],
+ "msg.guildLevelUp": [
+  "40770f3fb9c41f42",
+  "길드 레벨이 올랐습니다. Lv undefined",
+  "길드 레벨이 올랐습니다. Lv 0",
+  "길드 레벨이 올랐습니다. Lv 1",
+  "길드 레벨이 올랐습니다. Lv 2"
+ ],
+ "msg.guildNameBad": "쓸 수 없는 길드 이름입니다. 2~12자로 지어 주세요.",
+ "msg.guildNameTaken": "이미 있는 길드 이름입니다.",
+ "msg.guildNeedLv": [
+  "e1bbc936e6aa8dba",
+  "길드는 레벨 undefined부터 만들 수 있습니다.",
+  "길드는 레벨 0부터 만들 수 있습니다.",
+  "길드는 레벨 1부터 만들 수 있습니다.",
+  "길드는 레벨 2부터 만들 수 있습니다."
+ ],
+ "msg.guildNone": "길드가 없습니다. 메뉴의 길드에서 만들거나 초대를 받으세요.",
+ "msg.guildNotLeader": "길드장만 할 수 있습니다.",
+ "msg.guildYouLeft": "길드에서 나왔습니다.",
+ "msg.hpFull": "체력이 가득합니다.",
+ "msg.joined": [
+  "c2558c8334016647",
+  "undefined 님이 들어왔습니다.",
+  "0 님이 들어왔습니다.",
+  "1 님이 들어왔습니다.",
+  "2 님이 들어왔습니다."
+ ],
+ "msg.kill": [
+  "cc99b3644034096d",
+  "undefined 처치. 경험치 +undefined, 불씨 +undefined, 골드 +NaN",
+  "0 처치. 경험치 +0, 불씨 +0, 골드 +0",
+  "1 처치. 경험치 +1, 불씨 +1, 골드 +1",
+  "2 처치. 경험치 +3, 불씨 +4, 골드 +5"
+ ],
+ "msg.left": [
+  "7e1d302f3473e938",
+  "undefined 님이 나갔습니다.",
+  "0 님이 나갔습니다.",
+  "1 님이 나갔습니다.",
+  "2 님이 나갔습니다."
+ ],
+ "msg.levelUp": [
+  "5ead74b42ed7a7ae",
+  "레벨이 올랐습니다. Lv undefined · 능력치 3점 (메뉴의 성장)",
+  "레벨이 올랐습니다. Lv 0 · 능력치 3점 (메뉴의 성장)",
+  "레벨이 올랐습니다. Lv 1 · 능력치 3점 (메뉴의 성장)",
+  "레벨이 올랐습니다. Lv 2 · 능력치 3점 (메뉴의 성장)"
+ ],
+ "msg.loot": [
+  "82a5973f6fd6cac3",
+  "undefined을(를) 주웠습니다. 브람의 대장간에서 쓸 수 있습니다.",
+  "0을(를) 주웠습니다. 브람의 대장간에서 쓸 수 있습니다.",
+  "1을(를) 주웠습니다. 브람의 대장간에서 쓸 수 있습니다.",
+  "2을(를) 주웠습니다. 브람의 대장간에서 쓸 수 있습니다."
+ ],
+ "msg.mailGot": [
+  "7f87f18c6357943a",
+  "우편을 받았습니다.",
+  "우편을 받았습니다. 골드 +1 경험치 +1 불씨 +1 장비 +1 재료 +1",
+  "우편을 받았습니다. 골드 +2 경험치 +3 불씨 +4 장비 +5 재료 +6",
+  "우편을 받았습니다. 골드 +1,234,567 경험치 +1,234,567 불씨 +1234567 장비 +1234567 재료 +1234567"
+ ],
+ "msg.mailLeft": "자리가 모자라 받지 못한 물건은 우편에 남겨 두었습니다. 가방을 비운 뒤 다시 받으세요.",
+ "msg.mailNew": "우편이 왔습니다. 메뉴[[(M)|]]의 우편에서 받으세요.",
+ "msg.marketBought": [
+  "78f9fef982a23b70",
+  "거래소에서 샀습니다. 골드 -NaN",
+  "거래소에서 샀습니다. 골드 -0",
+  "거래소에서 샀습니다. 골드 -1",
+  "거래소에서 샀습니다. 골드 -2"
+ ],
+ "msg.marketCanceled": "올린 물건을 내렸습니다.",
+ "msg.marketCant": "거래소에 올릴 수 없는 물건입니다. 끼고 있는 장비와 보급형은 올릴 수 없습니다.",
+ "msg.marketCrowded": "거래소가 가득 찼습니다. 잠시 뒤에 다시 올려 주세요.",
+ "msg.marketFull": [
+  "4d219d93cd7bc962",
+  "거래소에는 한 번에 undefined개까지만 올릴 수 있습니다. 올려 둔 물건을 내리거나 팔리기를 기다려 주세요.",
+  "거래소에는 한 번에 0개까지만 올릴 수 있습니다. 올려 둔 물건을 내리거나 팔리기를 기다려 주세요.",
+  "거래소에는 한 번에 1개까지만 올릴 수 있습니다. 올려 둔 물건을 내리거나 팔리기를 기다려 주세요.",
+  "거래소에는 한 번에 2개까지만 올릴 수 있습니다. 올려 둔 물건을 내리거나 팔리기를 기다려 주세요."
+ ],
+ "msg.marketGone": "이미 팔렸거나 내려간 물건입니다.",
+ "msg.marketGuest": "이 브라우저에서는 캐릭터가 저장되지 않아 거래소를 쓸 수 없습니다.",
+ "msg.marketMailFull": [
+  "2ed4fbc8729cda26",
+  "우편함에 물건이 든 우편이 undefined통 넘게 쌓여 있습니다. 우편을 먼저 받아 주세요. 올려 둔 물건을 내리는 것은 지금도 됩니다.",
+  "우편함에 물건이 든 우편이 0통 넘게 쌓여 있습니다. 우편을 먼저 받아 주세요. 올려 둔 물건을 내리는 것은 지금도 됩니다.",
+  "우편함에 물건이 든 우편이 1통 넘게 쌓여 있습니다. 우편을 먼저 받아 주세요. 올려 둔 물건을 내리는 것은 지금도 됩니다.",
+  "우편함에 물건이 든 우편이 2통 넘게 쌓여 있습니다. 우편을 먼저 받아 주세요. 올려 둔 물건을 내리는 것은 지금도 됩니다."
+ ],
+ "msg.marketNeedLv": [
+  "193aa01ab62d6440",
+  "거래소에서 사고팔려면 레벨 undefined이 되어야 합니다. 둘러보기는 지금도 됩니다.",
+  "거래소에서 사고팔려면 레벨 0이 되어야 합니다. 둘러보기는 지금도 됩니다.",
+  "거래소에서 사고팔려면 레벨 1이 되어야 합니다. 둘러보기는 지금도 됩니다.",
+  "거래소에서 사고팔려면 레벨 2이 되어야 합니다. 둘러보기는 지금도 됩니다."
+ ],
+ "msg.marketOwn": "자기가 올린 물건은 살 수 없습니다. 내 물건에서 내릴 수 있습니다.",
+ "msg.marketPosted": [
+  "eef8909c05e9b328",
+  "거래소에 올렸습니다. 값 NaN골드",
+  "거래소에 올렸습니다. 값 0골드",
+  "거래소에 올렸습니다. 값 1골드",
+  "거래소에 올렸습니다. 값 2골드"
+ ],
+ "msg.marketPriceBad": [
+  "73ed408f8b09828e",
+  "값은 2골드 이상 undefined골드 이하의 정수여야 합니다.",
+  "값은 2골드 이상 0골드 이하의 정수여야 합니다.",
+  "값은 2골드 이상 1골드 이하의 정수여야 합니다.",
+  "값은 2골드 이상 2골드 이하의 정수여야 합니다."
+ ],
+ "msg.nameBad": "쓸 수 없는 이름입니다.",
+ "msg.nameTaken": "지금 다른 사람이 쓰고 있는 이름입니다.",
+ "msg.noGold": "골드가 모자랍니다.",
+ "msg.noMats": "재료가 모자랍니다.",
+ "msg.noPotion": "물약이 없습니다.",
+ "msg.noResident": "되돌릴 주민이 더 없습니다.",
+ "msg.noSparks": "불씨가 없습니다.",
+ "msg.noTarget": "대상이 없습니다.",
+ "msg.notStocked": "아직 상점에 없는 물건입니다.",
+ "msg.offerFar": "등탑 가까이에서 바칠 수 있습니다.",
+ "msg.offered": [
+  "1616512b89d6fefb",
+  "등탑에 불씨 undefined개를 바쳤습니다. (누적 undefined)",
+  "등탑에 불씨 0개를 바쳤습니다. (누적 0)",
+  "등탑에 불씨 1개를 바쳤습니다. (누적 1)",
+  "등탑에 불씨 2개를 바쳤습니다. (누적 3)"
+ ],
+ "msg.partyBusy": [
+  "2a406042d287b4ae",
+  "undefined 님은 지금 초대할 수 없습니다.",
+  "0 님은 지금 초대할 수 없습니다.",
+  "1 님은 지금 초대할 수 없습니다.",
+  "2 님은 지금 초대할 수 없습니다."
+ ],
+ "msg.partyDeclined": [
+  "47fa90f25b29d3ae",
+  "undefined 님이 초대를 거절했습니다.",
+  "0 님이 초대를 거절했습니다.",
+  "1 님이 초대를 거절했습니다.",
+  "2 님이 초대를 거절했습니다."
+ ],
+ "msg.partyEnded": "혼자 남아 파티가 풀렸습니다.",
+ "msg.partyFull": "파티가 가득 찼습니다. (최대 4명)",
+ "msg.partyGone": "초대가 이미 사라졌습니다.",
+ "msg.partyInvited": [
+  "3bc0f918e0159652",
+  "undefined 님에게 파티 초대를 보냈습니다.",
+  "0 님에게 파티 초대를 보냈습니다.",
+  "1 님에게 파티 초대를 보냈습니다.",
+  "2 님에게 파티 초대를 보냈습니다."
+ ],
+ "msg.partyJoined": [
+  "e1677a94443587d7",
+  "undefined 님이 파티에 들어왔습니다.",
+  "0 님이 파티에 들어왔습니다.",
+  "1 님이 파티에 들어왔습니다.",
+  "2 님이 파티에 들어왔습니다."
+ ],
+ "msg.partyLeft": [
+  "32482616bfbe3ef9",
+  "undefined 님이 파티에서 나갔습니다.",
+  "0 님이 파티에서 나갔습니다.",
+  "1 님이 파티에서 나갔습니다.",
+  "2 님이 파티에서 나갔습니다."
+ ],
+ "msg.partyYouLeft": "파티에서 나왔습니다.",
+ "msg.potionFull": "더 들 수 없습니다.",
+ "msg.questDone": [
+  "7ff2b4206d90e4ae",
+  "'undefined'을(를) 마쳤습니다.",
+  "'0'을(를) 마쳤습니다.",
+  "'1'을(를) 마쳤습니다.",
+  "'2'을(를) 마쳤습니다."
+ ],
+ "msg.questStep": [
+  "e898b3f42233088e",
+  "퀘스트 단계 완료. 경험치 +undefined",
+  "퀘스트 단계 완료. 경험치 +0",
+  "퀘스트 단계 완료. 경험치 +1, 불씨 +1",
+  "퀘스트 단계 완료. 경험치 +2, 불씨 +3"
+ ],
+ "msg.raidAbandoned": [
+  "ec59c393d309c237",
+  "undefined채널을 지키는 사람이 없어, 그곳의 적이 등탑을 치고 안개로 돌아갔습니다.",
+  "0채널을 지키는 사람이 없어, 그곳의 적이 등탑을 치고 안개로 돌아갔습니다.",
+  "1채널을 지키는 사람이 없어, 그곳의 적이 등탑을 치고 안개로 돌아갔습니다.",
+  "2채널을 지키는 사람이 없어, 그곳의 적이 등탑을 치고 안개로 돌아갔습니다."
+ ],
+ "msg.raidElsewhere": [
+  "262c28f5c29c6c8e",
+  "이 채널에는 안개의 적이 없습니다. undefined채널에 남아 있습니다. 채널을 옮겨 함께 막아 주세요.",
+  "이 채널에는 안개의 적이 없습니다. 0채널에 남아 있습니다. 채널을 옮겨 함께 막아 주세요.",
+  "이 채널에는 안개의 적이 없습니다. 1채널에 남아 있습니다. 채널을 옮겨 함께 막아 주세요.",
+  "이 채널에는 안개의 적이 없습니다. 2채널에 남아 있습니다. 채널을 옮겨 함께 막아 주세요."
+ ],
+ "msg.raidLost": [
+  "76f4094a3113f615",
+  "등탑을 지키지 못했습니다. 마을 등탑 밝기 undefined",
+  "등탑을 지키지 못했습니다. 밝기는 더 내려가지 않았습니다.",
+  "등탑을 지키지 못했습니다. 마을 등탑 밝기 +1",
+  "등탑을 지키지 못했습니다. 마을 등탑 밝기 +2"
+ ],
+ "msg.raidReward": [
+  "0616d61f66ea815a",
+  "습격 보상: 불씨 +undefined, 경험치 +undefined",
+  "습격 보상: 불씨 +0, 경험치 +0",
+  "습격 보상: 불씨 +1, 경험치 +1",
+  "습격 보상: 불씨 +2, 경험치 +3"
+ ],
+ "msg.raidSoon": [
+  "b2aac247048a7d6d",
+  "첫불 마을에 안개가 몰려옵니다. undefined초 뒤 마을 등탑으로 모이세요.",
+  "첫불 마을에 안개가 몰려옵니다. 0초 뒤 마을 등탑으로 모이세요.",
+  "첫불 마을에 안개가 몰려옵니다. 1초 뒤 마을 등탑으로 모이세요.",
+  "첫불 마을에 안개가 몰려옵니다. 2초 뒤 마을 등탑으로 모이세요."
+ ],
+ "msg.raidStart": [
+  "80728d5f8ba63742",
+  "첫불 마을 습격이 시작됐습니다. '안개' 이름이 붙은 적 undefined마리가 등탑으로 옵니다.",
+  "첫불 마을 습격이 시작됐습니다. '안개' 이름이 붙은 적 0마리가 등탑으로 옵니다.",
+  "첫불 마을 습격이 시작됐습니다. '안개' 이름이 붙은 적 1마리가 등탑으로 옵니다.",
+  "첫불 마을 습격이 시작됐습니다. '안개' 이름이 붙은 적 2마리가 등탑으로 옵니다."
+ ],
+ "msg.raidWon": [
+  "11eba17295e44ee6",
+  "습격을 막아 냈습니다. 마을 등탑 밝기 undefined",
+  "습격을 막아 냈습니다. 마을 등탑 밝기 0",
+  "습격을 막아 냈습니다. 마을 등탑 밝기 +1",
+  "습격을 막아 냈습니다. 마을 등탑 밝기 +2"
+ ],
+ "msg.renameWait": "이름은 잠시 뒤에 다시 바꿀 수 있습니다.",
+ "msg.renamed": [
+  "5e962b9a5fd7eb7a",
+  "undefined 님이 이름을 undefined(으)로 바꿨습니다.",
+  "0 님이 이름을 0(으)로 바꿨습니다.",
+  "1 님이 이름을 1(으)로 바꿨습니다.",
+  "2 님이 이름을 3(으)로 바꿨습니다."
+ ],
+ "msg.replaced": "다른 곳에서 접속해 연결을 끊습니다.",
+ "msg.reportWait": "같은 사람은 잠시 뒤에 다시 신고할 수 있습니다.",
+ "msg.reported": [
+  "84ce968e787cb193",
+  "undefined 님을 신고했습니다. 최근 대화와 함께 운영진에게 전달됩니다.",
+  "0 님을 신고했습니다. 최근 대화와 함께 운영진에게 전달됩니다.",
+  "1 님을 신고했습니다. 최근 대화와 함께 운영진에게 전달됩니다.",
+  "2 님을 신고했습니다. 최근 대화와 함께 운영진에게 전달됩니다."
+ ],
+ "msg.residentBack": [
+  "e56abad74f1b5365",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "msg.rested": [
+  "a83e22fbf94f2041",
+  "등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 undefined (처치 경험치 2배)",
+  "등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 0 (처치 경험치 2배)",
+  "등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 1 (처치 경험치 2배)",
+  "등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 2 (처치 경험치 2배)"
+ ],
+ "msg.shopFar": "길 상인 가까이에서 살 수 있습니다.",
+ "msg.skillMax": "더 강화할 수 없는 기술입니다.",
+ "msg.skillNeedLv": [
+  "fbdf601aa7ece26a",
+  "레벨 undefined부터 강화할 수 있습니다.",
+  "레벨 0부터 강화할 수 있습니다.",
+  "레벨 1부터 강화할 수 있습니다.",
+  "레벨 2부터 강화할 수 있습니다."
+ ],
+ "msg.skillUp": [
+  "4f4c2c46e1e62ffa",
+  "기술을 강화했습니다. undefined단계",
+  "기술을 강화했습니다. 0단계",
+  "기술을 강화했습니다. 1단계",
+  "기술을 강화했습니다. 3단계"
+ ],
+ "msg.stageChanged": [
+  "1bf89c852e9a62b6",
+  "undefined의 밝기가 바뀌었습니다: undefined",
+  "0의 밝기가 바뀌었습니다: 어스름",
+  "1의 밝기가 바뀌었습니다: 보통",
+  "3의 밝기가 바뀌었습니다: 환함"
+ ],
+ "msg.statNone": "찍을 능력치 점수가 없습니다. 레벨이 오르면 3점씩 받습니다.",
+ "msg.statReset": "능력치를 모두 돌려받았습니다. 다시 찍을 수 있습니다.",
+ "msg.tierUp": [
+  "368dbdba97381ffb",
+  "기여 undefined단계에 올랐습니다. 등탑지기 할멈이 골드 NaN을 건넵니다.",
+  "기여 0단계에 올랐습니다. 등탑지기 할멈이 골드 0을 건넵니다.",
+  "기여 1단계에 올랐습니다. 등탑지기 할멈이 골드 1을 건넵니다.",
+  "기여 2단계에 올랐습니다. 등탑지기 할멈이 골드 3을 건넵니다."
+ ],
+ "msg.tooFar": "대상이 너무 멉니다.",
+ "msg.towerFull": "등탑이 이미 가장 밝습니다.",
+ "msg.towerLit": [
+  "32d948255b459fa2",
+  "undefined에 불이 켜졌습니다. 이제 그곳에서 다시 일어날 수 있습니다.",
+  "0에 불이 켜졌습니다. 이제 그곳에서 다시 일어날 수 있습니다.",
+  "1에 불이 켜졌습니다. 이제 그곳에서 다시 일어날 수 있습니다.",
+  "2에 불이 켜졌습니다. 이제 그곳에서 다시 일어날 수 있습니다."
+ ],
+ "nameA.length": "10",
+ "nameA[0]": "졸린",
+ "nameA[1]": "용감한",
+ "nameA[2]": "느긋한",
+ "nameA[3]": "수줍은",
+ "nameA[4]": "씩씩한",
+ "nameA[5]": "배고픈",
+ "nameA[6]": "반짝이는",
+ "nameA[7]": "조용한",
+ "nameA[8]": "엉뚱한",
+ "nameA[9]": "다정한",
+ "nameB.length": "10",
+ "nameB[0]": "등불",
+ "nameB[1]": "부엉이",
+ "nameB[2]": "여우",
+ "nameB[3]": "도토리",
+ "nameB[4]": "고슴도치",
+ "nameB[5]": "나그네",
+ "nameB[6]": "솔방울",
+ "nameB[7]": "개구리",
+ "nameB[8]": "반딧불",
+ "nameB[9]": "다람쥐",
+ "quests.ashwood.steps.length": "5",
+ "quests.ashwood.steps[0]": "동쪽 큰길을 따라 잿빛 숲의 꺼진 등탑을 찾아가세요",
+ "quests.ashwood.steps[1]": "잿빛 숲 등탑에 불씨를 바쳐 불을 켜세요",
+ "quests.ashwood.steps[2]": "잿빛 숲 북쪽에서 멧돼지를 잡으세요",
+ "quests.ashwood.steps[3]": "잿빛 숲 남쪽에서 고블린 무리를 물리치세요",
+ "quests.ashwood.steps[4]": "숲 동쪽 끝의 잿빛 트롤을 쓰러뜨리세요. 여럿이 함께 가는 편이 좋습니다",
+ "quests.ashwood.title": "3장 · 잿빛 숲의 등불",
+ "quests.bram.steps.length": "5",
+ "quests.bram.steps[0]": "서쪽 들판에서 슬라임을 잡아 불씨를 모으세요",
+ "quests.bram.steps[1]": "마을의 등탑에 불씨를 바치세요",
+ "quests.bram.steps[2]": "서쪽 숲 너머, 옛 대장간 터를 찾아가세요",
+ "quests.bram.steps[3]": "안개에 삼켜진 브람의 그림자를 쓰러뜨리세요",
+ "quests.bram.steps[4]": "등탑에서 불씨를 바쳐 마을의 빛을 키우세요",
+ "quests.bram.title": "1장 · 망치 소리",
+ "quests.halmeom.steps.length": "3",
+ "quests.halmeom.steps[0]": "첫불 마을 등탑에 불씨를 바치세요. 할멈은 평생 이 불을 지켰습니다",
+ "quests.halmeom.steps[1]": "잿빛 숲 동쪽에서 잊힌 병사를 쓰러뜨리세요. 안개에 삼켜진 옛 등탑지기들입니다",
+ "quests.halmeom.steps[2]": "낮 12시·3시·6시와 저녁 8~11시 정각에 오는 안개 습격을 마을 등탑에서 함께 막아 내세요",
+ "quests.halmeom.title": "4장 · 등탑지기의 밤",
+ "quests.mira.steps.length": "5",
+ "quests.mira.steps[0]": "마을의 길 상인에게서 물약을 하나 사세요",
+ "quests.mira.steps[1]": "남쪽 숲에서 위습을 잡으세요",
+ "quests.mira.steps[2]": "연못 동쪽, 옛 약초밭을 찾아가세요",
+ "quests.mira.steps[3]": "안개에 삼켜진 미라의 그림자를 쓰러뜨리세요",
+ "quests.mira.steps[4]": "등탑에서 불씨를 바쳐 마을의 빛을 키우세요",
+ "quests.mira.title": "2장 · 마른 약초밭",
+ "residents.bram.bonus": "상점에 등불검이 들어오고, 대장간이 열립니다",
+ "residents.bram.name": "대장장이 브람",
+ "residents.halmeom.bonus": "등탑에 오늘의 등탑지기 명단이 걸리고, 기여 단계마다 보상을 받습니다",
+ "residents.halmeom.name": "등탑지기 할멈",
+ "residents.mira.bonus": "상점에 진한 물약이 들어옵니다",
+ "residents.mira.name": "약초꾼 미라",
+ "skills.aimed.info": "멀리 있는 대상에게 큰 피해",
+ "skills.aimed.name": "조준 사격",
+ "skills.bolt.info": "멀리 있는 대상에게 큰 피해",
+ "skills.bolt.name": "불꽃 화살",
+ "skills.breath.info": "체력 회복",
+ "skills.breath.name": "숨 고르기",
+ "skills.frost.info": "대상 주변 모두에게 피해를 주고 느리게 함",
+ "skills.frost.name": "서리",
+ "skills.mend.info": "나와 주변 사람들의 체력 회복",
+ "skills.mend.name": "치유의 빛",
+ "skills.smash.info": "대상에게 큰 피해",
+ "skills.smash.name": "강타",
+ "skills.volley.info": "대상 주변 모두에게 피해",
+ "skills.volley.name": "화살비",
+ "skills.whirl.info": "주변 모두에게 피해",
+ "skills.whirl.name": "회오리",
+ "stages.length": "3",
+ "stages[0]": "어스름",
+ "stages[1]": "보통",
+ "stages[2]": "환함",
+ "towers.ash": "잿빛 숲 등탑",
+ "towers.crypt": "지하묘 입구",
+ "towers.first": "첫불 마을 등탑",
+ "ui.allReturned": "모두 돌아왔습니다",
+ "ui.attackNearest": "가까운 대상 공격",
+ "ui.auto": "자동 사냥",
+ "ui.autoOff": "자동 사냥을 껐습니다.",
+ "ui.autoOn": "자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. 켠 채로 창을 닫으면 캐릭터가 남아 계속 사냥합니다(최대 8시간).",
+ "ui.bag": "가방",
+ "ui.bagArmor": "갑옷",
+ "ui.bagArmorHint": "길 상인에게서 살 수 있습니다",
+ "ui.bagMats": "제작 재료",
+ "ui.bagPotions": "물약",
+ "ui.bagToGear": "장비 보기 (메뉴의 장비)",
+ "ui.bagWeapon": "무기",
+ "ui.block": "대화 차단",
+ "ui.changeClass": "직업 바꾸기",
+ "ui.channel": "채널",
+ "ui.chatLabel": "대화 입력",
+ "ui.chatOpen": "대화하기",
+ "ui.chatPlaceholder": "[[Enter로 대화|대화 입력]]",
+ "ui.chooseClass": "직업을 고르세요",
+ "ui.claim": "받기",
+ "ui.claimAll": "모두 받기",
+ "ui.classHint": "직업은 나중에 등탑에서 바꿀 수 있습니다.",
+ "ui.close": "닫기",
+ "ui.connecting": "접속 중…",
+ "ui.count1": "1개",
+ "ui.count5": "5개",
+ "ui.countAll": "전부",
+ "ui.currentClass": "지금 직업",
+ "ui.dailyDone": "완료",
+ "ui.dailyNote": "임무를 채우면 보상이 우편으로 옵니다. 자정에 새로 시작합니다.",
+ "ui.disconnected": "서버와 연결이 끊어졌습니다.",
+ "ui.dungeonEnter": "들어가기",
+ "ui.dungeonLeave": "던전 나가기",
+ "ui.dungeonLeaveConfirm": "한 번 더 누르면 나갑니다 (오늘 횟수는 돌아오지 않습니다)",
+ "ui.dungeonNoRuns": "오늘은 더 들어갈 수 없습니다. 자정에 다시 열립니다.",
+ "ui.enhanceFailed": "강화 실패 · 장비는 그대로입니다",
+ "ui.enhanceMaxed": "강화 끝",
+ "ui.equip": "끼기",
+ "ui.forge": "브람의 대장간",
+ "ui.full": "서버가 가득 찼습니다. 잠시 뒤에 다시 시도해 주세요.",
+ "ui.gearEmpty": "남는 장비가 없습니다. 몬스터를 잡으면 가끔 떨어집니다.",
+ "ui.goingTown": "첫불 마을로 걸어갑니다.",
+ "ui.guildChatHint": "대화창에 '/g 내용'이라고 치면 길드원에게만 보입니다. 초대는 길드장이 상대를 눌러서 합니다.",
+ "ui.guildChatTag": "[길드]",
+ "ui.guildCreate": "만들기",
+ "ui.guildGiveInfo": "골드를 기부하면 길드 레벨이 오르고, 길드원 모두의 경험치가 늘어납니다.",
+ "ui.guildInvite": "길드 초대",
+ "ui.guildKick": "추방",
+ "ui.guildLeader": "길드장",
+ "ui.guildLeave": "길드 나가기",
+ "ui.guildMaxLv": "길드가 가장 높은 레벨입니다",
+ "ui.guildNameHint": "길드 이름 (2~12자)",
+ "ui.guildNoticeHint": "길드 공지",
+ "ui.guildNoticeSet": "공지 올리기",
+ "ui.helpVerb": "보태기",
+ "ui.hint": "땅 클릭/WASD: 이동 · 몬스터 클릭: 공격 · 1–3: 기술 · Q: 물약 · F: 퀘스트 이동 · R: 자동 사냥 · H: 마을로 · B: 가방 · M: 메뉴 · Tab: 대상 · Enter: 대화",
+ "ui.intro": "안개에 잠긴 땅에서 등탑의 빛을 지키는 등불지기가 됩니다. 몬스터를 잡아 불씨를 모으고, 등탑에 바쳐 마을을 밝히세요.",
+ "ui.keepersEmpty": "아직 아무도 없습니다. 불씨를 바치거나 습격을 막으면 이름이 오릅니다.",
+ "ui.keepersToday": "오늘의 등탑지기",
+ "ui.language": "언어",
+ "ui.mailEmpty": "받을 우편이 없습니다.",
+ "ui.mapLegend": "■ 등탑 · ○ 퀘스트 · 초록 상인",
+ "ui.mapLegendDungeon": "붉은 ○ 우두머리 · 하늘색 파티원",
+ "ui.marketAll": "전체",
+ "ui.marketBrowse": "둘러보기",
+ "ui.marketCancel": "내리기",
+ "ui.marketCountHint": "수량",
+ "ui.marketEmpty": "올라온 물건이 없습니다.",
+ "ui.marketFilter": "종류",
+ "ui.marketGuestNote": "이 브라우저에서는 캐릭터가 저장되지 않아 거래소에서 사고팔 수 없습니다.",
+ "ui.marketMat": "재료",
+ "ui.marketMine": "내 물건",
+ "ui.marketMineEmpty": "올려 둔 물건이 없습니다.",
+ "ui.marketNext": "다음",
+ "ui.marketPick": "고르기",
+ "ui.marketPickHint": "아래에서 올릴 물건을 고르고 값을 적어 주세요.",
+ "ui.marketPost": "올리기",
+ "ui.marketPostEmpty": "올릴 수 있는 물건이 없습니다. 끼고 있는 장비와 보급형, 물약은 올릴 수 없습니다.",
+ "ui.marketPrev": "이전",
+ "ui.marketPriceHint": "묶음 전체의 값 (골드)",
+ "ui.marketRefresh": "새로 고침",
+ "ui.marketSort": "정렬",
+ "ui.marketSortCheap": "싼 순",
+ "ui.marketSortCostly": "비싼 순",
+ "ui.marketSortNew": "최신순",
+ "ui.menu": "메뉴",
+ "ui.minimap": "미니맵",
+ "ui.noTargetNearby": "주변에 대상이 없습니다.",
+ "ui.none": "없음",
+ "ui.offerNote": "등탑을 밝힙니다. 밝을수록 습격을 오래 버팁니다.",
+ "ui.offerVerb": "바치기",
+ "ui.owned": "보유 중",
+ "ui.party": "파티",
+ "ui.partyAccept": "수락",
+ "ui.partyDecline": "거절",
+ "ui.partyInvite": "파티 초대",
+ "ui.partyLeave": "나가기",
+ "ui.quest": "퀘스트",
+ "ui.questAllDone": "지금까지의 이야기를 모두 마쳤습니다.",
+ "ui.questGo": "누르면 목적지로 걸어갑니다[[ (F)|]]",
+ "ui.questNeedSparks": "바칠 불씨가 없습니다. 몬스터를 잡아 모으세요.",
+ "ui.rankEmpty": "아직 순위가 없습니다.",
+ "ui.reconnect": "다시 접속",
+ "ui.reconnecting": "연결이 끊어져 다시 접속하는 중입니다…",
+ "ui.reload": "새로고침",
+ "ui.renameLabel": "새 이름",
+ "ui.renameSubmit": "변경",
+ "ui.renameTitle": "눌러서 이름 바꾸기",
+ "ui.report": "신고",
+ "ui.reportConfirm": "한 번 더 누르면 신고",
+ "ui.residents": "주민",
+ "ui.shop": "길 상인",
+ "ui.skillUpBtn": "강화",
+ "ui.skillUpHead": "기술 강화",
+ "ui.soundOff": "소리 끔",
+ "ui.soundOn": "소리 켬",
+ "ui.stale": "새 버전이 나왔습니다. 새로고침해 주세요.",
+ "ui.stickLabel": "이동 조이스틱",
+ "ui.tabBuild": "성장",
+ "ui.tabDaily": "일일",
+ "ui.tabGear": "장비",
+ "ui.tabGuild": "길드",
+ "ui.tabMail": "우편",
+ "ui.tabMarket": "거래소",
+ "ui.tabRank": "순위",
+ "ui.title": "등불지기",
+ "ui.toTown": "마을로",
+ "ui.tower": "등탑",
+ "ui.towerDark": "불이 꺼져 있습니다. 모두가 불씨를 바쳐 밝히면, 이 숲에서 쓰러져도 여기서 다시 일어납니다.",
+ "ui.towerOff": "꺼짐",
+ "ui.unblock": "차단 풀기",
+ "ui.unequip": "빼기",
+ "ui.zoneDark": "등탑이 꺼진 곳입니다. 몬스터가 강하고 먼저 덤벼듭니다. 쓰러지면 첫불 마을에서 일어납니다.",
+ "zones.length": "2",
+ "zones[0]": "등불 들판",
+ "zones[1]": "잿빛 숲"
+}

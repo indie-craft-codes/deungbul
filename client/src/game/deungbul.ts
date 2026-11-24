@@ -9,6 +9,7 @@ import { onKey, onMsg } from '../bus';
 import { addNpc, setMerchantLook } from '../entities';
 import { hudSlow } from '../hud/panels';
 import { goToQuest, renderQuest } from '../hud/quest';
+import { initWords } from './words';
 import { L } from '../i18n';
 import { rules } from '../rules';
 import { makeHumanoid } from '../scene/models';
@@ -74,6 +75,7 @@ function initPersonal(): void {
 }
 
 export function initDeungbul(): void {
+  initWords();
   // 서버(systems/tower.ts)가 g.rules에 채우는 것과 같은 식이어야 한다: 속도는 같은 공유 함수(speedFor)로 셈한다
   rules.speed = () => speedFor(stage());
   // 열쇠는 주민의 id다. 주민이 아닌 열쇠는 잠그지 않는다

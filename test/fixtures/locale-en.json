@@ -1,0 +1,1379 @@
+{
+ "build.stats.luck.info": [
+  "18cf4c7bf8692b4f",
+  "Crit +undefined%",
+  "Crit +0%",
+  "Crit +1%",
+  "Crit +2%"
+ ],
+ "build.stats.luck.name": "Luck",
+ "build.stats.pow.info": [
+  "d0c669482dd42c3c",
+  "Damage +undefined%",
+  "Damage +0%",
+  "Damage +1%",
+  "Damage +2%"
+ ],
+ "build.stats.pow.name": "Might",
+ "build.stats.vit.info": [
+  "3792ed529a0b7484",
+  "Max health +undefined",
+  "Max health +0",
+  "Max health +1",
+  "Max health +2"
+ ],
+ "build.stats.vit.name": "Vigor",
+ "classes.archer.info": "Shoots from afar. Less health.",
+ "classes.archer.name": "Archer",
+ "classes.mage.info": "Casts from afar. Slows foes and heals those nearby. Least health.",
+ "classes.mage.name": "Mage",
+ "classes.warrior.info": "Fights up close. More health.",
+ "classes.warrior.name": "Warrior",
+ "code": "en",
+ "dungeons.crypt.info": "Fight through goblins and lost soldiers and bring down the Lord of the Crypt. Better with a party.",
+ "dungeons.crypt.name": "The Ash Crypt",
+ "fmt.autoOnEarly": [
+  "6db475a79e329ece",
+  "Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level undefined.)",
+  "Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level 0.)",
+  "Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level 1.)",
+  "Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level 2.)"
+ ],
+ "fmt.blocked": [
+  "d21ef6566af7c94f",
+  "You muted undefined. Their chat is now hidden for you only.",
+  "You muted 0. Their chat is now hidden for you only.",
+  "You muted 1. Their chat is now hidden for you only.",
+  "You muted 2. Their chat is now hidden for you only."
+ ],
+ "fmt.channelOpt": [
+  "ed49aac5f4935f19",
+  "Ch undefined · undefined",
+  "Ch 0 · undefined",
+  "Ch 1 · undefined",
+  "Ch 2 · undefined"
+ ],
+ "fmt.channelShort": [
+  "d1918d681223f7c9",
+  "Ch undefined",
+  "Ch 0",
+  "Ch 1",
+  "Ch 2"
+ ],
+ "fmt.contrib": [
+  "7679cf1a7b600f6a",
+  "Contribution undefined",
+  "Contribution 0",
+  "Contribution 1",
+  "Contribution 2"
+ ],
+ "fmt.distance": [
+  "04f513c824224e9f",
+  "undefined m",
+  "0 m",
+  "1 m",
+  "2 m"
+ ],
+ "fmt.dungeonExit": [
+  "16d826923c7aa13f",
+  "Cleared. Leaving in undefined s.",
+  "Cleared. Leaving in 0 s.",
+  "Cleared. Leaving in 1 s.",
+  "Cleared. Leaving in 2 s."
+ ],
+ "fmt.dungeonFoes": [
+  "0570b9d6eb66c32c",
+  "Enemies left: undefined",
+  "Enemies left: 0",
+  "Enemies left: 1",
+  "Enemies left: 2"
+ ],
+ "fmt.dungeonInfo": [
+  "202b1dac390db39b",
+  "undefined Time limit: undefined min.",
+  "undefined Time limit: 0 min.",
+  "undefined Time limit: 1 min.",
+  "undefined Time limit: 2 min."
+ ],
+ "fmt.dungeonMateIn": [
+  "849059d4e487fe9b",
+  "Party members inside: undefined. Enter to join them.",
+  "Party members inside: 0. Enter to join them.",
+  "Party members inside: 1. Enter to join them.",
+  "Party members inside: 2. Enter to join them."
+ ],
+ "fmt.dungeonNeedLv": [
+  "e203c7fada4f78ff",
+  "Opens at level undefined.",
+  "Opens at level 0.",
+  "Opens at level 1.",
+  "Opens at level 2."
+ ],
+ "fmt.dungeonRuns": [
+  "53bef4fb1595f125",
+  "undefined / undefined runs today",
+  "0 / undefined runs today",
+  "1 / undefined runs today",
+  "2 / undefined runs today"
+ ],
+ "fmt.enhanceCost": [
+  "fd17d68455d56577",
+  "Enhance · NaN gold · undefined%",
+  "Enhance · 0 gold · undefined%",
+  "Enhance · 1 gold · undefined%",
+  "Enhance · 2 gold · undefined%"
+ ],
+ "fmt.enhanceDone": [
+  "653c21c7926bbf71",
+  "Enhanced · +undefined",
+  "Enhanced · +0",
+  "Enhanced · +1",
+  "Enhanced · +2"
+ ],
+ "fmt.gearHint": [
+  "9b0f19cd632b7c72",
+  "Enhancing: standard gear (bought in a shop) goes up to +undefined; crafted or dropped gear up to +undefined. A failed attempt leaves the gear unchanged and costs only the gold.",
+  "Enhancing: standard gear (bought in a shop) goes up to +0; crafted or dropped gear up to +undefined. A failed attempt leaves the gear unchanged and costs only the gold.",
+  "Enhancing: standard gear (bought in a shop) goes up to +1; crafted or dropped gear up to +undefined. A failed attempt leaves the gear unchanged and costs only the gold.",
+  "Enhancing: standard gear (bought in a shop) goes up to +2; crafted or dropped gear up to +undefined. A failed attempt leaves the gear unchanged and costs only the gold."
+ ],
+ "fmt.gearName": [
+  "fb2e0f39631a37e0",
+  "undefined (Lv undefined)",
+  "0 (Lv undefined)",
+  "1 (Lv undefined)",
+  "2 (Lv undefined)"
+ ],
+ "fmt.glow": [
+  "13934cf88c23f11a",
+  "undefined · undefined / undefined",
+  "Dim · undefined / undefined",
+  "Steady · undefined / undefined",
+  "Bright · undefined / undefined"
+ ],
+ "fmt.gold": [
+  "4c2f7ed44540861a",
+  "Gold NaN",
+  "Gold 0",
+  "Gold 1",
+  "Gold 2"
+ ],
+ "fmt.guildCreateInfo": [
+  "feb56c30cb1e1539",
+  "Creating a guild takes level undefined and NaN gold. To join another guild, ask its leader for an invite.",
+  "Creating a guild takes level 0 and NaN gold. To join another guild, ask its leader for an invite.",
+  "Creating a guild takes level 1 and NaN gold. To join another guild, ask its leader for an invite.",
+  "Creating a guild takes level 2 and NaN gold. To join another guild, ask its leader for an invite."
+ ],
+ "fmt.guildExp": [
+  "f9c3c0920403777e",
+  "NaN / NaN to next level",
+  "0 / NaN to next level",
+  "1 / NaN to next level",
+  "2 / NaN to next level"
+ ],
+ "fmt.guildGave": [
+  "cd9dedc82969a87b",
+  "donated NaN",
+  "donated 0",
+  "donated 1",
+  "donated 2"
+ ],
+ "fmt.guildGive": [
+  "2a264f9b2c15c2b5",
+  "Donate NaN",
+  "Donate 0",
+  "Donate 1",
+  "Donate 2"
+ ],
+ "fmt.guildHead": [
+  "19633f464349841c",
+  "undefined · guild Lv undefined · kill exp +undefined%",
+  "0 · guild Lv undefined · kill exp +undefined%",
+  "1 · guild Lv undefined · kill exp +undefined%",
+  "2 · guild Lv undefined · kill exp +undefined%"
+ ],
+ "fmt.guildInviteFrom": [
+  "380ae600f1d0c53f",
+  "undefined invited you to the guild \"undefined\"",
+  "undefined invited you to the guild \"0\"",
+  "undefined invited you to the guild \"1\"",
+  "undefined invited you to the guild \"2\""
+ ],
+ "fmt.guildMembers": [
+  "1b0f8b2167677efd",
+  "Members undefined / undefined",
+  "Members 0 / undefined",
+  "Members 1 / undefined",
+  "Members 2 / undefined"
+ ],
+ "fmt.have": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.itemDamage": [
+  "d0c669482dd42c3c",
+  "Damage +undefined%",
+  "Damage +0%",
+  "Damage +1%",
+  "Damage +2%"
+ ],
+ "fmt.itemGuard": [
+  "ef75368d02acf2b2",
+  "Damage taken -undefined%",
+  "Damage taken -0%",
+  "Damage taken -1%",
+  "Damage taken -2%"
+ ],
+ "fmt.itemHeal": [
+  "876478f8e243a145",
+  "Restores undefined health",
+  "Restores 0 health",
+  "Restores 1 health",
+  "Restores 2 health"
+ ],
+ "fmt.keeper": [
+  "ea6ab0cb2b2ddb92",
+  "undefined undefined",
+  "0 undefined",
+  "1 undefined",
+  "2 undefined"
+ ],
+ "fmt.level": [
+  "7be2f6ffa034b5d9",
+  "Lv undefined undefined",
+  "Lv 0 undefined",
+  "Lv 1 undefined",
+  "Lv 2 undefined"
+ ],
+ "fmt.mailTitle": [
+  "092837990ec5962f",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.marketBuy": [
+  "357fe0a666c19391",
+  "Buy · NaN gold",
+  "Buy · 0 gold",
+  "Buy · 1 gold",
+  "Buy · 2 gold"
+ ],
+ "fmt.marketConfirm": [
+  "8643198b4dde2768",
+  "Confirm · NaN gold",
+  "Confirm · 0 gold",
+  "Confirm · 1 gold",
+  "Confirm · 2 gold"
+ ],
+ "fmt.marketCountRange": [
+  "8b41357f4a04ce99",
+  "Enter a quantity from 1 to undefined.",
+  "Enter a quantity from 1 to 0.",
+  "Enter a quantity from 1 to 1.",
+  "Enter a quantity from 1 to 2."
+ ],
+ "fmt.marketFeeInfo": [
+  "6e8a2ab35b6556b8",
+  "When it sells, the price minus a undefined% fee arrives by mail. If it does not sell within undefined hours, the item is mailed back to you.",
+  "When it sells, the price minus a 0% fee arrives by mail. If it does not sell within undefined hours, the item is mailed back to you.",
+  "When it sells, the price minus a 1% fee arrives by mail. If it does not sell within undefined hours, the item is mailed back to you.",
+  "When it sells, the price minus a 2% fee arrives by mail. If it does not sell within undefined hours, the item is mailed back to you."
+ ],
+ "fmt.marketLeft": [
+  "63867776b27aa8f0",
+  "undefined min left",
+  "1 h undefined min left",
+  "2 h undefined min left",
+  "5 h undefined min left"
+ ],
+ "fmt.marketMineHead": [
+  "f9b30c6897469d50",
+  "My listings undefined / undefined",
+  "My listings 0 / undefined",
+  "My listings 1 / undefined",
+  "My listings 2 / undefined"
+ ],
+ "fmt.marketNet": [
+  "348f1adc15180723",
+  "Price NaN − fee NaN = you receive NaN gold",
+  "Price 0 − fee NaN = you receive NaN gold",
+  "Price 1 − fee NaN = you receive NaN gold",
+  "Price 2 − fee NaN = you receive NaN gold"
+ ],
+ "fmt.marketPage": [
+  "2b0897622311aa24",
+  "Page undefined / undefined · undefined items",
+  "Page 0 / undefined · undefined items",
+  "Page 1 / undefined · undefined items",
+  "Page 2 / undefined · undefined items"
+ ],
+ "fmt.marketPageShort": [
+  "3132675317693acc",
+  "undefined/undefined (NaN)",
+  "0/undefined (NaN)",
+  "1/undefined (NaN)",
+  "2/undefined (NaN)"
+ ],
+ "fmt.marketPicked": [
+  "bd02ebf7da4ebbe5",
+  "Listing: undefined",
+  "Listing: 0",
+  "Listing: 1",
+  "Listing: 2"
+ ],
+ "fmt.marketPrice": [
+  "15781eb8b77e7a21",
+  "Price: NaN gold",
+  "Price: 0 gold",
+  "Price: 1 gold",
+  "Price: 2 gold"
+ ],
+ "fmt.marketPriceRange": [
+  "0cbc6c70b1ae0f70",
+  "Enter a whole number from 2 to NaN. For materials this is the price of the whole stack, not each.",
+  "Enter a whole number from 2 to 0. For materials this is the price of the whole stack, not each.",
+  "Enter a whole number from 2 to 1. For materials this is the price of the whole stack, not each.",
+  "Enter a whole number from 2 to 2. For materials this is the price of the whole stack, not each."
+ ],
+ "fmt.marketSeller": [
+  "88c7d80d6e7a1284",
+  "Seller: undefined",
+  "Seller: 0",
+  "Seller: 1",
+  "Seller: 2"
+ ],
+ "fmt.marketStack": [
+  "96d8413451feab3f",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.mat": [
+  "ebd0159f0f1be222",
+  "undefined undefined/undefined",
+  "0 undefined/undefined",
+  "1 undefined/undefined",
+  "2 undefined/undefined"
+ ],
+ "fmt.matFrom": [
+  "f5b55cf561121ade",
+  "(던짐) TypeError",
+  "Dropped by: 슬라임, 위습",
+  "Dropped by: "
+ ],
+ "fmt.matSource": [
+  "4d4bc94769ebfd7a",
+  "(던짐) TypeError",
+  "쇳조각: dropped by 고블린, 잊힌 병사",
+  "Iron Scrap: dropped by Goblin",
+  "idle: dropped by 35"
+ ],
+ "fmt.needsResident": [
+  "11cb893c029e2abb",
+  "In stock once undefined returns",
+  "In stock once 0 returns",
+  "In stock once 1 returns",
+  "In stock once 2 returns"
+ ],
+ "fmt.nextResident": [
+  "633acca24bd7f655",
+  "Bring back: undefined",
+  "Bring back: 0",
+  "Bring back: 1",
+  "Bring back: 2"
+ ],
+ "fmt.num": [
+  "4b8d4903240717c5",
+  "NaN",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.partyInvite": [
+  "92800a428f9b2af9",
+  "undefined invited you to a party. Party members share rewards for kills.",
+  "0 invited you to a party. Party members share rewards for kills.",
+  "1 invited you to a party. Party members share rewards for kills.",
+  "2 invited you to a party. Party members share rewards for kills."
+ ],
+ "fmt.potions": [
+  "89393566891e05f4",
+  "Potions undefined",
+  "Potions 0",
+  "Potions 1",
+  "Potions 2"
+ ],
+ "fmt.power": [
+  "67007927271277c6",
+  "Power NaN",
+  "Power 0",
+  "Power 1",
+  "Power 2"
+ ],
+ "fmt.price": [
+  "72817b9a01c600fd",
+  "NaN gold",
+  "0 gold",
+  "1 gold",
+  "2 gold"
+ ],
+ "fmt.questProgress": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.raidActive": [
+  "7820869b4b3beddb",
+  "Raid on Firstlight Village · undefined left · undefined",
+  "Raid on Firstlight Village · 0 left · undefined",
+  "Raid on Firstlight Village · 1 left · undefined",
+  "Raid on Firstlight Village · 2 left · undefined"
+ ],
+ "fmt.raidFoe": [
+  "90dfb7fa104d73d2",
+  "Mist undefined",
+  "Mist 0",
+  "Mist 1",
+  "Mist 2"
+ ],
+ "fmt.raidNext": [
+  "6a8d36e843f1acca",
+  "Next raid undefined · undefined a day",
+  "Next raid 0 · undefined a day",
+  "Next raid 1 · undefined a day",
+  "Next raid 2 · undefined a day"
+ ],
+ "fmt.raidSoon": [
+  "0cfedc9e6ec5f6b0",
+  "Mist is closing on Firstlight Village · in undefineds",
+  "Mist is closing on Firstlight Village · in 0s",
+  "Mist is closing on Firstlight Village · in 1s",
+  "Mist is closing on Firstlight Village · in 2s"
+ ],
+ "fmt.residentHint": [
+  "e4a837e818890cd5",
+  "undefined has not returned yet. Add sparks at the lamp tower to bring them back (undefined to go).",
+  "0 has not returned yet. Add sparks at the lamp tower to bring them back (undefined to go).",
+  "1 has not returned yet. Add sparks at the lamp tower to bring them back (undefined to go).",
+  "2 has not returned yet. Add sparks at the lamp tower to bring them back (undefined to go)."
+ ],
+ "fmt.rested": [
+  "2bbf03b78130c903",
+  "Rested undefined",
+  "Rested 0",
+  "Rested 1",
+  "Rested 2"
+ ],
+ "fmt.reward": [
+  "38de90d271325065",
+  "",
+  "Gold 1",
+  "Gold 2",
+  "Gold 5"
+ ],
+ "fmt.sellConfirm": [
+  "8643198b4dde2768",
+  "Confirm · NaN gold",
+  "Confirm · 0 gold",
+  "Confirm · 1 gold",
+  "Confirm · 2 gold"
+ ],
+ "fmt.sellFor": [
+  "a970faa2066e9848",
+  "Sell · NaN gold",
+  "Sell · 0 gold",
+  "Sell · 1 gold",
+  "Sell · 2 gold"
+ ],
+ "fmt.short": [
+  "c66e47a99014c2b5",
+  "NaN gold short",
+  "0 gold short",
+  "1 gold short",
+  "2 gold short"
+ ],
+ "fmt.skillBonus": [
+  "23eb1e85cb7c6a1d",
+  "Damage and healing +undefined%",
+  "Damage and healing +0%",
+  "Damage and healing +1%",
+  "Damage and healing +2%"
+ ],
+ "fmt.skillLabel": [
+  "02c8a19dbdbdb8ed",
+  "undefined: undefined (key undefined)",
+  "0: undefined (key undefined)",
+  "1: undefined (key undefined)",
+  "2: undefined (key undefined)"
+ ],
+ "fmt.skillLv": [
+  "03315a5c4128d479",
+  "rank undefined / undefined",
+  "rank 0 / undefined",
+  "rank 1 / undefined",
+  "rank 2 / undefined"
+ ],
+ "fmt.skillNeed": [
+  "bc859ca1bad690c3",
+  "Needs level undefined",
+  "Needs level 0",
+  "Needs level 1",
+  "Needs level 2"
+ ],
+ "fmt.sparks": [
+  "f2372ebd9fa8a432",
+  "Sparks undefined",
+  "Sparks 0",
+  "Sparks 1",
+  "Sparks 2"
+ ],
+ "fmt.stageNote": [
+  "cf3b381daaef7d34",
+  "undefined",
+  "The light is weak. No bonuses.",
+  "At undefined it turns bright: +undefined% move speed, undefinedx recovery",
+  "Bright: +undefined% move speed, undefinedx recovery"
+ ],
+ "fmt.statLeft": [
+  "07c9e381b99c0c40",
+  "Attributes · undefined points left (undefined per level)",
+  "Attributes · 0 points left (undefined per level)",
+  "Attributes · 1 points left (undefined per level)",
+  "Attributes · 2 points left (undefined per level)"
+ ],
+ "fmt.statResetFor": [
+  "327c2f1cc97c6d42",
+  "Refund all · NaN gold",
+  "Refund all · 0 gold",
+  "Refund all · 1 gold",
+  "Refund all · 2 gold"
+ ],
+ "fmt.status": [
+  "65312fa5245ef5df",
+  "Online undefined · Nearby undefined · Ping undefined",
+  "Online 0 · Nearby undefined · Ping undefined",
+  "Online 1 · Nearby undefined · Ping undefined",
+  "Online 2 · Nearby undefined · Ping undefined"
+ ],
+ "fmt.streak": [
+  "fb8d5a8e0bf93cb7",
+  "Day undefined streak",
+  "Day 0 streak",
+  "Day 1 streak",
+  "Day 2 streak"
+ ],
+ "fmt.tier": [
+  "2133fedeaeba9b67",
+  "Tier undefined · next at undefined",
+  "Tier 0 · next at undefined",
+  "Tier 1 · next at undefined",
+  "Tier 2 · next at undefined"
+ ],
+ "fmt.towerHp": [
+  "2446dc593bc01891",
+  "Tower HP undefined / undefined",
+  "Tower HP 0 / undefined",
+  "Tower HP 1 / undefined",
+  "Tower HP 2 / undefined"
+ ],
+ "fmt.towerMini": [
+  "189efc9ef382927e",
+  "Tower: undefined undefined",
+  "Tower: Dim undefined",
+  "Tower: Steady undefined",
+  "Tower: Bright undefined"
+ ],
+ "fmt.unblocked": [
+  "2f59b11657b3db84",
+  "You unmuted undefined.",
+  "You unmuted 0.",
+  "You unmuted 1.",
+  "You unmuted 2."
+ ],
+ "fmt.whenBack": [
+  "49bbd5d91027f3bd",
+  "On return: undefined",
+  "On return: 0",
+  "On return: 1",
+  "On return: 2"
+ ],
+ "gear.dailies.enhance1": "Enhance gear once",
+ "gear.dailies.kill30": "Defeat 30 monsters",
+ "gear.dailies.offer10": "Offer 10 sparks",
+ "gear.rarities.common": "Plain",
+ "gear.rarities.epic": "Radiant",
+ "gear.rarities.made": "Crafted",
+ "gear.rarities.rare": "Rare",
+ "gear.rarities.supply": "Standard",
+ "gear.rarities.uncommon": "Fine",
+ "gear.slots.amulet": "Necklace",
+ "gear.slots.armor": "Armor",
+ "gear.slots.charm": "Charm",
+ "gear.slots.ring": "Ring",
+ "gear.slots.weapon": "Weapon",
+ "gear.stats.crit": [
+  "18cf4c7bf8692b4f",
+  "Crit +undefined%",
+  "Crit +0%",
+  "Crit +1%",
+  "Crit +2%"
+ ],
+ "gear.stats.dmg": [
+  "d0c669482dd42c3c",
+  "Damage +undefined%",
+  "Damage +0%",
+  "Damage +1%",
+  "Damage +2%"
+ ],
+ "gear.stats.guard": [
+  "ef75368d02acf2b2",
+  "Damage taken -undefined%",
+  "Damage taken -0%",
+  "Damage taken -1%",
+  "Damage taken -2%"
+ ],
+ "gear.stats.hp": [
+  "3eeea1e16ed11ea1",
+  "Health +undefined",
+  "Health +0",
+  "Health +1",
+  "Health +2"
+ ],
+ "items.armor1.name": "Leather Armor",
+ "items.armor2.name": "Iron Armor",
+ "items.ashcore.info": "Material dropped by the Ash Troll",
+ "items.ashcore.name": "Ash Core",
+ "items.hide.info": "Material dropped by boars",
+ "items.hide.name": "Tough Hide",
+ "items.iron.info": "Material dropped by goblins and lost soldiers",
+ "items.iron.name": "Iron Scrap",
+ "items.potion.name": "Potion",
+ "items.sword1.bow": "Worn Bow",
+ "items.sword1.info": "Starting weapon",
+ "items.sword1.name": "Worn Sword",
+ "items.sword1.staff": "Worn Staff",
+ "items.sword2.bow": "Sturdy Bow",
+ "items.sword2.name": "Iron Sword",
+ "items.sword2.staff": "Sturdy Staff",
+ "items.sword3.bow": "Lamp Bow",
+ "items.sword3.name": "Lamp Sword",
+ "items.sword3.staff": "Lamp Staff",
+ "items.sword4.bow": "Ember Bow",
+ "items.sword4.name": "Ember Sword",
+ "items.sword4.staff": "Ember Staff",
+ "items.tonic.name": "Strong Potion",
+ "label": "English",
+ "monsters.ash_troll": "Ash Troll",
+ "monsters.boar": "Boar",
+ "monsters.crypt_lord": "Lord of the Crypt",
+ "monsters.goblin": "Goblin",
+ "monsters.lost_soldier": "Lost Soldier",
+ "monsters.shade_bram": "Bram's Shade",
+ "monsters.shade_mira": "Mira's Shade",
+ "monsters.slime": "Slime",
+ "monsters.wisp": "Wisp",
+ "monsters.wolf": "Wolf",
+ "msg.alreadyBest": "You already have equal or better gear.",
+ "msg.awayBack": [
+  "d040f307df7e4064",
+  "Auto-hunt kept going for the undefined min you were away. Sparks +undefined, gold +NaN",
+  "Auto-hunt kept going for the 0 min you were away. Sparks +0, gold +0",
+  "Auto-hunt kept going for the 1 min you were away. Sparks +1, gold +1, level +1",
+  "Auto-hunt kept going for the 2 min you were away. Sparks +3, gold +4, level +5"
+ ],
+ "msg.bossDown": [
+  "197daa7df98e2c5b",
+  "undefined has fallen. undefined fought together.",
+  "0 has fallen. 0 fought together.",
+  "1 has fallen. 1 fought together.",
+  "2 has fallen. 3 fought together."
+ ],
+ "msg.bossUp": [
+  "e1c720dfa8f52c36",
+  "undefined has appeared deep in the Ashwood.",
+  "0 has appeared deep in the Ashwood.",
+  "1 has appeared deep in the Ashwood.",
+  "2 has appeared deep in the Ashwood."
+ ],
+ "msg.bought": [
+  "ca4bd1e3085482b4",
+  "Bought undefined.",
+  "Bought 0.",
+  "Bought 1.",
+  "Bought 2."
+ ],
+ "msg.channelDungeon": "You can't change channels inside a dungeon.",
+ "msg.channelFight": "You can't change channels while fighting. Try again once the fight is over.",
+ "msg.channelFull": [
+  "003bf0a40d2e4869",
+  "Channel undefined is full. Pick another one.",
+  "Channel 0 is full. Pick another one.",
+  "Channel 1 is full. Pick another one.",
+  "Channel 2 is full. Pick another one."
+ ],
+ "msg.channelMoved": [
+  "53d523ffbe7408da",
+  "Moved to channel undefined.",
+  "Moved to channel 0.",
+  "Moved to channel 1.",
+  "Moved to channel 2."
+ ],
+ "msg.channelWait": [
+  "03a853a252c9a77e",
+  "You can change channels again in undefineds.",
+  "You can change channels again in 0s.",
+  "You can change channels again in 1s.",
+  "You can change channels again in 2s."
+ ],
+ "msg.chatWait": "Chat is too busy, so your last message was not sent. Try again in a moment.",
+ "msg.classChanged": [
+  "45aca5b9a8cc44e5",
+  "You are now an undefined.",
+  "You are now a 0.",
+  "You are now a 1.",
+  "You are now a 2."
+ ],
+ "msg.classFar": "Move closer to the lamp tower to change class.",
+ "msg.crafted": [
+  "270b25dd971fbfcf",
+  "Forged undefined.",
+  "Forged 0.",
+  "Forged 1.",
+  "Forged 2."
+ ],
+ "msg.died": [
+  "a1fb4f93bfcea28e",
+  "You fell. You rose again at undefined. Nothing was lost.",
+  "You fell. You rose again at 0. Nothing was lost.",
+  "You fell. You rose again at 1. Nothing was lost.",
+  "You fell. You rose again at 2. Nothing was lost."
+ ],
+ "msg.dungeonClear": [
+  "d38b59a5517619e4",
+  "undefined cleared. Your reward is in the mail.",
+  "0 cleared. Your reward is in the mail.",
+  "1 cleared. Your reward is in the mail.",
+  "2 cleared. Your reward is in the mail."
+ ],
+ "msg.dungeonEnter": [
+  "b533c74de75b0af3",
+  "You entered undefined. Defeat the boss to finish.",
+  "You entered 0. Defeat the boss to finish.",
+  "You entered 1. Defeat the boss to finish.",
+  "You entered 2. Defeat the boss to finish."
+ ],
+ "msg.dungeonFail": "Time ran out. You were sent back outside.",
+ "msg.dungeonFar": "Move closer to the gate.",
+ "msg.dungeonLeft": "You left the dungeon.",
+ "msg.dungeonLevel": [
+  "11072799b3baa4b1",
+  "Opens at level undefined.",
+  "Opens at level 0.",
+  "Opens at level 1.",
+  "Opens at level 2."
+ ],
+ "msg.dungeonMate": [
+  "b1ebcb51b0e00929",
+  "undefined entered undefined. Enter at the gate to join the same run.",
+  "0 entered 0. Enter at the gate to join the same run.",
+  "1 entered 1. Enter at the gate to join the same run.",
+  "2 entered 3. Enter at the gate to join the same run."
+ ],
+ "msg.dungeonNoRuns": "No more runs today. It opens again at midnight.",
+ "msg.enhanceFail": "Enhancement failed. The gear is unchanged.",
+ "msg.enhanceMax": "This cannot be enhanced further. (Standard gear stops at +5, crafted or dropped gear at +10.)",
+ "msg.enhanceOk": [
+  "e9503324957d0a59",
+  "Enhancement succeeded. +undefined",
+  "Enhancement succeeded. +0",
+  "Enhancement succeeded. +1",
+  "Enhancement succeeded. +2"
+ ],
+ "msg.forgeClosed": "Bram the smith has not returned yet.",
+ "msg.forgeFar": "Move closer to Bram the smith to forge.",
+ "msg.gearDrop": [
+  "510ea14824e07d86",
+  "You picked up a undefined undefined. Equip it under Menu[[ (M)|]] > Gear.",
+  "You picked up a 0 0. Equip it under Menu[[ (M)|]] > Gear.",
+  "You picked up a 1 1. Equip it under Menu[[ (M)|]] > Gear.",
+  "You picked up a 3 2. Equip it under Menu[[ (M)|]] > Gear."
+ ],
+ "msg.gearFull": "Your gear bag is full, so the drop was left behind. Sell spare gear in the menu.",
+ "msg.gearSold": [
+  "69c2acaf783089b8",
+  "Gear sold. +NaN gold",
+  "Gear sold. +0 gold",
+  "Gear sold. +1 gold",
+  "Gear sold. +2 gold"
+ ],
+ "msg.guildBusy": [
+  "50e795ef341192b8",
+  "undefined cannot be invited: they are already in a guild or playing as a guest.",
+  "0 cannot be invited: they are already in a guild or playing as a guest.",
+  "1 cannot be invited: they are already in a guild or playing as a guest.",
+  "2 cannot be invited: they are already in a guild or playing as a guest."
+ ],
+ "msg.guildCreated": [
+  "d4f4533d065b4a33",
+  "You created the guild \"undefined\".",
+  "You created the guild \"0\".",
+  "You created the guild \"1\".",
+  "You created the guild \"2\"."
+ ],
+ "msg.guildFull": "The guild is full.",
+ "msg.guildGave": [
+  "89a537e7dcb50dc9",
+  "You donated NaN gold to the guild.",
+  "You donated 0 gold to the guild.",
+  "You donated 1 gold to the guild.",
+  "You donated 2 gold to the guild."
+ ],
+ "msg.guildGuest": "This browser cannot save your character, so you cannot join a guild.",
+ "msg.guildInvited": [
+  "615af5f281d6218c",
+  "You invited undefined to the guild.",
+  "You invited 0 to the guild.",
+  "You invited 1 to the guild.",
+  "You invited 2 to the guild."
+ ],
+ "msg.guildJoined": [
+  "51b83105fc7eac3a",
+  "undefined joined the guild.",
+  "0 joined the guild.",
+  "1 joined the guild.",
+  "2 joined the guild."
+ ],
+ "msg.guildKicked": "You were removed from the guild.",
+ "msg.guildLeft": [
+  "628678a1650132e6",
+  "undefined left the guild.",
+  "0 left the guild.",
+  "1 left the guild.",
+  "2 left the guild."
+ ],
+ "msg.guildLevelUp": [
+  "87f9dcefe83c87bd",
+  "The guild reached Lv undefined.",
+  "The guild reached Lv 0.",
+  "The guild reached Lv 1.",
+  "The guild reached Lv 2."
+ ],
+ "msg.guildNameBad": "That guild name cannot be used. Use 2–12 characters.",
+ "msg.guildNameTaken": "That guild name is taken.",
+ "msg.guildNeedLv": [
+  "18774e54294e3077",
+  "You can create a guild at level undefined.",
+  "You can create a guild at level 0.",
+  "You can create a guild at level 1.",
+  "You can create a guild at level 2."
+ ],
+ "msg.guildNone": "You are not in a guild. Create one or get invited under Menu > Guild.",
+ "msg.guildNotLeader": "Only the guild leader can do that.",
+ "msg.guildYouLeft": "You left the guild.",
+ "msg.hpFull": "Your health is full.",
+ "msg.joined": [
+  "9d24bb15d0f91008",
+  "undefined joined.",
+  "0 joined.",
+  "1 joined.",
+  "2 joined."
+ ],
+ "msg.kill": [
+  "72148cdd8d856eb7",
+  "undefined defeated. +undefined exp, +undefined sparks, +NaN gold",
+  "0 defeated. +0 exp, +0 sparks, +0 gold",
+  "1 defeated. +1 exp, +1 spark, +1 gold",
+  "2 defeated. +3 exp, +4 sparks, +5 gold"
+ ],
+ "msg.left": [
+  "97d410f04fff99f9",
+  "undefined left.",
+  "0 left.",
+  "1 left.",
+  "2 left."
+ ],
+ "msg.levelUp": [
+  "713597ab64e89559",
+  "Level up! You are now Lv undefined.",
+  "Level up! You are now Lv 0.",
+  "Level up! You are now Lv 1.",
+  "Level up! You are now Lv 2."
+ ],
+ "msg.loot": [
+  "d8989e9af1210c96",
+  "Picked up undefined. Bram can use it at the forge.",
+  "Picked up 0. Bram can use it at the forge.",
+  "Picked up 1. Bram can use it at the forge.",
+  "Picked up 2. Bram can use it at the forge."
+ ],
+ "msg.mailGot": [
+  "8f05c0fc892846ea",
+  "Mail claimed.",
+  "Mail claimed. Gold +1 Exp +1 Sparks +1 Gear +1 Materials +1",
+  "Mail claimed. Gold +2 Exp +3 Sparks +4 Gear +5 Materials +6",
+  "Mail claimed. Gold +1,234,567 Exp +1,234,567 Sparks +1234567 Gear +1234567 Materials +1234567"
+ ],
+ "msg.mailLeft": "Some items did not fit and were left in your mail. Make room, then claim again.",
+ "msg.mailNew": "You have mail. Claim it under Menu[[ (M)|]] > Mail.",
+ "msg.marketBought": [
+  "51a955b0aa9e30d3",
+  "Bought on the market. -NaN gold",
+  "Bought on the market. -0 gold",
+  "Bought on the market. -1 gold",
+  "Bought on the market. -2 gold"
+ ],
+ "msg.marketCanceled": "You took the listing down.",
+ "msg.marketCant": "That cannot be listed. Equipped gear and standard gear cannot be sold on the market.",
+ "msg.marketCrowded": "The market is full. Try listing again in a little while.",
+ "msg.marketFull": [
+  "c2bb0d6b46708b6c",
+  "You can have up to undefined listings at once. Take one down or wait for a sale.",
+  "You can have up to 0 listings at once. Take one down or wait for a sale.",
+  "You can have up to 1 listings at once. Take one down or wait for a sale.",
+  "You can have up to 2 listings at once. Take one down or wait for a sale."
+ ],
+ "msg.marketGone": "That listing is gone: it was sold or taken down.",
+ "msg.marketGuest": "This browser cannot save your character, so you cannot use the market.",
+ "msg.marketMailFull": [
+  "def9705f1d0b48b9",
+  "You have undefined or more mails with items attached. Claim your mail first. You can still take your listings down.",
+  "You have 0 or more mails with items attached. Claim your mail first. You can still take your listings down.",
+  "You have 1 or more mails with items attached. Claim your mail first. You can still take your listings down.",
+  "You have 2 or more mails with items attached. Claim your mail first. You can still take your listings down."
+ ],
+ "msg.marketNeedLv": [
+  "cb13cc792a227565",
+  "You need to be level undefined to buy or sell on the market. You can still browse.",
+  "You need to be level 0 to buy or sell on the market. You can still browse.",
+  "You need to be level 1 to buy or sell on the market. You can still browse.",
+  "You need to be level 2 to buy or sell on the market. You can still browse."
+ ],
+ "msg.marketOwn": "You cannot buy your own listing. Take it down under My listings.",
+ "msg.marketPosted": [
+  "0c27c93a5ed77950",
+  "Listed on the market for NaN gold.",
+  "Listed on the market for 0 gold.",
+  "Listed on the market for 1 gold.",
+  "Listed on the market for 2 gold."
+ ],
+ "msg.marketPriceBad": [
+  "1f88afa241b388c5",
+  "The price must be a whole number from 2 to undefined gold.",
+  "The price must be a whole number from 2 to 0 gold.",
+  "The price must be a whole number from 2 to 1 gold.",
+  "The price must be a whole number from 2 to 2 gold."
+ ],
+ "msg.nameBad": "That name cannot be used.",
+ "msg.nameTaken": "Someone online is already using that name.",
+ "msg.noGold": "Not enough gold.",
+ "msg.noMats": "Not enough materials.",
+ "msg.noPotion": "You have no potions.",
+ "msg.noResident": "There is no one left to bring back.",
+ "msg.noSparks": "You have no sparks.",
+ "msg.noTarget": "No target.",
+ "msg.notStocked": "The shop does not stock that yet.",
+ "msg.offerFar": "Move closer to the lamp tower to offer sparks.",
+ "msg.offered": [
+  "7b259cbe476c7e0a",
+  "Offered undefined sparks to the tower. (undefined in total)",
+  "Offered 0 sparks to the tower. (0 in total)",
+  "Offered 1 spark to the tower. (1 in total)",
+  "Offered 2 sparks to the tower. (3 in total)"
+ ],
+ "msg.partyBusy": [
+  "a8116203d8bc54f3",
+  "undefined cannot be invited right now.",
+  "0 cannot be invited right now.",
+  "1 cannot be invited right now.",
+  "2 cannot be invited right now."
+ ],
+ "msg.partyDeclined": [
+  "596b7cc0ce177820",
+  "undefined declined your invite.",
+  "0 declined your invite.",
+  "1 declined your invite.",
+  "2 declined your invite."
+ ],
+ "msg.partyEnded": "The party disbanded: you were the last one left.",
+ "msg.partyFull": "The party is full. (4 at most)",
+ "msg.partyGone": "That invite is no longer there.",
+ "msg.partyInvited": [
+  "0d26501f3b4554d0",
+  "Party invite sent to undefined.",
+  "Party invite sent to 0.",
+  "Party invite sent to 1.",
+  "Party invite sent to 2."
+ ],
+ "msg.partyJoined": [
+  "0687c32cff8025bc",
+  "undefined joined the party.",
+  "0 joined the party.",
+  "1 joined the party.",
+  "2 joined the party."
+ ],
+ "msg.partyLeft": [
+  "edea4a445e8db990",
+  "undefined left the party.",
+  "0 left the party.",
+  "1 left the party.",
+  "2 left the party."
+ ],
+ "msg.partyYouLeft": "You left the party.",
+ "msg.potionFull": "You cannot carry any more.",
+ "msg.questDone": [
+  "793cd1ac89182bbd",
+  "You finished \"undefined\".",
+  "You finished \"0\".",
+  "You finished \"1\".",
+  "You finished \"2\"."
+ ],
+ "msg.questStep": [
+  "963b2dd2297858c6",
+  "Quest step complete. +undefined exp",
+  "Quest step complete. +0 exp",
+  "Quest step complete. +1 exp, +1 spark",
+  "Quest step complete. +2 exp, +3 sparks"
+ ],
+ "msg.raidAbandoned": [
+  "86d9bd2ebd739485",
+  "No one held channel undefined, so the foes there struck the tower and went back into the Mist.",
+  "No one held channel 0, so the foes there struck the tower and went back into the Mist.",
+  "No one held channel 1, so the foes there struck the tower and went back into the Mist.",
+  "No one held channel 2, so the foes there struck the tower and went back into the Mist."
+ ],
+ "msg.raidElsewhere": [
+  "a92899732e74a130",
+  "No Mist foes in this channel. Some remain in channel undefined. Switch there to help hold the tower.",
+  "No Mist foes in this channel. Some remain in channel 0. Switch there to help hold the tower.",
+  "No Mist foes in this channel. Some remain in channel 1. Switch there to help hold the tower.",
+  "No Mist foes in this channel. Some remain in channel 2. Switch there to help hold the tower."
+ ],
+ "msg.raidLost": [
+  "1e76bda4bb83adae",
+  "The lamp tower fell. Village tower light undefined",
+  "The lamp tower fell. Its light could not drop any lower.",
+  "The lamp tower fell. Village tower light +1",
+  "The lamp tower fell. Village tower light +2"
+ ],
+ "msg.raidReward": [
+  "39cb9391c940d753",
+  "Raid reward: +undefined sparks, +undefined exp",
+  "Raid reward: +0 sparks, +0 exp",
+  "Raid reward: +1 spark, +1 exp",
+  "Raid reward: +2 sparks, +3 exp"
+ ],
+ "msg.raidSoon": [
+  "881d2871a49d88af",
+  "Mist is closing on Firstlight Village. Gather at the village tower in undefineds.",
+  "Mist is closing on Firstlight Village. Gather at the village tower in 0s.",
+  "Mist is closing on Firstlight Village. Gather at the village tower in 1s.",
+  "Mist is closing on Firstlight Village. Gather at the village tower in 2s."
+ ],
+ "msg.raidStart": [
+  "5de57e41743a7542",
+  "A raid on Firstlight Village has begun. undefined foes marked \"Mist\" are heading for the tower.",
+  "A raid on Firstlight Village has begun. 0 foes marked \"Mist\" are heading for the tower.",
+  "A raid on Firstlight Village has begun. 1 foes marked \"Mist\" are heading for the tower.",
+  "A raid on Firstlight Village has begun. 2 foes marked \"Mist\" are heading for the tower."
+ ],
+ "msg.raidWon": [
+  "7196148a0c3da651",
+  "The raid was held off. Village tower light undefined",
+  "The raid was held off. Village tower light 0",
+  "The raid was held off. Village tower light +1",
+  "The raid was held off. Village tower light +2"
+ ],
+ "msg.renameWait": "You can change your name again in a moment.",
+ "msg.renamed": [
+  "9d4b48b1416625d6",
+  "undefined is now called undefined.",
+  "0 is now called 0.",
+  "1 is now called 1.",
+  "2 is now called 3."
+ ],
+ "msg.replaced": "Signed in elsewhere. This connection is closing.",
+ "msg.reportWait": "You can report the same player again later.",
+ "msg.reported": [
+  "8f6c041679c6b49d",
+  "You reported undefined. Their recent chat was sent to the moderators.",
+  "You reported 0. Their recent chat was sent to the moderators.",
+  "You reported 1. Their recent chat was sent to the moderators.",
+  "You reported 2. Their recent chat was sent to the moderators."
+ ],
+ "msg.residentBack": [
+  "7a532e8afca75e7b",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "msg.rested": [
+  "df626cdee1a19e31",
+  "Your lamp gathered light at the tower while you were away. Rested bonus undefined (double exp from kills)",
+  "Your lamp gathered light at the tower while you were away. Rested bonus 0 (double exp from kills)",
+  "Your lamp gathered light at the tower while you were away. Rested bonus 1 (double exp from kills)",
+  "Your lamp gathered light at the tower while you were away. Rested bonus 2 (double exp from kills)"
+ ],
+ "msg.shopFar": "Move closer to the road merchant to buy.",
+ "msg.skillMax": "This skill is at its highest rank.",
+ "msg.skillNeedLv": [
+  "9d64ba5d874a4803",
+  "You can upgrade this at level undefined.",
+  "You can upgrade this at level 0.",
+  "You can upgrade this at level 1.",
+  "You can upgrade this at level 2."
+ ],
+ "msg.skillUp": [
+  "11b765cb898b616a",
+  "Skill upgraded to rank undefined.",
+  "Skill upgraded to rank 0.",
+  "Skill upgraded to rank 1.",
+  "Skill upgraded to rank 3."
+ ],
+ "msg.stageChanged": [
+  "1be35710bcfe51c9",
+  "undefined's light changed: undefined",
+  "0's light changed: Dim",
+  "1's light changed: Steady",
+  "3's light changed: Bright"
+ ],
+ "msg.statNone": "No attribute points to spend. You get 3 each level.",
+ "msg.statReset": "All attribute points refunded. You can spend them again.",
+ "msg.tierUp": [
+  "a6a696002c58c590",
+  "You reached contribution tier undefined. Granny hands you NaN gold.",
+  "You reached contribution tier 0. Granny hands you 0 gold.",
+  "You reached contribution tier 1. Granny hands you 1 gold.",
+  "You reached contribution tier 2. Granny hands you 3 gold."
+ ],
+ "msg.tooFar": "Target is too far away.",
+ "msg.towerFull": "The lamp tower is already at its brightest.",
+ "msg.towerLit": [
+  "6f080369b6b9ee90",
+  "undefined is lit. You can now rise there when you fall.",
+  "0 is lit. You can now rise there when you fall.",
+  "1 is lit. You can now rise there when you fall.",
+  "2 is lit. You can now rise there when you fall."
+ ],
+ "nameA.length": "10",
+ "nameA[0]": "Sleepy",
+ "nameA[1]": "Brave",
+ "nameA[2]": "Calm",
+ "nameA[3]": "Shy",
+ "nameA[4]": "Bold",
+ "nameA[5]": "Hungry",
+ "nameA[6]": "Bright",
+ "nameA[7]": "Quiet",
+ "nameA[8]": "Odd",
+ "nameA[9]": "Kind",
+ "nameB.length": "10",
+ "nameB[0]": "Lamp",
+ "nameB[1]": "Owl",
+ "nameB[2]": "Fox",
+ "nameB[3]": "Acorn",
+ "nameB[4]": "Hedgehog",
+ "nameB[5]": "Rover",
+ "nameB[6]": "Pinecone",
+ "nameB[7]": "Frog",
+ "nameB[8]": "Firefly",
+ "nameB[9]": "Squirrel",
+ "quests.ashwood.steps.length": "5",
+ "quests.ashwood.steps[0]": "Follow the east road to the unlit lamp tower in the Ashwood",
+ "quests.ashwood.steps[1]": "Offer sparks at the Ashwood tower to light it",
+ "quests.ashwood.steps[2]": "Hunt boars in the north of the Ashwood",
+ "quests.ashwood.steps[3]": "Drive off the goblin pack in the south of the Ashwood",
+ "quests.ashwood.steps[4]": "Defeat the Ash Troll at the far east of the woods. Bring others if you can",
+ "quests.ashwood.title": "Chapter 3 · A Lamp for the Ashwood",
+ "quests.bram.steps.length": "5",
+ "quests.bram.steps[0]": "Hunt slimes in the western field to gather sparks",
+ "quests.bram.steps[1]": "Offer a spark at the lamp tower in the village",
+ "quests.bram.steps[2]": "Find the old forge beyond the western woods",
+ "quests.bram.steps[3]": "Defeat Bram's Shade, lost to the mist",
+ "quests.bram.steps[4]": "Offer sparks at the lamp tower to grow the village light",
+ "quests.bram.title": "Chapter 1 · The Sound of a Hammer",
+ "quests.halmeom.steps.length": "3",
+ "quests.halmeom.steps[0]": "Offer sparks at the Firstlight Village tower. Granny has kept this flame all her life",
+ "quests.halmeom.steps[1]": "Defeat lost soldiers in the east of the Ashwood. They were keepers once, before the mist took them",
+ "quests.halmeom.steps[2]": "Help hold off a mist raid at the village tower. Raids come on the hour at noon, 3, 6 and 8 to 11 pm",
+ "quests.halmeom.title": "Chapter 4 · The Keeper's Night",
+ "quests.mira.steps.length": "5",
+ "quests.mira.steps[0]": "Buy a potion from the road merchant in the village",
+ "quests.mira.steps[1]": "Hunt wisps in the southern woods",
+ "quests.mira.steps[2]": "Find the old herb field east of the pond",
+ "quests.mira.steps[3]": "Defeat Mira's Shade, lost to the mist",
+ "quests.mira.steps[4]": "Offer sparks at the lamp tower to grow the village light",
+ "quests.mira.title": "Chapter 2 · The Withered Herb Field",
+ "residents.bram.bonus": "The shop stocks the Lamp Sword, and the forge opens",
+ "residents.bram.name": "Bram the Smith",
+ "residents.halmeom.bonus": "Today's keepers are listed at the tower, and each contribution tier pays a reward",
+ "residents.halmeom.name": "Granny the Lampwarden",
+ "residents.mira.bonus": "The shop stocks Strong Potions",
+ "residents.mira.name": "Mira the Herbalist",
+ "skills.aimed.info": "Heavy damage to a distant target",
+ "skills.aimed.name": "Aimed Shot",
+ "skills.bolt.info": "Heavy damage to a distant target",
+ "skills.bolt.name": "Firebolt",
+ "skills.breath.info": "Recover health",
+ "skills.breath.name": "Breather",
+ "skills.frost.info": "Damages and slows everything around your target",
+ "skills.frost.name": "Frost",
+ "skills.mend.info": "Heals you and those nearby",
+ "skills.mend.name": "Mend",
+ "skills.smash.info": "Heavy damage to your target",
+ "skills.smash.name": "Smash",
+ "skills.volley.info": "Damage to everything around your target",
+ "skills.volley.name": "Volley",
+ "skills.whirl.info": "Damage to everything around you",
+ "skills.whirl.name": "Whirl",
+ "stages.length": "3",
+ "stages[0]": "Dim",
+ "stages[1]": "Steady",
+ "stages[2]": "Bright",
+ "towers.ash": "Ashwood Tower",
+ "towers.crypt": "the crypt entrance",
+ "towers.first": "Firstlight Village Tower",
+ "ui.allReturned": "Everyone has returned",
+ "ui.attackNearest": "Attack nearest",
+ "ui.auto": "Auto-hunt",
+ "ui.autoOff": "Auto-hunt off.",
+ "ui.autoOn": "Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting (up to 8 hours).",
+ "ui.bag": "Bag",
+ "ui.bagArmor": "Armor",
+ "ui.bagArmorHint": "Sold by the Road Merchant",
+ "ui.bagMats": "Crafting materials",
+ "ui.bagPotions": "Potions",
+ "ui.bagToGear": "View gear (Menu > Gear)",
+ "ui.bagWeapon": "Weapon",
+ "ui.block": "Mute chat",
+ "ui.changeClass": "Change class",
+ "ui.channel": "Channel",
+ "ui.chatLabel": "Chat message",
+ "ui.chatOpen": "Chat",
+ "ui.chatPlaceholder": "[[Press Enter to chat|Message]]",
+ "ui.chooseClass": "Choose your class",
+ "ui.claim": "Claim",
+ "ui.claimAll": "Claim all",
+ "ui.classHint": "You can change class later at a lamp tower.",
+ "ui.close": "Close",
+ "ui.connecting": "Connecting…",
+ "ui.count1": "1",
+ "ui.count5": "5",
+ "ui.countAll": "All",
+ "ui.currentClass": "current",
+ "ui.dailyDone": "Done",
+ "ui.dailyNote": "Finish a task and the reward arrives by mail. Tasks reset at midnight.",
+ "ui.disconnected": "Lost connection to the server.",
+ "ui.dungeonEnter": "Enter",
+ "ui.dungeonLeave": "Leave dungeon",
+ "ui.dungeonLeaveConfirm": "[[Click|Tap]] again to leave (today's run is not refunded)",
+ "ui.dungeonNoRuns": "No more runs today. It opens again at midnight.",
+ "ui.enhanceFailed": "Enhance failed · the gear is unchanged",
+ "ui.enhanceMaxed": "Maxed",
+ "ui.equip": "Equip",
+ "ui.forge": "Bram's Forge",
+ "ui.full": "The server is full. Please try again shortly.",
+ "ui.gearEmpty": "No spare gear. Monsters drop some now and then.",
+ "ui.goingTown": "Walking back to Firstlight Village.",
+ "ui.guildChatHint": "Type '/g message' in chat to talk to your guild only. The leader invites people by [[clicking|tapping]] them.",
+ "ui.guildChatTag": "[Guild]",
+ "ui.guildCreate": "Create",
+ "ui.guildGiveInfo": "Donated gold raises the guild level, which gives every member more exp.",
+ "ui.guildInvite": "Invite to guild",
+ "ui.guildKick": "Kick",
+ "ui.guildLeader": "leader",
+ "ui.guildLeave": "Leave guild",
+ "ui.guildMaxLv": "The guild is at its highest level",
+ "ui.guildNameHint": "Guild name (2–12 characters)",
+ "ui.guildNoticeHint": "Guild notice",
+ "ui.guildNoticeSet": "Post notice",
+ "ui.helpVerb": "Give",
+ "ui.hint": "Click or WASD: move · Click a monster: attack · 1–3: skills · Q: potion · F: quest · R: auto-hunt · H: town · B: bag · M: menu · Tab: target · Enter: chat",
+ "ui.intro": "In a land lost to mist, you keep the lamp towers lit. Hunt monsters for sparks and offer them at the tower to light the village.",
+ "ui.keepersEmpty": "No one yet. Offer sparks or hold off a raid to be listed.",
+ "ui.keepersToday": "Today's keepers",
+ "ui.language": "Language",
+ "ui.mailEmpty": "No mail to claim.",
+ "ui.mapLegend": "■ tower · ○ quest · green merchant",
+ "ui.mapLegendDungeon": "red ○ boss · blue party",
+ "ui.marketAll": "All",
+ "ui.marketBrowse": "Browse",
+ "ui.marketCancel": "Take down",
+ "ui.marketCountHint": "Qty",
+ "ui.marketEmpty": "Nothing is listed right now.",
+ "ui.marketFilter": "Type",
+ "ui.marketGuestNote": "This browser cannot save your character, so you cannot buy or sell on the market.",
+ "ui.marketMat": "Materials",
+ "ui.marketMine": "My listings",
+ "ui.marketMineEmpty": "You have nothing listed.",
+ "ui.marketNext": "Next",
+ "ui.marketPick": "Select",
+ "ui.marketPickHint": "Select an item below, then set a price.",
+ "ui.marketPost": "Sell",
+ "ui.marketPostEmpty": "You have nothing to list. Equipped gear, standard gear and potions cannot be listed.",
+ "ui.marketPrev": "Prev",
+ "ui.marketPriceHint": "Price for the whole stack (gold)",
+ "ui.marketRefresh": "Refresh",
+ "ui.marketSort": "Sort",
+ "ui.marketSortCheap": "Cheapest",
+ "ui.marketSortCostly": "Priciest",
+ "ui.marketSortNew": "Newest",
+ "ui.menu": "Menu",
+ "ui.minimap": "Minimap",
+ "ui.noTargetNearby": "No targets nearby.",
+ "ui.none": "None",
+ "ui.offerNote": "Lights the tower. A brighter tower holds out longer in a raid.",
+ "ui.offerVerb": "Offer",
+ "ui.owned": "Owned",
+ "ui.party": "Party",
+ "ui.partyAccept": "Accept",
+ "ui.partyDecline": "Decline",
+ "ui.partyInvite": "Invite to party",
+ "ui.partyLeave": "Leave",
+ "ui.quest": "Quest",
+ "ui.questAllDone": "You have finished the story so far.",
+ "ui.questGo": "[[Click to walk there (F)|Tap to walk there]]",
+ "ui.questNeedSparks": "You have no sparks to offer. Defeat monsters to gather some.",
+ "ui.rankEmpty": "No ranking yet.",
+ "ui.reconnect": "Reconnect",
+ "ui.reconnecting": "Connection lost. Reconnecting…",
+ "ui.reload": "Refresh",
+ "ui.renameLabel": "New name",
+ "ui.renameSubmit": "Change",
+ "ui.renameTitle": "[[Click|Tap]] to change your name",
+ "ui.report": "Report",
+ "ui.reportConfirm": "[[Click|Tap]] again to report",
+ "ui.residents": "Residents",
+ "ui.shop": "Road Merchant",
+ "ui.skillUpBtn": "Upgrade",
+ "ui.skillUpHead": "Skill upgrades",
+ "ui.soundOff": "Sound off",
+ "ui.soundOn": "Sound on",
+ "ui.stale": "A new version is available. Please refresh the page.",
+ "ui.stickLabel": "Movement joystick",
+ "ui.tabBuild": "Growth",
+ "ui.tabDaily": "Daily",
+ "ui.tabGear": "Gear",
+ "ui.tabGuild": "Guild",
+ "ui.tabMail": "Mail",
+ "ui.tabMarket": "Market",
+ "ui.tabRank": "Rank",
+ "ui.title": "Lamp Tower",
+ "ui.toTown": "To town",
+ "ui.tower": "Lamp tower",
+ "ui.towerDark": "The lamp is out. Once everyone offers sparks to light it, you will rise here when you fall in these woods.",
+ "ui.towerOff": "Unlit",
+ "ui.unblock": "Unmute",
+ "ui.unequip": "Remove",
+ "ui.zoneDark": "The lamp tower here is unlit. Monsters are strong and attack on sight. If you fall, you rise in Firstlight Village.",
+ "zones.length": "2",
+ "zones[0]": "Lampfield",
+ "zones[1]": "The Ashwood"
+}
