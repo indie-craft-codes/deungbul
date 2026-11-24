@@ -28,6 +28,7 @@ import { Dungeon } from './systems/dungeon';
 import { GearSys } from './systems/gear';
 import { Guild } from './systems/guild';
 import { Idle } from './systems/idle';
+import { Ledger } from './systems/ledger';
 import { MailSys } from './systems/mail';
 import { Market } from './systems/market';
 import { Rank } from './systems/rank';
@@ -187,6 +188,7 @@ export class Game {
   readonly gear: GearSys;
   readonly mail: MailSys;
   readonly idle: Idle;
+  readonly ledger: Ledger;
   readonly daily: Daily;
   readonly rank: Rank;
   readonly dungeon: Dungeon;
@@ -215,6 +217,7 @@ export class Game {
     this.gear = new GearSys(this);
     this.mail = new MailSys(this);
     this.idle = new Idle(this);
+    this.ledger = new Ledger(this);
     this.daily = new Daily(this);
     this.rank = new Rank(this);
     this.dungeon = new Dungeon(this);

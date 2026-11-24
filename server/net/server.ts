@@ -175,7 +175,23 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     game.saveDirty = false;
     for (const c of clients) if (c.ent?.unsaved) savePlayer(c);
     for (const [key, e] of away) if (e.unsaved) saveEnt(key, e);
+    saveEcon();
   }
+  /**
+   * 재화 흐름 지표(game/systems/ledger.ts)가 모아 둔 줄을 저장소에 얹는다. 실패하면 되돌려 주어 다음에 다시 얹는다.
+   * 그날의 분포 스냅샷이 아직 없으면(날이 바뀐 뒤 첫 저장, 서버를 켠 직후) 저장된 캐릭터를 훑어 하나 남긴다.
+   */
+  let snapDay = '';
+  function saveEcon(): void {
+    const rows = game.ledger.drain();
+    try { store.addEcon(rows); }
+    catch (err) { game.ledger.giveBack(rows); console.error('[server] 지표 저장 실패:', err); }
+    const day = game.ledger.today();
+    if (day === snapDay) return;
+    try { if (!store.econSnapshot(day)) store.saveEconSnapshot(day, game.ledger.snapshot((fn) => store.eachPlayer(fn))); snapDay = day; }
+    catch (err) { console.error('[server] 지표 스냅샷 실패:', err); }
+  }
+  saveEcon(); // 켜질 때: 오늘의 스냅샷이 없으면 남긴다
 
   function join(c: Client, m: Record<string, unknown>): void {
     // 토큰이 있으면 저장된 캐릭터를 이어받는다
@@ -435,6 +451,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const autosave = setInterval(() => {
     for (const c of clients) if (c.ent?.unsaved) savePlayer(c);
     for (const [key, e] of away) if (e.unsaved) saveEnt(key, e);
+    saveEcon();
   }, SAVE_EVERY_MS);
 
   // 응답 없는 연결 정리
@@ -468,6 +485,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
           for (const c of clients) savePlayer(c);
           for (const [key, e] of away) saveEnt(key, e);
           saveWorld();
+          saveEcon();
           for (const c of clients) c.ws.terminate();
           wss.close(() => httpServer.close(() => ok()));
         }),

@@ -206,6 +206,8 @@ export class Market {
 
   /** 올라와 있는 물건의 수 (시험과 지표용) */
   get count(): number { return this.listings.size; }
+  /** 올라와 있는 물건마다의 종류(장비 칸, 재료는 'item:아이템 id')와 낱개 값 (지표용) */
+  listed(): { kind: string; price: number }[] { return [...this.listings.values()].map((l) => ({ kind: l.gear ? l.gear.slot : `item:${l.item}`, price: l.price / l.n })); }
   /** 지금까지 수수료로 사라진 골드 (시험과 지표용) */
   get taxed(): number { return this.burned; }
   /** 거래소가 맡고 있는 것: 장비의 수와 재료별 수량 (시험과 지표용) */

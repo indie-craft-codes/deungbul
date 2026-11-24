@@ -12,7 +12,8 @@
     "pilot": "node scripts/pilot.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsx test/all.ts",
-    "load": "tsx test/load.ts"
+    "load": "tsx test/load.ts",
+    "econ": "tsx scripts/econ.ts"
   },
   "dependencies": {
     "three": "^0.187.0",

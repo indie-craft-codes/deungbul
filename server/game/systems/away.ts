@@ -50,6 +50,9 @@ export class Away {
     p.wait = 0;
   }
 
+  /** 지금 서버가 대신 사냥하고 있는 캐릭터인가 (지표가 접속 중의 사냥과 가려 적는 데 쓴다) */
+  active(p: Ent): boolean { return this.stays.has(p.id); }
+
   /** 주인이 돌아왔다: 그동안 얻은 것을 알려 주고 손을 뗀다. */
   stop(p: Ent): void {
     const s = this.stays.get(p.id);
