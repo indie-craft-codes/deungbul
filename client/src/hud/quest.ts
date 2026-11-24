@@ -3,6 +3,7 @@
 import { QUESTS, goalCount, type QuestStep } from '../../../shared/defs';
 import { moveTo } from '../actions';
 import { $, view } from '../app';
+import { goalBeam } from '../deungbul/scene';
 import { L, t } from '../i18n';
 import { S, inDungeon } from '../state';
 
@@ -51,12 +52,12 @@ export function questFrame(now: number): void {
   // 던전 안에서는 들판의 목적지까지의 거리와 방향이 뜻이 없다: 거리, 화살표, 걸어가기 안내를 숨기고 할 일만 남긴다
   const away = inDungeon();
   ui.panel.classList.toggle('away', away);
-  if (!me || !step || away) { view.goalBeam.visible = false; ui.arrow.hidden = true; ui.dist.textContent = ''; return; }
+  if (!me || !step || away) { goalBeam.visible = false; ui.arrow.hidden = true; ui.dist.textContent = ''; return; }
   if ((step.goal.kind === 'offer' && me.sparks === 0) !== needSparks) renderQuest(); // 불씨가 생기거나 떨어지면 안내를 바꾼다
   const dx = step.at.x - me.x, dz = step.at.z - me.z, d = Math.hypot(dx, dz);
-  view.goalBeam.visible = true;
-  view.goalBeam.position.set(step.at.x, 7, step.at.z);
-  view.goalBeam.material.opacity = 0.24 + Math.sin(now / 400) * 0.08;
+  goalBeam.visible = true;
+  goalBeam.position.set(step.at.x, 7, step.at.z);
+  goalBeam.material.opacity = 0.24 + Math.sin(now / 400) * 0.08;
   ui.dist.textContent = d > 6 ? L().fmt.distance(Math.round(d)) : '';
 
   // 목적지가 화면 안에 보이면 화살표는 필요 없다

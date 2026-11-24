@@ -6,7 +6,7 @@ import { nextTarget, offer, rename, useSkill } from '../actions';
 import { $, clamp, view } from '../app';
 import { L, LOCALES, clock, setLang, t } from '../i18n';
 import type { UiKey } from '../i18n/ko';
-import { S, inDungeon, myZone, raidLeft, stage, zoneGlow } from '../state';
+import { S, myZone, raidLeft, stage, zoneGlow } from '../state';
 import { banner } from './notify';
 
 const ui = {
@@ -97,7 +97,6 @@ export function renderTexts(): void {
 export function renderWorld(): void {
   const loc = L(), { residents } = S.world.tower, zone = myZone(), glow = zoneGlow(), st = stage();
   shownZone = zone;
-  S.world.tower.glows.forEach((g, i) => view.setTowerGlow(i, g));
   ui.towerMini.textContent = glow > 0 ? loc.fmt.towerMini(st, glow) : `${loc.towers[TOWERS[zone].id] ?? loc.ui.tower}: ${loc.ui.towerOff}`;
   $('towerTitle').textContent = loc.towers[TOWERS[zone].id] ?? loc.ui.tower;
   $('glowText').textContent = glow > 0 ? loc.fmt.glow(st, glow, GLOW_MAX) : `${loc.ui.towerOff} · 0 / ${GLOW_MAX}`;
@@ -126,7 +125,6 @@ export function renderWorld(): void {
     const list = S.world.keepers;
     $('keepList').textContent = list.length ? list.map((k) => loc.fmt.keeper(k.name, k.n)).join(' · ') : loc.ui.keepersEmpty;
   }
-  view.setMood(st, zone === 0 && S.world.raid.phase === 'active', glow === 0 || inDungeon()); // 던전 안은 늘 어둡다
 }
 
 /** 매 프레임 바뀌는 것: 막대, 대상 정보, 쿨다운. */

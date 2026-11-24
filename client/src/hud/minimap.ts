@@ -1,6 +1,6 @@
 // 미니맵 (PC 전용): 나를 가운데에 두고 주변을 화면과 같은 방향으로 그린다.
 // 등탑과 퀘스트 목적지는 범위 밖이어도 가장자리에 붙여 보여 줘서, 어느 쪽인지 항상 알 수 있다.
-import { AREAS, MAX_X, MAX_Z, MIN_X, MIN_Z, POND, ZONE_SPLIT } from '../../../shared/world';
+import { AREAS } from '../../../shared/world';
 import { $ } from '../app';
 import { onSlow } from '../bus';
 import { S } from '../state';
@@ -10,7 +10,7 @@ const SIZE = 150, HALF = SIZE / 2;
 /** 가운데에서 가장자리까지 보이는 거리(m) */
 const RANGE = 70;
 const K = (HALF / RANGE) * Math.SQRT1_2;
-const COLOR = { ground: '#3d6b45', forest: '#4a5a52', out: '#0e2227', pond: '#4f9fc0', tower: '#f0bb55', dark: '#8a8f8c', shop: '#7fd68a', quest: '#ffe08a', foe: '#e0705f', other: '#eef3ee', ally: '#8fd8ff', me: '#ffffff' };
+const COLOR = { ground: '#3d6b45', out: '#0e2227', tower: '#f0bb55', dark: '#8a8f8c', shop: '#7fd68a', quest: '#ffe08a', foe: '#e0705f', other: '#eef3ee', ally: '#8fd8ff', me: '#ffffff' };
 
 let ctx: CanvasRenderingContext2D | null = null;
 
@@ -19,6 +19,11 @@ export interface Mark { x: number; z: number; color: string; shape: 'dot' | 'squ
 const markers: (() => Mark[])[] = [];
 /** 표식을 내는 함수를 등록한다. 그릴 때마다 불린다 */
 export function addMarks(fn: () => Mark[]): void { markers.push(fn); }
+/** 바탕을 칠하는 붓: 월드 좌표로 네모와 원을 칠한다 */
+export interface MapBrush { quad(x0: number, z0: number, x1: number, z1: number, color: string): void; disc(x: number, z: number, r: number, color: string): void }
+let paint = (b: MapBrush): void => { for (const a of AREAS) b.quad(a.x0, a.z0, a.x1, a.z1, COLOR.ground); };
+/** 바탕(땅, 물 같은 지형)을 칠하는 함수를 등록한다. 맵은 게임마다 다르므로, 등록하지 않으면 지역마다 한 가지 색으로 칠한다 */
+export function setMapPaint(fn: (b: MapBrush) => void): void { paint = fn; }
 /** 표식에 쓰는 색 */
 export const MARK = { lit: '#f0bb55', dark: '#8a8f8c', shop: '#7fd68a', quest: '#ffe08a', portal: '#b9a3ff' };
 
@@ -56,12 +61,11 @@ function draw(): void {
   c.clearRect(0, 0, SIZE, SIZE);
   c.beginPath(); c.arc(HALF, HALF, HALF - 1, 0, Math.PI * 2); c.clip();
   c.fillStyle = COLOR.out; c.fillRect(0, 0, SIZE, SIZE);
-  // 땅: 구역마다 색이 다르다
-  quad(c, MIN_X, MIN_Z, ZONE_SPLIT, MAX_Z, COLOR.ground);
-  quad(c, ZONE_SPLIT, MIN_Z, MAX_X, MAX_Z, COLOR.forest);
-  for (const a of AREAS.slice(1)) quad(c, a.x0, a.z0, a.x1, a.z1, '#3a3648'); // 던전 같은 따로 떨어진 지역
-  const pond = at(POND.x, POND.z);
-  dot(c, pond.x, pond.y, POND.r * K * Math.SQRT2, COLOR.pond);
+  // 바탕: 땅과 물은 게임이 칠한다 (setMapPaint)
+  paint({
+    quad: (x0, z0, x1, z1, color) => quad(c, x0, z0, x1, z1, color),
+    disc: (x, z, r, color) => { const p = at(x, z); dot(c, p.x, p.y, r * K * Math.SQRT2, color); },
+  });
 
   // 주변의 몬스터와 사람
   const allies = new Set(S.party.map((m) => m.id));
