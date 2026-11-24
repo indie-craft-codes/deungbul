@@ -27,7 +27,8 @@ export class Daily {
     });
   }
 
-  private dayOf(ms: number): string {
+  /** 그 시각의 날짜 (서버 현지 시간, 자정에 바뀐다). 하루 단위로 세는 다른 시스템도 이것을 쓴다 */
+  dayOf(ms: number): string {
     const d = new Date(ms);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }

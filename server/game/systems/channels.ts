@@ -8,10 +8,14 @@ import type { Game } from '../game';
 import { channelOf, fieldLayer, isField } from '../layers';
 
 export class Channels {
+  // 아래 세 기록은 엔티티 번호가 아니라 사람(저장 키)으로 적는다: 다시 접속하면 번호가 바뀌어, 재접속 한 번으로 대기 시간과 싸움 판정이 지워졌다.
+  // 손님은 저장 키가 없어 접속마다 따로다. 오래된 기록은 tick에서 지운다.
   /** 마지막으로 채널을 바꾼 시각 (게임 시계) */
-  private moved = new Map<number, number>();
+  private moved = new Map<string, number>();
   /** 마지막으로 몬스터를 쓰러뜨린 시각 (게임 시계). 쓰러진 몬스터는 때린 사람을 잊으므로 따로 적어 둔다 */
-  private killed = new Map<number, number>();
+  private killed = new Map<string, number>();
+  /** 싸우는 중에 접속이 끊긴 시각 (게임 시계). 다시 접속해도 그때부터 calmS 동안은 싸우는 중이다 */
+  private fled = new Map<string, number>();
   /** 층별로 지금 그 들판에 서 있는 캐릭터의 수와, 그것을 센 시각. 틱마다 한 번만 센다 */
   private here: number[] = [];
   private hereAt = -1;
@@ -25,10 +29,14 @@ export class Channels {
 
     g.commands.set('channel', (p, m) => { if (typeof m.n === 'number') this.move(p, m.n); });
     g.on('playerJoined', (p) => this.seat(p));
-    g.on('playerLeft', (id) => { this.moved.delete(id); this.killed.delete(id); this.hereAt = -1; });
-    g.on('monsterKilled', (_m, hitters) => { for (const p of hitters) this.killed.set(p.id, g.clock); });
+    g.on('playerLeft', () => { this.hereAt = -1; });
+    g.on('playerDropped', (p) => { if (this.fighting(p)) this.fled.set(Channels.key(p), g.clock); });
+    g.on('monsterKilled', (_m, hitters) => { for (const p of hitters) this.killed.set(Channels.key(p), g.clock); });
     g.ticks.push((dt) => this.tick(dt));
   }
+
+  /** 기록의 열쇠: 저장 키가 있으면 그것(재접속해도 같다), 손님은 엔티티 번호 */
+  private static key(p: Ent): string { return p.pid || '#' + p.id; }
 
   /** 그 캐릭터의 들판 층. 던전 안에 있으면 나와서 돌아갈 층이다 */
   private home(p: Ent): number { return isField(p.layer) ? p.layer : this.g.dungeon.homeOf(p) ?? fieldLayer(1); }
@@ -62,6 +70,8 @@ export class Channels {
    * 접속한 사람이 설 채널을 고른다.
    * 인원이 가장 적은 곳이 아니라, 붐비지 않는(soft 미만) 채널 가운데 번호가 가장 낮은 곳이다: 사람이 적을 때 흩어지지 않고 1채널에 모인다.
    * 모두 붐비면 가장 적은 곳. 파티원이 접속해 있으면 그 사람의 채널이 먼저다.
+   * 접속은 hard(옮겨 올 수 없는 인원)로 막지 않는다: 들어온 사람을 세울 곳은 있어야 하므로, 서버가 가득 차면 채널마다 hard를 넘을 수 있다
+   * (서버 전체 인원은 통신 계층의 접속 상한이 따로 막는다).
    */
   pick(p: Ent): number {
     const mate = this.g.party.mates(p)[0];
@@ -88,7 +98,8 @@ export class Channels {
   /** 최근에 맞았거나 때렸는가: 싸움에서 도망치는 데 채널을 쓰지 못하게 한다 */
   private fighting(p: Ent): boolean {
     const g = this.g, since = g.clock - CHANNEL.calmS;
-    if (p.lastHurt > since || (this.killed.get(p.id) ?? -Infinity) > since) return true;
+    const key = Channels.key(p);
+    if (p.lastHurt > since || (this.killed.get(key) ?? -Infinity) > since || (this.fled.get(key) ?? -Infinity) > since) return true;
     // 때린 시각은 따로 적지 않는다: 내가 때린 몬스터가 방금 맞았으면 싸우는 중으로 본다.
     // 멀리 떠나온 싸움은 치지 않는다 (처치 보상을 받는 거리와 같다): 한 대 치고 떠난 보스를 남들이 잡는 동안 묶여 있지 않게
     for (const m of g.ents.values()) if (m.kind === 'm' && !m.dead && m.layer === p.layer && m.lastHurt > since && m.hitters.has(p.id) && dist(p, m) <= AOI_LEAVE) return true;
@@ -103,9 +114,10 @@ export class Channels {
     const to = fieldLayer(n);
     if (to === p.layer) { this.tell(p); return; } // 이미 그 채널이다: 화면만 맞춘다
     if (this.fighting(p)) { g.notify(p, 'channelFight'); return; }
-    const wait = CHANNEL.switchCdS - (g.clock - (this.moved.get(p.id) ?? -Infinity));
+    const wait = CHANNEL.switchCdS - (g.clock - (this.moved.get(Channels.key(p)) ?? -Infinity));
     if (wait > 0) { g.notify(p, 'channelWait', Math.ceil(wait)); return; }
-    if (this.counts()[to] >= CHANNEL.hard) { g.notify(p, 'channelFull', n); return; }
+    // 거절할 때도 최신 인원을 보낸다: 화면의 숫자가 낡아서 빈 줄 알고 누른 것이다
+    if (this.counts()[to] >= CHANNEL.hard) { g.notify(p, 'channelFull', n); this.tell(p); return; }
 
     p.layer = to; p.targetId = 0; p.moving = false; p.path = null; p.tx = p.x; p.tz = p.z;
     // 떠난 채널의 몬스터는 나를 잊는다 (쫓던 몬스터가 보이지 않는 사람을 붙들고 있지 않게)
@@ -113,7 +125,7 @@ export class Channels {
       if (e.kind === 'm') { e.hitters.delete(p.id); if (e.targetId === p.id) e.targetId = 0; }
     }
     g.emit(['r', p.id]); // 클라이언트가 걷던 것과 노리던 대상을 내려놓는다. 주변은 다음 스냅샷이 새 층의 것으로 바꿔 보낸다
-    this.moved.set(p.id, g.clock);
+    this.moved.set(Channels.key(p), g.clock);
     this.hereAt = -1;
     g.notify(p, 'channelMoved', n);
     this.tell(p);
@@ -135,6 +147,9 @@ export class Channels {
     this.t += dt;
     if (this.t < (g.raid.phase === 'active' ? CHANNEL.tellRaidS : CHANNEL.tellS)) return;
     this.t = 0;
+    // 쓸모가 다한 기록을 지운다 (가장 긴 것이 채널 이동 대기다)
+    const old = g.clock - Math.max(CHANNEL.switchCdS, CHANNEL.calmS);
+    for (const map of [this.moved, this.killed, this.fled]) for (const [k, at] of map) if (at < old) map.delete(k);
     const list = this.counts(), foes = this.foes();
     for (const p of g.ents.values()) if (p.kind === 'p') this.tell(p, list, foes);
   }

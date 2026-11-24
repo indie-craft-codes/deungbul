@@ -1,10 +1,10 @@
 // 길드: 만들고, 초대하고, 함께 대화하고, 골드를 기부해 길드를 키운다. 길드 레벨만큼 길드원의 경험치가 늘어난다.
 // 길드원은 접속해 있지 않아도 길드에 남으므로, 사람을 엔티티 번호가 아니라 저장 키(Ent.pid)로 가리킨다.
 // 손님(저장 키가 없는 접속)은 가입할 수 없다. 규칙의 수치는 shared/content/social.ts의 GUILD에 있다.
-import { GUILD, type GuildMember, type GuildView } from '../../../shared/defs';
-import { CHAT_MAX } from '../../../shared/world';
+import { GUILD, PARTY, type GuildMember, type GuildView } from '../../../shared/defs';
+import { CHAT_MAX, NAME_MAX } from '../../../shared/world';
 import { isClean, mask, tidy } from '../../net/moderation';
-import type { Ent } from '../entity';
+import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 
 interface Member { pid: string; name: string; lv: number; cls: string; gave: number }
@@ -18,7 +18,9 @@ export class Guild {
   /** 저장 키 → 길드 */
   private of = new Map<string, GuildRec>();
   /** 받은 초대: 초대받은 사람의 엔티티 번호 → 길드와 초대한 사람 */
-  private invites = new Map<number, { guild: number; from: string; until: number }>();
+  private invites = new Map<number, { guild: number; from: string; until: number; pair: string }>();
+  /** 다시 초대할 수 있는 시각(게임 시계): '초대한 사람>받은 사람'(저장 키)별 */
+  private again = new Map<string, number>();
   private nextId = 1;
   private lastChat = new Map<number, number>();
   private lastNotice = new Map<number, number>();
@@ -29,7 +31,7 @@ export class Guild {
         case 'create': this.create(p, text(m.name, GUILD.nameMax)); break;
         case 'invite': if (typeof m.id === 'number') this.invite(p, m.id); break;
         case 'accept': this.accept(p); break;
-        case 'decline': this.invites.delete(p.id); this.tell(p); break;
+        case 'decline': { const inv = this.invites.get(p.id); if (inv) this.again.set(inv.pair, g.clock + GUILD.reinviteS); this.invites.delete(p.id); this.tell(p); break; }
         case 'leave': this.leave(p); break;
         case 'kick': if (typeof m.pid === 'string') this.kick(p, m.pid); break;
         case 'give': if (typeof m.n === 'number') this.give(p, m.n); break;
@@ -40,26 +42,30 @@ export class Guild {
 
     g.on('playerJoined', (p) => { p.guild = this.nameOf(p); this.touch(p); this.tell(p); const rec = this.of.get(p.pid); if (rec) this.sync(rec); });
     g.on('playerLeft', (id) => { this.invites.delete(id); this.lastChat.delete(id); });
-    g.ticks.push(() => { for (const [id, inv] of this.invites) if (inv.until < g.clock) { this.invites.delete(id); const p = g.ents.get(id); if (p) this.tell(p); } });
+    g.ticks.push(() => { for (const [k, until] of this.again) if (until <= g.clock) this.again.delete(k); for (const [id, inv] of this.invites) if (inv.until < g.clock) { this.invites.delete(id); const p = g.ents.get(id); if (p) this.tell(p); } });
     // 길드 레벨만큼 경험치를 더 받는다
     g.mods.provide('exp', (p) => { const rec = p && this.of.get(p.pid); return rec ? this.level(rec) * GUILD.expPerLevel : 0; });
     g.worldSaves.push({ name: 'guilds', save: () => ({ next: this.nextId, list: [...this.guilds.values()] }), load: (d) => this.load(d) });
   }
 
   private load(data: unknown): void {
+    // 칸 전체가 깨져 있으면(null, 숫자) 처음 상태로 둔다. 길드 하나가 깨져 있으면 그 길드만 건너뛴다
+    if (typeof data !== 'object' || data === null) return;
     const d = data as { next?: unknown; list?: unknown };
     if (!Array.isArray(d.list)) return;
+    const count = (v: unknown, max: number): number => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(max, Math.floor(v))) : 0);
     for (const raw of d.list as GuildRec[]) {
-      if (typeof raw !== 'object' || raw === null || typeof raw.id !== 'number' || typeof raw.name !== 'string' || !Array.isArray(raw.members) || !raw.members.length) continue;
-      const members = raw.members.filter((m) => typeof m === 'object' && m !== null && typeof m.pid === 'string' && m.pid && typeof m.name === 'string')
-        .map((m): Member => ({ pid: m.pid, name: m.name, lv: Number(m.lv) || 1, cls: typeof m.cls === 'string' ? m.cls : '', gave: Number(m.gave) || 0 }));
+      // 번호가 정수가 아니면(NaN, 소수) 다음 번호까지 깨진다
+      if (typeof raw !== 'object' || raw === null || !Number.isInteger(raw.id) || raw.id < 1 || this.guilds.has(raw.id) || typeof raw.name !== 'string' || !Array.isArray(raw.members) || !raw.members.length) continue;
+      const members = raw.members.filter((m) => typeof m === 'object' && m !== null && typeof m.pid === 'string' && m.pid && typeof m.name === 'string' && !this.of.has(m.pid)).slice(0, GUILD.maxMembers)
+        .map((m): Member => ({ pid: m.pid, name: m.name.slice(0, NAME_MAX), lv: count(m.lv, 999) || 1, cls: typeof m.cls === 'string' ? m.cls : '', gave: count(m.gave, 1e12) }));
       if (!members.length) continue;
-      const rec: GuildRec = { id: raw.id, name: raw.name, leader: members.some((m) => m.pid === raw.leader) ? raw.leader : members[0].pid, exp: Number(raw.exp) || 0, notice: typeof raw.notice === 'string' ? raw.notice : '', members };
+      const rec: GuildRec = { id: raw.id, name: raw.name.slice(0, GUILD.nameMax), leader: members.some((m) => m.pid === raw.leader) ? raw.leader : members[0].pid, exp: count(raw.exp, 1e12), notice: typeof raw.notice === 'string' ? raw.notice.slice(0, GUILD.noticeMax) : '', members };
       this.guilds.set(rec.id, rec);
       for (const m of members) this.of.set(m.pid, rec);
       this.nextId = Math.max(this.nextId, rec.id + 1);
     }
-    if (typeof d.next === 'number') this.nextId = Math.max(this.nextId, d.next);
+    if (Number.isInteger(d.next) && (d.next as number) > 0) this.nextId = Math.max(this.nextId, d.next as number);
   }
 
   /** 길드 레벨: 쌓인 기부로 정한다 */
@@ -121,12 +127,18 @@ export class Guild {
     const g = this.g, rec = this.of.get(p.pid), t = g.ents.get(id);
     if (!rec || !t || t.kind !== 'p' || t.bot || t === p) return;
     if (rec.leader !== p.pid) { g.notify(p, 'guildNotLeader'); return; }
+    // 파티 초대처럼 같은 층의 가까운 사람만 초대한다: 엔티티 번호만 알면 보이지도 않는 사람에게 초대 창을 띄울 수 있었다
+    if (t.layer !== p.layer || dist(p, t) > PARTY.inviteRange) return;
     if (!t.pid || this.of.has(t.pid)) { g.notify(p, 'guildBusy', t.name); return; }
     if (rec.members.length >= GUILD.maxMembers) { g.notify(p, 'guildFull'); return; }
     // 살아 있는 초대가 있으면 덮어쓰지 않는다: 초대 창 도배와, 비슷한 이름의 길드로 초대를 바꿔치기하는 것을 막는다
     const old = this.invites.get(t.id);
     if (old && old.until > g.clock) { if (old.guild !== rec.id) g.notify(p, 'guildBusy', t.name); return; }
-    this.invites.set(t.id, { guild: rec.id, from: p.name, until: g.clock + GUILD.inviteS });
+    // 거절당했거나 받지 않은 채 사라진 초대는 한동안 다시 보내지 못한다: 되풀이해 초대하면 다른 길드의 초대가 들어올 자리를 붙들게 된다
+    const pair = `${p.pid}>${t.pid}`;
+    if ((this.again.get(pair) ?? -Infinity) > g.clock) { g.notify(p, 'guildBusy', t.name); return; }
+    this.invites.set(t.id, { guild: rec.id, from: p.name, until: g.clock + GUILD.inviteS, pair });
+    this.again.set(pair, g.clock + GUILD.inviteS + GUILD.reinviteS); // 받지 않고 두면 초대가 사라진 뒤부터 센다
     g.notify(p, 'guildInvited', t.name);
     this.tell(t);
   }
@@ -134,6 +146,7 @@ export class Guild {
   accept(p: Ent): void {
     const g = this.g, inv = this.invites.get(p.id), rec = inv && this.guilds.get(inv.guild);
     this.invites.delete(p.id);
+    if (inv) this.again.delete(inv.pair); // 받아들인 사이에는 간격을 두지 않는다
     if (!rec || !p.pid || this.of.has(p.pid) || inv!.until < g.clock) { this.tell(p); return; }
     if (rec.members.length >= GUILD.maxMembers) { g.notify(p, 'guildFull'); this.tell(p); return; }
     rec.members.push({ pid: p.pid, name: p.name, lv: p.lv, cls: p.cls, gave: 0 });

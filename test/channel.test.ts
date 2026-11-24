@@ -287,6 +287,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   const glow = g.tower.glow;
   run(0.1);
   g.notices = [];
+  for (const p of [a, b]) g.command(p, { t: 'stop' }); // 적의 수는 최근에 스스로 움직인 사람만 센다: 둘 다 방금 명령을 냈다
   g.raid.start();
   const max = (RAID.towerHpBase + glow * RAID.towerHpPerGlow) * 2;
   check(g.raid.phase === 'active' && g.raid.state().foes === perChannel * 2 && g.raid.state().towerMaxHp === max, `사람이 있는 채널마다 그 인원에 맞는 적이 온다 (두 채널, ${perChannel}마리씩). 등탑 내구는 하나이고 싸우는 채널 수만큼 크다`);

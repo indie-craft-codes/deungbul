@@ -14,17 +14,27 @@ interface Waiting { k: MailKind; a: (string | number)[]; r: Reward }
 /** 그 아이템을 들 수 있는 한도. 낱개 장비로 다루는 무기와 갑옷은 0이다 */
 const cap = (id: ItemId): number => (ITEMS[id].kind === 'mat' ? MAT_MAX : ITEMS[id].kind === 'potion' ? POTION_MAX : 0);
 
-/** 저장된 보상을 읽는다: 숫자가 아닌 값, 모양이 깨진 장비, 없어진 아이템은 버린다 */
+/** 우편 한 통에 붙을 수 있는 골드·경험치·불씨의 상한. 정상적인 보상(거래소의 가장 비싼 값 100만)보다 넉넉하고, 깨진 저장이 캐릭터를 망가뜨릴 만큼 크지는 않다 */
+const REWARD_MAX = 1e7;
+/** 우편 한 통에 붙을 수 있는 장비의 수 */
+const MAIL_GEAR_MAX = 8;
+/** 제목에 넣을 값: 글자와 수만, 짧게 */
+const readArgs = (a: unknown[]): (string | number)[] => a.filter((v): v is string | number => typeof v === 'string' || num(v)).slice(0, 8).map((v) => (typeof v === 'string' ? v.slice(0, 40) : v));
+
+/**
+ * 저장된 보상을 읽는다: 숫자가 아닌 값(문자열), 음수, 모양이 깨진 장비, 없어진 아이템은 버린다.
+ * 골드·경험치·불씨는 1 이상 REWARD_MAX 이하의 정수로, 아이템 수는 그 아이템을 들 수 있는 한도까지로 맞춘다.
+ */
 function readReward(raw: unknown): Reward {
   const d = raw as Record<string, unknown>, r: Reward = {};
-  for (const k of ['gold', 'exp', 'sparks'] as const) if (num(d[k]) && d[k] > 0) r[k] = Math.floor(d[k]);
+  for (const k of ['gold', 'exp', 'sparks'] as const) if (num(d[k]) && d[k] >= 1) r[k] = Math.min(REWARD_MAX, Math.floor(d[k]));
   if (Array.isArray(d.gear)) {
-    const gear = d.gear.filter(GearSys.valid);
+    const gear = d.gear.filter(GearSys.valid).slice(0, MAIL_GEAR_MAX);
     if (gear.length) r.gear = gear;
   }
   if (typeof d.items === 'object' && d.items !== null) {
     const items: Record<string, number> = {};
-    for (const [id, n] of Object.entries(d.items as Record<string, unknown>)) if (isItemId(id) && cap(id) > 0 && num(n) && n >= 1) items[id] = Math.floor(n);
+    for (const [id, n] of Object.entries(d.items as Record<string, unknown>)) if (isItemId(id) && cap(id) > 0 && num(n) && n >= 1) items[id] = Math.min(cap(id), Math.floor(n));
     if (Object.keys(items).length) r.items = items;
   }
   return r;
@@ -49,7 +59,7 @@ export class MailSys {
         const d = raw as { list?: unknown; seq?: unknown };
         if (!Array.isArray(d.list)) return;
         // 예전 형식(골드·경험치·불씨만 든 보상)도 그대로 읽힌다
-        p.mail = (d.list as unknown[]).filter((x): x is Mail => shaped(x) && num((x as Mail).id)).map((x) => ({ id: x.id, k: x.k, a: x.a, r: readReward(x.r) }));
+        p.mail = (d.list as unknown[]).filter((x): x is Mail => shaped(x) && num((x as Mail).id)).map((x) => ({ id: x.id, k: x.k, a: readArgs(x.a), r: readReward(x.r) }));
         MailSys.trim(p.mail);
         p.mailSeq = Math.max(num(d.seq) ? d.seq : 0, ...p.mail.map((x) => x.id));
       },
@@ -58,11 +68,12 @@ export class MailSys {
       name: 'mailbox',
       save: () => ({ waiting: [...this.waiting].map(([pid, list]) => ({ pid, list })) }),
       load: (raw) => {
+        if (typeof raw !== 'object' || raw === null) return;
         const d = raw as { waiting?: unknown };
         if (!Array.isArray(d.waiting)) return;
         for (const w of d.waiting as { pid?: unknown; list?: unknown }[]) {
           if (typeof w !== 'object' || w === null || typeof w.pid !== 'string' || !w.pid || !Array.isArray(w.list)) continue;
-          const list = w.list.filter(shaped).map((x): Waiting => ({ k: x.k, a: x.a, r: readReward(x.r) }));
+          const list = w.list.filter(shaped).map((x): Waiting => ({ k: x.k, a: readArgs(x.a), r: readReward(x.r) }));
           if (list.length) this.waiting.set(w.pid, [...(this.waiting.get(w.pid) ?? []), ...list]);
         }
       },

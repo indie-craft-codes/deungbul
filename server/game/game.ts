@@ -68,6 +68,8 @@ export interface Hooks {
   dungeonCleared: (id: string, players: Ent[]) => void;
   /** 장비 강화를 시도했다 (성공이든 실패든) */
   enhanced: (p: Ent) => void;
+  /** 사람이 몬스터를 때렸다: 실제로 깎인 체력 (쓰러뜨렸으면 monsterKilled보다 먼저 불린다) */
+  hit: (p: Ent, m: Ent, amount: number) => void;
 }
 
 /**
@@ -163,7 +165,7 @@ export class Game {
   readonly shared: { name: keyof WorldState; state: () => unknown }[] = [];
   /** 캐릭터와 함께 저장할 것을 가진 시스템들 */
   readonly saves: Saver[] = [];
-  private hooks: { [K in keyof Hooks]: Hooks[K][] } = { monsterKilled: [], playerDied: [], playerLeft: [], offered: [], bought: [], playerJoined: [], residentReturned: [], raidWon: [], enhanced: [], playerDropped: [], dungeonCleared: [] };
+  private hooks: { [K in keyof Hooks]: Hooks[K][] } = { monsterKilled: [], playerDied: [], playerLeft: [], offered: [], bought: [], playerJoined: [], residentReturned: [], raidWon: [], enhanced: [], playerDropped: [], dungeonCleared: [], hit: [] };
   private nextId = 1;
 
   // ---- 시스템 ----
@@ -234,10 +236,10 @@ export class Game {
   /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. */
   create(kind: Kind, type: string, name: string, x: number, z: number, hp: number): Ent {
     const e: Ent = {
-      id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, path: null, pgx: x, pgz: z, pat: 0,
+      id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, lastAct: -99, path: null, pgx: x, pgz: z, pat: 0,
       hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
       bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
-      gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
+      gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), raid: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
     };
     resolve(e, this.world.obstacles);
@@ -257,7 +259,10 @@ export class Game {
 
   /** 플레이어 명령을 해당 시스템에 넘긴다. 모르는 명령은 무시한다. */
   command(p: Ent, msg: Record<string, unknown>): void {
-    if (typeof msg.t === 'string') this.commands.get(msg.t)?.(p, msg);
+    const fn = typeof msg.t === 'string' ? this.commands.get(msg.t) : undefined;
+    if (!fn) return;
+    p.lastAct = this.clock; // 무엇이든 명령을 냈으면 자리에 있는 사람이다 (습격의 인원 세기)
+    fn(p, msg);
   }
 
   tick(dt: number): void {

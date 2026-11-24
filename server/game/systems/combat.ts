@@ -69,11 +69,12 @@ export class Combat {
     if (dst.dead || src.layer !== dst.layer) return;
     if (src.kind === 'p') amount = Math.round(amount * this.g.mods.product('damage', src));
     if (dst.kind === 'p') amount = Math.max(1, Math.round(amount * this.g.mods.product('guard', dst)));
+    const before = dst.hp;
     dst.hp -= amount;
     dst.lastHurt = this.g.clock;
     this.g.emit(['h', src.id, dst.id, amount, crit ? 1 : 0]);
     if (dst.kind === 'm') {
-      if (src.kind === 'p') dst.hitters.add(src.id);
+      if (src.kind === 'p') { dst.hitters.add(src.id); src.lastAct = this.g.clock; this.g.fire('hit', src, dst, Math.max(0, Math.min(amount, before))); }
       if (!dst.targetId) dst.targetId = src.id;
       if (dst.hp <= 0) this.killMonster(dst);
     } else if (dst.hp <= 0) this.killPlayer(dst);

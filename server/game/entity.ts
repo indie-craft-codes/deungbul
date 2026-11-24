@@ -9,6 +9,8 @@ export interface Ent {
   tx: number; tz: number; moving: boolean; stuck: number;
   /** 마지막으로 이동 명령을 받은 시각(게임 시계) */
   lastMove: number;
+  /** 마지막으로 스스로 무언가를 한 시각(게임 시계): 명령을 냈거나 몬스터를 때렸다. 서 있기만 한 사람을 습격의 인원에서 빼는 데 쓴다 */
+  lastAct: number;
   /** 목표로 가려고 세운 길과, 세울 때의 목표·시각 (shared/nav.ts) */
   path: Point[] | null; pgx: number; pgz: number; pat: number;
   hp: number; maxHp: number; dead: boolean;
@@ -54,6 +56,8 @@ export interface Ent {
   daily: DailyState;
   /** 찍은 능력치와 기술의 강화 단계 (systems/build.ts) */
   stats: Record<string, number>; skillLv: Record<string, number>;
+  /** 자리 비움 사냥으로 오늘 쓴 시간(초)과 그 날짜 (systems/away.ts) */
+  away: { day: string; used: number };
   /** 이번 접속 전에 비운 시간(ms). 방치 보상을 셈하는 데 쓴다 */
   offMs: number;
   /** 장비·우편·일일 임무가 바뀌었다: 본인에게 알려야 한다 */

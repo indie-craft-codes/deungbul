@@ -16,6 +16,14 @@ export interface RaidConfig {
   base: number; perPlayer: number; max: number;
   /** 등탑 근처 이 거리 안의 사람을 참여 인원으로 센다 */
   joinRadius: number;
+  /**
+   * 참여 인원으로 세는 조건: 최근 이 시간(초) 안에 스스로 무언가를 했다(명령을 냈거나 몬스터를 때렸다).
+   * 서 있기만 한 캐릭터(부계정)로 적의 수를 부풀리지 못하게 한다. 혼자 가만히 기다리던 사람도 습격은 열리고(1명 몫),
+   * 물결마다 다시 세므로 싸우기 시작하면 그 인원만큼 늘어난다.
+   */
+  activeS: number;
+  /** 막아야 할 적이 있는데 그 채널에서 이 시간(초) 동안 아무도 움직이지 않으면, 그 채널은 버려진 것으로 보고 싸움을 끝낸다 (남은 적은 등탑을 한 번 치고 사라진다) */
+  abandonS: number;
   /** 적이 나타나는 거리 (등탑 기준) */
   spawnRadius: readonly [number, number];
   /** 등탑 내구 = base + 밝기 × perGlow. 미리 불씨를 바쳐 둘수록 오래 버틴다 */
@@ -38,6 +46,8 @@ export const RAID: RaidConfig = {
   waveAtS: [0, 30, 60],
   base: 4, perPlayer: 3, max: 40,
   joinRadius: 45,
+  activeS: 30, // 물결 간격(30초)과 같다: 지난 물결을 함께 막은 사람이 다음 물결의 인원이 된다
+  abandonS: 30,
   spawnRadius: [24, 30],
   towerHpBase: 240, towerHpPerGlow: 3, // 밝기가 바닥이어도 혼자 막아 볼 시간이 있게 넉넉히 잡는다
   drainPerS: 0.6, // 적 6마리가 붙어도 아무도 안 막으면 1분쯤 버틴다

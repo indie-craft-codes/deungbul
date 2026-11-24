@@ -5,7 +5,7 @@ import { check } from './harness';
 {
   let clock = new Date(2026, 0, 10, 12).getTime();
   const g = new Game({ now: () => clock });
-  const p = g.players.spawn('수집가', false);
+  const p = g.players.spawn('수집가', false, null, 'collector-key'); // 순위는 저장 키로 사람을 구분한다 (손님은 오르지 않는다)
   g.classes.apply(p, 'warrior');
   check(p.mail.length === 1 && p.mail[0].k === 'attend' && p.mail[0].a[0] === 1, '그날 처음 접속하면 출석 1일째 보상이 우편으로 온다');
 

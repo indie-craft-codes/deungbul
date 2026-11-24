@@ -76,4 +76,9 @@ export const maxHpFor = (cls: string, lv: number): number => classOf(cls).hp + H
 export const SLOW_FACTOR = 0.5;
 
 export const ATTACK_CD = 1.0;
+/**
+ * 나갔다가 이 시간(초) 안에 다시 접속하면 나갈 때의 체력, 기술 쿨다운, 물약 대기가 이어진다 (쿨다운은 떠나 있던 만큼 줄어든다).
+ * 재접속으로 체력을 채우고 쿨다운을 지우지 못하게 한다. 더 오래 떠나 있었으면 쉬다 온 것이므로 가득 찬 채로 시작한다.
+ */
+export const REJOIN_KEEP_S = 300;
 export const SPAWN = { x: 0, z: 3 }; // 등탑 앞: 접속과 부활 지점
