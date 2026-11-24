@@ -27,6 +27,8 @@ const isMat = (v: unknown): v is ItemId => isItemId(v) && ITEMS[v].kind === 'mat
 export class Market {
   private listings = new Map<number, Listing>();
   private nextId = 1;
+  /** 목록을 마지막으로 달라고 한 시각 (요청을 몰아 보내 서버를 느리게 하지 못하게) */
+  private asked = new Map<number, number>();
   /** 지금까지 수수료로 사라진 골드 */
   private burned = 0;
   /** 기간이 지난 물건을 마지막으로 거둔 뒤 흐른 시간(초). 켜지자마자 한 번 거두도록 가득 채워 둔다 */
@@ -35,7 +37,7 @@ export class Market {
   constructor(private g: Game) {
     g.commands.set('market', (p, m) => {
       switch (m.a) {
-        case 'list': this.browse(p, isMarketFilter(m.f) ? m.f : 'all', isMarketSort(m.sort) ? m.sort : 'new', int(m.page, 0, Number.MAX_SAFE_INTEGER) ? m.page : 0); break;
+        case 'list': if (g.clock - (this.asked.get(p.id) ?? -99) < MARKET.listGapS) break; this.asked.set(p.id, g.clock); this.browse(p, isMarketFilter(m.f) ? m.f : 'all', isMarketSort(m.sort) ? m.sort : 'new', int(m.page, 0, Number.MAX_SAFE_INTEGER) ? m.page : 0); break;
         case 'mine': this.tellMine(p); break;
         case 'post': this.post(p, m); break;
         case 'buy': if (int(m.id, 1, Number.MAX_SAFE_INTEGER)) this.buy(p, m.id); break;
@@ -43,6 +45,7 @@ export class Market {
       }
     });
     g.on('playerJoined', (p) => { if (p.pid) this.tellMine(p); });
+    g.on('playerLeft', (id) => { this.asked.delete(id); });
     g.ticks.push((dt) => { this.since += dt; if (this.since >= MARKET.sweepS) { this.since = 0; this.sweep(); } });
     g.worldSaves.push({ name: 'market', save: () => ({ next: this.nextId, burned: this.burned, list: [...this.listings.values()] }), load: (d) => this.load(d) });
   }
@@ -101,7 +104,8 @@ export class Market {
   private post(p: Ent, m: Record<string, unknown>): void {
     const g = this.g;
     if (!p.pid) { g.notify(p, 'marketGuest'); return; }
-    if (!int(m.price, 1, MARKET.maxPrice)) { g.notify(p, 'marketPriceBad', MARKET.maxPrice); return; }
+    if (p.lv < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
+    if (!int(m.price, MARKET.minPrice, MARKET.maxPrice)) { g.notify(p, 'marketPriceBad', MARKET.maxPrice); return; }
     if (this.own(p.pid).length >= MARKET.maxListings) { g.notify(p, 'marketFull', MARKET.maxListings); return; }
     const l: Listing = { id: this.nextId, seller: p.pid, name: p.name, n: 1, price: m.price, until: g.now() + MARKET.hours * 3600000 };
     if (m.uid !== undefined) {
@@ -145,6 +149,7 @@ export class Market {
     // 이미 팔렸거나 내려갔거나, 기간이 지나 곧 돌아갈 물건
     if (!l || l.until <= g.now()) { g.notify(p, 'marketGone'); return; }
     if (l.seller === p.pid) { g.notify(p, 'marketOwn'); return; }
+    if (p.lv < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
     if (!(p.gold >= l.price)) { g.notify(p, 'noGold'); return; }
     // 여기부터는 되돌리지 않는다: 먼저 목록에서 빼서 같은 물건이 두 번 팔리지 않게 한다
     this.listings.delete(id);

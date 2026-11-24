@@ -81,6 +81,7 @@ export type MsgKey =
   | 'marketGone' // [] 이미 팔렸거나 내려간 물건
   | 'marketOwn' // [] 자기 물건은 살 수 없다
   | 'marketCanceled' // [] 올린 물건을 내렸다
+  | 'marketNeedLv' // [필요한 레벨]
   | 'guildGuest' // [] 손님은 길드에 들 수 없다
   | 'guildNeedLv' // [필요한 레벨]
   | 'guildNameBad' // []

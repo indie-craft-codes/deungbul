@@ -74,8 +74,9 @@ export class MailSys {
    * 다른 사람과 주고받은 것이 사라지면 안 되므로, 그런 우편만 남았으면 한도를 넘겨서라도 둔다.
    */
   private static trim(list: Mail[]): void {
+    // 가장 나중에 온 것은 밀어내지 않는다: 거래 우편이 한도를 채우고 있을 때 새 보상 우편이 오자마자 사라지지 않게
     while (list.length > MAIL_MAX) {
-      const i = list.findIndex((m) => !mailKept(m));
+      const i = list.findIndex((m, k) => k < list.length - 1 && !mailKept(m));
       if (i < 0) break;
       list.splice(i, 1);
     }

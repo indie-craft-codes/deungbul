@@ -14,12 +14,12 @@ const copy = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
 /** 한 게임을 다루는 손잡이들 */
 function bench(g: Game) {
-  const mk = (name: string, pid: string, gold = 5000, save: PlayerSave | null = null) => { const p = g.players.spawn(name, false, save, pid); if (!save) { g.classes.apply(p, 'warrior'); p.gold = gold; p.mail = []; } return p; }; // 첫 접속의 출석 우편은 치워 둔다: 거래와 무관한 골드가 셈에 섞이지 않게
+  const mk = (name: string, pid: string, gold = 5000, save: PlayerSave | null = null) => { const p = g.players.spawn(name, false, save, pid); if (!save) { g.classes.apply(p, 'warrior'); p.gold = gold; p.mail = []; p.lv = 10; g.players.refresh(p); } return p; }; // 첫 접속의 출석 우편은 치워 둔다: 거래와 무관한 골드가 셈에 섞이지 않게
   const said = (p: { id: number }) => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
   const cmd = (p: Ent, m: Record<string, unknown>) => { g.notices = []; g.out = []; g.command(p, m); };
   const got = <V extends MarketMsg['v']>(p: { id: number }, v: V) => g.out.filter((o) => o.id === p.id && o.msg.t === 'market' && o.msg.v === v).pop()?.msg as Extract<MarketMsg, { v: V }> | undefined;
   /** 목록을 받아 온다 */
-  const list = (p: Ent, q: Record<string, unknown> = {}): Extract<MarketMsg, { v: 'list' }> => { cmd(p, { t: 'market', a: 'list', ...q }); return got(p, 'list')!; };
+  const list = (p: Ent, q: Record<string, unknown> = {}): Extract<MarketMsg, { v: 'list' }> => { g.clock += 1; cmd(p, { t: 'market', a: 'list', ...q }); return got(p, 'list')!; };
   const mine = (p: Ent): MarketItem[] => { cmd(p, { t: 'market', a: 'mine' }); return got(p, 'mine')!.list; };
   /** 반지 한 점을 가방에 넣어 준다 */
   const ring = (p: Ent, rar = 2) => { const it = g.gear.roll(3, rar, 'ring'); g.gear.put(p, it); return it; };
@@ -123,7 +123,7 @@ const same = (a: object, b: object): boolean => JSON.stringify(a) === JSON.strin
   check(said(c).includes('marketGone') && c.gold === 5000 && c.gear.length === 1, '이미 팔린 물건을 뒤이어 사려 하면 사지 못하고 골드도 그대로다');
   cmd(a, { t: 'mailClaim', id: sold(a)[0].id });
   check(a.gold === 5000 + PRICE - FEE && sold(a).length === 0, '판매자가 우편을 받으면 골드가 들어온다');
-  check(marketFee(1) === 0 && marketFee(19) === 0 && marketFee(20) === 1 && marketFee(MARKET.maxPrice) === MARKET.maxPrice * MARKET.tax, '수수료는 내림으로 셈한다 (값 1은 수수료 0)');
+  check(marketFee(2) === 1 && marketFee(19) === 1 && marketFee(20) === 1 && marketFee(21) === 2 && marketFee(MARKET.maxPrice) === MARKET.maxPrice * MARKET.tax, '수수료는 올림이고 적어도 1골드다 (쪼개 팔아 수수료를 피할 수 없다');
   check(same(count(), start), '장비 거래 뒤에도 골드(수수료 포함)와 물건의 총수가 그대로다');
 
   // ---------- 내리기 ----------
@@ -332,4 +332,28 @@ const same = (a: object, b: object): boolean => JSON.stringify(a) === JSON.strin
   check(p2.mail.length === MAIL_MAX + 9 && p2.mail.some((m) => m.r.items?.iron === 2), '한도를 넘긴 거래 우편도 저장되고 다시 읽힌다');
   g2.command(p2, { t: 'mailClaim', id: 0 });
   check(p2.gold === p.gold + owed && owed === 10 * (MAIL_MAX + 8) && p2.items.iron === 2 && p2.mail.length === 0, '모두 받으면 거래 우편의 골드와 재료가 모두 들어온다');
+}
+
+// 거래소 검토에서 나온 것: 레벨 조건, 가장 싼 값, 방금 온 우편이 밀려나지 않는 것
+{
+  const g = new Game();
+  const t = bench(g);
+  const a = t.mk('본캐', 'key-main'), alt = t.mk('부캐', 'key-alt');
+  alt.lv = MARKET.minLv - 1;
+  const it = t.ring(a);
+  t.cmd(a, { t: 'market', a: 'post', uid: it.uid, price: 1 });
+  check(t.said(a).includes('marketPriceBad') && g.market.count === 0, '값 1골드로는 올릴 수 없다 (수수료가 적어도 1골드다)');
+  t.cmd(a, { t: 'market', a: 'post', uid: it.uid, price: 30 });
+  const id = t.mine(a)[0].id;
+  t.cmd(alt, { t: 'market', a: 'buy', id });
+  check(t.said(alt).includes('marketNeedLv') && g.market.count === 1 && alt.gold === 5000, `레벨 ${MARKET.minLv} 미만은 살 수 없다 (부캐의 골드를 거래로 모으지 못하게)`);
+  const mine = t.ring(alt);
+  t.cmd(alt, { t: 'market', a: 'post', uid: mine.uid, price: 30 });
+  check(t.said(alt).includes('marketNeedLv') && g.market.count === 1, `레벨 ${MARKET.minLv} 미만은 올릴 수도 없다`);
+  check(t.list(alt).list.length === 1, '둘러보기는 레벨과 상관없이 된다');
+
+  // 거래 우편이 한도를 채우고 있어도 새 보상 우편은 남는다
+  for (let i = 0; i < MAIL_MAX + 2; i++) g.mail.send(a, 'marketSold', ['iron', 1, 10, 1], { gold: 9 });
+  g.mail.send(a, 'dungeon', ['crypt'], { gold: 300 });
+  check(a.mail.some((m) => m.k === 'dungeon') && a.mail.filter((m) => m.k === 'marketSold').length === MAIL_MAX + 2, '거래 우편이 가득해도 방금 온 보상 우편은 사라지지 않는다');
 }

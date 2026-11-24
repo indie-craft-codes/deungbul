@@ -54,8 +54,14 @@ export interface GuildView {
 
 // ---------- 거래소 ----------
 export const MARKET = {
-  /** 값의 한도(골드). 값은 1 이상 이 값 이하의 정수다 */
+  /** 값의 한도(골드). 값은 minPrice 이상 이 값 이하의 정수다 */
   maxPrice: 1_000_000,
+  /** 가장 싼 값. 수수료가 적어도 1골드라서 1골드짜리는 팔아도 남는 것이 없다 */
+  minPrice: 2,
+  /** 이 레벨부터 올리고 살 수 있다. 막 만든 부캐의 출석·방치 골드를 거래로 한 캐릭터에 모으지 못하게 한다 */
+  minLv: 8,
+  /** 목록을 다시 달라고 할 수 있는 간격(초) */
+  listGapS: 0.4,
   /** 한 사람이 동시에 올려 둘 수 있는 수 */
   maxListings: 8,
   /** 올려 두는 기간(시간). 지나면 물건이 우편으로 돌아간다 */
@@ -68,7 +74,8 @@ export const MARKET = {
   sweepS: 5,
 };
 /** 그 값에 팔렸을 때 떼는 수수료 */
-export const marketFee = (price: number): number => Math.max(0, Math.floor(price * MARKET.tax));
+// 올림이고 적어도 1골드다: 내림이면 싼 값으로 쪼개 팔아 수수료 없이 큰 돈을 옮길 수 있다
+export const marketFee = (price: number): number => Math.max(1, Math.ceil(price * MARKET.tax));
 /** 목록을 거르는 종류: 전체, 장비 칸, 재료 */
 export const MARKET_FILTERS = ['all', ...GEAR_SLOTS, 'mat'] as const;
 export type MarketFilter = (typeof MARKET_FILTERS)[number];

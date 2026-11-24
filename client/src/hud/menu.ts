@@ -316,7 +316,11 @@ function drawRank(): void {
 }
 
 /** 내 장비·우편·일일 임무·순위나 언어가 바뀌면 다시 그린다 (열려 있을 때만). 단추의 우편 수는 늘 맞춘다. */
-export function renderMenu(): void {
+/**
+ * soft가 켜져 있으면(전투 중 초당 여러 번 오는 상태 메시지) 화면에 영향을 주는 값이 그대로일 때 다시 그리지 않는다.
+ * 그 밖에는(단추를 눌렀을 때, 거래소·길드·순위 응답) 언제나 다시 그린다.
+ */
+export function renderMenu(soft = false): void {
   const n = S.meta.mail.length;
   ui.btn.textContent = n ? `${t('menu')} ${n}` : t('menu');
   ui.btn.classList.toggle('alert', n > 0 || S.meta.build.left > 0 || !!S.guildInvite); // 받을 우편이나 찍을 점수가 있으면 눈에 띄게
@@ -325,7 +329,7 @@ export function renderMenu(): void {
   // 전투 중에는 상태 메시지가 초당 여러 번 온다. 그때마다 단추를 새로 만들면 누르는 사이에 단추가 사라져 클릭이 먹지 않으므로,
   // 화면에 영향을 주는 값이 그대로면 다시 그리지 않는다
   const sig = JSON.stringify([tab, L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank]);
-  if (sig === lastSig) return;
+  if (soft === true && sig === lastSig) return;
   lastSig = sig;
   ui.gold.textContent = L().fmt.gold(S.me.gold);
   ui.tabs.textContent = '';
@@ -361,7 +365,7 @@ export function toggleMenu(): void {
 export function initMenu(): void {
   ui.btn.addEventListener('click', (e) => { toggleMenu(); (e.currentTarget as HTMLElement).blur(); });
   $('menuClose').addEventListener('click', () => { ui.panel.hidden = true; });
-  onMsg('meta', (m) => { S.meta = { gear: m.gear, worn: m.worn, mail: m.mail, daily: m.daily, power: m.power, build: m.build }; renderMenu(); });
+  onMsg('meta', (m) => { S.meta = { gear: m.gear, worn: m.worn, mail: m.mail, daily: m.daily, power: m.power, build: m.build }; renderMenu(true); });
   onMsg('guild', (m) => { S.guild = m.g; S.guildInvite = m.invite ?? null; renderMenu(); });
   onMsg('gtag', (m) => setGuildTag(m.id, m.g));
   onMsg('market', (m) => {
@@ -371,6 +375,6 @@ export function initMenu(): void {
     renderMenu();
   });
   onMsg('rank', (m) => { S.rank = { list: m.list, me: m.me }; renderMenu(); });
-  onMsg('stat', renderMenu); // 골드가 바뀌면 강화 단추의 상태도 바뀐다
-  onLangChange(renderMenu);
+  onMsg('stat', () => renderMenu(true)); // 골드가 바뀌면 강화 단추의 상태도 바뀐다
+  onLangChange(() => renderMenu());
 }
