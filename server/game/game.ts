@@ -187,6 +187,17 @@ export class Game {
   readonly entInit: ((e: Ent) => void)[] = [];
   /** 몬스터를 잡은 사람이 덤으로 받는 경험치 (휴식 보너스 같은 것). 등록한 함수들의 값을 더한다 */
   readonly killBonus: ((p: Ent, m: Ent) => number)[] = [];
+  /**
+   * 개인 상태: 본인에게만 보내는 값의 한 칸 (모두에게 보내는 shared의 짝). 통신 계층이 { t: 'me', k: name, s: state(p) }로 보낸다: 접속 직후에 전부, 그 뒤로는 바뀐 칸만.
+   * dirty를 주지 않으면 마지막으로 보낸 값과 달라졌을 때 보낸다 (수 하나처럼 값이 작을 때). dirty를 주면 그것이 참일 때 보내고, 보낸 뒤에 sent가 불린다 (표시를 지우는 자리)
+   */
+  readonly personal: { name: string; state: (p: Ent) => unknown; dirty?: (p: Ent) => boolean; sent?: (p: Ent) => void }[] = [];
+  /**
+   * 호환: 다음 배포에서 뺀다 (이 칸과, server/net/server.ts의 flush가 이것을 읽는 두 곳). 채우는 쪽은 게임의 플러그인이다 (./deungbul.ts의 SEND_OLD_MSGS).
+   * 개인 상태를 me 메시지로 옮긴 배포 한 번 동안, 옛 화면이 읽던 모양으로도 함께 보낸다. 틀은 그 모양을 모르므로 게임이 만든다.
+   * stat: stat 메시지가 나갈 때 불린다. 옛 칸을 얹은 것을 돌려준다. msg: 그 이름의 개인 상태가 나갈 때 불린다. 함께 보낼 옛 메시지가 있으면 돌려준다
+   */
+  oldMsgs: { stat: (p: Ent, stat: Extract<ServerMsg, { t: 'stat' }>) => ServerMsg; msg: (p: Ent, name: string) => ServerMsg | null } | null = null;
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
   private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;

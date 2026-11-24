@@ -1,6 +1,7 @@
 // 휴식 보너스(등불 맡기기): 접속을 끊고 쉰 시간만큼 보너스가 쌓이고, 몬스터를 잡을 때 그만큼 경험치를 더 받는다.
 // 수치와 쌓이는 식은 내용에 있다 (shared/content/items.ts의 REST, restGain).
 import { REST, restGain } from '../../../shared/defs';
+import type { MeState } from '../../../shared/deungbul';
 import { readInt } from '../entity';
 import type { Game } from '../game';
 
@@ -20,6 +21,8 @@ export class Rest {
       legacy: (whole) => ({ left: whole.rested }),
       legacySave: (p) => ({ rested: p.rested }),
     });
+    // 본인에게 알리는 개인 상태: 쉬고 와서 쌓였거나 사냥으로 줄면 간다
+    g.personal.push({ name: 'rested', state: (p): MeState['rested'] => p.rested });
     // 보너스가 남아 있으면 그만큼 경험치를 더 받는다 (한 마리당 그 몬스터의 경험치까지, 즉 최대 2배)
     g.killBonus.push((p, m) => {
       const bonus = Math.min(m.def?.exp ?? 0, p.rested);

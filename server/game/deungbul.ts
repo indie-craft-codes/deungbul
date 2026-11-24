@@ -4,6 +4,7 @@
 // 쓰는 법: new Game({ plugins: [installDeungbul] }), 설정을 줄 때는 plugins: [(g) => installDeungbul(g, { raid: { everyMin: 5 } })].
 // (지금은 plugins를 주지 않아도 game.ts가 이것을 기본으로 깐다. 기존 코드와 시험이 new Game()으로 등불지기를 만들기 때문이다.)
 import type { RaidConfig } from '../../shared/defs';
+import type { OldStatCells } from '../../shared/deungbul';
 import type { Ent } from './entity';
 import type { Game } from './game';
 import { Keepers } from './systems/keepers';
@@ -44,6 +45,14 @@ declare module './ext' {
   }
 }
 
+/**
+ * 호환: 다음 배포에서 뺀다 (false로 바꾸거나, 이 상수와 installDeungbul의 g.oldMsgs 줄, game.ts의 oldMsgs 칸, server.ts의 flush가 그것을 읽는 두 곳을 함께 지운다. 그때 PROTOCOL을 올린다).
+ * 퀘스트 진행과 기여·기여 단계·휴식 보너스를 개인 상태(me 메시지)로 옮긴 배포 한 번 동안은, 옛 화면이 읽던 모양으로도 함께 보낸다:
+ * 서버와 화면(GitHub Pages)은 같은 순간에 바뀌지 않고, 열려 있던 탭은 새로고침하기 전까지 옛 화면이다.
+ * 옛 모양은 stat 메시지의 contrib·rested·tier 칸(칸의 순서도 전과 같다)과 quest 메시지이고, 가는 때도 전과 같다 (stat이 갈 때, 퀘스트 진행이 바뀌었을 때).
+ */
+export const SEND_OLD_MSGS = true;
+
 export interface DeungbulConfig {
   /** 습격 설정 덮어쓰기 (서버의 RAID_EVERY_MIN, 시험) */
   raid?: Partial<RaidConfig>;
@@ -56,4 +65,12 @@ export function installDeungbul(g: Game, cfg: DeungbulConfig = {}): void {
   g.quests = new Quests(g);
   g.keepers = new Keepers(g);
   g.rest = new Rest(g);
+  if (SEND_OLD_MSGS) g.oldMsgs = {
+    stat: (p, s) => {
+      const { t, maxHp, lv, exp, need, sparks, ...rest } = s;
+      const old: typeof s & OldStatCells = { t, maxHp, lv, exp, need, sparks, contrib: p.contrib, ...rest, rested: p.rested, tier: p.tier };
+      return old;
+    },
+    msg: (p, name) => (name === 'quest' ? { t: 'quest', c: p.qc, s: p.qs, n: p.qn } : null),
+  };
 }

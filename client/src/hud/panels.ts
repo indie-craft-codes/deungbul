@@ -4,6 +4,7 @@ import { CONTRIB_TIERS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_
 import { TOWERS } from '../../../shared/world';
 import { nextTarget, offer, rename, useSkill } from '../actions';
 import { $, clamp, view } from '../app';
+import { G } from '../game/state';
 import { L, LOCALES, clock, setLang, t } from '../i18n';
 import type { UiKey } from '../i18n/ko';
 import { S, inDungeon, myZone, raidLeft, stage, zoneGlow } from '../state';
@@ -187,10 +188,10 @@ export function hudSlow(now: number): void {
   ui.hpt.textContent = `${me.hp} / ${me.maxHp}`;
   ui.lv.textContent = loc.fmt.level(me.lv, isClassId(me.cls) ? loc.classes[me.cls].name : '');
   ui.sparks.textContent = loc.fmt.sparks(me.sparks);
-  ui.contrib.textContent = loc.fmt.contrib(me.contrib);
+  ui.contrib.textContent = loc.fmt.contrib(G.contrib);
   $('gold').textContent = loc.fmt.gold(me.gold);
-  $('rested').textContent = me.rested > 0 ? loc.fmt.rested(me.rested) : '';
-  $('tierText').textContent = loc.fmt.tier(me.tier, CONTRIB_TIERS[me.tier]?.need ?? null);
+  $('rested').textContent = G.rested > 0 ? loc.fmt.rested(G.rested) : '';
+  $('tierText').textContent = loc.fmt.tier(G.tier, CONTRIB_TIERS[G.tier]?.need ?? null);
   // 등탑 가까이에 있을 때만 바치기 창을 연다
   const tower = TOWERS[myZone()];
   const near = Math.hypot(me.x - tower.x, me.z - tower.z) <= TOWER_REACH;
