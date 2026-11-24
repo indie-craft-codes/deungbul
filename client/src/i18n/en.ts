@@ -258,7 +258,7 @@ export const en: Locale = {
       steps: [
         'Offer sparks at the Firstlight Village tower. Granny has kept this flame all her life',
         'Defeat lost soldiers in the east of the Ashwood. They were keepers once, before the mist took them',
-        'Help hold off a mist raid at the village tower. Raids come on the hour, 8 to 11 pm',
+        'Help hold off a mist raid at the village tower. Raids come on the hour at noon, 3, 6 and 8 to 11 pm',
       ],
     },
   },

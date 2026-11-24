@@ -5,6 +5,7 @@ import { initAutoName } from './hud/autoname';
 import { initBag } from './hud/bag';
 import { initChannel } from './hud/channel';
 import { initDungeon } from './hud/dungeon';
+import { initGuideLink } from './hud/guidelink';
 import { initMarks } from './hud/marks';
 import { initMenu } from './hud/menu';
 import { initMinimap } from './hud/minimap';
@@ -18,6 +19,7 @@ export function initModules(): void {
   initMarks();
   initMenu();
   initChannel();
+  initGuideLink();
   initDungeon();
   initNear();
   initSound();

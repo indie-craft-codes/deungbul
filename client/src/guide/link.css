@@ -1,0 +1,13 @@
+/* 게임 화면에 붙는 도감 단추. 화면 왼쪽 가장자리에 혼자 떠 있다: 다른 창의 자리에 기대지 않는다 (client/src/hud/guidelink.ts).
+   색은 게임의 것(client/style.css의 변수)을 쓰되, 이 파일만으로도 보이도록 기본값을 함께 적는다. */
+#guideLink {
+  position: fixed; left: 0; top: 60%; transform: translateY(-50%); z-index: 1;
+  padding: 5px 9px 5px max(7px, env(safe-area-inset-left, 0px));
+  font-size: 12px; font-weight: 700; line-height: 1.3; white-space: nowrap; text-decoration: none;
+  color: var(--gold, #f0bb55); background: var(--panel, rgba(14, 34, 39, .86));
+  border: 1px solid var(--line, rgba(233, 214, 160, .3)); border-left: 0; border-radius: 0 4px 4px 0;
+  pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+#guideLink:hover, #guideLink:focus-visible { border-color: var(--gold, #f0bb55); }
+/* 손가락으로 누르는 화면에서는 조금 크게 */
+@media (pointer: coarse) { #guideLink { padding-top: 8px; padding-bottom: 8px; font-size: 13px; } }
