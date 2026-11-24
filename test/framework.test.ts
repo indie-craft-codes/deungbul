@@ -176,6 +176,8 @@ function noonOf(day: unknown): number {
     check(g.rules.siege === null && g.rules.unlocked('bram') && g.rules.speed(p) === PLAYER_SPEED && g.rules.canChangeClass(p), '규칙의 기본값: 몰려갈 곳이 없고, 잠긴 것이 없고, 걸음은 기본 속도이고, 직업은 어디서나 바꾼다');
 
     // 이동
+    // 처음 서는 자리는 무작위라 찍은 곳이 건물에 걸릴 수 있다: 길이 트인 정해진 자리에서 잰다
+    p.x = 0; p.z = 8;
     const from = { x: p.x, z: p.z };
     cmd(p, { t: 'move', x: p.x + 6, z: p.z + 4 });
     run(3);
