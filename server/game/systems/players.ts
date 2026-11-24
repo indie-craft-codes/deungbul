@@ -129,7 +129,7 @@ export class Players {
     return { ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, contrib: p.contrib, seen: this.g.now(), quest: [p.qc, p.qs, p.qn], gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, rested: p.rested, cls: p.cls, tier: p.tier, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
   }
 
-  rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; this.g.rank.renamed(p); this.g.keepers.renamed(p); }
+  rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; this.g.rank.renamed(p); this.g.fire('playerRenamed', p); }
 
   /** 최대 체력을 다시 구한다: 직업과 레벨, 그리고 보정(장비). 장비를 바꾸거나 레벨이 오르면 부른다 */
   refresh(p: Ent): void {

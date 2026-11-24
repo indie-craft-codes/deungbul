@@ -157,7 +157,8 @@ export const IDLE = {
 };
 
 // ---------- 일일 임무와 출석 ----------
-export type DailyKind = 'kill' | 'offer' | 'enhance';
+/** 임무의 종류. 틀이 세는 것은 'kill'(처치)과 'enhance'(강화)이고, 그 밖의 것은 게임의 규칙이 센다 (이 게임의 'offer': 불씨 바치기) */
+export type DailyKind = string;
 export interface DailyDef { kind: DailyKind; n: number; r: Reward }
 export const DAILIES = {
   kill30: { kind: 'kill', n: 30, r: { gold: 60, exp: 150 } },

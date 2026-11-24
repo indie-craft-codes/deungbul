@@ -10,7 +10,7 @@
 //   - 버려진 채널: 막아야 할 적이 있는데 RAID.abandonS 동안 아무도 움직이지 않은 채널은 싸움을 끝낸다. 남은 적은 등탑을 한 번 치고 사라진다.
 //     그 피해는 그 채널이 보탠 내구(전체 내구 ÷ 채널 수)를 넘지 않는다: 남이 방치한 채널 때문에, 자기 채널을 다 막은 사람들이 지지 않는다.
 //     거저 사라지지도 않는다: 채널을 비워 적을 줄이면 그만큼 내구를 잃는다. 모든 채널이 버려졌으면 막아 낸 것이 아니다.
-import { RAID, nextRaidAt, type RaidConfig, type RaidPhase } from '../../../shared/defs';
+import { CHANNEL, RAID, nextRaidAt, type RaidConfig, type RaidPhase } from '../../../shared/defs';
 import type { WorldState } from '../../../shared/protocol';
 import { TOWER } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -55,6 +55,11 @@ export class Raid {
     this.startAt = nextRaidAt(g.now(), this.cfg);
     g.on('monsterKilled', (m, hitters) => { if (m.raid) for (const p of hitters) this.fighters.add(p.id); });
     g.on('playerLeft', (id) => this.fighters.delete(id));
+    // 채널 화면의 '채널별 남은 적'과 습격 중의 잦은 알림. 채널 시스템은 습격을 모르므로 여기서 채운다 (채널이 더 늦게 만들어져서 ready에 맡긴다)
+    g.ready.push(() => {
+      g.channels.extraFoes = () => (this.phase === 'active' ? Array.from({ length: CHANNEL.count }, (_, i) => this.foesAt(i)) : undefined);
+      g.channels.busy = () => this.phase === 'active';
+    });
   }
 
   private foes(): Ent[] {

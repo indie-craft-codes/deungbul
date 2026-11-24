@@ -24,6 +24,7 @@ export class Keepers {
     g.on('offered', (p, _to, n) => { this.add(p, n); this.claim(p); });
     g.on('raidWon', (fighters) => { for (const p of fighters) this.add(p, RAID_KEEP_POINTS); });
     g.on('playerJoined', (p) => this.claim(p));
+    g.on('playerRenamed', (p) => this.renamed(p));
     g.on('residentReturned', (id) => {
       if (id !== 'halmeom') return;
       for (const p of g.ents.values()) if (p.kind === 'p') this.claim(p);

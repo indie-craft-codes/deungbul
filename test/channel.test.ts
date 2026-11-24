@@ -321,7 +321,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   // 모든 채널의 적을 다 쓰러뜨려야 막아 낸 것이다
   g.notices = []; g.announces = []; g.out = [];
   kill(a, 1);
-  run(CHANNEL.tellRaidS + 0.1);
+  run(CHANNEL.tellBusyS + 0.1);
   check(g.raid.phase === 'active' && foes(1).length === 0 && said(a).includes('raidElsewhere:2'), '한 채널의 적을 다 잡아도 다른 채널에 남아 있으면 끝나지 않고, 어느 채널에 남았는지 알려 준다');
   check(g.out.some((o) => o.id === a.id && o.msg.t === 'channels' && o.msg.foes?.[0] === 0 && o.msg.foes?.[1] === perChannel), '습격 중에는 채널별로 남은 적의 수도 함께 알린다');
   kill(b2, 2);

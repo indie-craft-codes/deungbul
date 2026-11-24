@@ -13,7 +13,8 @@ export class Tower {
   private got: number[] = RESIDENTS.map(() => 0);
 
   constructor(private g: Game) {
-    g.worldSaves.push({ name: 'tower', save: () => this.save(), load: (d) => this.load(d) });
+    // 칸 이름이 생기기 전의 저장({ glow, residents })은 통째로 등탑의 몫이다
+    g.worldSaves.push({ name: 'tower', save: () => this.save(), load: (d) => this.load(d), legacy: (whole) => whole });
     // 등탑이 정하는 규칙: 일어나는 자리, 이동 속도, 직업을 바꿀 수 있는 곳, 주민이 돌아와야 풀리는 것
     g.rules.respawn = (p) => { const t = this.respawnFor(p); return { x: t.spawn.x, z: t.spawn.z, id: t.id }; };
     g.rules.speed = (p) => speedFor(this.stageAt(p.x));
@@ -89,6 +90,7 @@ export class Tower {
     p.sparks -= used; p.contrib += used; p.dirty = true; p.unsaved = true;
     g.notify(p, 'offered', used, p.contrib, to);
     g.fire('offered', p, to, used, ti);
+    g.daily.add(p, 'offer', used); // 일일 임무 '불씨 바치기'. 임무 시스템은 불씨를 모르므로 여기서 알린다
   }
 
   state(): WorldState['tower'] { return { glow: this.glows[0], glows: [...this.glows], residents: [...this.got] }; }
