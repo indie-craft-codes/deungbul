@@ -9,8 +9,9 @@ const WORDS = [
   'fuck', 'shit', 'bitch', 'asshole', 'cunt', 'nigger', 'nigga', 'faggot', 'retard', 'whore',
 ];
 /** 글자 사이에 끼워 넣어 피하는 것(공백, 점, 별표 등)을 건너뛰며 찾는다 */
-// 공백은 건너뛰지 않는다: '시 발표', 'this hit'처럼 낱말 사이에 걸친 것까지 가리게 된다
-const GAP = '[.\\-_*~!?,·/@0-9]*';
+// 건너뛰는 글자는 점·별표처럼 낱말 안에 끼워 넣는 것만이다. 공백, 물음표, 쉼표, 하이픈, 숫자까지 건너뛰면
+// '시 발표', '혹시?발견', '즉시-발송', '택시2발' 같은 정상 문장이 가려진다
+const GAP = '[.*_~^]*';
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const PATTERN = new RegExp(WORDS.map((w) => [...w].map(esc).join(GAP)).join('|'), 'giu');
 
@@ -19,7 +20,8 @@ const PATTERN = new RegExp(WORDS.map((w) => [...w].map(esc).join(GAP)).join('|')
  * 한글 채움 문자)는 지운다. 이런 글자로 금칙어를 피하거나 남의 이름을 흉내 내지 못하게 한다.
  */
 export function tidy(text: string): string {
-  return text.normalize('NFKC').replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff\u00ad\u115f\u1160\u3164\uffa0]/g, '');
+  // 낱글자 자모(ㅋ, ㅠ, ㅅㅂ)는 그대로 둔다: NFKC는 이것을 조합용 자모로 바꿔서 화면에서 깨져 보이고 금칙어 목록과도 어긋난다
+  return [...text].map((ch) => (/[\u3130-\u318f]/.test(ch) ? ch : ch.normalize('NFKC'))).join('').replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff\u00ad\u115f\u1160\u3164\uffa0]/g, '');
 }
 
 /** 금칙어를 같은 길이의 별표로 가린다. */

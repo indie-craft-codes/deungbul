@@ -276,6 +276,7 @@ export const ko = {
   fmt: {
     level: (lv: number, cls: string) => `Lv ${lv} ${cls}`.trim(),
     sparks: (n: number) => `불씨 ${n}`,
+    autoOnEarly: (lv: number) => `자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. (창을 닫아도 이어지는 것은 직업을 고르고 레벨 ${lv}부터입니다.)`,
     marketBuy: (gold: number) => `사기 ${gold}골드`,
     marketConfirm: (gold: number) => `확인 · ${gold}골드`,
     marketSeller: (name: string) => `판매자 ${name}`,

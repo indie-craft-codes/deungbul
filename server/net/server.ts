@@ -5,6 +5,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
+import { AWAY } from '../../shared/auto';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { ServerMsg } from '../../shared/protocol';
 import { CHAT_MAX, NAME_MAX, SNAP_EVERY, TICK_MS } from '../../shared/world';
@@ -23,8 +24,8 @@ const RENAME_GAP_MS = 5000;
 const SAVE_EVERY_MS = 60000;
 const JOIN_WITHIN_MS = 10000; // 연결하고 이 안에 접속 절차를 밟지 않으면 끊는다 (빈 연결로 자리를 채우지 못하게)
 const MAX_PER_IP = 12; // 한 주소에서 동시에 열 수 있는 연결 (같은 집의 여러 사람은 되고, 수백 개는 안 된다)
-const MAX_AWAY = 60; // 주인 없이 사냥 중인 캐릭터의 상한
-const AWAY_MIN_LV = 3; // 이 레벨부터 자리 비움 사냥이 된다 (막 만든 캐릭터를 수천 개 남겨 두지 못하게)
+const MAX_AWAY = AWAY.max; // 주인 없이 사냥 중인 캐릭터의 상한
+const AWAY_MIN_LV = AWAY.minLv; // 이 레벨부터 자리 비움 사냥이 된다 (막 만든 캐릭터를 수천 개 남겨 두지 못하게)
 
 interface Client {
   ws: WebSocket; ent: Ent | null; known: Set<number>;
@@ -80,6 +81,9 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const byKey = new Map<string, Client>();
   /** 자동 사냥을 켠 채 접속이 끊겨, 주인 없이 사냥 중인 캐릭터 (저장 키별) */
   const away = new Map<string, Ent>();
+  /** 그 캐릭터를 남긴 주소 (한 주소가 자리를 다 차지하지 못하게 센다) */
+  const awayIp = new Map<string, string>();
+  const awayFrom = (ip: string): number => { let n = 0; for (const v of awayIp.values()) if (v === ip) n++; return n; };
   let tick = 0;
   const maxClients = opts.maxClients ?? MAX_CLIENTS;
   const maxPerIp = opts.maxPerIp ?? MAX_PER_IP, maxAway = opts.maxAway ?? MAX_AWAY;
@@ -144,7 +148,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     // 자리를 비운 동안 사냥하던 캐릭터가 있으면 새로 만들지 않고 그대로 이어받는다
     const kept = c.key ? away.get(c.key) : undefined;
     if (c.key && kept) {
-      away.delete(c.key);
+      away.delete(c.key); awayIp.delete(c.key);
       if (game.ents.has(kept.id)) {
         c.ent = kept;
         byEnt.set(kept.id, c);
@@ -163,7 +167,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     const ok = (s: string) => (isClean(s) ? s : ''); // 금칙어가 든 이름은 쓰지 않는다
     let name = ok(tidyName(save?.name)) || ok(tidyName(m.name)) || 'Keeper' + (1000 + Math.floor(Math.random() * 9000));
     // 지금 접속해 있는 사람과 같은 이름이면 숫자를 붙여 구별한다 (사칭 방지)
-    if (taken(name)) name = (name.slice(0, NAME_MAX - 3) + (100 + Math.floor(Math.random() * 900))).slice(0, NAME_MAX);
+    // 저장된 자기 이름은 그대로 쓴다. 새로 온 사람이 고른 이름이 남의 것이면 숫자를 붙인다
+    for (let i = 0; i < 5 && taken(name, undefined, c.key); i++) name = ([...name].slice(0, NAME_MAX - 3).join('') + (100 + Math.floor(Math.random() * 900)));
     c.ent = game.players.spawn(name, false, save, c.key ?? '');
     byEnt.set(c.ent.id, c);
     send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: c.ent.auto || undefined });
@@ -174,22 +179,28 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   }
 
   /** 이름을 다듬는다: 제어 문자와 눈에 보이지 않는 글자를 지우고 길이를 자른다 */
-  const tidyName = (raw: unknown): string => tidy(clean(raw, 200)).slice(0, NAME_MAX).trim();
+  const tidyName = (raw: unknown): string => [...tidy(clean(raw, 200))].slice(0, NAME_MAX).join('').trim();
   /** 그 이름을 지금 월드에 있는 다른 사람이 쓰고 있는가 (대소문자 무시) */
-  const taken = (name: string, me?: Ent): boolean => { const k = name.toLowerCase(); for (const e of game.ents.values()) if (e.kind === 'p' && e !== me && e.name.toLowerCase() === k) return true; return false; };
+  const taken = (name: string, me?: Ent, myKey: string | null = null): boolean => {
+    const k = name.toLowerCase();
+    for (const e of game.ents.values()) if (e.kind === 'p' && e !== me && e.name.toLowerCase() === k) return true;
+    // 접속해 있지 않은 사람의 이름도 남이 차지할 수 없다 (돌아왔을 때 자기 이름을 잃지 않게)
+    try { const owner = store.keyOfName(name); return owner !== null && owner !== myKey; } catch { return false; }
+  };
 
   function rename(c: Client, e: Ent, raw: unknown): void {
     const name = tidyName(raw);
     const now = Date.now();
     if (!name || name === e.name) return;
     if (!isClean(name)) { send(c, sys('nameBad')); return; }
-    if (taken(name, e)) { send(c, sys('nameTaken')); return; }
+    if (taken(name, e, c.key)) { send(c, sys('nameTaken')); return; }
     if (now - c.lastRename < RENAME_GAP_MS) { send(c, sys('renameWait')); return; }
     c.lastRename = now;
     const before = e.name;
     game.players.rename(e, name);
     broadcast({ t: 'name', id: e.id, name });
     broadcast(sys('renamed', before, name));
+    c.hadSave = true; // 이름을 지은 사람은 아직 아무것도 하지 않았어도 저장한다 (다음 접속에 그 이름이 남게)
     savePlayer(c);
   }
 
@@ -242,7 +253,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       byEnt.delete(c.ent.id);
       // 자동 사냥 중이었으면 캐릭터를 남겨 두고 서버가 이어서 사냥한다.
       // 직업을 고르고 조금이라도 키운 캐릭터만, 정해진 수까지만 남긴다 (접속했다 끊기를 되풀이해 월드를 채우지 못하게)
-      if (c.key && c.ent.auto && !stopped && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && away.size < maxAway) { away.set(c.key, c.ent); game.away.start(c.ent); return; }
+      if (c.key && c.ent.auto && !stopped && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && away.size < maxAway && awayFrom(c.ip) < AWAY.maxPerIp) { awayIp.set(c.key, c.ip); away.set(c.key, c.ent); game.away.start(c.ent); return; }
       game.players.leave(c.ent.id);
       broadcast(sys('left', c.ent.name));
     }
@@ -318,7 +329,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     // 자리 비움 사냥이 끝난 캐릭터(시간이 다 됨)는 저장하고 내보낸다
     for (const [key, e] of away) {
       if (e.auto) continue;
-      saveEnt(key, e); away.delete(key);
+      saveEnt(key, e); away.delete(key); awayIp.delete(key);
       game.players.leave(e.id);
       broadcast(sys('left', e.name));
     }

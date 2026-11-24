@@ -36,6 +36,8 @@ export interface Store {
   saveWorld(w: WorldSave): void;
   /** key는 접속 토큰의 해시다. 토큰 원문은 저장하지 않는다. */
   loadPlayer(key: string): PlayerSave | null;
+  /** 그 이름을 쓰는 저장된 캐릭터의 키 (대소문자 무시, 없으면 null). 남의 이름을 차지하지 못하게 하는 데 쓴다 */
+  keyOfName(name: string): string | null;
   savePlayer(key: string, p: PlayerSave): void;
   /** 신고를 적는다. 운영자가 나중에 읽는다 */
   saveReport(r: ReportSave): void;

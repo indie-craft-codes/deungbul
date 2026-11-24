@@ -8,6 +8,7 @@ export class MemoryStore implements Store {
   saveWorld(w: WorldSave): void { this.world = structuredClone(w); }
   loadPlayer(key: string): PlayerSave | null { const p = this.players.get(key); return p ? { ...p } : null; }
   savePlayer(key: string, p: PlayerSave): void { this.players.set(key, { ...p }); }
+  keyOfName(name: string): string | null { const k = name.toLowerCase(); for (const [key, p] of this.players) if (p.name.toLowerCase() === k) return key; return null; }
   private reportList: ReportSave[] = [];
   saveReport(r: ReportSave): void { this.reportList.push(structuredClone(r)); }
   reports(limit: number): ReportSave[] { return this.reportList.slice(-limit).reverse(); }

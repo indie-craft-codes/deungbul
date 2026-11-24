@@ -40,7 +40,7 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
   check(per < 25, `길 없는 곳을 400번 찍어도 틱이 예산(50ms)의 절반 안이다 (틱당 ${per.toFixed(2)}ms)`);
   g.command(a, { t: 'move', x: 0, z: 6 });
   g.command(a, { t: 'move', x: 50, z: 6 });
-  check(Math.abs(a.tx - 50) > 1, '너무 잦은 이동 명령은 버린다');
+  check(Math.abs(a.tx - 50) < 0.1, '빠르게 두 번 찍으면 마지막 것이 목적지다 (명령을 버리지 않는다)');
 
   // 파티: 다른 층에서는 처치를 나눠 받지 못한다
   g.command(a, { t: 'stop' });
@@ -80,7 +80,9 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
 
 // ---- 금칙어와 이름 다듬기
 {
-  check(!isClean('fu​ck') && !isClean('ｆｕｃｋ') && !isClean('씨​발') && !isClean('씨1발'), '보이지 않는 글자, 전각 글자, 숫자를 끼운 금칙어도 걸린다');
+  check(!isClean('fu​ck') && !isClean('ｆｕｃｋ') && !isClean('씨​발') && !isClean('ㅅㅂ') && !isClean('씨.발'), '보이지 않는 글자, 전각 글자, 점을 끼운 금칙어와 자모 금칙어도 걸린다');
+  check(mask('ㅋㅋㅋㅋ ㅠㅠ') === 'ㅋㅋㅋㅋ ㅠㅠ' && tidy('ㅋㅋ맨') === 'ㅋㅋ맨', '낱글자 자모(ㅋㅋ, ㅠㅠ)는 다듬어도 그대로다');
+  check(mask('혹시?발견했어') === '혹시?발견했어' && mask('즉시-발송') === '즉시-발송' && mask('택시2발') === '택시2발', '물음표, 하이픈, 숫자가 낀 정상 문장은 가리지 않는다');
   check(mask('this hit hard') === 'this hit hard' && mask('시 발표') === '시 발표' && mask('다시 발사') === '다시 발사', '낱말 사이에 걸친 것은 가리지 않는다');
   check(tidy('가​나‮다ㅤ') === '가나다', '눈에 보이지 않는 글자를 지운다');
 }
@@ -121,7 +123,23 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
     check(await until(() => n2.sys.includes('nameTaken')) && server.game.ents.get(n2.id)!.name === '도전자', '접속해 있는 다른 사람의 이름으로는 바꿀 수 없다');
     const n3 = await connect(server.port, '챔피언', 'name-token-0123456789cc');
     check(n3.name !== '챔피언', '같은 이름으로 들어오면 숫자가 붙는다');
-    n1.ws.close(); n2.ws.close(); n3.ws.close();
+    // 접속하지 않은 사람의 이름도 차지할 수 없다 (저장된 캐릭터가 있을 때)
+    server.game.ents.get(n1.id)!.gold = 1;
+    n1.ws.close();
+    await until(() => !server.game.ents.has(n1.id));
+    n2.send({ t: 'rename', name: '챔피언' });
+    await sleep(300);
+    check(server.game.ents.get(n2.id)!.name === '도전자', '접속하지 않은 사람의 이름도 차지할 수 없다');
+    // 이름만 바꾸고 나가도 그 이름이 남는다
+    const r1 = await connect(server.port, '임시', 'rename-token-0123456789');
+    r1.send({ t: 'rename', name: '내가고른이름' });
+    await until(() => server.game.ents.get(r1.id)?.name === '내가고른이름');
+    r1.ws.close();
+    await until(() => !server.game.ents.has(r1.id));
+    const r2 = await connect(server.port, undefined, 'rename-token-0123456789');
+    check(r2.name === '내가고른이름', '이름만 바꾸고 나가도 다음 접속에 그 이름이 남는다');
+    r2.ws.close();
+    n2.ws.close(); n3.ws.close();
     await sleep(200);
 
     // 막 만든 캐릭터는 자동 사냥을 켜고 끊어도 남지 않는다. 키운 캐릭터도 정해진 수까지만 남는다

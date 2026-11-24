@@ -29,6 +29,10 @@ export class SqliteStore implements Store {
   loadPlayer(key: string): PlayerSave | null {
     return this.parse<PlayerSave>(this.db.prepare('SELECT data FROM players WHERE key = ?').get(key)?.data);
   }
+  keyOfName(name: string): string | null {
+    const row = this.db.prepare('SELECT key FROM players WHERE name = ? COLLATE NOCASE LIMIT 1').get(name) as { key?: string } | undefined;
+    return row?.key ?? null;
+  }
   savePlayer(key: string, p: PlayerSave): void {
     this.db.prepare('INSERT INTO players (key, name, data, updated) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET name = excluded.name, data = excluded.data, updated = excluded.updated')
       .run(key, p.name, JSON.stringify(p), Date.now());

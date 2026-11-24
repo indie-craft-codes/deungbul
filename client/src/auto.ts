@@ -1,12 +1,12 @@
 // 자동 사냥: 가까운 몬스터를 골라 공격하고, 기술과 물약을 알아서 쓴다.
 // 직접 이동하거나 멈추면 꺼진다. 서버에는 사람이 누른 것과 같은 명령만 보낸다.
-import { AUTO, pickPotion, pickSkill } from '../../shared/auto';
+import { AUTO, AWAY, pickPotion, pickSkill } from '../../shared/auto';
 import { DUNGEONS, isDungeonId } from '../../shared/defs';
 import { attack, autoWalk, goToTown, monstersNear, usePotion, useSkill } from './actions';
 import { $ } from './app';
 import { onMsg } from './bus';
 import { feed } from './hud/notify';
-import { t } from './i18n';
+import { L, t } from './i18n';
 import { send } from './net';
 import { S } from './state';
 
@@ -16,7 +16,9 @@ let shown = false;
 export function toggleAuto(): void {
   if (!S.me) return;
   S.auto = !S.auto;
-  feed(t(S.auto ? 'autoOn' : 'autoOff'));
+  // 창을 닫아도 이어지는 것은 직업을 고르고 조금 키운 캐릭터만이다 (서버의 조건과 같은 수: AWAY.minLv)
+  const stays = S.me.cls !== '' && S.me.lv >= AWAY.minLv;
+  feed(S.auto ? (stays ? t('autoOn') : L().fmt.autoOnEarly(AWAY.minLv)) : t('autoOff'));
   tick();
 }
 

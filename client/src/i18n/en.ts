@@ -283,6 +283,7 @@ export const en: Locale = {
     rested: (n) => `Rested ${n}`,
     price: (n) => `${n} gold`,
     have: (n, max) => `${n} / ${max}`,
+    autoOnEarly: (lv) => `Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level ${lv}.)`,
     marketBuy: (gold) => `Buy · ${gold}g`,
     marketConfirm: (gold) => `Confirm · ${gold}g`,
     marketSeller: (name) => `Seller: ${name}`,
