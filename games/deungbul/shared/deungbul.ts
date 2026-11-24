@@ -59,16 +59,16 @@ declare module '@engine/shared/ext' {
 
 /** 이 게임의 개인 상태 (me 메시지): 칸의 이름(k) → 값(s). 서버에서는 그 칸을 맡은 시스템이 g.personal에 같은 이름으로 등록한다 */
 export interface MeState {
-  /** 메인 퀘스트 진행: c번째 장의 s번째 단계, 진행 수치 n. 장을 다 마쳤으면 c가 장의 수와 같다 (systems/quests.ts) */
+  /** 메인 퀘스트 진행: c번째 장의 s번째 단계, 진행 수치 n. 장을 다 마쳤으면 c가 장의 수와 같다 (games/deungbul/server/systems/quests.ts) */
   quest: { c: number; s: number; n: number };
-  /** 지금까지 바친 불씨 (systems/tower.ts) */
+  /** 지금까지 바친 불씨 (games/deungbul/server/systems/tower.ts) */
   contrib: number;
-  /** 받은 기여 단계 보상의 수 (systems/keepers.ts) */
+  /** 받은 기여 단계 보상의 수 (games/deungbul/server/systems/keepers.ts) */
   tier: number;
-  /** 남은 휴식 보너스 (systems/rest.ts) */
+  /** 남은 휴식 보너스 (games/deungbul/server/systems/rest.ts) */
   rested: number;
 }
 
-/** 장부가 안내문으로 원인을 가리는 보상(content/economy.ts의 ECON_NOTICES)은 모두 실제 안내문의 종류여야 한다: 오타가 있으면 여기서 컴파일되지 않는다 */
+/** 장부가 안내문으로 원인을 가리는 보상(games/deungbul/shared/content/economy.ts의 ECON_NOTICES)은 모두 실제 안내문의 종류여야 한다: 오타가 있으면 여기서 컴파일되지 않는다 */
 export type EconNoticesAreMsgs = [EconNoticeKey] extends [MsgKey] ? true : { 안내문이_아닌_키: Exclude<EconNoticeKey, MsgKey> };
 true satisfies EconNoticesAreMsgs;

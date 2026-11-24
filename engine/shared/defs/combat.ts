@@ -2,7 +2,7 @@
 import { CLASSES, DEFAULT_CLASS, HP_PER_LEVEL, MAP, SKILL_DEFS } from '@game/shared/content';
 
 /**
- * 기술이 하는 일. 서버(systems/combat.ts)는 기술 이름이 아니라 이 종류만 보고 처리하므로,
+ * 기술이 하는 일. 서버(engine/server/game/systems/combat.ts)는 기술 이름이 아니라 이 종류만 보고 처리하므로,
  * 새 기술은 여기에 한 줄 더하면 된다. 새 종류의 효과가 필요할 때만 서버 코드를 고친다.
  */
 export type SkillEffect =

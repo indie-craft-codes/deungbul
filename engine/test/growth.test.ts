@@ -102,7 +102,7 @@ import { check } from './harness';
   check(p3.daily.streak === 2 && p3.daily.got.length === 0 && p3.mail.some((m) => m.k === 'attend' && m.a[0] === 2), '다음 날 접속하면 출석이 2일째가 되고 임무가 새로 시작한다');
 }
 
-// 다음 레벨까지의 필요 경험치는 저장된 값이 아니라 레벨에서 다시 구한다 (systems/players.ts의 spawn).
+// 다음 레벨까지의 필요 경험치는 저장된 값이 아니라 레벨에서 다시 구한다 (engine/server/game/systems/players.ts의 spawn).
 // 전에는 저장 값을 1e9에서 잘라 읽어, 필요 경험치가 1e9를 넘는 레벨(57부터)에서 다시 접속하면 필요 경험치가 줄었다
 {
   const TOP = 70, clock = new Date(2026, 0, 10, 12).getTime();

@@ -31,7 +31,7 @@ export interface Gear {
 
 /**
  * 떨어진 장비에 붙는 옵션 하나의 값. roll은 0 이상 1 미만의 난수다.
- * 서버의 장비 굴림(systems/gear.ts의 roll)과 도감의 값 범위(가장 작은 난수와 가장 큰 난수를 넣는다)가 이 함수 하나를 쓴다
+ * 서버의 장비 굴림(engine/server/game/systems/gear.ts의 roll)과 도감의 값 범위(가장 작은 난수와 가장 큰 난수를 넣는다)가 이 함수 하나를 쓴다
  */
 export const rollOpt = (stat: Stat, rar: number, lv: number, roll: number): number =>
   Math.max(1, Math.round(STATS[stat].base * RARITIES[rar].mult * (GEAR.optMin + roll * GEAR.optSpan) * (1 + (lv - 1) * GEAR.optPerLevel)));
@@ -60,7 +60,7 @@ export const gearScore = (g: Gear): number => Math.round(g.opts.reduce((s, [k, v
 export const sellPrice = (g: Gear): number => GEAR.sellBase + gearScore(g) + baseTier(g) * GEAR.sellPerTier;
 
 // ---------- 레벨 ----------
-/** 레벨이 올랐을 때의 새 필요 경험치: 지금 값에서 구한다 (서버의 systems/players.ts가 레벨이 오를 때 부른다) */
+/** 레벨이 올랐을 때의 새 필요 경험치: 지금 값에서 구한다 (서버의 engine/server/game/systems/players.ts가 레벨이 오를 때 부른다) */
 export const nextNeed = (need: number): number => Math.round(need * LEVEL.growth);
 /**
  * 레벨 lv에서 다음 레벨로 오르는 데 필요한 경험치.
@@ -120,7 +120,7 @@ export interface DailyState {
 // ---------- 순위 ----------
 export interface RankRow { name: string; lv: number; cls: string; power: number }
 /**
- * 전투력: 순위와 화면 표시에 쓴다 (서버의 systems/rank.ts와 도감이 함께 쓴다).
+ * 전투력: 순위와 화면 표시에 쓴다 (서버의 engine/server/game/systems/rank.ts와 도감이 함께 쓴다).
  * lv 캐릭터 레벨, tiers 낀 무기와 갑옷 바탕의 등급 합, skillLvs 기술마다의 강화 단계, worn 낀 장비들(값어치 gearScore가 더해진다)
  */
 export function powerOf(lv: number, tiers: number, skillLvs: readonly number[], worn: readonly Gear[]): number {
