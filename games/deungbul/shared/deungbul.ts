@@ -36,14 +36,6 @@ declare module '@engine/shared/ext' {
     raidAbandoned: [channel: number];
   }
 
-  interface ServerMsgs {
-    /**
-     * 호환: 다음 배포에서 뺀다 (서버는 games/deungbul/server/deungbul.ts의 SEND_OLD_MSGS가 켜져 있는 동안만 보낸다. 화면이 옛 서버의 것을 받는 길은 games/deungbul/client/deungbul.ts).
-     * 내 메인 퀘스트 진행의 옛 통로. 지금은 개인 상태(me 메시지의 quest 칸)로 간다
-     */
-    quest: { c: number; s: number; n: number };
-  }
-
   interface ClientMsgs {
     /** 등탑 가까이에서 불씨를 바친다: 등탑 밝기에, 또는 다음 주민을 되돌리는 데 */
     offer: { to: 'tower' | 'resident'; n: number };
@@ -76,9 +68,6 @@ export interface MeState {
   /** 남은 휴식 보너스 (systems/rest.ts) */
   rested: number;
 }
-
-/** 호환: 다음 배포에서 뺀다. 개인 상태로 옮기기 전에 stat 메시지에 실려 가던 이 게임의 칸 */
-export interface OldStatCells { contrib: number; rested: number; tier: number }
 
 /** 장부가 안내문으로 원인을 가리는 보상(content/economy.ts의 ECON_NOTICES)은 모두 실제 안내문의 종류여야 한다: 오타가 있으면 여기서 컴파일되지 않는다 */
 export type EconNoticesAreMsgs = [EconNoticeKey] extends [MsgKey] ? true : { 안내문이_아닌_키: Exclude<EconNoticeKey, MsgKey> };

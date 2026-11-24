@@ -3,7 +3,7 @@
 // 서버의 games/deungbul/server/deungbul.ts(installDeungbul)와 짝이다. 틀의 파일은 이 파일을 import하지 않는다 (이 게임의 진입점 ./main.ts의 목록만 안다).
 // 등탑이 정하는 것: 이동 속도(환한 구역에서 빨라진다)와, 주민이 돌아와야 풀리는 것(상점 물건, 대장간).
 import { RESIDENTS, SHOPS, speedFor } from '../shared/defs';
-import type { MeState, OldStatCells } from '../shared/deungbul';
+import type { MeState } from '../shared/deungbul';
 import { TOWER, TOWERS, TOWN } from '../shared/world';
 import { goToTown } from '@engine/client/actions';
 import { $ } from '@engine/client/app';
@@ -80,15 +80,9 @@ function initPersonal(): void {
   // 직업이 바뀐 stat(접속 뒤 첫 stat이 그렇다)에서 틀은 내 정보 창을 곧바로 다시 쓴다 (main.ts가 hud/me.ts의 renderTexts를 부른다).
   // 가르기 전에는 그때 등탑 창과 이 게임의 줄도 함께 다시 썼다. 같은 때에 다시 쓴다: 접속 직후에 틀의 숫자만 먼저 보이는 순간이 없고,
   // 등탑 창이 접속한 자리의 구역으로 맞춰져 그 구역을 구역 알림으로 알리지 않는다.
-  // 아래의 옛 칸 처리기보다 먼저 등록한다: 그쪽이 구역을 견주기(zoneSlow) 전에 등탑 창이 새 구역으로 그려져 있어야 한다
   let cls = '';
   onMsg('welcome', () => { cls = ''; });
   onMsg('stat', (m, now) => { if (!S.me || m.cls === cls) return; cls = m.cls; renderWorld(); gameHud(now); });
-  // 호환: 다음 배포에서 뺀다 (아래 두 처리기와 games/deungbul/shared/deungbul.ts의 quest 메시지·OldStatCells).
-  // 개인 상태를 보내지 않는 옛 서버에 붙었을 때: 그 서버가 보내는 quest 메시지와 stat의 옛 칸을 같은 상태에 넣는다.
-  // 새 서버도 이번 배포 동안은 둘을 함께 보내지만 값이 같으므로 어느 쪽으로 받아도 된다
-  onMsg('quest', setQuest);
-  onMsg('stat', (m, now) => { if (setNums(m as Partial<OldStatCells>)) hudNow(now); });
 }
 
 /** 돌아온 주민을 세우는 일을 등록한다. 이 게임의 창들(hud/) 뒤에 둔다: 공유 상태가 오면 창을 먼저 고치고 주민을 세우던 차례 그대로다 */

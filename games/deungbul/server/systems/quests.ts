@@ -23,7 +23,6 @@ export class Quests {
         p.qn = steps ? readInt(q[2], 0, goalCount(steps[p.qs].goal) - 1, 0) : 0;
       },
       legacy: (whole) => whole.quest,
-      legacySave: (p) => ({ quest: [p.qc, p.qs, p.qn] }),
     });
     // 본인에게 알리는 개인 상태: 진행이 바뀌면(questDirty) 간다. 통신 계층이 보내고 나면 표시를 지운다
     g.personal.push({ name: 'quest', state: (p): MeState['quest'] => ({ c: p.qc, s: p.qs, n: p.qn }), dirty: (p) => p.questDirty, sent: (p) => { p.questDirty = false; } });

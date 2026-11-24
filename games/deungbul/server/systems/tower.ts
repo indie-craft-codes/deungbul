@@ -21,7 +21,6 @@ export class Tower {
       save: (p) => ({ contrib: p.contrib }),
       load: (p, raw) => { p.contrib = readInt((raw as { contrib?: unknown } | null)?.contrib, 0, 1e9, 0); },
       legacy: (whole) => (whole.contrib === undefined ? undefined : { contrib: whole.contrib }),
-      legacySave: (p) => ({ contrib: p.contrib }),
     });
     // 본인에게 알리는 개인 상태: 기여가 바뀌면 간다
     g.personal.push({ name: 'contrib', state: (p): MeState['contrib'] => p.contrib });

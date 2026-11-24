@@ -90,9 +90,8 @@ export interface Rules extends RulesExt {
 /**
  * 캐릭터 저장의 한 칸. 시스템이 자기 몫을 직접 쓰고 읽는다 (PlayerSave.ext[name])
  * legacy: 자기 칸이 없는 저장(그 값이 PlayerSave의 최상위 칸에 있던 옛 형식)에서 자기 몫을 찾아 load가 읽는 모양으로 돌려준다. 없으면 undefined (월드 저장의 legacy와 같다). 옛 저장이 남아 있는 한 지우지 않는다
- * legacySave: 호환: 다음 배포에서 뺀다. 칸을 옮긴 배포 한 번 동안 옛 최상위 칸에도 함께 적을 값 (쓰는 곳은 players.ts의 export 한 곳)
  */
-export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: PlayerSave) => unknown; legacySave?: (p: Ent) => Partial<PlayerSave> }
+export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: PlayerSave) => unknown }
 
 /** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (주민 혜택, 나중의 장비와 버프). */
 export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp' | keyof ModsExt;
@@ -189,12 +188,6 @@ export class Game {
    * dirty를 주지 않으면 마지막으로 보낸 값과 달라졌을 때 보낸다 (수 하나처럼 값이 작을 때). dirty를 주면 그것이 참일 때 보내고, 보낸 뒤에 sent가 불린다 (표시를 지우는 자리)
    */
   readonly personal: { name: string; state: (p: Ent) => unknown; dirty?: (p: Ent) => boolean; sent?: (p: Ent) => void }[] = [];
-  /**
-   * 호환: 다음 배포에서 뺀다 (이 칸과, engine/server/net/server.ts의 flush가 이것을 읽는 두 곳). 채우는 쪽은 게임의 플러그인이다 (./deungbul.ts의 SEND_OLD_MSGS).
-   * 개인 상태를 me 메시지로 옮긴 배포 한 번 동안, 옛 화면이 읽던 모양으로도 함께 보낸다. 틀은 그 모양을 모르므로 게임이 만든다.
-   * stat: stat 메시지가 나갈 때 불린다. 옛 칸을 얹은 것을 돌려준다. msg: 그 이름의 개인 상태가 나갈 때 불린다. 함께 보낼 옛 메시지가 있으면 돌려준다
-   */
-  oldMsgs: { stat: (p: Ent, stat: Extract<ServerMsg, { t: 'stat' }>) => ServerMsg; msg: (p: Ent, name: string) => ServerMsg | null } | null = null;
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
   private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;

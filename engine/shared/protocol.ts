@@ -9,7 +9,7 @@ import type { MsgArg, MsgKey } from './messages';
  * 프로토콜 번호. 서버가 welcome에 실어 보내고, 클라이언트는 자기 빌드의 번호와 다르면 새로고침을 권한다
  * (서버만 새로 올라가고 화면은 옛 빌드가 남아 있는 때). 메시지의 모양이나 뜻을 바꾸면 올린다. 칸을 덧붙이기만 한 것은 올리지 않는다.
  */
-export const PROTOCOL = 1;
+export const PROTOCOL = 2;
 
 /** 'p' 플레이어, 'm' 몬스터 */
 export type Kind = 'p' | 'm';

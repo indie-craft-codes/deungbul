@@ -7,13 +7,6 @@ import { clamp, type Ent } from '../entity';
 import type { Game } from '../game';
 import { Shop } from './shop';
 
-/**
- * 호환: 다음 배포에서 뺀다 (false로 바꾸거나, 이 상수와 Saver.legacySave를 함께 지운다).
- * 게임의 칸(퀘스트, 기여, 기여 단계, 휴식)을 ext로 옮긴 배포 한 번 동안은 옛 최상위 칸에도 함께 적는다: 코드를 이전으로 되돌려도 진행이 남는다.
- * 옛 칸을 읽는 길(Saver.legacy)은 이것과 무관하게 계속 둔다.
- */
-const WRITE_OLD_CELLS = true;
-
 export class Players {
   /** 개발용: 접속 위치를 바꾼다 (부활 위치는 그대로 등탑 앞). */
   devSpawn: { x: number; z: number } | null = null;
@@ -122,9 +115,8 @@ export class Players {
   export(p: Ent): PlayerSave {
     const ext: Record<string, unknown> = {};
     for (const s of this.g.saves) ext[s.name] = s.save(p);
-    const out: PlayerSave = { ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, seen: this.g.now(), gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, cls: p.cls, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
-    if (WRITE_OLD_CELLS) for (const s of this.g.saves) Object.assign(out, s.legacySave?.(p));
-    return out;
+    // 시스템의 몫은 ext에만 적는다. 옛 최상위 칸은 읽기만 한다 (spawn의 Saver.legacy): 칸을 옮긴 배포 한 번 동안 함께 적던 것은 껐다
+    return { ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, seen: this.g.now(), gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, cls: p.cls, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
   }
 
   rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; this.g.rank.renamed(p); this.g.fire('playerRenamed', p); }
