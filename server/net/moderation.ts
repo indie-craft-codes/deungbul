@@ -9,19 +9,28 @@ const WORDS = [
   'fuck', 'shit', 'bitch', 'asshole', 'cunt', 'nigger', 'nigga', 'faggot', 'retard', 'whore',
 ];
 /** 글자 사이에 끼워 넣어 피하는 것(공백, 점, 별표 등)을 건너뛰며 찾는다 */
-const GAP = '[\\s.\\-_*~!?,·]*';
+// 공백은 건너뛰지 않는다: '시 발표', 'this hit'처럼 낱말 사이에 걸친 것까지 가리게 된다
+const GAP = '[.\\-_*~!?,·/@0-9]*';
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const PATTERN = new RegExp(WORDS.map((w) => [...w].map(esc).join(GAP)).join('|'), 'giu');
 
+/**
+ * 글자를 한 가지 모양으로 다듬는다: 전각 글자와 꾸밈 글자를 보통 글자로(NFKC), 눈에 보이지 않는 글자(폭 없는 공백, 방향 뒤집기,
+ * 한글 채움 문자)는 지운다. 이런 글자로 금칙어를 피하거나 남의 이름을 흉내 내지 못하게 한다.
+ */
+export function tidy(text: string): string {
+  return text.normalize('NFKC').replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff\u00ad\u115f\u1160\u3164\uffa0]/g, '');
+}
+
 /** 금칙어를 같은 길이의 별표로 가린다. */
 export function mask(text: string): string {
-  return text.replace(PATTERN, (m) => '*'.repeat([...m].length));
+  return tidy(text).replace(PATTERN, (m) => '*'.repeat([...m].length));
 }
 
 /** 금칙어가 없는가 (이름처럼 가려서 쓸 수 없는 것을 검사할 때) */
 export function isClean(text: string): boolean {
   PATTERN.lastIndex = 0;
-  return !PATTERN.test(text);
+  return !PATTERN.test(tidy(text));
 }
 
 /** 신고 한 건. 운영자가 나중에 읽는다 */

@@ -212,6 +212,8 @@ try {
     const ent = server.game.ents.get(h.id)!;
     const prey = [...server.game.ents.values()].find((m) => m.kind === 'm' && !m.dead && m.type === 'slime') ?? [...server.game.ents.values()].find((m) => m.kind === 'm' && !m.dead)!;
     ent.x = prey.x + 3; ent.z = prey.z;
+    // 자리 비움 사냥은 직업을 고르고 조금 키운 캐릭터만 된다
+    server.game.classes.apply(ent, 'warrior'); ent.lv = 5; server.game.players.refresh(ent); ent.hp = ent.maxHp;
     const exp0 = ent.exp, lv0 = ent.lv;
     h.send({ t: 'auto', on: true });
     await until(() => ent.auto);
@@ -247,7 +249,7 @@ try {
     const TOKEN_POS = 'pos-token-0123456789ab';
     const h = await connect(server.port, '자리', TOKEN_POS);
     const ent = server.game.ents.get(h.id)!;
-    ent.x = 40; ent.z = 5;
+    ent.x = 40; ent.z = 5; ent.gold = 1; // 아무것도 하지 않은 새 캐릭터는 저장하지 않으므로 흔적을 남긴다
     h.ws.close();
     await until(() => !server.game.ents.has(ent.id));
     const h2 = await connect(server.port, undefined, TOKEN_POS);

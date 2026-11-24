@@ -7,6 +7,8 @@ export interface Ent {
   id: number; kind: Kind; type: string; name: string;
   x: number; z: number; face: number;
   tx: number; tz: number; moving: boolean; stuck: number;
+  /** 마지막으로 이동 명령을 받은 시각(게임 시계) */
+  lastMove: number;
   /** 목표로 가려고 세운 길과, 세울 때의 목표·시각 (shared/nav.ts) */
   path: Point[] | null; pgx: number; pgz: number; pat: number;
   hp: number; maxHp: number; dead: boolean;

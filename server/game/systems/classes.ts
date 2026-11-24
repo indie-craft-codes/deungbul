@@ -22,7 +22,8 @@ export class Classes {
   apply(p: Ent, cls: string): void {
     p.cls = cls;
     this.g.players.refresh(p);
-    p.cds = Array.from({ length: SKILL_SLOTS }, () => 0);
+    // 쿨다운은 칸에 걸려 있다: 직업을 바꿔도 지우지 않는다 (지우면 직업을 번갈아 바꾸는 것으로 쿨다운이 없어진다)
+    if (p.cds.length !== SKILL_SLOTS) p.cds = Array.from({ length: SKILL_SLOTS }, () => 0);
     p.targetId = 0;
   }
 }

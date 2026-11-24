@@ -18,7 +18,7 @@ const BANNER: Partial<Record<MsgKey, Tone>> = {
 const FEED: ReadonlySet<MsgKey> = new Set<MsgKey>([
   'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'mailLeft', 'marketGuest', 'marketFull', 'marketPriceBad', 'marketCant', 'marketPosted', 'marketBought', 'marketGone', 'marketOwn', 'marketCanceled', 'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildCreated', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildInvited', 'guildJoined', 'guildLeft', 'guildYouLeft', 'guildKicked', 'guildGave', 'guildLevelUp', 'guildNone', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
   'noTarget', 'tooFar', 'offerFar', 'noSparks', 'towerFull', 'noResident', 'shopFar', 'notStocked', 'alreadyBest',
-  'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
+  'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'nameTaken', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
 ]);
 
 const ui = { banner: $('banner'), bannerText: $('bannerText'), bannerSub: $('bannerSub'), feed: $('feed'), flash: $('flash') };

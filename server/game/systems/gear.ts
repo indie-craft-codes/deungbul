@@ -7,6 +7,8 @@ import type { Ent } from '../entity';
 import type { Game } from '../game';
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+/** 옵션 하나의 값이 가질 수 있는 가장 큰 수: 이보다 큰 것은 깨진 저장으로 보고 버린다 */
+const OPT_MAX = 500;
 
 export class GearSys {
   /** 시험에서 확률을 고정할 수 있다 */
@@ -39,7 +41,10 @@ export class GearSys {
       load: (p, raw) => {
         const d = raw as { list?: unknown; worn?: unknown; seq?: unknown };
         if (!Array.isArray(d.list)) return;
-        p.gear = d.list.filter(GearSys.valid).slice(0, GEAR.bagMax);
+        // 한도를 넘게 들어 있으면(가방이 찬 채 사거나 만든 경우) 끼고 있던 것부터 남긴다: 잘려 나가 기본 장비로 바뀌지 않게
+        const worn0 = (typeof d.worn === 'object' && d.worn !== null ? Object.values(d.worn as Record<string, unknown>) : []);
+        const all = d.list.filter(GearSys.valid);
+        p.gear = [...all.filter((x) => worn0.includes(x.uid)), ...all.filter((x) => !worn0.includes(x.uid))].slice(0, GEAR.bagMax);
         p.gearSeq = Math.max(num(d.seq) ? d.seq : 0, ...p.gear.map((x) => x.uid));
         const worn = (typeof d.worn === 'object' && d.worn !== null ? d.worn : {}) as Record<string, unknown>;
         for (const slot of GEAR_SLOTS) {
@@ -55,7 +60,8 @@ export class GearSys {
     const it = x as Gear;
     return typeof x === 'object' && x !== null && num(it.uid) && isGearSlot(it.slot) && num(it.rar) && it.rar >= 0 && it.rar < RARITIES.length
       && (it.base === undefined || (isItemId(it.base) && ITEMS[it.base].kind === it.slot)) && (it.base !== undefined) === (it.slot === 'weapon' || it.slot === 'armor')
-      && (it.made === undefined || typeof it.made === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]));
+      && (it.made === undefined || typeof it.made === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= 4 && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
+      && Number.isInteger(it.lv) && it.lv >= 1 && it.lv <= 20 && Number.isInteger(it.plus) && Number.isInteger(it.uid);
   }
 
   /** 낀 장비들이 주는 수치의 합 */

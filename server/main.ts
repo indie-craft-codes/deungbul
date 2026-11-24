@@ -36,6 +36,9 @@ startServer(port, { bots, store, game: raidEvery > 0 ? { raid: { everyMin: raidE
       console.log(`[metrics] 접속 ${x.clients} 엔티티 ${x.entities} | 틱 ${f(x.tickAvg)}/${f(x.tickP95)}/${f(x.tickMax)}ms | 전송 ${f(x.flushAvg)}/${f(x.flushP95)}/${f(x.flushMax)}ms | 지연 ${f(x.lagAvg)}/${f(x.lagMax)}ms | ${(x.bytesPerS / 1024).toFixed(1)}KB/s`);
     }, every * 1000).unref();
   }
+  // 어디선가 놓친 예외 하나로 모두의 게임이 꺼지지 않게 한다: 적어 두고 계속 돈다
+  process.on('uncaughtException', (err) => { console.error('[server] 처리되지 않은 예외:', err); });
+  process.on('unhandledRejection', (err) => { console.error('[server] 처리되지 않은 거부:', err); });
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
   console.log(`[server] http://localhost:${s.port} 에서 대기 중 (봇 ${bots}명, 저장: ${dbFile})`);

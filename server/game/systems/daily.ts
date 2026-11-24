@@ -18,7 +18,11 @@ export class Daily {
       load: (p, raw) => {
         const d = raw as Partial<Ent['daily']>;
         if (typeof d.day !== 'string' || typeof d.prog !== 'object' || d.prog === null || !Array.isArray(d.got)) return;
-        p.daily = { day: d.day, prog: { ...d.prog }, got: d.got.filter((x) => typeof x === 'string'), streak: typeof d.streak === 'number' ? d.streak : 0, last: typeof d.last === 'string' ? d.last : '' };
+        // 깨진 값(문자열 진행 수치, 소수 출석 일수)이 들어 있어도 규칙을 건너뛰거나 서버가 죽지 않게 정수로 맞춘다
+        const prog: Record<string, number> = {};
+        for (const [k, v] of Object.entries(d.prog)) if (typeof v === 'number' && Number.isFinite(v) && v > 0) prog[k] = Math.floor(v);
+        const streak = typeof d.streak === 'number' && Number.isFinite(d.streak) ? Math.max(0, Math.min(ATTEND.length, Math.floor(d.streak))) : 0;
+        p.daily = { day: d.day, prog, got: d.got.filter((x) => typeof x === 'string'), streak, last: typeof d.last === 'string' ? d.last : '' };
       },
     });
   }

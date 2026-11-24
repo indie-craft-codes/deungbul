@@ -34,7 +34,10 @@ export class Party {
 
   private invite(p: Ent, id: number): void {
     const g = this.g, t = g.ents.get(id);
-    if (!t || t.kind !== 'p' || t === p || dist(p, t) > PARTY.inviteRange) return;
+    if (!t || t.kind !== 'p' || t === p || t.layer !== p.layer || dist(p, t) > PARTY.inviteRange) return;
+    // 같은 사람에게 이미 보낸 초대가 살아 있으면 다시 보내지 않는다 (초대 창 도배 방지)
+    const sent = this.invites.get(t.id);
+    if (sent && sent.from === p.id && sent.until > g.clock) return;
     const mine = this.of.get(p.id);
     if (mine && mine.members.length >= PARTY.max) { g.notify(p, 'partyFull'); return; }
     const pending = this.invites.get(t.id);
@@ -117,7 +120,8 @@ export class Party {
     for (const h of hitters) {
       for (const id of this.membersOf(h.id)) {
         const e = this.g.ents.get(id);
-        if (e && dist(e, at) <= PARTY.shareRange) out.add(e);
+        // 같은 층에 있는 파티원만: 다른 던전 인스턴스에서 같은 자리에 서 있는 것으로 보상을 받지 못하게
+        if (e && e.layer === h.layer && dist(e, at) <= PARTY.shareRange) out.add(e);
       }
     }
     return [...out];

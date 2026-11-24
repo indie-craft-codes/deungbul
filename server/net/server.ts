@@ -11,7 +11,7 @@ import { CHAT_MAX, NAME_MAX, SNAP_EVERY, TICK_MS } from '../../shared/world';
 import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
 import { MemoryStore, type Store } from '../store';
-import { REPORT_GAP_MS, REPORT_LINES, isClean, mask } from './moderation';
+import { REPORT_GAP_MS, REPORT_LINES, isClean, mask, tidy } from './moderation';
 import { buildFrame, snapshotFor } from './snapshot';
 import { serveStatic } from './static';
 
@@ -21,6 +21,10 @@ const MSG_PER_TICK = 2; // 틱마다 회복되는 양 (초당 40개)
 const CHAT_GAP_MS = 700;
 const RENAME_GAP_MS = 5000;
 const SAVE_EVERY_MS = 60000;
+const JOIN_WITHIN_MS = 10000; // 연결하고 이 안에 접속 절차를 밟지 않으면 끊는다 (빈 연결로 자리를 채우지 못하게)
+const MAX_PER_IP = 12; // 한 주소에서 동시에 열 수 있는 연결 (같은 집의 여러 사람은 되고, 수백 개는 안 된다)
+const MAX_AWAY = 60; // 주인 없이 사냥 중인 캐릭터의 상한
+const AWAY_MIN_LV = 3; // 이 레벨부터 자리 비움 사냥이 된다 (막 만든 캐릭터를 수천 개 남겨 두지 못하게)
 
 interface Client {
   ws: WebSocket; ent: Ent | null; known: Set<number>;
@@ -31,6 +35,10 @@ interface Client {
   said: string[];
   /** 내가 신고한 상대(엔티티 id)와 그 시각 */
   reported: Map<number, number>;
+  /** 접속한 주소 (주소별 연결 수를 세는 데 쓴다) */
+  ip: string;
+  /** 저장된 캐릭터가 있었는가. 없던 사람은 직업을 고르기 전에는 저장하지 않는다 */
+  hadSave: boolean;
 }
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -58,7 +66,7 @@ export interface Metrics {
   lagAvg: number; lagMax: number;
 }
 export interface Running { port: number; game: Game; metrics(): Metrics; close(): Promise<void> }
-export interface Options { bots?: number; store?: Store; game?: GameOptions; maxClients?: number }
+export interface Options { bots?: number; store?: Store; game?: GameOptions; maxClients?: number; maxPerIp?: number; maxAway?: number }
 
 export function startServer(port: number, opts: Options = {}): Promise<Running> {
   const store = opts.store ?? new MemoryStore();
@@ -74,6 +82,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const away = new Map<string, Ent>();
   let tick = 0;
   const maxClients = opts.maxClients ?? MAX_CLIENTS;
+  const maxPerIp = opts.maxPerIp ?? MAX_PER_IP, maxAway = opts.maxAway ?? MAX_AWAY;
+  const perIp = new Map<string, number>();
   // 측정: 구간 동안의 시간과 전송량을 모은다
   const m = { since: performance.now(), tick: [] as number[], flush: [] as number[], lag: [] as number[], bytes: 0, msgs: 0 };
 
@@ -97,7 +107,13 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     try { store.savePlayer(key, game.players.export(e)); e.unsaved = false; }
     catch (err) { console.error('[server] 캐릭터 저장 실패:', err); }
   }
-  function savePlayer(c: Client): void { if (c.key && c.ent) saveEnt(c.key, c.ent); }
+  // 막 들어와 아무것도 하지 않은 새 캐릭터는 저장하지 않는다 (토큰만 바꿔 접속해 저장 파일을 불리지 못하게)
+  function savePlayer(c: Client): void {
+    const e = c.ent;
+    if (!c.key || !e) return;
+    const touched = e.cls !== '' || e.lv > 1 || e.exp > 0 || e.gold > 0 || e.sparks > 0 || e.qc > 0 || e.qs > 0 || e.qn > 0;
+    if (c.hadSave || touched) { saveEnt(c.key, e); c.hadSave = true; }
+  }
   function saveWorld(): void {
     try { store.saveWorld(game.exportWorld()); }
     catch (err) { console.error('[server] 월드 저장 실패:', err); }
@@ -109,7 +125,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     c.key = token && createHash('sha256').update(token).digest('hex');
     if (c.key) {
       const old = byKey.get(c.key);
-      if (old) { send(old, sys('replaced')); old.ws.close(4000, 'replaced'); dropClient(old); }
+      // 밀려난 연결은 캐릭터와의 끈을 끊는다: 닫히기 전에 보낸 명령이 옛 캐릭터를 움직이거나 저장을 덮어쓰지 못하게
+      if (old) { send(old, sys('replaced')); old.ws.close(4000, 'replaced'); dropClient(old); old.ent = null; }
       byKey.set(c.key, c);
     }
     // 자리를 비운 동안 사냥하던 캐릭터가 있으면 새로 만들지 않고 그대로 이어받는다
@@ -128,9 +145,12 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       }
     }
     const save = c.key ? store.loadPlayer(c.key) : null;
+    c.hadSave = !!save;
     // 이름: 저장된 이름이 먼저다. 없으면 클라이언트가 제안한 이름, 그것도 없으면 중립적인 이름
     const ok = (s: string) => (isClean(s) ? s : ''); // 금칙어가 든 이름은 쓰지 않는다
-    const name = ok(clean(save?.name, NAME_MAX)) || ok(clean(m.name, NAME_MAX)) || 'Keeper' + (1000 + Math.floor(Math.random() * 9000));
+    let name = ok(tidyName(save?.name)) || ok(tidyName(m.name)) || 'Keeper' + (1000 + Math.floor(Math.random() * 9000));
+    // 지금 접속해 있는 사람과 같은 이름이면 숫자를 붙여 구별한다 (사칭 방지)
+    if (taken(name)) name = (name.slice(0, NAME_MAX - 3) + (100 + Math.floor(Math.random() * 900))).slice(0, NAME_MAX);
     c.ent = game.players.spawn(name, false, save, c.key ?? '');
     byEnt.set(c.ent.id, c);
     send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: c.ent.auto || undefined });
@@ -139,11 +159,17 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     savePlayer(c);
   }
 
+  /** 이름을 다듬는다: 제어 문자와 눈에 보이지 않는 글자를 지우고 길이를 자른다 */
+  const tidyName = (raw: unknown): string => tidy(clean(raw, 200)).slice(0, NAME_MAX).trim();
+  /** 그 이름을 지금 월드에 있는 다른 사람이 쓰고 있는가 (대소문자 무시) */
+  const taken = (name: string, me?: Ent): boolean => { const k = name.toLowerCase(); for (const e of game.ents.values()) if (e.kind === 'p' && e !== me && e.name.toLowerCase() === k) return true; return false; };
+
   function rename(c: Client, e: Ent, raw: unknown): void {
-    const name = clean(raw, NAME_MAX);
+    const name = tidyName(raw);
     const now = Date.now();
     if (!name || name === e.name) return;
     if (!isClean(name)) { send(c, sys('nameBad')); return; }
+    if (taken(name, e)) { send(c, sys('nameTaken')); return; }
     if (now - c.lastRename < RENAME_GAP_MS) { send(c, sys('renameWait')); return; }
     c.lastRename = now;
     const before = e.name;
@@ -178,6 +204,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   }
 
   function handle(c: Client, raw: unknown): void {
+    if (!clients.has(c)) return; // 이미 정리된 연결(밀려났거나 끊긴 것)이 보낸 것은 버린다
     if (typeof raw !== 'object' || raw === null) return;
     const m = raw as Record<string, unknown>;
     if (m.t === 'join') { if (!c.ent) join(c, m); return; }
@@ -198,24 +225,38 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       game.fire('playerDropped', c.ent); // 던전 안이었으면 문 앞으로 나온 뒤에 저장한다
       savePlayer(c);
       byEnt.delete(c.ent.id);
-      // 자동 사냥 중이었으면 캐릭터를 남겨 두고 서버가 이어서 사냥한다
-      if (c.key && c.ent.auto && !stopped) { away.set(c.key, c.ent); game.away.start(c.ent); return; }
+      // 자동 사냥 중이었으면 캐릭터를 남겨 두고 서버가 이어서 사냥한다.
+      // 직업을 고르고 조금이라도 키운 캐릭터만, 정해진 수까지만 남긴다 (접속했다 끊기를 되풀이해 월드를 채우지 못하게)
+      if (c.key && c.ent.auto && !stopped && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && away.size < maxAway) { away.set(c.key, c.ent); game.away.start(c.ent); return; }
       game.players.leave(c.ent.id);
       broadcast(sys('left', c.ent.name));
     }
   }
 
-  wss.on('connection', (ws) => {
-    if (clients.size >= maxClients) { ws.send(JSON.stringify({ t: 'full' } satisfies ServerMsg)); ws.close(1013, 'full'); return; }
-    const c: Client = { ws, ent: null, known: new Set(), tokens: MSG_BURST, lastChat: 0, lastRename: 0, alive: true, key: null, said: [], reported: new Map() };
+  wss.on('connection', (ws, req) => {
+    // 터널(같은 PC의 프록시)을 거쳐 온 연결은 실제 주소가 머리말에 들어 있다. 바깥에서 직접 온 연결의 머리말은 믿지 않는다
+    const direct = req.socket.remoteAddress ?? '', local = direct === '127.0.0.1' || direct === '::1' || direct === '::ffff:127.0.0.1';
+    const fwd = req.headers['cf-connecting-ip'] ?? req.headers['x-forwarded-for'];
+    const ip = (local && typeof fwd === 'string' && fwd ? fwd.split(',')[0].trim() : direct) || '?';
+    const full = () => { ws.send(JSON.stringify({ t: 'full' } satisfies ServerMsg)); ws.close(1013, 'full'); };
+    // 주인 없이 사냥 중인 캐릭터도 자리를 차지한다
+    if (clients.size + away.size >= maxClients) { full(); return; }
+    if ((perIp.get(ip) ?? 0) >= maxPerIp) { full(); return; }
+    perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
+    const c: Client = { ws, ent: null, known: new Set(), tokens: MSG_BURST, lastChat: 0, lastRename: 0, alive: true, key: null, said: [], reported: new Map(), ip, hadSave: false };
     clients.add(c);
+    // 접속 절차를 밟지 않는 연결은 오래 두지 않는다
+    const joinTimer = setTimeout(() => { if (!c.ent && clients.has(c)) ws.close(1008, 'no join'); }, JOIN_WITHIN_MS);
+    ws.on('close', () => { clearTimeout(joinTimer); const n = (perIp.get(ip) ?? 1) - 1; if (n > 0) perIp.set(ip, n); else perIp.delete(ip); });
     ws.on('pong', () => { c.alive = true; });
     ws.on('message', (data, isBinary) => {
-      if (isBinary) return;
+      // 이진 프레임도 보낸 만큼 센다 (세지 않으면 속도 제한을 비켜 간다)
       if (--c.tokens < 0) { ws.close(1008, 'rate limit'); return; }
+      if (isBinary) return;
       let raw: unknown;
       try { raw = JSON.parse(data.toString()); } catch { return; }
-      handle(c, raw);
+      // 처리기의 버그 하나가 서버 전체를 끄지 않게 한다
+      try { handle(c, raw); } catch (err) { console.error('[server] 메시지 처리 중 예외:', err); }
     });
     ws.on('close', () => dropClient(c));
     ws.on('error', () => ws.terminate());
@@ -288,11 +329,12 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     const dt = Math.min(0.2, (now - last) / 1000);
     last = now;
     tick++;
-    game.tick(dt);
+    // 틱 안의 예외 하나로 루프가 멈추면 모두의 게임이 멈춘다: 적어 두고 다음 틱으로 넘어간다
+    try { game.tick(dt); } catch (err) { console.error('[server] 틱 처리 중 예외:', err); }
     const afterTick = performance.now();
     m.tick.push(afterTick - now);
     for (const c of clients) c.tokens = Math.min(MSG_BURST, c.tokens + MSG_PER_TICK);
-    if (tick % SNAP_EVERY === 0) { flush(); m.flush.push(performance.now() - afterTick); }
+    if (tick % SNAP_EVERY === 0) { try { flush(); } catch (err) { console.error('[server] 전송 중 예외:', err); } m.flush.push(performance.now() - afterTick); }
     nextAt += TICK_MS;
     const end = performance.now();
     if (nextAt < end - 250) nextAt = end; // 크게 밀렸으면 따라잡으려 하지 않고 여기서 다시 센다

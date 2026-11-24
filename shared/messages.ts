@@ -107,5 +107,6 @@ export type MsgKey =
   | 'partyYouLeft' // []
   | 'partyEnded' // [] 혼자 남아 파티가 풀렸다
   | 'nameBad' // [] 쓸 수 없는 이름
+  | 'nameTaken' // [] 지금 접속해 있는 다른 사람이 쓰는 이름
   | 'reported' // [상대 이름] 신고가 접수됐다
   | 'reportWait'; // [] 같은 사람을 방금 신고했다

@@ -3,14 +3,15 @@
 // 손님(저장 키가 없는 접속)은 가입할 수 없다. 규칙의 수치는 shared/content/social.ts의 GUILD에 있다.
 import { GUILD, type GuildMember, type GuildView } from '../../../shared/defs';
 import { CHAT_MAX } from '../../../shared/world';
-import { isClean, mask } from '../../net/moderation';
+import { isClean, mask, tidy } from '../../net/moderation';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 
 interface Member { pid: string; name: string; lv: number; cls: string; gave: number }
 interface GuildRec { id: number; name: string; leader: string; exp: number; notice: string; members: Member[] }
 
-const text = (v: unknown, max: number): string => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max) : '');
+// 눈에 보이지 않는 글자도 지운다: 보이기에 같은 이름의 길드를 만들지 못하게
+const text = (v: unknown, max: number): string => (typeof v === 'string' ? tidy(v.replace(/[\u0000-\u001f\u007f]/g, '')).trim().slice(0, max) : '');
 
 export class Guild {
   private guilds = new Map<number, GuildRec>();
@@ -20,6 +21,7 @@ export class Guild {
   private invites = new Map<number, { guild: number; from: string; until: number }>();
   private nextId = 1;
   private lastChat = new Map<number, number>();
+  private lastNotice = new Map<number, number>();
 
   constructor(private g: Game) {
     g.commands.set('guild', (p, m) => {
@@ -121,6 +123,9 @@ export class Guild {
     if (rec.leader !== p.pid) { g.notify(p, 'guildNotLeader'); return; }
     if (!t.pid || this.of.has(t.pid)) { g.notify(p, 'guildBusy', t.name); return; }
     if (rec.members.length >= GUILD.maxMembers) { g.notify(p, 'guildFull'); return; }
+    // 살아 있는 초대가 있으면 덮어쓰지 않는다: 초대 창 도배와, 비슷한 이름의 길드로 초대를 바꿔치기하는 것을 막는다
+    const old = this.invites.get(t.id);
+    if (old && old.until > g.clock) { if (old.guild !== rec.id) g.notify(p, 'guildBusy', t.name); return; }
     this.invites.set(t.id, { guild: rec.id, from: p.name, until: g.clock + GUILD.inviteS });
     g.notify(p, 'guildInvited', t.name);
     this.tell(t);
@@ -184,6 +189,9 @@ export class Guild {
     const rec = this.of.get(p.pid);
     if (!rec) return;
     if (rec.leader !== p.pid) { this.g.notify(p, 'guildNotLeader'); return; }
+    // 공지는 올릴 때마다 월드를 저장하므로 간격을 둔다
+    if (this.g.clock - (this.lastNotice.get(rec.id) ?? -99) < 5) return;
+    this.lastNotice.set(rec.id, this.g.clock);
     rec.notice = mask(s);
     this.sync(rec);
   }

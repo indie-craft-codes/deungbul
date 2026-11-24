@@ -29,6 +29,8 @@ export class NavGrid {
   private readonly seen = new Uint32Array(W * H);
   private readonly done = new Uint32Array(W * H);
   private stamp = 0;
+  /** 앞으로 살펴볼 수 있는 칸의 수. 서버가 틱마다 채운다(한 틱에 길찾기가 쓰는 시간에 한도를 둔다). 클라이언트는 한도 없이 쓴다 */
+  budget = Infinity;
 
   constructor(obstacles: readonly Obstacle[]) {
     // 지역의 가장자리와 지역 밖은 막힌 것으로 친다
@@ -87,7 +89,7 @@ export class NavGrid {
     const start = this.nearestFree(cellX(ax), cellZ(az));
     const goalCell = cellZ(bz) * W + cellX(bx);
     const goal = this.nearestFree(cellX(bx), cellZ(bz));
-    if (start < 0 || goal < 0) return null;
+    if (start < 0 || goal < 0 || this.budget <= 0) return null;
     const gx = goal % W, gz = (goal - gx) / W;
     const h = (i: number) => {
       const dx = Math.abs((i % W) - gx), dz = Math.abs(Math.floor(i / W) - gz);
@@ -131,7 +133,7 @@ export class NavGrid {
       if (this.done[cur] === stamp) continue;
       this.done[cur] = stamp;
       if (cur === goal) { found = true; break; }
-      if (++visits > MAX_VISITS) break;
+      if (++visits > MAX_VISITS || --this.budget < 0) break;
       const cx = cur % W, cz = (cur - cx) / W;
       for (const [dx, dz, w] of DIRS) {
         const x = cx + dx, z = cz + dz;

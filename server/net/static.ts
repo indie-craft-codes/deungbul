@@ -10,7 +10,10 @@ const MIME: Record<string, string> = {
 
 export function serveStatic(root: string): http.RequestListener {
   return (req, res) => {
-    const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
+    // 깨진 주소('/%')나 널 바이트가 든 주소는 예외를 던진다. 처리기 밖으로 나가면 서버가 통째로 죽으므로 여기서 거른다
+    let urlPath: string;
+    try { urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]); } catch { res.writeHead(400).end(); return; }
+    if (urlPath.includes('\0')) { res.writeHead(400).end(); return; }
     const file = path.resolve(root, '.' + (urlPath === '/' ? '/index.html' : urlPath));
     // 폴더 밖의 파일은 주지 않는다
     if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403).end(); return; }

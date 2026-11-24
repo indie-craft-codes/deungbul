@@ -370,6 +370,7 @@ export const en: Locale = {
     forgeClosed: () => 'Bram the smith has not returned yet.',
     noMats: () => 'Not enough materials.',
     nameBad: () => 'That name cannot be used.',
+    nameTaken: () => 'Someone online is already using that name.',
     reported: (a) => `You reported ${a[0]}. Their recent chat was sent to the moderators.`,
     reportWait: () => 'You can report the same player again later.',
     partyInvited: (a) => `Party invite sent to ${a[0]}.`,

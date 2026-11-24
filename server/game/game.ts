@@ -39,6 +39,9 @@ import { Raid } from './systems/raid';
 import { Shop } from './systems/shop';
 import { Tower } from './systems/tower';
 
+/** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
+const NAV_VISITS_PER_TICK = 12000;
+
 /** 플레이어 명령 처리기. msg는 검증되지 않은 입력이므로 처리기가 직접 확인한다. */
 export type Command = (p: Ent, msg: Record<string, unknown>) => void;
 
@@ -227,7 +230,7 @@ export class Game {
   /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. */
   create(kind: Kind, type: string, name: string, x: number, z: number, hp: number): Ent {
     const e: Ent = {
-      id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, path: null, pgx: x, pgz: z, pat: 0,
+      id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, path: null, pgx: x, pgz: z, pat: 0,
       hp, maxHp: hp, dead: false, layer: 0, targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
       bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
       gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
@@ -255,6 +258,7 @@ export class Game {
 
   tick(dt: number): void {
     this.clock += dt;
+    this.nav.budget = NAV_VISITS_PER_TICK; // 길찾기가 한 틱에 쓸 수 있는 양 (shared/nav.ts)
     for (const e of this.ents.values()) {
       if (e.kind === 'p') { if (e.bot) this.bots.think(e, dt); else this.away.think(e, dt); this.combat.tickPlayer(e, dt); }
       else this.monsters.tick(e, dt);
@@ -279,8 +283,11 @@ export class Game {
     // 예전 형식({ glow, residents })으로 저장된 파일은 통째로 등탑의 몫이다
     const legacy = !('tower' in w);
     for (const s of this.worldSaves) {
-      if (s.name in w) s.load(w[s.name]);
-      else if (legacy && s.name === 'tower') s.load(w);
+      // 한 칸이 깨져 있어도 서버는 떠야 한다: 그 칸만 처음 상태로 둔다
+      try {
+        if (s.name in w) s.load(w[s.name]);
+        else if (legacy && s.name === 'tower') s.load(w);
+      } catch (err) { console.error(`[game] 월드 저장의 '${s.name}' 칸을 읽지 못했습니다:`, err); }
     }
   }
 }
