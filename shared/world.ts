@@ -1,7 +1,8 @@
 // 서버와 클라이언트가 함께 쓰는 월드: 엔진 상수와, 맵 정의로 장애물을 만드는 코드.
 // 같은 시드로 같은 장애물을 만들어서, 서버의 충돌 판정과 클라이언트의 그림이 항상 일치한다.
 // 맵 자체(범위, 구역, 등탑, 빈터, 길, 나무 뿌리는 규칙)는 shared/content/map.ts에 있고, 여기서 그대로 다시 내보낸다.
-import { AREAS, EDGE, HOUSES, MAP_SEED, MAX_X, MAX_Z, MIN_X, MIN_Z, PILLARS, POND, PORTALS, PORTAL_CLEAR, SCATTER, TOWERS, areaAt, isFree } from './content/map';
+// 이 파일은 그 가운데 맵 정의(MAP)만 읽는다: 연못이나 등탑 같은 이 게임의 낱말은 모른다.
+import { AREAS, EDGE, MAP, areaAt } from './content/map';
 
 export * from './content/map';
 
@@ -51,28 +52,27 @@ export function rng(seed: number): () => number {
   };
 }
 
-export function buildWorld(seed = MAP_SEED): World {
+export function buildWorld(seed = MAP.seed): World {
   const rnd = rng(seed);
-  const obstacles: Obstacle[] = [{ x: POND.x, z: POND.z, r: POND.r }];
-  for (const t of TOWERS) obstacles.push({ x: t.x, z: t.z, r: t.r });
-  for (const h of HOUSES) obstacles.push({ x: h[0], z: h[1], r: 3.3 });
-  for (const c of PILLARS) obstacles.push({ x: c.x, z: c.z, r: c.r });
+  // 들판(0번 지역)의 범위: 나무와 바위는 들판에만 뿌린다
+  const { x0: MIN_X, x1: MAX_X, z0: MIN_Z, z1: MAX_Z } = MAP.areas[0];
+  const obstacles: Obstacle[] = MAP.obstacles.map((o) => ({ x: o.x, z: o.z, r: o.r }));
 
   const trees: Deco[] = [];
   const rocks: Deco[] = [];
   // 규칙마다 정해진 수만큼 뿌린다
-  for (const sc of SCATTER) {
+  for (const sc of MAP.scatter) {
     const list = sc.kind === 'tree' ? trees : rocks;
     const target = list.length + sc.count;
     for (let n = 0; list.length < target && n < sc.count * 30; n++) {
       const x = sc.x0 + rnd() * (sc.x1 - sc.x0), z = MIN_Z - sc.pad + rnd() * (MAX_Z - MIN_Z + sc.pad * 2);
       const s = sc.s0 + rnd() * sc.s1, rot = rnd();
-      if (isFree(x, z)) list.push({ x, z, s, rot });
+      if (MAP.isFree(x, z)) list.push({ x, z, s, rot });
     }
   }
 
   // 던전의 문 둘레는 비운다. 뿌릴 때 거르면 난수열이 달라져 맵 전체의 배치가 바뀌므로, 다 뿌린 뒤에 가까운 것만 뺀다
-  const clearOf = (d: Deco) => Object.values(PORTALS).every((p) => Math.hypot(d.x - p.x, d.z - p.z) > PORTAL_CLEAR);
+  const clearOf = (d: Deco) => Object.values(MAP.portals).every((p) => Math.hypot(d.x - p.x, d.z - p.z) > MAP.portalClear);
   for (const list of [trees, rocks]) for (let i = list.length - 1; i >= 0; i--) if (!clearOf(list[i])) list.splice(i, 1);
 
   const inside = (d: Deco) => d.x > MIN_X - 2 && d.x < MAX_X + 2 && d.z > MIN_Z - 2 && d.z < MAX_Z + 2;

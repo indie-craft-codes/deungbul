@@ -1,9 +1,11 @@
 // 성장의 틀: 드롭 장비(등급, 무작위 옵션, 강화), 우편, 방치 보상, 일일 임무와 출석, 순위.
 // 수치는 모두 잠정값이다. 규칙은 server/game/systems/의 gear, mail, idle, daily, rank가 맡는다.
+// 틀의 것(타입과 도우미 함수)과 이 게임의 것(표와 수치)이 한 파일에 있어 [틀] / [이 게임] 구역 주석으로 갈라 둔다 (파일은 9단계에서 갈린다).
 
 import { ITEMS, isItemId, type ItemId } from './items';
 
 // ---------- 장비 ----------
+// ===== [이 게임] 옵션의 종류, 장비 칸, 등급 (isStat, isGearSlot 같은 판별 함수는 [틀]의 도우미) =====
 /** 장비 옵션의 종류: 공격 피해(%), 받는 피해 감소(%), 치명타 확률(%p), 최대 체력 */
 export const STATS = {
   dmg: { base: 3 },
@@ -31,6 +33,7 @@ export const RARITIES = [
   { id: 'epic', weight: 1, opts: 4, mult: 2.2 },
 ] as const;
 
+// ===== [틀] 장비의 모양 =====
 /** 장비 한 점. 종류가 아니라 낱개로 다룬다 */
 export interface Gear {
   /** 그 캐릭터 안에서 겹치지 않는 번호 */
@@ -50,6 +53,7 @@ export interface Gear {
   opts: [Stat, number][];
 }
 
+// ===== [이 게임] 장비와 강화의 수치 =====
 export const GEAR = {
   /** 몬스터 한 마리가 장비를 떨어뜨릴 확률 (보스는 반드시) */
   dropChance: 0.06,
@@ -75,6 +79,7 @@ export const ENHANCE = {
   gold: (plus: number, rar: number): number => 30 * (plus + 1) * (rar + 1),
 };
 
+// ===== [틀] 장비 도우미: 위의 수치와 아이템 정의에서 값을 구한다 =====
 /** 무기와 갑옷의 바탕이 주는 기본 수치: [종류, 값]. 무기는 공격 피해(%), 갑옷은 받는 피해 감소(%) */
 export function baseOpt(g: Gear): [Stat, number] | null {
   if (!isItemId(g.base)) return null;
@@ -100,6 +105,7 @@ export const gearScore = (g: Gear): number => Math.round(g.opts.reduce((s, [k, v
 export const sellPrice = (g: Gear): number => 5 + gearScore(g) + baseTier(g) * 10;
 
 // ---------- 성장 선택: 능력치와 기술 강화 ----------
+// ===== [이 게임] 능력치의 종류와 수치 (isBuildStat은 [틀]의 도우미) =====
 /** 찍을 수 있는 능력치: 힘(공격 피해), 체력(최대 체력), 행운(치명타 확률) */
 export const BUILD_STATS = ['pow', 'vit', 'luck'] as const;
 export type BuildStat = (typeof BUILD_STATS)[number];
@@ -121,6 +127,7 @@ export const BUILD = {
 };
 
 // ---------- 우편 ----------
+// ===== [틀] 우편과 보상의 모양, 우편 도우미 (MAIL_MAX의 값은 [이 게임]의 것) =====
 /**
  * 우편의 종류. 제목과 내용은 언어 파일이 만든다 (fmt.mailTitle).
  * 거래소: marketSold 팔린 값, marketExpired 기간이 지나 돌아온 물건, marketBought 산 물건(가방에 자리가 없었다), marketBack 내린 물건(가방에 자리가 없었다)
@@ -144,6 +151,7 @@ export const hasGoods = (r: Reward): boolean => !!r.gear?.length || (!!r.items &
 export const mailKept = (m: { k: string; r: Reward }): boolean => hasGoods(m.r) || TRADE_MAILS.includes(m.k);
 
 // ---------- 방치 보상 ----------
+// ===== [이 게임] 방치 보상의 수치 =====
 export const IDLE = {
   /** 이보다 짧게 비웠으면 보상이 없다(분) */
   minMin: 10,
@@ -157,6 +165,7 @@ export const IDLE = {
 };
 
 // ---------- 일일 임무와 출석 ----------
+// ===== [틀] 임무의 모양(DailyKind, DailyDef, 아래의 DailyState) / [이 게임] 임무와 출석 보상의 표(DAILIES, ATTEND) =====
 /** 임무의 종류. 틀이 세는 것은 'kill'(처치)과 'enhance'(강화)이고, 그 밖의 것은 게임의 규칙이 센다 (이 게임의 'offer': 불씨 바치기) */
 export type DailyKind = string;
 export interface DailyDef { kind: DailyKind; n: number; r: Reward }
@@ -187,5 +196,6 @@ export interface DailyState {
 }
 
 // ---------- 순위 ----------
+// ===== [틀] 순위 한 줄의 모양 / [이 게임] 순위의 수치(RANK) =====
 export interface RankRow { name: string; lv: number; cls: string; power: number }
 export const RANK = { keep: 50, show: 20, everyS: 5 };

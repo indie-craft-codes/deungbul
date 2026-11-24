@@ -1,13 +1,16 @@
 // 몬스터 정의. 이름은 여기 없다: 클라이언트의 언어 파일이 id로 찾아 붙인다.
+// 틀의 것(타입과 도우미 함수)과 이 게임의 것(표와 수치)이 한 파일에 있어 [틀] / [이 게임] 구역 주석으로 갈라 둔다 (파일은 9단계에서 갈린다).
 import { CLEARINGS } from '../world';
+
+// ===== [틀] 몬스터의 모양 =====
 
 export interface MonsterDef {
   hp: number;
   dmg: readonly [number, number];
   speed: number;
   exp: number;
-  /** 처치 시 주는 불씨 범위. 피해를 준 사람 각자가 받는다. */
-  sparks: readonly [number, number];
+  /** 처치 시 주는 불씨(두 번째 재화) 범위. 피해를 준 사람 각자가 받는다. 없으면 주지 않는다: 불씨가 없는 게임도 몬스터를 정의할 수 있다 */
+  sparks?: readonly [number, number];
   /** 처치 시 주는 골드 범위 */
   gold: readonly [number, number];
   /** 먼저 덤비는 거리. 0이면 맞기 전에는 덤비지 않는다. */
@@ -20,6 +23,7 @@ export interface MonsterDef {
   respawn?: number;
 }
 
+// ===== [이 게임] 몬스터 =====
 export const MONSTERS = {
   slime: { hp: 60, dmg: [3, 6], speed: 3.0, exp: 12, sparks: [1, 1], gold: [2, 4], aggro: 0, h: 1.7 },
   wisp: { hp: 40, dmg: [2, 5], speed: 4.2, exp: 10, sparks: [1, 2], gold: [2, 5], aggro: 0, h: 2.3 },
@@ -38,10 +42,12 @@ export const MONSTERS = {
   // 잿빛 지하묘(던전)의 우두머리. 인스턴스 안에만 나온다. 파티로 잡는 것을 기준으로 잡은 값이다
   crypt_lord: { hp: 2600, dmg: [16, 24], speed: 3.6, exp: 500, sparks: [12, 16], gold: [120, 160], aggro: 10, h: 4.2 },
 } as const satisfies Record<string, MonsterDef>;
+// ===== [틀] 몬스터 도우미 =====
 export type MonsterId = keyof typeof MONSTERS;
 export const isMonsterId = (v: string): v is MonsterId => Object.hasOwn(MONSTERS, v);
 export const monsterDef = (id: MonsterId): MonsterDef => MONSTERS[id];
 
+// ===== [이 게임] 보스 수치, 빈터의 몬스터, 몬스터 공통 수치 =====
 /** 필드 보스의 규칙 (수치는 잠정값) */
 export const BOSS = {
   /** 맞서는 사람이 한 명 늘 때마다 늘어나는 체력 (기본 체력에 대한 비율) */

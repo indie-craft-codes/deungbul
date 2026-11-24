@@ -6,6 +6,9 @@
 //   - 틀만의 게임: 규칙 플러그인 없이(plugins: []) 만든 게임과 서버가 도는가
 //   - 의존 방향: 틀의 서버 파일이 이 게임의 규칙을 import하지 않는가
 import { createHash } from 'node:crypto';
+import { AUTO, POTIONS, pickPotion, potionOrder } from '../shared/auto';
+import { FORGES, ITEMS, MONSTERS, POTION_MAX, RESIDENTS, SMITHY, type ItemId } from '../shared/defs';
+import { AREAS, EDGE, MAP, MAX_X, MAX_Z, MIN_X, MIN_Z, PILLARS, POND, PORTALS, TOWERS, rng } from '../shared/world';
 import fs from 'node:fs';
 import { WebSocket } from 'ws';
 import { CHANNEL, DUNGEONS, SHOP, SPAWN } from '../shared/defs';
@@ -51,6 +54,78 @@ function noonOf(day: unknown): number {
   const blocked = (new NavGrid(w.obstacles) as unknown as { blocked: Uint8Array }).blocked;
   const n = blocked.reduce((sum, v) => sum + v, 0);
   check(n === 17461 && hash(blocked) === '03e74551f70ac7e0', `길찾기 격자의 막힌 칸이 그대로다 (${n}칸, ${hash(blocked)})`);
+}
+
+// ---------- 내용 계약 (docs/framework-plan.md의 단계 5) ----------
+// 틀이 게임의 낱말 대신 정의(MAP, FORGES, ITEMS)를 읽게 바꾼 것들이 예전과 똑같이 움직이는가.
+// 계약의 모양 자체(빠진 이름, 다른 타입)는 shared/contract.ts가 컴파일할 때 검사한다.
+{
+  // 맵 정의: 손으로 놓은 장애물은 예전에 buildWorld가 이름으로 읽던 순서(연못, 등탑, 집, 던전의 기둥) 그대로다
+  const w = buildWorld();
+  const tags = MAP.obstacles.map((o) => o.tag).join(',');
+  check(tags === ['pond', ...TOWERS.map(() => 'tower'), 'house', 'house', 'house', 'house', ...PILLARS.map(() => 'pillar')].join(','), `맵 정의의 장애물이 연못, 등탑, 집, 기둥의 순서다 (${MAP.obstacles.length}개)`);
+  check(MAP.obstacles.every((o, i) => w.obstacles[i].x === o.x && w.obstacles[i].z === o.z && w.obstacles[i].r === o.r) && w.obstacles[0].x === POND.x && w.obstacles[0].r === POND.r, '월드의 장애물 목록은 맵 정의의 장애물로 시작한다');
+  const field = MAP.areas[0];
+  check(AREAS === MAP.areas && EDGE === MAP.edge && PORTALS === MAP.portals && field.x0 === MIN_X && field.x1 === MAX_X && field.z0 === MIN_Z && field.z1 === MAX_Z && MAP.spawn.x === SPAWN.x && MAP.spawn.z === SPAWN.z,
+    '예전 이름(AREAS, EDGE, PORTALS, SPAWN)은 맵 정의에서 꺼낸 값이고, 0번 지역이 들판이다');
+
+  // 대장간: 주민에 묶인 한 곳이 아니라 목록이다. 지금은 대장장이 자리 하나이고 그의 id가 잠금 열쇠다
+  const smith = RESIDENTS[0];
+  check(FORGES.length === 1 && FORGES[0].x === smith.x && FORGES[0].z === smith.z && FORGES[0].needs === smith.id && SMITHY.x === smith.x && SMITHY.z === smith.z, '대장간 목록에는 대장장이의 자리 하나가 있고, 그가 돌아와야 열린다');
+  // 잠금 열쇠는 뜻 없는 문자열이지만, 이 게임의 정의에 적힌 열쇠는 모두 실제 주민이다
+  const keys = [...(Object.values(ITEMS) as { needs?: string }[]).map((d) => d.needs), ...FORGES.map((f) => f.needs)].filter((k): k is string => !!k);
+  check(keys.length === 4 && keys.every((k) => RESIDENTS.some((r) => r.id === k)), `잠금 열쇠가 모두 주민의 id다 (${[...new Set(keys)].join(', ')})`);
+
+  // 물약 고르기: 아이템 id를 적어 두던 예전 규칙과, 정의(회복량)에서 고르는 지금 규칙이 모든 경우에 같은 답을 낸다
+  const oldPick = (ratio: number, items: Record<string, number>): 'tonic' | 'potion' | null => {
+    if (ratio >= 0.35) return null;
+    return (items.tonic ?? 0) > 0 ? 'tonic' : (items.potion ?? 0) > 0 ? 'potion' : null;
+  };
+  const oldOrder = (hurt: number): ItemId[] => (hurt >= 160 ? ['tonic', 'potion'] : ['potion', 'tonic']);
+  const ratios = [...Array.from({ length: 1001 }, (_, i) => i / 1000), AUTO.potionAt - 1e-9, AUTO.potionAt + 1e-9, -0.1, 1.5];
+  const counts: (number | undefined)[] = [undefined, ...Array.from({ length: POTION_MAX + 1 }, (_, i) => i)];
+  let cases = 0, wrong = 0;
+  for (const ratio of ratios) for (const tonic of counts) for (const potion of counts) {
+    // 재료처럼 물약이 아닌 것이 섞여 있어도 고르지 않는다
+    const items: Record<string, number> = { iron: 5, hide: 1 };
+    if (tonic !== undefined) items.tonic = tonic;
+    if (potion !== undefined) items.potion = potion;
+    cases++;
+    if (pickPotion(ratio, items) !== oldPick(ratio, items)) wrong++;
+  }
+  check(wrong === 0 && POTIONS.join(',') === 'tonic,potion', `자동으로 마실 물약이 예전 규칙과 모든 경우에 같다 (체력 비율 ${ratios.length}가지 × 보유 ${counts.length * counts.length}가지 = ${cases}가지)`);
+  let orderWrong = 0;
+  for (let hurt = -5; hurt <= 400; hurt += 0.5) if (potionOrder(hurt).join(',') !== oldOrder(hurt).join(',')) orderWrong++;
+  check(orderWrong === 0 && potionOrder(Infinity).join(',') === oldOrder(Infinity).join(','), '손으로 마실 때 살펴보는 순서도 예전과 같다 (많이 다쳤으면 진한 것부터, 아니면 약한 것부터)');
+
+  // 불씨를 주지 않는 몬스터: sparks 칸이 없는 정의도 잡을 수 있고, 불씨는 0이다
+  const g = new Game({ plugins: [] });
+  const p = g.players.spawn('계약검사', false);
+  const m = g.monsters.spawn('slime', 0, 20);
+  const { sparks: _sparks, ...bare } = MONSTERS.slime;
+  m.def = bare;
+  g.fire('monsterKilled', m, [p]);
+  check(p.sparks === 0 && p.exp === MONSTERS.slime.exp && p.gold >= MONSTERS.slime.gold[0], '불씨 칸이 없는 몬스터를 잡으면 경험치와 골드만 받는다');
+
+  // 봇이 돌아다니는 범위: 맵 정의의 들판에서 읽어도, 숫자로 적혀 있던 예전 식과 같은 자리를 고른다
+  for (const e of [...g.ents.values()]) if (e.kind === 'm') g.remove(e.id);
+  const bot = g.players.spawn('봇', true);
+  const seq: number[] = [], went: [number, number][] = [];
+  const real = Math.random, rnd = rng(5);
+  const goTo = g.movement.goTo.bind(g.movement);
+  g.movement.goTo = (e, x, z) => { if (e === bot) went.push([x, z]); return goTo(e, x, z); };
+  let same = 0, picks = 0;
+  try {
+    Math.random = () => { const v = rnd(); seq.push(v); return v; };
+    for (let i = 0; i < 300; i++) {
+      bot.moving = false; bot.targetId = 0; bot.wait = 0; went.length = 0; seq.length = 0;
+      g.bots.think(bot, 0.05);
+      if (went.length !== 1 || seq.length !== 3) continue; // 난수는 쉬는 시간, x, z의 순서로 세 번 쓴다
+      picks++;
+      if (went[0][0] === MIN_X + 12 + seq[1] * (MAX_X - MIN_X - 24) && went[0][1] === (seq[2] - 0.5) * 84) same++;
+    }
+  } finally { Math.random = real; g.movement.goTo = goTo; }
+  check(picks === 300 && same === 300, `봇이 고르는 자리가 예전 식과 같다 (${same}/${picks})`);
 }
 
 // ---------- 캐릭터 저장의 왕복 ----------

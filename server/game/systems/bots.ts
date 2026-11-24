@@ -1,7 +1,10 @@
 // 봇: 시험과 부하 확인용 가짜 플레이어. 돌아다니다 몬스터를 만나면 싸운다.
-import { MAX_X, MIN_X } from '../../../shared/world';
+import { MAP } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
+
+/** 봇이 돌아다니는 범위: 들판(맵 정의의 0번 지역)의 가장자리에서 이만큼 안쪽 */
+const PAD_X = 12, PAD_Z = 18;
 
 export class Bots {
   constructor(private g: Game) {}
@@ -20,6 +23,7 @@ export class Bots {
     }
     if (near && nd < 8) { p.targetId = near.id; return; } // 가까우면 싸운다
     if (near && Math.random() < 0.35) { g.movement.goTo(p, near.x, near.z); return; } // 가끔은 찾아간다
-    g.movement.goTo(p, MIN_X + 12 + Math.random() * (MAX_X - MIN_X - 24), (Math.random() - 0.5) * 84);
+    const a = MAP.areas[0];
+    g.movement.goTo(p, a.x0 + PAD_X + Math.random() * (a.x1 - a.x0 - PAD_X * 2), (a.z0 + a.z1) / 2 + (Math.random() - 0.5) * (a.z1 - a.z0 - PAD_Z * 2));
   }
 }

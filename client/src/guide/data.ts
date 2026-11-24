@@ -146,8 +146,8 @@ function monsters(P: Pack): Section {
         return row(id, monsterName(P, id), whereText(P, id), num(d.hp), span(d.dmg), c.perSec(d.speed), d.aggro > 0 ? c.m(d.aggro) : M.passive, back === null ? M.noRespawn : c.sec(back));
       })),
       table('monsterRewards', M.rewardHead, M.rewardCols, MONSTER_IDS.map((id) => {
-        const d: MonsterDef = MONSTERS[id], drop = DROPS[id], lv = GEAR.levelOf(d.exp);
-        return row(id, monsterName(P, id), num(d.exp), `${span(d.gold)} (${num(avg(d.gold))})`, `${span(d.sparks)} (${num(avg(d.sparks))})`,
+        const d: MonsterDef = MONSTERS[id], drop = DROPS[id], lv = GEAR.levelOf(d.exp), sparks = d.sparks ?? [0, 0];
+        return row(id, monsterName(P, id), num(d.exp), `${span(d.gold)} (${num(avg(d.gold))})`, `${span(sparks)} (${num(avg(sparks))})`,
           pct(gearChance(d)), c.level(lv), drop ? `${itemLabel(P, drop.id)} ${pct(drop.chance)}` : c.none);
       })),
       p(M.rewardNote),
@@ -179,7 +179,11 @@ function sourceText(P: Pack, id: ItemId): string {
   if (s.gearLv.length) parts.push(T.srcGear(list(s.gearLv.map((lv) => P.T.common.level(lv)))));
   return list(parts) || P.T.common.none;
 }
-const needText = (P: Pack, d: ItemDef): string => (d.needs ? P.T.items.needs(P.L.residents[d.needs].name) : P.T.common.none);
+/** 상점 물건의 잠금: 틀에서는 뜻 없는 열쇠이고, 이 게임에서는 돌아와야 하는 주민이다 */
+function needText(P: Pack, d: ItemDef): string {
+  const r = RESIDENTS.find((x) => x.id === d.needs);
+  return r ? P.T.items.needs(P.L.residents[r.id].name) : P.T.common.none;
+}
 function items(P: Pack): Section {
   const { L, T } = P, c = T.common, I = T.items;
   return {

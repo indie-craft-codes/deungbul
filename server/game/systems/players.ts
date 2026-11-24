@@ -33,7 +33,7 @@ export class Players {
       if (!def) return;
       for (const p of hitters) {
         const roll = (r: readonly [number, number]) => r[0] + Math.floor(Math.random() * (r[1] - r[0] + 1));
-        const sparks = roll(def.sparks) + g.mods.sum('sparkBonus', p), gold = roll(def.gold);
+        const sparks = (def.sparks ? roll(def.sparks) : 0) + g.mods.sum('sparkBonus', p), gold = roll(def.gold);
         // 휴식 보너스가 남아 있으면 그만큼 경험치를 더 받는다 (최대 2배)
         const bonus = Math.min(def.exp, p.rested);
         p.rested -= bonus;

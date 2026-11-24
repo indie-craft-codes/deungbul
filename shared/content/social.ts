@@ -1,7 +1,9 @@
 // 사람들 사이의 것: 길드와 거래소, 채널의 규칙과 수치. 모두 잠정값이다.
+// 틀의 것(타입과 도우미 함수)과 이 게임의 것(표와 수치)이 한 파일에 있어 [틀] / [이 게임] 구역 주석으로 갈라 둔다 (파일은 9단계에서 갈린다).
 import { GEAR_SLOTS, type Gear } from './growth';
 
 // ---------- 채널 ----------
+// ===== [이 게임] 채널의 수치 =====
 // 같은 들판을 여러 벌로 돌린다. 채널이 다르면 서로 보이지 않고 몬스터도 따로다 (server/game/systems/channels.ts).
 export const CHANNEL = {
   /** 채널의 수. 서버를 켤 때 정해진다 */
@@ -23,6 +25,7 @@ export const CHANNEL = {
 };
 
 // ---------- 길드 ----------
+// ===== [이 게임] 길드의 수치 =====
 export const GUILD = {
   /** 만들 수 있는 레벨과 드는 골드 */
   createLv: 5,
@@ -44,6 +47,7 @@ export const GUILD = {
   gives: [100, 1000] as readonly number[],
 };
 
+// ===== [틀] 길드 화면의 모양 =====
 /** 길드 화면에 보이는 길드원 한 사람. pid는 내 것이거나 내가 길드장일 때만 채워진다(추방에 쓴다) */
 export interface GuildMember { pid: string; name: string; lv: number; cls: string; gave: number; leader: boolean; on: boolean; me: boolean }
 /** 내 길드의 모습 */
@@ -58,6 +62,7 @@ export interface GuildView {
 }
 
 // ---------- 거래소 ----------
+// ===== [이 게임] 거래소의 수치 =====
 export const MARKET = {
   /** 값의 한도(골드). 값은 minPrice 이상 이 값 이하의 정수다 */
   maxPrice: 1_000_000,
@@ -80,6 +85,7 @@ export const MARKET = {
   /** 기간이 지난 물건을 거두는 주기(초) */
   sweepS: 5,
 };
+// ===== [틀] 거래소 도우미와 물건의 모양 =====
 /** 그 값에 팔렸을 때 떼는 수수료 */
 // 올림이고 적어도 1골드다: 내림이면 싼 값으로 쪼개 팔아 수수료 없이 큰 돈을 옮길 수 있다
 export const marketFee = (price: number): number => Math.max(1, Math.ceil(price * MARKET.tax));
