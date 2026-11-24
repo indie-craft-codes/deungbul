@@ -231,6 +231,26 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   check(g.out.some((o) => o.id === p.id && o.msg.t === 'channels' && o.msg.me === 2), `채널별 인원을 ${CHANNEL.tellS}초마다 다시 알린다`);
 }
 
+// ---------- 싸우는 중의 판정: 함께 치던 몬스터 ----------
+{
+  const g = new Game(), run = runOn(g), said = saidOn(g);
+  const a = g.players.spawn('남는이', false), b = g.players.spawn('떠나는이', false);
+  const troll = mobsIn(g, 1, 'ash_troll')[0];
+  still(troll);
+  a.maxHp = a.hp = 99999; a.x = troll.x + 2; a.z = troll.z; b.x = troll.x - 2; b.z = troll.z;
+  run(0.1);
+  g.combat.damage(a, troll, 10, false); g.combat.damage(b, troll, 10, false);
+  run(CHANNEL.calmS + 0.1); // 그 뒤로 떠나는이는 때리지 않았지만, 남는이는 계속 친다
+  g.combat.damage(a, troll, 10, false);
+  b.lastHurt = -99;
+  g.notices = [];
+  g.command(b, { t: 'channel', n: 2 });
+  check(channelOf(b.layer) === 1 && said(b).includes('channelFight'), '함께 치던 몬스터가 곁에서 아직 맞고 있으면 싸우는 중이다');
+  b.x = troll.x - 60;
+  g.command(b, { t: 'channel', n: 2 });
+  check(channelOf(b.layer) === 2, '그 싸움에서 멀리 떠나왔으면 채널을 바꿀 수 있다');
+}
+
 // ---------- 사람이 없는 채널은 쉰다 ----------
 {
   const g = new Game(), run = runOn(g);

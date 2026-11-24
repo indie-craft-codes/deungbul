@@ -2,7 +2,8 @@
 // 접속하면 붐비지 않는 채널 가운데 번호가 가장 낮은 곳에 세우고, 명령으로 다른 채널로 옮긴다.
 // 등탑·주민·길드·순위·우편은 서버 전체의 것이라 채널로 나누지 않는다. 수치는 shared/content/social.ts의 CHANNEL.
 import { CHANNEL } from '../../../shared/defs';
-import type { Ent } from '../entity';
+import { AOI_LEAVE } from '../../../shared/world';
+import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { channelOf, fieldLayer, isField } from '../layers';
 
@@ -88,8 +89,9 @@ export class Channels {
   private fighting(p: Ent): boolean {
     const g = this.g, since = g.clock - CHANNEL.calmS;
     if (p.lastHurt > since || (this.killed.get(p.id) ?? -Infinity) > since) return true;
-    // 때린 시각은 따로 적지 않는다: 내가 때린 몬스터가 방금 맞았으면 싸우는 중으로 본다
-    for (const m of g.ents.values()) if (m.kind === 'm' && !m.dead && m.layer === p.layer && m.lastHurt > since && m.hitters.has(p.id)) return true;
+    // 때린 시각은 따로 적지 않는다: 내가 때린 몬스터가 방금 맞았으면 싸우는 중으로 본다.
+    // 멀리 떠나온 싸움은 치지 않는다 (처치 보상을 받는 거리와 같다): 한 대 치고 떠난 보스를 남들이 잡는 동안 묶여 있지 않게
+    for (const m of g.ents.values()) if (m.kind === 'm' && !m.dead && m.layer === p.layer && m.lastHurt > since && m.hitters.has(p.id) && dist(p, m) <= AOI_LEAVE) return true;
     return false;
   }
 

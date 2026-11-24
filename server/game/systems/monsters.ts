@@ -2,7 +2,7 @@
 import { CAMPS, LEASH, MONSTERS, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, type MonsterId, SLOW_FACTOR } from '../../../shared/defs';
 import { dist, ri, type Ent } from '../entity';
 import type { Game } from '../game';
-import { notifyLayer } from '../layers';
+import { fieldLayer, notifyLayer } from '../layers';
 
 /** 습격 적이 등탑에 이만큼 다가오면 등탑을 공격한다 */
 export const TOWER_ATTACK_RANGE = 3.2;
@@ -15,7 +15,7 @@ export class Monsters {
   asleep: (layer: number) => boolean = () => false;
 
   constructor(private g: Game) {
-    this.populate(0);
+    this.populate(fieldLayer(1)); // 나머지 채널은 채널 시스템이 놓는다
     // 습격 적은 죽으면 다시 나오지 않는다
     g.on('monsterKilled', (m) => { if (m.raid) g.remove(m.id); });
   }
