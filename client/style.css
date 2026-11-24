@@ -425,3 +425,15 @@ html:lang(en) body { overflow-wrap: break-word; }
 .mchips button.on { background: var(--gold); color: #1c1405; border-color: var(--gold); font-weight: 700; }
 .mfield input.short { flex: 0 1 76px; }
 @media (pointer: coarse) { .mchips button { padding: 7px 4px; } }
+
+/* 채널 선택: 언어 선택과 같은 모양이고 가방·메뉴 단추 옆에 둔다. 던전 안에서는 잠긴다 */
+#channel { font: inherit; font-size: 11px; color: var(--fg); background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 3px; padding: 0 2px; max-width: 100%; flex: none; }
+#channel:disabled { opacity: .5; }
+/* iOS는 16px보다 작은 선택 상자를 누르면 화면을 확대한다 */
+@media (pointer: coarse) { #channel { font-size: 16px; } }
+/* 폰: 내 정보 창에 줄이 늘지 않게 한다. 닫혀 있을 때는 화살표를 빼고 채널 번호만 보일 너비로 줄여서
+   가로 화면에서는 가방·메뉴와 같은 줄에, 세로 화면에서는 소리 단추와 같은 줄에 들어간다 (펼치면 인원까지 다 보인다).
+   줄을 나눌 때는 좁은 너비(2.6em)로 셈하고 남는 자리만큼만 넓어지므로, 메뉴 단추의 숫자가 길어져도 줄이 늘지 않는다 */
+@media (max-width: 720px), (max-height: 480px) {
+  #channel { -webkit-appearance: none; appearance: none; flex: 1 1 2.6em; min-width: 2.6em; max-width: 3.3em; padding: 1px 3px; overflow: hidden; white-space: nowrap; text-overflow: clip; }
+}

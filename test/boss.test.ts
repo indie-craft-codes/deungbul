@@ -9,7 +9,8 @@ import { check } from './harness';
   const g = new Game();
   const troll = [...g.ents.values()].find((e) => e.type === 'ash_troll')!;
   const run = (seconds: number) => { for (let i = 0; i < seconds * 20; i++) g.tick(0.05); };
-  const told = () => g.announces.map((a) => `${a.k}:${a.a.join(',')}`);
+  // 보스는 채널마다 따로라서 소식은 그 채널(층)의 사람에게만 간다: 서버 전체 알림이 아니라 싸운 사람이 받은 안내문을 본다
+  const told = (p: { id: number }) => g.notices.filter((n) => n.id === p.id).map((n) => `${n.k}:${n.a.join(',')}`);
   const fighter = (name: string, dx: number) => { const p = g.players.spawn(name, false); p.x = troll.x + dx; p.z = troll.z; p.maxHp = p.hp = 5000; return p; };
   check(!!troll && troll.x > ZONE_SPLIT && troll.maxHp === H, '잿빛 트롤이 잿빛 숲에 기본 체력으로 있다');
   troll.wait = 999; // 시험 동안 어슬렁거리지 않게
@@ -41,14 +42,14 @@ import { check } from './harness';
   // 쓰러뜨리면 함께 싸운 사람 모두가 보상을 받고, 한참 뒤에 기본 체력으로 다시 나타난다
   p2.x = troll.x - 3;
   const gold1 = p1.gold, gold2 = p2.gold;
-  g.announces = [];
+  g.notices = [];
   g.combat.damage(p1, troll, 99999, false);
-  check(troll.dead && p1.gold >= gold1 + 80 && p2.gold >= gold2 + 80 && told().includes('bossDown:ash_troll,2'), '쓰러뜨리면 함께 싸운 둘 모두가 보상을 받고, 모두에게 알린다');
+  check(troll.dead && p1.gold >= gold1 + 80 && p2.gold >= gold2 + 80 && told(p1).includes('bossDown:ash_troll,2') && told(far).includes('bossDown:ash_troll,2'), '쓰러뜨리면 함께 싸운 둘 모두가 보상을 받고, 그 채널의 모두에게 알린다');
   run(10);
   check(troll.dead, '보통 몬스터처럼 8초 만에 다시 나타나지 않는다');
-  g.announces = [];
+  g.notices = [];
   run(295);
-  check(!troll.dead && troll.maxHp === H && troll.hp === H && told().includes('bossUp:ash_troll'), '5분 뒤에 기본 체력으로 다시 나타나고, 모두에게 알린다');
+  check(!troll.dead && troll.maxHp === H && troll.hp === H && told(p1).includes('bossUp:ash_troll'), '5분 뒤에 기본 체력으로 다시 나타나고, 그 채널의 모두에게 알린다');
 
   // 멀리 끌고 가면 돌아가서 회복하고, 체력도 기본으로 돌아간다
   g.combat.damage(p1, troll, 100, false); g.combat.damage(p2, troll, 100, false);

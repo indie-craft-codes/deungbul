@@ -6,6 +6,7 @@ import { resolve } from '../../../shared/sim';
 import { AREAS, areaAt } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
+import { DUNGEON_LAYER, fieldLayer, isField } from '../layers';
 
 interface Run {
   id: DungeonId; def: DungeonDef; layer: number;
@@ -23,7 +24,9 @@ interface Run {
 export class Dungeon {
   private runs = new Map<number, Run>();
   private of = new Map<number, Run>();
-  private nextLayer = 1;
+  /** 안에 있는 사람이 들어오기 전에 있던 들판의 층(채널). 나갈 때 그곳으로 돌려보낸다 */
+  private back = new Map<number, number>();
+  private nextLayer = DUNGEON_LAYER;
 
   constructor(private g: Game) {
     g.ticks.push((dt) => this.tick(dt));
@@ -40,7 +43,7 @@ export class Dungeon {
     });
     // 접속이 끊기거나 나가면 던전에서도 나온다 (저장되는 자리는 문 앞이다)
     g.on('playerDropped', (p) => this.leave(p, false));
-    g.on('playerLeft', (id) => { const run = this.of.get(id); if (run) { run.members.delete(id); this.of.delete(id); } });
+    g.on('playerLeft', (id) => { this.back.delete(id); const run = this.of.get(id); if (run) { run.members.delete(id); this.of.delete(id); } });
     // 서버가 꺼졌다 켜진 경우처럼 인스턴스 없이 던전 안에 있으면 문 앞으로 내보낸다
     g.on('playerJoined', (p) => { if (!this.of.has(p.id)) this.outside(p); });
 
@@ -54,6 +57,9 @@ export class Dungeon {
     const run = this.of.get(p.id);
     return run && { id: run.id, left: run.left, foes: run.mobs.size, cleared: run.cleared };
   }
+
+  /** 던전 안에 있는 사람이 나가면 돌아갈 들판의 층 (밖에 있으면 undefined). 채널의 인원을 셀 때 쓴다 */
+  homeOf(p: Ent): number | undefined { return this.back.get(p.id); }
 
   private move(p: Ent, x: number, z: number, layer: number): void {
     const g = this.g;
@@ -70,12 +76,12 @@ export class Dungeon {
     const area = AREAS[areaAt(p.x, p.z)];
     if (!area || !isDungeonId(area.id)) return;
     const at = dungeonDef(area.id).portal;
-    this.move(p, at.x + 1.5, at.z + 1.5, 0);
+    this.move(p, at.x + 1.5, at.z + 1.5, fieldLayer(1)); // 어느 채널에 설지는 접속 처리(채널 시스템)가 이어서 정한다
   }
 
   enter(p: Ent, id: DungeonId): void {
     const g = this.g, def = dungeonDef(id);
-    if (this.of.has(p.id) || p.layer !== 0) return;
+    if (this.of.has(p.id) || !isField(p.layer)) return;
     if (dist(p, def.portal) > PORTAL_REACH) { g.notify(p, 'dungeonFar'); return; }
     if (p.lv < def.minLv) { g.notify(p, 'dungeonLevel', def.minLv); return; }
     g.daily.roll(p); // 날이 바뀌었으면 입장 횟수도 새로 센다
@@ -89,6 +95,7 @@ export class Dungeon {
     p.metaDirty = true; p.unsaved = true;
     run.members.add(p.id);
     this.of.set(p.id, run);
+    this.back.set(p.id, p.layer);
     this.move(p, def.entry.x + (Math.random() - 0.5) * 2, def.entry.z + (Math.random() - 0.5) * 2, run.layer);
     g.notify(p, 'dungeonEnter', id);
     this.tell(run);
@@ -140,7 +147,9 @@ export class Dungeon {
     if (!run) return;
     run.members.delete(p.id);
     this.of.delete(p.id);
-    this.move(p, run.def.portal.x + 1.5 + Math.random(), run.def.portal.z + 1.5 + Math.random(), 0);
+    const home = this.back.get(p.id) ?? fieldLayer(1);
+    this.back.delete(p.id);
+    this.move(p, run.def.portal.x + 1.5 + Math.random(), run.def.portal.z + 1.5 + Math.random(), home);
     this.g.out.push({ id: p.id, msg: { t: 'dungeon', id: '', left: 0, foes: 0, cleared: false } });
     if (notify) this.g.notify(p, 'dungeonLeft');
   }

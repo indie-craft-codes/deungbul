@@ -27,7 +27,7 @@ export class Combat {
     let target: Ent | undefined;
     if (def.range !== undefined) {
       target = g.ents.get(p.targetId);
-      if (!target || target.dead) { g.notify(p, 'noTarget'); return; }
+      if (!target || target.dead || target.layer !== p.layer) { g.notify(p, 'noTarget'); return; }
       if (dist(p, target) > def.range) { g.notify(p, 'tooFar'); return; }
       p.face = Math.atan2(target.x - p.x, target.z - p.z);
     }
@@ -86,7 +86,7 @@ export class Combat {
     const hitters: Ent[] = [];
     for (const id of m.hitters) {
       const p = g.ents.get(id);
-      if (p && p.kind === 'p' && dist(p, m) <= AOI_LEAVE) hitters.push(p);
+      if (p && p.kind === 'p' && p.layer === m.layer && dist(p, m) <= AOI_LEAVE) hitters.push(p);
     }
     m.hitters.clear();
     for (const e of g.ents.values()) if (e.targetId === m.id) e.targetId = 0;
@@ -119,7 +119,7 @@ export class Combat {
 
     if (!p.targetId) { if (p.moving) g.movement.walk(p, speed, dt); return; }
     const t = g.ents.get(p.targetId);
-    if (!t || t.dead || dist(p, t) > AOI_LEAVE) { p.targetId = 0; p.moving = false; return; }
+    if (!t || t.dead || t.layer !== p.layer || dist(p, t) > AOI_LEAVE) { p.targetId = 0; p.moving = false; return; }
     // 사거리 밖이면 다가간다 (전사는 붙고, 궁수는 멀리서 멈춘다)
     if (dist(p, t) > cls.range) {
       p.tx = t.x; p.tz = t.z; p.moving = true;

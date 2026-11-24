@@ -2,7 +2,7 @@
 // 새 테스트는 test/이름.test.ts를 만들고 아래 목록에 더한다.
 import { failures } from './harness';
 
-const ALL = ['move', 'shop', 'classes', 'monsters', 'combat', 'craft', 'party', 'keepers', 'quests', 'nav', 'zone2', 'boss', 'growth', 'build', 'market', 'guild', 'dungeon', 'security', 'server'];
+const ALL = ['move', 'shop', 'classes', 'monsters', 'combat', 'craft', 'party', 'keepers', 'quests', 'nav', 'zone2', 'boss', 'growth', 'channel', 'build', 'market', 'guild', 'dungeon', 'security', 'server'];
 const only = process.argv.slice(2);
 for (const name of only.length ? only : ALL) {
   console.log(`\n[${name}]`);

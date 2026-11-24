@@ -141,6 +141,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         send(c, { t: 'welcome', id: kept.id, name: kept.name, x: r2(kept.x), z: r2(kept.z), auto: true });
         send(c, { t: 'world', s: game.state() });
         game.party.resend(kept.id);
+        game.channels.tell(kept); // 있던 채널 그대로다: 화면에 다시 알린다
         return;
       }
     }

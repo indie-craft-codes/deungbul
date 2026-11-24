@@ -12,7 +12,7 @@ export interface Ent {
   /** 목표로 가려고 세운 길과, 세울 때의 목표·시각 (shared/nav.ts) */
   path: Point[] | null; pgx: number; pgz: number; pat: number;
   hp: number; maxHp: number; dead: boolean;
-  /** 층: 0은 모두가 함께 있는 월드, 그 밖은 던전 인스턴스. 층이 다르면 서로 보이지 않고 싸우지 않는다 */
+  /** 층: 들판의 채널이거나 던전 인스턴스다 (번호의 뜻은 layers.ts). 층이 다르면 서로 보이지 않고 싸우지 않는다 */
   layer: number;
   targetId: number; atkCd: number; lastHurt: number; wait: number;
 

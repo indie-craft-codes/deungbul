@@ -3,18 +3,23 @@
 import { BOSS } from '../../../shared/defs';
 import { dist, ri, type Ent } from '../entity';
 import type { Game } from '../game';
+import { notifyLayer } from '../layers';
 
 export class Boss {
   constructor(private g: Game) {
     g.ticks.push((dt) => this.tick(dt));
     g.on('monsterKilled', (m, hitters) => {
-      if (m.def?.boss) g.announce('bossDown', m.type, hitters.length);
+      // 보스는 채널마다 따로라서, 쓰러뜨린 소식도 그 채널에만 알린다
+      if (m.def?.boss) notifyLayer(g, m.layer, 'bossDown', m.type, hitters.length);
     });
   }
 
   /** 맞선 사람 수에 맞춰 체력을 다시 잡는다. 한 명이면 기본 체력이고, 한 명 늘 때마다 일정 비율씩 는다. */
   private rescale(m: Ent, base: number): void {
-    const n = Math.min(BOSS.maxScale, m.hitters.size);
+    // 맞서는 사람은 같은 층(채널)에 있는 사람만 센다
+    let here = 0;
+    for (const id of m.hitters) if (this.g.ents.get(id)?.layer === m.layer) here++;
+    const n = Math.min(BOSS.maxScale, here);
     if (n === m.scale) return;
     const max = Math.round(base * (1 + BOSS.hpPerPlayer * Math.max(0, n - 1)));
     // 사람이 늘면 늘어난 만큼 체력도 채워 주고, 줄면 넘치는 만큼만 깎는다. 아무도 없으면 가득 채운다
@@ -38,7 +43,7 @@ export class Boss {
         if (m.windup > 0) continue;
         // 예고가 끝났다: 그때 범위 안에 남아 있는 사람만 맞는다
         for (const p of [...g.ents.values()]) {
-          if (p.kind === 'p' && dist(p, m) <= BOSS.slamRadius) g.combat.damage(m, p, ri(BOSS.slamDmg[0], BOSS.slamDmg[1]), true);
+          if (p.kind === 'p' && p.layer === m.layer && dist(p, m) <= BOSS.slamRadius) g.combat.damage(m, p, ri(BOSS.slamDmg[0], BOSS.slamDmg[1]), true);
         }
         m.cast = BOSS.slamEveryS;
       } else {

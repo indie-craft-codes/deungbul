@@ -106,7 +106,7 @@ export class Party {
   /** 파티원 모두에게 서로의 상태를 보낸다. */
   private sync(group: Group): void {
     const list = this.ents(group);
-    const m: PartyMember[] = list.map((e) => ({ id: e.id, name: e.name, lv: e.lv, cls: e.cls, hp: Math.ceil(e.hp), maxHp: e.maxHp, x: Math.round(e.x), z: Math.round(e.z) }));
+    const m: PartyMember[] = list.map((e) => ({ id: e.id, name: e.name, lv: e.lv, cls: e.cls, hp: Math.ceil(e.hp), maxHp: e.maxHp, x: Math.round(e.x), z: Math.round(e.z), ch: this.g.channels.of(e) }));
     for (const e of list) { this.names.set(e.id, e.name); this.g.partyOut.push({ id: e.id, msg: { t: 'party', m } }); }
   }
 
@@ -114,14 +114,14 @@ export class Party {
    * 몬스터를 잡은 사람들에, 곁에 있던 그들의 파티원을 더한다.
    * 보상과 퀘스트 진행은 이 목록의 모두가 받는다.
    */
-  share(hitters: Ent[], at: { x: number; z: number }): Ent[] {
+  share(hitters: Ent[], at: { x: number; z: number; layer: number }): Ent[] {
     if (!this.groups.size) return hitters;
     const out = new Set(hitters);
     for (const h of hitters) {
       for (const id of this.membersOf(h.id)) {
         const e = this.g.ents.get(id);
-        // 같은 층에 있는 파티원만: 다른 던전 인스턴스에서 같은 자리에 서 있는 것으로 보상을 받지 못하게
-        if (e && e.layer === h.layer && dist(e, at) <= PARTY.shareRange) out.add(e);
+        // 같은 자리여도 층(채널, 인스턴스)이 다르면 곁에 있는 것이 아니다
+        if (e && e.layer === at.layer && dist(e, at) <= PARTY.shareRange) out.add(e);
       }
     }
     return [...out];

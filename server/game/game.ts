@@ -14,10 +14,12 @@ import { resolve } from '../../shared/sim';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
 import type { WorldSave } from '../store';
 import type { Ent } from './entity';
+import { fieldLayer } from './layers';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
 import { Bots } from './systems/bots';
 import { Build } from './systems/build';
+import { Channels } from './systems/channels';
 import { Classes } from './systems/classes';
 import { Combat } from './systems/combat';
 import { Craft } from './systems/craft';
@@ -186,6 +188,7 @@ export class Game {
   readonly daily: Daily;
   readonly rank: Rank;
   readonly dungeon: Dungeon;
+  readonly channels: Channels;
   readonly build: Build;
   readonly market: Market;
   readonly guild: Guild;
@@ -213,6 +216,7 @@ export class Game {
     this.daily = new Daily(this);
     this.rank = new Rank(this);
     this.dungeon = new Dungeon(this);
+    this.channels = new Channels(this);
     this.build = new Build(this);
     this.market = new Market(this);
     this.guild = new Guild(this);
@@ -231,7 +235,7 @@ export class Game {
   create(kind: Kind, type: string, name: string, x: number, z: number, hp: number): Ent {
     const e: Ent = {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, path: null, pgx: x, pgz: z, pat: 0,
-      hp, maxHp: hp, dead: false, layer: 0, targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
+      hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
       bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
       gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), raid: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
