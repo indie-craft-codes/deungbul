@@ -1,38 +1,45 @@
 // 재화 흐름 지표(경제 장부): 골드·불씨·경험치·장비·재료가 어디서 얼마나 생기고 어디로 얼마나 사라지는지를 날짜별·원인별로 적는다.
 // 게임의 규칙은 하나도 바꾸지 않는다. 기록만 더한다.
 //
-// 방식: 경계에서 차이를 잰다. 재화를 바꾸는 코드(열 곳이 넘는다)를 고치지 않고, 명령·처치 사건·틱의 앞뒤로 캐릭터가 가진 것의 차이를 재어
-// 그 경계의 탓으로 적는다. 캐릭터마다 '여기까지는 적었다'는 기준값을 들고 있다가, 경계가 끝날 때 기준값과 지금 값의 차이를 적고 기준값을 옮긴다(settle).
-// 안쪽 경계(명령 안에서 일어난 처치)가 먼저 적고 기준값을 옮기므로, 바깥 경계에는 나머지만 남는다: 같은 변화가 두 번 적히지 않는다.
+// 방식은 둘이 겹쳐 있다.
+//   1. 지갑이 알린다: 골드·불씨·경험치는 지갑(wallet.ts)을 지날 때 원인의 이름과 함께 바로 적힌다 (direct). 주는 쪽이 원인을 아니까 가장 정확하다.
+//   2. 경계에서 차이를 잰다: 명령·처치 사건·틱의 앞뒤로 캐릭터가 가진 것의 차이를 재어 그 경계의 탓으로 적는다. 장비와 재료·물약은 이 방식으로 센다.
+//      캐릭터마다 '여기까지는 적었다'는 기준값을 들고 있다가, 경계가 끝날 때 기준값과 지금 값의 차이를 적고 기준값을 옮긴다(settle).
+//      안쪽 경계(명령 안에서 일어난 처치)가 먼저 적고 기준값을 옮기므로, 바깥 경계에는 나머지만 남는다: 같은 변화가 두 번 적히지 않는다.
+// 지갑이 알린 만큼은 기준값도 함께 옮기므로, 골드·불씨·경험치에서 경계의 차이로 남는 것은 '지갑 밖에서 일어난 변화'뿐이다.
+// 그것은 어느 경계에서 드러나든 other나 tick으로 적는다: 이 칸이 0이 아니면 지갑을 거치지 않고 재화를 고친 코드가 있거나 재화가 복사된 것이다.
 //
 // 원인의 이름은 게임의 낱말을 코드에 박지 않고 만들어진다:
-//   cmd:명령[:하위 동작]   플레이어 명령의 앞뒤 차이 (하위 동작은 명령의 a 값: cmd:guild:give, cmd:market:post)
+//   cmd:명령[:하위 동작]   플레이어 명령이 바꾼 것 (하위 동작은 명령의 a 값: cmd:guild:give, cmd:market:post). 골드는 지갑이 같은 이름으로 알린다 (wallet.ts의 WHY)
 //   mail:우편 종류         우편 수령. 명령 하나(mailClaim)가 여러 우편을 받으므로 우편마다 받은 것을 나눠 적는다
-//   hunt, huntAway, huntDungeon   처치 사건의 앞뒤 차이: 접속 중, 자리 비움 사냥 중, 던전 인스턴스 안
-//   quest, raid, tier 등   보상을 알리는 안내문에 적힌 값 (games/deungbul/shared/content/economy.ts의 ECON_NOTICES)
+//   hunt, huntAway, huntDungeon   처치로 얻은 것: 접속 중, 자리 비움 사냥 중, 던전 인스턴스 안 (players.ts의 huntWhy)
+//   quest, raid, tier 등   게임의 규칙이 지갑에 넘긴 이름 (이 게임: games/deungbul/shared/content/economy.ts의 ECON_WHY)
 //   market:out, market:in  사람 사이를 건너가는 골드 (ECON_MOVES). 생성도 소멸도 아니다
 //   lostFull               가방이 가득 차 버려진 장비
-//   ev:playerJoined        접속 처리 중에 생긴, 위의 어느 것도 아닌 변화
+//   ev:playerJoined        접속 처리 중에 생긴, 위의 어느 것도 아닌 변화 (장비와 재료)
 //   tick, other            어느 원인에도 잡히지 않은 변화: 틱 안에서 생긴 것과 그 밖. 0이어야 하고, 0이 아니면 빠뜨린 통로나 재화 복사 버그다
 //
-// 끼어드는 자리: 생성자에서 Game의 command·fire·tick·notify와 gear.give, players.grant를 감싼다(아래 wrap).
+// 끼어드는 자리: 지갑의 seen에 등록하고, 생성자에서 Game의 command·fire·tick과 gear.give를 감싼다(아래 wrap).
 // Game에 '끼어드는 자리'를 따로 만들지 않은 까닭: 장부가 필요한 것은 "앞뒤에서 불린다"뿐이고, 감싸면 game.ts와 다른 시스템을 한 줄도 고치지 않는다.
 // 틱도 같다: g.ticks에 등록한 함수는 시스템 틱의 뒤에만 불려서 틱 전체의 앞뒤를 잴 수 없다.
 // 감싸는 쪽에서 난 예외는 삼키고 적어만 둔다: 장부의 잘못으로 게임이 멈추면 안 된다.
 //
 // 저장: 게임 계층은 저장소를 모른다. 아직 저장하지 않은 줄을 drain()으로 내어 주고 통신 계층이 저장소에 얹는다(월드 저장과 같은 방향).
 // 캐릭터별 기록(플레이 시간, 레벨 도달, 오늘 번·쓴 골드)은 g.saves로 캐릭터와 함께 저장된다(PlayerSave.ext.stats).
-import { ECON_FRESH_DAYS, ECON_HUNT, ECON_LEVEL_MARKS, ECON_LOST_FULL, ECON_MOVES, ECON_NOTICES, ECON_UNKNOWN, GEAR_SLOTS, RARITIES, isEconMove, type EconCur, type Gear, type Mail } from '../../../shared/defs';
+import { ECON_FRESH_DAYS, ECON_LEVEL_MARKS, ECON_LOST_FULL, ECON_MOVES, ECON_UNKNOWN, GEAR_SLOTS, RARITIES, isEconMove, type Gear, type Mail } from '../../../shared/defs';
 import type { EconRow, PlayerSave } from '../../store';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { isField } from '../layers';
+import { mailWhy, type Cur } from './wallet';
 
 const DAY_MS = 24 * 3600000;
 /** 틱의 끝에서 캐릭터 하나를 빠짐없이(장비 구성과 재료까지) 다시 세는 주기(틱). 20틱 = 1초 */
 const AUDIT_TICKS = 20;
 /** 원인 이름에 넣어도 되는 낱말: 영문자, 숫자, 밑줄만. 클라이언트가 보낸 값(명령의 a)이 원인 이름이 되므로 걸러서 쓴다 */
 const WORD = /^[A-Za-z0-9_]{1,24}$/;
+/** 지갑이 넘긴 원인 이름으로 받아들이는 모양: 낱말을 쌍점으로 이은 것. 장부의 줄을 가르는 글자(|)가 섞인 이름은 받지 않는다 */
+const WHY = /^[A-Za-z0-9_:]{1,64}$/;
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const gearCur = (rar: number): string => `gear:${RARITIES[rar]?.id ?? rar}`;
 
@@ -81,7 +88,7 @@ interface Track {
   /** 등급별 장비 수와, 그 합 */
   gear: number[]; nGear: number;
   items: Record<string, number>; nItems: number;
-  /** grant로 받았지만 아직 적지 않은 경험치 */
+  /** 원인의 이름 없이 받아 아직 적지 않은 경험치 (레벨이 오르며 exp가 깎이므로 차이로 재지 못하고 받은 양을 모아 둔다) */
   expIn: number;
   /** 이미 다른 원인으로 적어 둔 몫 (재화 → 양). 다음에 차이를 잴 때 그만큼 뺀다 */
   credit: Map<string, number> | null;
@@ -150,6 +157,8 @@ export class Ledger {
       this.settle(t, this.base);
       this.tracks.delete(id);
     });
+    // 지갑을 지난 변화: 원인의 이름과 함께 바로 적는다
+    g.wallet.seen.push((p, cur, d, why) => { try { this.direct(p, cur, d, why); } catch (err) { this.oops(err); } });
     this.wrap();
   }
 
@@ -195,7 +204,7 @@ export class Ledger {
         } catch (err) { this.oops(err); }
         try { fire(name, ...args); } finally {
           try {
-            for (const t of here) this.settle(t, inst ? ECON_HUNT.inst : g.away.active(t.p) ? ECON_HUNT.away : ECON_HUNT.live);
+            for (const t of here) this.settle(t, g.players.huntWhy(t.p, m));
           } catch (err) { this.oops(err); }
         }
       } else if (name === 'playerJoined') {
@@ -226,29 +235,6 @@ export class Ledger {
         } catch (err) { this.oops(err); }
         this.base = ECON_UNKNOWN[0];
       }
-    };
-
-    // 보상을 알리는 안내문: 적힌 값만큼을 그 원인으로 먼저 적는다 (퀘스트 단계, 습격, 기여 단계)
-    const notify = g.notify.bind(g);
-    g.notify = (p, k, ...a) => {
-      const def = ECON_NOTICES[k], t = def && this.tracks.get(p.id);
-      if (def && t) {
-        try {
-          for (const cur of ['gold', 'sparks', 'exp'] as EconCur[]) {
-            const i = def[cur], v = i === undefined ? 0 : a[i];
-            if (num(v) && v > 0) this.pre(t, cur, def.why, v);
-          }
-        } catch (err) { this.oops(err); }
-      }
-      notify(p, k, ...a);
-    };
-
-    // 경험치는 grant 한 곳으로만 들어온다: 레벨이 오르며 exp가 깎이므로 차이로 재지 않고 받은 양을 그대로 모은다
-    const grant = g.players.grant.bind(g.players);
-    g.players.grant = (p, exp, sparks) => {
-      const t = this.tracks.get(p.id);
-      if (t && num(exp)) t.expIn += exp;
-      grant(p, exp, sparks);
     };
 
     // 가방이 가득 차 버려진 장비: 생겼다가 사라진 것으로 적는다 (생긴 쪽은 그 경계의 원인으로, 사라진 쪽은 lostFull로)
@@ -292,17 +278,32 @@ export class Ledger {
   private outer(t: Track): string { return this.cmd && this.cmd.id === t.p.id ? this.cmd.why : this.base; }
 
   /**
+   * 지갑을 지난 변화를 그 원인으로 바로 적고, 기준값도 그만큼 옮긴다 (경계의 차이에 다시 잡히지 않게).
+   * 원인의 이름이 없으면('') 적지 않고 둔다: 다음 경계에서 차이로 드러나 other·tick이나 note가 붙인 이름으로 적힌다.
+   */
+  private direct(p: Ent, cur: Cur, d: number, why: string): void {
+    const t = this.tracks.get(p.id);
+    if (!t) return;
+    if (!why) { if (cur === 'exp') t.expIn += d; return; }
+    this.add(cur, WHY.test(why) ? why : this.base, d, t);
+    if (cur === 'gold') t.gold += d; else if (cur === 'sparks') t.sparks += d;
+  }
+
+  /**
    * 기준값과 지금 값의 차이를 그 원인으로 적고, 기준값을 지금으로 옮긴다.
    * full이 아니면 가볍게만 잰다: 골드·불씨·경험치는 언제나 재고, 장비와 재료는 장비 수가 달라졌을 때만 센다
    * (틱의 앞뒤에서 모두를 훑을 때 쓴다. 그때 놓친 것은 다음에 다 셀 때 드러나므로 사라지지 않는다).
+   * 골드·불씨·경험치의 차이는 지갑 밖에서 일어난 변화다 (지갑을 지난 것은 direct가 이미 적었다): 명령이나 처치의 경계에서 드러났더라도
+   * 그 이름이 아니라 other·tick으로 적어 경보가 되게 한다. named(g.ledger.note가 붙인 이름)일 때만 그 이름으로 적는다.
    */
-  private settle(t: Track, why: string, full = true): void {
+  private settle(t: Track, why: string, full = true, named = false): void {
     const p = t.p, c = t.credit;
     if (c) t.credit = null;
-    if (c || p.gold !== t.gold || p.sparks !== t.sparks || t.expIn !== 0) {
-      this.add('gold', why, p.gold - t.gold - (c?.get('gold') ?? 0), t);
-      this.add('sparks', why, p.sparks - t.sparks - (c?.get('sparks') ?? 0), t);
-      this.add('exp', why, t.expIn - (c?.get('exp') ?? 0), t);
+    if (p.gold !== t.gold || p.sparks !== t.sparks || t.expIn !== 0) {
+      const stray = named || ECON_UNKNOWN.includes(why) ? why : this.base;
+      this.add('gold', stray, p.gold - t.gold, t);
+      this.add('sparks', stray, p.sparks - t.sparks, t);
+      this.add('exp', stray, t.expIn, t);
       t.gold = p.gold; t.sparks = p.sparks; t.expIn = 0;
     }
     if (p.lv !== t.lv) {
@@ -361,17 +362,15 @@ export class Ledger {
 
   // ---------- 우편 ----------
   /** 받으려는 우편들에 지금 무엇이 붙어 있는지 적어 둔다. 받은 뒤에 남은 것과 견주면 우편마다 받은 것이 나온다 */
-  private openMails(p: Ent, id: unknown): { m: Mail; why: string; gold: number; sparks: number; exp: number; gear: Gear[]; items: Record<string, number> }[] | null {
+  private openMails(p: Ent, id: unknown): { m: Mail; why: string; gear: Gear[]; items: Record<string, number> }[] | null {
     if (!num(id)) return null;
-    return p.mail.filter((m) => id === 0 || m.id === id).map((m) => ({
-      m, why: `mail:${WORD.test(m.k) ? m.k : 'unknown'}`, gold: m.r.gold ?? 0, sparks: m.r.sparks ?? 0, exp: m.r.exp ?? 0, gear: [...(m.r.gear ?? [])], items: { ...m.r.items },
-    }));
+    return p.mail.filter((m) => id === 0 || m.id === id).map((m) => ({ m, why: mailWhy(m.k), gear: [...(m.r.gear ?? [])], items: { ...m.r.items } }));
   }
   private closeMails(t: Track, mails: NonNullable<ReturnType<Ledger['openMails']>>): void {
     for (const b of mails) {
-      // 우편함에 그대로 남아 있으면 남은 보상을 뺀 만큼만 받은 것이다 (가방이 차서 못 받은 물건, 받지 않은 우편)
+      // 우편함에 그대로 남아 있으면 남은 물건을 뺀 만큼만 받은 것이다 (가방이 차서 못 받은 물건, 받지 않은 우편).
+      // 우편에 붙은 골드·경험치·불씨는 우편 시스템이 같은 이름(mail:종류)으로 지갑에 넣으므로 여기서는 물건만 가린다
       const left = t.p.mail.includes(b.m) ? b.m.r : {};
-      for (const cur of ['gold', 'sparks', 'exp'] as const) { const got = b[cur] - (left[cur] ?? 0); if (got) this.pre(t, cur, b.why, got); }
       const rest = new Set(left.gear ?? []);
       for (const it of b.gear) if (!rest.has(it)) this.pre(t, gearCur(it.rar), b.why, 1);
       for (const [id, n] of Object.entries(b.items)) { const got = n - (left.items?.[id] ?? 0); if (got) this.pre(t, `item:${id}`, b.why, got); }
@@ -395,12 +394,12 @@ export class Ledger {
   }
 
   /**
-   * 그 캐릭터에게 지금까지 쌓인 변화를 이 원인으로 적는다. 명령과 사건 밖에서 재화를 바꾸는 코드(운영 도구, 시험의 준비)가
-   * 바꾼 직후에 부르면 other가 아니라 제 이름으로 적힌다.
+   * 그 캐릭터에게 지금까지 쌓인 변화를 이 원인으로 적는다. 명령과 사건 밖에서 가진 것을 바꾸는 코드(운영 도구, 시험의 준비)가
+   * 바꾼 직후에 부르면 other가 아니라 제 이름으로 적힌다. 재화는 되도록 지갑에 이름을 넘겨 준다: 이것은 이름 없이 준 것과 장비·재료를 위한 길이다
    */
   note(p: Ent, why: string): void {
     const t = this.tracks.get(p.id);
-    if (t) this.settle(t, WORD.test(why) ? why : ECON_UNKNOWN[0]);
+    if (t) this.settle(t, WORD.test(why) ? why : ECON_UNKNOWN[0], true, true);
   }
 
   /** 아직 저장소에 얹지 않은 줄을 내어 주고 비운다. 통신 계층이 저장 주기에 맞춰 가져간다 */

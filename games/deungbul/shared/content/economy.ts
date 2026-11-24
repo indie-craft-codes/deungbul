@@ -21,7 +21,7 @@
 //   자리 비움 사냥의 하루 한도 (8시간)                 틀의 engine/shared/auto.ts의 AWAY.maxS (아직 틀에 있는 수치다)
 //   저장을 읽을 때의 안전 범위 (레벨 999, 필요 경험치 1e9, 우편 한 통의 보상 1e7, 길드 기부 누계 1e12)   틀의 engine/server/game/systems/의 players.ts, mail.ts, guild.ts. 균형의 손잡이가 아니라 깨진 저장을 막는 값이다
 import type { Recipe } from '@engine/shared/defs/craft';
-import type { CurrencyDef, EconNotice } from '@engine/shared/defs/economy';
+import type { CurrencyDef } from '@engine/shared/defs/economy';
 import type { DailyDef, Reward } from '@engine/shared/defs/growth';
 
 // ====================================================================================================
@@ -198,19 +198,12 @@ export const FULL_TOWER_OFFER = 5;
 export const ECON_CURS = ['gold', 'sparks', 'exp'] as const satisfies readonly (keyof typeof CURRENCIES)[];
 
 /**
- * 안내문으로 원인을 가리는 보상: 명령이나 처치의 한가운데, 또는 틱 안에서 주는 것(퀘스트 단계, 습격, 기여 단계)은
- * 앞뒤 차이만으로는 원인을 알 수 없다. 그 보상을 알리는 안내문의 종류와, 안내문의 몇 번째 값이 어느 재화인지를 적어 두면
- * 장부가 그만큼을 그 원인으로 먼저 적는다. 값의 순서는 안내문 선언(games/deungbul/shared/deungbul.ts의 MsgMap)의 주석과 같다
+ * 이 게임의 규칙이 재화를 주고받을 때 지갑(g.wallet)에 넘기는 원인의 이름. 장부에 이 이름으로 적힌다:
+ * 퀘스트 단계 보상(quests.ts), 습격을 막은 보상(raid.ts), 기여 단계 보상(keepers.ts), 불씨 바치기(tower.ts의 offer 명령).
+ * 틀의 시스템이 넘기는 이름은 틀에 있다 (engine/server/game/systems/wallet.ts의 WHY와 mailWhy: cmd:buy, cmd:enhance, mail:종류 등. 사냥은 아래 ECON_HUNT).
+ * 운영에 쌓인 자료(econ_daily의 why)와 이어지도록 한 번 쓴 이름은 바꾸지 않는다. 새 원인은 새 이름으로 더한다
  */
-const notices = {
-  questStep: { why: 'quest', exp: 0, sparks: 1 },
-  raidReward: { why: 'raid', sparks: 0, exp: 1 },
-  tierUp: { why: 'tier', gold: 1 },
-} satisfies Record<string, EconNotice>;
-/** 위 표에 적은 안내문의 종류. 모두 실제 안내문(MsgKey)인지는 이 게임의 선언 파일(games/deungbul/shared/deungbul.ts)이 컴파일할 때 검사한다 */
-export type EconNoticeKey = keyof typeof notices;
-// 이 파일은 틀이 읽는 내용이라 이 게임의 선언(안내문의 목록)에 기대지 않는다: 틀만 타입 검사할 때(npm run typecheck:engine)도 그대로 컴파일된다
-export const ECON_NOTICES: Readonly<Partial<Record<string, EconNotice>>> = notices;
+export const ECON_WHY = { quest: 'quest', raid: 'raid', tier: 'tier', offer: 'cmd:offer' } as const;
 
 /**
  * 생성도 소멸도 아닌 이동: 사람 사이를 건너가는 골드는 원인의 이름을 바꿔 적는다.

@@ -1,5 +1,5 @@
 // 메인 퀘스트: 플레이어마다 장과 단계를 따라간다. 다른 시스템의 사건을 듣고 진행을 올린다.
-import { QUESTS, goalCount, type QuestStep } from '../../shared/defs';
+import { ECON_WHY, QUESTS, goalCount, type QuestStep } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
 import { dist, readInt, type Ent } from '@engine/server/game/entity';
 import type { Game } from '@engine/server/game/game';
@@ -63,8 +63,9 @@ export class Quests {
     p.qn += by; p.questDirty = true; p.unsaved = true;
     if (p.qn < goalCount(step.goal)) return;
     // 단계 완료: 보상을 주고 다음 단계로
-    g.notify(p, 'questStep', step.reward.exp, step.reward.sparks);
-    g.players.grant(p, step.reward.exp, step.reward.sparks);
+    // 안내문에는 실제로 받는 양을 넣는다. 레벨 업 안내가 이 뒤에 오도록 안내문을 먼저 보낸다
+    g.notify(p, 'questStep', g.wallet.amount(p, 'exp', step.reward.exp, ECON_WHY.quest), g.wallet.amount(p, 'sparks', step.reward.sparks, ECON_WHY.quest));
+    g.players.grant(p, step.reward.exp, step.reward.sparks, ECON_WHY.quest);
     p.qn = 0; p.qs++;
     if (p.qs >= QUESTS[p.qc].steps.length) {
       g.notify(p, 'questDone', QUESTS[p.qc].id);

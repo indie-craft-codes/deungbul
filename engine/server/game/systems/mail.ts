@@ -6,6 +6,7 @@ import { ITEMS, MAIL_MAX, MAT_MAX, POTION_MAX, isItemId, mailKept, type Gear, ty
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { GearSys } from './gear';
+import { mailWhy } from './wallet';
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 /** 아직 우편함에 들어가지 않은 우편 (번호는 우편함에 들어갈 때 붙는다) */
@@ -143,8 +144,10 @@ export class MailSys {
     if (!take.length) return;
     let gold = 0, exp = 0, sparks = 0, gears = 0, items = 0;
     const left = new Set<Mail>();
+    /** 우편마다 붙어 있던 골드·경험치·불씨: 물건을 다 살핀 뒤에 우편의 종류를 원인으로 지갑에 넣는다 */
+    const paid: { why: string; r: Reward }[] = [];
     for (const m of take) {
-      gold += m.r.gold ?? 0; exp += m.r.exp ?? 0; sparks += m.r.sparks ?? 0;
+      paid.push({ why: mailWhy(m.k), r: m.r });
       const restGear: Gear[] = [], restItems: Record<string, number> = {};
       // 가방에는 베낀 것을 넣는다: 같은 보상 값을 여러 우편이 함께 쓰더라도 한 장비가 두 가방에 들어가지 않게
       for (const it of m.r.gear ?? []) { if (g.gear.put(p, { ...it, opts: it.opts.map(([k, v]): [typeof k, number] => [k, v]) })) gears++; else restGear.push(it); }
@@ -162,8 +165,14 @@ export class MailSys {
       left.add(m);
     }
     p.mail = p.mail.filter((x) => !take.includes(x) || left.has(x));
-    p.gold += gold;
-    g.players.grant(p, exp, sparks);
+    // 안내문에는 실제로 받은 양을 넣는다 (배율이나 상한이 걸렸으면 그만큼)
+    for (const { why, r } of paid) {
+      gold += g.wallet.add(p, 'gold', r.gold ?? 0, why);
+      sparks += g.wallet.add(p, 'sparks', r.sparks ?? 0, why);
+      exp += g.wallet.add(p, 'exp', r.exp ?? 0, why);
+    }
+    // 받은 재화가 없어도 전처럼 저장할 것으로 표시하고 레벨을 확인한다
+    p.dirty = true; p.unsaved = true; g.players.levelUp(p);
     p.metaDirty = true;
     if (gold || exp || sparks || gears || items) g.notify(p, 'mailGot', gold, exp, sparks, gears, items);
     if (left.size) g.notify(p, 'mailLeft');

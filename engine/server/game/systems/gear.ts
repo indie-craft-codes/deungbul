@@ -5,6 +5,7 @@
 import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, baseOpt, gearStat, isGearSlot, isItemId, isStat, rollOpt, sellPrice, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
+import { WHY } from './wallet';
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 /** 옵션 하나의 값이 가질 수 있는 가장 큰 수: 이보다 큰 것은 깨진 저장으로 보고 버린다 */
@@ -188,8 +189,7 @@ export class GearSys {
       this.look(p, it.slot);
     }
     p.gear.splice(p.gear.indexOf(it), 1);
-    const gold = sellPrice(it);
-    p.gold += gold;
+    const gold = this.g.wallet.add(p, 'gold', sellPrice(it), WHY.sell);
     this.g.notify(p, 'gearSold', gold);
     this.changed(p);
   }
@@ -199,8 +199,7 @@ export class GearSys {
     if (!it) return;
     if (it.plus >= enhanceMax(it)) { g.notify(p, 'enhanceMax'); return; }
     const cost = ENHANCE.gold(it.plus, it.rar);
-    if (p.gold < cost) { g.notify(p, 'noGold'); return; }
-    p.gold -= cost;
+    if (!g.wallet.take(p, 'gold', cost, WHY.enhance)) { g.notify(p, 'noGold'); return; }
     if (this.random() < ENHANCE.rate(it.plus)) { it.plus++; g.notify(p, 'enhanceOk', it.plus); }
     else g.notify(p, 'enhanceFail');
     this.changed(p);

@@ -3,6 +3,7 @@
 import { BUILD, BUILD_STATS, classOf, isBuildStat, isSkillId, type BuildStat, type SkillId } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
+import { WHY } from './wallet';
 
 export class Build {
   constructor(private g: Game) {
@@ -52,8 +53,7 @@ export class Build {
   reset(p: Ent): void {
     const g = this.g, cost = BUILD.resetGold(p.lv);
     if (this.spent(p) === 0) return;
-    if (p.gold < cost) { g.notify(p, 'noGold'); return; }
-    p.gold -= cost;
+    if (!g.wallet.take(p, 'gold', cost, WHY.statReset)) { g.notify(p, 'noGold'); return; }
     for (const k of BUILD_STATS) p.stats[k] = 0;
     g.notify(p, 'statReset');
     this.changed(p);
@@ -65,8 +65,7 @@ export class Build {
     if (lv >= BUILD.skillMax) { g.notify(p, 'skillMax'); return; }
     if (p.lv < BUILD.skillNeedLv(lv)) { g.notify(p, 'skillNeedLv', BUILD.skillNeedLv(lv)); return; }
     const cost = BUILD.skillGold(lv);
-    if (p.gold < cost) { g.notify(p, 'noGold'); return; }
-    p.gold -= cost;
+    if (!g.wallet.take(p, 'gold', cost, WHY.skillUp)) { g.notify(p, 'noGold'); return; }
     p.skillLv[id] = lv + 1;
     g.notify(p, 'skillUp', id, lv + 1);
     this.changed(p);

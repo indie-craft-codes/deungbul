@@ -1,6 +1,6 @@
 // 등탑과 주민: 서버 전체가 공유하는 진행. 불씨를 바쳐 밝기를 올리고 주민을 되돌린다.
 // 등탑은 구역마다 하나씩 있다. 바깥 구역의 등탑은 꺼진 채로 시작하고, 모두가 불씨를 모아 밝혀야 한다.
-import { FULL_TOWER_OFFER, GLOW_BRIGHT_REGEN, GLOW_MAX, RESIDENTS, TOWER_REACH, speedFor, stageOf, type ResidentId, type Stage } from '../../shared/defs';
+import { ECON_WHY, FULL_TOWER_OFFER, GLOW_BRIGHT_REGEN, GLOW_MAX, RESIDENTS, TOWER_REACH, speedFor, stageOf, type ResidentId, type Stage } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
 import type { WorldState } from '@engine/shared/protocol';
 import { TOWERS, zoneOf, type TowerDef } from '../../shared/world';
@@ -99,7 +99,8 @@ export class Tower {
       if (this.got[i] >= RESIDENTS[i].need) { g.announce('residentBack', RESIDENTS[i].id); g.fire('residentReturned', RESIDENTS[i].id); }
       g.stateDirty = true; g.saveDirty = true;
     }
-    p.sparks -= used; p.contrib += used; p.dirty = true; p.unsaved = true;
+    g.wallet.take(p, 'sparks', used, ECON_WHY.offer); // used는 가진 불씨를 넘지 않게 위에서 맞췄다
+    p.contrib += used; p.dirty = true; p.unsaved = true;
     g.notify(p, 'offered', used, p.contrib, to);
     g.fire('offered', p, to, used, ti);
     g.daily.add(p, 'offer', used); // 일일 임무 '불씨 바치기'. 임무 시스템은 불씨를 모르므로 여기서 알린다

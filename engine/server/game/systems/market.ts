@@ -6,6 +6,7 @@ import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { GearSys } from './gear';
+import { WHY } from './wallet';
 
 /** 올라온 물건 하나. 장비(gear)이거나 재료 묶음(item과 n)이다 */
 interface Listing {
@@ -166,10 +167,9 @@ export class Market {
     if (l.seller === p.pid) { g.notify(p, 'marketOwn'); return; }
     if (p.lv < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
     if (this.mailFull(p)) return;
-    if (!(p.gold >= l.price)) { g.notify(p, 'noGold'); return; }
-    // 여기부터는 되돌리지 않는다: 먼저 목록에서 빼서 같은 물건이 두 번 팔리지 않게 한다
+    // 값을 치른 뒤부터는 되돌리지 않는다: 먼저 목록에서 빼서 같은 물건이 두 번 팔리지 않게 한다
+    if (!g.wallet.take(p, 'gold', l.price, WHY.marketBuy)) { g.notify(p, 'noGold'); return; }
     this.listings.delete(id);
-    p.gold -= l.price;
     this.hand(p, l, 'marketBought');
     const fee = marketFee(l.price);
     this.burned += fee;

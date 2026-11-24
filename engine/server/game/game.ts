@@ -40,6 +40,7 @@ import { Party } from './systems/party';
 import { Movement } from './systems/movement';
 import { Players } from './systems/players';
 import { Shop } from './systems/shop';
+import { Wallet } from './systems/wallet';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
 const NAV_VISITS_PER_TICK = 12000;
@@ -200,6 +201,8 @@ export class Game {
   private nextId = 1;
 
   // ---- 시스템 ----
+  /** 재화(골드, 불씨, 경험치)를 더하고 빼는 한 통로. 다른 시스템과 규칙 플러그인이 만들어질 때부터 쓸 수 있게 가장 먼저 만든다 */
+  readonly wallet: Wallet;
   readonly movement: Movement;
   readonly players: Players;
   readonly combat: Combat;
@@ -225,6 +228,7 @@ export class Game {
 
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
+    this.wallet = new Wallet(this);
     this.movement = new Movement(this);
     this.players = new Players(this);
     this.combat = new Combat(this);
