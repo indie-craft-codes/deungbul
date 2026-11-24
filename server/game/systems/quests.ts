@@ -1,12 +1,32 @@
 // 메인 퀘스트: 플레이어마다 장과 단계를 따라간다. 다른 시스템의 사건을 듣고 진행을 올린다.
 import { QUESTS, goalCount, type QuestStep } from '../../../shared/defs';
-import { dist, type Ent } from '../entity';
+import { dist, readInt, type Ent } from '../entity';
 import type { Game } from '../game';
 
 export class Quests {
   private visitT = 0;
 
   constructor(private g: Game) {
+    // 엔티티 칸: 메인 퀘스트의 장·단계·진행 수치와, 본인에게 알려야 한다는 표시 (접속한 사람은 처음에 한 번 받는다)
+    g.entInit.push((e) => { e.qc = 0; e.qs = 0; e.qn = 0; e.questDirty = e.kind === 'p'; });
+    // 저장: ext.quest = [장, 단계, 진행 수치]. 칸을 옮기기 전의 저장은 같은 모양으로 최상위 quest에 있다
+    g.saves.push({
+      name: 'quest',
+      save: (p) => [p.qc, p.qs, p.qn],
+      load: (p, raw) => {
+        // 내용이 바뀌어 없는 단계를 가리키면 그 장의 처음으로 돌린다
+        const q = Array.isArray(raw) ? raw : [0, 0, 0];
+        p.qc = readInt(q[0], 0, QUESTS.length, 0);
+        const steps = QUESTS[p.qc]?.steps;
+        p.qs = steps ? readInt(q[1], 0, steps.length - 1, 0) : 0;
+        p.qn = steps ? readInt(q[2], 0, goalCount(steps[p.qs].goal) - 1, 0) : 0;
+      },
+      legacy: (whole) => whole.quest,
+      legacySave: (p) => ({ quest: [p.qc, p.qs, p.qn] }),
+    });
+    // 퀘스트를 조금이라도 한 캐릭터는 저장할 것이 있다 (아무것도 하지 않은 새 캐릭터를 저장하지 않는 규칙)
+    const touched = g.rules.touched;
+    g.rules.touched = (p) => p.qc > 0 || p.qs > 0 || p.qn > 0 || !!touched?.(p);
     g.ticks.push((dt) => this.tick(dt));
     g.on('monsterKilled', (m, hitters) => {
       for (const p of hitters) {

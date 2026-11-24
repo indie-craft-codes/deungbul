@@ -2,10 +2,10 @@
 // 실시간 상태(체력, 몬스터)는 저장하지 않는다. 재시작을 넘어 남아야 하는 것만 적는다.
 
 export interface PlayerSave {
-  name: string; lv: number; exp: number; need: number; maxHp: number; sparks: number; contrib: number;
+  name: string; lv: number; exp: number; need: number; maxHp: number; sparks: number; /** 옛 칸 (읽기 전용 호환): 지금은 ext.tower.contrib. 옛 저장을 읽는 길(Saver.legacy)이 본다 */ contrib?: number;
   /** 마지막으로 저장된 시각(ms). 접속하지 않은 시간을 계산할 때 쓴다 */
   seen?: number;
-  /** 메인 퀘스트 진행: [장, 단계, 진행 수치] */
+  /** 옛 칸 (읽기 전용 호환): 지금은 ext.quest. 메인 퀘스트 진행: [장, 단계, 진행 수치] */
   quest?: [number, number, number];
   /** 직업. 아직 고르지 않았으면 빈 문자열 */
   cls?: string;
@@ -13,9 +13,9 @@ export interface PlayerSave {
   weapon?: string;
   armor?: string;
   items?: Record<string, number>;
-  /** 남은 휴식 보너스 */
+  /** 옛 칸 (읽기 전용 호환): 지금은 ext.rest.left. 남은 휴식 보너스 */
   rested?: number;
-  /** 받은 기여 단계 보상의 수 */
+  /** 옛 칸 (읽기 전용 호환): 지금은 ext.keepers.tier. 받은 기여 단계 보상의 수 */
   tier?: number;
   /** 시스템마다 자기 이름의 칸에 저장하는 것 (장비, 우편, 일일 임무). server/game/game.ts의 Saver */
   ext?: Record<string, unknown>;

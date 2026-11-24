@@ -4,7 +4,7 @@
 import { CONTRIB_TIERS, KEEPERS_SHOWN, RAID_KEEP_POINTS } from '../../../shared/defs';
 import type { WorldState } from '../../../shared/protocol';
 import { NAME_MAX } from '../../../shared/world';
-import type { Ent } from '../entity';
+import { readInt, type Ent } from '../entity';
 import type { Game } from '../game';
 
 export class Keepers {
@@ -18,6 +18,15 @@ export class Keepers {
   private rollT = 0;
 
   constructor(private g: Game) {
+    // 엔티티 칸과 저장: 받은 기여 단계 보상의 수. ext.keepers = { tier }. 칸을 옮기기 전의 저장은 최상위 tier에 있다
+    g.entInit.push((e) => { e.tier = 0; });
+    g.saves.push({
+      name: 'keepers',
+      save: (p) => ({ tier: p.tier }),
+      load: (p, raw) => { p.tier = readInt((raw as { tier?: unknown } | null)?.tier, 0, 99, 0); },
+      legacy: (whole) => (whole.tier === undefined ? undefined : { tier: whole.tier }),
+      legacySave: (p) => ({ tier: p.tier }),
+    });
     g.ticks.push((dt) => this.tick(dt));
     g.worldSaves.push({ name: 'keepers', save: () => this.save(), load: (d) => this.load(d) });
     g.shared.push({ name: 'keepers', state: () => this.state() });

@@ -13,7 +13,7 @@ import { NavGrid } from '../../shared/nav';
 import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
 import { resolve } from '../../shared/sim';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
-import type { WorldSave } from '../store';
+import type { PlayerSave, WorldSave } from '../store';
 import type { Ent } from './entity';
 import type { EntExt, GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
 import { installDeungbul } from './deungbul';
@@ -82,10 +82,16 @@ export interface Rules extends RulesExt {
   unlocked: (key: string) => boolean;
   /** 습격으로 온 적이 향하는 곳. 없으면 평소의 몬스터처럼 군다 */
   siege: { x: number; z: number } | null;
+  /** 이 캐릭터에게 게임의 진행(틀이 모르는 칸)이 있는가. 아무것도 하지 않은 새 캐릭터를 저장하지 않는 규칙이 틀의 칸(직업, 레벨, 골드 등)에 더해 묻는다. 없으면 '없다' */
+  touched?: (p: Ent) => boolean;
 }
 
-/** 캐릭터 저장의 한 칸. 시스템이 자기 몫을 직접 쓰고 읽는다 (PlayerSave.ext[name]) */
-export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void }
+/**
+ * 캐릭터 저장의 한 칸. 시스템이 자기 몫을 직접 쓰고 읽는다 (PlayerSave.ext[name])
+ * legacy: 자기 칸이 없는 저장(그 값이 PlayerSave의 최상위 칸에 있던 옛 형식)에서 자기 몫을 찾아 load가 읽는 모양으로 돌려준다. 없으면 undefined (월드 저장의 legacy와 같다). 옛 저장이 남아 있는 한 지우지 않는다
+ * legacySave: 호환: 다음 배포에서 뺀다. 칸을 옮긴 배포 한 번 동안 옛 최상위 칸에도 함께 적을 값 (쓰는 곳은 players.ts의 export 한 곳)
+ */
+export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: PlayerSave) => unknown; legacySave?: (p: Ent) => Partial<PlayerSave> }
 
 /** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (주민 혜택, 나중의 장비와 버프). */
 export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp' | keyof ModsExt;
@@ -177,6 +183,8 @@ export class Game {
   readonly ready: (() => void)[] = [];
   /** 엔티티가 만들어질 때마다 불린다. 게임이 더한 칸(EntExt)의 처음 값을 채운다 */
   readonly entInit: ((e: Ent) => void)[] = [];
+  /** 몬스터를 잡은 사람이 덤으로 받는 경험치 (휴식 보너스 같은 것). 등록한 함수들의 값을 더한다 */
+  readonly killBonus: ((p: Ent, m: Ent) => number)[] = [];
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
   private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;
@@ -249,7 +257,7 @@ export class Game {
     const base: Omit<Ent, keyof EntExt> = {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, lastAct: -99, path: null, pgx: x, pgz: z, pat: 0,
       hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
-      bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
+      bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], dirty: false, unsaved: false, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0,
       gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), raid: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
     };
