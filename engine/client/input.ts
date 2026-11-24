@@ -3,6 +3,7 @@ import { toggleAuto } from './auto';
 import { runKey } from './bus';
 import { toggleBag } from './hud/bag';
 import { toggleMenu } from './hud/menu';
+import { closeWorldMap, toggleWorldMap, worldMapOpen } from './hud/worldmap';
 import { goToTown } from './actions';
 import { SKILL_SLOTS } from '../shared/defs';
 import { nextTarget, stop, tapAt, usePotion, useSkill } from './actions';
@@ -85,13 +86,14 @@ function initKeyboard(): void {
     if (!S.me) return;
     if (ev.key === 'Enter') { ev.preventDefault(); focusChat(); return; }
     if (ev.key === 'Tab') { ev.preventDefault(); nextTarget(); return; }
-    if (ev.key === 'Escape') { stop(); return; }
+    if (ev.key === 'Escape') { if (worldMapOpen()) closeWorldMap(); else stop(); return; }
     if (ev.key >= '1' && ev.key <= String(SKILL_SLOTS)) { useSkill(Number(ev.key) - 1); return; }
     if (ev.key.toLowerCase() === 'q') { usePotion(); return; }
     if (ev.key.toLowerCase() === 'r') { toggleAuto(); return; }
     if (ev.key.toLowerCase() === 'h') { goToTown(); return; }
     if (ev.key.toLowerCase() === 'b') { toggleBag(); return; }
     if (ev.key.toLowerCase() === 'm') { toggleMenu(); return; }
+    if (ev.key.toLowerCase() === 'n') { toggleWorldMap(); return; }
     if (runKey(ev.key)) return; // 게임의 모듈이 등록한 단축키 (bus.onKey)
     keys.add(ev.key.toLowerCase());
   });

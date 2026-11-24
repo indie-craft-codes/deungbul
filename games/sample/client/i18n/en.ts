@@ -39,7 +39,7 @@ export const enGame: GameLocale = {
     title: 'Bonfire Hunting Ground',
     intro: 'You are a hunter at a forest camp. Hunt for firewood, feed the bonfire and warm up together.',
     classHint: 'You can change class later beside the bonfire.',
-    hint: keyHints(['Click/WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: stew', 'F: feed the fire', 'R: auto-hunt', 'H: to the bonfire', 'B: bag', 'M: menu', 'Tab: target', 'Enter: chat']),
+    hint: keyHints(['Click/WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: stew', 'F: feed the fire', 'R: auto-hunt', 'H: to the bonfire', 'B: bag', 'M: menu', 'N: map', 'Tab: target', 'Enter: chat']),
     mapLegend: '■ Bonfire · green: merchant',
     goingTown: 'Walking to the bonfire.',
     bagMats: 'Materials',

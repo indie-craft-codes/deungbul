@@ -66,11 +66,13 @@ export const enBase = (n: ContentNames): EngineLocale => {
       chatPlaceholder: '[[Press Enter to chat|Message]]',
       chatLabel: 'Chat message',
       stickLabel: 'Movement joystick',
-      hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'R: auto-hunt', 'B: bag', 'M: menu', 'Tab: target', 'Enter: chat']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'R: auto-hunt', 'B: bag', 'M: menu', 'N: map', 'Tab: target', 'Enter: chat']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       attackNearest: 'Attack nearest',
       auto: 'Auto-hunt',
       bag: 'Bag',
       minimap: 'Minimap',
+      worldMap: 'Map',
+      worldMapHint: 'Tap a spot on the map to walk there. Open and close it with the Map button, the N key or the minimap.',
       mapLegendDungeon: 'red ○ boss · blue party',
       bagPotions: 'Potions',
       bagMats: 'Crafting materials',

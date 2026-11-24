@@ -81,6 +81,11 @@ export const SKELETON = `
       <div id="bagList"></div>
       <button type="button" class="plain" id="bagClose" data-i18n="close"></button>
     </div>
+    <div class="panel" id="wmap" hidden>
+      <div class="row"><span class="ttitle" data-i18n="worldMap"></span><button type="button" class="plain" id="wmapClose" data-i18n="close"></button></div>
+      <canvas id="wmapCanvas" data-i18n-aria="worldMap"></canvas>
+      <div class="note" data-i18n="worldMapHint"></div>
+    </div>
     <div class="panel" id="menu" hidden>
       <!-- 창의 머리: 소리 단추와 닫기 단추는 어느 탭에서나 같은 자리에 있다 -->
       <div class="row" id="menuHead">
@@ -105,6 +110,7 @@ export const SKELETON = `
       <div id="actRow">
         <button id="autoBtn" type="button" aria-pressed="false" data-i18n="auto"></button>
         <button id="tabBtn" type="button" data-i18n="attackNearest"></button>
+        <button id="mapBtn" type="button" aria-pressed="false" data-i18n="worldMap"></button>
       </div>
       <div id="skills"></div>
     </div>

@@ -89,11 +89,13 @@ export const koBase = (n: ContentNames) => {
       chatPlaceholder: '[[Enter로 대화|대화 입력]]',
       chatLabel: '대화 입력',
       stickLabel: '이동 조이스틱',
-      hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 물약', 'R: 자동 사냥', 'B: 가방', 'M: 메뉴', 'Tab: 대상', 'Enter: 대화']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 물약', 'R: 자동 사냥', 'B: 가방', 'M: 메뉴', 'N: 지도', 'Tab: 대상', 'Enter: 대화']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       attackNearest: '가까운 대상 공격',
       auto: '자동 사냥',
       bag: '가방',
       minimap: '미니맵',
+      worldMap: '지도',
+      worldMapHint: '지도에서 누른 곳으로 걸어갑니다. 지도 단추, N 키, 미니맵으로 열고 닫습니다.',
       mapLegendDungeon: '붉은 ○ 우두머리 · 하늘색 파티원',
       bagPotions: '물약',
       bagMats: '제작 재료',

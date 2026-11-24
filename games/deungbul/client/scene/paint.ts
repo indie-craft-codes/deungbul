@@ -29,7 +29,7 @@ export function leaf(x: number, _z: number, k: number): number {
   return colors[Math.floor(k * colors.length) % colors.length];
 }
 
-const MAP_COLOR = { ground: '#3d6b45', forest: '#4a5a52', pond: '#4f9fc0' };
+const MAP_COLOR = { ground: '#3d6b45', forest: '#4a5a52', pond: '#4f9fc0', road: '#8f8058' };
 /** 미니맵의 바탕 (hud/minimap.ts의 setMapPaint) */
 export function mapPaint(b: MapBrush): void {
   // 땅: 구역마다 색이 다르다
@@ -37,4 +37,9 @@ export function mapPaint(b: MapBrush): void {
   b.quad(ZONE_SPLIT, MIN_Z, MAX_X, MAX_Z, MAP_COLOR.forest);
   for (const a of AREAS.slice(1)) b.quad(a.x0, a.z0, a.x1, a.z1, '#3a3648'); // 던전 같은 따로 떨어진 지역
   b.disc(POND.x, POND.z, POND.r, MAP_COLOR.pond);
+  // 길: shared/content/map.ts의 onPath와 같은 자리 (동서 큰길, 등탑마다 지나는 남북 길)
+  const w = 1.6;
+  b.quad(-44, -w, MAX_X - 4, w, MAP_COLOR.road);
+  b.quad(-w, -40, w, 30, MAP_COLOR.road);
+  b.quad(TOWERS[1].x - w, -30, TOWERS[1].x + w, 30, MAP_COLOR.road);
 }

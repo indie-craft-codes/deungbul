@@ -13,6 +13,7 @@ import { initMinimap } from './hud/minimap';
 import { initNear } from './hud/near';
 import { initParty } from './hud/party';
 import { initShop } from './hud/shop';
+import { initWorldMap } from './hud/worldmap';
 import { initSound } from './sound';
 
 export function initModules(): void {
@@ -24,6 +25,7 @@ export function initModules(): void {
   initAuto();
   initBag();
   initMinimap();
+  initWorldMap();
   initMenu();
   initChannel();
   initDungeon();

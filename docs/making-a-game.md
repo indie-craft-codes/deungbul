@@ -317,7 +317,7 @@ export const koNames: ContentNames = {
     title: '모닥불 사냥터',
     intro: '숲속 야영지의 사냥꾼이 됩니다. 짐승을 잡아 장작을 모으고, 모닥불을 지펴 함께 몸을 녹이세요.',
     classHint: '직업은 나중에 모닥불 곁에서 바꿀 수 있습니다.',
-    hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 스튜', 'F: 장작 넣기', 'R: 자동 사냥', 'H: 모닥불로', 'B: 가방', 'M: 메뉴', 'Tab: 대상', 'Enter: 대화']),
+    hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 스튜', 'F: 장작 넣기', 'R: 자동 사냥', 'H: 모닥불로', 'B: 가방', 'M: 메뉴', 'N: 지도', 'Tab: 대상', 'Enter: 대화']),
     mapLegend: '■ 모닥불 · 초록 상인',
     // 틀의 기본 문장을 이 게임의 말로 덮어쓴 것
     goingTown: '모닥불로 걸어갑니다.',
@@ -729,7 +729,7 @@ export function initBonfire(): void {
 | `rules.ts`의 `rules` | 화면 쪽 규칙 | `client/bonfire.ts` (`home`) |
 | `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳 | `client/bonfire.ts` |
 | `hud/near.ts`의 `addPlace` | 가까이 가면 열리는 창 | `client/bonfire.ts` |
-| `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK` | 미니맵의 표식과 바탕 | `client/bonfire.ts`, `client/scene.ts` |
+| `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도에 적는 이름(구역, 마을 …). 전체 지도(`hud/worldmap.ts`, N 키·미니맵·`지도` 단추)는 틀이 그리고 누른 곳으로 걸어가게 한다: 게임은 표식·바탕·이름만 등록한다 | `client/bonfire.ts`, `client/scene.ts` |
 | `hud/classes.ts`의 `openClasses` | 직업 고르기 창 열기 | `client/bonfire.ts` |
 | `scene/view.ts`의 `Look` | 땅, 잎, 건물 | `client/scene.ts` |
 | `scene/models.ts`의 `registerMonsterModel`, `registerBlade`, `registerArmor`, `mat`, `part`, `limb` | 모델 | `client/scene.ts` |

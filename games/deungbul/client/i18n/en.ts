@@ -74,7 +74,7 @@ export const enGame: GameLocale = {
   ui: {
     title: 'Lampkeeper',
     shop: 'Road Merchant',
-    hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'F: quest', 'R: auto-hunt', 'H: town', 'B: bag', 'M: menu', 'Tab: target', 'Enter: chat']),
+    hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'F: quest', 'R: auto-hunt', 'H: town', 'B: bag', 'M: menu', 'N: map', 'Tab: target', 'Enter: chat']),
     toTown: 'To town',
     mapLegend: '■ tower · ○ quest · green merchant',
     goingTown: 'Walking back to Firstlight Village.',

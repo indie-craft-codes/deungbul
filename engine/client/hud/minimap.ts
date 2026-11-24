@@ -24,6 +24,17 @@ export interface MapBrush { quad(x0: number, z0: number, x1: number, z1: number,
 let paint = (b: MapBrush): void => { for (const a of AREAS) b.quad(a.x0, a.z0, a.x1, a.z1, COLOR.ground); };
 /** 바탕(땅, 물 같은 지형)을 칠하는 함수를 등록한다. 맵은 게임마다 다르므로, 등록하지 않으면 지역마다 한 가지 색으로 칠한다 */
 export function setMapPaint(fn: (b: MapBrush) => void): void { paint = fn; }
+/** 전체 지도(worldmap.ts)도 같은 바탕과 표식을 쓴다 */
+export const paintWith = (b: MapBrush): void => paint(b);
+export const allMarks = (): Mark[] => markers.flatMap((fn) => fn());
+
+/** 전체 지도에 적는 이름 (구역, 마을, 던전 …). big은 구역처럼 큰 이름 */
+export interface MapLabel { x: number; z: number; text: string; big?: boolean }
+const labelers: (() => MapLabel[])[] = [];
+/** 전체 지도에 적을 이름을 내는 함수를 등록한다. 언어가 바뀌어도 맞게 그릴 때마다 불린다. 미니맵에는 적지 않는다 */
+export function addMapLabels(fn: () => MapLabel[]): void { labelers.push(fn); }
+export const allLabels = (): MapLabel[] => labelers.flatMap((fn) => fn());
+
 /** 표식에 쓰는 색 */
 export const MARK = { lit: '#f0bb55', dark: '#8a8f8c', shop: '#7fd68a', quest: '#ffe08a', portal: '#b9a3ff' };
 
@@ -108,5 +119,5 @@ export function initMinimap(): void {
   canvas.width = SIZE * ratio; canvas.height = SIZE * ratio;
   ctx = canvas.getContext('2d');
   ctx?.scale(ratio, ratio);
-  onSlow(draw);
+  onSlow(draw); // 미니맵을 누르면 전체 지도가 열린다 (worldmap.ts가 듣는다)
 }

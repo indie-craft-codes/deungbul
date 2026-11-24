@@ -77,7 +77,7 @@ export const koNames: ContentNames = {
 export const koGame = {
   ui: {
     title: '등불지기',
-    hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 물약', 'F: 퀘스트 이동', 'R: 자동 사냥', 'H: 마을로', 'B: 가방', 'M: 메뉴', 'Tab: 대상', 'Enter: 대화']),
+    hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 물약', 'F: 퀘스트 이동', 'R: 자동 사냥', 'H: 마을로', 'B: 가방', 'M: 메뉴', 'N: 지도', 'Tab: 대상', 'Enter: 대화']),
     toTown: '마을로',
     shop: '길 상인',
     mapLegend: '■ 등탑 · ○ 퀘스트 · 초록 상인',

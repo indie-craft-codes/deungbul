@@ -181,6 +181,8 @@ button.plain:hover { border-color: var(--gold); }
 @media (pointer: coarse) { #skills { justify-content: flex-end; } }
 #autoBtn { pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
 #autoBtn.on { background: var(--gold); color: #1c1405; font-weight: 700; border-color: transparent; }
+#mapBtn { pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
+#mapBtn[aria-pressed="true"] { border-color: var(--gold); }
 #tabBtn { flex: 1; display: none; pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; }
 #stick {
   position: absolute; left: max(20px, env(safe-area-inset-left, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px));
@@ -306,6 +308,12 @@ html, body { height: var(--app-h, 100%); }
 
 /* 미니맵: PC에서만 오른쪽 아래에 둔다 */
 #mapBox { position: absolute; right: 16px; bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; pointer-events: none; }
+#minimap { pointer-events: auto; cursor: pointer; }
+/* 전체 지도: 화면 가운데의 창. 캔버스의 크기는 worldmap.ts가 지역의 모양에 맞춰 정한다 */
+#wmap { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min-content; max-width: 96%; max-height: 94%; display: flex; flex-direction: column; gap: 6px; align-items: center; background: var(--ink); z-index: 5; }
+#wmap[hidden] { display: none; }
+#wmap .row { align-self: stretch; }
+#wmapCanvas { cursor: crosshair; touch-action: manipulation; }
 #minimap { width: 150px; height: 150px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); }
 #mapLegend { background: rgba(14, 34, 39, .6); padding: 1px 7px; border-radius: 3px; font-size: 10.5px; white-space: nowrap; }
 @media (pointer: coarse), (max-width: 900px), (max-height: 520px) { #mapBox { display: none; } }
