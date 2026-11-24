@@ -2,6 +2,7 @@
 // 규칙은 engine/server/game/systems/dungeon.ts가 맡는다. 수치는 모두 잠정값이다.
 // 모양(DungeonDef)과 도우미는 틀에 있다: engine/shared/defs/dungeons.ts
 import type { DungeonDef } from '@engine/shared/defs/dungeons';
+import { DUNGEON_ECON } from './economy';
 import { MAP } from './map';
 
 export const DUNGEONS = {
@@ -9,7 +10,8 @@ export const DUNGEONS = {
     portal: MAP.portals.crypt,
     entry: { x: 266, z: 0 },
     minLv: 8,
-    perDay: 3,
+    // 하루 횟수와 끝낸 보상은 economy.ts에 있다
+    perDay: DUNGEON_ECON.crypt.perDay,
     timeS: 600,
     exitS: 30,
     packs: [
@@ -19,7 +21,7 @@ export const DUNGEONS = {
       { type: 'goblin', x: 310, z: 0, n: 5 },
     ],
     boss: { type: 'crypt_lord', x: 328, z: 0 },
-    reward: { gold: 300, exp: 600, sparks: 15 },
+    reward: DUNGEON_ECON.crypt.reward,
     dropRar: 2, dropLv: 5,
   },
 } as const satisfies Record<string, DungeonDef>;

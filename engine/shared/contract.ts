@@ -10,7 +10,7 @@
 import type { ClassDef, SkillDef } from './defs/combat';
 import type { ForgeDef } from './defs/craft';
 import type { DungeonDef } from './defs/dungeons';
-import type { EconNotice } from './defs/economy';
+import type { CurrencyDef, EconNotice } from './defs/economy';
 import type { DailyDef, Reward } from './defs/growth';
 import type { ItemDef } from './defs/items';
 import type { MapDef } from './defs/map';
@@ -99,6 +99,10 @@ export interface ContentContract {
   CHANNEL: { count: number; soft: number; hard: number; switchCdS: number; calmS: number; tellS: number; tellBusyS: number };
   GUILD: { createLv: number; createGold: number; nameMin: number; nameMax: number; noticeMax: number; maxMembers: number; inviteS: number; reinviteS: number; expPerGuildLevel: number; maxLevel: number; expPerLevel: number; gives: readonly number[]; noticeGapS: number; chatGapS: number };
   MARKET: { maxPrice: number; minPrice: number; minLv: number; listGapS: number; maxListings: number; maxTotal: number; hours: number; tax: number; pageSize: number; sweepS: number };
+
+  // ---------- 재화 ----------
+  /** 재화의 표: 재화의 id → 이름표 칸, 거래 가능 여부, 상한. 틀이 아는 칸은 gold, sparks, exp다 (없는 재화는 한도 없이 다룬다) */
+  CURRENCIES: Readonly<Record<string, CurrencyDef>>;
 
   // ---------- 재화 흐름 지표 (경제 장부: engine/server/game/systems/ledger.ts, scripts/econ.ts) ----------
   /** 장부가 적는 재화 */
