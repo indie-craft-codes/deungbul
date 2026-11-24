@@ -6,7 +6,7 @@
 //   - 확장 지점: 게임이 선언으로 더한 것(사건, 공유 상태, 명령)이 등불지기에는 실행 중에 있고 틀만의 게임에는 없는가
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, restGain } from '../shared/defs';
+import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, needFor, restGain } from '../shared/defs';
 import { TOWER } from '../shared/world';
 import type { Ent } from '@engine/server/game/entity';
 import { Game } from '@engine/server/game/game';
@@ -51,6 +51,7 @@ function noonOf(day: unknown): number {
 //   ext.build      비어 있던 능력치 칸이 0으로 채워진다 ({} → { pow: 0, … }). 0인 칸은 없는 것으로 보고 비교한다
 //   ext.gear       목록의 순서(낀 것이 앞으로 온다)는 따지지 않는다. 낀 무기가 없던 저장은 든 무기(weapon)를 낱개 장비로 새로 받으므로,
 //                  '견본의 장비가 모두 그대로 있고 끼고 있던 것을 그대로 끼고 있다'까지만 본다
+//   need           다음 레벨까지의 필요 경험치. 저장 값을 읽지 않고 레벨에서 다시 구한다 (needFor): 꾸민 견본 셋은 이 칸이 레벨과 맞지 않게 적혀 있다
 //   quest, contrib, tier, rested   옛 최상위 칸. 읽기만 하고 다시 적지 않는다: 견본의 옛 칸은 새로 쓴 저장의 새 칸(ext.quest, ext.tower, ext.keepers, ext.rest)과 견준다
 // 견본에 없던 칸(옛 저장의 ext, armor, at 등)은 새로 생기는 것이라 따지지 않는다. 대신 한 번 더 왕복해서 그대로인지 본다.
 {
@@ -79,7 +80,8 @@ function noonOf(day: unknown): number {
     const was = norm(save), is = norm(out), wasExt = was.ext as Bag, isExt = is.ext as Bag;
     const d: string[] = [];
     const OLD_CELLS = ['quest', 'contrib', 'tier', 'rested'];
-    for (const k of Object.keys(was)) if (k !== 'ext' && !OLD_CELLS.includes(k)) d.push(...diff(was[k], is[k], k));
+    for (const k of Object.keys(was)) if (k !== 'ext' && k !== 'need' && !OLD_CELLS.includes(k)) d.push(...diff(was[k], is[k], k));
+    d.push(...diff(needFor(save.lv), out.need, 'need (레벨에서 다시 구한 값)'));
     for (const k of Object.keys(wasExt)) {
       if (k !== 'gear') { d.push(...diff(wasExt[k], isExt[k], `ext.${k}`)); continue; }
       const a = wasExt.gear as GearSave, b = isExt.gear as GearSave;
