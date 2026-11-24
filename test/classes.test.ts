@@ -9,6 +9,8 @@ import { check } from './harness';
   const p = g.players.spawn('armored', false);
   const said = () => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
   const cmd = (m: Record<string, unknown>) => { g.notices = []; g.command(p, m); };
+  // 물건의 잠금은 게임의 규칙이 답한다 (이 게임에서는 주민의 귀환: test/deungbul/classes.test.ts). 여기서는 아무 열쇠도 열리지 않은 시험용 규칙으로 본다
+  g.rules.unlocked = () => false;
   const slime = [...g.ents.values()].find((e) => e.type === 'slime' && !e.dead)!;
   p.x = SHOP.x; p.z = SHOP.z; p.gold = 200; p.maxHp = p.hp = 1000;
   g.combat.damage(slime, p, 100, false);

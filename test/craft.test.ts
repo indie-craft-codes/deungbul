@@ -1,5 +1,5 @@
 // 제작 (서버 없이 게임 규칙만 돌린다)
-import { SMITHY, RESIDENTS, RECIPES } from '../shared/defs';
+import { SMITHY, RECIPES } from '../shared/defs';
 import { Game } from '../server/game/game';
 import { check } from './harness';
 
@@ -9,10 +9,13 @@ import { check } from './harness';
   const said = () => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
   const cmd = (m: Record<string, unknown>) => { g.notices = []; g.command(p, m); };
   p.gold = 500; p.items = { iron: 8, hide: 5 };
+  // 대장간의 잠금은 게임의 규칙(g.rules.unlocked)이 답한다 (이 게임에서는 대장장이의 귀환: test/deungbul/craft.test.ts). 여기서는 시험용 규칙으로 본다 (열쇠는 FORGES의 needs: bram)
+  const opened = new Set<string>();
+  g.rules.unlocked = (key) => opened.has(key);
   p.x = SMITHY.x + 1; p.z = SMITHY.z + 1;
   cmd({ t: 'craft', id: 'sword4' });
   check(said().includes('forgeClosed') && p.weapon === 'sword1', '대장장이가 돌아오기 전에는 만들 수 없다');
-  g.tower.load({ glows: [40, 0], residents: [RESIDENTS[0].need, 0, 0] });
+  opened.add('bram');
   cmd({ t: 'craft', id: 'sword4' });
   check(said().includes('noMats') && p.gold === 500, '재료가 하나라도 모자라면 만들 수 없고 골드도 그대로다');
 

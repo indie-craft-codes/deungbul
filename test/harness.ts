@@ -40,7 +40,7 @@ export function connect(port: number, name?: string, token?: string): Promise<Pe
       const m = JSON.parse(data.toString()) as ServerMsg;
       if (m.t === 'welcome') { p.id = m.id; p.name = m.name; p.you = [m.x, m.z, 0]; done(p); }
       else if (m.t === 'quest') p.quest = [m.c, m.s, m.n];
-      else if (m.t === 'world') { p.glow = m.s.tower.glow; p.residents = m.s.tower.residents; p.raid = m.s.raid; }
+      else if (m.t === 'world' && m.s.tower) { p.glow = m.s.tower.glow; p.residents = m.s.tower.residents; p.raid = m.s.raid; }
       else if (m.t === 'name') { const s = p.seen.get(m.id); if (s) s.name = m.name; }
       else if (m.t === 'snap') {
         p.you = [m.you[0], m.you[1], m.you[2]];

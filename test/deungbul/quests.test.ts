@@ -1,11 +1,11 @@
 // 메인 퀘스트 (서버 없이 게임 규칙만 돌린다)
-import { HERB_FIELD, QUESTS, SHOP } from '../shared/defs';
-import { TOWER, TOWERS } from '../shared/world';
-import { Game } from '../server/game/game';
-import { check } from './harness';
+import { HERB_FIELD, QUESTS, SHOP } from '../../shared/defs';
+import { TOWER, TOWERS } from '../../shared/world';
+import { newGame } from './game';
+import { check } from '../harness';
 
 {
-  const g = new Game();
+  const g = newGame();
   const p = g.players.spawn('둘째장', false, { name: '둘째장', lv: 4, exp: 0, need: 148, maxHp: 245, sparks: 20, contrib: 6, quest: [1, 0, 0], gold: 40 });
   const at = (c: number, st: number, n = 0) => p.qc === c && p.qs === st && p.qn === n;
   const slay = (type: string, count: number) => {

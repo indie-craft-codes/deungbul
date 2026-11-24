@@ -2,7 +2,7 @@
 // 틀(game.ts와 표준 시스템)은 이 파일과 네 시스템을 모른다. Game의 g.tower 같은 칸과 이 게임의 사건도 여기서 선언해 덧붙인다 (확장 지점: ./ext.ts).
 // 공용 쪽의 짝(안내문, 메시지, 공유 상태)은 shared/deungbul.ts에 있다.
 // 쓰는 법: new Game({ plugins: [installDeungbul] }), 설정을 줄 때는 plugins: [(g) => installDeungbul(g, { raid: { everyMin: 5 } })].
-// (지금은 plugins를 주지 않아도 game.ts가 이것을 기본으로 깐다. 기존 코드와 시험이 new Game()으로 등불지기를 만들기 때문이다.)
+// plugins를 주지 않은 new Game()은 틀만으로 만들어진다: 이 게임의 서버(server/main.ts)와 시험(test/deungbul/game.ts)이 이 플러그인을 적어 넘긴다.
 import type { RaidConfig } from '../../shared/defs';
 import type { Ent } from './entity';
 import type { Game } from './game';

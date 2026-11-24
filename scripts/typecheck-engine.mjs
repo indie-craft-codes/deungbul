@@ -11,12 +11,6 @@ const root = path.resolve(import.meta.dirname, '..');
 const out = path.join(root, 'node_modules', '.cache', 'typecheck-engine');
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'tsconfig.engine.json'), 'utf8'));
 const excluded = (rel) => cfg.exclude.some((x) => rel === x || rel.startsWith(x + '/'));
-/** 이미 알고 있는 예외는 빈 구현으로 대신해 세지 않는다 (test/framework.test.ts의 예외 목록과 같다) */
-const STUBS = {
-  // new Game()이 이 게임의 규칙을 기본으로 깐다. 시험을 틀과 게임으로 가를 때 기본값을 뒤집고 지운다
-  'server/game/deungbul.ts': "import type { Game } from './game';\nexport function installDeungbul(_g: Game, _cfg?: { raid?: unknown }): void {}\n",
-};
-
 fs.rmSync(out, { recursive: true, force: true });
 let files = 0;
 for (const dir of cfg.include) {
@@ -25,7 +19,6 @@ for (const dir of cfg.include) {
     filter: (src) => { const rel = path.relative(root, src).split(path.sep).join('/'); if (excluded(rel)) return false; if (rel.endsWith('.ts')) files++; return true; },
   });
 }
-for (const [rel, text] of Object.entries(STUBS)) fs.writeFileSync(path.join(out, rel), text);
 fs.copyFileSync(path.join(root, 'tsconfig.json'), path.join(out, 'tsconfig.json'));
 fs.writeFileSync(path.join(out, 'tsconfig.engine.json'), JSON.stringify({ extends: './tsconfig.json', include: cfg.include }));
 

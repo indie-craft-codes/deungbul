@@ -1,11 +1,11 @@
 // 두 번째 구역 '잿빛 숲'과 두 번째 등탑 (서버 없이 게임 규칙만 돌린다)
-import { RAID } from '../shared/defs';
-import { TOWER, TOWERS, ZONE_SPLIT } from '../shared/world';
-import { Game } from '../server/game/game';
-import { check } from './harness';
+import { RAID } from '../../shared/defs';
+import { TOWER, TOWERS, ZONE_SPLIT } from '../../shared/world';
+import { newGame } from './game';
+import { check } from '../harness';
 
 {
-  const g = new Game();
+  const g = newGame();
   const p = g.players.spawn('숲지기', false);
   const ash = TOWERS[1];
   const said = () => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
@@ -49,10 +49,10 @@ import { check } from './harness';
   check(p.cls === 'warrior', '직업은 어느 등탑에서든 바꿀 수 있다');
 
   // 저장: 등탑별 밝기가 남고, 등탑이 하나뿐이던 때의 저장도 읽힌다
-  const again = new Game();
+  const again = newGame();
   again.importWorld(g.exportWorld());
   check(JSON.stringify(again.state().tower.glows) === '[40,35]', '등탑별 밝기가 저장되고 다시 읽힌다');
-  const old = new Game();
+  const old = newGame();
   old.importWorld({ tower: { glow: 77, residents: [30, 4, 0] } });
   check(JSON.stringify(old.state().tower.glows) === '[77,0]' && old.state().tower.glow === 77, '등탑이 하나뿐이던 때의 저장도 읽힌다');
   // 습격은 첫불 마을 등탑의 일이다. 마을에 사람이 없으면 열리지 않는다
