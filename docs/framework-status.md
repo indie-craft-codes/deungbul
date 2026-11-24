@@ -26,7 +26,7 @@
 
 | 묶음 | 상태 |
 |---|---|
-| A. 두 번째 내용과 게임 고르기 | **반쯤.** 틀을 두 번째 내용(예제)으로 타입 검사하는 것과 빈 표 변형 셋(`bare`, `weaponOnly`, `otherGear`)은 예제 작업 때 들어갔다. 남은 것: `GAME` 환경 변수 하나로 고르기(`package.json`, `vite.config.ts`, `test/all.ts`, `scripts/`), 등불지기의 게임별 `tsconfig` |
+| A. 두 번째 내용과 게임 고르기 | **거의 끝(2026-11-24).** 틀을 두 번째 내용(예제)으로 타입 검사하는 것과 빈 표 변형 셋(`bare`, `weaponOnly`, `otherGear`)은 예제 작업 때 들어갔다. 게임 고르기는 `scripts/game.mjs <start\|watch\|client\|build> [게임]`(인자, `GAME`, 기본 `deungbul`) 한곳으로: 뿌리의 `vite.config.ts`를 `games/deungbul/vite.config.ts`로 옮겼고 `package.json`의 서버·화면 스크립트는 전부 이것을 부른다. 남은 것: 시험 도구(`test/all.ts`)와 뿌리 `tsconfig.json`은 아직 등불지기를 기본으로 안다(F에서 틀의 시험을 떼면서 함께) |
 | B. 장비·능력치·이름의 고정 풀기 | **끝(2026-11-24).** `STATS[id] = { base, mod }`, `BUILD_STATS[id] = { mod, per }`(전에는 id 목록과 `BUILD.pow/vit/luck`). `mod`는 틀의 효과 넷(`StatMod`: `damage`, `guard`, `crit`, `hp`)이고 서버의 보정(`modValue`, `wornMod`)과 화면의 문장은 효과로 만든다. 칸·등급·능력치의 이름은 이름표(`ContentNames`)의 `gearSlots`, `rarities`, `buildStats`로 게임에. 무기·갑옷 바탕의 기본 수치는 그 효과에 드는 첫 옵션(`statFor`)으로 보인다. 저장을 읽을 때의 옵션 수·장비 레벨 상한도 내용에서(`OPTS_MAX`) 또는 넉넉하게(999). 화면의 문장은 견본과 글자까지 같다. 남은 것: 안내문 `rested`를 게임으로, 첫 번째 재화의 이름 '골드'를 이름표로(점검 13·26번) |
 | C. 빈 표와 낱개 | **거의 끝.** `ATTEND = []`면 출석을 세지 않는다, 처음 필요 경험치는 `needFor(1)`, 접속 전 카메라는 `MAP.spawn` 둘레, 대장간 창은 닿는 곳의 잠금 풀린 대장간이면 어느 것이나(서버와 같은 규칙), 직업의 기술 수는 `SKILL_SLOTS`를 따른다(`readonly SkillId[]`). `loc.items.potion`·`'field'`·개발 포트·`itemDef().kind`는 예제 작업 때 고쳤다. 남은 것: 상인 NPC를 게임에게(20번), 레벨·재화 상한을 `CURRENCIES.max`에서(24번) |
 | D, E, F | 아직 |
@@ -103,9 +103,9 @@
 - 별칭: `@engine/*` → `engine/*`, `@game/*` → 그 게임의 폴더. 뿌리의 설정은 등불지기를, `games/sample/`의 설정은 예제를 가리킨다.
   - `tsc`: `tsconfig.json`의 `paths` (예제: `games/sample/tsconfig.json`).
   - `tsx`(서버 실행, 시험, `scripts/econ.ts`): 실행한 폴더의 `tsconfig.json`을 읽어 `paths`를 따른다. **저장소 뿌리에서 실행해야 한다**(`npm` 스크립트와 `scripts/restart.sh`는 뿌리에서 돈다). 다른 폴더에서 `tsx games/deungbul/server/main.ts`를 직접 부르면 별칭을 찾지 못한다. 다른 게임은 `tsx --tsconfig games/<게임>/tsconfig.json`으로 실행한다: 주지 않으면 뿌리의 설정을 읽어 **등불지기의 내용으로 오류 없이 뜬다**(예제는 플러그인 파일의 맨 위에서 이것을 잡아 던진다).
-  - `vite`: `vite.config.ts`의 `resolve.alias` (예제: `games/sample/vite.config.ts`).
+  - `vite`: 게임 폴더의 `vite.config.ts`의 `resolve.alias` (`games/deungbul/vite.config.ts`, `games/sample/vite.config.ts`). 어느 것을 쓸지는 `scripts/game.mjs`가 고른다.
 - 별칭은 폴더를 넘을 때만 쓴다. 같은 폴더 안은 상대 경로다.
-- 뿌리에 남은 것: `test/all.ts`(시험을 돌리는 도구), `scripts/`, `docs/`, `tsconfig*.json`, `vite.config.ts`, `package.json`, 그리고 git에 넣지 않는 `data/`(저장)와 `dist/`(빌드).
+- 뿌리에 남은 것: `test/all.ts`(시험을 돌리는 도구), `scripts/`, `docs/`, `tsconfig*.json`, `package.json`, 그리고 git에 넣지 않는 `data/`(저장)와 `dist/`(빌드).
 
 ### 서버
 
@@ -150,7 +150,7 @@
 | 상태 | `S` (틀의 칸만) | `client/state.ts`의 `GS`(공유), `G`(개인) |
 | 뼈대 | `engine/client/hud/skeleton.ts`(마크업), `hud/shell.ts`의 `mountShell`(읽히는 때에 붙인다) | `client/index.html`의 머리와 script. body에는 script만 둔다 |
 | 스타일 | `engine/client/style.css` (틀의 진입 모듈이 읽는다) | `client/deungbul.css` (틀의 것 뒤에 읽혀 덮어쓴다) |
-| 빌드 | 개발 서버의 화면이 붙을 포트는 `VITE_DEV_PORT`(없으면 3001) | `vite.config.ts`: 뿌리 `games/deungbul/client`, 결과 `dist/`. 도감은 게임 빌드 뒤에 따로. 예제는 `games/sample/vite.config.ts`: 결과 `dist-sample/` |
+| 빌드 | 개발 서버의 화면이 붙을 포트는 `VITE_DEV_PORT`(없으면 3001) | `games/deungbul/vite.config.ts`(`scripts/game.mjs`가 고른다): 뿌리 `games/deungbul/client`, 결과 `dist/`. 도감은 게임 빌드 뒤에 따로. 예제는 `games/sample/vite.config.ts`: 결과 `dist-sample/` |
 
 ### 시험
 
@@ -219,10 +219,10 @@
 
 ## 4. 설정 파일
 
-- `tsconfig.json`: 전체. `include: ["engine", "games/deungbul", "test", "scripts", "vite.config.ts"]`. 게임의 선언 파일(`games/deungbul/shared/deungbul.ts`)은 아무도 import하지 않고 이 `include`로 컴파일에 들어간다: `include`에서 `games/deungbul`을 빼면 선언 병합이 사라져 게임의 코드가 컴파일되지 않는다.
+- `tsconfig.json`: 전체. `include: ["engine", "games/deungbul", "test", "scripts"]`. 게임의 선언 파일(`games/deungbul/shared/deungbul.ts`)은 아무도 import하지 않고 이 `include`로 컴파일에 들어간다: `include`에서 `games/deungbul`을 빼면 선언 병합이 사라져 게임의 코드가 컴파일되지 않는다.
 - `games/sample/tsconfig.json`: 예제. 뿌리의 설정을 물려받아 `paths`의 `@game`만 자기 폴더로 바꾸고 `include`는 틀의 소스와 자기 폴더다. `games/sample/tsconfig.engine.json`은 거기서 `include`를 틀의 소스로 줄인 것이다(틀만을 예제의 내용으로).
 - `tsconfig.engine.json`: 틀만. `include: ["engine/shared", "engine/server", "engine/client"]`. 별칭은 `tsconfig.json`의 것을 물려받아 `@game`이 등불지기의 내용을 가리킨다: 틀의 통로가 import하는 내용 파일은 따라 들어오지만 게임의 선언 파일과 규칙은 들어오지 않는다.
-- `vite.config.ts`: `root`는 `games/deungbul/client`, `publicDir`은 그 안의 `public/`, `outDir`은 뿌리의 `dist/`, `base: './'`. 도감은 게임 빌드가 끝난 뒤 같은 `dist/`에 따로 빌드한다.
+- `games/deungbul/vite.config.ts`(2026-11-24에 뿌리에서 옮겼다): `root`는 `games/deungbul/client`, `publicDir`은 그 안의 `public/`, `outDir`은 뿌리의 `dist/`, `base: './'`. 도감은 게임 빌드가 끝난 뒤 같은 `dist/`에 따로 빌드한다.
 - `package.json`의 스크립트 이름은 옮기기 전과 같다: `dev, dev:server, dev:client, build, start, pilot, typecheck, typecheck:engine, test, test:engine, test:game, load, econ`. `typecheck`는 전체, 틀만, 틀만(예제의 내용), 예제를 차례로 돌린다. 11단계에서 더한 것: `typecheck:engine:sample, typecheck:sample, test:sample, build:sample, start:sample, dev:sample`. 예제의 기본 포트는 3002, 저장은 `data/sample/game.db`, 빌드 결과는 `dist-sample/`이라 등불지기의 것과 섞이지 않는다.
 
 ## 5. 운영 서버에 올릴 때 (9단계)

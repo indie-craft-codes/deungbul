@@ -54,7 +54,7 @@ games/sample/
   test/                    시험
 ```
 
-**별칭이 전부다.** `@game`이 어느 폴더를 가리키느냐가 "어느 게임인가"를 정한다. 세 곳에서 같아야 한다: `tsconfig.json`(타입 검사와 `tsx`), `vite.config.ts`(화면 빌드).
+**별칭이 전부다.** `@game`이 어느 폴더를 가리키느냐가 "어느 게임인가"를 정한다. 두 파일에서 같아야 한다: `tsconfig.json`(타입 검사와 `tsx`), `vite.config.ts`(화면 빌드). 게임을 돌리는 도구 `scripts/game.mjs`가 게임 폴더의 이 두 파일을 골라 쓴다: `node scripts/game.mjs <start|watch|client|build> <게임 폴더 이름>`.
 
 ```json games/sample/tsconfig.json
 {
@@ -101,18 +101,18 @@ export default defineConfig({
 - 아이콘과 manifest를 두려면 `client/public/`을 만들고 `publicDir: false` 줄을 지운다.
 - 빌드 결과 폴더(`dist-sample/`)는 `.gitignore`에 넣는다.
 
-`package.json`의 스크립트(게임 이름만 바꿔 같은 모양으로 더한다):
+`package.json`의 스크립트(게임 이름만 바꿔 같은 모양으로 더한다. 서버와 화면은 `scripts/game.mjs`를 거친다: 게임 폴더의 `tsconfig.json`이 있으면 `tsx --tsconfig`로 그것을 읽게 한다):
 
 | 스크립트 | 하는 일 |
 |---|---|
 | `npm run typecheck:sample` | `tsc --noEmit -p games/sample/tsconfig.json`: 틀 + 이 게임 |
 | `npm run typecheck:engine:sample` | `tsc --noEmit -p games/sample/tsconfig.engine.json`: 틀만, 이 게임의 내용으로 |
-| `npm run build:sample` | `vite build -c games/sample/vite.config.ts` → `dist-sample/` |
-| `npm run start:sample` | `tsx --tsconfig games/sample/tsconfig.json games/sample/server/main.ts` (기본 포트 3002) |
-| `npm run dev:sample` | 서버(3002)와 vite 개발 서버(5174)를 함께. 파일을 고치면 바로 반영 |
+| `npm run build:sample` | `node scripts/game.mjs build sample`: `vite build -c games/sample/vite.config.ts` → `dist-sample/` |
+| `npm run start:sample` | `node scripts/game.mjs start sample`: `tsx --tsconfig games/sample/tsconfig.json games/sample/server/main.ts` (기본 포트 3002) |
+| `npm run dev:sample` | `watch`와 `client`를 함께: 서버(3002)와 vite 개발 서버(5174). 파일을 고치면 바로 반영 |
 | `npm run test:sample` | `tsx --tsconfig games/sample/tsconfig.json games/sample/test/all.ts` |
 
-`tsx`에는 반드시 `--tsconfig`를 준다. 주지 않으면 뿌리의 `tsconfig.json`을 읽어 `@game`이 등불지기를 가리키고, 서버가 **오류 없이 다른 게임의 내용으로 뜬다**. 예제는 플러그인 파일의 맨 위에서 이것을 잡는다.
+`tsx`를 직접 부를 때는 반드시 `--tsconfig`를 준다(`scripts/game.mjs`는 스스로 준다). 주지 않으면 뿌리의 `tsconfig.json`을 읽어 `@game`이 등불지기를 가리키고, 서버가 **오류 없이 다른 게임의 내용으로 뜬다**. 예제는 플러그인 파일의 맨 위에서 이것을 잡는다.
 
 ```ts games/sample/server/sample.ts
 // 틀이 별칭 @game으로 읽은 내용이 이 게임의 것인가. tsx는 --tsconfig를 주지 않으면 뿌리의 tsconfig.json을 읽어 다른 게임의 내용으로 조용히 뜬다

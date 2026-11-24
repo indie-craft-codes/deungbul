@@ -15,5 +15,5 @@
       "@game/*": ["./games/deungbul/*"]
     }
   },
-  "include": ["engine", "games/deungbul", "test", "scripts", "vite.config.ts"]
+  "include": ["engine", "games/deungbul", "test", "scripts"]
 }
