@@ -111,3 +111,22 @@ import { check } from './harness';
   const back = new Game({ now: () => clock }).players.spawn('앞장', false, save);
   check(isField(back.layer) && !inCrypt(back), '서버가 다시 켜진 뒤 던전 안에서 접속하면 문 앞으로 나온다');
 }
+
+// 파티원이 던전에 들어가면 아직 밖에 있는 파티원에게 알린다
+{
+  const g = new Game({ now: () => new Date(2026, 0, 10, 12).getTime() });
+  const def = DUNGEONS.crypt;
+  const hero = (name: string) => { const p = g.players.spawn(name, false); g.classes.apply(p, 'warrior'); p.lv = 12; g.players.refresh(p); p.x = def.portal.x + 1; p.z = def.portal.z; return p; };
+  const told = (p: { id: number }) => g.notices.filter((n) => n.id === p.id && n.k === 'dungeonMate');
+  const a = hero('앞장'), b = hero('동료'), c = hero('막내'), stranger = hero('남');
+  for (const m of [b, c]) { g.command(a, { t: 'party', a: 'invite', id: m.id }); g.command(m, { t: 'party', a: 'accept' }); }
+
+  g.notices = [];
+  g.command(a, { t: 'dungeon', id: 'crypt' });
+  check(told(b).length === 1 && told(c).length === 1 && told(b)[0].a[0] === '앞장' && told(b)[0].a[1] === 'crypt', '파티원이 던전에 들어가면 밖에 있는 파티원에게 누가 어디에 들어갔는지 알린다');
+  check(told(a).length === 0 && told(stranger).length === 0, '들어간 본인과 파티가 아닌 사람에게는 알리지 않는다');
+
+  g.notices = [];
+  g.command(b, { t: 'dungeon', id: 'crypt' });
+  check(b.layer === a.layer && told(c).length === 1 && told(a).length === 0, '뒤따라 들어가면 아직 밖에 있는 파티원에게만 알린다 (이미 같은 곳에 있는 사람은 빼고)');
+}

@@ -4,6 +4,7 @@ import { craft } from '../actions';
 import { $ } from '../app';
 import { L, itemName, t } from '../i18n';
 import { S } from '../state';
+import { sourceLine } from './sources';
 
 const ui = { panel: $('forge'), gold: $('forgeGold'), list: $('forgeList') };
 const smith = RESIDENTS.findIndex((r) => r.id === SMITH);
@@ -17,6 +18,8 @@ export function renderForge(): void {
   const armorTier = me && isItemId(me.armor) ? itemDef(me.armor).tier ?? 0 : 0;
   ui.gold.textContent = loc.fmt.gold(gold);
   ui.list.textContent = '';
+  /** 만들 것에 모자라는 재료들: 창 아래에 어디서 얻는지 적어 준다 */
+  const lacking = new Set<ItemId>();
   for (const r of RECIPES) {
     const def = itemDef(r.id);
     const row = document.createElement('div');
@@ -37,12 +40,28 @@ export function renderForge(): void {
     else {
       // 재료마다 가진 수 / 필요한 수를 보여 줘서, 무엇이 모자라는지 바로 알게 한다
       const mats = Object.entries(r.mats) as [ItemId, number][];
-      note.textContent = [loc.items[r.id].info, ...mats.map(([id, n]) => loc.fmt.mat(loc.items[id].name, items[id] ?? 0, n))].join(' · ');
-      if (gold < r.gold) note.textContent += ` · ${loc.fmt.short(r.gold - gold)}`;
+      const parts = [loc.items[r.id].info, ...mats.map(([id, n]) => loc.fmt.mat(loc.items[id].name, items[id] ?? 0, n))];
+      if (gold < r.gold) parts.push(loc.fmt.short(r.gold - gold));
+      // 항목 하나(재료 이름과 수)가 중간에서 줄이 바뀌지 않게 덩어리로 넣는다
+      parts.forEach((p, i) => {
+        const s = document.createElement('span');
+        s.className = 'opt'; s.textContent = p;
+        if (i) note.append(' · ');
+        note.append(s);
+      });
       btn.disabled = gold < r.gold || mats.some(([id, n]) => (items[id] ?? 0) < n);
+      for (const [id, n] of mats) if ((items[id] ?? 0) < n) lacking.add(id);
     }
     row.append(info, btn);
     ui.list.appendChild(row);
+  }
+  for (const id of lacking) {
+    const text = sourceLine(id);
+    if (!text) continue;
+    const src = document.createElement('div');
+    src.className = 'note';
+    src.textContent = text;
+    ui.list.appendChild(src);
   }
 }
 

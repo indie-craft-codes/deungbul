@@ -7,7 +7,7 @@ import { RESIDENTS } from '../../../shared/defs';
 import { S } from '../state';
 import type { MsgArg, MsgKey } from '../../../shared/messages';
 import { $ } from '../app';
-import { L } from '../i18n';
+import { L, forInput, onLangChange } from '../i18n';
 import { logText } from './chat';
 
 type Tone = '' | 'good' | 'bad';
@@ -22,11 +22,12 @@ const FEED: ReadonlySet<MsgKey> = new Set<MsgKey>([
 ]);
 
 const ui = { banner: $('banner'), bannerText: $('bannerText'), bannerSub: $('bannerSub'), feed: $('feed'), flash: $('flash') };
-const queue: { text: string; sub: string; tone: Tone }[] = [];
+const queue: { text: string; sub: string; tone: Tone; stale?: () => boolean }[] = [];
 let showing = false;
 
 function next(): void {
-  const b = queue.shift();
+  let b = queue.shift();
+  while (b?.stale?.()) b = queue.shift(); // 차례를 기다리는 사이에 뜻이 없어진 알림은 건너뛴다
   if (!b) { showing = false; ui.banner.hidden = true; return; }
   showing = true;
   ui.bannerText.textContent = b.text;
@@ -38,10 +39,10 @@ function next(): void {
   setTimeout(next, 2600 + Math.min(2400, (b.text.length + b.sub.length) * 40));
 }
 
-/** 화면 가운데 위에 크게 뜨는 알림. 여러 개가 겹치면 차례로 보여 준다. */
-export function banner(text: string, tone: Tone = '', sub = ''): void {
+/** 화면 가운데 위에 크게 뜨는 알림. 여러 개가 겹치면 차례로 보여 준다. stale이 참을 돌려주면 차례가 와도 띄우지 않는다. */
+export function banner(text: string, tone: Tone = '', sub = '', stale?: () => boolean): void {
   if (queue.length > 4) queue.shift(); // 너무 밀리면 오래된 것부터 버린다
-  queue.push({ text, sub, tone });
+  queue.push({ text, sub, tone, stale });
   if (!showing) next();
 }
 
@@ -55,6 +56,9 @@ export function feed(text: string): void {
   while (ui.feed.children.length > 4) ui.feed.firstChild?.remove();
   setTimeout(() => d.remove(), 4500);
 }
+
+// 언어를 바꾸면 떠 있던 알림이 이전 언어로 남는다: 한 줄 알림과 가운데 알림을 지운다 (대화창의 기록은 남긴다)
+onLangChange(() => { ui.feed.textContent = ''; queue.length = 0; ui.banner.hidden = true; });
 
 /** 쓰러졌을 때 화면이 잠깐 어두워졌다 돌아온다 */
 function flash(): void {
@@ -77,7 +81,7 @@ function residentHint(chapter: string): string {
 /** 서버 안내문을 현재 언어의 문장으로 만들어 알맞은 곳에 보여 준다. */
 export function notifySys(k: MsgKey, a: MsgArg[] = []): void {
   const make = L().msg[k];
-  const text = make ? make(a) : k;
+  const text = make ? forInput(make(a)) : k;
   if (k === 'joined' || k === 'left') return; // 드나드는 소식이 대화와 큰 소식을 밀어낸다
   if (FEED.has(k)) { feed(text); return; }
   logText(text);

@@ -5,6 +5,7 @@ import { onMsg } from '../bus';
 import { L, onLangChange, t } from '../i18n';
 import { S } from '../state';
 import { openMenu } from './menu';
+import { sourceText } from './sources';
 
 const ui = { panel: $('bag'), gold: $('bagGold'), list: $('bagList') };
 const ids = Object.keys(ITEMS) as ItemId[];
@@ -47,7 +48,8 @@ export function renderBag(): void {
   ui.list.append(head(t('bagPotions')));
   for (const id of ids) if (ITEMS[id].kind === 'potion') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, POTION_MAX), ''));
   ui.list.append(head(t('bagMats')));
-  for (const id of ids) if (ITEMS[id].kind === 'mat') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, MAT_MAX), ''));
+  // 재료마다 어떤 몬스터가 떨어뜨리는지 적어 준다 (어디서 구하는지 화면 어디에도 없었다)
+  for (const id of ids) if (ITEMS[id].kind === 'mat') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, MAT_MAX), sourceText(id)));
 }
 
 export function toggleBag(): void {

@@ -25,8 +25,19 @@ export function itemName(id: ItemId, cls: string): string {
   const hand = handOf(cls);
   return (hand !== 'sword' && it[hand]) || it.name;
 }
+/** 터치 화면인가. 키보드가 없으니 단축키 안내를 빼고 보여 준다 */
+export const isTouch = (): boolean => matchMedia('(pointer: coarse)').matches;
+/**
+ * 문장 안의 [[PC용|터치용]] 표시를 지금 입력 장치에 맞게 고른다. 터치용을 비우면([[ (F)|]]) 그 부분이 빠진다.
+ * 언어 파일의 문장은 이것을 거쳐야 하므로, 고정 문구는 t()로, 서버 안내문은 notifySys로 읽는다.
+ */
+export function forInput(text: string): string {
+  if (!text.includes('[[')) return text;
+  const touch = isTouch();
+  return text.replace(/\[\[([^|\]]*)\|([^\]]*)\]\]/g,(_, pc: string, tap: string) => (touch ? tap : pc));
+}
 /** 고정 문구 */
-export const t = (key: UiKey): string => current.ui[key];
+export const t = (key: UiKey): string => forInput(current.ui[key]);
 
 /** HTML에 적어 둔 표시(data-i18n 등)를 현재 언어로 채운다. */
 export function applyDom(): void {
@@ -35,7 +46,7 @@ export function applyDom(): void {
   const each = (attr: string, set: (el: HTMLElement, text: string) => void) => {
     for (const el of document.querySelectorAll<HTMLElement>(`[${attr}]`)) {
       const key = el.getAttribute(attr) as UiKey;
-      if (key in current.ui) set(el, current.ui[key]);
+      if (key in current.ui) set(el, forInput(current.ui[key]));
     }
   };
   each('data-i18n', (el, s) => { el.textContent = s; });
@@ -60,6 +71,24 @@ export function onLangChange(fn: () => void): void { listeners.push(fn); }
 export function randomName(): string {
   const pick = (a: readonly string[]) => a[Math.floor(Math.random() * a.length)];
   return (pick(current.nameA) + pick(current.nameB) + (10 + Math.floor(Math.random() * 90))).slice(0, NAME_MAX);
+}
+
+/**
+ * 그 이름이 무작위로 붙은 이름이면 어느 언어의 낱말로 지어졌는지(언어 코드)를, 아니면 null을 돌려준다.
+ * randomName이 만드는 모양(낱말 둘 + 숫자 둘, 길면 잘림)과 정확히 맞을 때만 그렇게 본다.
+ */
+export function autoNameLocale(name: string): string | null {
+  for (const l of LOCALES) {
+    for (const a of l.nameA) {
+      if (!name.startsWith(a.slice(0, NAME_MAX))) continue;
+      for (const b of l.nameB) {
+        // 낱말 둘 뒤에 숫자가 (잘리고 남은 만큼, 많아야 둘) 붙은 모양인가
+        const word = (a + b).slice(0, NAME_MAX), rest = name.slice(word.length);
+        if (name.startsWith(word) && rest.length === Math.min(2, NAME_MAX - word.length) && /^\d*$/.test(rest)) return l.code;
+      }
+    }
+  }
+  return null;
 }
 
 /** 초를 m:ss로 */

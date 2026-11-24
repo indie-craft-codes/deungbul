@@ -98,6 +98,8 @@ export class Dungeon {
     this.back.set(p.id, p.layer);
     this.move(p, def.entry.x + (Math.random() - 0.5) * 2, def.entry.z + (Math.random() - 0.5) * 2, run.layer);
     g.notify(p, 'dungeonEnter', id);
+    // 아직 같은 인스턴스에 없는 파티원에게 알린다: 모르고 밖에 남거나 따로 들어가지 않게 (문에서 들어가면 여기로 합류한다)
+    for (const m of g.party.mates(p)) if (this.of.get(m.id) !== run) g.notify(m, 'dungeonMate', p.name, id);
     this.tell(run);
   }
 

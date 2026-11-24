@@ -41,7 +41,9 @@ body {
 #me .name { font-size: 16px; font-weight: 700; color: var(--gold); background: none; border: 0; padding: 0; text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 #me .name:hover { text-decoration: underline; }
 #renameForm { display: flex; gap: 6px; }
-#renameForm button { padding: 4px 10px; }
+/* 좁은 창에서 '변경'이 두 줄로 꺾이지 않게: 단추는 제 너비를 지키고 입력칸이 줄어든다 */
+#renameForm input { flex: 1 1 auto; min-width: 0; }
+#renameForm button { padding: 4px 10px; flex: none; white-space: nowrap; }
 #tower {
   right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); width: 250px;
   display: flex; flex-direction: column; gap: 6px;
@@ -189,7 +191,8 @@ button.plain:hover { border-color: var(--gold); }
   position: absolute; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; width: max-content; max-width: 100%;
 }
-#hint { background: rgba(14, 34, 39, .6); padding: 3px 9px; border-radius: 3px; font-size: 11.5px; white-space: nowrap; }
+/* 조작 안내: 왼쪽의 대화창(336px까지)과 오른쪽의 미니맵 사이에만 놓이게 너비를 묶고, 넘치면 줄을 바꾼다 (한 줄로 두면 1280 너비에서 대화창을 덮었다) */
+#hint { background: rgba(14, 34, 39, .6); padding: 3px 9px; border-radius: 3px; font-size: 11.5px; max-width: calc(100vw - 720px); text-align: center; text-wrap: balance; }
 #skills { display: flex; gap: 6px; pointer-events: auto; }
 .skill {
   position: relative; width: 66px; height: 62px; padding: 0; overflow: hidden; background: var(--panel); color: var(--fg);
@@ -355,25 +358,66 @@ html, body { height: var(--app-h, 100%); }
 #mapLegend { background: rgba(14, 34, 39, .6); padding: 1px 7px; border-radius: 3px; font-size: 10.5px; white-space: nowrap; }
 @media (pointer: coarse), (max-width: 900px), (max-height: 520px) { #mapBox { display: none; } }
 /* PC: 오른쪽 창들이 미니맵 위에서 끝나게 한다 (넘치면 창 안에서 스크롤) */
-@media (pointer: fine) and (min-width: 901px) and (min-height: 521px) { #rightcol { max-height: calc(100% - 200px); overflow-y: auto; scrollbar-width: none; pointer-events: auto; } }
+@media (pointer: fine) and (min-width: 901px) and (min-height: 521px) {
+  #rightcol { max-height: calc(100% - 200px); overflow-y: auto; scrollbar-width: none; pointer-events: auto; }
+  /* 자리가 모자라면 등탑·상점·대장간 창이 줄어들고(그 안에서 스크롤) 퀘스트와 던전 창은 온전히 남는다.
+     예전에는 기둥 전체가 잘려서 맨 아래의 퀘스트 글이 미니맵 쪽으로 잘려 나갔다 */
+  #rightcol > .panel { flex: none; }
+  #rightcol > #tower, #rightcol > #shop, #rightcol > #forge { flex: 0 1 auto; min-height: 84px; overflow-y: auto; scrollbar-width: thin; }
+}
+/* 낮은 PC 창: 등탑 창의 설명 글을 빼서 스크롤 없이 퀘스트와 함께 들어가게 한다. 더 낮으면 등탑지기 명단과 퀘스트의 걸어가기 안내도 뺀다 */
+@media (pointer: fine) and (max-height: 710px) { #tower > .note, #resNote { display: none; } }
+@media (pointer: fine) and (max-height: 600px) {
+  #keepBox { display: none; }
+  #tower:not([hidden]) ~ #quest #questGo { display: none; }
+}
 
 /* 짧은 숫자 표시는 낱말 중간에서 끊기지 않게 한다 (영어 화면에서 'Offere/d 4'처럼 끊겼다) */
 #questDist, #contrib, #lv { white-space: nowrap; flex: none; }
 html:lang(en) .skill .n { font-size: 12px; }
 html:lang(en) body { overflow-wrap: break-word; }
 
-/* 메뉴 창 (장비, 우편, 일일 임무, 순위) */
-#menu { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 380px; max-width: 94%; max-height: 86%; display: flex; flex-direction: column; gap: 8px; background: #0e2227; z-index: 5; }
+/* 메뉴 창 (장비, 성장, 우편, 일일 임무, 거래소, 길드, 순위).
+   높이를 고정한다: 탭마다 내용의 길이가 달라도 탭 줄과 닫기 단추가 제자리에 있고, 내용은 창 안에서 스크롤한다 */
+#menu { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 440px; max-width: 94%; height: min(600px, 86%); display: flex; flex-direction: column; gap: 8px; background: #0e2227; z-index: 5; }
 #menu[hidden] { display: none; }
-#menuTabs { display: flex; gap: 4px; }
-#menuTabs button { flex: 1; padding: 6px 4px; white-space: nowrap; }
+/* 머리: 제목과 골드는 왼쪽, 소리와 닫기 단추는 오른쪽 끝 */
+#menuHead { flex: none; align-items: center; justify-content: flex-start; }
+#menuHead .gold { margin-right: auto; }
+#menuHead button { flex: none; padding: 4px 10px; white-space: nowrap; }
+/* 탭 일곱 개를 한 줄에: 글자가 긴 언어에서 넘치면 옆으로 밀어 넘긴다 */
+#menuTabs { flex: none; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+#menuTabs::-webkit-scrollbar { display: none; }
+#menuTabs button { position: relative; flex: 1 0 auto; padding: 6px 5px; white-space: nowrap; }
 #menuTabs button.on { background: var(--gold); color: #1c1405; border-color: var(--gold); font-weight: 700; }
-#menuList { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 120px; }
+/* 받을 우편이나 찍을 점수가 있다는 점: 모서리에 얹어서 탭의 너비를 바꾸지 않는다 */
+#menuTabs button.dot::after { content: ''; position: absolute; right: 2px; top: 2px; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+#menuTabs button.dot.on::after { background: #b3261e; }
+#menuList { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; overscroll-behavior: contain; }
+#menuList > * { flex: none; }
+#menuList { padding-right: 3px; } /* 스크롤 막대가 단추에 붙지 않게 */
 .mrow { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-left: 3px solid var(--line); padding-left: 7px; }
 .mrow .what { min-width: 0; }
 .mrow .iname { font-weight: 700; }
 .mrow .acts { display: flex; gap: 4px; flex: none; flex-wrap: wrap; justify-content: flex-end; max-width: 58%; }
 .mrow .acts button { padding: 4px 7px; font-size: 12px; white-space: nowrap; }
+.mrow .acts button:disabled, .mtools button:disabled, #menuList > button:disabled { opacity: .4; cursor: default; }
+/* 장비 줄: 이름과 옵션이 줄의 너비를 다 쓰고 단추는 그 아래에 둔다 (옆에 두면 좁은 창에서 옵션 글이 서너 줄로 꺾였다) */
+.mrow.gear { flex-direction: column; align-items: stretch; gap: 4px; padding-top: 2px; padding-bottom: 2px; }
+.mrow.gear .acts { max-width: none; }
+/* 어느 칸의 장비인지 알려 주는 작은 표 */
+.mslot { display: inline-block; margin-right: 6px; padding: 0 5px; border: 1px solid var(--line); border-radius: 3px; font-size: 10.5px; font-weight: 400; color: var(--dim); white-space: nowrap; vertical-align: 1px; }
+.mrow.empty .iname { font-weight: 400; color: var(--dim); }
+/* 옵션 하나는 중간에서 줄이 바뀌지 않는다 */
+.opt { white-space: nowrap; }
+/* 강화 결과: 누른 그 줄이 잠깐 물들고 결과가 적힌다 */
+.mresult { font-size: 12.5px; font-weight: 700; }
+.mrow.ok { background: rgba(127, 214, 138, .18); border-left-color: #7fd68a; }
+.mrow.ok .mresult { color: #a6efae; }
+.mrow.fail { background: rgba(220, 90, 76, .2); border-left-color: var(--hp); }
+.mrow.fail .mresult { color: #ffb3a8; }
+/* 한 번 더 눌러야 하는 단추 (팔기, 사기) */
+.mrow .acts button.armed { border-color: var(--gold); color: var(--gold); font-weight: 700; }
 .mrow.rar1 { border-left-color: #7fd68a; } .mrow.rar1 .iname { color: #7fd68a; }
 .mrow.rar2 { border-left-color: #8fd8ff; } .mrow.rar2 .iname { color: #8fd8ff; }
 .mrow.rar3 { border-left-color: #d79bff; } .mrow.rar3 .iname { color: #d79bff; }
@@ -390,6 +434,16 @@ html:lang(en) body { overflow-wrap: break-word; }
 #dungeon[hidden] { display: none; }
 #dungeon .ttitle { color: #c9b8ff; }
 #dgBtn { padding: 7px; }
+#dgMates { color: #8fd8ff; }
+/* 좁은 화면의 대장간: 값 단추를 재료 글 아래로 내려서 글이 한 낱말씩 꺾이지 않게 한다 */
+@media (max-width: 720px) {
+  #forgeList .shoprow { flex-direction: column; align-items: stretch; gap: 3px; }
+  #forgeList .shoprow button { align-self: flex-end; }
+}
+/* 던전 안: 퀘스트 창은 할 일만 보여 준다 (들판의 목적지까지 걸어갈 수 없다) */
+#quest.away { cursor: default; }
+#quest.away:hover { border-color: var(--line); }
+#quest.away #questGo { display: none; }
 
 .mrow.supply .iname { color: var(--dim); }
 
@@ -399,8 +453,7 @@ html:lang(en) body { overflow-wrap: break-word; }
   #rightcol[data-near="shop"] #tower, #rightcol[data-near="shop"] #forge,
   #rightcol[data-near="forge"] #tower, #rightcol[data-near="forge"] #shop { display: none; }
 }
-#soundBtn { padding: 1px 8px; font-size: 11px; white-space: nowrap; flex: none; }
-@media (pointer: coarse) { #soundBtn { font-size: 14px; padding: 3px 10px; } }
+@media (pointer: coarse) { #menuHead button { font-size: 14px; padding: 5px 12px; } }
 .mrow.made { border-left-color: var(--gold); } .mrow.made .iname { color: var(--gold); }
 
 /* 메뉴 안의 글 칸 (길드 이름, 공지) */
@@ -408,8 +461,6 @@ html:lang(en) body { overflow-wrap: break-word; }
 .mfield input { flex: 1; min-width: 0; }
 .mfield button { flex: none; white-space: nowrap; padding: 4px 10px; }
 #log .gchat { color: #9fe0a8; }
-#menuTabs { flex-wrap: wrap; }
-#menuTabs button { flex: 1 1 22%; }
 
 /* 폰 세로: 위쪽 창이 싸움터를 덮지 않게 줄인다. 등탑 밝기와 다음 습격은 등탑 창과 알림으로 알 수 있으니 내 정보에서는 뺀다 */
 @media (pointer: coarse) and (max-width: 720px) {
@@ -419,12 +470,28 @@ html:lang(en) body { overflow-wrap: break-word; }
   #quest { gap: 2px; }
 }
 
-/* 거래소: 화면과 거르는 종류를 고르는 단추 줄. 좁은 화면에서는 줄을 바꾼다 */
-.mchips { display: flex; gap: 4px; flex-wrap: wrap; }
-.mchips button { flex: 1 1 22%; padding: 5px 4px; white-space: nowrap; }
+/* 거래소의 위쪽 줄: 화면을 고르는 단추 셋과 둘러보기 도구(종류, 정렬, 새로 고침, 쪽 넘기기).
+   넓으면 한 줄, 좁으면 두 줄이고 목록을 내려도 창 위쪽에 붙어 있다. 예전에는 단추가 네 줄이라 폰 가로에서 물건이 한 줄도 안 보였다 */
+.mbar { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; gap: 4px; background: #0e2227; padding-bottom: 2px; }
+.mbar .mchips { flex: 1 1 190px; }
+.mtools { flex: 1 1 250px; display: flex; gap: 4px; align-items: stretch; min-width: 0; }
+.mtools select { flex: 1 1 0; min-width: 0; font: inherit; font-size: 12px; color: var(--fg); background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 4px; padding: 3px 2px; }
+.mtools button.icon { flex: none; min-width: 30px; padding: 3px 8px; font-size: 15px; line-height: 1; }
+.mtools .mpage { flex: none; align-self: center; white-space: nowrap; }
+.mchips { display: flex; gap: 4px; }
+.mchips button { flex: 1 1 0; padding: 5px 4px; white-space: nowrap; }
 .mchips button.on { background: var(--gold); color: #1c1405; border-color: var(--gold); font-weight: 700; }
 .mfield input.short { flex: 0 1 76px; }
-@media (pointer: coarse) { .mchips button { padding: 7px 4px; } }
+@media (pointer: coarse) { .mchips button { padding: 7px 4px; } .mtools select { font-size: 16px; } .mtools button.icon { min-width: 34px; } }
+/* 폰 가로: 높이가 400px 안팎이라 창을 넓고 높게 써서 한 화면에 물건이 여러 줄 보이게 한다 */
+@media (max-height: 480px) {
+  #menu { width: 660px; height: 94%; gap: 5px; padding: 6px 9px; }
+  #menuTabs button { padding: 5px; }
+  #menuList { gap: 5px; }
+  /* 창이 넓으니 장비 줄의 단추를 다시 글 옆에 둔다: 줄이 낮아져 한 화면에 더 많이 보인다 */
+  .mrow.gear { flex-direction: row; align-items: center; }
+  .mrow.gear .acts { flex-wrap: nowrap; }
+}
 
 /* 채널 선택: 언어 선택과 같은 모양이고 가방·메뉴 단추 옆에 둔다. 던전 안에서는 잠긴다 */
 #channel { font: inherit; font-size: 11px; color: var(--fg); background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 3px; padding: 0 2px; max-width: 100%; flex: none; }
@@ -432,7 +499,7 @@ html:lang(en) body { overflow-wrap: break-word; }
 /* iOS는 16px보다 작은 선택 상자를 누르면 화면을 확대한다 */
 @media (pointer: coarse) { #channel { font-size: 16px; } }
 /* 폰: 내 정보 창에 줄이 늘지 않게 한다. 닫혀 있을 때는 화살표를 빼고 채널 번호만 보일 너비로 줄여서
-   가로 화면에서는 가방·메뉴와 같은 줄에, 세로 화면에서는 소리 단추와 같은 줄에 들어간다 (펼치면 인원까지 다 보인다).
+   가방·메뉴 단추, 언어 선택과 같은 줄에 들어간다 (펼치면 인원까지 다 보인다). 소리 단추는 메뉴 창의 머리로 옮겼다.
    줄을 나눌 때는 좁은 너비(2.6em)로 셈하고 남는 자리만큼만 넓어지므로, 메뉴 단추의 숫자가 길어져도 줄이 늘지 않는다 */
 @media (max-width: 720px), (max-height: 480px) {
   #channel { -webkit-appearance: none; appearance: none; flex: 1 1 2.6em; min-width: 2.6em; max-width: 3.3em; padding: 1px 3px; overflow: hidden; white-space: nowrap; text-overflow: clip; }
