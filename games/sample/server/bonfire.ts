@@ -3,8 +3,7 @@
 // 틀의 시스템처럼 필요한 것을 생성자에서 스스로 등록한다. 틀은 이 파일을 모른다.
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MeState } from '../shared/sample';
-import { dist, readInt, type Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
+import { dist, type Ent, type Game, readInt } from '@engine/server';
 
 export class Bonfire {
   /** 온기 (0 ~ BONFIRE.heatMax) */

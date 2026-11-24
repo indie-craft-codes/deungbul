@@ -4,8 +4,7 @@
 // 쓰는 법: new Game({ plugins: [installDeungbul] }), 설정을 줄 때는 plugins: [(g) => installDeungbul(g, { raid: { everyMin: 5 } })].
 // plugins를 주지 않은 new Game()은 틀만으로 만들어진다: 이 게임의 서버(games/deungbul/server/main.ts)와 시험(games/deungbul/test/game.ts)이 이 플러그인을 적어 넘긴다.
 import type { RaidConfig } from '../shared/defs';
-import type { Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
+import type { Ent, Game } from '@engine/server';
 import { Keepers } from './systems/keepers';
 import { Quests } from './systems/quests';
 import { Raid } from './systems/raid';

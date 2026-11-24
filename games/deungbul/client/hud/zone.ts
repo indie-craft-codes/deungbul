@@ -1,8 +1,6 @@
 // 구역 알림: 다른 구역에 들어서면 어디인지, 위험한 곳(등탑이 꺼진 곳)인지 가운데에 크게 알린다.
-import { onSlow } from '@engine/client/bus';
-import { banner } from '@engine/client/hud/notify';
+import { banner, onSlow, S } from '@engine/client';
 import { L } from '@engine/client/i18n';
-import { S } from '@engine/client/state';
 import { myZone, zoneGlow } from '../state';
 import { renderWorld, shown } from './tower';
 

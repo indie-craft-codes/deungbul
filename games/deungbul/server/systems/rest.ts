@@ -2,8 +2,7 @@
 // 수치와 쌓이는 식은 내용에 있다 (games/deungbul/shared/content/items.ts의 REST, restGain).
 import { REST, restGain } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
-import { readInt } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
+import { type Game, readInt } from '@engine/server';
 
 export class Rest {
   constructor(g: Game) {

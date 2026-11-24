@@ -8,15 +8,12 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, needFor, restGain } from '../shared/defs';
 import { TOWER } from '../shared/world';
-import type { Ent } from '@engine/server/game/entity';
-import { Game } from '@engine/server/game/game';
-import { MemoryStore, type PlayerSave, type WorldSave } from '@engine/server/store';
-import { check, connect, sleep, until } from '@engine/test/harness';
+import { type Ent, Game, MemoryStore, type PlayerSave, startServer, type WorldSave } from '@engine/server';
+import { check, connect, sleep, until } from '@engine/testing';
 import { newGame, startDeungbul } from './game';
 import { WebSocket } from 'ws';
-import type { ServerMsg } from '@engine/shared/protocol';
+import type { ServerMsg } from '@engine/shared';
 import { installDeungbul } from '../server/deungbul';
-import { startServer } from '@engine/server/net/server';
 
 const fixture = <T>(name: string): T => JSON.parse(fs.readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8')) as T;
 /** 두 값이 다른 자리의 목록 (칸의 순서는 따지지 않는다). 같으면 빈 목록 */

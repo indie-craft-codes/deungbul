@@ -1,7 +1,7 @@
 // 한국어: 이 게임의 내용의 이름(koNames)과 이 게임의 문장(koGame). 틀의 문장(koBase)과 합쳐 한 언어 묶음이 된다 (index.ts).
 // 기준 언어다: en.ts는 이 파일과 같은 모양을 갖춰야 컴파일된다. 내용에 id를 더하고 이름을 빠뜨려도 컴파일되지 않는다.
 import type { MsgMap } from '@engine/shared/ext';
-import type { MsgArg, MsgKey } from '@engine/shared/messages';
+import type { MsgArg, MsgKey } from '@engine/shared';
 import { keyHints } from '@engine/client/i18n/ko';
 import type { ContentNames } from '@engine/client/i18n/names';
 

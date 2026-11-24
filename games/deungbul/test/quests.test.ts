@@ -2,7 +2,7 @@
 import { HERB_FIELD, QUESTS, SHOP } from '../shared/defs';
 import { TOWER, TOWERS } from '../shared/world';
 import { newGame } from './game';
-import { check } from '@engine/test/harness';
+import { check } from '@engine/testing';
 
 {
   const g = newGame();

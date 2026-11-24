@@ -4,9 +4,9 @@
 // 고치는 곳은 메시지를 받는 deungbul.ts 하나이고, 이 게임의 화면이 읽는다.
 import { GLOW_START, RESIDENTS, stageOf, type Stage } from '../shared/defs';
 import type { MeState } from '../shared/deungbul';
-import type { WorldState } from '@engine/shared/protocol';
+import type { WorldState } from '@engine/shared';
 import { TOWERS, zoneOf } from '../shared/world';
-import { S } from '@engine/client/state';
+import { S } from '@engine/client';
 
 export const G: MeState = {
   quest: { c: 0, s: 0, n: 0 },

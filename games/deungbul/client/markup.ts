@@ -4,7 +4,7 @@
 // 글자는 틀의 마크업처럼 여기에 직접 쓰지 않는다: data-i18n 표시를 보고 i18n의 applyDom이 채운다.
 // 붙은 뒤의 문서는 이 창들이 index.html에 있던 때와 요소의 차례, 사이의 공백까지 같다 (스타일의 ~ 선택자와 겹치는 순서가 차례에 기댄다).
 // 줄 끝의 \n과 공백은 그 공백을 맞추는 것이라 화면에는 영향이 없다.
-import { mountPanel } from '@engine/client/hud/shell';
+import { mountPanel } from '@engine/client';
 import './deungbul.css';
 
 /**

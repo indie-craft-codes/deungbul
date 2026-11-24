@@ -3,10 +3,9 @@
 // 순위를 겨루게 하지 않으려고, 명단은 오늘 하루치만 보여 주고 날이 바뀌면 비운다.
 import { CONTRIB_TIERS, ECON_WHY, KEEPERS_SHOWN, RAID_KEEP_POINTS } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
-import type { WorldState } from '@engine/shared/protocol';
+import type { WorldState } from '@engine/shared';
 import { NAME_MAX } from '../../shared/world';
-import { readInt, type Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
+import { type Ent, type Game, readInt } from '@engine/server';
 
 export class Keepers {
   private day = '';

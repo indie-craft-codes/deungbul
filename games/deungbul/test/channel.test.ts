@@ -2,10 +2,8 @@
 // 채널 자체의 검사는 틀의 시험 engine/test/channel.test.ts에 있다.
 import { CHANNEL, RAID } from '../shared/defs';
 import { TOWER } from '../shared/world';
-import type { Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
-import { fieldLayer } from '@engine/server/game/layers';
-import { check } from '@engine/test/harness';
+import { type Ent, fieldLayer, type Game } from '@engine/server';
+import { check } from '@engine/testing';
 import { newGame } from './game';
 
 const runOn = (g: Game) => (seconds: number) => { for (let i = 0; i < Math.round(seconds * 20); i++) g.tick(0.05); };

@@ -3,11 +3,7 @@ import * as THREE from 'three';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MonsterId } from '@engine/shared/defs';
 import { AREAS } from '@engine/shared/world';
-import { view } from '@engine/client/app';
-import { onFrame } from '@engine/client/bus';
-import { setMapPaint } from '@engine/client/hud/minimap';
-import { limb, mat, part, registerArmor, registerBlade, registerMonsterModel, type Model } from '@engine/client/scene/models';
-import type { Look } from '@engine/client/scene/view';
+import { limb, type Look, mat, type Model, onFrame, part, registerArmor, registerBlade, registerMonsterModel, setMapPaint, view } from '@engine/client';
 import { G } from './bonfire';
 
 const dirt = new THREE.Color(0xa98d62), grass = [new THREE.Color(0x8aa35a), new THREE.Color(0x76904e)];

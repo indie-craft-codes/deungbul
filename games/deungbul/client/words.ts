@@ -1,9 +1,7 @@
 // 이 게임(등불지기)의 말을 틀에 등록한다: 언어 묶음과, 이 게임이 더한 안내문(games/deungbul/shared/deungbul.ts의 MsgMap)을 어디에 어떤 소리로 알릴지.
 // 틀의 파일(i18n/index.ts, hud/notify.ts, sound.ts)은 틀의 안내문만 알고 이 게임의 것은 여기서 받는다.
-import { addNotices } from '@engine/client/hud/notify';
+import { addMsgSounds, addNotices, rules, sfx } from '@engine/client';
 import { setLocales } from '@engine/client/i18n';
-import { rules } from '@engine/client/rules';
-import { addMsgSounds, sfx } from '@engine/client/sound';
 import { LOCALES } from './i18n';
 
 // 언어 묶음은 init이 아니라 이 모듈이 읽히는 때에 등록한다: 진입점(main.ts)이 initModules()보다 먼저 applyDom()과 initPanels()로 문장을 읽는데,

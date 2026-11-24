@@ -1,0 +1,19 @@
+// 틀의 화면 입구: 게임의 화면 진입점과 화면 모듈이 읽는 것. 여기 없는 것은 틀의 내부다 (입구의 목록은 engine/shared/index.ts).
+// 문장(L, t, 언어 묶음)은 '@engine/client/i18n'에서 따로 읽는다: 도감과 시험이 three.js 없이 node와 정적 페이지에서 읽기 때문이다.
+export { startClient, type ClientOptions } from './main';
+export { onFrame, onKey, onMsg, onSlow } from './bus';
+export { rules } from './rules';
+export { $, view } from './app';
+export { S, inDungeon } from './state';
+export { send } from './net';
+export { goToTown, moveTo } from './actions';
+export { addNpc, setMerchantLook } from './entities';
+export { addMsgSounds, sfx } from './sound';
+export { mountPanel } from './hud/shell';
+export { addPlace } from './hud/near';
+export { addMarks, setMapPaint, MARK, type Mark, type MapBrush } from './hud/minimap';
+export { addNotices, banner } from './hud/notify';
+export { openClasses } from './hud/classes';
+export { hudSlow } from './hud/me';
+export type { Look, Mood } from './scene/view';
+export { limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco, type ArmorLook, type BladeLook, type Model, type MonsterBuilder } from './scene/models';

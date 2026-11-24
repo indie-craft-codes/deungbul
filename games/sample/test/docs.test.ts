@@ -2,7 +2,7 @@
 // 약속: 따온 조각은 코드 울타리의 머리에 파일 경로를 적는다 (```ts games/sample/server/bonfire.ts). 경로가 없는 울타리(명령, 폴더 그림)는 검사하지 않는다.
 // 조각 안의 '…'만 있는 줄은 건너뛴 자리다: 그 앞뒤의 덩어리가 파일에 그 차례로 있으면 된다. 줄 앞뒤의 공백은 견주지 않는다.
 import fs from 'node:fs';
-import { check } from '@engine/test/harness';
+import { check } from '@engine/testing';
 
 const root = new URL('../../../', import.meta.url);
 const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8').replace(/\r\n/g, '\n');

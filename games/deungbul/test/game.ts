@@ -3,8 +3,7 @@
 // 틀의 시험(engine/test/*.test.ts)은 이 폴더를 import하지 않는다 (engine/test/framework.test.ts가 검사한다).
 import type { RaidConfig } from '../shared/defs';
 import { installDeungbul } from '../server/deungbul';
-import { Game, type GameOptions } from '@engine/server/game/game';
-import { startServer, type Options, type Running } from '@engine/server/net/server';
+import { Game, type GameOptions, type Options, type Running, startServer } from '@engine/server';
 
 export interface DeungbulOptions extends GameOptions {
   /** 습격 설정 덮어쓰기 (시각표를 비우거나 물결을 줄인다): installDeungbul의 인자로 넘어간다 */

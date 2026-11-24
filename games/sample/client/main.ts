@@ -1,6 +1,6 @@
 // 이 게임의 클라이언트 진입점 (index.html이 이 파일을 읽는다). 게임이 틀을 시작시킨다.
 import { setLocales } from '@engine/client/i18n';
-import { startClient } from '@engine/client/main';
+import { startClient } from '@engine/client';
 import { initBonfire, mountBonfire } from './bonfire';
 import { LOCALES } from './i18n';
 import { initScene, look } from './scene';

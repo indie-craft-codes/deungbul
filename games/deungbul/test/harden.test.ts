@@ -2,10 +2,8 @@
 // 틀의 것(필드 보스, 재접속, 순위, 자리 비움 사냥, 거래소, 깨진 저장 값, 채널, 초대, 통신 계층)은 engine/test/harden.test.ts에 있다. 항목 번호는 그 파일과 같다.
 import { RAID } from '../shared/defs';
 import { TOWER } from '../shared/world';
-import type { Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
-import { fieldLayer } from '@engine/server/game/layers';
-import { check } from '@engine/test/harness';
+import { type Ent, fieldLayer, type Game } from '@engine/server';
+import { check } from '@engine/testing';
 import { newGame } from './game';
 
 const runOn = (g: Game) => (seconds: number) => { for (let i = 0; i < Math.round(seconds * 20); i++) g.tick(0.05); };

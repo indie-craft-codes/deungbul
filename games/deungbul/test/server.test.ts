@@ -3,8 +3,8 @@
 import { createHash } from 'node:crypto';
 import { FORGE, GLOW_START, RAID, nextRaidAt } from '../shared/defs';
 import { TOWER } from '../shared/world';
-import { MemoryStore } from '@engine/server/store';
-import { check, until, sleep } from '@engine/test/harness';
+import { MemoryStore } from '@engine/server';
+import { check, sleep, until } from '@engine/testing';
 import { connectDeungbul as connect } from './peer';
 import { startDeungbul } from './game';
 

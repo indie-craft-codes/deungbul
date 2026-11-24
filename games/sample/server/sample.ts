@@ -1,6 +1,5 @@
 // 이 게임(모닥불 사냥터)의 규칙 플러그인과 서버 쪽 선언. 틀(engine/server)은 이 파일을 모른다: 서버 진입점(./main.ts)과 시험이 넘긴다.
-import type { Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
+import type { Ent, Game } from '@engine/server';
 import { MAP as aliased } from '@engine/shared/world';
 import { MAP } from '../shared/content';
 import { Bonfire } from './bonfire';

@@ -3,17 +3,8 @@
 import { SHOPS } from '../shared/content';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MeState } from '../shared/sample';
-import { $ } from '@engine/client/app';
-import { onKey, onMsg, onSlow } from '@engine/client/bus';
-import { openClasses } from '@engine/client/hud/classes';
-import { MARK, addMarks, type Mark } from '@engine/client/hud/minimap';
-import { addPlace } from '@engine/client/hud/near';
-import { addNotices } from '@engine/client/hud/notify';
-import { mountPanel } from '@engine/client/hud/shell';
+import { $, addMarks, addNotices, addPlace, type Mark, MARK, mountPanel, onKey, onMsg, onSlow, openClasses, rules, S, send } from '@engine/client';
 import { L, t } from '@engine/client/i18n';
-import { send } from '@engine/client/net';
-import { rules } from '@engine/client/rules';
-import { S } from '@engine/client/state';
 import './sample.css';
 
 /** 이 게임의 화면 상태: 서버가 알려 준 온기(공유 상태)와 내가 넣은 장작(개인 상태). 틀의 상태(S)에는 이 칸이 없다 */

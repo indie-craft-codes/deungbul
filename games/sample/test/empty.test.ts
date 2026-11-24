@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { check } from '@engine/test/harness';
+import { check } from '@engine/testing';
 
 const root = new URL('../../../', import.meta.url);
 const src = fs.readFileSync(new URL('games/sample/shared/content/index.ts', root), 'utf8').replace(/\r\n/g, '\n');

@@ -5,17 +5,10 @@
 import { RESIDENTS, SHOPS, speedFor } from '../shared/defs';
 import type { MeState } from '../shared/deungbul';
 import { TOWER, TOWERS, TOWN } from '../shared/world';
-import { goToTown } from '@engine/client/actions';
-import { $ } from '@engine/client/app';
-import { onKey, onMsg } from '@engine/client/bus';
-import { addNpc, setMerchantLook } from '@engine/client/entities';
-import { hudSlow } from '@engine/client/hud/me';
+import { $, addNpc, goToTown, hudSlow, makeHumanoid, onKey, onMsg, rules, S, setMerchantLook } from '@engine/client';
 import { goToQuest, renderQuest } from './hud/quest';
 import { initWords } from './words';
 import { L } from '@engine/client/i18n';
-import { rules } from '@engine/client/rules';
-import { makeHumanoid } from '@engine/client/scene/models';
-import { S } from '@engine/client/state';
 import { raidSlow } from './hud/raid';
 import { renderWorld, towerSlow } from './hud/tower';
 import { zoneSlow } from './hud/zone';

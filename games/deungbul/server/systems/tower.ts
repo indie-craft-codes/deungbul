@@ -2,10 +2,9 @@
 // 등탑은 구역마다 하나씩 있다. 바깥 구역의 등탑은 꺼진 채로 시작하고, 모두가 불씨를 모아 밝혀야 한다.
 import { ECON_WHY, FULL_TOWER_OFFER, GLOW_BRIGHT_REGEN, GLOW_MAX, RESIDENTS, TOWER_REACH, speedFor, stageOf, type ResidentId, type Stage } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
-import type { WorldState } from '@engine/shared/protocol';
+import type { WorldState } from '@engine/shared';
 import { TOWERS, zoneOf, type TowerDef } from '../../shared/world';
-import { clamp, dist, readInt, type Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
+import { clamp, dist, type Ent, type Game, readInt } from '@engine/server';
 
 export class Tower {
   /** 등탑별 밝기 (0~100). 시간으로 줄지 않는다: 습격 결과로만 변한다 */

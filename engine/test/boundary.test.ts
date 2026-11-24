@@ -115,3 +115,32 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
   const probe = importsIn("import { x } from '../server/game/layers';\nimport type { Y } from '../../store';\nexport { z } from './z';");
   check(probe.join('|') === "../server/game/layers|type ../../store|./z" && resolveTo('engine/client/hud/x.ts', '../../server/game/layers') === 'engine/server/game/layers', '검사의 모양: import와 export from, import type을 가려 읽는다');
 }
+
+// ---------- 5. 게임은 틀을 입구로만 읽는다 ----------
+{
+  /**
+   * 틀의 입구 (입구의 목록과 뜻은 engine/shared/index.ts). 이 밖의 틀 파일은 틀의 내부라 게임이 깊게 읽지 않는다:
+   * 내부를 고쳐도 게임이 깨지지 않게, 그리고 게임에 내놓은 것이 무엇인지 한눈에 보이게.
+   *   @engine/shared, @engine/server, @engine/client, @engine/testing: 입구 넷
+   *   @engine/client/i18n과 그 언어 묶음(ko, en, names, merge): 언어. 도감과 시험이 three.js 없이 읽는다
+   *   @engine/shared/defs, @engine/shared/world: 내용 통로 (게임의 통로 defs.ts·world.ts가 다시 내보낸다)
+   *   @engine/shared/ext, @engine/server/game/ext, @engine/client/i18n/ext: 확장 지점 (선언 병합)
+   */
+  const ENTRIES = ['@engine/shared', '@engine/server', '@engine/client', '@engine/testing', '@engine/client/i18n', '@engine/client/i18n/ko', '@engine/client/i18n/en', '@engine/client/i18n/names', '@engine/client/i18n/merge',
+    '@engine/shared/defs', '@engine/shared/world', '@engine/shared/ext', '@engine/server/game/ext', '@engine/client/i18n/ext'];
+  /** 게임의 내용 파일(shared/content/)만: 계약의 타입은 defs/*.ts에서 import type으로, 기본값은 defaults에서 (통로를 값으로 읽으면 초기화 순서가 꼬인다) */
+  const contentOk = (f: string, spec: string, typeOnly: boolean): boolean => /^games\/[^/]+\/shared\/content\//.test(f) && ((/^@engine\/shared\/defs\/\w+$/.test(spec) && typeOnly) || spec === '@engine/shared/defaults');
+  const specsIn = (src: string): { spec: string; typeOnly: boolean }[] => [...stripComments(src).matchAll(/^\s*(import|export)\s+(type\s+)?[^'"]*?from\s+['"](@engine\/[^'"]+)['"]|^\s*import\s+['"](@engine\/[^'"]+)['"]/gm)].map((m) => ({ spec: m[3] ?? m[4], typeOnly: !!m[2] }));
+  const deep = (f: string, src: string): string[] => specsIn(src).filter((s) => !ENTRIES.includes(s.spec) && !contentOk(f, s.spec, s.typeOnly)).map((s) => `${f} → ${s.spec}`);
+  const GAMES = walk(path.join(root, 'games'), /\.ts$/).map(rel);
+  const found = GAMES.flatMap((f) => deep(f, read(f)));
+  for (const x of found) console.log('  ' + x);
+  const viaEntry = GAMES.filter((f) => specsIn(read(f)).some((s) => ['@engine/server', '@engine/client', '@engine/shared', '@engine/testing'].includes(s.spec)));
+  check(GAMES.some((f) => f.startsWith('games/sample/')) && viaEntry.length >= 40 && found.length === 0, `게임(${[...new Set(GAMES.map((f) => f.split('/')[1]))].join(', ')})은 틀을 입구로만 읽는다: 틀의 내부 파일을 깊게 import하지 않는다 (입구를 쓰는 파일 ${viaEntry.length}개)`);
+  // 검사가 실제로 잡아내는가
+  const probe = deep('games/x/client/hud.ts', "import { S } from '@engine/client/state';\nimport { $ } from '@engine/client';\nimport type { ItemDef } from '@engine/shared/defs/items';");
+  const probeContent = deep('games/x/shared/content/items.ts', "import type { ItemDef } from '@engine/shared/defs/items';\nimport { GEAR_BASE } from '@engine/shared/defaults';\nimport { X } from '@engine/shared/defs/items';");
+  check(probe.length === 2 && probeContent.length === 1, '검사의 모양: 깊은 import는 잡고, 입구와 내용 파일의 타입 import는 지나간다');
+  // 입구 파일이 실제로 있다
+  check(['engine/shared/index.ts', 'engine/server/index.ts', 'engine/client/index.ts', 'engine/testing.ts'].every((f) => fs.existsSync(path.join(root, f))), '틀의 입구 파일 넷이 있다 (engine/{shared,server,client}/index.ts, engine/testing.ts)');
+}

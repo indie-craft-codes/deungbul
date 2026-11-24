@@ -1,8 +1,7 @@
 // 메인 퀘스트: 플레이어마다 장과 단계를 따라간다. 다른 시스템의 사건을 듣고 진행을 올린다.
 import { ECON_WHY, QUESTS, goalCount, type QuestStep } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
-import { dist, readInt, type Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
+import { dist, type Ent, type Game, readInt } from '@engine/server';
 
 export class Quests {
   private visitT = 0;

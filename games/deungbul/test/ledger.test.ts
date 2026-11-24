@@ -3,11 +3,8 @@
 // 이 파일은 장부 시험에서 가른 이 게임의 몫이다: 대조 검사의 긴 시나리오가 등탑·퀘스트·기여 단계·습격을 거친다. 장부 자체의 나머지 검사는 틀의 시험 engine/test/ledger.test.ts에 있다.
 import { CAMPS, CONTRIB_TIERS, DUNGEONS, FORGE, RARITIES, SHOPS, SMITHY, marketFee, type MarketItem } from '../shared/defs';
 import { TOWER } from '../shared/world';
-import type { Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
-import { isField } from '@engine/server/game/layers';
-import { MemoryStore, type EconRow, type PlayerSave } from '@engine/server/store';
-import { check } from '@engine/test/harness';
+import { type EconRow, type Ent, type Game, isField, MemoryStore, type PlayerSave } from '@engine/server';
+import { check } from '@engine/testing';
 import { newGame } from './game';
 
 type MonsterType = Parameters<Game['monsters']['spawn']>[0];

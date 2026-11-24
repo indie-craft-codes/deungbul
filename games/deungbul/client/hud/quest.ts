@@ -1,11 +1,8 @@
 // 메인 퀘스트 표시: 지금 할 일, 진행 수치, 목적지 길잡이(빛기둥과 화면 가장자리 화살표).
 // 창을 누르면 목적지까지 걸어간다. 가는 것만 자동이고, 도착한 뒤의 일(전투, 구매, 바치기)은 직접 한다.
 import { QUESTS, goalCount, type QuestStep } from '../../shared/defs';
-import { moveTo } from '@engine/client/actions';
-import { $, view } from '@engine/client/app';
-import { onFrame } from '@engine/client/bus';
+import { $, inDungeon, moveTo, onFrame, S, view } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
-import { S, inDungeon } from '@engine/client/state';
 import { goalBeam } from '../scene/scene';
 import { G } from '../state';
 

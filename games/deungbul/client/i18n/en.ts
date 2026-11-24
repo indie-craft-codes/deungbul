@@ -1,7 +1,7 @@
 // English, this game's share (Lampkeeper). Must have the same shape as ko.ts in this folder (GameLocale and ContentNames enforce it).
 // 틀의 문장(engine/client/i18n/en.ts의 enBase)과 합쳐 한 언어 묶음이 된다 (index.ts).
 import type { ClassId, ItemId, MonsterId, QuestId, ResidentId } from '../../shared/defs';
-import type { MsgArg } from '@engine/shared/messages';
+import type { MsgArg } from '@engine/shared';
 import { count, num, signed } from '@engine/client/i18n/en';
 import { keyHints } from '@engine/client/i18n/ko';
 import { itemNameOf, type ContentNames } from '@engine/client/i18n/names';

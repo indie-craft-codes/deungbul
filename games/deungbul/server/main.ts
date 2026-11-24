@@ -9,8 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installDeungbul } from './deungbul';
-import { startServer } from '@engine/server/net/server';
-import { MemoryStore, SqliteStore, type Store } from '@engine/server/store';
+import { MemoryStore, SqliteStore, startServer, type Store } from '@engine/server';
 
 // 저장소 뿌리: 저장 파일(data/)과 빌드된 화면(dist/)은 게임 폴더가 아니라 뿌리에 있다
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');

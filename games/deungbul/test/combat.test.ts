@@ -1,7 +1,7 @@
 // 전투 시험에서 가른 이 게임의 검사: 직업은 등탑 곁에서만 바꿀 수 있다 (등탑이 g.rules.canChangeClass를 채운다. 서버 없이 게임 규칙만 돌린다)
 // 직업과 기술 자체의 검사는 틀의 시험 engine/test/combat.test.ts에 있다.
 import { TOWER } from '../shared/world';
-import { check } from '@engine/test/harness';
+import { check } from '@engine/testing';
 import { newGame } from './game';
 
 {

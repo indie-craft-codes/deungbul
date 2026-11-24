@@ -4,7 +4,7 @@
 // 기준 언어다: en.ts는 이 파일과 같은 모양을 갖춰야 컴파일된다.
 import type { ClassId, DailyId, DungeonId, ItemId, MonsterId, QuestId, ResidentId, SkillId } from '../../shared/defs';
 import type { MsgMap } from '@engine/shared/ext';
-import type { MsgArg, MsgKey } from '@engine/shared/messages';
+import type { MsgArg, MsgKey } from '@engine/shared';
 import { josa, keyHints, num, signed } from '@engine/client/i18n/ko';
 import { itemNameOf, type ContentNames } from '@engine/client/i18n/names';
 

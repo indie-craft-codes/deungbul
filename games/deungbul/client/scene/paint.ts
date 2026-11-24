@@ -2,7 +2,7 @@
 // 틀(scene/view.ts, hud/minimap.ts)은 여기 함수를 넘겨받아 칠하기만 한다. 맵 정의(games/deungbul/shared/content/map.ts)가 바뀌면 함께 고친다.
 import * as THREE from 'three';
 import { AREAS, MAX_X, MAX_Z, MIN_X, MIN_Z, POND, TOWERS, ZONE_SPLIT, onPath, zoneOf } from '../../shared/world';
-import type { MapBrush } from '@engine/client/hud/minimap';
+import type { MapBrush } from '@engine/client';
 
 const dirt = new THREE.Color(0xb99c6c), sand = new THREE.Color(0xd0bd88), stone = new THREE.Color(0xb9aa8c);
 // 구역마다 풀빛이 다르다: 등불 들판은 푸르고, 잿빛 숲은 바랜 빛이다

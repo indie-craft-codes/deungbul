@@ -2,7 +2,7 @@
 import { RAID } from '../shared/defs';
 import { TOWER, TOWERS, ZONE_SPLIT } from '../shared/world';
 import { newGame } from './game';
-import { check } from '@engine/test/harness';
+import { check } from '@engine/testing';
 
 {
   const g = newGame();

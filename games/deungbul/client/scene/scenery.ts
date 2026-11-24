@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { DUNGEONS, stageOf } from '../../shared/defs';
 import { AREAS, HOUSES, PILLARS, POND, TOWERS } from '../../shared/world';
-import { mat, part } from '@engine/client/scene/models';
+import { mat, part } from '@engine/client';
 
 /** 등탑 하나의 빛나는 부분: 등불, 빛무리, 실제 광원 */
 interface TowerLamp { lamp: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>; halo: THREE.Mesh<THREE.IcosahedronGeometry, THREE.MeshBasicMaterial>; light: THREE.PointLight }

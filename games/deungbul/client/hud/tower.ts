@@ -2,13 +2,8 @@
 // 틀의 내 정보 창(hud/me.ts)은 이 줄들을 모른다: 여기서 bus에 스스로 등록해 그린다 (느린 주기, 공유 상태를 받았을 때, 언어가 바뀔 때).
 import { CONTRIB_TIERS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, RESIDENTS, TOWER_REACH } from '../../shared/defs';
 import { TOWERS } from '../../shared/world';
-import { $ } from '@engine/client/app';
-import { onMsg, onSlow } from '@engine/client/bus';
-import { openClasses } from '@engine/client/hud/classes';
-import { addPlace } from '@engine/client/hud/near';
+import { $, addPlace, onMsg, onSlow, openClasses, S, send } from '@engine/client';
 import { L, onLangChange } from '@engine/client/i18n';
-import { send } from '@engine/client/net';
-import { S } from '@engine/client/state';
 import { G, GS, myZone, stage, zoneGlow } from '../state';
 
 /** 화면의 요소들. initTower에서 잡는다 (이 게임의 창이 화면에 붙은 뒤다) */

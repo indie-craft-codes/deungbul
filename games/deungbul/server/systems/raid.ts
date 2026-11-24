@@ -11,11 +11,9 @@
 //     그 피해는 그 채널이 보탠 내구(전체 내구 ÷ 채널 수)를 넘지 않는다: 남이 방치한 채널 때문에, 자기 채널을 다 막은 사람들이 지지 않는다.
 //     거저 사라지지도 않는다: 채널을 비워 적을 줄이면 그만큼 내구를 잃는다. 모든 채널이 버려졌으면 막아 낸 것이 아니다.
 import { CHANNEL, ECON_WHY, RAID, nextRaidAt, raidFoes, raidTowerHp, type RaidConfig, type RaidPhase } from '../../shared/defs';
-import type { WorldState } from '@engine/shared/protocol';
+import type { WorldState } from '@engine/shared';
 import { TOWER } from '../../shared/world';
-import { dist, type Ent } from '@engine/server/game/entity';
-import type { Game } from '@engine/server/game/game';
-import { channelOf, isField, notifyLayer } from '@engine/server/game/layers';
+import { channelOf, dist, type Ent, type Game, isField, notifyLayer } from '@engine/server';
 
 /** 한 층(채널)의 싸움: 올 적의 수, 나올 때가 된 수, 실제로 나온 수 */
 interface Front {

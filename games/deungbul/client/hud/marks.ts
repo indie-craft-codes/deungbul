@@ -2,12 +2,9 @@
 // 미니맵 자체(hud/minimap.ts)는 무엇을 찍는지 모른다. 다른 게임은 이 파일만 바꾸면 된다.
 import { DUNGEONS, QUESTS, SHOPS, isDungeonId } from '../../shared/defs';
 import { TOWERS } from '../../shared/world';
-import { $ } from '@engine/client/app';
-import { onSlow } from '@engine/client/bus';
-import { MARK, addMarks, type Mark } from '@engine/client/hud/minimap';
+import { $, addMarks, inDungeon, type Mark, MARK, onSlow, S } from '@engine/client';
 import { t } from '@engine/client/i18n';
 import type { UiKey } from '@engine/client/i18n/ko';
-import { S, inDungeon } from '@engine/client/state';
 import { G, GS } from '../state';
 
 export function initMarks(): void {

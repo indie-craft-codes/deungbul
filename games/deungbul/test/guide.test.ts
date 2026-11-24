@@ -16,7 +16,7 @@ import { koGame, koNames } from '../client/i18n/ko';
 import { enBase } from '@engine/client/i18n/en';
 import { itemInfo, keyHints, koBase } from '@engine/client/i18n/ko';
 import { overlaps } from '@engine/client/i18n/merge';
-import { AWAY } from '@engine/shared/auto';
+import { AWAY } from '@engine/shared';
 import { BUILD, CLASSES, COMBAT, FULL_TOWER_OFFER, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, GUILD, LEASH, LEVEL, MONSTER_AI, POWER, STATS, bossHp, gearScore, guildLevel, guildNeed, needFor, raidFoes, raidTowerHp, type Gear } from '../shared/defs';
 import { newGame } from './game';
 import { compare, readFixture, snapshotOf } from './locale-snapshot';
@@ -26,7 +26,7 @@ import {
 } from '../shared/defs';
 import { TOWERS, rng } from '../shared/world';
 import { BAG_UP, SALVAGE, bagSlots, dustFor, itemCap } from '../shared/defs';
-import { check } from '@engine/test/harness';
+import { check } from '@engine/testing';
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
 const near = (got: number, want: number, ratio: number): boolean => Math.abs(got - want) <= Math.abs(want) * ratio;

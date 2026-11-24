@@ -31,9 +31,9 @@ const fixture = <T>(name: string): T => JSON.parse(fs.readFileSync(new URL(`../.
  */
 const ALIASES: [string, string][] = [['@engine/', 'engine/'], ['@game/', 'games/deungbul/']];
 function resolveSpec(root: URL, file: string, spec: string): string | null {
-  if (spec.startsWith('.')) return new URL(spec, new URL(file, root)).href.slice(root.href.length);
-  for (const [alias, dir] of ALIASES) if (spec.startsWith(alias)) return dir + spec.slice(alias.length);
-  return null;
+  const p = spec.startsWith('.') ? new URL(spec, new URL(file, root)).href.slice(root.href.length) : ALIASES.map(([alias, dir]) => (spec.startsWith(alias) ? dir + spec.slice(alias.length) : null)).find((x) => x !== null) ?? null;
+  // 폴더를 가리키면 그 폴더의 입구(index.ts)다: 틀의 입구 '@engine/server', '@engine/client', '@engine/shared'
+  return p !== null && !fs.existsSync(new URL(`${p}.ts`, root)) && fs.existsSync(new URL(`${p}/index.ts`, root)) ? `${p}/index` : p;
 }
 const hash = (data: string | Uint8Array): string => createHash('sha256').update(data).digest('hex').slice(0, 16);
 /** 'YYYY-M-D' 꼴 날짜의 낮 12시 (서버 현지 시간). 날짜를 못 읽으면 정해 둔 날 */
@@ -395,7 +395,7 @@ function noonOf(day: unknown): number {
   // 검사가 실제로 읽어 내는지: 경로를 풀어내는 법과, 양쪽 폴더에서 별칭을 실제로 쓰는 곳
   check(resolveSpec(root, 'engine/client/hud/x.ts', '../../../games/deungbul/shared/defs') === 'games/deungbul/shared/defs' && resolveSpec(root, 'games/deungbul/server/x.ts', '@engine/server/game/game') === 'engine/server/game/game'
     && resolveSpec(root, 'engine/shared/defs.ts', 'node:fs') === null && engineFiles.length >= 110 && gameFiles.length >= 70
-    && specsOf('engine/shared/defs.ts').some((s) => s.spec === '@game/shared/content') && specsOf('games/deungbul/server/systems/tower.ts').some((s) => s.spec === '@engine/server/game/game')
+    && specsOf('engine/shared/defs.ts').some((s) => s.spec === '@game/shared/content') && specsOf('games/deungbul/server/systems/tower.ts').some((s) => s.spec === '@engine/server')
     && specsOf('games/deungbul/shared/content/items.ts').some((s) => s.spec === '@engine/shared/defs/items' && s.typeOnly) && specsOf('games/deungbul/shared/deungbul.ts').some((s) => s.spec === '@engine/shared/ext'),
     `폴더를 넘는 import를 읽어 낸다 (engine/ 아래 ${engineFiles.length}개, games/deungbul/ 아래 ${gameFiles.length}개)`);
 
@@ -437,7 +437,7 @@ function noonOf(day: unknown): number {
   const gameOut = gameFiles.flatMap((f) => specsOf(f).filter((s) => (s.spec.startsWith('.') && !(resolveSpec(root, f, s.spec) ?? '').startsWith('games/deungbul/')) || s.spec.startsWith('@game')).map((s) => `${f} -> ${s.spec}`));
   for (const x of gameOut) console.log('  ' + x);
   const viaAlias = gameFiles.flatMap((f) => specsOf(f).filter((s) => s.spec.startsWith('@engine/'))).length;
-  check(viaAlias >= 100 && gameOut.length === 0, `games/deungbul/은 engine/을 별칭 @engine으로만 읽는다: 상대 경로로 폴더를 넘지 않고, 자기 폴더는 상대 경로로 읽는다 (@engine ${viaAlias}곳)`);
+  check(viaAlias >= 80 && gameOut.length === 0, `games/deungbul/은 engine/을 별칭 @engine으로만 읽는다: 상대 경로로 폴더를 넘지 않고, 자기 폴더는 상대 경로로 읽는다 (@engine ${viaAlias}곳)`);
 
   // 6
   const contentFiles = specsOf('games/deungbul/shared/content/index.ts').map((s) => `games/deungbul/shared/content/${s.spec.slice(2)}.ts`);
@@ -691,7 +691,7 @@ function noonOf(day: unknown): number {
     `틀 쪽 화면 파일 ${CLEAN.length}개(client/src에서 game/, guide/, 언어 파일, sound.ts를 뺀 전부)는 이 게임의 클라이언트 파일과 게임 전용 내용(주민, 등탑, 습격, 퀘스트)을 import하지 않는다`);
   // 이 게임의 클라이언트 파일은 한 폴더에 모여 있고, 틀을 시작시키는 것은 게임의 진입점이다: 틀의 목록(modules.ts)은 게임의 모듈을 모른다
   const entry = importsOf('games/deungbul/client/main.ts').map((i) => i.to);
-  check(entry.includes('engine/client/main.ts') && entry.includes('games/deungbul/client/deungbul.ts') && entry.includes('games/deungbul/client/hud/tower.ts') && /startClient\(\{/.test(read('games/deungbul/client/main.ts'))
+  check(entry.includes('engine/client/index.ts') && entry.includes('games/deungbul/client/deungbul.ts') && entry.includes('games/deungbul/client/hud/tower.ts') && /startClient\(\{/.test(read('games/deungbul/client/main.ts'))
     && /<script type="module" src="\.\/main\.ts"><\/script>/.test(read('games/deungbul/client/index.html')) && !list('engine/client/').some((f) => /^engine\/client\/(game|deungbul|guide)\//.test(f)),
     '이 게임의 진입점(games/deungbul/client/main.ts)이 자기 모듈을 들고 틀의 startClient를 부르고, index.html은 그 진입점을 읽는다');
   // 틀만 타입 검사하는 설정은 틀의 폴더만 읽는다 (npm run typecheck:engine이 틀만 센다): 게임의 클라이언트 폴더는 games/ 아래에 있어 들어가지 않는다
@@ -779,7 +779,7 @@ function noonOf(day: unknown): number {
   // app.ts를 import하지 않는 것은 순서 때문이다: app.ts가 이 파일에 기대어 먼저 붙인 뒤에야 다른 파일이 요소를 잡는다
   const imports = (file: string): string[] => [...read(file).matchAll(/\b(?:import|export)\b[^;'"]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm)].map((m) => m[1] ?? m[2]);
   const shell = imports('engine/client/hud/shell.ts');
-  check(imports('games/deungbul/client/markup.ts').includes('@engine/client/hud/shell') && imports('games/deungbul/client/markup.ts').includes('./deungbul.css')
+  check(imports('games/deungbul/client/markup.ts').includes('@engine/client') && imports('games/deungbul/client/markup.ts').includes('./deungbul.css')
     && !shell.some((to) => /^@game\/|(^|\/)(games?|deungbul)(\/|$)|\/(quest|marks|scenery|app)$|\.css$/.test(to)),
     `hud/shell.ts는 게임 파일(마크업, 스타일)과 app.ts를 import하지 않는다 (import ${shell.length}개)`);
   const app = read('engine/client/app.ts');

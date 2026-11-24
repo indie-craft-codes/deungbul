@@ -2,11 +2,7 @@
 // 틀(scene/view.ts)은 값만 받아 그리고, 언제 어떤 값을 쓸지는 여기서 정한다. 필요한 것은 bus에 스스로 등록한다.
 import * as THREE from 'three';
 import type { Stage } from '../../shared/defs';
-import { view } from '@engine/client/app';
-import { onMsg, onSlow } from '@engine/client/bus';
-import { setMapPaint } from '@engine/client/hud/minimap';
-import type { Mood } from '@engine/client/scene/view';
-import { S, inDungeon } from '@engine/client/state';
+import { inDungeon, type Mood, onMsg, onSlow, S, setMapPaint, view } from '@engine/client';
 import { GS, myZone, stage, zoneGlow } from '../state';
 import { mapPaint } from './paint';
 import { scenery } from './scenery';

@@ -2,7 +2,7 @@
 // 새 몬스터나 장비를 더하면 아래 표에 한 줄을 더한다 (몬스터는 빠뜨리면 컴파일이 실패한다).
 import * as THREE from 'three';
 import type { ItemId, MonsterId } from '../../shared/defs';
-import { limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco, type ArmorLook, type BladeLook, type Model, type MonsterBuilder } from '@engine/client/scene/models';
+import { type ArmorLook, type BladeLook, limb, makeBlob, makeHumanoid, mat, type Model, type MonsterBuilder, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco } from '@engine/client';
 
 const G = {
   wisp: new THREE.IcosahedronGeometry(0.42, 0), halo: new THREE.IcosahedronGeometry(0.7, 0),

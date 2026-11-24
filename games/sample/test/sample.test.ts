@@ -4,13 +4,10 @@
 import { CAMPS, CLASSES, DUNGEONS, FORGES, MONSTERS, SHOPS } from '../shared/content';
 import { BONFIRE } from '../shared/content/bonfire';
 import { installSample } from '../server/sample';
-import type { Ent } from '@engine/server/game/entity';
-import { Game } from '@engine/server/game/game';
-import { startServer } from '@engine/server/net/server';
-import { MemoryStore } from '@engine/server/store';
+import { type Ent, Game, MemoryStore, startServer } from '@engine/server';
 import { maxHpFor } from '@engine/shared/defs';
-import type { ServerMsg } from '@engine/shared/protocol';
-import { check, connect, until } from '@engine/test/harness';
+import type { ServerMsg } from '@engine/shared';
+import { check, connect, until } from '@engine/testing';
 
 // ---------- 규칙만 (서버 없이) ----------
 {
