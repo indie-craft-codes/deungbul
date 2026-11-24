@@ -1,4 +1,4 @@
-// 상점, 갑옷 (서버 없이 게임 규칙만 돌린다). 등불 맡기기(휴식 보너스)와 주민의 귀환은 이 게임의 것이라 test/deungbul/shop.test.ts에 있다
+// 상점, 갑옷 (서버 없이 게임 규칙만 돌린다). 등불 맡기기(휴식 보너스)와 주민의 귀환은 이 게임의 것이라 games/deungbul/test/shop.test.ts에 있다
 import { SHOP } from '@game/shared/defs';
 import { Game } from '../server/game/game';
 import { check } from './harness';
@@ -10,7 +10,7 @@ import { check } from './harness';
   const said = () => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
   const cmd = (m: Record<string, unknown>) => { g.notices = []; g.command(p, m); };
   p.x = SHOP.x + 1; p.z = SHOP.z; p.gold = 100;
-  // 물건의 잠금은 게임의 규칙(g.rules.unlocked)이 답한다: 이 게임에서는 '그 주민이 돌아왔는가'이고, 그 연결은 test/deungbul/shop.test.ts가 본다.
+  // 물건의 잠금은 게임의 규칙(g.rules.unlocked)이 답한다: 이 게임에서는 '그 주민이 돌아왔는가'이고, 그 연결은 games/deungbul/test/shop.test.ts가 본다.
   // 여기서는 시험용 규칙을 넣어 상점이 그 답을 따르는지 본다 (열쇠는 내용 정의의 needs: 등불검은 bram, 진한 물약은 mira)
   const opened = new Set<string>();
   g.rules.unlocked = (key) => opened.has(key);

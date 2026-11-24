@@ -12,7 +12,7 @@ export interface Ent extends EntExt {
   lastMove: number;
   /** 마지막으로 스스로 무언가를 한 시각(게임 시계): 명령을 냈거나 몬스터를 때렸다. 서 있기만 한 사람을 습격의 인원에서 빼는 데 쓴다 */
   lastAct: number;
-  /** 목표로 가려고 세운 길과, 세울 때의 목표·시각 (shared/nav.ts) */
+  /** 목표로 가려고 세운 길과, 세울 때의 목표·시각 (engine/shared/nav.ts) */
   path: Point[] | null; pgx: number; pgz: number; pat: number;
   hp: number; maxHp: number; dead: boolean;
   /** 층: 들판의 채널이거나 던전 인스턴스다 (번호의 뜻은 layers.ts). 층이 다르면 서로 보이지 않고 싸우지 않는다 */

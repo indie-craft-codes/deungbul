@@ -1,11 +1,11 @@
-// 재화 흐름 지표를 읽는다: 서버가 저장 파일에 쌓아 둔 경제 장부(server/game/systems/ledger.ts)를 사람이 읽을 표로 찍는다.
+// 재화 흐름 지표를 읽는다: 서버가 저장 파일에 쌓아 둔 경제 장부(engine/server/game/systems/ledger.ts)를 사람이 읽을 표로 찍는다.
 //   npm run econ                     최근 7일, data/game.db
 //   npm run econ -- 14               최근 14일
 //   npm run econ -- 14 경로/game.db   다른 파일 (DB 환경 변수로도 받는다)
 //   npm run econ -- --json           같은 내용을 JSON으로
 //   npm run econ -- --to=2026-11-20  그 날짜까지의 N일 (기본은 오늘)
 // 저장 파일은 읽기 전용으로 연다: 운영 중인 서버가 쓰고 있는 파일을 열어도 방해하지 않는다.
-// 판단 기준(정상 범위)은 shared/content/economy.ts의 ECON_WATCH에 있다. 모두 임시값이다.
+// 판단 기준(정상 범위)은 games/deungbul/shared/content/economy.ts의 ECON_WATCH에 있다. 모두 임시값이다.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -112,7 +112,7 @@ const watch: Watch[] = [
 const active = snap?.active.d7 ?? 0, enough = active >= W.minSample;
 
 const report = {
-  db: file, from, to, days, provisional: '판단 기준은 임시값입니다 (shared/content/economy.ts의 ECON_WATCH)',
+  db: file, from, to, days, provisional: '판단 기준은 임시값입니다 (games/deungbul/shared/content/economy.ts의 ECON_WATCH)',
   daily, gold: { ...gold, awayShare }, sparks, exp, gear, items, unknown,
   snapshot: snap, snapshots: snaps,
   reach: snap ? snap.fresh : null,
@@ -193,7 +193,7 @@ else {
   console.log(`  신규(최근 7일에 만든 캐릭터 ${num(s.fresh.n)}): ${marks.length ? marks.map(([m, v]) => `레벨 ${m} 도달 ${v.n}명, 접속 시간 중간값 ${hms(v.play)} (자리 비움 포함 ${hms(v.total)})`).join(' / ') : '레벨 도달 기록 없음'}`);
 }
 
-title('판단 기준 (임시값: shared/content/economy.ts의 ECON_WATCH)');
+title('판단 기준 (임시값: games/deungbul/shared/content/economy.ts의 ECON_WATCH)');
 const show = (w: Watch) => (w.value === null ? '자료 없음' : w.key === 'awayShare' || w.key === 'maxEnhShare' || w.key === 'unknownShare' ? pct(w.value) : w.key === 'holdDays' ? `${num(w.value, 1)}일` : num(w.value, 2));
 table(['지표', '지금', '정상 범위', '판단'], [
   ...watch.map((w) => [w.label, show(w), w.range, (w.ok === null ? '-' : w.ok ? '정상' : '주의') + (w.note ? ` (${w.note})` : '')]),

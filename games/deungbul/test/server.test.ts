@@ -1,5 +1,5 @@
 // 통합 테스트 (이 게임의 규칙): 등불지기의 서버를 띄우고 클라이언트를 붙여서 등탑, 메인 퀘스트, 습격, 그 저장을 확인한다.
-// 접속·이동·대화·전투·자리 비움 사냥처럼 틀의 것은 test/server.test.ts가 본다. 여기서는 같은 차례로 준비만 하고(이름 바꾸기, 슬라임 한 마리) 이 게임의 것만 검사한다.
+// 접속·이동·대화·전투·자리 비움 사냥처럼 틀의 것은 engine/test/server.test.ts가 본다. 여기서는 같은 차례로 준비만 하고(이름 바꾸기, 슬라임 한 마리) 이 게임의 것만 검사한다.
 import { createHash } from 'node:crypto';
 import { FORGE, GLOW_START, RAID, nextRaidAt } from '../shared/defs';
 import { TOWER } from '../shared/world';
@@ -24,7 +24,7 @@ try {
 
   check(await until(() => a.glow === GLOW_START), '접속하면 등탑 밝기를 받는다');
 
-  // 준비 (검사는 test/server.test.ts에 있다): 이름을 바꾸고, 슬라임 빈터로 가서 한 마리를 잡아 불씨를 얻는다
+  // 준비 (검사는 engine/test/server.test.ts에 있다): 이름을 바꾸고, 슬라임 빈터로 가서 한 마리를 잡아 불씨를 얻는다
   await until(() => a.seen.has(b.id) && b.seen.has(a.id));
   a.send({ t: 'rename', name: '새이름' });
   await until(() => b.seen.get(a.id)?.name === '새이름');

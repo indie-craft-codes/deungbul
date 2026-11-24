@@ -1,5 +1,5 @@
 // 성장 선택: 레벨이 오를 때마다 받는 능력치 점수를 나눠 찍고, 골드로 기술을 강화한다.
-// 수치는 shared/content/growth.ts의 BUILD에 있다. 찍은 것은 수치 보정(g.mods)과 기술 배율로 들어간다.
+// 수치는 games/deungbul/shared/content/growth.ts의 BUILD에 있다. 찍은 것은 수치 보정(g.mods)과 기술 배율로 들어간다.
 import { BUILD, BUILD_STATS, classOf, isBuildStat, isSkillId, type BuildStat, type SkillId } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';

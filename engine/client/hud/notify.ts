@@ -3,7 +3,7 @@
 //   흘러가는 알림(feed):  방금 한 일의 결과. 처치, 바치기, 구매, 거절 사유. 몇 초 뒤 사라진다
 //   대화창(log):         사람들의 말과, 나중에 다시 볼 만한 소식
 // 이렇게 나누지 않으면 처치 알림이 대화와 중요한 소식을 밀어낸다.
-// 여기 적힌 것은 틀의 안내문(shared/messages.ts)의 분류다. 게임이 더한 안내문은 게임의 모듈이 addNotices로 자기 분류를 등록한다 (이 게임: game/words.ts).
+// 여기 적힌 것은 틀의 안내문(engine/shared/messages.ts)의 분류다. 게임이 더한 안내문은 게임의 모듈이 addNotices로 자기 분류를 등록한다 (이 게임: games/deungbul/client/words.ts).
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import { $ } from '../app';
 import { L, forInput, onLangChange } from '../i18n';

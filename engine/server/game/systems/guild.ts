@@ -1,6 +1,6 @@
 // 길드: 만들고, 초대하고, 함께 대화하고, 골드를 기부해 길드를 키운다. 길드 레벨만큼 길드원의 경험치가 늘어난다.
 // 길드원은 접속해 있지 않아도 길드에 남으므로, 사람을 엔티티 번호가 아니라 저장 키(Ent.pid)로 가리킨다.
-// 손님(저장 키가 없는 접속)은 가입할 수 없다. 규칙의 수치는 shared/content/social.ts의 GUILD에 있다.
+// 손님(저장 키가 없는 접속)은 가입할 수 없다. 규칙의 수치는 games/deungbul/shared/content/social.ts의 GUILD에 있다.
 import { GUILD, PARTY, guildLevel, type GuildMember, type GuildView } from '../../../shared/defs';
 import { CHAT_MAX, NAME_MAX } from '../../../shared/world';
 import { isClean, mask, tidy } from '../../text';

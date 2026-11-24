@@ -16,7 +16,7 @@ const notices = {
   raidReward: { why: 'raid', sparks: 0, exp: 1 },
   tierUp: { why: 'tier', gold: 1 },
 } satisfies Record<string, EconNotice>;
-/** 위 표에 적은 안내문의 종류. 모두 실제 안내문(MsgKey)인지는 이 게임의 선언 파일(shared/deungbul.ts)이 컴파일할 때 검사한다 */
+/** 위 표에 적은 안내문의 종류. 모두 실제 안내문(MsgKey)인지는 이 게임의 선언 파일(games/deungbul/shared/deungbul.ts)이 컴파일할 때 검사한다 */
 export type EconNoticeKey = keyof typeof notices;
 // 이 파일은 틀이 읽는 내용이라 이 게임의 선언(안내문의 목록)에 기대지 않는다: 틀만 타입 검사할 때(npm run typecheck:engine)도 그대로 컴파일된다
 export const ECON_NOTICES: Readonly<Partial<Record<string, EconNotice>>> = notices;

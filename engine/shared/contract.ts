@@ -22,7 +22,7 @@ type Point = { x: number; z: number };
 
 export interface ContentContract {
   // ---------- 맵 ----------
-  /** 지역, 장애물, 나무와 바위를 뿌리는 규칙, 던전의 문 (shared/world.ts의 buildWorld가 이것만 읽는다) */
+  /** 지역, 장애물, 나무와 바위를 뿌리는 규칙, 던전의 문 (engine/shared/world.ts의 buildWorld가 이것만 읽는다) */
   MAP: MapDef;
 
   // ---------- 직업과 기술 ----------

@@ -7,7 +7,7 @@ export type MsgArg = string | number;
 
 /** 종류별로 a에 들어가는 값은 주석에 적는다. id류(몬스터, 주민)는 클라이언트가 이름으로 바꾼다. */
 export type MsgKey =
-  | keyof MsgMap // 게임이 더한 안내문 (shared/ext.ts의 MsgMap. 이 게임의 것은 shared/deungbul.ts)
+  | keyof MsgMap // 게임이 더한 안내문 (engine/shared/ext.ts의 MsgMap. 이 게임의 것은 games/deungbul/shared/deungbul.ts)
   | 'joined' // [이름]
   | 'left' // [이름]
   | 'renamed' // [이전 이름, 새 이름]

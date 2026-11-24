@@ -1,6 +1,6 @@
 // 한국어, 이 게임(등불지기)의 몫: 등탑·불씨 바치기·주민·습격·퀘스트·등탑지기·휴식의 문장, 이 게임의 안내문, 그리고 내용의 이름(몬스터, 아이템, 직업, 기술, 던전, 구역, 주민).
-// 틀의 문장(client/src/i18n/ko.ts의 koBase)과 합쳐 한 언어 묶음이 된다 (index.ts). 같은 키가 양쪽에 있으면 여기 것이 이긴다:
-// 틀의 기본 문장을 이 게임의 말로 덮어쓴 것이고, 그 목록은 test/deungbul/guide.test.ts에 고정해 두었다 (뜻하지 않은 겹침을 잡는다).
+// 틀의 문장(engine/client/i18n/ko.ts의 koBase)과 합쳐 한 언어 묶음이 된다 (index.ts). 같은 키가 양쪽에 있으면 여기 것이 이긴다:
+// 틀의 기본 문장을 이 게임의 말로 덮어쓴 것이고, 그 목록은 games/deungbul/test/guide.test.ts에 고정해 두었다 (뜻하지 않은 겹침을 잡는다).
 // 기준 언어다: en.ts는 이 파일과 같은 모양을 갖춰야 컴파일된다.
 import type { ClassId, DailyId, DungeonId, ItemId, MonsterId, QuestId, ResidentId, SkillId } from '../../shared/defs';
 import type { MsgMap } from '@engine/shared/ext';
@@ -151,7 +151,7 @@ export const koGame = {
     contrib: (n: number) => `기여 ${n}`,
     towerMini: (stage: number, glow: number) => `등탑 ${stages[stage]} ${glow}`,
     glow: (stage: number, glow: number, max: number) => `${stages[stage]} · ${glow} / ${max}`,
-    /** bright: 환해지는 밝기, speedPct: 이동 속도가 느는 비율(%), regen: 회복 배율 (shared/content/tower.ts의 값을 넘긴다) */
+    /** bright: 환해지는 밝기, speedPct: 이동 속도가 느는 비율(%), regen: 회복 배율 (games/deungbul/shared/content/tower.ts의 값을 넘긴다) */
     stageNote: (stage: number, bright: number, speedPct: number, regen: number) => ['빛이 약합니다. 혜택이 없습니다.', `${bright} 이상이면 환해집니다: 이동 속도 +${speedPct}%, 회복 ${regen}배`, `환합니다: 이동 속도 +${speedPct}%, 회복 ${regen}배`][stage],
     nextResident: (name: string) => `되돌릴 주민: ${name}`,
     whenBack: (bonus: string) => `돌아오면: ${bonus}`,
@@ -167,7 +167,7 @@ export const koGame = {
     residentHint: (name: string, left: number) => `${josa(name, '은', '는')} 아직 돌아오지 못했습니다. 등탑에서 불씨를 보태면 돌아옵니다 (앞으로 ${left}개).`,
     needsResident: (name: string) => `${josa(name, '이', '가')} 돌아오면 들어옵니다`,
   },
-  /** 이 게임이 더한 서버 안내문(shared/deungbul.ts의 MsgMap)과, 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것 */
+  /** 이 게임이 더한 서버 안내문(games/deungbul/shared/deungbul.ts의 MsgMap)과, 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것 */
   msg: {
     offerFar: () => '등탑 가까이에서 바칠 수 있습니다.',
     noSparks: () => '불씨가 없습니다.',

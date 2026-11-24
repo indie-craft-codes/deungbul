@@ -498,5 +498,5 @@ function noonOf(day: unknown): number {
   check(words.includes("questDone: { tone: 'good', sub: (a) => rules.lockHint(String(a[0])) }") && !notify.includes('rules') && notify.includes('BANNER_SUB[k]?.(a)'), '장을 마쳤을 때 덧붙는 줄(주민을 되돌리는 법)은 게임이 등록한 함수가 만든다: 틀의 알림 코드는 퀘스트를 모른다');
   // 언어 묶음의 등록은 init이 아니라 모듈이 읽히는 때에 한다 (진입점이 모듈의 init보다 먼저 화면의 문장을 채운다)
   check(/^setLocales\(LOCALES\);$/m.test(words) && read('games/deungbul/client/deungbul.ts').includes("from './words'") && read('games/deungbul/client/main.ts').includes("from './deungbul'"),
-    '이 게임의 언어 묶음은 게임 모듈이 읽히는 때(import)에 틀에 등록된다: game/main.ts → game/deungbul.ts → game/words.ts');
+    '이 게임의 언어 묶음은 게임 모듈이 읽히는 때(import)에 틀에 등록된다: client/main.ts → deungbul.ts → words.ts');
 }

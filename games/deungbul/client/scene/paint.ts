@@ -1,5 +1,5 @@
 // 이 게임의 맵을 칠하는 법: 땅의 색(등탑 앞마당, 길, 물가, 구역별 풀빛), 구역별 잎 색, 미니맵의 바탕.
-// 틀(scene/view.ts, hud/minimap.ts)은 여기 함수를 넘겨받아 칠하기만 한다. 맵 정의(shared/content/map.ts)가 바뀌면 함께 고친다.
+// 틀(scene/view.ts, hud/minimap.ts)은 여기 함수를 넘겨받아 칠하기만 한다. 맵 정의(games/deungbul/shared/content/map.ts)가 바뀌면 함께 고친다.
 import * as THREE from 'three';
 import { AREAS, MAX_X, MAX_Z, MIN_X, MIN_Z, POND, TOWERS, ZONE_SPLIT, onPath, zoneOf } from '../../shared/world';
 import type { MapBrush } from '@engine/client/hud/minimap';

@@ -1,5 +1,5 @@
 // 악용 막기 시험에서 가른 이 게임의 검사: 습격(서 있기만 한 부계정, 비운 채널)과 오늘의 등탑지기 명단 (서버 없이 게임 규칙만 돌린다)
-// 틀의 것(필드 보스, 재접속, 순위, 자리 비움 사냥, 거래소, 깨진 저장 값, 채널, 초대, 통신 계층)은 test/harden.test.ts에 있다. 항목 번호는 그 파일과 같다.
+// 틀의 것(필드 보스, 재접속, 순위, 자리 비움 사냥, 거래소, 깨진 저장 값, 채널, 초대, 통신 계층)은 engine/test/harden.test.ts에 있다. 항목 번호는 그 파일과 같다.
 import { RAID } from '../shared/defs';
 import { TOWER } from '../shared/world';
 import type { Ent } from '@engine/server/game/entity';

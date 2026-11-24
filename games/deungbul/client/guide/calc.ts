@@ -1,4 +1,4 @@
-// 도감의 계산: 내용 정의(shared/content)의 수치로 확률, 기대값, 범위를 구한다. 화면(DOM)도 문장도 모른다.
+// 도감의 계산: 내용 정의(games/deungbul/shared/content)의 수치로 확률, 기대값, 범위를 구한다. 화면(DOM)도 문장도 모른다.
 import {
   CAMPS, DROPS, DUNGEONS, ENHANCE, GEAR, GEAR_SLOTS, LEVEL, MONSTERS, RAID, RARITIES, RECIPES, RESPAWN_S, SHOP_STOCK, STATS, STAT_IDS, START_WEAPON,
   ITEMS, clearRar, gearScore, needFor, sellPrice, type Gear, type GearSlot, type ItemId, type MonsterDef, type MonsterId, type Stat,

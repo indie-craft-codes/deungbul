@@ -1,5 +1,5 @@
 // 테스트가 함께 쓰는 것: 검사 기록, 기다리기, 서버에 붙는 가짜 클라이언트.
-// 가짜 클라이언트(Peer)는 틀의 메시지만 읽는다. 게임의 메시지(개인 상태, 공유 상태)는 connect의 onMsg로 넘겨받아 게임의 시험이 읽는다 (이 게임은 test/deungbul/peer.ts).
+// 가짜 클라이언트(Peer)는 틀의 메시지만 읽는다. 게임의 메시지(개인 상태, 공유 상태)는 connect의 onMsg로 넘겨받아 게임의 시험이 읽는다 (이 게임은 games/deungbul/test/peer.ts).
 import { WebSocket } from 'ws';
 import type { ClientMsg, ServerMsg } from '../shared/protocol';
 

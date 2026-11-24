@@ -1,6 +1,6 @@
 // 채널: 같은 들판을 여러 벌(층)로 돌린다. 채널이 다르면 서로 보이지 않고 몬스터도 따로다 (층 번호의 뜻은 ../layers.ts).
 // 접속하면 붐비지 않는 채널 가운데 번호가 가장 낮은 곳에 세우고, 명령으로 다른 채널로 옮긴다.
-// 등탑·주민·길드·순위·우편은 서버 전체의 것이라 채널로 나누지 않는다. 수치는 shared/content/social.ts의 CHANNEL.
+// 등탑·주민·길드·순위·우편은 서버 전체의 것이라 채널로 나누지 않는다. 수치는 games/deungbul/shared/content/social.ts의 CHANNEL.
 import { CHANNEL } from '../../../shared/defs';
 import { AOI_LEAVE } from '../../../shared/world';
 import { dist, type Ent } from '../entity';

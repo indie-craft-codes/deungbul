@@ -6,7 +6,7 @@ import { rename } from '../actions';
 import { L, autoNameLocale, onLangChange, randomName } from '../i18n';
 import { S } from '../state';
 
-/** 서버는 이름을 연달아 바꾸지 못하게 막는다 (server/net/server.ts의 RENAME_GAP_MS, 5초). 그보다 조금 길게 기다린다 */
+/** 서버는 이름을 연달아 바꾸지 못하게 막는다 (engine/server/net/server.ts의 RENAME_GAP_MS, 5초). 그보다 조금 길게 기다린다 */
 const GAP_MS = 5500;
 let lastAt = -GAP_MS;
 let timer = 0;

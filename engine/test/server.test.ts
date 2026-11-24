@@ -1,4 +1,4 @@
-// 통합 테스트: 서버를 띄우고 클라이언트를 붙여서 접속, 전투, 저장, 대화, 자리 비움 사냥을 확인한다. (등탑·퀘스트·습격은 이 게임의 것: test/deungbul/server.test.ts)
+// 통합 테스트: 서버를 띄우고 클라이언트를 붙여서 접속, 전투, 저장, 대화, 자리 비움 사냥을 확인한다. (등탑·퀘스트·습격은 이 게임의 것: games/deungbul/test/server.test.ts)
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';

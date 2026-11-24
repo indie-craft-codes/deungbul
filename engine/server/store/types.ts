@@ -17,7 +17,7 @@ export interface PlayerSave {
   rested?: number;
   /** 옛 칸 (읽기 전용 호환): 지금은 ext.keepers.tier. 받은 기여 단계 보상의 수 */
   tier?: number;
-  /** 시스템마다 자기 이름의 칸에 저장하는 것 (장비, 우편, 일일 임무). server/game/game.ts의 Saver */
+  /** 시스템마다 자기 이름의 칸에 저장하는 것 (장비, 우편, 일일 임무). engine/server/game/game.ts의 Saver */
   ext?: Record<string, unknown>;
   /** 마지막으로 있던 자리 [x, z]. 다시 접속하면 여기서 시작한다 */
   at?: [number, number];
@@ -25,11 +25,11 @@ export interface PlayerSave {
   auto?: boolean;
 }
 
-/** 신고 한 건 (server/net/moderation.ts의 Report와 같은 모양) */
+/** 신고 한 건 (engine/server/net/moderation.ts의 Report와 같은 모양) */
 export interface ReportSave { at: number; by: string; byKey: string | null; target: string; targetKey: string | null; lines: string[] }
 
 /**
- * 재화 흐름 지표의 한 줄 (server/game/systems/ledger.ts): 그날, 그 재화가, 그 원인으로, 생겼거나(+) 사라진(-) 양과 건수.
+ * 재화 흐름 지표의 한 줄 (engine/server/game/systems/ledger.ts): 그날, 그 재화가, 그 원인으로, 생겼거나(+) 사라진(-) 양과 건수.
  * 재화는 gold, sparks, exp, gear:등급, item:아이템 id. 같은 (day, cur, why, dir)은 한 줄로 합쳐진다
  */
 export interface EconRow { day: string; cur: string; why: string; dir: '+' | '-'; amount: number; n: number }

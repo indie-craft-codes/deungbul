@@ -1,5 +1,5 @@
 // English, the engine's share. Must have the same shape as ko.ts (the EngineLocale type enforces it).
-// 이 게임의 문장과 내용의 이름은 client/src/game/i18n/en.ts에 있다. 이 파일은 게임의 파일을 import하지 않고 게임의 낱말을 적지 않는다.
+// 이 게임의 문장과 내용의 이름은 games/deungbul/client/i18n/en.ts에 있다. 이 파일은 게임의 파일을 import하지 않고 게임의 낱말을 적지 않는다.
 import type { ClassId, ItemId, MonsterId } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { keyHints, type EngineLocale } from './ko';

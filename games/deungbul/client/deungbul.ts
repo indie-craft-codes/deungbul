@@ -1,6 +1,6 @@
 // 이 게임(등불지기)의 클라이언트 모듈: 틀의 화면 코드가 묻는 규칙(rules)을 채우고, 돌아온 주민을 세우고, 이 게임의 단축키를 등록하고,
 // 서버가 알려 주는 공유 상태(등탑, 주민, 습격)와 내 진행(개인 상태: 퀘스트, 기여, 기여 단계, 휴식 보너스)을 받아 이 게임의 상태(./state.ts의 GS, G)에 넣는다.
-// 서버의 server/game/deungbul.ts(installDeungbul)와 짝이다. 틀의 파일은 이 파일을 import하지 않는다 (이 게임의 진입점 ./main.ts의 목록만 안다).
+// 서버의 games/deungbul/server/deungbul.ts(installDeungbul)와 짝이다. 틀의 파일은 이 파일을 import하지 않는다 (이 게임의 진입점 ./main.ts의 목록만 안다).
 // 등탑이 정하는 것: 이동 속도(환한 구역에서 빨라진다)와, 주민이 돌아와야 풀리는 것(상점 물건, 대장간).
 import { RESIDENTS, SHOPS, speedFor } from '../shared/defs';
 import type { MeState, OldStatCells } from '../shared/deungbul';
@@ -70,7 +70,7 @@ function initPersonal(): void {
     return first;
   };
   onMsg('me', (m, now) => {
-    // 칸의 모양은 이 게임의 서버가 정한 것이다 (shared/deungbul.ts의 MeState). 모르는 칸은 버린다
+    // 칸의 모양은 이 게임의 서버가 정한 것이다 (games/deungbul/shared/deungbul.ts의 MeState). 모르는 칸은 버린다
     if (m.k === 'quest') setQuest(m.s as MeState['quest']);
     else if (m.k === 'contrib' || m.k === 'tier' || m.k === 'rested') { if (setNums({ [m.k]: m.s })) hudNow(now); }
   });
@@ -84,7 +84,7 @@ function initPersonal(): void {
   let cls = '';
   onMsg('welcome', () => { cls = ''; });
   onMsg('stat', (m, now) => { if (!S.me || m.cls === cls) return; cls = m.cls; renderWorld(); gameHud(now); });
-  // 호환: 다음 배포에서 뺀다 (아래 두 처리기와 shared/deungbul.ts의 quest 메시지·OldStatCells).
+  // 호환: 다음 배포에서 뺀다 (아래 두 처리기와 games/deungbul/shared/deungbul.ts의 quest 메시지·OldStatCells).
   // 개인 상태를 보내지 않는 옛 서버에 붙었을 때: 그 서버가 보내는 quest 메시지와 stat의 옛 칸을 같은 상태에 넣는다.
   // 새 서버도 이번 배포 동안은 둘을 함께 보내지만 값이 같으므로 어느 쪽으로 받아도 된다
   onMsg('quest', setQuest);

@@ -1,7 +1,7 @@
 // 이 게임(등불지기)의 클라이언트 상태. 틀의 상태(../state.ts의 S)에는 이 칸들이 없다.
 //   G    개인 상태: 서버가 me 메시지로 알려 주는 내 진행 (퀘스트, 기여, 기여 단계, 휴식 보너스)
 //   GS   공유 상태: 서버가 world 메시지로 모두에게 알려 주는 것 (등탑 밝기, 주민, 오늘의 등탑지기, 습격)
-// 고치는 곳은 메시지를 받는 game/deungbul.ts 하나이고, 이 게임의 화면이 읽는다.
+// 고치는 곳은 메시지를 받는 deungbul.ts 하나이고, 이 게임의 화면이 읽는다.
 import { GLOW_START, RESIDENTS, stageOf, type Stage } from '../shared/defs';
 import type { MeState } from '../shared/deungbul';
 import type { WorldState } from '@engine/shared/protocol';

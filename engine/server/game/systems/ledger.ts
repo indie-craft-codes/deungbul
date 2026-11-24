@@ -9,7 +9,7 @@
 //   cmd:명령[:하위 동작]   플레이어 명령의 앞뒤 차이 (하위 동작은 명령의 a 값: cmd:guild:give, cmd:market:post)
 //   mail:우편 종류         우편 수령. 명령 하나(mailClaim)가 여러 우편을 받으므로 우편마다 받은 것을 나눠 적는다
 //   hunt, huntAway, huntDungeon   처치 사건의 앞뒤 차이: 접속 중, 자리 비움 사냥 중, 던전 인스턴스 안
-//   quest, raid, tier 등   보상을 알리는 안내문에 적힌 값 (shared/content/economy.ts의 ECON_NOTICES)
+//   quest, raid, tier 등   보상을 알리는 안내문에 적힌 값 (games/deungbul/shared/content/economy.ts의 ECON_NOTICES)
 //   market:out, market:in  사람 사이를 건너가는 골드 (ECON_MOVES). 생성도 소멸도 아니다
 //   lostFull               가방이 가득 차 버려진 장비
 //   ev:playerJoined        접속 처리 중에 생긴, 위의 어느 것도 아닌 변화

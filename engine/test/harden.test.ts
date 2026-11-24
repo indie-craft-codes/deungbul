@@ -115,7 +115,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   check(b4.hp === b4.maxHp && b4.cds.every((v) => Number.isFinite(v) && v >= 0 && v <= 600) && b4.itemCd <= POTION_CD, '깨진 값은 범위 안으로 맞춘다');
 }
 
-// ---------- 4. 순위: 이름이 아니라 저장 키로 사람을 구분한다 (오늘의 등탑지기 명단은 test/deungbul/harden.test.ts) ----------
+// ---------- 4. 순위: 이름이 아니라 저장 키로 사람을 구분한다 (오늘의 등탑지기 명단은 games/deungbul/test/harden.test.ts) ----------
 {
   const clock = new Date(2026, 10, 23, 15, 0, 0).getTime();
   const g = new Game({ now: () => clock });

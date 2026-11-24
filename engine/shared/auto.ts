@@ -1,4 +1,4 @@
-// 자동 사냥의 판단. 클라이언트(client/src/auto.ts)와 서버의 자리 비움 사냥(server/game/systems/away.ts)이
+// 자동 사냥의 판단. 클라이언트(engine/client/auto.ts)와 서버의 자리 비움 사냥(engine/server/game/systems/away.ts)이
 // 같은 기준으로 움직이도록 여기에 한 번만 적는다. 무엇을 누를지만 정하고, 실제 명령은 부른 쪽이 낸다.
 import { ITEMS, SKILL_SLOTS, classOf, skillDef, type ItemDef, type ItemId } from './defs';
 
@@ -20,7 +20,7 @@ export const AWAY = {
   maxPerIp: 3,
   /**
    * 자리를 비운 채 사냥을 이어 가는 시간의 하루 한도(초). 다 쓰면 저장하고 월드에서 나가고, 그날은 끊겨도 캐릭터가 남지 않는다.
-   * 한 번 비울 때마다가 아니라 하루(자정 기준, 일일 임무와 같은 날짜)에 쓴 시간을 모아서 센다 (server/game/systems/away.ts)
+   * 한 번 비울 때마다가 아니라 하루(자정 기준, 일일 임무와 같은 날짜)에 쓴 시간을 모아서 센다 (engine/server/game/systems/away.ts)
    */
   maxS: 8 * 3600,
   /** 자리를 비운 곳에서 이보다 먼 몬스터는 쫓지 않는다 */

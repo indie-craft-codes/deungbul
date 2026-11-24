@@ -38,7 +38,7 @@ export function buildFrame(ents: Iterable<Ent>): Frame {
 }
 
 /**
- * 한 클라이언트에 보낼 스냅샷(JSON 문자열)을 만든다. 형식은 shared/protocol.ts의 'snap' 메시지다.
+ * 한 클라이언트에 보낼 스냅샷(JSON 문자열)을 만든다. 형식은 engine/shared/protocol.ts의 'snap' 메시지다.
  * known은 지난번에 보이던 엔티티이고, 돌려주는 seen이 다음 known이 된다.
  * 시야에 들어올 때는 AOI, 빠질 때는 조금 넓은 AOI_LEAVE를 써서 경계에서 깜빡이지 않게 한다.
  */

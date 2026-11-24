@@ -1,5 +1,5 @@
 // 휴식 보너스(등불 맡기기): 접속을 끊고 쉰 시간만큼 보너스가 쌓이고, 몬스터를 잡을 때 그만큼 경험치를 더 받는다.
-// 수치와 쌓이는 식은 내용에 있다 (shared/content/items.ts의 REST, restGain).
+// 수치와 쌓이는 식은 내용에 있다 (games/deungbul/shared/content/items.ts의 REST, restGain).
 import { REST, restGain } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
 import { readInt } from '@engine/server/game/entity';

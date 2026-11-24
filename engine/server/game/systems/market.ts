@@ -1,6 +1,6 @@
 // 거래소: 플레이어끼리 장비와 제작 재료를 골드로 사고판다. 올린 물건은 판매자에게서 빠져 거래소가 맡는다(복사가 생기지 않게).
 // 판 값과 돌아오는 물건은 우편으로 간다: 판매자가 접속해 있지 않아도 받아야 하므로 사람을 저장 키(Ent.pid)로 가리킨다.
-// 손님(저장 키가 없는 접속)은 쓸 수 없다. 거래소는 월드와 함께 저장되고, 규칙의 수치는 shared/content/social.ts의 MARKET에 있다.
+// 손님(저장 키가 없는 접속)은 쓸 수 없다. 거래소는 월드와 함께 저장되고, 규칙의 수치는 games/deungbul/shared/content/social.ts의 MARKET에 있다.
 import { ITEMS, MAIL_MAX, MARKET, MAT_MAX, hasGoods, isItemId, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward } from '../../../shared/defs';
 import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';

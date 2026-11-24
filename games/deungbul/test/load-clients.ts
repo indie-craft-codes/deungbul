@@ -1,5 +1,5 @@
 // 부하 측정용 가짜 접속자들. 서버와 다른 프로세스에서 돌려서 서버의 측정을 흐리지 않게 한다.
-//   tsx test/load-clients.ts <포트> <인원> <cluster|spread|fight> <초>
+//   tsx games/deungbul/test/load-clients.ts <포트> <인원> <cluster|spread|fight> <초>
 // cluster: 모두 등탑 주변에 모여 서로가 서로의 시야에 든다 (전송량이 가장 큰 경우)
 // spread:  월드 전체에 흩어져 돌아다닌다
 // fight:   등탑 주변에 모여 가까운 몬스터를 계속 공격한다 (습격을 흉내 낸다)
@@ -46,7 +46,7 @@ function client(i: number): void {
 // 한꺼번에 붙지 않고 초당 100명씩 들어온다
 for (let i = 0; i < count; i++) setTimeout(() => client(i), i * 10);
 setTimeout(() => {
-  // 결과 한 줄: 부모 프로세스(test/load.ts)가 읽는다
+  // 결과 한 줄: 부모 프로세스(games/deungbul/test/load.ts)가 읽는다
   console.log(JSON.stringify({ joined, closed, bytesInPerClientPerS: bytesIn / Math.max(1, joined) / seconds }));
   process.exit(0);
 }, seconds * 1000 + count * 10 + 1500);

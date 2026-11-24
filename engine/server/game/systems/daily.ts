@@ -1,5 +1,5 @@
 // 일일 임무와 출석: 날마다 새로 시작하는 임무의 진행을 세고, 채우면 보상을 우편으로 보낸다.
-// 그날 처음 접속하면 출석 보상이 온다. 임무와 보상은 shared/content/growth.ts의 DAILIES, ATTEND에 있다.
+// 그날 처음 접속하면 출석 보상이 온다. 임무와 보상은 games/deungbul/shared/content/growth.ts의 DAILIES, ATTEND에 있다.
 import { ATTEND, DAILIES, DAILY_IDS, type DailyKind } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';

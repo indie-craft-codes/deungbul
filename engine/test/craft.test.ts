@@ -9,7 +9,7 @@ import { check } from './harness';
   const said = () => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
   const cmd = (m: Record<string, unknown>) => { g.notices = []; g.command(p, m); };
   p.gold = 500; p.items = { iron: 8, hide: 5 };
-  // 대장간의 잠금은 게임의 규칙(g.rules.unlocked)이 답한다 (이 게임에서는 대장장이의 귀환: test/deungbul/craft.test.ts). 여기서는 시험용 규칙으로 본다 (열쇠는 FORGES의 needs: bram)
+  // 대장간의 잠금은 게임의 규칙(g.rules.unlocked)이 답한다 (이 게임에서는 대장장이의 귀환: games/deungbul/test/craft.test.ts). 여기서는 시험용 규칙으로 본다 (열쇠는 FORGES의 needs: bram)
   const opened = new Set<string>();
   g.rules.unlocked = (key) => opened.has(key);
   p.x = SMITHY.x + 1; p.z = SMITHY.z + 1;

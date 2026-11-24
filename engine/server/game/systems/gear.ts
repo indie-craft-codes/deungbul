@@ -1,7 +1,7 @@
 // 장비: 낱개 장비(등급, 무작위 옵션, 강화 단계)를 줍고, 끼고, 팔고, 강화한다. 무기와 갑옷도 여기서 다룬다.
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
-// 수치는 shared/content/growth.ts에 있다.
+// 수치는 games/deungbul/shared/content/growth.ts에 있다.
 import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, baseOpt, gearStat, isGearSlot, isItemId, isStat, rollOpt, sellPrice, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';

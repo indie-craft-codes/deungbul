@@ -1,5 +1,5 @@
 // 파티 시험에서 가른 이 게임의 검사: 파티원이 잡은 몬스터는 곁의 파티원의 퀘스트에도 세어진다 (서버 없이 게임 규칙만 돌린다)
-// 파티 자체의 검사는 틀의 시험 test/party.test.ts에 있다.
+// 파티 자체의 검사는 틀의 시험 engine/test/party.test.ts에 있다.
 import { check } from '@engine/test/harness';
 import { newGame } from './game';
 

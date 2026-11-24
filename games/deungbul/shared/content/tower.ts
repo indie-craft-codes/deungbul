@@ -2,7 +2,7 @@
 import { PLAYER_SPEED } from '@engine/shared/world';
 
 export const GLOW_MAX = 100;
-export const GLOW_START = 40; // 첫불 마을 등탑의 처음 밝기 (등탑별 값은 shared/world.ts의 TOWERS)
+export const GLOW_START = 40; // 첫불 마을 등탑의 처음 밝기 (등탑별 값은 engine/shared/world.ts의 TOWERS)
 export const GLOW_BRIGHT = 70; // 이 이상이면 '환함'
 export const GLOW_DIM = 30; // 이 미만이면 '어스름'
 export const TOWER_REACH = 6; // 등탑에 이만큼 가까워야 불씨를 바칠 수 있다

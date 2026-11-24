@@ -1,8 +1,8 @@
 // 이 게임(등불지기)의 규칙을 틀에 까는 플러그인: 등탑, 습격, 등탑지기, 퀘스트, 휴식 보너스.
 // 틀(game.ts와 표준 시스템)은 이 파일과 네 시스템을 모른다. Game의 g.tower 같은 칸과 이 게임의 사건도 여기서 선언해 덧붙인다 (확장 지점: ./ext.ts).
-// 공용 쪽의 짝(안내문, 메시지, 공유 상태)은 shared/deungbul.ts에 있다.
+// 공용 쪽의 짝(안내문, 메시지, 공유 상태)은 games/deungbul/shared/deungbul.ts에 있다.
 // 쓰는 법: new Game({ plugins: [installDeungbul] }), 설정을 줄 때는 plugins: [(g) => installDeungbul(g, { raid: { everyMin: 5 } })].
-// plugins를 주지 않은 new Game()은 틀만으로 만들어진다: 이 게임의 서버(server/main.ts)와 시험(test/deungbul/game.ts)이 이 플러그인을 적어 넘긴다.
+// plugins를 주지 않은 new Game()은 틀만으로 만들어진다: 이 게임의 서버(games/deungbul/server/main.ts)와 시험(games/deungbul/test/game.ts)이 이 플러그인을 적어 넘긴다.
 import type { RaidConfig } from '../shared/defs';
 import type { OldStatCells } from '../shared/deungbul';
 import type { Ent } from '@engine/server/game/entity';

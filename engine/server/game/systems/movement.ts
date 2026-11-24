@@ -34,7 +34,7 @@ export class Movement {
 
   goTo(e: Ent, x: number, z: number): void { e.tx = x; e.tz = z; e.moving = true; e.stuck = 0; }
 
-  /** 한 틱만큼 걷는다. 도착하거나 막히면 moving이 꺼진다. 길찾기는 shared/nav.ts가 한다 (클라이언트 예측과 같은 코드). */
+  /** 한 틱만큼 걷는다. 도착하거나 막히면 moving이 꺼진다. 길찾기는 engine/shared/nav.ts가 한다 (클라이언트 예측과 같은 코드). */
   walk(e: Ent, speed: number, dt: number): void {
     walk(e, speed, dt, this.g.world.obstacles, this.g.nav, this.g.clock);
   }

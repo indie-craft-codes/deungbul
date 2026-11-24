@@ -1,5 +1,5 @@
 // 클라이언트가 아는 게임 상태. 모듈들은 이것을 읽고, 서버 메시지를 처리하는 쪽만 고친다.
-// 틀의 상태만 둔다: 게임에만 있는 상태(이 게임에서는 등탑·습격의 공유 상태와 내 퀘스트·기여)는 게임의 상태 파일에 있다 (game/state.ts).
+// 틀의 상태만 둔다: 게임에만 있는 상태(이 게임에서는 등탑·습격의 공유 상태와 내 퀘스트·기여)는 게임의 상태 파일에 있다 (games/deungbul/client/state.ts).
 import { SKILL_SLOTS, maxHpFor, type Gear, type GuildView, type Mail, type RankRow } from '../shared/defs';
 import type { Point } from '../shared/nav';
 import type { Kind, PartyMember } from '../shared/protocol';
@@ -32,7 +32,7 @@ export interface Remote {
 export interface Me {
   id: number; name: string; model: Model; tag: Tag;
   x: number; z: number; face: number; tx: number; tz: number; moving: boolean; stuck: number; phase: number;
-  /** 목표로 가려고 세운 길 (shared/nav.ts) */
+  /** 목표로 가려고 세운 길 (engine/shared/nav.ts) */
   path: Point[] | null; pgx: number; pgz: number; pat: number;
   sx: number; sz: number; srvMoving: boolean; srvTarget: number; lastCmd: number;
   hp: number; maxHp: number; lv: number; exp: number; need: number; sparks: number;

@@ -1,5 +1,5 @@
 // 잊힌 주민. 서버 전체가 불씨를 모아 순서대로 한 명씩 되돌린다.
-// 되돌아오면 마을에 자리를 잡고, 상점에 새 물건이 들어온다 (shared/content/items.ts의 needs).
+// 되돌아오면 마을에 자리를 잡고, 상점에 새 물건이 들어온다 (games/deungbul/shared/content/items.ts의 needs).
 
 export interface ResidentDef {
   id: string;

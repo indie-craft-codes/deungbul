@@ -1,5 +1,5 @@
 // English, this game's share (Lamp Tower). Must have the same shape as ko.ts in this folder (GameLocale and ContentNames enforce it).
-// 틀의 문장(client/src/i18n/en.ts의 enBase)과 합쳐 한 언어 묶음이 된다 (index.ts).
+// 틀의 문장(engine/client/i18n/en.ts의 enBase)과 합쳐 한 언어 묶음이 된다 (index.ts).
 import type { ClassId, ItemId, MonsterId, QuestId, ResidentId } from '../../shared/defs';
 import type { MsgArg } from '@engine/shared/messages';
 import { count, num, signed } from '@engine/client/i18n/en';

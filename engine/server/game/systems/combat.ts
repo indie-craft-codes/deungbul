@@ -32,7 +32,7 @@ export class Combat {
       p.face = Math.atan2(target.x - p.x, target.z - p.z);
     }
     g.emit(['s', p.id, id, target?.id ?? 0]);
-    // 기술 이름이 아니라 효과의 종류로 처리한다 (shared/content/combat.ts의 SkillEffect)
+    // 기술 이름이 아니라 효과의 종류로 처리한다 (engine/shared/defs/combat.ts의 SkillEffect)
     const fx = def.effect, up = g.build.skillScale(p, id); // 강화한 기술은 피해와 회복이 커진다
     switch (fx.kind) {
       case 'hit': if (target) this.damage(p, target, Math.round(ri(fx.dmg[0], fx.dmg[1]) * up), true); break;

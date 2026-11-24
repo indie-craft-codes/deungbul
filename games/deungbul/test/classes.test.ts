@@ -1,5 +1,5 @@
 // 직업 시험에서 가른 이 게임의 검사: 주민이 돌아와야 상점에 나오는 갑옷 (서버 없이 게임 규칙만 돌린다)
-// 갑옷 자체의 검사는 틀의 시험 test/classes.test.ts에 있다.
+// 갑옷 자체의 검사는 틀의 시험 engine/test/classes.test.ts에 있다.
 import { SHOP } from '../shared/defs';
 import { check } from '@engine/test/harness';
 import { newGame } from './game';

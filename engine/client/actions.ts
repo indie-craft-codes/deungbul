@@ -147,7 +147,7 @@ export function usePotion(): void {
   if (!me || performance.now() < S.itemCdEnd) return;
   const have = (id: ItemId) => (me.items[id] ?? 0) > 0;
   const hurt = me.maxHp - me.hp;
-  // 물약의 id를 적지 않고 정의(회복량)에서 고른다: 자동 사냥과 같은 목록이다 (shared/auto.ts)
+  // 물약의 id를 적지 않고 정의(회복량)에서 고른다: 자동 사냥과 같은 목록이다 (engine/shared/auto.ts)
   const id = potionOrder(hurt).find(have);
   if (!POTIONS.length) return;
   send({ t: 'use', id: id ?? POTIONS[POTIONS.length - 1] }); // 없으면 (가장 약한 물약으로 물어) 서버가 없다고 알려 준다

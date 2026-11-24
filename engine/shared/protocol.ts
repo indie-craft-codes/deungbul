@@ -45,10 +45,10 @@ export type Ev =
   | ['mh', id: number, maxHp: number] // 최대 체력이 바뀌었다 (필드 보스)
   | ['heal', id: number, amount: number];
 
-/** 서버 전체가 공유하는 상태. 칸은 게임이 더한다 (shared/ext.ts) */
+/** 서버 전체가 공유하는 상태. 칸은 게임이 더한다 (engine/shared/ext.ts) */
 export type { WorldState };
 
-/** 게임이 확장 지점(shared/ext.ts의 ServerMsgs, ClientMsgs)에 더한 메시지들: 종류마다 { t: 종류 } & 나머지 칸. 더한 것이 없으면 never */
+/** 게임이 확장 지점(engine/shared/ext.ts의 ServerMsgs, ClientMsgs)에 더한 메시지들: 종류마다 { t: 종류 } & 나머지 칸. 더한 것이 없으면 never */
 type Added<M> = { [K in keyof M]: { t: K } & M[K] }[keyof M];
 
 /** 파티원 한 명의 상태 */
@@ -178,7 +178,7 @@ export type ServerMsg =
   | { t: 'market'; v: 'mine'; list: MarketItem[]; guest?: true }
   /** 누군가의 길드 이름이 바뀌었다 (이름표) */
   | { t: 'gtag'; id: number; g: string }
-  /** 안내문: 종류와 값 (shared/messages.ts) */
+  /** 안내문: 종류와 값 (engine/shared/messages.ts) */
   | { t: 'sys'; k: MsgKey; a?: MsgArg[] }
   | { t: 'pong'; c: number }
   | { t: 'full' }

@@ -10,7 +10,7 @@
     "build": "vite build",
     "start": "tsx games/deungbul/server/main.ts",
     "pilot": "node scripts/pilot.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.engine.json",
     "typecheck:engine": "tsc --noEmit -p tsconfig.engine.json",
     "test": "tsx test/all.ts",
     "test:engine": "tsx test/all.ts --engine",

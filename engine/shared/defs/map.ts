@@ -16,11 +16,11 @@ export interface Scatter {
   /** 크기: s0 + 난수 * s1 */
   s0: number; s1: number;
 }
-/** 게임이 내놓는 맵 정의 (shared/contract.ts의 MAP) */
+/** 게임이 내놓는 맵 정의 (engine/shared/contract.ts의 MAP) */
 export interface MapDef {
   /**
    * 걸어 다닐 수 있는 지역들. 0번은 들판이고, 나머지는 던전처럼 따로 떨어진 곳이다.
-   * 지역 사이는 걸어서 넘을 수 없고 문(shared/content/dungeons.ts)으로만 오간다. 지역을 더하려면 여기에 네모를 더한다.
+   * 지역 사이는 걸어서 넘을 수 없고 문(games/deungbul/shared/content/dungeons.ts)으로만 오간다. 지역을 더하려면 여기에 네모를 더한다.
    */
   areas: readonly Area[];
   /** 가장자리에서 이만큼 안쪽까지만 갈 수 있다 */

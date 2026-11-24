@@ -14,7 +14,7 @@ export interface MonsterDef {
   aggro: number;
   /** 이름표 높이 */
   h: number;
-  /** 필드 보스: 맞서는 사람이 늘수록 체력이 늘고, 예고 뒤에 주변을 내려친다 (server/game/systems/boss.ts) */
+  /** 필드 보스: 맞서는 사람이 늘수록 체력이 늘고, 예고 뒤에 주변을 내려친다 (engine/server/game/systems/boss.ts) */
   boss?: boolean;
   /** 쓰러진 뒤 다시 나타나기까지(초). 없으면 RESPAWN_S */
   respawn?: number;

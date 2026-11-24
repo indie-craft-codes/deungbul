@@ -1,5 +1,5 @@
 // 다국어. 화면에 보이는 문장은 코드에 직접 쓰지 않고 언제나 여기를 거친다.
-// 문장은 틀의 몫(이 폴더의 ko.ts, en.ts)과 게임의 몫으로 나뉘어 있고, 게임이 둘을 합친 묶음을 setLocales로 등록한다 (이 게임: game/words.ts).
+// 문장은 틀의 몫(이 폴더의 ko.ts, en.ts)과 게임의 몫으로 나뉘어 있고, 게임이 둘을 합친 묶음을 setLocales로 등록한다 (이 게임: games/deungbul/client/words.ts).
 // 언어를 더하려면 틀과 게임에 각각 ko.ts와 같은 모양의 파일을 만들고 게임의 LOCALES에 한 줄 더한다.
 // [[PC용|터치용]] 표시(forInput), 자릿수 구분(fmt.num), 조작 안내 잇기(keyHints), HTML 채우기(applyDom)는 틀의 기능이고 게임의 문장에도 똑같이 적용된다.
 import { handOf, type ItemId } from '../../shared/defs';

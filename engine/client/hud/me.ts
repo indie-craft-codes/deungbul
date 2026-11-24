@@ -1,5 +1,5 @@
 // 화면의 바탕 패널들: 내 정보, 대상 정보, 기술 버튼, 접속 화면, 언어 선택.
-// 게임이 내 정보 창에 덧붙이는 줄과 게임의 창(이 게임에서는 등탑 창, 습격 알림, 구역 알림: game/hud/)은 게임의 모듈이 bus에 스스로 등록해 그린다.
+// 게임이 내 정보 창에 덧붙이는 줄과 게임의 창(이 게임에서는 등탑 창, 습격 알림, 구역 알림: games/deungbul/client/hud/)은 게임의 모듈이 bus에 스스로 등록해 그린다.
 import { SKILL_SLOTS, classOf, isClassId } from '../../shared/defs';
 import { nextTarget, rename, useSkill } from '../actions';
 import { $, clamp, view } from '../app';

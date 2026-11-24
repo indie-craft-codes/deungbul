@@ -2,7 +2,7 @@
 // 화면에 보이는 모양(GuildView, MarketItem)과 도우미(guildLevel, marketFee 등)는 틀에 있다: engine/shared/defs/social.ts
 
 // ---------- 채널 ----------
-// 같은 들판을 여러 벌로 돌린다. 채널이 다르면 서로 보이지 않고 몬스터도 따로다 (server/game/systems/channels.ts).
+// 같은 들판을 여러 벌로 돌린다. 채널이 다르면 서로 보이지 않고 몬스터도 따로다 (engine/server/game/systems/channels.ts).
 export const CHANNEL = {
   /** 채널의 수. 서버를 켤 때 정해진다 */
   count: 3,

@@ -11,7 +11,7 @@ import { check } from './harness';
   const cmd = (m: Record<string, unknown>) => { g.notices = []; g.command(p, m); };
   const run = (seconds: number) => { for (let i = 0; i < seconds * 20; i++) g.tick(0.05); };
   const slimes = () => [...g.ents.values()].filter((e) => e.type === 'slime' && !e.dead);
-  // 직업을 바꿀 수 있는 자리는 게임의 규칙(g.rules.canChangeClass)이 답한다: 이 게임에서는 등탑 곁이고, 그 연결은 test/deungbul/combat.test.ts가 본다.
+  // 직업을 바꿀 수 있는 자리는 게임의 규칙(g.rules.canChangeClass)이 답한다: 이 게임에서는 등탑 곁이고, 그 연결은 games/deungbul/test/combat.test.ts가 본다.
   // 여기서는 같은 뜻의 시험용 규칙(정해 둔 자리에서 6 안)을 넣어 직업 시스템이 그 답을 따르는지 본다
   g.rules.canChangeClass = (q) => Math.hypot(q.x - TOWER.x, q.z - TOWER.z) < 6;
 

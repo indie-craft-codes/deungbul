@@ -2,7 +2,7 @@
 // 통신은 모른다: 밖으로 나갈 것은 outbox에 쌓아 두고 net 계층이 가져간다.
 //
 // 새 기능을 더하는 방법:
-//   1. server/game/systems/에 시스템 파일을 만든다.
+//   1. engine/server/game/systems/에 시스템 파일을 만든다.
 //   2. 생성자에서 필요한 것을 등록한다: commands(플레이어 명령), on(사건 구독), mods(수치 보정),
 //      ticks(주기 처리), saves(캐릭터 저장), worldSaves(월드 저장), shared(모두에게 보내는 공유 상태).
 //   3. 아래 Game 생성자에 한 줄 추가한다.
@@ -118,7 +118,7 @@ export class Modifiers {
 export type Plugin = (g: Game) => void;
 
 export interface GameOptions {
-  /** 규칙 플러그인들. 주지 않으면 틀만으로 만들어진다: 게임을 만드는 쪽이 자기 규칙을 적어 넘긴다 (이 게임은 server/main.ts와 test/deungbul/game.ts) */
+  /** 규칙 플러그인들. 주지 않으면 틀만으로 만들어진다: 게임을 만드는 쪽이 자기 규칙을 적어 넘긴다 (이 게임은 games/deungbul/server/main.ts와 games/deungbul/test/game.ts) */
   plugins?: Plugin[];
   /** 현재 시각(ms). 시험에서 시간을 다루려고 바꿀 수 있다 */
   now?: () => number;
@@ -190,7 +190,7 @@ export class Game {
    */
   readonly personal: { name: string; state: (p: Ent) => unknown; dirty?: (p: Ent) => boolean; sent?: (p: Ent) => void }[] = [];
   /**
-   * 호환: 다음 배포에서 뺀다 (이 칸과, server/net/server.ts의 flush가 이것을 읽는 두 곳). 채우는 쪽은 게임의 플러그인이다 (./deungbul.ts의 SEND_OLD_MSGS).
+   * 호환: 다음 배포에서 뺀다 (이 칸과, engine/server/net/server.ts의 flush가 이것을 읽는 두 곳). 채우는 쪽은 게임의 플러그인이다 (./deungbul.ts의 SEND_OLD_MSGS).
    * 개인 상태를 me 메시지로 옮긴 배포 한 번 동안, 옛 화면이 읽던 모양으로도 함께 보낸다. 틀은 그 모양을 모르므로 게임이 만든다.
    * stat: stat 메시지가 나갈 때 불린다. 옛 칸을 얹은 것을 돌려준다. msg: 그 이름의 개인 상태가 나갈 때 불린다. 함께 보낼 옛 메시지가 있으면 돌려준다
    */
@@ -300,7 +300,7 @@ export class Game {
 
   tick(dt: number): void {
     this.clock += dt;
-    this.nav.budget = NAV_VISITS_PER_TICK; // 길찾기가 한 틱에 쓸 수 있는 양 (shared/nav.ts)
+    this.nav.budget = NAV_VISITS_PER_TICK; // 길찾기가 한 틱에 쓸 수 있는 양 (engine/shared/nav.ts)
     for (const e of this.ents.values()) {
       if (e.kind === 'p') { if (e.bot) this.bots.think(e, dt); else this.away.think(e, dt); this.combat.tickPlayer(e, dt); }
       else this.monsters.tick(e, dt);

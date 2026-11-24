@@ -182,7 +182,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     saveEcon();
   }
   /**
-   * 재화 흐름 지표(game/systems/ledger.ts)가 모아 둔 줄을 저장소에 얹는다. 실패하면 되돌려 주어 다음에 다시 얹는다.
+   * 재화 흐름 지표(engine/server/game/systems/ledger.ts)가 모아 둔 줄을 저장소에 얹는다. 실패하면 되돌려 주어 다음에 다시 얹는다.
    * 그날의 분포 스냅샷이 아직 없으면(날이 바뀐 뒤 첫 저장, 서버를 켠 직후) 저장된 캐릭터를 훑어 하나 남긴다.
    */
   let snapDay = '';

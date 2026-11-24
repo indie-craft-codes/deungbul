@@ -1,5 +1,5 @@
 // 자리 비움 자동 사냥: 자동 사냥을 켠 채 접속이 끊기면(창을 닫음, 폰 화면이 꺼짐) 캐릭터가 월드에 남아 계속 사냥한다.
-// 다시 접속하면 그 캐릭터를 그대로 이어받는다. 판단은 클라이언트의 자동 사냥(client/src/auto.ts)과 같고,
+// 다시 접속하면 그 캐릭터를 그대로 이어받는다. 판단은 클라이언트의 자동 사냥(engine/client/auto.ts)과 같고,
 // 사람이 누른 것과 같은 명령(g.command)만 내므로 전투 규칙은 그대로다.
 import { AUTO, AWAY, pickPotion, pickSkill } from '../../../shared/auto';
 import { dist, type Ent } from '../entity';
@@ -12,7 +12,7 @@ const THINK_S = 0.3;
  * 한 번 비울 때마다가 아니라 하루(자정 기준, 일일 임무와 같은 날짜)에 쓴 시간을 모아서 센다:
  * 한 번마다 세면 잠깐 다시 접속하는 것만으로 처음부터 다시 세어 끝없이 이어진다. 쓴 시간은 캐릭터와 함께 저장한다(Ent.away).
  */
-export const AWAY_MAX_S = AWAY.maxS; // 값은 shared/auto.ts에 있다 (화면과 도감이 같은 수를 쓴다)
+export const AWAY_MAX_S = AWAY.maxS; // 값은 engine/shared/auto.ts에 있다 (화면과 도감이 같은 수를 쓴다)
 
 interface Stay { x: number; z: number; at: number; sparks: number; gold: number; lv: number }
 

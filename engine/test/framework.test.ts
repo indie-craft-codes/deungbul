@@ -373,28 +373,110 @@ function noonOf(day: unknown): number {
   check(!!saved && !('tower' in saved) && 'mailbox' in saved, '틀만의 서버가 닫히며 저장한 월드에 등탑 칸이 없다');
 }
 
-// ---------- 의존 방향 ----------
-// 틀로 분류한 서버 파일은 이 게임의 규칙(등탑, 습격, 등탑지기, 퀘스트)과 그것을 까는 플러그인을 import하지 않는다.
-// 게임 규칙(engine/server/game)은 통신 계층(engine/server/net)을 import하지 않는다. import 문을 읽어 검사한다 (타입만 가져오는 것도 센다).
-// games/deungbul/server/main.ts는 이 게임의 서버를 띄우는 진입점이라 검사하지 않는다 (플러그인을 고르는 자리다).
+// ---------- 의존 방향: 폴더 (docs/framework-plan.md의 단계 9) ----------
+// 틀은 engine/ 아래에, 이 게임은 games/deungbul/ 아래에 있다. 방향은 폴더로 본다 (아래의 블록들은 같은 것을 더 잘게, 가져오는 이름까지 본다):
+//   1. engine/ 아래의 어떤 파일도 games/를 상대 경로로 import하지 않는다
+//   2. 틀의 소스(시험을 뺀 것)가 별칭 @game으로 읽는 것은 내용 통로(@game/shared/content) 하나뿐이고, 읽는 자리도 틀의 내용 통로(engine/shared/defs.ts, defs/, contract.ts, world.ts)뿐이다
+//   3. 틀의 통로가 @game에서 다시 내보내는 이름은 내용 계약(engine/shared/contract.ts)의 이름과 같다: 계약 밖의 것은 틀로 나오지 않는다
+//   4. 틀의 시험이 @game으로 읽는 것은 게임의 내용 통로(@game/shared/defs, @game/shared/world)뿐이다 (아직 등불지기의 좌표와 id 위에서 돈다: 13단계에서 뗀다)
+//   5. games/deungbul/은 engine/을 별칭 @engine으로만 읽는다 (상대 경로로 폴더를 넘지 않는다). 방향은 게임 → 틀이다
+//   6. 틀이 읽는 게임의 내용 파일(content/index.ts가 내보내는 것)은 틀에서 타입만 가져온다: 값을 읽으면 틀의 도우미와 서로 물려 초기화 순서가 꼬인다
+//   7. 틀만 타입 검사(tsconfig.engine.json: engine/의 소스만)해도 오류가 없다: 틀이 게임의 선언(시스템 칸, 안내문, 공유 상태)에 기대면 여기서 잡힌다
 {
   const root = new URL('../../', import.meta.url);
-  const GAME_FILES = ['games/deungbul/server/deungbul.ts', ...['tower', 'raid', 'keepers', 'quests', 'rest'].map((n) => `games/deungbul/server/systems/${n}.ts`)];
+  const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8').replace(/\r\n/g, '\n');
+  const list = (dir: string): string[] => fs.readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? list(`${dir}${d.name}/`) : d.name.endsWith('.ts') ? [`${dir}${d.name}`] : []));
+  /** 그 파일의 import·export … from·declare module에 적힌 경로들. typeOnly: 문장 전체가 타입만 가져오는가 (import type) */
+  const specsOf = (file: string): { spec: string; typeOnly: boolean }[] =>
+    [...read(file).matchAll(/^\s*(?:import|export)\s+(type\s+)?[^;'"]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|^\s*declare\s+module\s*['"]([^'"]+)['"]/gm)]
+      .map((m) => ({ spec: m[2] ?? m[3] ?? m[4] ?? m[5], typeOnly: !!m[1] }));
+  const engineFiles = list('engine/'), gameFiles = list('games/deungbul/');
+  const isTest = (f: string): boolean => f.startsWith('engine/test/');
+  // 검사가 실제로 읽어 내는지: 경로를 풀어내는 법과, 양쪽 폴더에서 별칭을 실제로 쓰는 곳
+  check(resolveSpec(root, 'engine/client/hud/x.ts', '../../../games/deungbul/shared/defs') === 'games/deungbul/shared/defs' && resolveSpec(root, 'games/deungbul/server/x.ts', '@engine/server/game/game') === 'engine/server/game/game'
+    && resolveSpec(root, 'engine/shared/defs.ts', 'node:fs') === null && engineFiles.length >= 110 && gameFiles.length >= 70
+    && specsOf('engine/shared/defs.ts').some((s) => s.spec === '@game/shared/content') && specsOf('games/deungbul/server/systems/tower.ts').some((s) => s.spec === '@engine/server/game/game')
+    && specsOf('games/deungbul/shared/content/items.ts').some((s) => s.spec === '@engine/shared/defs/items' && s.typeOnly) && specsOf('games/deungbul/shared/deungbul.ts').some((s) => s.spec === '@engine/shared/ext'),
+    `폴더를 넘는 import를 읽어 낸다 (engine/ 아래 ${engineFiles.length}개, games/deungbul/ 아래 ${gameFiles.length}개)`);
+
+  // 1
+  const relOut = engineFiles.flatMap((f) => specsOf(f).filter((s) => s.spec.startsWith('.') && !(resolveSpec(root, f, s.spec) ?? '').startsWith('engine/')).map((s) => `${f} -> ${s.spec}`));
+  for (const x of relOut) console.log('  ' + x);
+  check(relOut.length === 0, 'engine/ 아래의 어떤 파일도 상대 경로로 폴더 밖(games/)을 import하지 않는다');
+
+  // 2
+  /** 틀에서 게임의 내용을 읽어도 되는 자리: 틀의 내용 통로와 그 조각들 */
+  const isChannel = (f: string): boolean => /^engine\/shared\/(defs|contract|world)\.ts$/.test(f) || f.startsWith('engine/shared/defs/');
+  const CONTENT = '@game/shared/content';
+  const srcGame = engineFiles.filter((f) => !isTest(f)).flatMap((f) => specsOf(f).filter((s) => s.spec.startsWith('@game')).map((s) => ({ f, spec: s.spec })));
+  const srcBad = srcGame.filter((x) => x.spec !== CONTENT || !isChannel(x.f));
+  for (const x of srcBad) console.log(`  ${x.f} -> ${x.spec}`);
+  check(srcGame.length >= 8 && srcBad.length === 0, `틀의 소스가 @game으로 읽는 것은 내용 통로(${CONTENT})뿐이고, 읽는 자리는 틀의 내용 통로(engine/shared/defs.ts, defs/, contract.ts, world.ts)뿐이다 (${srcGame.length}곳)`);
+
+  // 3
+  const contract = /export interface ContentContract \{([\s\S]*?)\n\}/.exec(read('engine/shared/contract.ts'))?.[1] ?? '';
+  const wanted = [...contract.matchAll(/^ {2}([A-Z][A-Z_0-9]*):/gm)].map((m) => m[1]);
+  const passed = (/export \{([^}]*)\} from '@game\/shared\/content';/.exec(read('engine/shared/defs.ts'))?.[1] ?? '').replace(/\/\/.*$/gm, '').split(',').map((s) => s.trim()).filter(Boolean);
+  const onlyContract = wanted.filter((n) => !passed.includes(n)), onlyChannel = passed.filter((n) => !wanted.includes(n));
+  check(wanted.length >= 55 && wanted.includes('MAP') && wanted.includes('ECON_NOTICES') && new Set(passed).size === passed.length && onlyContract.length === 0 && onlyChannel.length === 0,
+    `틀의 통로가 게임에서 다시 내보내는 이름은 내용 계약의 이름과 같다 (${wanted.length}개)${onlyContract.length + onlyChannel.length ? `: 계약에만 ${onlyContract.join(', ') || '없음'}, 통로에만 ${onlyChannel.join(', ') || '없음'}` : ''}`);
+  // 계약 밖의 것은 @game의 그 파일이 내보내더라도 틀의 통로로는 나오지 않는다 (실제로 불러 본다)
+  const engineDefs = await import('../shared/defs') as Record<string, unknown>, engineWorld = await import('../shared/world') as Record<string, unknown>;
+  const gameDefs = await import('@game/shared/defs') as Record<string, unknown>;
+  const leaked = ['SMITH', 'SMITHY', 'SHOP', 'REST', 'restGain', 'RESIDENTS', 'QUESTS', 'RAID', 'GLOW_MAX', 'TOWER', 'TOWERS', 'POND', 'CLEARINGS', 'ZONE_SPLIT', 'MIN_X'].filter((n) => n in engineDefs || n in engineWorld);
+  check(leaked.length === 0 && 'SMITHY' in gameDefs && 'RESIDENTS' in gameDefs && wanted.every((n) => n in engineDefs) && 'AREAS' in engineWorld && 'MAP' in engineWorld,
+    `이 게임에만 있는 이름(SMITHY, RESIDENTS, TOWER, POND …)은 틀의 통로에 없고 게임의 통로에만 있다${leaked.length ? ': ' + leaked.join(', ') : ''}`);
+
+  // 4
+  const testGame = engineFiles.filter(isTest).flatMap((f) => specsOf(f).filter((s) => s.spec.startsWith('@game')).map((s) => ({ f, spec: s.spec })));
+  const testBad = testGame.filter((x) => x.spec !== '@game/shared/defs' && x.spec !== '@game/shared/world');
+  for (const x of testBad) console.log(`  ${x.f} -> ${x.spec}`);
+  check(testBad.length === 0, `틀의 시험이 @game으로 읽는 것은 게임의 내용 통로(@game/shared/defs, @game/shared/world)뿐이다 (${testGame.length}곳, 시험 파일 ${new Set(testGame.map((x) => x.f)).size}개: 13단계에서 0으로 줄인다)`);
+
+  // 5
+  const gameOut = gameFiles.flatMap((f) => specsOf(f).filter((s) => (s.spec.startsWith('.') && !(resolveSpec(root, f, s.spec) ?? '').startsWith('games/deungbul/')) || s.spec.startsWith('@game')).map((s) => `${f} -> ${s.spec}`));
+  for (const x of gameOut) console.log('  ' + x);
+  const viaAlias = gameFiles.flatMap((f) => specsOf(f).filter((s) => s.spec.startsWith('@engine/'))).length;
+  check(viaAlias >= 100 && gameOut.length === 0, `games/deungbul/은 engine/을 별칭 @engine으로만 읽는다: 상대 경로로 폴더를 넘지 않고, 자기 폴더는 상대 경로로 읽는다 (@engine ${viaAlias}곳)`);
+
+  // 6
+  const contentFiles = specsOf('games/deungbul/shared/content/index.ts').map((s) => `games/deungbul/shared/content/${s.spec.slice(2)}.ts`);
+  const valueReads = contentFiles.flatMap((f) => specsOf(f).filter((s) => !s.typeOnly && (s.spec.startsWith('@engine') || /(^|\/)(defs|world)$/.test(s.spec))).map((s) => `${f} -> ${s.spec}`));
+  for (const x of valueReads) console.log('  ' + x);
+  check(contentFiles.length >= 10 && contentFiles.every((f) => fs.existsSync(new URL(f, root))) && valueReads.length === 0, `틀이 읽는 게임의 내용 파일 ${contentFiles.length}개는 틀에서 타입만 가져온다 (값을 읽지 않는다)`);
+
+  // 7
+  const { spawnSync } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  const tsc = spawnSync(process.execPath, [fileURLToPath(new URL('node_modules/typescript/bin/tsc', root)), '--noEmit', '--pretty', 'false', '-p', fileURLToPath(new URL('tsconfig.engine.json', root))], { cwd: fileURLToPath(root), encoding: 'utf8' });
+  const errors = `${tsc.stdout}${tsc.stderr}`.split(/\r?\n/).filter((l) => /error TS\d+/.test(l));
+  for (const l of errors.slice(0, 20)) console.log('  ' + l);
+  check(tsc.status === 0 && errors.length === 0, `틀만 타입 검사해도 오류가 없다 (npm run typecheck:engine: engine/의 소스만, 게임의 선언 없이)${errors.length ? `: 오류 ${errors.length}개` : ''}`);
+}
+
+// ---------- 의존 방향: 서버와 공용 ----------
+// 틀의 서버 파일(engine/server/ 아래 전부)은 이 게임의 규칙(등탑, 습격, 등탑지기, 퀘스트, 휴식)과 그것을 까는 플러그인을 import하지 않는다.
+// 게임 규칙(engine/server/game)은 통신 계층(engine/server/net)을 import하지 않는다. import 문을 읽어 검사한다 (타입만 가져오는 것도 센다).
+// 파일의 목록은 폴더에서 읽는다: 이 게임의 서버 파일은 games/deungbul/server/ 아래의 것이다 (main.ts는 이 게임의 서버를 띄우는 진입점이다: 플러그인을 고르는 자리).
+{
+  const root = new URL('../../', import.meta.url);
+  const list = (dir: string): string[] => fs.readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? list(`${dir}${d.name}/`) : d.name.endsWith('.ts') ? [`${dir}${d.name}`] : []));
+  /** 이 게임의 규칙 파일: 플러그인(deungbul.ts)과 규칙 시스템들 */
+  const GAME_FILES = list('games/deungbul/server/').filter((f) => f !== 'games/deungbul/server/main.ts');
   /** 아직 지키지 못하는 것 (지금은 없다: new Game()의 기본값이 틀만이 되면서 game.ts가 플러그인을 import하지 않는다) */
   const EXCEPTIONS: string[] = [];
-  const list = (dir: string): string[] => fs.readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? list(`${dir}${d.name}/`) : d.name.endsWith('.ts') ? [`${dir}${d.name}`] : []));
   /** 그 파일이 import하는 저장소 안의 파일들 (상대 경로와 별칭을 따라간다) */
   const importsOf = (file: string): string[] => {
     const src = fs.readFileSync(new URL(file, root), 'utf8');
     const specs = [...src.matchAll(/\b(?:import|export)\b[^;'"]*?\bfrom\s*['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|^\s*import\s*['"]([^'"]+)['"]|\bdeclare\s+module\s*['"]([^'"]+)['"]/gm)].map((m) => m[1] ?? m[2] ?? m[3] ?? m[4]);
     return specs.map((sp) => resolveSpec(root, file, sp)).filter((p): p is string => p !== null).map((p) => (p.endsWith('.ts') ? p : `${p}.ts`));
   };
-  const engine = [...list('engine/server/game/'), ...list('engine/server/net/'), ...list('engine/server/store/'), 'engine/server/text.ts'].filter((f) => !GAME_FILES.includes(f));
+  const engine = list('engine/server/');
   const found: string[] = [];
-  for (const f of engine) for (const to of importsOf(f)) if (GAME_FILES.includes(to)) found.push(`${f} -> ${to}`);
+  for (const f of engine) for (const to of importsOf(f)) if (to.startsWith('games/')) found.push(`${f} -> ${to}`);
   const extra = found.filter((x) => !EXCEPTIONS.includes(x)), stale = EXCEPTIONS.filter((x) => !found.includes(x));
   for (const x of extra) console.log('  ' + x);
-  check(engine.length >= 30 && importsOf('games/deungbul/server/deungbul.ts').filter((x) => GAME_FILES.includes(x)).length === 5 && importsOf('engine/server/net/server.ts').includes('engine/server/game/game.ts'), `import 문을 읽어 낸다 (틀의 서버 파일 ${engine.length}개)`);
+  check(engine.length >= 30 && GAME_FILES.length === 6 && importsOf('games/deungbul/server/deungbul.ts').filter((x) => GAME_FILES.includes(x)).length === 5 && importsOf('engine/server/net/server.ts').includes('engine/server/game/game.ts'), `import 문을 읽어 낸다 (틀의 서버 파일 ${engine.length}개)`);
   check(extra.length === 0, `틀의 서버 파일은 이 게임의 규칙 시스템과 플러그인을 import하지 않는다 (예외 ${EXCEPTIONS.length}건)`);
   check(stale.length === 0, `예외 목록에 이미 풀린 것이 남아 있지 않다${stale.length ? `: ${stale.join(', ')}` : ''}`);
   const toNet = list('engine/server/game/').flatMap((f) => importsOf(f).filter((to) => to.startsWith('engine/server/net/')).map((to) => `${f} -> ${to}`));
@@ -406,16 +488,18 @@ function noonOf(day: unknown): number {
   const EXT = ['engine/shared/ext.ts', 'engine/server/game/ext.ts', 'engine/client/i18n/ext.ts'];
   /** 게임의 선언 파일: 공용(안내문, 메시지, 공유 상태), 서버(시스템 칸, 사건), 클라이언트(언어 묶음의 모양) */
   const GAME_DECL = ['games/deungbul/shared/deungbul.ts', 'games/deungbul/server/deungbul.ts', 'games/deungbul/client/i18n/index.ts'];
-  /** 이 게임에만 있는 공용 파일: 선언 파일과 등탑·습격·주민·퀘스트의 내용 */
-  const GAME_SHARED = ['games/deungbul/shared/deungbul.ts', ...['tower', 'raid', 'residents', 'quests'].map((n) => `games/deungbul/shared/content/${n}.ts`)];
-  /** 틀로 분류한 공용 파일. engine/shared/defs.ts는 내용을 통째로 다시 내보내는 통로라 넣지 않았다 (내용을 별칭으로 갈아 끼우는 단계에서 정리한다) */
-  const SHARED_ENGINE = ['ext', 'protocol', 'messages', 'sim', 'nav', 'world', 'auto'].map((n) => `engine/shared/${n}.ts`);
+  /** 틀이 읽는 게임의 내용: 계약의 통로(content/index.ts)와 그것이 다시 내보내는 파일들 */
+  const CONTRACT_CONTENT = ['games/deungbul/shared/content/index.ts', ...[...fs.readFileSync(new URL('games/deungbul/shared/content/index.ts', root), 'utf8').matchAll(/from '\.\/(\w+)'/g)].map((m) => `games/deungbul/shared/content/${m[1]}.ts`)];
+  /** 이 게임에만 있는 공용 파일: games/deungbul/shared/ 아래에서 위의 것을 뺀 전부 (선언 파일, 게임의 통로, 등탑·습격·주민·퀘스트의 내용) */
+  const GAME_SHARED = list('games/deungbul/shared/').filter((f) => !CONTRACT_CONTENT.includes(f));
+  /** 틀의 공용 파일: engine/shared/ 아래 전부 (내용 통로 defs.ts와 그 조각 defs/도 넣는다: 계약의 내용만 읽는다) */
+  const SHARED_ENGINE = list('engine/shared/');
   /** 아직 지키지 못하는 것 (지금은 없다) */
   const SHARED_EXCEPTIONS: string[] = [];
   const sharedFound = SHARED_ENGINE.flatMap((f) => importsOf(f).filter((to) => GAME_SHARED.includes(to)).map((to) => `${f} -> ${to}`));
   const sharedExtra = sharedFound.filter((x) => !SHARED_EXCEPTIONS.includes(x)), sharedStale = SHARED_EXCEPTIONS.filter((x) => !sharedFound.includes(x));
   for (const x of sharedExtra) console.log('  ' + x);
-  check(SHARED_ENGINE.every((f) => fs.existsSync(new URL(f, root))) && importsOf('engine/shared/protocol.ts').includes('engine/shared/ext.ts') && importsOf('games/deungbul/shared/deungbul.ts').includes('games/deungbul/shared/content/raid.ts'), `공용 파일의 import 문을 읽어 낸다 (틀의 공용 파일 ${SHARED_ENGINE.length}개)`);
+  check(SHARED_ENGINE.length >= 15 && CONTRACT_CONTENT.length >= 10 && ['deungbul.ts', 'defs.ts', 'world.ts', 'content/tower.ts', 'content/raid.ts', 'content/residents.ts', 'content/quests.ts'].every((n) => GAME_SHARED.includes(`games/deungbul/shared/${n}`)) && importsOf('engine/shared/protocol.ts').includes('engine/shared/ext.ts') && importsOf('games/deungbul/shared/deungbul.ts').includes('games/deungbul/shared/content/raid.ts'), `공용 파일의 import 문을 읽어 낸다 (틀의 공용 파일 ${SHARED_ENGINE.length}개)`);
   check(sharedExtra.length === 0 && sharedStale.length === 0, `틀의 공용 파일은 이 게임의 선언과 등탑·습격·주민·퀘스트의 내용을 직접 import하지 않는다 (예외 ${SHARED_EXCEPTIONS.length}건)`);
   // 게임의 공용 선언 파일은 틀의 서버 파일도, 다른 공용 파일도 import하지 않는다 (tsconfig의 include로만 컴파일에 들어간다)
   const declUsers = [...engine, ...list('engine/shared/')].filter((f) => f !== 'games/deungbul/shared/deungbul.ts' && importsOf(f).includes('games/deungbul/shared/deungbul.ts'));
@@ -564,7 +648,7 @@ function noonOf(day: unknown): number {
 // ---------- 의존 방향: 클라이언트 (docs/framework-plan.md의 단계 6a) ----------
 // 6a에서 가른 틀 쪽 화면 파일은 이 게임의 것을 직접 읽지 않고 rules(engine/client/rules.ts)와 등록 접점(addNpc, onKey)을 거친다.
 // 내용은 통로(engine/shared/defs, engine/shared/world)로 들어오므로 파일 경로만으로는 알 수 없다: 가져오는 이름까지 본다.
-// 6b부터는 client/src 아래의 틀 쪽 파일 전부가 대상이다: 이 게임의 파일은 games/deungbul/client/ 한 폴더에 모였고, 틀을 시작시키는 것도 게임의 진입점(game/main.ts)이다.
+// 6b부터는 client/src 아래의 틀 쪽 파일 전부가 대상이다: 이 게임의 파일은 games/deungbul/client/ 한 폴더에 모였고, 틀을 시작시키는 것도 게임의 진입점(games/deungbul/client/main.ts)이다.
 {
   const root = new URL('../../', import.meta.url);
   const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
@@ -592,7 +676,7 @@ function noonOf(day: unknown): number {
       ...(isGameClient(i.to) || GAME_CONTENT.includes(i.to) ? [`${file} -> ${i.to}`] : []),
       ...i.names.filter((n) => GAME_NAMES.has(n)).map((n) => `${file} -> ${n} (${i.to})`),
     ]),
-    // 공유 상태(S.world)와 퀘스트 진행(S.quest)의 모양은 이 게임의 것이다: 틀은 rules에 묻는다 (6b부터 틀의 상태 S에는 그 칸이 아예 없다: 게임의 상태는 game/state.ts)
+    // 공유 상태(S.world)와 퀘스트 진행(S.quest)의 모양은 이 게임의 것이다: 틀은 rules에 묻는다 (6b부터 틀의 상태 S에는 그 칸이 아예 없다: 게임의 상태는 games/deungbul/client/state.ts)
     ...(usesGameState(read(file)) ? [`${file} -> S.world / S.quest`] : []),
   ];
   function usesGameState(src: string): boolean { return /\bS\.(world|quest)\s*\./.test(src); }
@@ -658,7 +742,7 @@ function noonOf(day: unknown): number {
 
 // ---------- 의존 방향: 화면의 뼈대와 스타일 (7b단계: 게임의 창은 게임이 붙인다) ----------
 // 틀의 index.html과 style.css에는 틀의 창만 있다. 이 게임의 창(등탑, 퀘스트, 습격 알림, 내 정보에 덧붙는 표시, '마을로' 단추)은
-// 게임의 마크업(games/deungbul/client/markup.ts)이 틀의 빈 자리(hud/shell.ts의 mountPanel)에 붙이고, 모양은 게임의 스타일(game/deungbul.css)에 있다.
+// 게임의 마크업(games/deungbul/client/markup.ts)이 틀의 빈 자리(hud/shell.ts의 mountPanel)에 붙이고, 모양은 게임의 스타일(games/deungbul/client/deungbul.css)에 있다.
 // 옮긴 창의 id는 게임의 마크업에서 읽어 낸다: 창을 더 옮기면 검사도 따라간다.
 {
   const root = new URL('../../', import.meta.url);

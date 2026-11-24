@@ -1,6 +1,6 @@
 // 틀에 덧붙는 기능 모듈의 목록. 어느 게임에나 쓸 새 기능은 파일을 만들고 여기에 init 한 줄을 더한다.
 // 모듈은 init 안에서 필요한 것(서버 메시지, 프레임, 느린 주기, 언어 변경)을 bus와 i18n에 스스로 등록한다.
-// 게임에만 있는 모듈은 여기에 두지 않는다: 게임의 진입점이 startClient에 넘긴다 (이 게임은 game/main.ts). 게임의 모듈이 이 목록보다 먼저 init된다 (main.ts).
+// 게임에만 있는 모듈은 여기에 두지 않는다: 게임의 진입점이 startClient에 넘긴다 (이 게임은 games/deungbul/client/main.ts). 게임의 모듈이 이 목록보다 먼저 init된다 (main.ts).
 import { initAuto } from './auto';
 import { initAutoName } from './hud/autoname';
 import { initBag } from './hud/bag';

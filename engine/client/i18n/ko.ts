@@ -1,8 +1,8 @@
 // 한국어, 틀의 몫: 어느 게임에서나 쓰는 화면의 문장이다 (접속, 내 정보, 전투, 상점·제작·장비·우편·일일·순위·길드·거래소·채널·던전·자동 사냥, 틀의 안내문).
 // 기준 언어다: 다른 언어의 틀 파일(en.ts)은 이 파일과 같은 모양을 갖춰야 컴파일된다.
-// 이 게임의 문장(등탑, 퀘스트 등)과 내용의 이름(몬스터, 아이템, 직업 …)은 여기 없다: 게임의 언어 파일(client/src/game/i18n/)에 있고 mergeLocale로 합친다.
+// 이 게임의 문장(등탑, 퀘스트 등)과 내용의 이름(몬스터, 아이템, 직업 …)은 여기 없다: 게임의 언어 파일(games/deungbul/client/i18n/)에 있고 mergeLocale로 합친다.
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
-// 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (test/framework.test.ts가 검사한다).
+// 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (engine/test/framework.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemDef, ItemId, MonsterId, Stat } from '../../shared/defs';
 import { ITEMS } from '../../shared/defs';
 import type { MsgMap } from '../../shared/ext';
@@ -10,7 +10,7 @@ import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { LocaleExt } from './ext';
 import { itemNameOf, type ContentNames } from './names';
 
-/** 틀의 안내문 종류: 게임이 확장 지점(shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
+/** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
 export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
 
 /** 받침이 있으면 a, 없으면 b를 붙인다 (예: 검이 / 활이, 방패가). 한글이 아니면 둘 다 적는다. */
@@ -38,7 +38,7 @@ export const num = (n: MsgArg) => Number(n).toLocaleString('ko-KR');
 
 /**
  * 틀의 문장 묶음. 내용의 이름표(n)를 받아 만든다: 게임마다 몬스터·아이템·직업의 이름이 다르고, 틀의 안내문이 그 이름을 문장에 넣는다.
- * 게임은 mergeLocale(koBase(이름표), 게임의 문장)으로 자기 언어 묶음을 만든다 (이 게임: client/src/game/i18n/index.ts)
+ * 게임은 mergeLocale(koBase(이름표), 게임의 문장)으로 자기 언어 묶음을 만든다 (이 게임: games/deungbul/client/i18n/index.ts)
  */
 export const koBase = (n: ContentNames) => {
   const { monsters, items, classes, dungeons, dailies } = n;
@@ -260,7 +260,7 @@ export const koBase = (n: ContentNames) => {
       matSource: (mat: string, names: string[]) => `${mat} 얻는 곳: ${names.join(', ')}`,
       dungeonMateIn: (names: string) => `파티원(${names})이 안에 있습니다. 들어가면 같은 곳으로 갑니다.`,
     },
-    /** 서버 안내문 (shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
+    /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
       joined: (a) => `${a[0]} 님이 들어왔습니다.`,
       left: (a) => `${a[0]} 님이 나갔습니다.`,

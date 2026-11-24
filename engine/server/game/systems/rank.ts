@@ -21,7 +21,7 @@ export class Rank {
     g.commands.set('rank', (p) => { this.update(); g.out.push({ id: p.id, msg: { t: 'rank', list: this.top(), me: p.pid ? this.rows.findIndex((r) => r.pid === p.pid) : -1 } }); });
   }
 
-  /** 전투력: 순위와 화면 표시에 쓴다. 식은 내용 정의에 있다 (shared/content/growth.ts의 powerOf) */
+  /** 전투력: 순위와 화면 표시에 쓴다. 식은 내용 정의에 있다 (engine/shared/defs/growth.ts의 powerOf) */
   power(p: Ent): number {
     const worn: Gear[] = [];
     for (const slot of GEAR_SLOTS) {
