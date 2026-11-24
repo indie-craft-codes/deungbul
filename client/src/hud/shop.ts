@@ -1,8 +1,9 @@
 // 상점 창(길 상인 가까이에서 열린다)과 물약 버튼.
-import { ITEMS, POTION_MAX, RESIDENTS, nearShop, SHOP_STOCK, itemDef, isItemId, type ItemId } from '../../../shared/defs';
+import { ITEMS, POTION_MAX, nearShop, SHOP_STOCK, itemDef, isItemId, type ItemId } from '../../../shared/defs';
 import { buy, usePotion } from '../actions';
 import { $ } from '../app';
 import { L, itemInfo, itemName, t } from '../i18n';
+import { rules } from '../rules';
 import { S } from '../state';
 
 const ui = { panel: $('shop'), gold: $('shopGold'), list: $('shopList') };
@@ -20,9 +21,7 @@ export function initShop(): void {
   renderShop();
 }
 
-function residentIndex(id: string): number { return RESIDENTS.findIndex((r) => r.id === id); }
-
-/** 내 소지품, 주민 상태, 언어가 바뀌면 다시 그린다. */
+/** 내 소지품, 잠금 상태(공유 상태), 언어가 바뀌면 다시 그린다. */
 export function renderShop(): void {
   const loc = L(), me = S.me;
   const gold = me?.gold ?? 0, items = me?.items ?? {};
@@ -47,9 +46,8 @@ export function renderShop(): void {
     btn.addEventListener('click', () => buy(id));
 
     // 왜 살 수 없는지를 단추 대신 글로 알린다
-    const need = def.needs ? residentIndex(def.needs) : -1;
-    const stocked = need < 0 || S.world.tower.residents[need] >= RESIDENTS[need].need;
-    if (!stocked) { note.textContent = loc.fmt.needsResident(loc.residents[RESIDENTS[need].id].name); btn.disabled = true; }
+    const stocked = !def.needs || rules.unlocked(def.needs); // 무엇이 잠그는지는 게임의 규칙이 안다 (서버의 g.rules.unlocked와 같은 판정)
+    if (!stocked) { note.textContent = rules.lockNote(def.needs!); btn.disabled = true; }
     else if ((def.kind === 'weapon' && (def.tier ?? 0) <= tier) || (def.kind === 'armor' && (def.tier ?? 0) <= armorTier)) { note.textContent = t('owned'); btn.hidden = true; }
     else {
       note.textContent = def.kind === 'potion' ? `${itemInfo(id)} · ${loc.fmt.have(items[id] ?? 0, POTION_MAX)}` : itemInfo(id);

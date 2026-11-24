@@ -3,11 +3,10 @@
 //   흘러가는 알림(feed):  방금 한 일의 결과. 처치, 바치기, 구매, 거절 사유. 몇 초 뒤 사라진다
 //   대화창(log):         사람들의 말과, 나중에 다시 볼 만한 소식
 // 이렇게 나누지 않으면 처치 알림이 대화와 중요한 소식을 밀어낸다.
-import { RESIDENTS } from '../../../shared/defs';
-import { S } from '../state';
 import type { MsgArg, MsgKey } from '../../../shared/messages';
 import { $ } from '../app';
 import { L, forInput, onLangChange } from '../i18n';
+import { rules } from '../rules';
 import { logText } from './chat';
 
 type Tone = '' | 'good' | 'bad';
@@ -67,17 +66,6 @@ function flash(): void {
   ui.flash.classList.add('on');
 }
 
-/**
- * 주민의 그림자를 쓰러뜨려 장을 마쳤는데 그 주민이 아직 돌아오지 않았으면, 어떻게 되돌리는지 알려 준다.
- * (장 이름이 주민 id와 같다: bram, mira)
- */
-function residentHint(chapter: string): string {
-  const i = RESIDENTS.findIndex((r) => r.id === chapter);
-  if (i < 0 || S.world.tower.residents[i] >= RESIDENTS[i].need) return '';
-  const loc = L();
-  return loc.fmt.residentHint(loc.residents[RESIDENTS[i].id].name, RESIDENTS[i].need - S.world.tower.residents[i]);
-}
-
 /** 서버 안내문을 현재 언어의 문장으로 만들어 알맞은 곳에 보여 준다. */
 export function notifySys(k: MsgKey, a: MsgArg[] = []): void {
   const make = L().msg[k];
@@ -86,6 +74,7 @@ export function notifySys(k: MsgKey, a: MsgArg[] = []): void {
   if (FEED.has(k)) { feed(text); return; }
   logText(text);
   const tone = BANNER[k];
-  if (tone !== undefined) banner(text, tone, k === 'questDone' ? residentHint(String(a[0])) : '');
+  // 장을 마쳤는데 그 장의 이름으로 된 잠금이 아직 안 풀렸으면, 어떻게 푸는지 덧붙인다 (문장은 게임의 규칙이 만든다)
+  if (tone !== undefined) banner(text, tone, k === 'questDone' ? rules.lockHint(String(a[0])) : '');
   if (k === 'died') flash();
 }

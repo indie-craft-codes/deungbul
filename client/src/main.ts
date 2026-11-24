@@ -9,7 +9,7 @@ import { dispatch, onMsg, runFrame, runSlow } from './bus';
 import { initModules } from './modules';
 import { steer } from './actions';
 import { $, view } from './app';
-import { applySnapshot, clearEntities, placeTags, relabel, renameEntity, setGear, spawnMe, spawnMerchant, syncNpcs, tagOf, updateEntities } from './entities';
+import { applySnapshot, clearEntities, placeTags, relabel, renameEntity, setGear, spawnMe, spawnMerchant, tagOf, updateEntities } from './entities';
 import { shakeOffset, updateFx } from './fx';
 import { initChat, logChat } from './hud/chat';
 import { forgeSlow, renderForge } from './hud/forge';
@@ -44,7 +44,7 @@ onMsg('stat', (m) => {
 onMsg('quest', (m) => { S.quest = { c: m.c, s: m.s, n: m.n }; renderQuest(); });
 onMsg('icd', (m, now) => { S.itemCdEnd = now + m.ms; S.itemCdLen = m.ms; });
 onMsg('gear', (m) => setGear(m.id, m.weapon, m.cls, m.armor));
-onMsg('world', (m, now) => { S.world = m.s; S.worldAt = now; syncNpcs(); renderWorld(); renderShop(); renderForge(); hudSlow(now); });
+onMsg('world', (m, now) => { S.world = m.s; S.worldAt = now; renderWorld(); renderShop(); renderForge(); hudSlow(now); });
 onMsg('cd', (m, now) => { S.cdEnd[m.n] = now + m.ms; S.cdLen[m.n] = m.ms; });
 onMsg('name', (m) => { renameEntity(m.id, m.name); if (S.me && m.id === S.me.id) setMyName(m.name); });
 onMsg('chat', (m) => {

@@ -1,16 +1,16 @@
-// 대장간 창: 대장장이가 돌아온 뒤, 그 가까이에 서면 열린다. 가진 재료와 만들 수 있는 것을 보여 준다.
-import { RECIPES, RESIDENTS, SMITH, SMITHY, SMITHY_REACH, itemDef, isItemId, type ItemId } from '../../../shared/defs';
+// 대장간 창: 잠금(SMITH)이 풀린 뒤, 그 가까이에 서면 열린다. 가진 재료와 만들 수 있는 것을 보여 준다.
+import { RECIPES, SMITH, SMITHY, SMITHY_REACH, itemDef, isItemId, type ItemId } from '../../../shared/defs';
 import { craft } from '../actions';
 import { $ } from '../app';
 import { L, itemInfo, itemName, t } from '../i18n';
+import { rules } from '../rules';
 import { S } from '../state';
 import { sourceLine } from './sources';
 
 const ui = { panel: $('forge'), gold: $('forgeGold'), list: $('forgeList') };
-const smith = RESIDENTS.findIndex((r) => r.id === SMITH);
-const open = (): boolean => S.world.tower.residents[smith] >= RESIDENTS[smith].need;
+const open = (): boolean => rules.unlocked(SMITH);
 
-/** 내 소지품, 주민 상태, 언어가 바뀌면 다시 그린다. */
+/** 내 소지품, 언어가 바뀌면 다시 그린다. */
 export function renderForge(): void {
   const loc = L(), me = S.me;
   const gold = me?.gold ?? 0, items = me?.items ?? {};
@@ -65,7 +65,7 @@ export function renderForge(): void {
   }
 }
 
-/** 가끔: 대장장이가 돌아왔고 그 가까이에 있을 때만 창을 연다 */
+/** 가끔: 잠금이 풀렸고 그 가까이에 있을 때만 창을 연다 */
 export function forgeSlow(): void {
   const me = S.me;
   ui.panel.hidden = !me || !open() || Math.hypot(me.x - SMITHY.x, me.z - SMITHY.z) > SMITHY_REACH;

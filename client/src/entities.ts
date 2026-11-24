@@ -1,38 +1,46 @@
-// 화면 속 엔티티: 내 캐릭터(예측과 보정), 다른 엔티티(보간), 돌아온 주민, 서버 사건의 연출.
-import { BOSS, MONSTERS, RESIDENTS, SHOPS, classOf, isMonsterId, isSkillId, monsterDef, skillDef, speedFor } from '../../shared/defs';
+// 화면 속 엔티티: 내 캐릭터(예측과 보정), 다른 엔티티(보간), 화면에만 서 있는 사람(상인, 게임이 세우는 NPC), 서버 사건의 연출.
+import { BOSS, MONSTERS, SHOPS, classOf, isMonsterId, isSkillId, monsterDef, skillDef } from '../../shared/defs';
 import type { EnterInfo, Ev, ServerMsg } from '../../shared/protocol';
 import { walk } from '../../shared/nav';
-import { TOWER, TOWERS } from '../../shared/world';
 import { nav, view, world } from './app';
 import { ARROW_S, arrow, burst, hit, puff, recoilOf, shake } from './fx';
 import { floatText, makeTag, placeTag, setTagHp, setTagName, settleTags, type Tag } from './hud/tags';
 import { L } from './i18n';
+import { rules } from './rules';
 import { sfx } from './sound';
 import { animate, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
-import { S, newMe, stage, type Me, type Remote } from './state';
+import { S, newMe, type Me, type Remote } from './state';
 
 const INTERP_MS = 150; // 다른 엔티티는 이만큼 과거 시점을 그려서 스냅샷 사이를 부드럽게 잇는다
 const SWING_S = 0.3;
 const DIE_S = 0.3;
 const CLOTH = [0x3f7fbf, 0x8a5ac0, 0x4c9a6a, 0xd08a2e, 0x4a6a8a, 0xc05a8a, 0x6a6ad0, 0x9a7a3a, 0x3fa0a0, 0xa04a4a];
-const NPC_CLOTH = [0x7a5a3a, 0x4c9a6a, 0x8a6aa0];
 const MY_CLOTH = 0xc9463d;
 /** 직업에 맞는 손 장비: 궁수는 활, 마법사는 지팡이, 나머지는 검 */
 const gearOf = (cls: string): true | 'bow' | 'staff' => { const hand = classOf(cls).hand; return hand === 'sword' ? true : hand; };
 
-/** 마을로 돌아온 주민 (서버 엔티티가 아니라 화면에만 세워 둔다) */
-const npcs = new Map<number, { model: Model; tag: Tag }>();
-/** 상인들: 늘 제자리(SHOPS)에 서서 곁의 등탑을 바라본다 */
-const merchants: Tag[] = [];
+type At = { x: number; z: number };
+/** 화면에만 서 있는 사람들 (서버 엔티티가 아니다): 상인과, 게임이 세운 NPC */
+const npcs: { x: number; z: number; tag: Tag; name: () => string }[] = [];
 
+/**
+ * 화면에만 서 있는 사람을 세운다. 이름은 언어가 바뀌면 다시 읽으므로 함수로 받고, look을 주면 그쪽을 바라본다.
+ * 게임의 모듈이 자기 NPC(이 게임은 돌아온 주민)를 세울 때 부른다.
+ */
+export function addNpc(x: number, z: number, model: Model, name: () => string, look?: At): void {
+  model.root.position.set(x, 0, z);
+  if (look) model.root.rotation.y = Math.atan2(look.x - x, look.z - z);
+  view.scene.add(model.root);
+  npcs.push({ x, z, tag: makeTag(name(), 'npc', false), name });
+}
+
+/** 상인이 바라볼 곳. 틀은 정하지 않고(앞을 본다), 게임이 정한다 (이 게임은 곁의 등탑) */
+let merchantLook: ((shop: At, i: number) => At | undefined) | null = null;
+export function setMerchantLook(fn: (shop: At, i: number) => At | undefined): void { merchantLook = fn; }
+
+/** 상인들: 늘 제자리(SHOPS)에 서 있다 */
 export function spawnMerchant(): void {
-  for (const s of SHOPS) {
-    const model = makeHumanoid(0xb5863c, false), t = TOWERS[s.tower] ?? TOWER;
-    model.root.position.set(s.x, 0, s.z);
-    model.root.rotation.y = Math.atan2(t.x - s.x, t.z - s.z);
-    view.scene.add(model.root);
-    merchants.push(makeTag(L().ui.shop, 'npc', false));
-  }
+  SHOPS.forEach((s, i) => addNpc(s.x, s.z, makeHumanoid(0xb5863c, false), () => L().ui.shop, merchantLook?.(s, i)));
 }
 
 /** 이름표에 적는 글: 길드가 있으면 이름 뒤에 붙인다 */
@@ -94,23 +102,10 @@ export function clearEntities(): void {
   view.targetRing.visible = false;
 }
 
-/** 공유 상태에 맞춰 돌아온 주민을 마을에 세운다. */
-export function syncNpcs(): void {
-  RESIDENTS.forEach((def, i) => {
-    if (S.world.tower.residents[i] < def.need || npcs.has(i)) return;
-    const model = makeHumanoid(NPC_CLOTH[i % NPC_CLOTH.length], false);
-    model.root.position.set(def.x, 0, def.z);
-    model.root.rotation.y = Math.atan2(TOWER.x - def.x, TOWER.z + 6 - def.z);
-    view.scene.add(model.root);
-    npcs.set(i, { model, tag: makeTag(L().residents[def.id].name, 'npc', false) });
-  });
-}
-
-/** 언어가 바뀌면 몬스터와 주민의 이름표를 다시 쓴다. */
+/** 언어가 바뀌면 몬스터와 NPC의 이름표를 다시 쓴다. */
 export function relabel(): void {
   for (const r of S.others.values()) if (r.kind === 'm') { r.name = monsterName(r.type, r.raid); setTagName(r.tag, r.name); }
-  for (const [i, n] of npcs) setTagName(n.tag, L().residents[RESIDENTS[i].id].name);
-  for (const m of merchants) setTagName(m, L().ui.shop);
+  for (const n of npcs) setTagName(n.tag, n.name());
 }
 
 /** 직업이 바뀌면 모델을 새로 만든다 (검을 든 모습과 활을 든 모습이 다르다). */
@@ -261,7 +256,7 @@ function updateMe(m: Me, dt: number, now: number): void {
 
   // 예측: 서버와 같은 코드로 먼저 움직인다
   if (m.moving) {
-    walk(m, speedFor(stage()), dt, world.obstacles, nav, now / 1000); // 서버와 같은 길찾기
+    walk(m, rules.speed(), dt, world.obstacles, nav, now / 1000); // 서버와 같은 길찾기
     m.phase += dt * 10;
     // 서버가 멈췄다고 하면 따른다 (명령이 도착할 시간은 준다)
     if (!m.srvMoving && now - m.lastCmd > 400) m.moving = false;
@@ -315,7 +310,6 @@ export function updateEntities(dt: number, now: number): void {
 export function placeTags(now: number): void {
   if (S.me) placeTag(S.me.tag, S.me.x, 2.5, S.me.z, now);
   for (const r of S.others.values()) placeTag(r.tag, r.x, r.h, r.z, now, r.dying <= 0 && !r.gone && r.model.root.visible);
-  for (const [i, n] of npcs) placeTag(n.tag, RESIDENTS[i].x, 2.5, RESIDENTS[i].z, now);
-  merchants.forEach((m, i) => placeTag(m, SHOPS[i].x, 2.5, SHOPS[i].z, now));
+  for (const n of npcs) placeTag(n.tag, n.x, 2.5, n.z, now);
   settleTags();
 }

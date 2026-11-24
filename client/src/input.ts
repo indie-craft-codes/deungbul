@@ -1,5 +1,6 @@
 // 입력 장치: 마우스, 터치(탭, 핀치), 가상 조이스틱, 키보드. 장치의 신호를 actions의 행동으로 바꾼다.
 import { toggleAuto } from './auto';
+import { runKey } from './bus';
 import { toggleBag } from './hud/bag';
 import { toggleMenu } from './hud/menu';
 import { goToTown } from './actions';
@@ -7,7 +8,6 @@ import { SKILL_SLOTS } from '../../shared/defs';
 import { nextTarget, stop, tapAt, usePotion, useSkill } from './actions';
 import { $, clamp, view } from './app';
 import { blurChat, focusChat } from './hud/chat';
-import { goToQuest } from './hud/quest';
 import { S } from './state';
 
 const keys = new Set<string>();
@@ -88,11 +88,11 @@ function initKeyboard(): void {
     if (ev.key === 'Escape') { stop(); return; }
     if (ev.key >= '1' && ev.key <= String(SKILL_SLOTS)) { useSkill(Number(ev.key) - 1); return; }
     if (ev.key.toLowerCase() === 'q') { usePotion(); return; }
-    if (ev.key.toLowerCase() === 'f') { goToQuest(); return; }
     if (ev.key.toLowerCase() === 'r') { toggleAuto(); return; }
     if (ev.key.toLowerCase() === 'h') { goToTown(); return; }
     if (ev.key.toLowerCase() === 'b') { toggleBag(); return; }
     if (ev.key.toLowerCase() === 'm') { toggleMenu(); return; }
+    if (runKey(ev.key)) return; // 게임의 모듈이 등록한 단축키 (bus.onKey)
     keys.add(ev.key.toLowerCase());
   });
   window.addEventListener('keyup', (ev) => keys.delete(ev.key.toLowerCase()));
