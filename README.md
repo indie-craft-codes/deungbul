@@ -245,8 +245,10 @@ test/
 
 **틀과 이 게임의 규칙**: 서버의 게임 규칙은 틀과 이 게임의 것으로 나뉜다(전체 계획: `docs/framework-plan.md`). 틀은 `server/game/game.ts`와 표준 시스템(이동, 전투, 몬스터, 상점, 장비, 우편, 일일 임무, 순위, 던전, 채널, 거래소, 길드, 필드 보스 등)이고, 이 게임에만 있는 규칙(등탑, 습격, 등탑지기, 퀘스트)은 규칙 플러그인 `server/game/deungbul.ts`의 `installDeungbul`이 깐다. 틀의 파일은 그 네 시스템과 플러그인을 import하지 않고, `server/game`은 `server/net`을 import하지 않는다(`test/framework.test.ts`가 import 문을 읽어 검사한다). 금칙어와 글 다듬기는 통신과 게임 규칙이 함께 쓰므로 `server/text.ts`에 있다. `new Game({ plugins: [] })`는 틀만으로 만들어진다. 지금은 `plugins`를 주지 않으면 등불지기의 규칙이 깔린다.
 - 어느 게임에나 쓸 기능은 `server/game/systems/`에 시스템을 만들고 `Game` 생성자에 한 줄 더한다.
-- 이 게임에만 있는 규칙은 시스템을 만든 뒤 `installDeungbul`과 그 위의 `interface Game` 선언에 한 줄씩 더한다. 플러그인은 바탕 시스템 뒤, 상점 앞에서 불리므로 생성자에서는 등록만 한다. 뒤에 만들어지는 시스템의 접점을 채우는 일은 `g.ready.push(() => …)`에 넣는다.
+- 이 게임에만 있는 규칙은 시스템을 만든 뒤 `installDeungbul`과 그 위의 `interface GameSystems` 선언에 한 줄씩 더한다. 플러그인은 바탕 시스템 뒤, 상점 앞에서 불리므로 생성자에서는 등록만 한다. 뒤에 만들어지는 시스템의 접점을 채우는 일은 `g.ready.push(() => …)`에 넣는다.
 - 틀의 시스템이 게임의 규칙을 알아야 할 때는 직접 부르지 않고, 틀 쪽에 선택 접점을 두고 게임이 채운다(`g.rules`, `Channels.extraFoes`·`busy`, `worldSaves`의 `legacy`). 게임의 규칙이 틀을 부르는 것은 된다(예: 등탑이 `g.daily.add(p, 'offer', n)`).
+- **확장 지점**: 틀이 가진 목록(안내문 종류, 메시지 종류, 공유 상태의 칸, 사건, `Game`의 시스템 칸, 엔티티 칸, `g.rules`의 칸, 보정 이름)은 게임이 선언 병합으로 넓힌다. 넓힐 자리는 빈 인터페이스로 `shared/ext.ts`(`MsgMap`, `ServerMsgs`, `ClientMsgs`, `WorldState`)와 `server/game/ext.ts`(`GameSystems`, `EntExt`, `HooksExt`, `RulesExt`, `ModsExt`)에 모여 있고, 이 게임의 선언은 `shared/deungbul.ts`(안내문, 메시지, 공유 상태)와 `server/game/deungbul.ts`(시스템 칸, 사건)에 있다. 새 안내문·메시지·공유 상태 칸·사건이 이 게임의 것이면 틀의 파일(`shared/messages.ts`, `shared/protocol.ts`, `game.ts`)이 아니라 이 두 선언 파일에 적는다. 선언에서 빼면 그것을 쓰는 코드가 컴파일되지 않는다. 엔티티에 칸을 더할 때는 `EntExt`에 선언하고 `g.entInit.push((e) => { … })`로 처음 값을 채운다(플러그인이 설치되는 동안 등록한다). `RulesExt`의 칸은 선택(`?`)으로 선언한다. `declare module`은 이 두 선언 파일에서 두 `ext.ts`만 가리킨다(`test/framework.test.ts`가 검사한다).
+- `npm run typecheck:engine`은 이 게임의 파일(`tsconfig.engine.json`의 `exclude`)을 뺀 사본에서 틀만 타입 검사한다. 남은 오류는 틀이 아직 게임을 아는 곳의 목록이고(2단계 뒤 84개, 대부분 클라이언트), 뒤 단계가 줄여 간다. `npm test`에는 넣지 않았다.
 - 메시지의 모양이나 뜻을 바꾸면 `shared/protocol.ts`의 `PROTOCOL`을 올린다. 옛 화면은 접속할 때 새로고침 안내를 본다.
 - 맵이나 저장 형식을 고치면 `npm test`의 `framework`가 맵 지문과 저장 견본(`test/fixtures/`)으로 확인한다. 맵을 일부러 바꿨으면 지문 값을 새로 적는다.
 

@@ -2,7 +2,7 @@
 // 화면에 보일 문장은 싣지 않는다: 종류와 값만 보내고 문장은 클라이언트가 언어에 맞게 만든다.
 import type { Gear, Mail, RankRow } from './content/growth';
 import type { GuildView, MarketItem } from './content/social';
-import type { RaidPhase } from './content/raid';
+import type { ClientMsgs, ServerMsgs, WorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
 
 /**
@@ -45,21 +45,11 @@ export type Ev =
   | ['mh', id: number, maxHp: number] // 최대 체력이 바뀌었다 (필드 보스)
   | ['heal', id: number, amount: number];
 
-/** 서버 전체가 공유하는 상태. 시스템마다 한 칸씩 갖는다 */
-export interface WorldState {
-  /** glow: 첫불 마을 등탑의 밝기. glows: 등탑별 밝기 (구역 번호 순) */
-  tower: { glow: number; glows: number[]; residents: number[] };
-  /** 오늘 등탑을 지킨 사람들 (등탑지기 할멈이 돌아온 뒤에만 채워진다) */
-  keepers: { name: string; n: number }[];
-  raid: {
-    phase: RaidPhase;
-    /** idle: 다음 습격까지, soon: 시작까지, active: 끝까지 남은 초 */
-    left: number;
-    /** 살아 있는 적의 수 (active일 때) */
-    foes: number;
-    towerHp: number; towerMaxHp: number;
-  };
-}
+/** 서버 전체가 공유하는 상태. 칸은 게임이 더한다 (shared/ext.ts) */
+export type { WorldState };
+
+/** 게임이 확장 지점(shared/ext.ts의 ServerMsgs, ClientMsgs)에 더한 메시지들: 종류마다 { t: 종류 } & 나머지 칸. 더한 것이 없으면 never */
+type Added<M> = { [K in keyof M]: { t: K } & M[K] }[keyof M];
 
 /** 파티원 한 명의 상태 */
 export interface PartyMember {
@@ -110,8 +100,6 @@ export type ClientMsg =
   | { t: 'skill'; n: number }
   /** 직업을 고르거나 바꾼다 */
   | { t: 'class'; id: string }
-  /** 등탑 가까이에서 불씨를 바친다: 등탑 밝기에, 또는 다음 주민을 되돌리는 데 */
-  | { t: 'offer'; to: 'tower' | 'resident'; n: number }
   /** 길 상인 가까이에서 물건을 산다 */
   | { t: 'buy'; id: string }
   | { t: 'craft'; id: string }
@@ -122,7 +110,8 @@ export type ClientMsg =
   | { t: 'chat'; text: string }
   /** 다른 사람을 신고한다 (id는 상대). 서버는 그 사람의 최근 대화와 함께 기록한다 */
   | { t: 'report'; id: number }
-  | { t: 'ping'; c: number };
+  | { t: 'ping'; c: number }
+  | Added<ClientMsgs>;
 
 export type ServerMsg =
   /** 내 파티의 구성원 (나 포함). 빈 목록이면 파티가 없다 */
@@ -196,4 +185,5 @@ export type ServerMsg =
   /** 안내문: 종류와 값 (shared/messages.ts) */
   | { t: 'sys'; k: MsgKey; a?: MsgArg[] }
   | { t: 'pong'; c: number }
-  | { t: 'full' };
+  | { t: 'full' }
+  | Added<ServerMsgs>;

@@ -15,6 +15,7 @@ import { resolve } from '../../shared/sim';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
 import type { WorldSave } from '../store';
 import type { Ent } from './entity';
+import type { EntExt, GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
 import { installDeungbul } from './deungbul';
 import { fieldLayer } from './layers';
 import { Boss } from './systems/boss';
@@ -45,23 +46,17 @@ const NAV_VISITS_PER_TICK = 12000;
 /** 플레이어 명령 처리기. msg는 검증되지 않은 입력이므로 처리기가 직접 확인한다. */
 export type Command = (p: Ent, msg: Record<string, unknown>) => void;
 
-/** 시스템끼리 주고받는 사건 */
-export interface Hooks {
+/** 시스템끼리 주고받는 사건. 게임에만 있는 사건은 HooksExt(./ext.ts)에 게임이 더한다 */
+export interface Hooks extends HooksExt {
   monsterKilled: (m: Ent, hitters: Ent[]) => void;
   playerDied: (p: Ent) => void;
   playerLeft: (id: number) => void;
-  /** 불씨를 바쳤다 */
-  offered: (p: Ent, to: 'tower' | 'resident', n: number, tower: number) => void;
   /** 상점에서 물건을 샀다 */
   bought: (p: Ent, item: string) => void;
   /** 사람이 접속했다 (봇은 제외) */
   playerJoined: (p: Ent) => void;
   /** 이름을 바꿨다: 이름을 적어 둔 곳(명단 같은 것)이 따라 고친다 */
   playerRenamed: (p: Ent) => void;
-  /** 주민이 마을로 돌아왔다 */
-  residentReturned: (id: string) => void;
-  /** 습격을 막아 냈다: 맞서 싸운 사람들 */
-  raidWon: (fighters: Ent[]) => void;
   /** 접속이 끊겼다: 저장하기 전에 불린다 (인스턴스에서 내보내는 데 쓴다) */
   playerDropped: (p: Ent) => void;
   /** 던전을 끝냈다: 던전 id와 안에 있던 사람들 */
@@ -76,7 +71,7 @@ export interface Hooks {
  * 게임마다 다른 규칙이 끼어드는 자리. 기본값은 '그런 규칙이 없다'이고, 그 규칙을 가진 시스템이 덮어쓴다
  * (이 게임에서는 등탑과 습격). 이동·전투·상점 같은 틀은 등탑을 직접 알지 않고 여기만 본다.
  */
-export interface Rules {
+export interface Rules extends RulesExt {
   /** 쓰러진 사람이 다시 일어날 자리. id는 안내문에 넣을 장소의 이름표 */
   respawn: (p: Ent) => { x: number; z: number; id: string };
   /** 그 사람의 이동 속도 */
@@ -93,7 +88,7 @@ export interface Rules {
 export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void }
 
 /** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (주민 혜택, 나중의 장비와 버프). */
-export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp';
+export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp' | keyof ModsExt;
 export class Modifiers {
   private list = new Map<ModName, ((p?: Ent) => number)[]>();
   /**
@@ -123,6 +118,9 @@ export interface GameOptions {
   /** 현재 시각(ms). 시험에서 시간을 다루려고 바꿀 수 있다 */
   now?: () => number;
 }
+
+/** 게임의 규칙 시스템이 다는 칸(g.tower 같은 것)을 Game의 타입에 잇는다: GameSystems(./ext.ts)에 게임이 더한다 */
+export interface Game extends GameSystems {}
 
 export class Game {
   readonly world = buildWorld();
@@ -177,6 +175,8 @@ export class Game {
   readonly saves: Saver[] = [];
   /** 모든 시스템이 만들어진 뒤에 한 번 불린다. 자기보다 뒤에 만들어지는 시스템의 접점을 채울 때 쓴다 (예: 습격이 채널의 extraFoes를) */
   readonly ready: (() => void)[] = [];
+  /** 엔티티가 만들어질 때마다 불린다. 게임이 더한 칸(EntExt)의 처음 값을 채운다 */
+  readonly entInit: ((e: Ent) => void)[] = [];
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
   private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;
@@ -214,6 +214,8 @@ export class Game {
     this.away = new Away(this);
     // 게임의 규칙이 깔리는 자리 (Plugin의 설명). 기본값이 이 게임의 규칙인 것은 기존 코드와 시험이 new Game()으로 등불지기를 만들기 때문이다
     for (const install of opts.plugins ?? [(g: Game) => installDeungbul(g, { raid: opts.raid })]) install(this);
+    // 플러그인보다 먼저 만들어진 엔티티(첫 채널의 몬스터)도 게임이 더한 칸을 갖게 한다
+    for (const e of this.ents.values()) for (const init of this.entInit) init(e);
     this.shop = new Shop(this);
     this.classes = new Classes(this);
     this.boss = new Boss(this);
@@ -243,13 +245,16 @@ export class Game {
 
   /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. */
   create(kind: Kind, type: string, name: string, x: number, z: number, hp: number): Ent {
-    const e: Ent = {
+    // 틀은 자기 칸만 채운다: 게임이 더한 칸(EntExt)은 여기 적을 수 없고(적으면 컴파일 오류), entInit이 채운다
+    const base: Omit<Ent, keyof EntExt> = {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, lastAct: -99, path: null, pgx: x, pgz: z, pat: 0,
       hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
       bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
       gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), raid: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
     };
+    const e = base as Ent;
+    for (const init of this.entInit) init(e);
     resolve(e, this.world.obstacles);
     e.hx = e.x; e.hz = e.z;
     this.ents.set(e.id, e);

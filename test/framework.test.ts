@@ -1,10 +1,11 @@
-// 틀과 게임을 가르는 작업의 안전망과 경계 (docs/framework-plan.md의 단계 0과 1).
+// 틀과 게임을 가르는 작업의 안전망과 경계 (docs/framework-plan.md의 단계 0, 1, 2).
 // 구조를 고치다가 맵의 배치가 달라지거나 옛 저장이 다르게 읽히면 여기서 잡힌다.
 //   - 맵 지문: buildWorld()가 놓는 장애물·나무·바위와 길찾기 격자가 그대로인가
 //   - 저장 왕복: 견본(test/fixtures/)을 읽어 캐릭터와 월드를 만든 뒤 다시 저장한 값이 견본과 같은가
 //   - 프로토콜 번호: 서버가 welcome에 번호를 싣는가
 //   - 틀만의 게임: 규칙 플러그인 없이(plugins: []) 만든 게임과 서버가 도는가
-//   - 의존 방향: 틀의 서버 파일이 이 게임의 규칙을 import하지 않는가
+//   - 의존 방향: 틀의 서버 파일과 공용 파일이 이 게임의 규칙과 선언을 import하지 않는가
+//   - 확장 지점: 게임이 선언으로 더한 칸(사건, 공유 상태, 명령)이 틀만의 게임에는 실행 중에도 없는가
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { WebSocket } from 'ws';
@@ -295,6 +296,41 @@ function noonOf(day: unknown): number {
   const toNet = list('server/game/').flatMap((f) => importsOf(f).filter((to) => to.startsWith('server/net/')).map((to) => `${f} -> ${to}`));
   for (const x of toNet) console.log('  ' + x);
   check(toNet.length === 0, '게임 규칙(server/game)은 통신 계층(server/net)을 import하지 않는다');
+
+  // ---- 확장 지점과 게임의 선언 (단계 2) ----
+  // 틀은 넓힐 자리(두 ext.ts)를 비워 두고, 게임은 자기 선언 파일에서 그 두 파일만 선언 병합으로 넓힌다.
+  const EXT = ['shared/ext.ts', 'server/game/ext.ts'];
+  /** 게임의 선언 파일: 공용(안내문, 메시지, 공유 상태)과 서버(시스템 칸, 사건) */
+  const GAME_DECL = ['shared/deungbul.ts', 'server/game/deungbul.ts'];
+  /** 이 게임에만 있는 공용 파일: 선언 파일과 등탑·습격·주민·퀘스트의 내용 */
+  const GAME_SHARED = ['shared/deungbul.ts', ...['tower', 'raid', 'residents', 'quests'].map((n) => `shared/content/${n}.ts`)];
+  /** 틀로 분류한 공용 파일. shared/defs.ts는 내용을 통째로 다시 내보내는 통로라 넣지 않았다 (내용을 별칭으로 갈아 끼우는 단계에서 정리한다) */
+  const SHARED_ENGINE = ['ext', 'protocol', 'messages', 'sim', 'nav', 'world', 'auto'].map((n) => `shared/${n}.ts`);
+  /** 아직 지키지 못하는 것 (지금은 없다) */
+  const SHARED_EXCEPTIONS: string[] = [];
+  const sharedFound = SHARED_ENGINE.flatMap((f) => importsOf(f).filter((to) => GAME_SHARED.includes(to)).map((to) => `${f} -> ${to}`));
+  const sharedExtra = sharedFound.filter((x) => !SHARED_EXCEPTIONS.includes(x)), sharedStale = SHARED_EXCEPTIONS.filter((x) => !sharedFound.includes(x));
+  for (const x of sharedExtra) console.log('  ' + x);
+  check(SHARED_ENGINE.every((f) => fs.existsSync(new URL(f, root))) && importsOf('shared/protocol.ts').includes('shared/ext.ts') && importsOf('shared/deungbul.ts').includes('shared/content/raid.ts'), `공용 파일의 import 문을 읽어 낸다 (틀의 공용 파일 ${SHARED_ENGINE.length}개)`);
+  check(sharedExtra.length === 0 && sharedStale.length === 0, `틀의 공용 파일은 이 게임의 선언과 등탑·습격·주민·퀘스트의 내용을 직접 import하지 않는다 (예외 ${SHARED_EXCEPTIONS.length}건)`);
+  // 게임의 공용 선언 파일은 틀의 서버 파일도, 다른 공용 파일도 import하지 않는다 (tsconfig의 include로만 컴파일에 들어간다)
+  const declUsers = [...engine, ...list('shared/')].filter((f) => f !== 'shared/deungbul.ts' && importsOf(f).includes('shared/deungbul.ts'));
+  for (const x of declUsers) console.log('  ' + x + ' -> shared/deungbul.ts');
+  check(declUsers.length === 0, '틀의 서버 파일과 공용 파일은 이 게임의 공용 선언 파일(shared/deungbul.ts)을 import하지 않는다');
+  // (importsOf는 주석 속 쓰는 법의 declare module './ext'도 세므로 자기 자신은 뺀다)
+  check(EXT.every((f) => importsOf(f).every((to) => to === f)), '확장 지점 파일(shared/ext.ts, server/game/ext.ts)은 아무것도 import하지 않는다');
+  // 선언 병합은 그 파일이 컴파일 대상에 들어 있어야 효력이 있다: 게임의 선언 파일은 tsconfig.json의 include 아래에 있고,
+  // 틀만 검사하는 설정(tsconfig.engine.json, npm run typecheck:engine)은 게임의 파일을 모두 뺀다
+  const cfgOf = (name: string) => JSON.parse(fs.readFileSync(new URL(name, root), 'utf8')) as { include?: string[]; exclude?: string[] };
+  const included = cfgOf('tsconfig.json').include ?? [], left = cfgOf('tsconfig.engine.json').exclude ?? [];
+  check(GAME_DECL.every((f) => included.some((d) => f.startsWith(`${d}/`))) && [...GAME_FILES, ...GAME_SHARED].every((f) => left.includes(f)),
+    '게임의 선언 파일은 컴파일 대상(tsconfig.json의 include)에 들어 있고, 틀만 검사하는 설정은 게임의 파일을 뺀다');
+  // 선언 병합(declare module)은 게임의 선언 파일에만 있고, 확장 지점만 가리킨다: 틀의 다른 타입을 직접 넓히지 않는다
+  const merges = [...list('shared/'), ...list('server/'), ...list('client/src/')].flatMap((f) => [...fs.readFileSync(new URL(f, root), 'utf8').matchAll(/^\s*declare\s+module\s*['"]([^'"]+)['"]/gm)]
+    .map((m) => ({ from: f, to: new URL(m[1], new URL(f, root)).href.slice(root.href.length) + '.ts' })));
+  const badMerges = merges.filter((m) => !GAME_DECL.includes(m.from) || !EXT.includes(m.to));
+  for (const m of badMerges) console.log(`  ${m.from} => ${m.to}`);
+  check(GAME_DECL.every((f) => merges.some((m) => m.from === f)) && badMerges.length === 0, `선언 병합은 게임의 선언 파일에만 있고 확장 지점만 넓힌다 (${merges.map((m) => `${m.from} => ${m.to}`).join(', ')})`);
 }
 
 // ---------- 뒤집은 결합이 그대로 도는가 (이 게임의 규칙이 깔린 게임) ----------
@@ -316,4 +352,31 @@ function noonOf(day: unknown): number {
   g.players.rename(p, '새이름');
   check(g.state().keepers.some((r) => r.name === '새이름' && r.n === 11), '이름을 바꾸면 등탑지기 명단의 내 줄도 따라 바뀐다');
   check(g.channels.busy?.() === false && g.channels.extraFoes?.() === undefined, '습격이 채널의 접점(바쁜 때, 남은 적)을 채워 두었다: 평소에는 바쁘지 않고 남은 적이 없다');
+}
+
+// ---------- 확장 지점: 선언으로 더한 것이 실행 중에도 게임 쪽에만 있는가 (docs/framework-plan.md의 단계 2) ----------
+// 이 게임의 사건·공유 상태·명령·메시지의 타입 선언은 게임의 선언 파일(shared/deungbul.ts, server/game/deungbul.ts)로 옮겼다.
+// 타입은 컴파일 대상 전체에 보이므로, 틀만의 게임에 그 칸이 실제로 없다는 것은 돌려서 확인한다.
+{
+  const hooksOf = (g: Game): string[] => Object.keys((g as unknown as { hooks: Record<string, unknown[]> }).hooks);
+  const GAME_HOOKS = ['offered', 'residentReturned', 'raidWon'], GAME_STATE = ['tower', 'raid', 'keepers'];
+  const bare = new Game({ plugins: [] }), full = new Game();
+  check(hooksOf(bare).includes('monsterKilled') && GAME_HOOKS.every((k) => !hooksOf(bare).includes(k)) && GAME_HOOKS.every((k) => hooksOf(full).includes(k)),
+    `틀만의 게임은 게임의 사건(바침, 주민 귀환, 습격 승리)을 듣는 곳이 없고, 등불지기에는 있다 (틀: ${hooksOf(bare).join(', ')})`);
+  let threw = '';
+  try { bare.fire('raidWon', []); bare.fire('residentReturned', 'bram'); } catch (err) { threw = String(err); }
+  check(threw === '', '듣는 곳이 없는 사건을 알려도 아무 일도 없다');
+  check(bare.shared.length === 0 && Object.keys(bare.state()).length === 0 && Object.keys(full.state()).join() === GAME_STATE.join(),
+    `공유 상태의 칸은 게임이 등록한 것뿐이다: 틀만의 게임은 비어 있고 등불지기는 ${Object.keys(full.state()).join(', ')}`);
+  check(!bare.commands.has('offer') && full.commands.has('offer') && bare.commands.has('move'), '게임이 더한 명령(바치기)은 틀만의 게임에 없다');
+  check(bare.mods.sum('sparkBonus') === 0 && bare.mods.product('regen') === 1, '보정을 거는 시스템이 없는 수치는 기본값이다 (틀만의 게임: 불씨 덤 0, 회복 1배)');
+
+  // 엔티티 칸의 처음 값: 플러그인이 entInit에 등록하면, 그 뒤에 만들어지는 엔티티와 그 전에 만들어진 것(첫 채널의 몬스터)이 모두 한 번씩 거친다
+  const seen = new Map<number, number>();
+  const marked = new Game({ plugins: [(g) => { g.entInit.push((e) => { seen.set(e.id, (seen.get(e.id) ?? 0) + 1); (e as unknown as { mark: string }).mark = e.kind; }); }] });
+  const p = marked.players.spawn('칸사람', false, null, 'ext-key');
+  const all = [...marked.ents.values()];
+  check(all.length > 10 && all.every((e) => seen.get(e.id) === 1 && (e as unknown as { mark: string }).mark === e.kind) && all.includes(p),
+    `entInit에 등록한 함수가 모든 엔티티를 한 번씩 거친다 (${all.length}개)`);
+  check(bare.entInit.length === 0 && Object.keys(bare.players.spawn('맨사람', false, null, 'ext-bare')).every((k) => k !== 'mark'), '등록하지 않은 게임의 엔티티에는 그 칸이 없다');
 }
