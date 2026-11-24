@@ -1,5 +1,6 @@
 // 메인 퀘스트: 플레이어마다 장과 단계를 따라간다. 다른 시스템의 사건을 듣고 진행을 올린다.
 import { QUESTS, goalCount, type QuestStep } from '../../../shared/defs';
+import type { MeState } from '../../../shared/deungbul';
 import { dist, readInt, type Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -24,6 +25,8 @@ export class Quests {
       legacy: (whole) => whole.quest,
       legacySave: (p) => ({ quest: [p.qc, p.qs, p.qn] }),
     });
+    // 본인에게 알리는 개인 상태: 진행이 바뀌면(questDirty) 간다. 통신 계층이 보내고 나면 표시를 지운다
+    g.personal.push({ name: 'quest', state: (p): MeState['quest'] => ({ c: p.qc, s: p.qs, n: p.qn }), dirty: (p) => p.questDirty, sent: (p) => { p.questDirty = false; } });
     // 퀘스트를 조금이라도 한 캐릭터는 저장할 것이 있다 (아무것도 하지 않은 새 캐릭터를 저장하지 않는 규칙)
     const touched = g.rules.touched;
     g.rules.touched = (p) => p.qc > 0 || p.qs > 0 || p.qn > 0 || !!touched?.(p);

@@ -5,6 +5,7 @@
 //   - 프로토콜 번호: 서버가 welcome에 번호를 싣는가
 //   - 틀만의 게임: 규칙 플러그인 없이(plugins: []) 만든 게임과 서버가 도는가
 //   - 의존 방향: 틀의 서버 파일과 공용 파일이 이 게임의 규칙과 선언을 import하지 않는가
+//   - 개인 상태: 틀만의 서버는 me 메시지를 보내지 않는가, 이 게임의 서버는 접속 직후에 전부, 그 뒤로는 바뀐 칸만 보내는가
 //   - 확장 지점: 게임이 선언으로 더한 칸(사건, 공유 상태, 명령)이 틀만의 게임에는 실행 중에도 없는가
 import { createHash } from 'node:crypto';
 import { AUTO, AWAY, POTIONS, pickPotion, potionOrder } from '../shared/auto';

@@ -32,8 +32,8 @@ onMsg('snap', (m, now) => applySnapshot(m, now));
 onMsg('stat', (m) => {
   const me = S.me;
   if (!me) return;
-  me.maxHp = m.maxHp; me.lv = m.lv; me.exp = m.exp; me.need = m.need; me.sparks = m.sparks; me.contrib = m.contrib;
-  me.gold = m.gold; me.items = m.items; me.rested = m.rested; me.tier = m.tier;
+  me.maxHp = m.maxHp; me.lv = m.lv; me.exp = m.exp; me.need = m.need; me.sparks = m.sparks;
+  me.gold = m.gold; me.items = m.items;
   const classChanged = me.cls !== m.cls;
   if (me.weapon !== m.weapon || me.armor !== m.armor || classChanged) setGear(me.id, m.weapon, m.cls, m.armor);
   me.ready = true;
@@ -41,7 +41,6 @@ onMsg('stat', (m) => {
   renderShop(); renderForge();
   classSlow();
 });
-onMsg('quest', (m) => { S.quest = { c: m.c, s: m.s, n: m.n }; renderQuest(); });
 onMsg('icd', (m, now) => { S.itemCdEnd = now + m.ms; S.itemCdLen = m.ms; });
 onMsg('gear', (m) => setGear(m.id, m.weapon, m.cls, m.armor));
 onMsg('world', (m, now) => { S.world = m.s; S.worldAt = now; renderWorld(); renderShop(); renderForge(); hudSlow(now); });

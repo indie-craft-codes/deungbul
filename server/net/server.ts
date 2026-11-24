@@ -40,6 +40,8 @@ const AWAY_MIN_LV = AWAY.minLv; // 이 레벨부터 자리 비움 사냥이 된�
 
 interface Client {
   ws: WebSocket; ent: Ent | null; known: Set<number>;
+  /** 이 연결에 보낸 개인 상태: 칸의 이름 → 마지막으로 보낸 값(JSON). 아직 없는 칸은 한 번도 보내지 않은 것이다 (그래서 접속 직후에는 전부 간다) */
+  mine: Map<string, string>;
   tokens: number; alive: boolean;
   /** 마지막으로 이름을 바꾼 시각. 연결이 아니라 사람의 기록(Person)을 읽고 쓴다 */
   lastRename: number;
@@ -212,7 +214,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       if (game.ents.has(kept.id)) {
         c.ent = kept;
         byEnt.set(kept.id, c);
-        kept.dirty = true; kept.questDirty = true; kept.metaDirty = true;
+        kept.dirty = true; kept.metaDirty = true;
         game.away.stop(kept);
         send(c, { t: 'welcome', id: kept.id, name: kept.name, x: r2(kept.x), z: r2(kept.z), auto: true, v: PROTOCOL });
         send(c, { t: 'world', s: game.state() });
@@ -335,7 +337,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if ((perIp.get(ip) ?? 0) >= maxPerIp) { full(); return; }
     perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
     const c: Client = {
-      ws, ent: null, known: new Set(), tokens: MSG_BURST, alive: true, key: null, ip, hadSave: false,
+      ws, ent: null, known: new Set(), mine: new Map(), tokens: MSG_BURST, alive: true, key: null, ip, hadSave: false,
       // 이름 바꾸기 간격도 사람의 기록에 둔다 (다시 접속해서 간격을 지우지 못하게)
       get lastRename() { return people.get(who(c))?.lastRename ?? 0; },
       set lastRename(at: number) { person(c).lastRename = at; },
@@ -374,15 +376,24 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       if (c.ws.readyState === c.ws.OPEN) { m.bytes += json.length; m.msgs++; c.ws.send(json); }
       if (me.dirty) {
         me.dirty = false;
-        send(c, { t: 'stat', maxHp: me.maxHp, lv: me.lv, exp: me.exp, need: me.need, sparks: me.sparks, contrib: me.contrib, gold: me.gold, weapon: me.weapon, armor: me.armor, cls: me.cls, items: me.items, rested: me.rested, tier: me.tier });
+        const stat: Extract<ServerMsg, { t: 'stat' }> = { t: 'stat', maxHp: me.maxHp, lv: me.lv, exp: me.exp, need: me.need, sparks: me.sparks, gold: me.gold, weapon: me.weapon, armor: me.armor, cls: me.cls, items: me.items };
+        send(c, game.oldMsgs?.stat(me, stat) ?? stat); // 호환: 다음 배포에서 뺀다 (stat을 그대로 보낸다)
       }
       if (me.metaDirty) {
         me.metaDirty = false;
         send(c, { t: 'meta', gear: me.gear, worn: me.worn, mail: me.mail, daily: { prog: me.daily.prog, got: me.daily.got, streak: me.daily.streak }, power: game.rank.power(me), build: { stats: me.stats, skillLv: me.skillLv, left: game.build.left(me) } });
       }
-      if (me.questDirty) {
-        me.questDirty = false;
-        send(c, { t: 'quest', c: me.qc, s: me.qs, n: me.qn });
+      // 개인 상태: 게임의 시스템이 등록한 칸을 돌며, 이 연결에 처음이거나 바뀐 것만 보낸다
+      for (const it of game.personal) {
+        const first = !c.mine.has(it.name);
+        if (it.dirty && !first && !it.dirty(me)) continue;
+        const s = it.state(me), json = it.dirty ? '' : JSON.stringify(s) ?? '';
+        if (!it.dirty && !first && json === c.mine.get(it.name)) continue;
+        c.mine.set(it.name, json);
+        it.sent?.(me);
+        send(c, { t: 'me', k: it.name, s });
+        const old = game.oldMsgs?.msg(me, it.name); // 호환: 다음 배포에서 뺀다 (이 두 줄)
+        if (old) send(c, old);
       }
     }
     for (const n of game.notices) { const c = byEnt.get(n.id); if (c) send(c, { t: 'sys', k: n.k, a: n.a }); }

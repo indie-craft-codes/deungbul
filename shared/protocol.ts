@@ -139,7 +139,7 @@ export type ServerMsg =
     }
   /** 내 성장 수치. 바뀔 때만 온다 */
   | {
-      t: 'stat'; maxHp: number; lv: number; exp: number; need: number; sparks: number; contrib: number;
+      t: 'stat'; maxHp: number; lv: number; exp: number; need: number; sparks: number;
       gold: number; weapon: string;
       /** 입은 갑옷. 없으면 빈 문자열 */
       armor: string;
@@ -147,10 +147,6 @@ export type ServerMsg =
       cls: string;
       /** 가진 물약: 아이템 id별 개수 */
       items: Record<string, number>;
-      /** 남은 휴식 보너스 */
-      rested: number;
-      /** 받은 기여 단계 보상의 수 */
-      tier: number;
     }
   /** 내 장비·우편·일일 임무. 바뀔 때만 온다 */
   | { t: 'meta'; gear: Gear[]; worn: Record<string, number>; mail: Mail[]; daily: { prog: Record<string, number>; got: string[]; streak: number }; power: number; build: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
@@ -164,8 +160,8 @@ export type ServerMsg =
   | { t: 'icd'; ms: number }
   /** 누군가 무기나 직업을 바꿨다 */
   | { t: 'gear'; id: number; weapon: string; armor: string; cls: string }
-  /** 내 메인 퀘스트 진행: c번째 장의 s번째 단계, 진행 수치 n. 장을 다 마쳤으면 c가 장의 수와 같다 */
-  | { t: 'quest'; c: number; s: number; n: number }
+  /** 내 개인 상태의 한 칸 (게임의 시스템이 g.personal에 등록한 것). k는 칸의 이름, s는 그 값: 모양은 게임이 정한다. 접속 직후에 전부, 그 뒤로는 바뀐 칸만 온다 */
+  | { t: 'me'; k: string; s: unknown }
   /** 공유 상태. 바뀔 때만 온다 */
   | { t: 'world'; s: WorldState }
   /** 기술이 받아들여짐: n번 기술의 쿨다운(ms)이 시작됐다 */

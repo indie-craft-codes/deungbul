@@ -2,6 +2,7 @@
 // 등탑지기 할멈이 마을로 돌아오면 열린다. 그 전의 기여도 모두 세어 두었다가 돌아오는 순간 한꺼번에 인정한다.
 // 순위를 겨루게 하지 않으려고, 명단은 오늘 하루치만 보여 주고 날이 바뀌면 비운다.
 import { CONTRIB_TIERS, KEEPERS_SHOWN, RAID_KEEP_POINTS } from '../../../shared/defs';
+import type { MeState } from '../../../shared/deungbul';
 import type { WorldState } from '../../../shared/protocol';
 import { NAME_MAX } from '../../../shared/world';
 import { readInt, type Ent } from '../entity';
@@ -27,6 +28,8 @@ export class Keepers {
       legacy: (whole) => (whole.tier === undefined ? undefined : { tier: whole.tier }),
       legacySave: (p) => ({ tier: p.tier }),
     });
+    // 본인에게 알리는 개인 상태: 단계가 오르면 간다
+    g.personal.push({ name: 'tier', state: (p): MeState['tier'] => p.tier });
     g.ticks.push((dt) => this.tick(dt));
     g.worldSaves.push({ name: 'keepers', save: () => this.save(), load: (d) => this.load(d) });
     g.shared.push({ name: 'keepers', state: () => this.state() });

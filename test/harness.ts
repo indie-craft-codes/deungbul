@@ -39,7 +39,8 @@ export function connect(port: number, name?: string, token?: string): Promise<Pe
     ws.on('message', (data) => {
       const m = JSON.parse(data.toString()) as ServerMsg;
       if (m.t === 'welcome') { p.id = m.id; p.name = m.name; p.you = [m.x, m.z, 0]; done(p); }
-      else if (m.t === 'quest') p.quest = [m.c, m.s, m.n];
+      // 이 게임의 개인 상태(shared/deungbul.ts의 MeState)를 전과 같은 이름으로 내준다: 퀘스트 진행과 기여
+      else if (m.t === 'me') { if (m.k === 'quest') { const q = m.s as { c: number; s: number; n: number }; p.quest = [q.c, q.s, q.n]; } else if (m.k === 'contrib') p.contrib = m.s as number; }
       else if (m.t === 'world' && m.s.tower) { p.glow = m.s.tower.glow; p.residents = m.s.tower.residents; p.raid = m.s.raid; }
       else if (m.t === 'name') { const s = p.seen.get(m.id); if (s) s.name = m.name; }
       else if (m.t === 'snap') {
@@ -48,7 +49,7 @@ export function connect(port: number, name?: string, token?: string): Promise<Pe
         for (const id of m.leave ?? []) { p.seen.delete(id); p.mons.delete(id); }
         for (const [id, x, z] of m.ents) { const s = p.seen.get(id); if (s) { s.x = x; s.z = z; } }
         for (const e of m.ev ?? []) if (e[0] === 'h' && e[1] === p.id) p.hits++;
-      } else if (m.t === 'stat') { p.sparks = m.sparks; p.lv = m.lv; p.contrib = m.contrib; }
+      } else if (m.t === 'stat') { p.sparks = m.sparks; p.lv = m.lv; }
       else if (m.t === 'cd') p.cds.push(m.n);
       else if (m.t === 'sys') p.sys.push([m.k, ...(m.a ?? [])].join(':'));
       else if (m.t === 'chat') p.chat.push(`${m.name}: ${m.text}`);

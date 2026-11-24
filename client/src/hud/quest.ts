@@ -4,6 +4,7 @@ import { QUESTS, goalCount, type QuestStep } from '../../../shared/defs';
 import { moveTo } from '../actions';
 import { $, view } from '../app';
 import { goalBeam } from '../deungbul/scene';
+import { G } from '../game/state';
 import { L, t } from '../i18n';
 import { S, inDungeon } from '../state';
 
@@ -12,7 +13,7 @@ const ui = { panel: $('quest'), title: $('questTitle'), step: $('questStep'), pr
 let needSparks = false;
 
 function current(): QuestStep | null {
-  return QUESTS[S.quest.c]?.steps[S.quest.s] ?? null;
+  return QUESTS[G.quest.c]?.steps[G.quest.s] ?? null;
 }
 
 /** 지금 단계의 목적지로 걸어간다. 길은 길찾기가 알아서 잡고, 직접 움직이면 그만둔다. */
@@ -27,7 +28,7 @@ export function initQuest(): void {
 
 /** 퀘스트 진행이나 언어가 바뀌었을 때 다시 쓴다. */
 export function renderQuest(): void {
-  const loc = L(), chapter = QUESTS[S.quest.c], step = current();
+  const loc = L(), chapter = QUESTS[G.quest.c], step = current();
   if (!chapter || !step) {
     ui.title.textContent = t('quest');
     ui.step.textContent = t('questAllDone');
@@ -41,9 +42,9 @@ export function renderQuest(): void {
   ui.go.textContent = t(needSparks ? 'questNeedSparks' : 'questGo'); // 터치 화면에는 단축키 안내가 빠진다 (i18n의 forInput)
   const text = loc.quests[chapter.id];
   ui.title.textContent = text.title;
-  ui.step.textContent = text.steps[S.quest.s] ?? '';
+  ui.step.textContent = text.steps[G.quest.s] ?? '';
   const of = goalCount(step.goal);
-  ui.prog.textContent = of > 1 ? loc.fmt.questProgress(S.quest.n, of) : '';
+  ui.prog.textContent = of > 1 ? loc.fmt.questProgress(G.quest.n, of) : '';
 }
 
 /** 매 프레임: 목적지에 빛기둥을 세우고, 화면 밖이면 가장자리 화살표로 방향을 알린다. */

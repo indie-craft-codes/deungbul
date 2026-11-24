@@ -4,6 +4,7 @@ import { DUNGEONS, QUESTS, SHOPS, isDungeonId } from '../../../shared/defs';
 import { TOWERS } from '../../../shared/world';
 import { $ } from '../app';
 import { onSlow } from '../bus';
+import { G } from '../game/state';
 import { t } from '../i18n';
 import type { UiKey } from '../i18n/ko';
 import { S, inDungeon } from '../state';
@@ -17,7 +18,7 @@ export function initMarks(): void {
   addMarks(() => (isDungeonId(S.dungeon.id) && !S.dungeon.cleared ? [{ x: DUNGEONS[S.dungeon.id].boss.x, z: DUNGEONS[S.dungeon.id].boss.z, color: '#ff6b5e', shape: 'ring', edge: true } as Mark] : []));
   addMarks(() => (inDungeon() ? [] : TOWERS.map((tw, i): Mark => ({ x: tw.x, z: tw.z, color: (S.world.tower.glows[i] ?? 0) > 0 ? MARK.lit : MARK.dark, shape: 'square', edge: true }))));
   addMarks(() => {
-    const step = QUESTS[S.quest.c]?.steps[S.quest.s];
+    const step = QUESTS[G.quest.c]?.steps[G.quest.s];
     return step && !inDungeon() ? [{ x: step.at.x, z: step.at.z, color: MARK.quest, shape: 'ring', edge: true }] : [];
   });
   // 범례도 지금 찍는 표식에 맞춘다. 표시(data-i18n)를 바꿔 두면 언어를 바꿀 때도 따라간다

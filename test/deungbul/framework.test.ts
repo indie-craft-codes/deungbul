@@ -13,6 +13,10 @@ import { Game } from '../../server/game/game';
 import { MemoryStore, type PlayerSave, type WorldSave } from '../../server/store';
 import { check, connect, sleep, until } from '../harness';
 import { newGame, startDeungbul } from './game';
+import { WebSocket } from 'ws';
+import type { ServerMsg } from '../../shared/protocol';
+import { SEND_OLD_MSGS, installDeungbul } from '../../server/game/deungbul';
+import { startServer } from '../../server/net/server';
 
 const fixture = <T>(name: string): T => JSON.parse(fs.readFileSync(new URL(`../fixtures/${name}.json`, import.meta.url), 'utf8')) as T;
 /** 두 값이 다른 자리의 목록 (칸의 순서는 따지지 않는다). 같으면 빈 목록 */
@@ -285,4 +289,159 @@ function noonOf(day: unknown): number {
   check(bare.shared.length === 0 && Object.keys(bare.state()).length === 0 && Object.keys(full.state()).join() === GAME_STATE.join(),
     `공유 상태의 칸은 게임이 등록한 것뿐이다: 틀만의 게임은 비어 있고 등불지기는 ${Object.keys(full.state()).join(', ')}`);
   check(!bare.commands.has('offer') && full.commands.has('offer') && bare.commands.has('move'), '게임이 더한 명령(바치기)은 틀만의 게임에 없다');
+}
+
+// ---------- 개인 상태 통로 (docs/framework-plan.md의 단계 4) ----------
+// 본인에게만 보내는 값(이 게임에서는 퀘스트 진행, 기여, 기여 단계, 휴식 보너스)은 그 칸을 맡은 시스템이 g.personal에 등록하고,
+// 통신 계층이 { t: 'me', k: 칸의 이름, s: 값 }으로 보낸다: 접속 직후에 전부, 그 뒤로는 바뀐 칸만. 틀은 칸의 이름도 모양도 모른다.
+// 옮긴 배포 한 번 동안은 옛 화면이 읽던 모양(quest 메시지, stat의 contrib·rested·tier 칸)도 전과 같은 때에 함께 간다 (server/game/deungbul.ts의 SEND_OLD_MSGS).
+// 그 상수를 끄면 아래의 호환 검사는 '옛 것이 가지 않는다'를 본다 (검사를 고칠 필요는 없다).
+{
+  type Me = Extract<ServerMsg, { t: 'me' }>;
+  /** 접속해서 받은 메시지를 차례로 모은다 (스냅샷은 뺀다) */
+  const join = async (port: number, name: string, token?: string) => {
+    const ws = new WebSocket(`ws://127.0.0.1:${port}`), got: ServerMsg[] = [];
+    await new Promise<void>((done, fail) => {
+      ws.on('open', () => ws.send(JSON.stringify({ t: 'join', name, token })));
+      ws.on('message', (data) => { const m = JSON.parse(data.toString()) as ServerMsg; if (m.t !== 'snap') got.push(m); if (m.t === 'welcome') done(); });
+      ws.on('error', fail);
+    });
+    return {
+      ws, got,
+      id: (got[0] as Extract<ServerMsg, { t: 'welcome' }>).id,
+      mine: (from = 0) => got.slice(from).filter((m): m is Me => m.t === 'me'),
+      stats: (from = 0) => got.slice(from).filter((m) => m.t === 'stat') as unknown as Record<string, unknown>[],
+      olds: (from = 0) => got.slice(from).filter((m) => m.t === 'quest'),
+    };
+  };
+  const BARE_STAT = 't,maxHp,lv,exp,need,sparks,gold,weapon,armor,cls,items';
+  /** 개인 상태로 옮기기 전의 stat: 칸의 순서까지 이대로였다 */
+  const OLD_STAT = 't,maxHp,lv,exp,need,sparks,contrib,gold,weapon,armor,cls,items,rested,tier';
+  /** 서버가 몇 번 내보낼 만큼 기다린다 (0.1초마다 내보낸다) */
+  const settle = () => sleep(350);
+
+  // 틀만의 서버: 등록한 칸이 없으니 me를 하나도 보내지 않고, stat에는 틀의 칸만 있다
+  {
+    const s = await startServer(0, { store: new MemoryStore(), game: { plugins: [] } });
+    const c = await join(s.port, '틀개인');
+    await until(() => c.stats().length > 0);
+    const p = s.game.ents.get(c.id)!;
+    c.ws.send(JSON.stringify({ t: 'class', id: 'warrior' }));
+    p.gold += 3; p.dirty = true;
+    await until(() => c.stats().some((m) => m.gold === 3 && m.cls === 'warrior'));
+    await settle();
+    check(s.game.personal.length === 0 && s.game.oldMsgs === null && c.mine().length === 0 && c.olds().length === 0, '틀만의 서버는 개인 상태(me)도 옛 quest 메시지도 보내지 않는다');
+    check(c.stats().length >= 2 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), `틀만의 서버의 stat에는 게임의 칸(기여, 휴식, 기여 단계)이 없다 (${Object.keys(c.stats()[0]).join()})`);
+    c.ws.close();
+    await s.close();
+  }
+
+  // 이 게임의 서버
+  {
+    const store = new MemoryStore();
+    const s = await startServer(0, { store, game: { plugins: [installDeungbul] } });
+    const token = 'personal-token-0001';
+    const c = await join(s.port, '개인상태', token);
+    await until(() => c.mine().length >= 4);
+    await settle();
+    const p = s.game.ents.get(c.id)!;
+    const first = c.mine();
+    check(s.game.personal.map((x) => x.name).join() === 'contrib,quest,tier,rested' && first.map((m) => m.k).join() === 'contrib,quest,tier,rested' && JSON.stringify(first.map((m) => m.s)) === '[0,{"c":0,"s":0,"n":0},0,0]',
+      `접속 직후에 등록된 개인 상태를 전부 한 번씩 받는다 (${first.map((m) => m.k).join()})`);
+    // stat, meta가 먼저 가고 개인 상태가 그 뒤다: 화면이 퀘스트 창을 다시 쓸 때 불씨 수가 이미 새 값이다 (전에도 quest는 stat 뒤에 갔다)
+    const order = c.got.map((m) => m.t).filter((t) => t === 'stat' || t === 'meta' || t === 'me');
+    check(order.slice(0, 3).join() === 'stat,meta,me', `한 번 내보낼 때 stat, meta, 개인 상태의 순서다 (${order.slice(0, 3).join()})`);
+
+    // 호환: 옛 화면이 읽던 것이 전과 같은 모양으로, 전과 같은 자리(stat은 그대로, quest는 퀘스트 칸이 갈 때)에 함께 간다
+    const iq = c.got.findIndex((m) => m.t === 'me' && m.k === 'quest');
+    if (SEND_OLD_MSGS) check(Object.keys(c.stats()[0]).join() === OLD_STAT && c.stats()[0].contrib === 0 && c.stats()[0].rested === 0 && c.stats()[0].tier === 0 && c.olds().length === 1 && JSON.stringify(c.got[iq + 1]) === '{"t":"quest","c":0,"s":0,"n":0}',
+      '호환: 옛 quest 메시지와 stat의 옛 칸(contrib, rested, tier)이 전과 같은 모양과 순서로 함께 간다');
+    else check(Object.keys(c.stats()[0]).join() === BARE_STAT && c.olds().length === 0, '옛 메시지를 끈 뒤: quest 메시지와 stat의 옛 칸은 가지 않는다');
+
+    /** 그 사이에 값이 바뀐 칸만, 한 번씩, 지금 값으로 왔는가 */
+    const now = () => ({ contrib: p.contrib, quest: { c: p.qc, s: p.qs, n: p.qn }, tier: p.tier, rested: p.rested }) as Record<string, unknown>;
+    const onlyChanged = (before: Record<string, unknown>, from: number): boolean => {
+      const after = now(), changed = Object.keys(after).filter((k) => JSON.stringify(after[k]) !== JSON.stringify(before[k]));
+      const got = c.mine(from);
+      return got.length === changed.length && changed.every((k) => got.filter((m) => m.k === k).length === 1 && JSON.stringify(got.find((m) => m.k === k)!.s) === JSON.stringify(after[k]));
+    };
+
+    // 바뀌지 않으면 가지 않는다: 골드가 바뀌어 stat이 다시 가도 개인 상태는 가지 않는다
+    let at = c.got.length, before = now();
+    p.gold += 1; p.dirty = true;
+    await until(() => c.stats(at).length > 0);
+    await settle();
+    check(c.mine(at).length === 0 && c.olds(at).length === 0 && c.stats(at).length === 1, '값이 바뀌지 않으면 개인 상태는 다시 가지 않는다 (stat만 간다)');
+
+    // 불씨를 바친다: 기여가 바뀐다 (퀘스트의 지금 단계가 바치기가 아니면 퀘스트는 가지 않는다)
+    at = c.got.length; before = now();
+    p.sparks = 300; p.x = TOWER.x + 2; p.z = TOWER.z + 2;
+    c.ws.send(JSON.stringify({ t: 'offer', to: 'tower', n: 4 }));
+    await until(() => c.mine(at).some((m) => m.k === 'contrib'));
+    await settle();
+    check(p.contrib === 4 && c.mine(at).some((m) => m.k === 'contrib' && m.s === 4) && onlyChanged(before, at), `불씨를 바치면 바뀐 칸만 한 번 온다 (${c.mine(at).map((m) => `${m.k}=${JSON.stringify(m.s)}`).join(' ')})`);
+    if (SEND_OLD_MSGS) check(c.stats(at).some((m) => m.contrib === 4 && m.sparks === 296) && c.olds(at).length === c.mine(at).filter((m) => m.k === 'quest').length, '호환: 바뀐 기여가 stat의 옛 칸으로도 가고, 옛 quest 메시지는 퀘스트 칸이 갈 때만 간다');
+
+    // 기여 단계: 등탑지기 할멈이 돌아와 있으면, 기여가 문턱을 넘을 때 단계가 오른다
+    s.game.tower.load({ glow: 55, residents: RESIDENTS.map((r) => r.need) });
+    at = c.got.length; before = now();
+    c.ws.send(JSON.stringify({ t: 'offer', to: 'tower', n: 8 }));
+    await until(() => c.mine(at).some((m) => m.k === 'tier'));
+    await settle();
+    check(p.contrib === 12 && p.tier === 1 && c.mine(at).some((m) => m.k === 'tier' && m.s === 1) && onlyChanged(before, at), `기여 단계가 오르면 그 칸이 온다 (${c.mine(at).map((m) => `${m.k}=${JSON.stringify(m.s)}`).join(' ')})`);
+
+    // 휴식 보너스와 퀘스트 진행: 값이 달라진 틱에 한 번씩
+    at = c.got.length; before = now();
+    p.rested = 40; p.qn += 1; p.questDirty = true;
+    await until(() => c.mine(at).length >= 2);
+    await settle();
+    check(onlyChanged(before, at) && c.mine(at).map((m) => m.k).join() === 'quest,rested' && !p.questDirty, '휴식 보너스와 퀘스트 진행도 바뀐 때에 한 번씩 오고, 보낸 뒤에는 퀘스트의 더러움 표시가 지워진다');
+    if (SEND_OLD_MSGS) check(c.olds(at).length === 1 && JSON.stringify(c.olds(at)[0]) === JSON.stringify({ t: 'quest', c: p.qc, s: p.qs, n: p.qn }), '호환: 퀘스트 진행이 바뀌면 옛 quest 메시지도 한 번 간다');
+
+    // 다시 접속하면 저장된 값으로 전부 다시 온다
+    const want = JSON.stringify([p.contrib, { c: p.qc, s: p.qs, n: p.qn }, p.tier, p.rested]);
+    c.ws.close();
+    await until(() => !s.game.ents.has(c.id));
+    const c2 = await join(s.port, '개인상태', token);
+    await until(() => c2.mine().length >= 4);
+    await settle();
+    check(c2.mine().length === 4 && JSON.stringify(c2.mine().map((m) => m.s)) === want, `다시 접속하면 저장된 값으로 전부 다시 받는다 (${JSON.stringify(c2.mine().map((m) => m.s))})`);
+    c2.ws.close();
+    await s.close();
+  }
+
+  // 개인 상태를 등록하는 예: 틀 + 시험용 플러그인. dirty를 주지 않은 칸은 값이 달라지면, 준 칸은 그것이 참일 때 간다
+  {
+    const logs = new Map<number, number>();
+    let flag = false, cleared = 0;
+    const s = await startServer(0, { store: new MemoryStore(), game: { plugins: [(g) => {
+      g.personal.push({ name: 'logs', state: (p) => logs.get(p.id) ?? 0 });
+      g.personal.push({ name: 'note', state: (p) => ({ lv: p.lv, at: 'camp' }), dirty: () => flag, sent: () => { flag = false; cleared++; } });
+    }] } });
+    const c = await join(s.port, '장작꾼');
+    await until(() => c.mine().length >= 2);
+    await settle();
+    check(JSON.stringify(c.mine()) === '[{"t":"me","k":"logs","s":0},{"t":"me","k":"note","s":{"lv":1,"at":"camp"}}]' && cleared === 1, `플러그인이 g.personal에 등록한 칸이 접속 직후에 me로 온다 (${JSON.stringify(c.mine())})`);
+    let at = c.got.length;
+    logs.set(c.id, 7);
+    await until(() => c.mine(at).length > 0);
+    await settle();
+    check(JSON.stringify(c.mine(at)) === '[{"t":"me","k":"logs","s":7}]', '값이 달라진 칸만 다시 온다 (dirty를 주지 않으면 마지막으로 보낸 값과 견준다)');
+    at = c.got.length;
+    flag = true;
+    await until(() => c.mine(at).length > 0);
+    await settle();
+    check(JSON.stringify(c.mine(at)) === '[{"t":"me","k":"note","s":{"lv":1,"at":"camp"}}]' && cleared === 2 && !flag, 'dirty를 준 칸은 그것이 참일 때 한 번 가고, 보낸 뒤 sent가 불려 표시를 지운다');
+    check(c.olds().length === 0 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), '게임이 옛 모양을 만들지 않으면(g.oldMsgs가 없다) 옛 메시지는 가지 않는다');
+    c.ws.close();
+    await s.close();
+  }
+
+  // 틀의 통신 계층과 프로토콜, 틀의 화면 상태에는 이 칸들의 이름이 남아 있지 않다 (npm run typecheck:engine이 잡는 것을 여기서도 글자로 본다)
+  {
+    const read = (f: string): string => fs.readFileSync(new URL(`../../${f}`, import.meta.url), 'utf8');
+    const left = ['server/net/server.ts', 'shared/protocol.ts', 'client/src/state.ts'].filter((f) => /\b(contrib|rested|questDirty|qc|qs|qn)\b|\.tier\b|\btier:|'quest'|\bquest:/.test(read(f)));
+    check(left.length === 0 && !/onMsg\('(quest|me)'/.test(read('client/src/main.ts')) && /onMsg\('me'/.test(read('client/src/game/deungbul.ts')),
+      `통신 계층·프로토콜·틀의 화면 상태는 퀘스트와 기여의 칸을 이름으로 알지 않고, me 메시지는 이 게임의 모듈이 받는다${left.length ? ` (남은 곳: ${left.join(', ')})` : ''}`);
+  }
 }

@@ -34,12 +34,10 @@ export interface Me {
   /** 목표로 가려고 세운 길 (shared/nav.ts) */
   path: Point[] | null; pgx: number; pgz: number; pat: number;
   sx: number; sz: number; srvMoving: boolean; srvTarget: number; lastCmd: number;
-  hp: number; maxHp: number; lv: number; exp: number; need: number; sparks: number; contrib: number;
-  gold: number; weapon: string; armor: string; items: Record<string, number>; rested: number;
+  hp: number; maxHp: number; lv: number; exp: number; need: number; sparks: number;
+  gold: number; weapon: string; armor: string; items: Record<string, number>;
   /** 직업. 아직 고르지 않았으면 빈 문자열 */
   cls: string;
-  /** 받은 기여 단계 보상의 수 */
-  tier: number;
   /** 서버에서 내 수치를 한 번이라도 받았다 */
   ready: boolean;
   attackId: number; attackAt: number; swing: number;
@@ -59,8 +57,6 @@ export const S = {
   } as WorldState,
   /** 내 파티의 구성원 (나 포함). 파티가 없으면 비어 있다 */
   party: [] as PartyMember[],
-  /** 내 메인 퀘스트 진행: 장, 단계, 진행 수치 */
-  quest: { c: 0, s: 0, n: 0 },
   /** 공유 상태를 받은 시각. 남은 시간을 직접 세는 데 쓴다 */
   worldAt: 0,
   /** 기술별 쿨다운이 끝나는 시각과 길이(ms) */
@@ -99,6 +95,6 @@ export function newMe(id: number, name: string, x: number, z: number, model: Mod
   return {
     id, name, model, tag, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, phase: 0, path: null, pgx: x, pgz: z, pat: 0,
     sx: x, sz: z, srvMoving: false, srvTarget: 0, lastCmd: 0,
-    hp: maxHpFor('', 1), maxHp: maxHpFor('', 1), lv: 1, exp: 0, need: 60, sparks: 0, contrib: 0, gold: 0, weapon: '', armor: '', items: {}, rested: 0, cls: '', tier: 0, ready: false, attackId: 0, attackAt: 0, swing: 0,
+    hp: maxHpFor('', 1), maxHp: maxHpFor('', 1), lv: 1, exp: 0, need: 60, sparks: 0, gold: 0, weapon: '', armor: '', items: {}, cls: '', ready: false, attackId: 0, attackAt: 0, swing: 0,
   };
 }
