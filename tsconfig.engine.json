@@ -12,6 +12,7 @@
     "server/game/systems/raid.ts",
     "server/game/systems/keepers.ts",
     "server/game/systems/quests.ts",
+    "server/game/systems/rest.ts",
     "client/src/hud/quest.ts",
     "client/src/hud/marks.ts",
     "client/src/scene/scenery.ts",

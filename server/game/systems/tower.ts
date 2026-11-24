@@ -3,7 +3,7 @@
 import { FULL_TOWER_OFFER, GLOW_BRIGHT_REGEN, GLOW_MAX, RESIDENTS, TOWER_REACH, speedFor, stageOf, type ResidentId, type Stage } from '../../../shared/defs';
 import type { WorldState } from '../../../shared/protocol';
 import { TOWERS, zoneOf, type TowerDef } from '../../../shared/world';
-import { clamp, dist, type Ent } from '../entity';
+import { clamp, dist, readInt, type Ent } from '../entity';
 import type { Game } from '../game';
 
 export class Tower {
@@ -13,6 +13,15 @@ export class Tower {
   private got: number[] = RESIDENTS.map(() => 0);
 
   constructor(private g: Game) {
+    // 엔티티 칸과 저장: 지금까지 바친 불씨(누적 기여). ext.tower = { contrib }. 칸을 옮기기 전의 저장은 최상위 contrib에 있다
+    g.entInit.push((e) => { e.contrib = 0; });
+    g.saves.push({
+      name: 'tower',
+      save: (p) => ({ contrib: p.contrib }),
+      load: (p, raw) => { p.contrib = readInt((raw as { contrib?: unknown } | null)?.contrib, 0, 1e9, 0); },
+      legacy: (whole) => (whole.contrib === undefined ? undefined : { contrib: whole.contrib }),
+      legacySave: (p) => ({ contrib: p.contrib }),
+    });
     // 칸 이름이 생기기 전의 저장({ glow, residents })은 통째로 등탑의 몫이다
     g.worldSaves.push({ name: 'tower', save: () => this.save(), load: (d) => this.load(d), legacy: (whole) => whole });
     // 등탑이 정하는 규칙: 일어나는 자리, 이동 속도, 직업을 바꿀 수 있는 곳, 주민이 돌아와야 풀리는 것

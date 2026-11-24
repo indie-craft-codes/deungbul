@@ -159,7 +159,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   function savePlayer(c: Client): void {
     const e = c.ent;
     if (!c.key || !e) return;
-    const touched = e.cls !== '' || e.lv > 1 || e.exp > 0 || e.gold > 0 || e.sparks > 0 || e.qc > 0 || e.qs > 0 || e.qn > 0;
+    const touched = e.cls !== '' || e.lv > 1 || e.exp > 0 || e.gold > 0 || e.sparks > 0 || !!game.rules.touched?.(e);
     if (c.hadSave || touched) { saveEnt(c.key, e); c.hadSave = true; }
   }
   function saveWorld(): boolean {

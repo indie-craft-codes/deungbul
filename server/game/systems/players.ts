@@ -1,11 +1,18 @@
 // 플레이어: 생성, 저장 값 주고받기, 성장(경험치와 불씨).
-import { CLASS_IDS, ITEMS, LEVEL, POTION_CD, QUESTS, REJOIN_KEEP_S, REST, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, goalCount, isClassId, isItemId, maxHpFor, nextNeed, restGain } from '../../../shared/defs';
+import { CLASS_IDS, ITEMS, LEVEL, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, nextNeed } from '../../../shared/defs';
 import type { PlayerSave } from '../../store';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { clamp, type Ent } from '../entity';
 import type { Game } from '../game';
 import { Shop } from './shop';
+
+/**
+ * 호환: 다음 배포에서 뺀다 (false로 바꾸거나, 이 상수와 Saver.legacySave를 함께 지운다).
+ * 게임의 칸(퀘스트, 기여, 기여 단계, 휴식)을 ext로 옮긴 배포 한 번 동안은 옛 최상위 칸에도 함께 적는다: 코드를 이전으로 되돌려도 진행이 남는다.
+ * 옛 칸을 읽는 길(Saver.legacy)은 이것과 무관하게 계속 둔다.
+ */
+const WRITE_OLD_CELLS = true;
 
 export class Players {
   /** 개발용: 접속 위치를 바꾼다 (부활 위치는 그대로 등탑 앞). */
@@ -34,9 +41,8 @@ export class Players {
       for (const p of hitters) {
         const roll = (r: readonly [number, number]) => r[0] + Math.floor(Math.random() * (r[1] - r[0] + 1));
         const sparks = (def.sparks ? roll(def.sparks) : 0) + g.mods.sum('sparkBonus', p), gold = roll(def.gold);
-        // 휴식 보너스가 남아 있으면 그만큼 경험치를 더 받는다 (최대 2배)
-        const bonus = Math.min(def.exp, p.rested);
-        p.rested -= bonus;
+        // 덤으로 받는 경험치 (휴식 보너스 같은 것: 그 규칙을 가진 시스템이 killBonus에 등록한다)
+        const bonus = g.killBonus.reduce((sum, fn) => sum + fn(p, m), 0);
         p.gold += gold;
         g.notify(p, 'kill', m.type, def.exp + bonus + Math.round(def.exp * g.mods.sum('exp', p)), sparks, gold);
         // 길드 같은 보정으로 더 받는 경험치
@@ -51,7 +57,7 @@ export class Players {
     const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 3;
     const at = (!bot && this.devSpawn) || SPAWN;
     const p = this.g.create('p', '', name, at.x + Math.cos(a) * r, at.z + Math.sin(a) * r, maxHpFor('', 1));
-    p.bot = bot; p.pid = bot ? '' : pid; p.wait = Math.random() * 3; p.cds = Array.from({ length: SKILL_SLOTS }, () => 0); p.dirty = true; p.questDirty = true; p.metaDirty = true; p.weapon = START_WEAPON; p.armor = '';
+    p.bot = bot; p.pid = bot ? '' : pid; p.wait = Math.random() * 3; p.cds = Array.from({ length: SKILL_SLOTS }, () => 0); p.dirty = true; p.metaDirty = true; p.weapon = START_WEAPON; p.armor = '';
     if (save) {
       // 저장된 값은 믿되, 깨진 값이 섞여 있어도 서버가 죽지 않게 범위를 잡는다
       const n = (v: unknown, min: number, max: number, def: number) => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), min, max) : def);
@@ -59,14 +65,14 @@ export class Players {
       // 시스템마다 저장해 둔 몫(장비, 우편, 일일 임무)을 읽는다. 깨진 값은 그 시스템이 걸러 낸다
       const ext = typeof save.ext === 'object' && save.ext !== null ? save.ext : {};
       this.vitals = null;
-      for (const s of this.g.saves) if (ext[s.name] !== undefined) { try { s.load(p, ext[s.name]); } catch { /* 읽지 못한 칸은 처음 상태로 둔다 */ } }
-      p.offMs = typeof save.seen === 'number' ? Math.max(0, this.g.now() - save.seen) : 0;
+      p.offMs = typeof save.seen === 'number' ? Math.max(0, this.g.now() - save.seen) : 0; // 칸을 읽는 시스템(휴식 보너스)이 쓰므로 먼저 구한다
+      // 자기 칸이 없으면 옛 형식(최상위 칸)에서 자기 몫을 찾는다. 둘 다 있으면 새 칸이 이긴다
+      for (const s of this.g.saves) { try { const raw = ext[s.name] !== undefined ? ext[s.name] : s.legacy?.(save); if (raw !== undefined) s.load(p, raw); } catch { /* 읽지 못한 칸은 처음 상태로 둔다 */ } }
       // 체력은 저장된 값이 아니라 직업과 레벨로 다시 구한다
       this.g.classes.apply(p, isClassId(save.cls) ? save.cls : '');
       p.hp = p.maxHp;
-      p.sparks = n(save.sparks, 0, 1e9, 0); p.contrib = n(save.contrib, 0, 1e9, 0);
+      p.sparks = n(save.sparks, 0, 1e9, 0);
       p.gold = n(save.gold, 0, 1e9, 0);
-      p.tier = n(save.tier, 0, 99, 0);
       if (isItemId(save.weapon) && ITEMS[save.weapon].kind === 'weapon') p.weapon = save.weapon;
       if (isItemId(save.armor) && ITEMS[save.armor].kind === 'armor') p.armor = save.armor;
       p.items = Shop.readItems(save.items);
@@ -76,16 +82,6 @@ export class Players {
         p.x = save.at[0]; p.z = save.at[1]; clampInto(p); p.tx = p.x; p.tz = p.z;
         resolve(p, this.g.world.obstacles);
       }
-      // 등불 맡기기: 쉰 시간만큼 휴식 보너스가 쌓인다
-      const gain = typeof save.seen === 'number' ? restGain(this.g.now() - save.seen) : 0;
-      p.rested = Math.min(REST.cap, n(save.rested, 0, REST.cap, 0) + gain);
-      if (gain > 0) this.g.notify(p, 'rested', p.rested);
-      // 퀘스트 진행: 내용이 바뀌어 없는 단계를 가리키면 그 장의 처음으로 돌린다
-      const q = Array.isArray(save.quest) ? save.quest : [0, 0, 0];
-      p.qc = n(q[0], 0, QUESTS.length, 0);
-      const steps = QUESTS[p.qc]?.steps;
-      p.qs = steps ? n(q[1], 0, steps.length - 1, 0) : 0;
-      p.qn = steps ? n(q[2], 0, goalCount(steps[p.qs].goal) - 1, 0) : 0;
     }
     // 낀 무기와 갑옷을 낱개 장비와 맞춘다 (처음 온 사람은 기본 무기를 장비로 받는다)
     this.g.gear.adopt(p);
@@ -126,7 +122,9 @@ export class Players {
   export(p: Ent): PlayerSave {
     const ext: Record<string, unknown> = {};
     for (const s of this.g.saves) ext[s.name] = s.save(p);
-    return { ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, contrib: p.contrib, seen: this.g.now(), quest: [p.qc, p.qs, p.qn], gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, rested: p.rested, cls: p.cls, tier: p.tier, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
+    const out: PlayerSave = { ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, seen: this.g.now(), gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, cls: p.cls, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
+    if (WRITE_OLD_CELLS) for (const s of this.g.saves) Object.assign(out, s.legacySave?.(p));
+    return out;
   }
 
   rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; this.g.rank.renamed(p); this.g.fire('playerRenamed', p); }
