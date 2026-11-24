@@ -28,7 +28,12 @@ export type Stage = 0 | 1 | 2;
 export function stageOf(glow: number): Stage {
   return glow >= GLOW_BRIGHT ? 2 : glow >= GLOW_DIM ? 1 : 0;
 }
+/** 환함 단계의 혜택: 이동 속도와 자연 회복에 곱하는 값 */
+export const GLOW_BRIGHT_SPEED = 1.1;
+export const GLOW_BRIGHT_REGEN = 2;
+/** 이미 가장 밝은 등탑이 한 번에 받는 불씨: 밝기는 오르지 않지만 기여와 퀘스트에는 세어진다. '전부'로 불씨를 몽땅 태우지 않게 적게 받는다 */
+export const FULL_TOWER_OFFER = 5;
 /** 환함 단계에서는 발걸음이 빨라진다. 서버 판정과 클라이언트 예측이 같은 값을 쓴다. */
 export function speedFor(stage: Stage): number {
-  return PLAYER_SPEED * (stage === 2 ? 1.1 : 1);
+  return PLAYER_SPEED * (stage === 2 ? GLOW_BRIGHT_SPEED : 1);
 }

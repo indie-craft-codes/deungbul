@@ -2,7 +2,7 @@
 import { RECIPES, RESIDENTS, SMITH, SMITHY, SMITHY_REACH, itemDef, isItemId, type ItemId } from '../../../shared/defs';
 import { craft } from '../actions';
 import { $ } from '../app';
-import { L, itemName, t } from '../i18n';
+import { L, itemInfo, itemName, t } from '../i18n';
 import { S } from '../state';
 import { sourceLine } from './sources';
 
@@ -40,7 +40,7 @@ export function renderForge(): void {
     else {
       // 재료마다 가진 수 / 필요한 수를 보여 줘서, 무엇이 모자라는지 바로 알게 한다
       const mats = Object.entries(r.mats) as [ItemId, number][];
-      const parts = [loc.items[r.id].info, ...mats.map(([id, n]) => loc.fmt.mat(loc.items[id].name, items[id] ?? 0, n))];
+      const parts = [itemInfo(r.id), ...mats.map(([id, n]) => loc.fmt.mat(loc.items[id].name, items[id] ?? 0, n))];
       if (gold < r.gold) parts.push(loc.fmt.short(r.gold - gold));
       // 항목 하나(재료 이름과 수)가 중간에서 줄이 바뀌지 않게 덩어리로 넣는다
       parts.forEach((p, i) => {

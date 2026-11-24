@@ -45,7 +45,15 @@ export const GUILD = {
   expPerLevel: 0.02,
   /** 한 번에 기부하는 단위 (화면의 단추) */
   gives: [100, 1000] as readonly number[],
+  /** 공지를 다시 올릴 수 있는 간격(초): 올릴 때마다 월드를 저장하므로 간격을 둔다 */
+  noticeGapS: 5,
+  /** 길드 대화를 다시 보낼 수 있는 간격(초) */
+  chatGapS: 0.7,
 };
+/** 길드 레벨: 쌓인 기부(골드)로 정한다. 서버의 systems/guild.ts와 도감이 함께 쓴다 */
+export const guildLevel = (exp: number): number => Math.min(GUILD.maxLevel, 1 + Math.floor(exp / GUILD.expPerGuildLevel));
+/** 그 길드 레벨이 되는 데 필요한 누적 기부 (guildLevel을 거꾸로 푼 것) */
+export const guildNeed = (lv: number): number => (lv - 1) * GUILD.expPerGuildLevel;
 
 // ===== [틀] 길드 화면의 모양 =====
 /** 길드 화면에 보이는 길드원 한 사람. pid는 내 것이거나 내가 길드장일 때만 채워진다(추방에 쓴다) */

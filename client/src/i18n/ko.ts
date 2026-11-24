@@ -1,6 +1,6 @@
 // 한국어. 기준 언어다: 다른 언어 파일은 이 파일과 같은 모양을 갖춰야 컴파일된다.
-import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemId, MonsterId, QuestId, ResidentId, SkillId, Stat } from '../../../shared/defs';
-import { handOf } from '../../../shared/defs';
+import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemDef, ItemId, MonsterId, QuestId, ResidentId, SkillId, Stat } from '../../../shared/defs';
+import { ITEMS, handOf } from '../../../shared/defs';
 import type { MsgArg, MsgKey } from '../../../shared/messages';
 
 /** 받침이 있으면 a, 없으면 b를 붙인다 (예: 브람이 / 미라가). 한글이 아니면 둘 다 적는다. */
@@ -30,18 +30,19 @@ const classes: Record<ClassId, { name: string; info: string }> = {
   mage: { name: '마법사', info: '멀리서 마법을 씁니다. 적을 느리게 하고 곁의 사람을 치유합니다. 체력이 가장 적습니다.' },
 };
 // bow, staff: 궁수와 마법사에게 보이는 이름 (같은 등급의 활, 지팡이)
-const items: Record<ItemId, { name: string; info: string; bow?: string; staff?: string }> = {
+// info: 수치로 된 효과(공격 피해, 받는 피해, 회복량)는 여기 적지 않는다. 아이템 정의의 값으로 문장을 만든다 (아래 itemInfo, fmt.itemDamage 등)
+const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?: string }> = {
   sword1: { name: '낡은 검', bow: '낡은 활', staff: '낡은 지팡이', info: '기본 무기' },
-  sword2: { name: '철검', bow: '단단한 활', staff: '단단한 지팡이', info: '공격 피해 +20%' },
-  sword3: { name: '등불검', bow: '등불활', staff: '등불 지팡이', info: '공격 피해 +45%' },
-  sword4: { name: '잿불검', bow: '잿불활', staff: '잿불 지팡이', info: '공격 피해 +75%' },
-  armor1: { name: '가죽 갑옷', info: '받는 피해 -12%' },
-  armor2: { name: '쇠 갑옷', info: '받는 피해 -24%' },
+  sword2: { name: '철검', bow: '단단한 활', staff: '단단한 지팡이' },
+  sword3: { name: '등불검', bow: '등불활', staff: '등불 지팡이' },
+  sword4: { name: '잿불검', bow: '잿불활', staff: '잿불 지팡이' },
+  armor1: { name: '가죽 갑옷' },
+  armor2: { name: '쇠 갑옷' },
   hide: { name: '질긴 가죽', info: '멧돼지가 떨어뜨리는 재료' },
   iron: { name: '쇳조각', info: '고블린과 잊힌 병사가 떨어뜨리는 재료' },
   ashcore: { name: '잿빛 핵', info: '잿빛 트롤이 떨어뜨리는 재료' },
-  potion: { name: '물약', info: '체력 80 회복' },
-  tonic: { name: '진한 물약', info: '체력 160 회복' },
+  potion: { name: '물약' },
+  tonic: { name: '진한 물약' },
 };
 const itemName = (id: MsgArg, cls?: MsgArg) => { const it = items[id as ItemId]; if (!it) return String(id); const hand = handOf(cls); return (hand !== 'sword' && it[hand]) || it.name; };
 const towers: Record<string, string> = { first: '첫불 마을 등탑', ash: '잿빛 숲 등탑', crypt: '지하묘 입구' };
@@ -308,7 +309,7 @@ export const ko = {
     guildGave: (n: number) => `기부 ${num(n)}`,
     channelShort: (n: number) => `${n}채널`,
     channelOpt: (n: number, people: number, foes: number) => `${n}채널 · ${people}명${foes > 0 ? ` · 적 ${foes}` : ''}`,
-    statLeft: (n: number) => `능력치 · 남은 점수 ${n} (레벨이 오를 때마다 3점)`,
+    statLeft: (n: number, perLevel: number) => `능력치 · 남은 점수 ${n} (레벨이 오를 때마다 ${perLevel}점)`,
     statResetFor: (gold: number) => `모두 돌려받기 · ${num(gold)}골드`,
     skillLv: (lv: number, max: number) => `${lv} / ${max}단계`,
     skillBonus: (pct: number) => `피해·회복 +${pct}%`,
@@ -329,7 +330,11 @@ export const ko = {
     status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
     towerMini: (stage: number, glow: number) => `등탑 ${stages[stage]} ${glow}`,
     glow: (stage: number, glow: number, max: number) => `${stages[stage]} · ${glow} / ${max}`,
-    stageNote: (stage: number) => ['빛이 약합니다. 혜택이 없습니다.', '70 이상이면 환해집니다: 이동 속도 +10%, 회복 2배', '환합니다: 이동 속도 +10%, 회복 2배'][stage],
+    itemDamage: (pct: number) => `공격 피해 +${pct}%`,
+    itemGuard: (pct: number) => `받는 피해 -${pct}%`,
+    itemHeal: (n: number) => `체력 ${n} 회복`,
+    /** bright: 환해지는 밝기, speedPct: 이동 속도가 느는 비율(%), regen: 회복 배율 (shared/content/tower.ts의 값을 넘긴다) */
+    stageNote: (stage: number, bright: number, speedPct: number, regen: number) => ['빛이 약합니다. 혜택이 없습니다.', `${bright} 이상이면 환해집니다: 이동 속도 +${speedPct}%, 회복 ${regen}배`, `환합니다: 이동 속도 +${speedPct}%, 회복 ${regen}배`][stage],
     nextResident: (name: string) => `되돌릴 주민: ${name}`,
     whenBack: (bonus: string) => `돌아오면: ${bonus}`,
     skillLabel: (name: string, info: string, key: number) => `${name}: ${info} (단축키 ${key})`,
@@ -489,4 +494,17 @@ export const ko = {
 };
 
 export type Locale = typeof ko;
+
+/**
+ * 아이템의 한 줄 설명 (상점, 대장간). 수치로 된 효과는 아이템 정의에서 읽어 문장을 만든다: 정의의 값을 바꾸면 설명이 따라 바뀐다.
+ * 무기는 공격 피해가 느는 비율, 갑옷은 받는 피해가 주는 비율, 물약은 회복량이고, 그런 효과가 없으면 언어 파일에 적힌 설명이다
+ */
+export function itemInfo(loc: Locale, id: ItemId): string {
+  const def: ItemDef = ITEMS[id], text = loc.items[id].info;
+  if (text) return text;
+  if (def.damage !== undefined && def.damage !== 1) return loc.fmt.itemDamage(Math.round((def.damage - 1) * 100));
+  if (def.guard !== undefined) return loc.fmt.itemGuard(Math.round((1 - def.guard) * 100));
+  if (def.heal !== undefined) return loc.fmt.itemHeal(def.heal);
+  return '';
+}
 export type UiKey = keyof Locale['ui'];

@@ -32,6 +32,8 @@ export interface ContentContract {
   SKILL_SLOTS: number;
   HP_PER_LEVEL: number;
   ATTACK_CD: number;
+  /** 치명타(기본 확률, 피해 배율)와 자연 회복(맞은 뒤 기다리는 시간, 초당 회복량) */
+  COMBAT: { critChance: number; critMult: number; regenAfterS: number; regenPerS: number };
   SLOW_FACTOR: number;
   REJOIN_KEEP_S: number;
   /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -45,6 +47,8 @@ export interface ContentContract {
   MONSTER_ATTACK_CD: number;
   LEASH: number;
   RESPAWN_S: number;
+  /** 몬스터의 움직임: 대상을 놓는 거리, 집으로 돌아가는 속도(배율), 어슬렁거리는 속도 */
+  MONSTER_AI: { loseRange: number; homeSpeed: number; wanderSpeed: number };
   BOSS: { hpPerPlayer: number; maxScale: number; countRange: number; countS: number; slamEveryS: number; slamWarnS: number; slamRadius: number; slamDmg: Range };
 
   // ---------- 아이템, 상점, 제작 ----------
@@ -66,9 +70,16 @@ export interface ContentContract {
   STATS: Readonly<Record<string, { base: number }>>;
   GEAR_SLOTS: readonly string[];
   RARITIES: readonly { id: string; weight: number; opts: number; mult: number }[];
-  GEAR: { dropChance: number; bagMax: number; weaponFor: (lv: number) => string; armorFor: (lv: number) => string; levelOf: (monsterExp: number) => number };
+  GEAR: {
+    dropChance: number; bagMax: number; guardCap: number; optMin: number; optSpan: number; optPerLevel: number; sellBase: number; sellPerTier: number;
+    weaponFor: (lv: number) => string; armorFor: (lv: number) => string; levelOf: (monsterExp: number) => number;
+  };
   ENHANCE: { max: number; supplyMax: number; perPlus: number; rate: (plus: number) => number; gold: (plus: number, rar: number) => number };
   BUILD: { pointsPerLevel: number; pow: number; vit: number; luck: number; resetGold: (lv: number) => number; skillMax: number; skillPerLevel: number; skillNeedLv: (lv: number) => number; skillGold: (lv: number) => number };
+  /** 레벨 업에 필요한 경험치: 처음 값과 레벨마다 곱하는 값 */
+  LEVEL: { firstNeed: number; growth: number };
+  /** 전투력의 식에 드는 점수 */
+  POWER: { perLevel: number; perTier: number; perSkillLevel: number };
   MAIL_MAX: number;
   IDLE: { minMin: number; maxMin: number; reward: (minutes: number, lv: number) => Reward };
   DAILIES: Readonly<Record<string, DailyDef>>;
@@ -83,7 +94,7 @@ export interface ContentContract {
   // ---------- 사람들 사이의 것 ----------
   PARTY: { max: number; inviteS: number; reinviteS: number; inviteRange: number; shareRange: number; syncS: number };
   CHANNEL: { count: number; soft: number; hard: number; switchCdS: number; calmS: number; tellS: number; tellBusyS: number };
-  GUILD: { createLv: number; createGold: number; nameMin: number; nameMax: number; noticeMax: number; maxMembers: number; inviteS: number; reinviteS: number; expPerGuildLevel: number; maxLevel: number; expPerLevel: number; gives: readonly number[] };
+  GUILD: { createLv: number; createGold: number; nameMin: number; nameMax: number; noticeMax: number; maxMembers: number; inviteS: number; reinviteS: number; expPerGuildLevel: number; maxLevel: number; expPerLevel: number; gives: readonly number[]; noticeGapS: number; chatGapS: number };
   MARKET: { maxPrice: number; minPrice: number; minLv: number; listGapS: number; maxListings: number; maxTotal: number; hours: number; tax: number; pageSize: number; sweepS: number };
 }
 

@@ -1,7 +1,7 @@
 // 도감의 계산: 내용 정의(shared/content)의 수치로 확률, 기대값, 범위를 구한다. 화면(DOM)도 문장도 모른다.
 import {
-  BOSS, CAMPS, DROPS, DUNGEONS, ENHANCE, GEAR, GEAR_SLOTS, MONSTERS, RAID, RARITIES, RECIPES, RESPAWN_S, SHOP_STOCK, STATS, STAT_IDS, START_WEAPON,
-  ITEMS, gearScore, sellPrice, type Gear, type GearSlot, type ItemId, type MonsterDef, type MonsterId, type Stat,
+  CAMPS, DROPS, DUNGEONS, ENHANCE, GEAR, GEAR_SLOTS, LEVEL, MONSTERS, RAID, RARITIES, RECIPES, RESPAWN_S, SHOP_STOCK, STATS, STAT_IDS, START_WEAPON,
+  ITEMS, clearRar, gearScore, needFor, sellPrice, type Gear, type GearSlot, type ItemId, type MonsterDef, type MonsterId, type Stat,
 } from '../../../shared/defs';
 import { zoneOf } from '../../../shared/world';
 import { optRange } from './rules';
@@ -20,8 +20,10 @@ export function rarityShares(): number[] {
 }
 /** 가장 낮은 등급이 정해진 굴림(던전 보상)의 등급별 확률: 그보다 낮게 나온 것은 그 등급으로 올린다 */
 export function raritySharesFrom(minRar: number): number[] {
-  const base = rarityShares();
-  return base.map((p, i) => (i < minRar ? 0 : i === minRar ? base.slice(0, minRar + 1).reduce((s, x) => s + x, 0) : p));
+  // 평소의 등급 확률을, 서버가 등급을 올리는 그 함수(clearRar)에 등급마다 넣어 옮겨 담는다
+  const out = RARITIES.map(() => 0);
+  rarityShares().forEach((p, rolled) => { out[clearRar({ dropRar: minRar }, rolled)] += p; });
+  return out;
 }
 
 /** 장비 레벨의 범위 (가장 약한 몬스터와 가장 센 몬스터가 떨어뜨리는 것) */
@@ -87,8 +89,6 @@ export function habitat(id: MonsterId): Habitat {
 }
 /** 들판에서 쓰러진 뒤 다시 나타나기까지(초). 들판에 살지 않으면 null (던전과 습격의 몬스터는 다시 나오지 않는다) */
 export const respawnOf = (id: MonsterId): number | null => (habitat(id).zones.length ? (MONSTERS[id] as MonsterDef).respawn ?? RESPAWN_S : null);
-/** 필드 보스의 체력: n명이 맞설 때 */
-export const bossHp = (hp: number, n: number): number => Math.round(hp * (1 + BOSS.hpPerPlayer * Math.max(0, Math.min(BOSS.maxScale, n) - 1)));
 /** 같은 것끼리 센다: ['a','a','b'] → [['a',2],['b',1]] */
 export function tally<T>(list: readonly T[]): [T, number][] {
   const out = new Map<T, number>();
@@ -97,12 +97,18 @@ export function tally<T>(list: readonly T[]): [T, number][] {
 }
 
 // ---------- 습격 ----------
-/** n명이 맞설 때 한 채널에 오는 적의 수 */
-export const raidFoes = (n: number): number => Math.min(RAID.max, RAID.base + RAID.perPlayer * n);
-/** 적의 수가 한도에 닿는 인원 */
+/** 적의 수가 한도에 닿는 인원 (적의 수와 등탑 내구의 식은 내용 정의에 있다: raidFoes, raidTowerHp) */
 export const raidCapPlayers = (): number => Math.max(1, Math.ceil((RAID.max - RAID.base) / RAID.perPlayer));
-/** 그 밝기에서의 등탑 내구 (싸우는 채널 하나당) */
-export const raidTowerHp = (glow: number): number => RAID.towerHpBase + glow * RAID.towerHpPerGlow;
+
+// ---------- 레벨 ----------
+/** 레벨 1에서 그 레벨이 될 때까지 모아야 하는 경험치의 합 */
+export function expUpTo(lv: number): number {
+  let sum = 0;
+  for (let i = 1; i < lv; i++) sum += needFor(i);
+  return sum;
+}
+/** 필요 경험치가 레벨마다 늘어나는 비율 (예: 0.35) */
+export const levelGrowth = (): number => LEVEL.growth - 1;
 
 // ---------- 아이템 ----------
 /** 그 아이템을 얻는 길 */

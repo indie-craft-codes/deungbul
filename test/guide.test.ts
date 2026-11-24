@@ -3,13 +3,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { enhanceExpected, enhanceTries, gearChance, gearLevels, rarityShares, raritySharesFrom, sellRange } from '../client/src/guide/calc';
-import { PACKS, buildGuide, tablesOf, type Section, type Table } from '../client/src/guide/data';
+import { enhanceExpected, enhanceTries, expUpTo, gearChance, gearLevels, rarityShares, raritySharesFrom, sellRange } from '../client/src/guide/calc';
+import { LEVEL_ROWS, PACKS, buildGuide, tablesOf, type Section, type Table } from '../client/src/guide/data';
 import { num } from '../client/src/guide/fmt';
 import { LINK_TEXT } from '../client/src/guide/link.text';
 import { optRange } from '../client/src/guide/rules';
 import { textEn } from '../client/src/guide/text.en';
 import { textKo } from '../client/src/guide/text.ko';
+import { itemInfo } from '../client/src/i18n/ko';
+import { AWAY } from '../shared/auto';
+import { BUILD, CLASSES, COMBAT, FULL_TOWER_OFFER, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, GUILD, LEASH, LEVEL, MONSTER_AI, POWER, STATS, bossHp, gearScore, guildLevel, guildNeed, needFor, raidFoes, raidTowerHp, type Gear } from '../shared/defs';
 import { Game } from '../server/game/game';
 import {
   ATTEND, BUILD_STATS, CAMPS, CLASS_IDS, CONTRIB_TIERS, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MONSTERS, QUESTS, RARITIES, RECIPES,
@@ -195,13 +198,143 @@ for (const P of PACKS) {
   }
 }
 
+// ---------- 서버 코드에서 내용 정의로 옮긴 수치: 도감의 표가 서버를 실제로 굴린 결과와 맞는가 ----------
+{
+  const g = new Game({ now: () => new Date(2026, 0, 10, 12).getTime() });
+  const tableOf = (P: (typeof PACKS)[number], id: string): Table => tablesOf(buildGuide(P)).find((x) => x.id === id)!;
+  const cell = (P: (typeof PACKS)[number], id: string, key: string | number, col = 1): string => tableOf(P, id).rows.find((r) => r.key === String(key))!.cells[col];
+  const fresh = (name: string, cls = 'warrior') => { const p = g.players.spawn(name, false); g.classes.apply(p, cls as 'warrior'); return p; };
+
+  // 레벨 표: 경험치를 주어 실제로 레벨을 올려 본다. 필요 경험치에 1이 모자라면 오르지 않고, 채우면 오른다
+  const p = fresh('레벨검사');
+  let total = 0, early = 0, wrongNeed = 0, wrongTotal = 0;
+  for (let lv = 1; lv < LEVEL_ROWS; lv++) {
+    if (p.need !== needFor(lv) || total !== expUpTo(lv)) wrongNeed++;
+    g.players.grant(p, p.need - 1, 0);
+    if (p.lv !== lv) early++;
+    g.players.grant(p, 1, 0);
+    total += needFor(lv);
+    if (p.lv !== lv + 1 || p.exp !== 0 || total !== expUpTo(lv + 1)) wrongTotal++;
+    g.notices.length = 0;
+  }
+  check(early === 0 && wrongNeed === 0 && wrongTotal === 0 && p.lv === LEVEL_ROWS, `레벨 표의 필요 경험치만큼 주면 서버의 캐릭터가 정확히 그 지점에서 오른다 (Lv 1에서 ${LEVEL_ROWS}까지)`);
+  for (const P of PACKS) {
+    const t = tableOf(P, 'levels');
+    check(t.rows.length === LEVEL_ROWS && t.rows.every((r, i) => r.key === String(i + 1) && r.cells[1] === num(needFor(i + 1)) && r.cells[2] === num(expUpTo(i + 1))) && t.rows[0].cells[1] === num(LEVEL.firstNeed) && t.rows[0].cells[2] === '0',
+      `[${P.L.code}] 레벨 표에 Lv 1부터 ${LEVEL_ROWS}까지의 필요 경험치와 누적이 있다`);
+  }
+
+  // 치명타: 기본 공격을 많이 쳐 본다 (난수를 정해 두고). 확률과 피해 배율이 도감의 값과 맞는가
+  {
+    const a = fresh('치명타검사'), m = g.monsters.spawn('slime', a.x + 1, a.z);
+    const real = Math.random, cls = CLASSES.warrior.basic;
+    let hits = 0, crits = 0, maxPlain = 0, maxCrit = 0, minCrit = Infinity;
+    try {
+      Math.random = rng(31);
+      for (let i = 0; i < 40000; i++) {
+        m.hp = m.maxHp = 1e9; m.x = a.x + 1; m.z = a.z; a.targetId = m.id; a.atkCd = 0; a.hp = a.maxHp;
+        g.events = [];
+        g.combat.tickPlayer(a, 0.05);
+        for (const ev of g.events) if (ev[0] === 'h' && ev[1] === a.id) {
+          hits++;
+          if (ev[4]) { crits++; maxCrit = Math.max(maxCrit, ev[3]); minCrit = Math.min(minCrit, ev[3]); } else maxPlain = Math.max(maxPlain, ev[3]);
+        }
+      }
+    } finally { Math.random = real; }
+    g.remove(m.id);
+    check(hits === 40000 && Math.abs(crits / hits - COMBAT.critChance) < 0.006, `기본 공격의 치명타 비율이 도감의 확률과 맞는다 (도감 ${num(COMBAT.critChance * 100)}%, 실제 ${(crits / hits * 100).toFixed(2)}%)`);
+    check(maxPlain === cls[1] && maxCrit === Math.round(cls[1] * COMBAT.critMult) && minCrit === Math.round(cls[0] * COMBAT.critMult), `치명타의 피해는 기본 공격 피해에 도감의 배율을 곱한 값이다 (${minCrit}–${maxCrit})`);
+    for (const P of PACKS) check(cell(P, 'combat', 'critChance') === `${num(COMBAT.critChance * 100)}%` && cell(P, 'combat', 'critMult').includes(num(COMBAT.critMult)), `[${P.L.code}] 전투 표의 치명타 확률과 배율이 정의의 값이다`);
+  }
+
+  // 자연 회복: 맞은 뒤 정해진 시간이 지나야 시작하고, 초당 회복량은 표의 값이다. 등탑이 환하면 배로 는다
+  {
+    const a = fresh('회복검사');
+    const gain = (sinceHurt: number): number => { a.hp = 1; a.targetId = 0; a.moving = false; a.lastHurt = g.clock - sinceHurt; g.combat.tickPlayer(a, 1); return a.hp - 1; };
+    const before = gain(COMBAT.regenAfterS - 0.01), plain = gain(COMBAT.regenAfterS + 0.01);
+    g.tower.glows[0] = GLOW_MAX;
+    const bright = gain(COMBAT.regenAfterS + 0.01);
+    g.tower.glows[0] = GLOW_BRIGHT - 1;
+    check(before === 0 && plain === COMBAT.regenPerS && bright === COMBAT.regenPerS * GLOW_BRIGHT_REGEN, `자연 회복은 맞은 뒤 ${COMBAT.regenAfterS}초가 지나야 시작하고 초당 ${plain}, 환한 구역에서는 ${bright}이다`);
+    for (const P of PACKS) check(cell(P, 'combat', 'regenPerS').includes(num(plain)) && cell(P, 'combat', 'regenBright').includes(num(bright)) && cell(P, 'combat', 'regenAfter').includes(num(COMBAT.regenAfterS)) && cell(P, 'stages', '2', 3).includes(num(GLOW_BRIGHT_REGEN)),
+      `[${P.L.code}] 전투 표와 밝기 단계 표의 자연 회복이 서버의 결과와 같다`);
+  }
+
+  // 받는 피해 감소의 한도: 옵션을 아무리 쌓아도 한도까지만 듣는다
+  {
+    const a = fresh('한도검사');
+    const ring: Gear = { uid: 0, slot: 'ring', rar: 3, lv: 6, plus: 0, opts: [['guard', 400]] };
+    g.gear.put(a, ring); g.gear.equip(a, ring.uid);
+    const guard = g.mods.product('guard', a);
+    check(Math.abs(guard - (1 - GEAR.guardCap / 100)) < 1e-9, `받는 피해 감소 옵션은 한도까지만 듣는다 (받는 피해 ×${guard.toFixed(2)})`);
+    for (const P of PACKS) check(cell(P, 'combat', 'guardCap') === `${num(GEAR.guardCap)}%`, `[${P.L.code}] 전투 표의 받는 피해 감소 한도가 정의의 값이다`);
+
+    // 전투력: 도감의 점수표로 셈한 값이 서버가 내는 전투력과 같다
+    a.lv = 17; a.skillLv = { smash: 3, whirl: 2 }; a.weapon = 'sword3'; a.armor = 'armor2';
+    const tiers = (ITEMS.sword3.tier ?? 0) + (ITEMS.armor2.tier ?? 0);
+    const byTable = (P: (typeof PACKS)[number]) => {
+      const n = (key: string) => parseFloat(cell(P, 'power', key));
+      return a.lv * n('level') + tiers * n('tier') + (3 - 1 + 2 - 1) * n('skill') + gearScore(ring);
+    };
+    check(g.rank.power(a) === a.lv * POWER.perLevel + tiers * POWER.perTier + 3 * POWER.perSkillLevel + gearScore(ring) && PACKS.every((P) => byTable(P) === g.rank.power(a)), `도감의 전투력 점수표로 셈한 값이 서버의 전투력과 같다 (${g.rank.power(a)})`);
+    // 옵션의 점수: 기본값만큼의 옵션 하나가 표에 적힌 점수다
+    check(PACKS.every((P) => STAT_IDS.every((s) => gearScore({ uid: 0, slot: 'ring', rar: 0, lv: 1, plus: 0, opts: [[s, STATS[s].base]] }) === parseFloat(cell(P, 'power', 'gear')))), '기본값만큼의 옵션 하나의 값어치가 전투력 표에 적힌 점수다');
+  }
+
+  // 몬스터의 움직임: 대상이 표의 거리보다 멀어지면 놓는다
+  {
+    const a = fresh('추적검사'), m = g.monsters.spawn('wolf', 26, 22);
+    const chase = (d: number): boolean => { m.targetId = a.id; m.homing = false; m.x = m.hx; m.z = m.hz; a.x = m.x + d; a.z = m.z; g.monsters.tick(m, 0.05); return m.targetId === a.id; };
+    const near = chase(MONSTER_AI.loseRange - 0.5), far = chase(MONSTER_AI.loseRange + 0.5);
+    // 집으로 돌아가는 속도: 한 틱에 걷는 거리로 잰다
+    m.x = m.hx + LEASH + 1; m.z = m.hz; a.x = m.x + 1; a.z = m.z; m.targetId = a.id; m.homing = false;
+    g.monsters.tick(m, 0.05);
+    const x0 = m.x, z0 = m.z; g.monsters.tick(m, 0.05);
+    const homeSpeed = Math.hypot(m.x - x0, m.z - z0) / 0.05;
+    g.remove(m.id);
+    check(near && !far, `몬스터는 대상이 ${MONSTER_AI.loseRange}m보다 멀어지면 놓는다`);
+    check(m.homing && Math.abs(homeSpeed - MONSTERS.wolf.speed * MONSTER_AI.homeSpeed) < 0.2, `집으로 돌아가는 몬스터는 제 속도의 ${MONSTER_AI.homeSpeed}배로 걷는다 (초당 ${homeSpeed.toFixed(2)}m)`);
+    for (const P of PACKS) check(cell(P, 'monsterAi', 'loseRange').includes(num(MONSTER_AI.loseRange)) && cell(P, 'monsterAi', 'leash').includes(num(LEASH)) && cell(P, 'monsterAi', 'homeSpeed').includes(num(MONSTER_AI.homeSpeed)) && cell(P, 'monsterAi', 'wanderSpeed').includes(num(MONSTER_AI.wanderSpeed)),
+      `[${P.L.code}] 몬스터의 움직임 표가 정의의 값이다`);
+  }
+
+  // 서버와 도감이 같은 함수를 쓰는 식: 표의 값이 그 함수의 값이고, 길드 레벨의 누적 기부는 실제로 그 레벨이 되는 지점이다
+  check(Array.from({ length: GUILD.maxLevel }, (_, i) => i + 1).every((lv) => guildLevel(guildNeed(lv)) === lv && (lv === 1 || guildLevel(guildNeed(lv) - 1) === lv - 1)), '길드 레벨 표의 누적 기부는 그 레벨이 되는 가장 적은 기부다');
+  for (const P of PACKS) {
+    const boss = (Object.keys(MONSTERS) as MonsterId[]).find((id) => (MONSTERS[id] as { boss?: boolean }).boss)!;
+    check(cell(P, 'bossHp', 3) === num(bossHp(MONSTERS[boss].hp, 3)) && cell(P, 'raidFoes', 2) === num(raidFoes(2)) && cell(P, 'raidTower', GLOW_MAX) === num(raidTowerHp(GLOW_MAX)) && cell(P, 'guildLevels', 3).includes(num(guildNeed(3)))
+      && cell(P, 'away', 'roam').includes(num(AWAY.roam)) && cell(P, 'away', 'maxTime').includes(num(AWAY.maxS / 3600)) && cell(P, 'guild', 'noticeGap').includes(num(GUILD.noticeGapS)) && cell(P, 'guild', 'chatGap').includes(num(GUILD.chatGapS)),
+      `[${P.L.code}] 보스 체력, 습격 적의 수와 등탑 내구, 길드 레벨, 자리 비움, 길드 간격의 표가 서버와 같은 함수·정의에서 나온다`);
+    check(JSON.stringify(buildGuide(P).find((s) => s.id === 'tower')).includes(String(FULL_TOWER_OFFER)), `[${P.L.code}] 가득 찬 등탑이 한 번에 받는 불씨가 등탑 구역에 적혀 있다`);
+  }
+}
+
+// ---------- 게임 언어 파일의 문장: 정의의 값으로 만든 문장이 예전에 손으로 적어 둔 문장과 같은가 ----------
+{
+  const was: Record<string, Partial<Record<keyof typeof ITEMS, string>>> = {
+    ko: { sword1: '기본 무기', sword2: '공격 피해 +20%', sword3: '공격 피해 +45%', sword4: '공격 피해 +75%', armor1: '받는 피해 -12%', armor2: '받는 피해 -24%', potion: '체력 80 회복', tonic: '체력 160 회복', hide: '멧돼지가 떨어뜨리는 재료' },
+    en: { sword1: 'Starting weapon', sword2: 'Damage +20%', sword3: 'Damage +45%', sword4: 'Damage +75%', armor1: 'Damage taken -12%', armor2: 'Damage taken -24%', potion: 'Restores 80 health', tonic: 'Restores 160 health', hide: 'Material dropped by boars' },
+  };
+  const stage: Record<string, string[]> = {
+    ko: ['빛이 약합니다. 혜택이 없습니다.', '70 이상이면 환해집니다: 이동 속도 +10%, 회복 2배', '환합니다: 이동 속도 +10%, 회복 2배'],
+    en: ['The light is weak. No bonuses.', 'At 70 it turns bright: +10% move speed, 2x recovery', 'Bright: +10% move speed, 2x recovery'],
+  };
+  const left: Record<string, string> = { ko: '능력치 · 남은 점수 4 (레벨이 오를 때마다 3점)', en: 'Attributes · 4 points left (3 per level)' };
+  for (const P of PACKS) {
+    const lang = P.L.code, ids = Object.keys(was[lang]) as (keyof typeof ITEMS)[];
+    const bad = ids.filter((id) => itemInfo(P.L, id) !== was[lang][id]);
+    check(bad.length === 0 && (Object.keys(ITEMS) as (keyof typeof ITEMS)[]).every((id) => itemInfo(P.L, id) !== ''), `[${lang}] 아이템 설명(공격 피해, 받는 피해, 회복량)이 정의의 값으로 만들어지고 예전 문장과 같다${bad.length ? ': ' + bad.join(', ') : ''}`);
+    check([0, 1, 2].every((s) => P.L.fmt.stageNote(s, GLOW_BRIGHT, Math.round((GLOW_BRIGHT_SPEED - 1) * 100), GLOW_BRIGHT_REGEN) === stage[lang][s]) && P.L.fmt.statLeft(4, BUILD.pointsPerLevel) === left[lang], `[${lang}] 등탑 단계 안내와 능력치 안내가 정의의 값으로 만들어지고 예전 문장과 같다`);
+  }
+}
+
 // ---------- 도감이 끌어오는 코드 ----------
 {
-  // 도감은 정적 페이지다: 게임의 3D·통신 코드나 node 모듈, 서버의 통신·저장 코드가 딸려 오면 안 된다.
+  // 도감은 정적 페이지다: 게임의 3D·통신 코드나 node 모듈, 서버의 코드(server/)가 딸려 오면 안 된다. 규칙의 식은 shared/content의 순수 함수로 읽는다.
   // 진입점에서 시작해 불러오는 파일을 모두 따라간다 (형만 불러오는 import type은 번들에 들어가지 않으므로 건너뛴다).
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const seen = new Set<string>(), problems: string[] = [];
-  const allowed = (rel: string): boolean => rel.startsWith('shared/') || rel.startsWith('client/src/guide/') || /^client\/src\/i18n\/(ko|en)\.ts$/.test(rel) || rel.startsWith('server/game/');
+  const allowed = (rel: string): boolean => rel.startsWith('shared/') || rel.startsWith('client/src/guide/') || /^client\/src\/i18n\/(ko|en)\.ts$/.test(rel);
   const visit = (file: string): void => {
     const rel = path.relative(root, file).replace(/\\/g, '/');
     if (seen.has(rel)) return;
@@ -220,5 +353,6 @@ for (const P of PACKS) {
   };
   visit(path.join(root, 'client/src/guide/main.ts'));
   check(problems.length === 0, `도감은 내용 정의와 언어 파일, 순수한 게임 규칙만 불러온다 (파일 ${seen.size}개)${problems.length ? ': ' + problems.join('; ') : ''}`);
+  check(![...seen].some((f) => f.startsWith('server/')), '도감은 서버 코드를 불러오지 않는다');
   check(seen.has('shared/content/monsters.ts') && seen.has('shared/content/growth.ts') && seen.has('client/src/i18n/ko.ts'), '도감은 게임의 정의와 언어 파일을 직접 읽는다');
 }

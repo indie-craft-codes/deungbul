@@ -2,7 +2,7 @@
 import { ITEMS, POTION_MAX, RESIDENTS, nearShop, SHOP_STOCK, itemDef, isItemId, type ItemId } from '../../../shared/defs';
 import { buy, usePotion } from '../actions';
 import { $ } from '../app';
-import { L, itemName, t } from '../i18n';
+import { L, itemInfo, itemName, t } from '../i18n';
 import { S } from '../state';
 
 const ui = { panel: $('shop'), gold: $('shopGold'), list: $('shopList') };
@@ -31,7 +31,7 @@ export function renderShop(): void {
   ui.gold.textContent = loc.fmt.gold(gold);
   ui.list.textContent = '';
   for (const id of SHOP_STOCK) {
-    const def = itemDef(id), text = loc.items[id];
+    const def = itemDef(id);
     const row = document.createElement('div');
     row.className = 'shoprow';
     const info = document.createElement('div');
@@ -52,7 +52,7 @@ export function renderShop(): void {
     if (!stocked) { note.textContent = loc.fmt.needsResident(loc.residents[RESIDENTS[need].id].name); btn.disabled = true; }
     else if ((def.kind === 'weapon' && (def.tier ?? 0) <= tier) || (def.kind === 'armor' && (def.tier ?? 0) <= armorTier)) { note.textContent = t('owned'); btn.hidden = true; }
     else {
-      note.textContent = def.kind === 'potion' ? `${text.info} · ${loc.fmt.have(items[id] ?? 0, POTION_MAX)}` : text.info;
+      note.textContent = def.kind === 'potion' ? `${itemInfo(id)} · ${loc.fmt.have(items[id] ?? 0, POTION_MAX)}` : itemInfo(id);
       if (gold < def.price) note.textContent += ` · ${loc.fmt.short(def.price - gold)}`; // 왜 살 수 없는지 알린다
       btn.disabled = gold < def.price || (def.kind === 'potion' && (items[id] ?? 0) >= POTION_MAX);
     }

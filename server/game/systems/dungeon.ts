@@ -1,7 +1,7 @@
 // 던전: 문에서 들어가면 그 사람(과 파티)만의 인스턴스가 생긴다. 같은 지형을 여러 무리가 동시에 쓰지만
 // 층(Ent.layer)이 달라 서로 보이지 않고 싸우지 않는다. 우두머리를 잡으면 보상을 받고 밖으로 나온다.
 // 제한 시간을 넘기거나 모두 나가면 인스턴스는 사라진다. 내용과 수치는 shared/content/dungeons.ts에 있다.
-import { DUNGEONS, PORTAL_REACH, dungeonDef, isDungeonId, runKey, type DungeonDef, type DungeonId } from '../../../shared/defs';
+import { DUNGEONS, PORTAL_REACH, clearRar, dungeonDef, isDungeonId, runKey, type DungeonDef, type DungeonId } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { AREAS, areaAt } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -135,7 +135,7 @@ export class Dungeon {
     run.cleared = true; run.exit = run.def.exitS;
     for (const p of this.players(run)) {
       g.mail.send(p, 'dungeon', [run.id], run.def.reward);
-      const rar = Math.max(run.def.dropRar, g.gear.roll(run.def.dropLv).rar);
+      const rar = clearRar(run.def, g.gear.roll(run.def.dropLv).rar);
       g.gear.give(p, g.gear.roll(run.def.dropLv, rar));
       g.notify(p, 'dungeonClear', run.id, run.def.exitS);
     }

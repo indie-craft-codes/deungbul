@@ -1,6 +1,6 @@
 // 순위: 캐릭터의 전투력(레벨, 무기와 갑옷, 낀 드롭 장비)으로 줄을 세운다.
 // 접속 중인 사람의 값을 주기적으로 갱신하고, 나간 사람의 마지막 값도 남겨 둔다. 월드와 함께 저장한다.
-import { GEAR_SLOTS, RANK, gearScore, type RankRow } from '../../../shared/defs';
+import { GEAR_SLOTS, RANK, powerOf, type Gear, type RankRow } from '../../../shared/defs';
 import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
@@ -21,14 +21,14 @@ export class Rank {
     g.commands.set('rank', (p) => { this.update(); g.out.push({ id: p.id, msg: { t: 'rank', list: this.top(), me: p.pid ? this.rows.findIndex((r) => r.pid === p.pid) : -1 } }); });
   }
 
-  /** 전투력: 순위와 화면 표시에 쓴다 */
+  /** 전투력: 순위와 화면 표시에 쓴다. 식은 내용 정의에 있다 (shared/content/growth.ts의 powerOf) */
   power(p: Ent): number {
-    let score = Object.values(p.skillLv).reduce((s, lv) => s + (lv - 1) * 10, 0) + p.lv * 20 + (Shop.wornTier(p, 'weapon') + Shop.wornTier(p, 'armor')) * 15;
+    const worn: Gear[] = [];
     for (const slot of GEAR_SLOTS) {
       const it = p.worn[slot] ? p.gear.find((x) => x.uid === p.worn[slot]) : undefined;
-      if (it) score += gearScore(it);
+      if (it) worn.push(it);
     }
-    return score;
+    return powerOf(p.lv, Shop.wornTier(p, 'weapon') + Shop.wornTier(p, 'armor'), Object.values(p.skillLv), worn);
   }
 
   private update(): void {

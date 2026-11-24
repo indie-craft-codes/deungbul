@@ -81,6 +81,18 @@ export const classOf = (cls: string): ClassDef => CLASSES[isClassId(cls) ? cls :
 export const HP_PER_LEVEL = 15;
 export const maxHpFor = (cls: string, lv: number): number => classOf(cls).hp + HP_PER_LEVEL * (lv - 1);
 
+/** 전투 공통 수치: 치명타와 자연 회복 (서버의 systems/combat.ts가 읽는다) */
+export const COMBAT = {
+  /** 기본 공격이 치명타가 될 확률 (장비 옵션과 능력치의 치명타 확률이 여기에 더해진다) */
+  critChance: 0.15,
+  /** 치명타의 피해 배율 */
+  critMult: 1.8,
+  /** 자연 회복: 마지막으로 맞은 뒤 이 시간(초)이 지나야 시작한다 */
+  regenAfterS: 5,
+  /** 자연 회복: 초당 회복량 (회복 보정이 곱해진다. 이 게임에서는 환한 구역의 배율) */
+  regenPerS: 4,
+};
+
 /** 느려진 적의 이동 속도 배율 (느려지는 시간은 기술마다 effect.slow에 있다) */
 export const SLOW_FACTOR = 0.5;
 

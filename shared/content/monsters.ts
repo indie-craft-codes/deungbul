@@ -81,6 +81,19 @@ export const CAMPS: readonly { x: number; z: number; types: readonly MonsterId[]
   { ...CLEARINGS[11], types: ['ash_troll'] },
 ];
 
+/** 필드 보스의 최대 체력: fighters명이 맞설 때 (한 명이면 기본 체력). 서버의 systems/boss.ts와 도감이 함께 쓴다 */
+export const bossHp = (base: number, fighters: number): number => Math.round(base * (1 + BOSS.hpPerPlayer * Math.max(0, Math.min(BOSS.maxScale, fighters) - 1)));
+
+/** 몬스터의 움직임 (서버의 systems/monsters.ts가 읽는다) */
+export const MONSTER_AI = {
+  /** 쫓던 대상이 이만큼 멀어지면 놓는다 */
+  loseRange: 26,
+  /** 집으로 돌아갈 때의 속도: 제 이동 속도의 몇 배인가 */
+  homeSpeed: 1.5,
+  /** 싸우지 않을 때 집 근처를 어슬렁거리는 속도 */
+  wanderSpeed: 1.3,
+};
+
 export const MONSTER_ATTACK_RANGE = 1.9;
 export const MONSTER_ATTACK_CD = 1.6;
 export const LEASH = 18; // 몬스터가 집에서 이만큼 멀어지면 돌아간다

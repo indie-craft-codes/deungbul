@@ -1,5 +1,5 @@
 // 전투: 피해와 죽음, 플레이어의 공격·기술 명령, 플레이어의 틱(쿨다운, 회복, 추격과 자동 공격).
-import { ATTACK_CD, RESPAWN_S, SKILL_SLOTS, classOf, skillDef } from '../../../shared/defs';
+import { ATTACK_CD, COMBAT, RESPAWN_S, SKILL_SLOTS, classOf, skillDef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { AOI_LEAVE } from '../../../shared/world';
 import { dist, ri, type Ent } from '../entity';
@@ -114,7 +114,7 @@ export class Combat {
     if (p.atkCd > 0) p.atkCd -= dt;
     if (p.itemCd > 0) p.itemCd -= dt;
     for (let i = 0; i < p.cds.length; i++) if (p.cds[i] > 0) p.cds[i] = Math.max(0, p.cds[i] - dt);
-    if (p.hp < p.maxHp && g.clock - p.lastHurt > 5) p.hp = Math.min(p.maxHp, p.hp + 4 * g.mods.product('regen', p) * dt);
+    if (p.hp < p.maxHp && g.clock - p.lastHurt > COMBAT.regenAfterS) p.hp = Math.min(p.maxHp, p.hp + COMBAT.regenPerS * g.mods.product('regen', p) * dt);
     // 이동 속도는 클라이언트가 같은 식으로 예측하므로 보정 목록이 아니라, 내가 있는 구역의 등탑 단계에서 바로 구한다
     const speed = g.rules.speed(p);
 
@@ -132,9 +132,9 @@ export class Combat {
     p.face = Math.atan2(t.x - p.x, t.z - p.z);
     if (p.atkCd <= 0) {
       p.atkCd = ATTACK_CD;
-      const crit = Math.random() < 0.15 + g.mods.sum('crit', p);
+      const crit = Math.random() < COMBAT.critChance + g.mods.sum('crit', p);
       const hit = ri(cls.basic[0], cls.basic[1]);
-      this.damage(p, t, crit ? Math.round(hit * 1.8) : hit, crit);
+      this.damage(p, t, crit ? Math.round(hit * COMBAT.critMult) : hit, crit);
     }
   }
 }

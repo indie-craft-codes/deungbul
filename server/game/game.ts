@@ -12,6 +12,7 @@ import type { MsgArg, MsgKey } from '../../shared/messages';
 import { NavGrid } from '../../shared/nav';
 import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
 import { resolve } from '../../shared/sim';
+import { LEVEL } from '../../shared/defs';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
 import type { WorldSave } from '../store';
 import type { Ent } from './entity';
@@ -246,7 +247,7 @@ export class Game {
     const e: Ent = {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, lastAct: -99, path: null, pgx: x, pgz: z, pat: 0,
       hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
-      bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: 60, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
+      bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: LEVEL.firstNeed, sparks: 0, cds: [], contrib: 0, dirty: false, unsaved: false, qc: 0, qs: 0, qn: 0, questDirty: false, tier: 0, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0, rested: 0,
       gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), raid: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
     };

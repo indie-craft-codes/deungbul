@@ -6,8 +6,8 @@
 //   - 틀만의 게임: 규칙 플러그인 없이(plugins: []) 만든 게임과 서버가 도는가
 //   - 의존 방향: 틀의 서버 파일이 이 게임의 규칙을 import하지 않는가
 import { createHash } from 'node:crypto';
-import { AUTO, POTIONS, pickPotion, potionOrder } from '../shared/auto';
-import { FORGES, ITEMS, MONSTERS, POTION_MAX, RESIDENTS, SMITHY, type ItemId } from '../shared/defs';
+import { AUTO, AWAY, POTIONS, pickPotion, potionOrder } from '../shared/auto';
+import { BOSS, COMBAT, FORGES, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GUILD, ITEMS, LEVEL, MONSTERS, MONSTER_AI, POTION_MAX, POWER, RAID, RARITIES, RESIDENTS, SMITHY, STATS, STAT_IDS, baseTier, bossHp, clearRar, gearScore, guildLevel, needFor, nextNeed, powerOf, raidFoes, raidTowerHp, sellPrice, speedFor, type Gear, type GearSlot, type ItemId, type Stat } from '../shared/defs';
 import { AREAS, EDGE, MAP, MAX_X, MAX_Z, MIN_X, MIN_Z, PILLARS, POND, PORTALS, TOWERS, rng } from '../shared/world';
 import fs from 'node:fs';
 import { WebSocket } from 'ws';
@@ -126,6 +126,75 @@ function noonOf(day: unknown): number {
     }
   } finally { Math.random = real; g.movement.goTo = goTo; }
   check(picks === 300 && same === 300, `봇이 고르는 자리가 예전 식과 같다 (${same}/${picks})`);
+}
+
+// ---------- 서버 코드에 박혀 있던 숫자를 내용 정의로 옮긴 것 ----------
+// 값과 식을 옮기기만 했다: 예전에 서버 코드에 적혀 있던 숫자와 식(아래에 그대로 적어 둔다)으로 셈한 것과 지금의 결과가 같아야 한다.
+// 수치를 일부러 바꿀 때는 여기의 옛 값도 함께 고친다.
+{
+  check(LEVEL.firstNeed === 60 && LEVEL.growth === 1.35 && COMBAT.critChance === 0.15 && COMBAT.critMult === 1.8 && COMBAT.regenAfterS === 5 && COMBAT.regenPerS === 4
+    && GLOW_BRIGHT_REGEN === 2 && GLOW_BRIGHT_SPEED === 1.1 && speedFor(2) === PLAYER_SPEED * 1.1 && speedFor(1) === PLAYER_SPEED && FULL_TOWER_OFFER === 5
+    && GEAR.guardCap === 60 && GEAR.optMin === 0.8 && GEAR.optSpan === 0.4 && GEAR.optPerLevel === 0.15 && GEAR.sellBase === 5 && GEAR.sellPerTier === 10
+    && POWER.perLevel === 20 && POWER.perTier === 15 && POWER.perSkillLevel === 10 && AWAY.roam === 60 && AWAY.maxS === 8 * 3600
+    && MONSTER_AI.loseRange === 26 && MONSTER_AI.homeSpeed === 1.5 && MONSTER_AI.wanderSpeed === 1.3 && GUILD.noticeGapS === 5 && GUILD.chatGapS === 0.7,
+    '옮긴 수치가 서버 코드에 적혀 있던 값 그대로다 (레벨, 치명타, 자연 회복, 등탑 혜택, 장비, 전투력, 자리 비움, 몬스터의 움직임, 길드)');
+
+  // 레벨: 서버는 레벨이 오를 때마다 필요 경험치에 1.35를 곱해 반올림한다. 그 수열을 정의의 함수가 그대로 낸다 (닫힌 식은 어긋난다)
+  const g = new Game({ plugins: [] });
+  const p = g.players.spawn('수열검사', false);
+  let old = 60, closedOff = 0;
+  const wrong: number[] = [];
+  for (let lv = 1; lv <= 60; lv++) {
+    if (p.lv !== lv || p.need !== old || needFor(lv) !== old) wrong.push(lv);
+    if (Math.round(60 * 1.35 ** (lv - 1)) !== old) closedOff++;
+    g.players.grant(p, p.need, 0);
+    old = Math.round(old * 1.35);
+    if (nextNeed(needFor(lv)) !== old) wrong.push(lv);
+  }
+  check(wrong.length === 0, `레벨 1부터 60까지의 필요 경험치가 서버가 실제로 셈하는 수열과 같다${wrong.length ? `: Lv ${wrong.join(', ')}` : ` (Lv 60: ${needFor(60)})`}`);
+  check(closedOff > 0, `닫힌 식(60 × 1.35^(n−1))은 반올림이 쌓여 이 수열과 어긋난다 (${closedOff}곳): 그래서 단계마다 되풀이한다`);
+
+  // 장비 굴림: 예전 식(서버의 roll에 숫자로 적혀 있던 것)과 지금의 굴림이 같은 난수열에서 같은 장비를 낸다. 난수를 쓰는 순서와 횟수도 같다
+  const oldRoll = (rnd: () => number, lv: number, rar?: number, slot?: GearSlot): Gear => {
+    if (rar === undefined) {
+      let r = rnd() * RARITIES.reduce((s, x) => s + x.weight, 0);
+      rar = RARITIES.findIndex((x) => (r -= x.weight) < 0);
+      if (rar < 0) rar = 0;
+    }
+    const def = RARITIES[rar], pool = [...STAT_IDS], opts: [Stat, number][] = [];
+    for (let i = 0; i < def.opts && pool.length; i++) {
+      const stat = pool.splice(Math.floor(rnd() * pool.length), 1)[0];
+      opts.push([stat, Math.max(1, Math.round(STATS[stat].base * def.mult * (0.8 + rnd() * 0.4) * (1 + (lv - 1) * 0.15)))]);
+    }
+    slot ??= GEAR_SLOTS[Math.floor(rnd() * GEAR_SLOTS.length)];
+    const base = slot === 'weapon' ? GEAR.weaponFor(lv) : slot === 'armor' ? GEAR.armorFor(lv) : undefined;
+    return { uid: 0, slot, base, rar, lv, plus: 0, opts };
+  };
+  const a = rng(20261124), b = rng(20261124);
+  g.gear.random = b;
+  let rolls = 0, differ = 0, sellDiffer = 0;
+  for (let i = 0; i < 1200; i++) {
+    const lv = 1 + (i % 6), rar = i % 3 === 0 ? undefined : (i >> 2) % RARITIES.length, slot = i % 5 === 0 ? GEAR_SLOTS[i % GEAR_SLOTS.length] : undefined;
+    const want = oldRoll(a, lv, rar, slot), got = g.gear.roll(lv, rar, slot);
+    rolls++;
+    if (JSON.stringify(want) !== JSON.stringify(got)) differ++;
+    got.plus = i % 4; // 파는 값은 강화 단계도 본다
+    if (sellPrice(got) !== 5 + gearScore(got) + baseTier(got) * 10) sellDiffer++;
+  }
+  check(differ === 0 && a() === b(), `장비 굴림이 예전 식과 같은 장비를 낸다 (같은 난수열로 ${rolls}점, 난수를 쓴 횟수도 같다)`);
+  check(sellDiffer === 0, '파는 값이 예전 식(5 + 값어치 + 바탕의 등급 × 10)과 같다');
+
+  // 전투력, 보스 체력, 습격, 던전 완료 장비의 등급, 길드 레벨: 서버와 도감이 함께 쓰는 함수가 예전에 서버에 적혀 있던 식과 같다
+  const ring: Gear = { uid: 1, slot: 'ring', rar: 2, lv: 4, plus: 3, opts: [['dmg', 7], ['hp', 31]] };
+  let same = powerOf(23, 5, [1, 4, 2], [ring]) === (0 + 3 + 1) * 10 + 23 * 20 + 5 * 15 + gearScore(ring) && powerOf(1, 0, [], []) === 20;
+  for (let n = 0; n <= 14; n++) {
+    same &&= bossHp(1600, n) === Math.round(1600 * (1 + BOSS.hpPerPlayer * Math.max(0, Math.min(BOSS.maxScale, n) - 1)));
+    same &&= raidFoes(n) === Math.min(RAID.max, RAID.base + RAID.perPlayer * n) && raidFoes(n, { base: 2, perPlayer: 5, max: 30 }) === Math.min(30, 2 + 5 * n);
+    same &&= raidTowerHp(n * 7) === RAID.towerHpBase + n * 7 * RAID.towerHpPerGlow;
+    same &&= guildLevel(n * 1500) === Math.min(GUILD.maxLevel, 1 + Math.floor((n * 1500) / GUILD.expPerGuildLevel));
+  }
+  for (let min = 0; min < RARITIES.length; min++) for (let r = 0; r < RARITIES.length; r++) same &&= clearRar({ dropRar: min }, r) === Math.max(min, r);
+  check(same, '전투력, 보스 체력, 습격 적의 수와 등탑 내구, 던전 완료 장비의 등급, 길드 레벨의 식이 예전과 같다');
 }
 
 // ---------- 캐릭터 저장의 왕복 ----------

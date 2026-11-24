@@ -148,7 +148,7 @@ function drawBuild(): void {
   const loc = L(), me = S.me, b = S.meta.build;
   if (!me) return;
   // 능력치: 남은 점수를 나눠 찍는다
-  ui.list.append(el('baghead', loc.fmt.statLeft(b.left)));
+  ui.list.append(el('baghead', loc.fmt.statLeft(b.left, BUILD.pointsPerLevel)));
   for (const k of BUILD_STATS) {
     const n = b.stats[k] ?? 0;
     ui.list.append(row(`${loc.build.stats[k].name} ${n}`, loc.build.stats[k].info(Math.round(n * BUILD[k] * 10) / 10), [button('+1', () => send({ t: 'stat', k }), b.left < 1)]));
