@@ -8,6 +8,7 @@
 // 틀의 스타일: 게임의 index.html이 틀의 폴더를 가리키지 않아도 되게 여기서 읽는다. 맨 먼저 읽어야 게임의 스타일(틀의 것을 덮어쓴다)보다 앞에 놓인다
 import './style.css';
 import { PROTOCOL } from '../shared/protocol';
+import { MAP } from '../shared/world';
 import { dispatch, onMsg, runFrame, runSlow } from './bus';
 import { initModules } from './modules';
 import { steer } from './actions';
@@ -112,9 +113,9 @@ function frame(now: number): void {
   steer(a.x, a.z, now);
   updateEntities(dt, now);
 
-  // 카메라: 접속 전에는 마을을 천천히 둘러본다
+  // 카메라: 접속 전에는 처음 서는 곳(MAP.spawn)의 둘레를 천천히 둘러본다
   if (S.me) { const sh = shakeOffset(); view.follow(S.me.x + sh.x, S.me.z + sh.z, S.zoom); }
-  else view.follow(Math.cos(now / 9000) * 6, 3 + Math.sin(now / 9000) * 6, 1.05);
+  else view.follow(MAP.spawn.x + Math.cos(now / 9000) * 6, MAP.spawn.z + Math.sin(now / 9000) * 6, 1.05);
 
   placeTags(now);
   runFrame(now, dt); // 내 정보 창의 막대, 물약 대기 표시, 게임의 모듈 (등록한 차례대로)

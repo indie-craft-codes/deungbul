@@ -23,6 +23,10 @@ export const enNames: ContentNames = {
     snare: { name: 'Snare Arrow', info: 'Damages and slows everything around the target' },
     rest: { name: 'Catch Breath', info: 'Restore health' },
   },
+  // 장비 칸, 등급, 능력치의 이름 (id는 내용의 GEAR_SLOTS, RARITIES, BUILD_STATS: 이 예제는 틀의 기본값을 그대로 쓴다)
+  gearSlots: { weapon: 'Weapon', armor: 'Armor', ring: 'Ring', amulet: 'Necklace', charm: 'Charm' },
+  rarities: { common: 'Plain', uncommon: 'Fine', rare: 'Rare', epic: 'Radiant' },
+  buildStats: { pow: 'Might', vit: 'Vigor', luck: 'Luck' },
   dungeons: {},
   dailies: { kill20: 'Defeat 20 monsters', feed5: 'Feed 5 firewood to the bonfire' },
   places: { bonfire: 'the bonfire' },

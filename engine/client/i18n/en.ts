@@ -2,7 +2,8 @@
 // 이 게임의 문장과 내용의 이름은 games/deungbul/client/i18n/en.ts에 있다. 이 파일은 게임의 파일을 import하지 않고 게임의 낱말을 적지 않는다.
 import { AWAY } from '../../shared/auto';
 import { BUILD, ENHANCE, GUILD, MARKET, PARTY } from '../../shared/defs';
-import type { ClassId, ItemId, MonsterId } from '../../shared/defs';
+import type { BuildStat, ClassId, GearSlot, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
+import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { keyHints, type EngineLocale } from './ko';
 import { SALVAGE } from '../../shared/defs';
@@ -12,15 +13,28 @@ import { dungeonLabel, itemNameOf, type ContentNames } from './names';
 export const count = (n: MsgArg, word: string) => `${n} ${word}${Number(n) === 1 ? '' : 's'}`;
 /** a Warrior, an Archer */
 const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`;
-const gearSlots = { weapon: 'Weapon', armor: 'Armor', ring: 'Ring', amulet: 'Necklace', charm: 'Charm' };
-const rarities: Record<string, string> = { supply: 'Standard', made: 'Crafted', common: 'Plain', uncommon: 'Fine', rare: 'Rare', epic: 'Radiant' };
+/** Text per effect a gear option or stat point feeds (ko.ts의 modText, buildMod와 같다) */
+const buildMod: Record<StatMod, (v: number) => string> = {
+  damage: (v) => `Damage +${v}%`,
+  guard: (v) => `Damage taken -${v}%`,
+  crit: (v) => `Crit +${v}%`,
+  hp: (v) => `Max health +${v}`,
+};
+const modText: Record<StatMod, (v: number) => string> = {
+  damage: (v) => `Damage +${v}%`,
+  guard: (v) => `Damage taken -${v}%`,
+  crit: (v) => `Crit +${v}%`,
+  hp: (v) => `Health +${v}`,
+};
 export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 /** Thousands separators (1,000,000). Every gold amount and price goes through this */
 export const num = (n: MsgArg) => Number(n).toLocaleString('en-US');
 
 /** 틀의 문장 묶음. 내용의 이름표(n)를 받아 만든다 (ko.ts의 koBase와 같다) */
 export const enBase = (n: ContentNames): EngineLocale => {
-  const { monsters, items, classes, dungeons, dailies } = n;
+  const { monsters, items, classes, dungeons, dailies, gearSlots } = n;
+  /** Rarity names: the engine's two (standard, crafted) and the game's */
+  const rarities: Record<string, string> = { supply: 'Standard', made: 'Crafted', ...n.rarities };
   /** The second currency's name (shown in kill, mail and away rewards) */
   const coin = n.currency2;
   const itemName = itemNameOf(items);
@@ -28,7 +42,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
   /** The name of the place you rise at after falling */
   const place = (id: MsgArg) => n.places[String(id)] ?? String(id);
   /** Item name for market mail titles: [item id or gear slot, count] */
-  const tradeWhat = (a: (string | number)[]) => { const name = items[a[0] as ItemId]?.name ?? gearSlots[a[0] as keyof typeof gearSlots] ?? String(a[0]); return Number(a[1]) > 1 ? `${name} ×${a[1]}` : name; };
+  const tradeWhat = (a: (string | number)[]) => { const name = items[a[0] as ItemId]?.name ?? gearSlots[a[0] as GearSlot] ?? String(a[0]); return Number(a[1]) > 1 ? `${name} ×${a[1]}` : name; };
   return {
     code: 'en',
     label: 'English',
@@ -164,21 +178,12 @@ export const enBase = (n: ContentNames): EngineLocale => {
     monsters,
     dungeons,
     build: {
-      stats: {
-        pow: { name: 'Might', info: (v) => `Damage +${v}%` },
-        vit: { name: 'Vigor', info: (v) => `Max health +${v}` },
-        luck: { name: 'Luck', info: (v) => `Crit +${v}%` },
-      },
+      stats: Object.fromEntries(BUILD_STAT_IDS.map((k) => [k, { name: n.buildStats[k], info: buildMod[buildStatDef(k).mod] }])) as Record<BuildStat, { name: string; info: (v: number) => string }>,
     },
     gear: {
       slots: gearSlots,
       rarities,
-      stats: {
-        dmg: (v) => `Damage +${v}%`,
-        guard: (v) => `Damage taken -${v}%`,
-        crit: (v) => `Crit +${v}%`,
-        hp: (v) => `Health +${v}`,
-      },
+      stats: Object.fromEntries(STAT_IDS.map((k) => [k, modText[statMod(k)]])) as Record<Stat, (v: number) => string>,
       dailies,
     },
     skills: n.skills,
@@ -315,7 +320,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       partyLeft: (a) => `${a[0]} left the party.`,
       partyYouLeft: () => 'You left the party.',
       partyEnded: () => 'The party disbanded: you were the last one left.',
-      gearDrop: (a) => `You picked up a ${(rarities[String(a[1])] ?? String(a[1])).toLowerCase()} ${(gearSlots[a[0] as keyof typeof gearSlots] ?? String(a[0])).toLowerCase()}. Equip it under Menu[[ (M)|]] > Gear.`,
+      gearDrop: (a) => `You picked up a ${(rarities[String(a[1])] ?? String(a[1])).toLowerCase()} ${(gearSlots[a[0] as GearSlot] ?? String(a[0])).toLowerCase()}. Equip it under Menu[[ (M)|]] > Gear.`,
       gearFull: () => 'Your gear bag is full, so the drop was left behind. Sell spare gear in the menu.',
       gearSold: (a) => `Gear sold. +${num(a[0])} gold`,
       enhanceOk: (a) => `Enhancement succeeded. +${a[0]}`,

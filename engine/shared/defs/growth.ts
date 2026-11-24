@@ -4,9 +4,28 @@ import { BAG_UP, BUILD_STATS, DAILIES, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, LEVEL, 
 import { isItemId } from './items';
 
 // ---------- 장비 ----------
+/**
+ * 장비 옵션과 능력치가 드는 틀의 효과: damage(공격 피해 %), guard(받는 피해 감소 %, 한도 GEAR.guardCap), crit(치명타 확률 %p), hp(최대 체력).
+ * 옵션과 능력치의 id는 게임이 짓고(STATS, BUILD_STATS), 효과의 이름과 셈은 틀이 갖는다 (서버의 수치 보정 이름 ModName과 같다)
+ */
+export type StatMod = 'damage' | 'guard' | 'crit' | 'hp';
+export const STAT_MODS: readonly StatMod[] = ['damage', 'guard', 'crit', 'hp'];
+/** 효과의 합(%, %p, 체력)을 수치 보정의 값으로: damage와 guard는 곱하는 값, crit과 hp는 더하는 값 */
+export function modValue(mod: StatMod, sum: number): number {
+  switch (mod) {
+    case 'damage': return 1 + sum / 100;
+    case 'guard': return 1 - Math.min(GEAR.guardCap, sum) / 100;
+    case 'crit': return sum / 100;
+    case 'hp': return sum;
+  }
+}
 export type Stat = keyof typeof STATS;
 export const STAT_IDS = Object.keys(STATS) as Stat[];
 export const isStat = (v: unknown): v is Stat => typeof v === 'string' && Object.hasOwn(STATS, v);
+/** 장비 옵션이 드는 효과 */
+export const statMod = (s: Stat): StatMod => (STATS as Readonly<Record<string, { mod: StatMod }>>)[s].mod;
+/** 그 효과에 드는 첫 옵션 (무기와 갑옷의 바탕이 주는 기본 수치를 이 옵션으로 보여 준다). 없으면 undefined */
+export const statFor = (mod: StatMod): Stat | undefined => STAT_IDS.find((s) => statMod(s) === mod);
 export type GearSlot = (typeof GEAR_SLOTS)[number];
 export const isGearSlot = (v: unknown): v is GearSlot => typeof v === 'string' && (GEAR_SLOTS as readonly string[]).includes(v);
 
@@ -41,8 +60,10 @@ export const rollOpt = (stat: Stat, rar: number, lv: number, roll: number): numb
 export function baseOpt(g: Gear): [Stat, number] | null {
   if (!isItemId(g.base)) return null;
   const def = ITEMS[g.base] as { kind: string; damage?: number; guard?: number };
-  if (def.kind === 'weapon') return ['dmg', Math.round(((def.damage ?? 1) - 1) * 100)];
-  if (def.kind === 'armor') return ['guard', Math.round((1 - (def.guard ?? 1)) * 100)];
+  const stat = statFor(def.kind === 'weapon' ? 'damage' : 'guard');
+  if (stat === undefined) return null;
+  if (def.kind === 'weapon') return [stat, Math.round(((def.damage ?? 1) - 1) * 100)];
+  if (def.kind === 'armor') return [stat, Math.round((1 - (def.guard ?? 1)) * 100)];
   return null;
 }
 /** 바탕 아이템의 등급 (없으면 0) */
@@ -88,6 +109,8 @@ export function wornTotal(worn: readonly Gear[], stat: Stat): number {
   }
   return sum;
 }
+/** 낀 장비들이 그 효과에 주는 합: 그 효과에 드는 옵션들의 wornTotal을 더한다 (서버의 수치 보정과 화면의 장비 비교가 같이 쓴다) */
+export const wornMod = (worn: readonly Gear[], mod: StatMod): number => STAT_IDS.reduce((s, k) => (statMod(k) === mod ? s + wornTotal(worn, k) : s), 0);
 /** 낀 장비 묶음이 실제로 내는 효과. dmg: 공격 피해에 곱해지는 값, guard: 받는 피해에 곱해지는 값, crit: 치명타 확률에 더해지는 값(0~1), hp: 최대 체력에 더해지는 값 */
 export interface GearEffect { dmg: number; guard: number; crit: number; hp: number }
 /**
@@ -100,10 +123,10 @@ export function gearEffect(worn: readonly Gear[]): GearEffect {
     return it && isItemId(it.base) ? (ITEMS[it.base] as { damage?: number; guard?: number })[key] ?? 1 : 1;
   };
   return {
-    dmg: mult('weapon', 'damage') * (1 + wornTotal(worn, 'dmg') / 100),
-    guard: mult('armor', 'guard') * (1 - Math.min(GEAR.guardCap, wornTotal(worn, 'guard')) / 100),
-    crit: wornTotal(worn, 'crit') / 100,
-    hp: wornTotal(worn, 'hp'),
+    dmg: mult('weapon', 'damage') * modValue('damage', wornMod(worn, 'damage')),
+    guard: mult('armor', 'guard') * modValue('guard', wornMod(worn, 'guard')),
+    crit: modValue('crit', wornMod(worn, 'crit')),
+    hp: modValue('hp', wornMod(worn, 'hp')),
   };
 }
 /** 전투력 가운데 장비의 몫: 낀 장비의 값어치와 바탕의 등급 (powerOf의 장비 쪽) */
@@ -180,8 +203,11 @@ export function needFor(lv: number): number {
 }
 
 // ---------- 성장 선택: 능력치와 기술 강화 ----------
-export type BuildStat = (typeof BUILD_STATS)[number];
-export const isBuildStat = (v: unknown): v is BuildStat => typeof v === 'string' && (BUILD_STATS as readonly string[]).includes(v);
+export type BuildStat = keyof typeof BUILD_STATS;
+export const BUILD_STAT_IDS = Object.keys(BUILD_STATS) as BuildStat[];
+export const isBuildStat = (v: unknown): v is BuildStat => typeof v === 'string' && Object.hasOwn(BUILD_STATS, v);
+/** 능력치가 드는 효과와 점수 하나가 주는 값 */
+export const buildStatDef = (k: BuildStat): { mod: StatMod; per: number } => (BUILD_STATS as Readonly<Record<string, { mod: StatMod; per: number }>>)[k];
 
 // ---------- 우편 ----------
 /**

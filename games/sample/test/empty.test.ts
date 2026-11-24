@@ -1,4 +1,4 @@
-// 빈 표를 견디는가: 예제의 내용에서 표를 더 비운 변형을 만들어, 틀만 그 내용으로 타입 검사한다.
+// 빈 표와 다른 장비 체계를 견디는가: 예제의 내용에서 표를 더 비우거나 바꾼 변형을 만들어, 틀만 그 내용으로 타입 검사한다.
 // 틀은 게임의 내용을 게임이 적은 그대로의 타입으로 보므로, 표가 비면 id의 타입이 never가 되고 종류가 한 가지뿐이면 비교가 좁아진다:
 // 틀의 코드가 표를 직접 읽으면(DAILIES[id], ITEMS[id].kind) 그런 게임에서 컴파일되지 않는다. 틀은 넓은 모양으로 읽는 도우미(dailyDef, itemDef, dungeonDef)를 쓴다.
 // 예제 자체가 지키는 것(던전·대장간·보스·두 번째 재화 없음)에 더해 여기서 지키는 것: 상점·무리·떨어뜨리는 재료·일일 임무가 없는 게임, 무기만 있는 게임.
@@ -29,7 +29,18 @@ const VARIANTS: Record<string, [RegExp, string][]> = {
     NO_STOCK, NO_DROPS,
     [/export const GEAR = [^\n]*\n/, "export const GEAR = { ...GEAR_BASE, weaponFor: (): ItemId => 'axe1', armorFor: (): ItemId => 'axe1' };\n"],
   ],
+  // 장비 체계가 등불지기와 다른 게임: 칸 둘(무기·칩: 갑옷 칸이 없다), 옵션 둘(id도 다르다), 등급 둘, 능력치 하나.
+  // 틀은 칸·옵션·능력치의 id를 적지 않고, 옵션과 능력치가 드는 효과(mod)만 읽는다 (이름 바꿔 내보내기는 기본값 묶음의 export *보다 앞선다)
+  otherGear: [
+    [/\n$/, `
+export const GEAR_SLOTS = ['weapon', 'chip'] as const;
+export const STATS = { atk: { base: 4, mod: 'damage' }, life: { base: 10, mod: 'hp' } } as const;
+export const RARITIES = [{ id: 'worn', weight: 80, opts: 1, mult: 1 }, { id: 'keen', weight: 20, opts: 2, mult: 1.5 }] as const;
+export const BUILD_STATS = { grit: { mod: 'hp', per: 6 } } as const;
+`],
+  ],
 };
+const WHAT: Record<string, string> = { bare: '상점·무리·재료·일일 임무 없음', weaponOnly: '아이템이 무기 하나뿐', otherGear: '갑옷 칸 없이 장비 칸 둘, 옵션 둘, 등급 둘, 능력치 하나' };
 
 const cache = new URL('node_modules/.cache/empty-content/', root);
 for (const [name, pairs] of Object.entries(VARIANTS)) {
@@ -46,6 +57,6 @@ for (const [name, pairs] of Object.entries(VARIANTS)) {
   const tsc = spawnSync(process.execPath, [fileURLToPath(new URL('node_modules/typescript/bin/tsc', root)), '--noEmit', '--pretty', 'false', '-p', fileURLToPath(new URL('tsconfig.json', dir))], { cwd: fileURLToPath(root), encoding: 'utf8' });
   const errors = `${tsc.stdout}${tsc.stderr}`.split(/\r?\n/).filter((l) => /error TS\d+/.test(l));
   for (const l of errors.slice(0, 12)) console.log('  ' + l);
-  check(tsc.status === 0 && errors.length === 0, `틀이 더 비운 내용으로도 컴파일된다 (${name}: ${name === 'bare' ? '상점·무리·재료·일일 임무 없음' : '아이템이 무기 하나뿐'})${errors.length ? `: 오류 ${errors.length}개` : ''}`);
+  check(tsc.status === 0 && errors.length === 0, `틀이 더 비우거나 바꾼 내용으로도 컴파일된다 (${name}: ${WHAT[name]})${errors.length ? `: 오류 ${errors.length}개` : ''}`);
 }
 fs.rmSync(cache, { recursive: true, force: true });

@@ -37,9 +37,9 @@ export const MAT_MAX = 99;
 export const SMITHY_REACH = 4;
 
 // ---------- 장비와 성장 ----------
-// 아래 넷(STATS, GEAR_SLOTS, RARITIES, BUILD_STATS)의 id는 틀의 낱말이다: 틀의 문장(engine/client/i18n)이 이 id로 이름을 갖고 있다.
-// 다른 id를 쓰려면 틀의 언어 파일도 함께 고쳐야 하므로, 새 게임은 그대로 받는 것이 보통이다.
-export const STATS = { dmg: { base: 3 }, guard: { base: 2 }, crit: { base: 2 }, hp: { base: 12 } } as const;
+// 아래 넷(STATS, GEAR_SLOTS, RARITIES, BUILD_STATS)의 id는 게임이 짓는다: 이름은 게임의 이름표(ContentNames의 gearSlots, rarities, stats, buildStats)에 적는다.
+// 옵션과 능력치는 mod로 틀의 효과(공격 피해, 받는 피해 감소, 치명타, 최대 체력) 가운데 하나에 든다. 'weapon' 칸은 반드시 있어야 한다.
+export const STATS = { dmg: { base: 3, mod: 'damage' }, guard: { base: 2, mod: 'guard' }, crit: { base: 2, mod: 'crit' }, hp: { base: 12, mod: 'hp' } } as const;
 export const GEAR_SLOTS = ['weapon', 'armor', 'ring', 'amulet', 'charm'] as const;
 export const RARITIES = [
   { id: 'common', weight: 70, opts: 1, mult: 1 },
@@ -47,7 +47,7 @@ export const RARITIES = [
   { id: 'rare', weight: 7, opts: 3, mult: 1.7 },
   { id: 'epic', weight: 1, opts: 4, mult: 2.2 },
 ] as const;
-export const BUILD_STATS = ['pow', 'vit', 'luck'] as const;
+export const BUILD_STATS = { pow: { mod: 'damage', per: 1 }, vit: { mod: 'hp', per: 8 }, luck: { mod: 'crit', per: 0.4 } } as const;
 /**
  * GEAR에서 게임의 아이템 id가 들지 않는 부분. 게임은 떨어지는 무기와 갑옷의 바탕을 더해 GEAR를 만든다:
  *   export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => …, armorFor: (lv: number): ItemId => … };
@@ -68,7 +68,7 @@ export const ENHANCE = {
 export const SALVAGE = { item: '', dust: [] as readonly number[], perPlus: 0, maxBatch: 0, autoMaxRar: -1, tellS: 10 };
 export const BAG_UP = { step: 0, prices: [] as readonly number[] };
 export const BUILD = {
-  pointsPerLevel: 3, pow: 1, vit: 8, luck: 0.4,
+  pointsPerLevel: 3,
   resetGold: (lv: number): number => 30 * lv,
   skillMax: 5, skillPerLevel: 0.12,
   skillNeedLv: (lv: number): number => lv * 4,

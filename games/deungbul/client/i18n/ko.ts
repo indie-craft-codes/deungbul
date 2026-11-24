@@ -48,6 +48,9 @@ const dailies: Record<DailyId, string> = { kill30: '몬스터 30마리 잡기', 
 
 /** 틀의 문장이 쓰는 내용의 이름표 (koBase에 넘긴다). 틀의 안내문이 몬스터·아이템의 이름과 두 번째 재화(불씨)의 이름을 여기서 읽는다 */
 export const koNames: ContentNames = {
+  gearSlots: { weapon: '무기', armor: '갑옷', ring: '반지', amulet: '목걸이', charm: '부적' },
+  rarities: { common: '평범한', uncommon: '쓸 만한', rare: '희귀한', epic: '빛나는' },
+  buildStats: { pow: '힘', vit: '체력', luck: '행운' },
   monsters,
   items,
   classes,

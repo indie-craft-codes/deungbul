@@ -1,5 +1,5 @@
 // 성장 선택: 능력치 점수와 기술 강화 (서버 없이 게임 규칙만 돌린다)
-import { BUILD } from '../shared/defs';
+import { BUILD, BUILD_STATS } from '../shared/defs';
 import { Game } from '../server/game/game';
 import { check } from './harness';
 
@@ -23,7 +23,7 @@ import { check } from './harness';
   cmd({ t: 'stat', k: 'pow' }); cmd({ t: 'stat', k: 'pow' });
   cmd({ t: 'stat', k: 'vit' }); cmd({ t: 'stat', k: 'vit' }); cmd({ t: 'stat', k: 'vit' });
   cmd({ t: 'stat', k: 'luck' });
-  check(Math.abs(g.mods.product('damage', p) - dmg0 * 1.02) < 1e-9 && p.maxHp === hp0 + 3 * BUILD.vit && Math.abs(g.mods.sum('crit', p) - crit0 - BUILD.luck / 100) < 1e-9, '힘은 공격 피해, 체력은 최대 체력, 행운은 치명타를 올린다');
+  check(Math.abs(g.mods.product('damage', p) - dmg0 * 1.02) < 1e-9 && p.maxHp === hp0 + 3 * BUILD_STATS.vit.per && Math.abs(g.mods.sum('crit', p) - crit0 - BUILD_STATS.luck.per / 100) < 1e-9, '힘은 공격 피해, 체력은 최대 체력, 행운은 치명타를 올린다');
   cmd({ t: 'stat', k: 'pow' });
   check(said().includes('statNone') && g.build.left(p) === 0, '받은 점수보다 많이 찍을 수 없다');
   cmd({ t: 'stat', k: 'nope' });

@@ -10,14 +10,13 @@ import { addPlace } from './near';
 import { sourceLine } from './sources';
 
 let ui: Record<'panel' | 'gold' | 'list', HTMLElement>;
-/** 화면이 아는 대장간은 첫 번째 것 하나다 (없으면 제작이 없는 게임이라 창이 열리지 않는다) */
-const FORGE = FORGES.at(0);
-const open = (): boolean => !!FORGE && (FORGE.needs === undefined || rules.unlocked(FORGE.needs));
+/** 닿는 곳에 있고 잠금이 풀린 대장간 (서버의 craft와 같은 규칙. FORGES가 비면 제작이 없는 게임이라 창이 열리지 않는다) */
+const forgeHere = (x: number, z: number) => FORGES.find((f) => Math.hypot(x - f.x, z - f.z) <= SMITHY_REACH && (f.needs === undefined || rules.unlocked(f.needs)));
 
 export function initForge(): void {
   ui = { panel: $('forge'), gold: $('forgeGold'), list: $('forgeList') };
   renderForge();
-  addPlace('forge', FORGE ? [FORGE] : []);
+  addPlace('forge', FORGES);
   // 내 소지품(stat)이 바뀌면 다시 그린다. 공유 상태가 올 때도 전부터 다시 그렸다
   onMsg('stat', renderForge);
   onMsg('world', renderForge);
@@ -83,5 +82,5 @@ export function renderForge(): void {
 /** 가끔: 잠금이 풀렸고 그 가까이에 있을 때만 창을 연다 */
 export function forgeSlow(): void {
   const me = S.me;
-  ui.panel.hidden = !me || !FORGE || !open() || Math.hypot(me.x - FORGE.x, me.z - FORGE.z) > SMITHY_REACH;
+  ui.panel.hidden = !me || !forgeHere(me.x, me.z);
 }

@@ -34,7 +34,8 @@ export interface ClassDef {
   range: number;
   /** 기본 공격 피해 범위 */
   basic: readonly [number, number];
-  skills: readonly [SkillId, SkillId, SkillId];
+  /** 기술 칸의 기술 (SKILL_SLOTS개. 칸의 수는 게임이 정한다) */
+  skills: readonly SkillId[];
   /** 손에 드는 것의 모양. 캐릭터 모델과 무기 이름(검/활/지팡이)이 이것을 따른다 */
   hand: 'sword' | 'bow' | 'staff';
   /** 멀리서 쏘는 직업이면 날아가는 것의 모양. 없으면 붙어서 친다 */

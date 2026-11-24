@@ -2,7 +2,7 @@
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
 // 수치는 games/deungbul/shared/content/growth.ts에 있다.
-import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, isGearSlot, isItemId, isStat, rollOpt, sellPrice, wornTotal, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, isGearSlot, isItemId, isStat, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { WHY } from './wallet';
@@ -10,6 +10,12 @@ import { WHY } from './wallet';
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 /** 옵션 하나의 값이 가질 수 있는 가장 큰 수: 이보다 큰 것은 깨진 저장으로 보고 버린다 */
 const OPT_MAX = 500;
+/** 장비 한 점의 옵션 수의 한도: 가장 좋은 등급의 옵션 수 */
+const OPTS_MAX = Math.max(0, ...RARITIES.map((r) => r.opts));
+/** 장비 레벨의 한도: 이보다 큰 것은 깨진 저장으로 본다 (몬스터 레벨을 넉넉히 넘는다) */
+const GEAR_LV_MAX = 999;
+/** 무기와 갑옷처럼 바탕 아이템(ItemDef.kind가 칸의 이름)이 있는 칸인가. 칸의 id는 게임이 지으므로 넓은 문자열로 견준다 */
+const isBaseSlot = (slot: string): boolean => slot === 'weapon' || slot === 'armor';
 
 export class GearSys {
   /** 시험에서 확률을 고정할 수 있다 */
@@ -33,10 +39,8 @@ export class GearSys {
     });
 
     // 낀 장비의 옵션이 수치 보정으로 들어간다
-    g.mods.provide('damage', (p) => 1 + this.total(p, 'dmg') / 100);
-    g.mods.provide('guard', (p) => 1 - Math.min(GEAR.guardCap, this.total(p, 'guard')) / 100);
-    g.mods.provide('crit', (p) => this.total(p, 'crit') / 100);
-    g.mods.provide('hp', (p) => this.total(p, 'hp'));
+    // 옵션의 id는 게임이 짓고, 옵션마다 드는 효과(STATS의 mod)로 모아 보정한다
+    for (const mod of STAT_MODS) g.mods.provide(mod, (p) => modValue(mod, p && p.kind === 'p' ? wornMod(this.worn(p), mod) : 0));
 
     g.saves.push({
       name: 'gear',
@@ -62,9 +66,9 @@ export class GearSys {
   static valid(x: unknown): x is Gear {
     const it = x as Gear;
     return typeof x === 'object' && x !== null && num(it.uid) && isGearSlot(it.slot) && num(it.rar) && it.rar >= 0 && it.rar < RARITIES.length
-      && (it.base === undefined || (isItemId(it.base) && ITEMS[it.base].kind === it.slot)) && (it.base !== undefined) === (it.slot === 'weapon' || it.slot === 'armor')
-      && (it.made === undefined || typeof it.made === 'boolean') && (it.lock === undefined || typeof it.lock === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= 4 && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
-      && Number.isInteger(it.lv) && it.lv >= 1 && it.lv <= 20 && Number.isInteger(it.plus) && Number.isInteger(it.uid);
+      && (it.base === undefined || (isItemId(it.base) && ITEMS[it.base].kind === it.slot)) && (it.base !== undefined) === isBaseSlot(it.slot)
+      && (it.made === undefined || typeof it.made === 'boolean') && (it.lock === undefined || typeof it.lock === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= OPTS_MAX && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
+      && Number.isInteger(it.lv) && it.lv >= 1 && it.lv <= GEAR_LV_MAX && Number.isInteger(it.plus) && Number.isInteger(it.uid);
   }
 
   /** 낀 장비들이 주는 수치의 합 */
@@ -100,14 +104,15 @@ export class GearSys {
     slot ??= GEAR_SLOTS[Math.floor(rnd() * GEAR_SLOTS.length)];
     // 계약의 모양으로 부른다: 게임이 인자를 받지 않는 함수(() => 'coat')로 적어도 컴파일된다
     const pick: { weaponFor: (lv: number) => string; armorFor: (lv: number) => string } = GEAR;
-    const base = slot === 'weapon' ? pick.weaponFor(lv) : slot === 'armor' ? pick.armorFor(lv) : undefined;
+    const at: string = slot; // 칸의 id는 게임이 짓는다: 갑옷 칸이 없는 게임도 있다
+    const base = at === 'weapon' ? pick.weaponFor(lv) : at === 'armor' ? pick.armorFor(lv) : undefined;
     return { uid: 0, slot, base, rar, lv, plus: 0, opts };
   }
 
   /** 옵션 없는 기본 무기나 갑옷 (상점, 대장간, 처음 든 무기) */
   plain(base: ItemId): Gear {
     const def = ITEMS[base] as { kind: string; tier?: number };
-    return { uid: 0, slot: def.kind === 'armor' ? 'armor' : 'weapon', base, rar: 0, lv: def.tier ?? 1, plus: 0, opts: [] };
+    return { uid: 0, slot: (def.kind === 'armor' ? 'armor' : 'weapon') as GearSlot, base, rar: 0, lv: def.tier ?? 1, plus: 0, opts: [] };
   }
 
   /** 무기나 갑옷을 얻어 바로 낀다 (상점, 대장간). 산 것이 사라지지 않게 가방이 가득 차도 들어간다. 장비가 아니면 false. why: 원인의 이름 (systems/bag.ts) */
@@ -165,9 +170,9 @@ export class GearSys {
 
   /** 낀 무기나 갑옷이 바뀌었으면 겉모습 값을 맞추고 주변에 알린다 */
   private look(p: Ent, slot: GearSlot): void {
-    if (slot !== 'weapon' && slot !== 'armor') return;
+    if (!isBaseSlot(slot)) return;
     const base = p.gear.find((x) => x.uid === p.worn[slot])?.base ?? '';
-    if (slot === 'weapon') p.weapon = base; else p.armor = base;
+    if ((slot as string) === 'weapon') p.weapon = base; else p.armor = base;
     this.g.gears.push({ id: p.id, weapon: p.weapon, armor: p.armor, cls: p.cls });
   }
 

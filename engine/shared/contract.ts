@@ -11,7 +11,7 @@ import type { ClassDef, SkillDef } from './defs/combat';
 import type { ForgeDef } from './defs/craft';
 import type { DungeonDef } from './defs/dungeons';
 import type { CurrencyDef } from './defs/economy';
-import type { DailyDef, Reward } from './defs/growth';
+import type { DailyDef, Reward, StatMod } from './defs/growth';
 import type { ItemDef } from './defs/items';
 import type { MapDef } from './defs/map';
 import type { MonsterDef } from './defs/monsters';
@@ -69,7 +69,9 @@ export interface ContentContract {
   DROPS: Readonly<Partial<Record<string, { id: string; chance: number }>>>;
 
   // ---------- 장비와 성장 ----------
-  STATS: Readonly<Record<string, { base: number }>>;
+  /** 장비 옵션의 종류: id는 게임이 짓고, mod는 그 옵션이 드는 틀의 효과(공격 피해 %, 받는 피해 감소 %, 치명타 %p, 최대 체력). base는 옵션 값의 바탕 */
+  STATS: Readonly<Record<string, { base: number; mod: StatMod }>>;
+  /** 장비를 끼는 칸. id는 게임이 짓는다. 'weapon'(무기) 칸은 반드시 있고, 무기와 갑옷의 바탕 아이템은 ItemDef.kind와 같은 이름의 칸('weapon', 'armor')에 낀다 */
   GEAR_SLOTS: readonly string[];
   RARITIES: readonly { id: string; weight: number; opts: number; mult: number }[];
   GEAR: {
@@ -81,9 +83,9 @@ export interface ContentContract {
   SALVAGE: { item: string; dust: readonly number[]; perPlus: number; maxBatch: number; autoMaxRar: number; tellS: number };
   /** 가방 넓히기: 한 번에 늘어나는 칸 수와 차례대로의 값. prices가 비어 있으면 넓히기가 없는 게임이다 */
   BAG_UP: { step: number; prices: readonly number[] };
-  /** 찍을 수 있는 능력치의 종류 */
-  BUILD_STATS: readonly string[];
-  BUILD: { pointsPerLevel: number; pow: number; vit: number; luck: number; resetGold: (lv: number) => number; skillMax: number; skillPerLevel: number; skillNeedLv: (lv: number) => number; skillGold: (lv: number) => number };
+  /** 찍을 수 있는 능력치: id는 게임이 짓고, mod는 드는 틀의 효과, per는 점수 하나가 주는 값 (STATS와 같은 단위: 공격 피해 %, 치명타 %p, 체력) */
+  BUILD_STATS: Readonly<Record<string, { mod: StatMod; per: number }>>;
+  BUILD: { pointsPerLevel: number; resetGold: (lv: number) => number; skillMax: number; skillPerLevel: number; skillNeedLv: (lv: number) => number; skillGold: (lv: number) => number };
   /** 레벨 업에 필요한 경험치: 처음 값과 레벨마다 곱하는 값 */
   LEVEL: { firstNeed: number; growth: number };
   /** 전투력의 식에 드는 점수 */

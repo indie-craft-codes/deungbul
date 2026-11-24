@@ -1,6 +1,6 @@
 // 클라이언트가 아는 게임 상태. 모듈들은 이것을 읽고, 서버 메시지를 처리하는 쪽만 고친다.
 // 틀의 상태만 둔다: 게임에만 있는 상태(이 게임에서는 등탑·습격의 공유 상태와 내 퀘스트·기여)는 게임의 상태 파일에 있다 (games/deungbul/client/state.ts).
-import { GEAR, SKILL_SLOTS, maxHpFor, type Gear, type GuildView, type Mail, type RankRow } from '../shared/defs';
+import { GEAR, SKILL_SLOTS, maxHpFor, needFor, type Gear, type GuildView, type Mail, type RankRow } from '../shared/defs';
 import type { Point } from '../shared/nav';
 import type { Kind, PartyMember } from '../shared/protocol';
 import { areaAt } from '../shared/world';
@@ -84,6 +84,6 @@ export function newMe(id: number, name: string, x: number, z: number, model: Mod
   return {
     id, name, model, tag, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, phase: 0, path: null, pgx: x, pgz: z, pat: 0,
     sx: x, sz: z, srvMoving: false, srvTarget: 0, lastCmd: 0,
-    hp: maxHpFor('', 1), maxHp: maxHpFor('', 1), lv: 1, exp: 0, need: 60, sparks: 0, gold: 0, weapon: '', armor: '', items: {}, cls: '', ready: false, attackId: 0, attackAt: 0, swing: 0,
+    hp: maxHpFor('', 1), maxHp: maxHpFor('', 1), lv: 1, exp: 0, need: needFor(1), sparks: 0, gold: 0, weapon: '', armor: '', items: {}, cls: '', ready: false, attackId: 0, attackAt: 0, swing: 0,
   };
 }

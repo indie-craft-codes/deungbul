@@ -27,6 +27,10 @@ export const koNames: ContentNames = {
     snare: { name: '덫 화살', info: '대상 주변 모두에게 피해를 주고 느리게 함' },
     rest: { name: '숨 고르기', info: '체력 회복' },
   },
+  // 장비 칸, 등급, 능력치의 이름 (id는 내용의 GEAR_SLOTS, RARITIES, BUILD_STATS: 이 예제는 틀의 기본값을 그대로 쓴다)
+  gearSlots: { weapon: '무기', armor: '갑옷', ring: '반지', amulet: '목걸이', charm: '부적' },
+  rarities: { common: '평범한', uncommon: '쓸 만한', rare: '희귀한', epic: '빛나는' },
+  buildStats: { pow: '힘', vit: '체력', luck: '행운' },
   dungeons: {},
   dailies: { kill20: '몬스터 20마리 잡기', feed5: '모닥불에 장작 5개 넣기' },
   places: { bonfire: '모닥불 앞' },

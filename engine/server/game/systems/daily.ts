@@ -37,7 +37,8 @@ export class Daily {
     if (p.bot) return;
     const now = this.g.now(), today = this.dayOf(now), d = p.daily;
     if (d.day !== today) { d.day = today; d.prog = {}; d.got = []; p.metaDirty = true; p.unsaved = true; }
-    if (d.last === today) return;
+    // 출석 보상이 없는 게임(ATTEND가 빈 표)은 출석을 세지 않는다: 빈 보상의 우편이 생기지 않게
+    if (d.last === today || ATTEND.length === 0) return;
     // 어제도 왔으면 이어 가고, 하루라도 빠졌으면 1일째부터. 7일을 채운 다음 날도 1일째다
     d.streak = d.last === this.dayOf(now - DAY_MS) ? (d.streak % ATTEND.length) + 1 : 1;
     d.last = today;

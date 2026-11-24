@@ -21,7 +21,7 @@ import { BUILD, CLASSES, COMBAT, FULL_TOWER_OFFER, GLOW_BRIGHT, GLOW_BRIGHT_REGE
 import { newGame } from './game';
 import { compare, readFixture, snapshotOf } from './locale-snapshot';
 import {
-  ATTEND, BUILD_STATS, CAMPS, CLASS_IDS, CONTRIB_TIERS, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MONSTERS, QUESTS, RARITIES, RECIPES,
+  ATTEND, BUILD_STAT_IDS, CAMPS, CLASS_IDS, CONTRIB_TIERS, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MONSTERS, QUESTS, RARITIES, RECIPES,
   RESIDENTS, SHOP_STOCK, SKILL_DEFS, STAT_IDS, sellPrice, type MonsterId,
 } from '../shared/defs';
 import { TOWERS, rng } from '../shared/world';
@@ -60,7 +60,7 @@ for (const P of PACKS) {
   check(sameSet(keys('matDrops'), Object.keys(DROPS)), `[${lang}] 재료를 떨어뜨리는 몬스터가 모두 있다`);
   check(keys('attend').length === ATTEND.length && keys('contrib').length === CONTRIB_TIERS.length && keys('camps').length === CAMPS.length, `[${lang}] 출석 보상, 기여 단계, 몬스터 무리가 모두 있다`);
   check(sameSet(keys('residents'), RESIDENTS.map((r) => r.id)) && sameSet(keys('towers'), TOWERS.map((t) => t.id)), `[${lang}] 모든 주민과 등탑이 있다`);
-  check(sameSet(keys('rarities'), RARITIES.map((r) => r.id)) && sameSet(keys('buildStats'), BUILD_STATS) && keys('options').length === STAT_IDS.length * RARITIES.length, `[${lang}] 모든 등급, 능력치, 장비 옵션이 있다`);
+  check(sameSet(keys('rarities'), RARITIES.map((r) => r.id)) && sameSet(keys('buildStats'), BUILD_STAT_IDS) && keys('options').length === STAT_IDS.length * RARITIES.length, `[${lang}] 모든 등급, 능력치, 장비 옵션이 있다`);
   check(keys('enhance').length === ENHANCE.max && keys('enhanceTotal').length === ENHANCE.max, `[${lang}] 강화 표에 모든 단계가 있다 (+${ENHANCE.max}까지)`);
   // 분해로 나오는 가루의 표와 가방 넓히기의 값 표: 정의(SALVAGE, BAG_UP)를 따른다
   const salvageRows = byId.get('salvage')?.rows ?? [], bagUpRows = byId.get('bagUp')?.rows ?? [];
@@ -81,7 +81,7 @@ for (const P of PACKS) {
   const bad = texts.filter((s) => /undefined|NaN|\[object|null|Infinity|function|=>/.test(s));
   check(bad.length === 0, `[${lang}] undefined, NaN, [object 같은 글자가 없다${bad.length ? ': ' + bad[0] : ''}`);
   // id가 그대로 보이면 안 된다: 칸이 id와 똑같거나, 밑줄·숫자가 든 id(sword1, shade_bram)가 문장에 들어 있는 경우
-  const ids = [...monsterIds, ...itemIds, ...skillIds, ...CLASS_IDS, ...DAILY_IDS, ...DUNGEON_IDS, ...QUESTS.map((q) => q.id), ...RESIDENTS.map((r) => r.id), ...RARITIES.map((r) => r.id), ...STAT_IDS, ...BUILD_STATS, ...GEAR_SLOTS, ...TOWERS.map((t) => t.id)];
+  const ids = [...monsterIds, ...itemIds, ...skillIds, ...CLASS_IDS, ...DAILY_IDS, ...DUNGEON_IDS, ...QUESTS.map((q) => q.id), ...RESIDENTS.map((r) => r.id), ...RARITIES.map((r) => r.id), ...STAT_IDS, ...BUILD_STAT_IDS, ...GEAR_SLOTS, ...TOWERS.map((t) => t.id)];
   const raw = ids.filter((id) => cells.includes(id) || (/[_\d]/.test(id) && texts.some((s) => new RegExp(`\\b${id}\\b`).test(s))));
   check(raw.length === 0, `[${lang}] id가 그대로 보이는 곳이 없다${raw.length ? ': ' + raw.join(', ') : ''}`);
 }

@@ -3,8 +3,8 @@
 // 이 게임의 문장(등탑, 퀘스트 등)과 내용의 이름(몬스터, 아이템, 직업 …)은 여기 없다: 게임의 언어 파일(games/deungbul/client/i18n/)에 있고 mergeLocale로 합친다.
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (engine/test/framework.test.ts가 검사한다).
-import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat } from '../../shared/defs';
-import { BUILD, ENHANCE, GUILD, ITEMS, MARKET, PARTY, SALVAGE } from '../../shared/defs';
+import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
+import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, buildStatDef, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
@@ -29,8 +29,20 @@ export function ro(word: string): string {
   return word + (jong === 0 || jong === 8 ? '로' : '으로');
 }
 
-const gearSlots: Record<GearSlot, string> = { weapon: '무기', armor: '갑옷', ring: '반지', amulet: '목걸이', charm: '부적' };
-const rarities: Record<string, string> = { supply: '보급형', made: '제작', common: '평범한', uncommon: '쓸 만한', rare: '희귀한', epic: '빛나는' };
+/** 장비 옵션이 드는 효과마다의 문장 (옵션과 능력치의 id는 게임이 짓고, 문장은 그것이 드는 효과로 정해진다) */
+/** 능력치가 주는 것의 문장 (체력은 '최대 체력'으로) */
+const buildMod: Record<StatMod, (v: number) => string> = {
+  damage: (v) => `공격 피해 +${v}%`,
+  guard: (v) => `받는 피해 -${v}%`,
+  crit: (v) => `치명타 +${v}%`,
+  hp: (v) => `최대 체력 +${v}`,
+};
+const modText: Record<StatMod, (v: number) => string> = {
+  damage: (v) => `공격 피해 +${v}%`,
+  guard: (v) => `받는 피해 -${v}%`,
+  crit: (v) => `치명타 +${v}%`,
+  hp: (v) => `체력 +${v}`,
+};
 /** 조작 안내의 항목들을 한 줄로 잇는다. 항목 안의 빈칸은 줄이 바뀌지 않는 빈칸으로 바꿔서, 줄이 넘어갈 때 항목 사이에서만 끊기게 한다 */
 export const keyHints = (items: string[]) => items.map((s) => s.replace(/ /g, ' ')).join(' · ');
 export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
@@ -42,7 +54,9 @@ export const num = (n: MsgArg) => Number(n).toLocaleString('ko-KR');
  * 게임은 mergeLocale(koBase(이름표), 게임의 문장)으로 자기 언어 묶음을 만든다 (이 게임: games/deungbul/client/i18n/index.ts)
  */
 export const koBase = (n: ContentNames) => {
-  const { monsters, items, classes, dungeons, dailies } = n;
+  const { monsters, items, classes, dungeons, dailies, gearSlots } = n;
+  /** 등급의 이름: 틀의 둘(보급형, 제작)과 게임의 등급 */
+  const rarities: Record<string, string> = { supply: '보급형', made: '제작', ...n.rarities };
   /** 두 번째 재화의 이름 (처치·우편·자리 비움 보상에 적힌다). 그 재화를 쓰지 않는 게임은 이름표에 적지 않고, 그러면 문장에서 그 몫이 빠진다 */
   const coin = n.currency2;
   const itemName = itemNameOf(items);
@@ -189,22 +203,13 @@ export const koBase = (n: ContentNames) => {
     dungeons,
     /** 능력치의 이름과 지금 주는 것 */
     build: {
-      stats: {
-        pow: { name: '힘', info: (v: number) => `공격 피해 +${v}%` },
-        vit: { name: '체력', info: (v: number) => `최대 체력 +${v}` },
-        luck: { name: '행운', info: (v: number) => `치명타 +${v}%` },
-      } satisfies Record<BuildStat, { name: string; info: (v: number) => string }>,
+      stats: Object.fromEntries(BUILD_STAT_IDS.map((k) => [k, { name: n.buildStats[k], info: buildMod[buildStatDef(k).mod] }])) as Record<BuildStat, { name: string; info: (v: number) => string }>,
     },
     /** 드롭 장비와 일일 임무의 이름 */
     gear: {
       slots: gearSlots,
       rarities,
-      stats: {
-        dmg: (v: number) => `공격 피해 +${v}%`,
-        guard: (v: number) => `받는 피해 -${v}%`,
-        crit: (v: number) => `치명타 +${v}%`,
-        hp: (v: number) => `체력 +${v}`,
-      } satisfies Record<Stat, (v: number) => string>,
+      stats: Object.fromEntries(STAT_IDS.map((k) => [k, modText[statMod(k)]])) as Record<Stat, (v: number) => string>,
       dailies,
     },
     skills: n.skills,

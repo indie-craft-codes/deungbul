@@ -368,7 +368,7 @@ data/, dist/             저장 파일과 빌드 결과 (저장소 뿌리, git�
 
 **새 아이템**: `games/deungbul/shared/content/items.ts`의 `ITEMS`에 더하고 언어 파일에 이름을 넣는다. `needs`에 조건을 적으면 그 조건이 풀린 뒤에(`g.rules.unlocked`) 상점에 들어온다.
 
-**새 드롭 장비 칸, 옵션, 일일 임무, 출석 보상**: `games/deungbul/shared/content/growth.ts`의 `GEAR_SLOTS`, `STATS`, `DAILIES`, `ATTEND`에 더하고 언어 파일에 이름을 넣는다. 새 옵션은 `systems/gear.ts`에서 `g.mods.provide`로 수치에 연결한다.
+**새 드롭 장비 칸, 옵션, 능력치, 일일 임무, 출석 보상**: `games/deungbul/shared/content/growth.ts`의 `GEAR_SLOTS`, `STATS`, `BUILD_STATS`, `DAILIES`, `ATTEND`에 더하고 이 게임의 언어 파일(`games/deungbul/client/i18n/`)의 이름표에 이름을 넣는다(칸은 `gearSlots`, 등급은 `rarities`, 능력치는 `buildStats`). 옵션과 능력치는 `mod`로 틀의 효과(공격 피해, 받는 피해 감소, 치명타, 최대 체력) 가운데 하나에 들며, 서버의 수치 보정과 화면의 문장은 틀이 그 효과로 만든다: 틀을 고치지 않아도 된다. 효과의 종류를 새로 만드는 것만 틀의 일이다(`engine/shared/defs/growth.ts`의 `StatMod`, `modValue`).
 
 **새 몬스터, 주민**: `games/deungbul/shared/content/`에 정의를 더하고, 이 게임의 언어 파일(`games/deungbul/client/i18n/`)에 이름을 더하고, `games/deungbul/client/scene/models.ts`의 `MONSTER_LOOKS`에 모양을 더한다. 이름이나 모양을 빠뜨리면 컴파일이 실패한다.
 

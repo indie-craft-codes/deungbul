@@ -11,15 +11,15 @@ export { ATTEND, DAILIES, ENHANCE, IDLE } from './economy';
 // ---------- 장비 ----------
 /** 장비 옵션의 종류: 공격 피해(%), 받는 피해 감소(%), 치명타 확률(%p), 최대 체력 */
 export const STATS = {
-  dmg: { base: 3 },
-  guard: { base: 2 },
-  crit: { base: 2 },
-  hp: { base: 12 },
+  dmg: { base: 3, mod: 'damage' },
+  guard: { base: 2, mod: 'guard' },
+  crit: { base: 2, mod: 'crit' },
+  hp: { base: 12, mod: 'hp' },
 } as const;
 
 /**
  * 장비를 끼는 칸. 무기와 갑옷도 낱개 장비다: 상점에서 사거나 대장간에서 만든 것은 옵션 없는 기본 장비이고,
- * 몬스터가 떨어뜨린 것은 등급에 따라 옵션이 붙는다. 칸을 더하려면 여기와 언어 파일에 더한다
+ * 몬스터가 떨어뜨린 것은 등급에 따라 옵션이 붙는다. 칸을 더하려면 여기와 이 게임의 언어 파일(이름표 gearSlots)에 더한다
  */
 export const GEAR_SLOTS = ['weapon', 'armor', 'ring', 'amulet', 'charm'] as const;
 
@@ -66,14 +66,16 @@ export const LEVEL = {
 };
 
 // ---------- 성장 선택: 능력치와 기술 강화 ----------
-/** 찍을 수 있는 능력치: 힘(공격 피해), 체력(최대 체력), 행운(치명타 확률) */
-export const BUILD_STATS = ['pow', 'vit', 'luck'] as const;
+/** 찍을 수 있는 능력치: 힘(공격 피해), 체력(최대 체력), 행운(치명타 확률). per: 점수 하나가 주는 것 (공격 피해 +1%, 최대 체력 +8, 치명타 확률 +0.4%p) */
+export const BUILD_STATS = {
+  pow: { mod: 'damage', per: 1 },
+  vit: { mod: 'hp', per: 8 },
+  luck: { mod: 'crit', per: 0.4 },
+} as const;
 
 export const BUILD = {
   /** 레벨이 하나 오를 때마다 받는 점수 */
   pointsPerLevel: 3,
-  /** 점수 하나가 주는 것: 공격 피해 +1%, 최대 체력 +8, 치명타 확률 +0.4%p */
-  pow: 1, vit: 8, luck: 0.4,
   /** 찍은 점수를 모두 돌려받는 값 */
   resetGold: BUILD_COST.resetGold,
   /** 기술 강화: 가장 높은 단계, 단계마다 피해·회복이 늘어나는 비율 */

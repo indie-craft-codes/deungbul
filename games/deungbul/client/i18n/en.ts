@@ -45,6 +45,9 @@ const dailies = { kill30: 'Defeat 30 monsters', offer10: 'Offer 10 sparks', enha
 
 /** Content names the engine's sentences use (passed to enBase) */
 export const enNames: ContentNames = {
+  gearSlots: { weapon: 'Weapon', armor: 'Armor', ring: 'Ring', amulet: 'Necklace', charm: 'Charm' },
+  rarities: { common: 'Plain', uncommon: 'Fine', rare: 'Rare', epic: 'Radiant' },
+  buildStats: { pow: 'Might', vit: 'Vigor', luck: 'Luck' },
   monsters,
   items,
   classes,

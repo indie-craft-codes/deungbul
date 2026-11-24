@@ -152,8 +152,11 @@ export const GUEST_NAME = 'Camper';
 
 기본값으로 받는 이름: `SKILL_SLOTS`, `HP_PER_LEVEL`, `ATTACK_CD`, `COMBAT`, `SLOW_FACTOR`, `REJOIN_KEEP_S`, `GUEST_NAME`, `MONSTER_ATTACK_RANGE`, `MONSTER_ATTACK_CD`, `LEASH`, `RESPAWN_S`, `MONSTER_AI`, `BOSS`, `SHOP_REACH`, `POTION_MAX`, `POTION_CD`, `MAT_MAX`, `SMITHY_REACH`, `STATS`, `GEAR_SLOTS`, `RARITIES`, `ENHANCE`, `BUILD_STATS`, `BUILD`, `LEVEL`, `POWER`, `MAIL_MAX`, `IDLE`, `ATTEND`, `RANK`, `PORTAL_REACH`, `PARTY`, `CHANNEL`, `GUILD`, `MARKET`, `ECON_*` 열 개.
 
-- `STATS`, `GEAR_SLOTS`, `RARITIES`, `BUILD_STATS`의 id는 틀의 낱말이다(틀의 문장이 이 id로 이름을 갖고 있다). 바꾸지 않는다.
-- `SKILL_SLOTS`는 3이다(화면의 기술 단추와 단축키 1~3).
+- `STATS`, `GEAR_SLOTS`, `RARITIES`, `BUILD_STATS`의 id는 게임이 짓는다. 이름은 이름표(`ContentNames`)의 `gearSlots`, `rarities`, `buildStats`에 적는다.
+  - 장비 옵션(`STATS`)과 능력치(`BUILD_STATS`)는 `mod`로 틀의 효과 넷 가운데 하나에 든다: `damage`(공격 피해 %), `guard`(받는 피해 감소 %, 한도 `GEAR.guardCap`), `crit`(치명타 %p), `hp`(최대 체력). 옵션과 능력치가 주는 것의 문장("공격 피해 +3%")은 이 효과로 틀이 만든다. 효과의 종류를 새로 만들려면 틀을 고쳐야 한다.
+  - 예: `STATS = { atk: { base: 4, mod: 'damage' }, life: { base: 10, mod: 'hp' } }`, `BUILD_STATS = { grit: { mod: 'hp', per: 6 } }`(점수 하나에 최대 체력 +6).
+  - 칸에는 `'weapon'`이 반드시 있다. 무기와 갑옷의 바탕 아이템은 `ItemDef.kind`와 같은 이름의 칸(`'weapon'`, `'armor'`)에 낀다. 갑옷 칸이 없는 게임도 된다(`games/sample/test/empty.test.ts`의 `otherGear`가 지킨다).
+- `SKILL_SLOTS`는 기본 3이다(화면의 기술 단추와 단축키 1~3). 직업의 `skills`는 이 수만큼 적는다.
 
 맵은 이렇게 생겼다. 지역 하나, 손으로 놓은 장애물 하나(모닥불), 나무와 바위를 뿌리는 규칙 둘.
 

@@ -1,7 +1,7 @@
 // 메뉴 창: 드롭 장비(끼기·강화·팔기·분해·잠금·비교, 가방 넓히기), 우편, 일일 임무와 출석, 거래소, 길드, 순위를 탭으로 나눠 보여 준다. (단축키 M)
 // 새 탭을 더하려면 TABS에 이름과 그리는 함수를 더한다.
 // 창의 높이와 탭 줄, 닫기 단추의 자리는 고정이고(style.css의 #menu) 내용만 창 안에서 스크롤한다.
-import { BAG_UP, BUILD, BUILD_STATS, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
+import { BAG_UP, BUILD, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
 import { onMsg, onSlow } from '../bus';
@@ -288,11 +288,11 @@ function drawBuild(): void {
   if (!me) return;
   // 능력치: 남은 점수를 나눠 찍는다
   ui.list.append(el('baghead', loc.fmt.statLeft(b.left, BUILD.pointsPerLevel)));
-  for (const k of BUILD_STATS) {
+  for (const k of BUILD_STAT_IDS) {
     const n = b.stats[k] ?? 0;
-    ui.list.append(row(`${loc.build.stats[k].name} ${n}`, loc.build.stats[k].info(Math.round(n * BUILD[k] * 10) / 10), [button('+1', () => send({ t: 'stat', k }), b.left < 1)]));
+    ui.list.append(row(`${loc.build.stats[k].name} ${n}`, loc.build.stats[k].info(Math.round(n * buildStatDef(k).per * 10) / 10), [button('+1', () => send({ t: 'stat', k }), b.left < 1)]));
   }
-  const spent = BUILD_STATS.reduce((s, k) => s + (b.stats[k] ?? 0), 0), cost = BUILD.resetGold(me.lv);
+  const spent = BUILD_STAT_IDS.reduce((s, k) => s + (b.stats[k] ?? 0), 0), cost = BUILD.resetGold(me.lv);
   ui.list.append(button(loc.fmt.statResetFor(cost), () => send({ t: 'statReset' }), spent === 0 || me.gold < cost));
   // 기술: 골드로 단계를 올린다
   ui.list.append(el('baghead', t('skillUpHead')));

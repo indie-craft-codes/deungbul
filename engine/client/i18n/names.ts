@@ -1,7 +1,7 @@
 // 내용의 이름표: 틀의 문장이 문장 안에 넣는 내용의 이름들. 게임의 언어 파일이 채워 틀의 문장 묶음(koBase, enBase)에 넘긴다.
 // 이름이 빠지면 컴파일되지 않는다: 칸의 열쇠가 내용 정의의 id 타입이다 (몬스터를 더하고 이름을 안 적으면 오류).
-import { CLASS_IDS, DAILY_IDS, DUNGEON_IDS, ITEMS, MONSTERS, SKILL_DEFS, handOf } from '../../shared/defs';
-import type { ClassId, DailyId, DungeonId, ItemId, MonsterId, SkillId } from '../../shared/defs';
+import { BUILD_STAT_IDS, CLASS_IDS, DAILY_IDS, DUNGEON_IDS, GEAR_SLOTS, ITEMS, MONSTERS, RARITIES, SKILL_DEFS, handOf } from '../../shared/defs';
+import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemId, MonsterId, SkillId } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 
 export interface ContentNames {
@@ -12,6 +12,12 @@ export interface ContentNames {
   skills: Record<SkillId, { name: string; info: string }>;
   dungeons: Record<DungeonId, { name: string; info: string }>;
   dailies: Record<DailyId, string>;
+  /** 장비 칸의 이름 (GEAR_SLOTS) */
+  gearSlots: Record<GearSlot, string>;
+  /** 장비 등급의 이름 (RARITIES의 id). 보급형·제작은 틀의 낱말이라 틀의 언어 파일에 있다 */
+  rarities: Record<string, string>;
+  /** 찍을 수 있는 능력치의 이름 (BUILD_STATS). 주는 것의 문장은 능력치가 드는 효과(mod)로 틀이 만든다 */
+  buildStats: Record<BuildStat, string>;
   /** 쓰러진 뒤 다시 일어나는 곳의 이름 (안내문 'died'의 값). 없는 id는 id가 그대로 보인다 */
   places: Record<string, string>;
   /** 두 번째 재화의 이름. name: 값 앞에 붙이는 이름, one: 수를 셀 때의 낱말 (영어의 단수형). 그 재화를 쓰지 않는 게임(몬스터 정의에 sparks가 없다)은 적지 않는다: 틀의 문장에서 그 몫이 빠진다 */
@@ -49,6 +55,9 @@ export const idNames = (): ContentNames => ({
   skills: byId(keysOf(SKILL_DEFS), (id) => ({ name: id, info: '' })),
   dungeons: byId(DUNGEON_IDS, (id) => ({ name: id, info: '' })),
   dailies: byId(DAILY_IDS, (id) => id),
+  gearSlots: byId(GEAR_SLOTS, (id) => id),
+  rarities: Object.fromEntries(RARITIES.map((r) => [r.id, r.id])),
+  buildStats: byId(BUILD_STAT_IDS, (id) => id),
   places: {},
   nameA: ['Player'],
   nameB: [''],
