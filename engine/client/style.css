@@ -481,6 +481,7 @@ html:lang(en) body { overflow-wrap: break-word; }
   .mrow.gear .acts button, .baghead.gbag button, .mrow.gbulk .acts button { min-height: 36px; }
   .mrow .acts button.glock, .mrow .acts button.gmorebtn { min-width: 40px; }
   .gtools select { min-height: 36px; }
+  .mrow.gear .what.tap { min-height: 36px; }
 }
 /* 가방의 장비 줄: 단추(끼기, 잠금, 펼치기)를 이름 옆에 둔다 */
 .mrow.gear.gside { flex-direction: row; align-items: center; }
@@ -490,3 +491,7 @@ html:lang(en) body { overflow-wrap: break-word; }
 .gtools { flex-wrap: wrap; }
 .gtools select { flex: 1 1 150px; }
 @media (pointer: coarse) { .gtools select { flex-basis: 230px; } }
+/* 장비 탭 안의 분해·넓히기 결과 (흘러가는 알림은 메뉴 창에 가려진다) */
+.note.gres { font-weight: 700; padding: 2px 7px; border-left: 3px solid; }
+.note.gres.ok { color: #a6efae; border-color: #7fd68a; background: rgba(127, 214, 138, .12); }
+.note.gres.fail { color: #ffb3a8; border-color: var(--hp); background: rgba(220, 90, 76, .14); }

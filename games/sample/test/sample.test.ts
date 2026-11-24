@@ -99,8 +99,16 @@ import { check, connect, until } from '@engine/test/harness';
   const has = (k: string) => k in g;
   cmd({ t: 'offer', to: 'tower', n: 1 }); cmd({ t: 'dungeon', id: 'crypt' }); cmd({ t: 'craft', id: 'axe2' }); cmd({ t: 'craft', id: 'sword3' }); cmd({ t: 'buy', id: 'potion' }); cmd({ t: 'class', id: 'warrior' });
   run(2);
-  check(!has('tower') && !has('raid') && !has('quests') && !has('keepers') && !has('rest') && !g.commands.has('offer') && Object.keys(g.state()).join() === 'bonfire' && g.personal.map((x) => x.name).join() === 'fed' && g.rules.siege === null,
-    '등탑·습격·퀘스트·등탑지기·휴식 시스템과 불씨 바치기 명령이 없다 (공유 상태는 bonfire, 개인 상태는 fed뿐)');
+  check(!has('tower') && !has('raid') && !has('quests') && !has('keepers') && !has('rest') && !g.commands.has('offer') && Object.keys(g.state()).join() === 'bonfire' && g.personal.map((x) => x.name).filter((k) => k !== 'bag' && k !== 'salvage').join() === 'fed' && g.rules.siege === null,
+    '등탑·습격·퀘스트·등탑지기·휴식 시스템과 불씨 바치기 명령이 없다 (공유 상태는 bonfire, 게임의 개인 상태는 fed뿐. 틀의 가방·분해 칸은 따로 있다)');
+  // 가루를 주지 않는 게임(defaults의 SALVAGE.dust가 비어 있다): 분해·자동 분해·가방 넓히기가 꺼져 있고, 화면도 개인 상태(on: false)를 보고 그리지 않는다
+  {
+    const it = g.gear.roll(1); g.bag.giveGear(p, it, 'test');
+    const gold = p.gold = 1e6, n = p.gear.length;
+    cmd({ t: 'salvage', uids: [it.uid] }); cmd({ t: 'autoSalvage', rar: 0 }); cmd({ t: 'bagUp' });
+    const st = g.personal.find((x) => x.name === 'salvage')!.state(p) as { on: boolean; auto: number };
+    check(p.gear.length === n && p.autoSalvage === -1 && p.bagUp === 0 && p.gold === gold && st.on === false && st.auto === -1, '분해·자동 분해·가방 넓히기가 없는 게임이다: 명령은 아무것도 바꾸지 않고, 개인 상태는 분해가 꺼져 있다고 알린다');
+  }
   check(p.cls === 'woodcutter' && p.weapon === 'axe2' && g.dungeon.count === 0 && [...g.ents.values()].every((e) => !e.def?.boss && !e.raid), '없는 던전·제작·아이템·직업을 가리키는 명령은 아무 일도 하지 않는다 (보스와 습격 몹도 없다)');
   check(CAMPS.every((c) => c.types.every((t) => t in MONSTERS)), '무리의 몬스터는 모두 이 게임의 몬스터다');
 }

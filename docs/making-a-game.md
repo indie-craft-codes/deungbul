@@ -456,7 +456,8 @@ export function installSample(g: Game): void {
     if (dist(p, BONFIRE) > BONFIRE.reach) { g.notify(p, 'bonfireFar'); return; }
     if (have < 1) { g.notify(p, 'noLogs'); return; }
     const n = Math.min(want, have), cold = this.heat <= 0;
-    p.items.log = have - n;
+    // 장작은 틀의 가방 통로로 뺀다: 장부가 어디로 나갔는지 적고, 아이템 칸을 고치는 곳이 가방 하나로 남는다
+    g.bag.takeItem(p, 'log', n, 'cmd:feed');
     p.fed += n; p.dirty = true; p.unsaved = true;
     this.heat = Math.min(BONFIRE.heatMax, this.heat + n * BONFIRE.heatPerLog);
     g.stateDirty = true; g.saveDirty = true;
@@ -470,7 +471,7 @@ export function installSample(g: Game): void {
 
 | 표시 | 언제 |
 |---|---|
-| `p.dirty = true` | 틀의 수치(레벨, 골드, 소지품 `p.items`)를 바꿨다: 본인에게 `stat`이 다시 간다 |
+| `p.dirty = true` | 틀의 수치(레벨, 골드, 소지품 `p.items`)를 바꿨다: 본인에게 `stat`이 다시 간다 (소지품은 직접 고치지 않고 가방 통로 `g.bag`으로 넣고 뺀다. 통로가 이 표시도 세운다) |
 | `p.unsaved = true` | 그 캐릭터에 저장할 것이 생겼다 |
 | `p.metaDirty = true` | 장비, 우편, 일일 임무를 바꿨다 |
 | `g.stateDirty = true` | 공유 상태(`g.shared`)가 바뀌었다: 모두에게 `world`가 다시 간다 |

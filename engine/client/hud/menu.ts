@@ -5,7 +5,8 @@ import { BAG_UP, BUILD, BUILD_STATS, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEM
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
 import { onMsg, onSlow } from '../bus';
-import { L, itemName, onLangChange, t } from '../i18n';
+import { L, forInput, itemName, onLangChange, t } from '../i18n';
+import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { UiKey } from '../i18n/ko';
 import { send } from '../net';
 import { S } from '../state';
@@ -100,8 +101,13 @@ const act = {
   openUid: 0,
   /** 분해를 한 번 누른 장비, 넓히기를 한 번 눌렀는가 (한 번 더 눌러야 된다), 일괄 분해로 고른 등급 (-1이면 고르지 않음) */
   salvUid: 0, salvTimer: 0, upArmed: false, upTimer: 0, bulk: -1,
+  /** 장비 탭에서 방금 한 일(분해, 넓히기)의 서버 답: 창 안에 잠깐 보여 준다. 흘러가는 알림은 메뉴 창에 가려 보이지 않는다 */
+  res: null as { k: MsgKey; a: MsgArg[] } | null, resTimer: 0,
 };
 
+/** 장비 탭 안에 보여 줄 서버의 답: 된 것과 거절된 것 (자동 분해는 사냥 중에 자주 오므로 흘러가는 알림에만 둔다) */
+const GEAR_OK: ReadonlySet<MsgKey> = new Set<MsgKey>(['salvaged', 'bagUpDone']);
+const GEAR_FAIL: ReadonlySet<MsgKey> = new Set<MsgKey>(['salvageCant', 'salvageFull', 'gearLocked', 'bagUpMax']);
 /** 지금 낀 장비들 (칸의 순서대로): 장비 비교의 기준 */
 const wornNow = (): Gear[] => { const m = S.meta, out: Gear[] = []; for (const slot of GEAR_SLOTS) { const it = m.gear.find((x) => x.uid === m.worn[slot]); if (it) out.push(it); } return out; };
 /** 비교의 결론을 나타내는 표시: 색만으로 가르지 않게 모양도 다르다 (▲ 더 좋음, ▼ 더 나쁨, ◆ 엇갈림, = 비슷) */
@@ -248,7 +254,7 @@ function salvageTools(rest: Gear[]): HTMLElement[] {
     const upTo = rarName(String(act.bulk));
     const go = button(loc.fmt.salvageAllGo(targets.length), () => { send({ t: 'salvage', uids: targets.map((x) => x.uid) }); act.bulk = -1; renderMenu(); }, !targets.length || over || targets.length > SALVAGE.maxBatch);
     go.classList.add('armed');
-    const r = row(targets.length ? loc.fmt.salvageAllPreview(upTo, targets.length, dust) : loc.fmt.salvageAllNone(upTo), over ? loc.fmt.salvageOver(cap - have) : '', [go, button(t('salvageCancel'), () => { act.bulk = -1; renderMenu(); })], 'gbulk');
+    const r = row(targets.length ? loc.fmt.salvageAllPreview(upTo, targets.length, dust) : loc.fmt.salvageAllNone(upTo), over ? loc.fmt.salvageOver(cap - have) : '', [...(targets.length ? [go] : []), button(t('salvageCancel'), () => { act.bulk = -1; renderMenu(); })], 'gbulk'); // 대상이 없으면 분해 단추를 그리지 않는다 (0점 분해는 뜻이 없다)
     r.setAttribute('role', 'status');
     out.push(r);
   }
@@ -268,6 +274,7 @@ function drawGear(): void {
   }
   const rest = m.gear.filter((x) => m.worn[x.slot] !== x.uid).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
   ui.list.append(bagHead());
+  if (act.res) { const ok = GEAR_OK.has(act.res.k), r = el('note gres ' + (ok ? 'ok' : 'fail'), forInput(L().msg[act.res.k](act.res.a))); r.setAttribute('role', 'status'); ui.list.append(r); }
   // 가방이 가득 찼으면 눈에 띄게 알린다: 새로 떨어지는 장비가 조용히 버려진다
   if (m.gear.length >= S.bag.max) { const warn = el('note gwarn', S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull')); warn.setAttribute('role', 'status'); ui.list.append(warn); }
   if (S.salvage.on) ui.list.append(...salvageTools(rest));
@@ -537,7 +544,7 @@ export function renderMenu(soft = false): void {
   if ((focus instanceof HTMLInputElement || focus instanceof HTMLSelectElement) && ui.list.contains(focus)) { ui.gold.textContent = L().fmt.gold(S.me.gold); return; }
   // 전투 중에는 상태 메시지가 초당 여러 번 온다. 그때마다 단추를 새로 만들면 누르는 사이에 단추가 사라져 클릭이 먹지 않으므로,
   // 화면에 영향을 주는 값이 그대로면 다시 그리지 않는다
-  const sig = JSON.stringify([tab, L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid, act.openUid, act.salvUid, act.upArmed, act.bulk, S.bag, S.salvage, S.me.items]);
+  const sig = JSON.stringify([tab, L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid, act.openUid, act.salvUid, act.upArmed, act.bulk, act.res, S.bag, S.salvage, S.me.items]);
   if (soft === true && sig === lastSig) return;
   lastSig = sig;
   ui.gold.textContent = L().fmt.gold(S.me.gold);
@@ -601,6 +608,14 @@ export function initMenu(): void {
   onMsg('rank', (m) => { S.rank = { list: m.list, me: m.me }; renderMenu(); });
   onMsg('stat', () => renderMenu(true)); // 골드가 바뀌면 강화 단추의 상태도 바뀐다
   // 강화의 결과를 누른 그 줄에 잠깐 보여 준다
+  // 분해·넓히기의 답을 장비 탭 안에 보여 준다 (5초)
+  onMsg('sys', (m) => {
+    if (!GEAR_OK.has(m.k) && !GEAR_FAIL.has(m.k)) return;
+    act.res = { k: m.k, a: m.a ?? [] };
+    clearTimeout(act.resTimer);
+    act.resTimer = window.setTimeout(() => { act.res = null; renderMenu(true); }, 5000);
+    renderMenu(true);
+  });
   onMsg('sys', (m) => {
     if (!act.enhWait) return;
     if (m.k === 'enhanceOk' || m.k === 'enhanceFail') {
