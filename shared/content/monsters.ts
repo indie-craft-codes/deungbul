@@ -48,6 +48,9 @@ export const BOSS = {
   hpPerPlayer: 0.6,
   /** 이 인원까지만 체력에 반영한다 */
   maxScale: 10,
+  /** 맞서는 사람으로 세는 조건: 보스에게서 이 거리(m) 안에 있고, 마지막으로 때린 지 이 시간(초)이 지나지 않았다 (보스가 지금 노리는 사람은 때리지 않아도 센다) */
+  countRange: 36,
+  countS: 20,
   /** 내려치기: 몇 초마다, 예고 시간, 범위, 피해 */
   slamEveryS: 8,
   slamWarnS: 1.2,

@@ -6,7 +6,7 @@ import { check } from './harness';
 {
   let clock = new Date(2026, 10, 23, 15, 0, 0).getTime();
   const g = new Game({ now: () => clock });
-  const p = g.players.spawn('지킴이', false);
+  const p = g.players.spawn('지킴이', false, null, 'keeper-key'); // 명단은 저장 키로 사람을 구분한다 (손님은 오르지 않는다)
   const said = () => g.notices.filter((n) => n.id === p.id).map((n) => `${n.k}:${n.a.join(',')}`);
   const offer = (to: string, n: number) => { g.notices = []; p.x = TOWER.x + 2; p.z = TOWER.z + 2; g.command(p, { t: 'offer', to, n }); };
   p.sparks = 500;

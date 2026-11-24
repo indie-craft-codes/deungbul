@@ -81,6 +81,10 @@ export type MsgKey =
   | 'marketGone' // [] 이미 팔렸거나 내려간 물건
   | 'marketOwn' // [] 자기 물건은 살 수 없다
   | 'marketCanceled' // [] 올린 물건을 내렸다
+  | 'marketMailFull' // [우편 한도] 물건이 붙은 우편이 너무 많아 거래소에서 올리거나 살 수 없다
+  | 'marketCrowded' // [] 거래소 전체에 올라온 물건이 한도에 닿아 더 올릴 수 없다
+  | 'raidAbandoned' // [채널 번호] 그 채널을 지키는 사람이 없어, 남은 적이 등탑을 치고 사라졌다
+  | 'chatWait' // [] 같은 주소(또는 서버 전체)의 대화가 너무 많아 방금 한 말이 전해지지 않았다
   | 'marketNeedLv' // [필요한 레벨]
   | 'guildGuest' // [] 손님은 길드에 들 수 없다
   | 'guildNeedLv' // [필요한 레벨]

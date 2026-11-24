@@ -1,7 +1,8 @@
 // 거래소: 플레이어끼리 장비와 제작 재료를 골드로 사고판다. 올린 물건은 판매자에게서 빠져 거래소가 맡는다(복사가 생기지 않게).
 // 판 값과 돌아오는 물건은 우편으로 간다: 판매자가 접속해 있지 않아도 받아야 하므로 사람을 저장 키(Ent.pid)로 가리킨다.
 // 손님(저장 키가 없는 접속)은 쓸 수 없다. 거래소는 월드와 함께 저장되고, 규칙의 수치는 shared/content/social.ts의 MARKET에 있다.
-import { ITEMS, MARKET, MAT_MAX, isItemId, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward } from '../../../shared/defs';
+import { ITEMS, MAIL_MAX, MARKET, MAT_MAX, hasGoods, isItemId, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward } from '../../../shared/defs';
+import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { GearSys } from './gear';
@@ -51,12 +52,13 @@ export class Market {
   }
 
   private load(data: unknown): void {
+    if (typeof data !== 'object' || data === null) return;
     const d = data as { next?: unknown; burned?: unknown; list?: unknown };
     if (!Array.isArray(d.list)) return;
     for (const raw of d.list as Listing[]) {
       if (typeof raw !== 'object' || raw === null || !int(raw.id, 1, Number.MAX_SAFE_INTEGER) || this.listings.has(raw.id)) continue;
       if (typeof raw.seller !== 'string' || !raw.seller || typeof raw.name !== 'string' || !int(raw.price, 1, MARKET.maxPrice) || typeof raw.until !== 'number' || !Number.isFinite(raw.until)) continue;
-      const l: Listing = { id: raw.id, seller: raw.seller, name: raw.name, n: 1, price: raw.price, until: raw.until };
+      const l: Listing = { id: raw.id, seller: raw.seller, name: raw.name.slice(0, NAME_MAX), n: 1, price: raw.price, until: raw.until };
       if (GearSys.valid(raw.gear)) l.gear = raw.gear;
       else if (isMat(raw.item) && int(raw.n, 1, MAT_MAX)) { l.item = raw.item; l.n = raw.n; }
       else continue;
@@ -100,6 +102,17 @@ export class Market {
     if (s) this.tellMine(s);
   }
 
+  /**
+   * 우편함에 물건이 붙은 우편이 한도만큼 쌓였는가. 그러면 올리기와 사기를 막는다:
+   * 가방이 가득한 채 올리고 내리거나 사면 물건이 우편으로 가고, 그런 우편은 밀려나지 않아서 우편함이 한도 없는 창고가 된다.
+   * 내리기와 기간 만료는 막지 않는다 (물건이 갈 곳이 없어지면 안 된다). 그래도 올려 둘 수 있는 수가 정해져 있어 넘치는 양은 그만큼이다.
+   */
+  private mailFull(p: Ent): boolean {
+    if (p.mail.filter((m) => hasGoods(m.r)).length < MAIL_MAX) return false;
+    this.g.notify(p, 'marketMailFull', MAIL_MAX);
+    return true;
+  }
+
   /** 물건을 올린다. 올리는 순간 판매자의 가방에서 빠진다 */
   private post(p: Ent, m: Record<string, unknown>): void {
     const g = this.g;
@@ -107,6 +120,8 @@ export class Market {
     if (p.lv < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
     if (!int(m.price, MARKET.minPrice, MARKET.maxPrice)) { g.notify(p, 'marketPriceBad', MARKET.maxPrice); return; }
     if (this.own(p.pid).length >= MARKET.maxListings) { g.notify(p, 'marketFull', MARKET.maxListings); return; }
+    if (this.mailFull(p)) return;
+    if (this.listings.size >= MARKET.maxTotal) { g.notify(p, 'marketCrowded'); return; }
     const l: Listing = { id: this.nextId, seller: p.pid, name: p.name, n: 1, price: m.price, until: g.now() + MARKET.hours * 3600000 };
     if (m.uid !== undefined) {
       const it = int(m.uid, 1, Number.MAX_SAFE_INTEGER) ? p.gear.find((x) => x.uid === m.uid) : undefined;
@@ -150,6 +165,7 @@ export class Market {
     if (!l || l.until <= g.now()) { g.notify(p, 'marketGone'); return; }
     if (l.seller === p.pid) { g.notify(p, 'marketOwn'); return; }
     if (p.lv < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
+    if (this.mailFull(p)) return;
     if (!(p.gold >= l.price)) { g.notify(p, 'noGold'); return; }
     // 여기부터는 되돌리지 않는다: 먼저 목록에서 빼서 같은 물건이 두 번 팔리지 않게 한다
     this.listings.delete(id);

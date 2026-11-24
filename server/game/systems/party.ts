@@ -13,6 +13,8 @@ export class Party {
   private of = new Map<number, Group>();
   /** 받은 초대: 받은 사람 id → 보낸 사람 id와 만료 시각(게임 시계) */
   private invites = new Map<number, { from: number; until: number }>();
+  /** 다시 초대할 수 있는 시각(게임 시계): '보낸 사람>받은 사람'별. 사람은 저장 키로 적는다(재접속으로 지워지지 않게). 손님은 엔티티 번호 */
+  private again = new Map<string, number>();
   /** 나간 사람의 이름을 알리려고 기억해 둔다 */
   private names = new Map<number, string>();
   private nextId = 1;
@@ -29,6 +31,8 @@ export class Party {
     g.on('playerLeft', (id) => { this.invites.delete(id); this.leave(id); });
   }
 
+  private static pair(from: Ent, to: Ent): string { return `${from.pid || '#' + from.id}>${to.pid || '#' + to.id}`; }
+
   /** 그 사람의 파티원 id들 (자신 포함). 파티가 없으면 빈 배열 */
   membersOf(id: number): readonly number[] { return this.of.get(id)?.members ?? []; }
 
@@ -43,7 +47,10 @@ export class Party {
     const pending = this.invites.get(t.id);
     // 봇, 이미 파티가 있는 사람, 다른 초대를 받고 있는 사람은 초대할 수 없다
     if (t.bot || this.of.has(t.id) || (pending && pending.until > g.clock && pending.from !== p.id)) { g.notify(p, 'partyBusy', t.name); return; }
+    // 방금 거절당했거나 받지 않은 채 사라진 초대는 한동안 다시 보내지 못한다 (거절하자마자 다시 뜨는 초대 창 방지)
+    if ((this.again.get(Party.pair(p, t)) ?? -Infinity) > g.clock) { g.notify(p, 'partyBusy', t.name); return; }
     this.invites.set(t.id, { from: p.id, until: g.clock + PARTY.inviteS });
+    this.again.set(Party.pair(p, t), g.clock + PARTY.inviteS + PARTY.reinviteS); // 받지 않고 두면 초대가 사라진 뒤부터 센다
     g.notify(p, 'partyInvited', t.name);
     g.partyOut.push({ id: t.id, msg: { t: 'pinv', id: p.id, name: p.name, s: PARTY.inviteS } });
   }
@@ -52,6 +59,7 @@ export class Party {
     const g = this.g, inv = this.invites.get(p.id);
     this.invites.delete(p.id);
     const from = inv && inv.until > g.clock ? g.ents.get(inv.from) : undefined;
+    if (from) this.again.delete(Party.pair(from, p)); // 받아들인 사이에는 간격을 두지 않는다
     if (!from || this.of.has(p.id)) { g.notify(p, 'partyGone'); return; }
     let group = this.of.get(from.id);
     if (group && group.members.length >= PARTY.max) { g.notify(p, 'partyFull'); return; }
@@ -70,7 +78,7 @@ export class Party {
     const inv = this.invites.get(p.id);
     this.invites.delete(p.id);
     const from = inv && this.g.ents.get(inv.from);
-    if (from) this.g.notify(from, 'partyDeclined', p.name);
+    if (from) { this.again.set(Party.pair(from, p), this.g.clock + PARTY.reinviteS); this.g.notify(from, 'partyDeclined', p.name); }
   }
 
   /** 파티에서 나간다 (접속이 끊겨도 불린다). 혼자 남으면 파티가 풀린다. */
@@ -131,6 +139,7 @@ export class Party {
     this.t += dt;
     if (this.t < PARTY.syncS) return;
     this.t = 0;
+    for (const [k, until] of this.again) if (until <= this.g.clock) this.again.delete(k);
     for (const group of this.groups.values()) this.sync(group);
   }
 }

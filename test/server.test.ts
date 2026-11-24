@@ -164,6 +164,9 @@ try {
   // 습격: 시작하면 적이 나타나고, 다 막으면 밝기가 오르고 보상을 받는다
   const game = server.game, glow0 = a.glow;
   check(a.raid.phase === 'idle', '평소에는 습격이 없다');
+  // 적의 수는 최근에 스스로 움직인 사람만 센다 (서 있기만 한 사람은 세지 않는다): 둘 다 방금 명령을 냈다
+  a.send({ t: 'stop' }); b.send({ t: 'stop' });
+  await until(() => [a, b].every((p) => game.clock - game.ents.get(p.id)!.lastAct < 5));
   game.raid.start();
   check(await until(() => a.raid.phase === 'active' && a.raid.foes === 10 && a.raid.towerMaxHp === RAID.towerHpBase + glow0 * 3), `습격이 시작되면 인원에 맞는 적이 온다 (2명: ${a.raid.foes}마리, 등탑 내구 ${a.raid.towerMaxHp})`);
   check(await until(() => [...game.ents.values()].filter((e) => e.raid).length === 10), '습격 적이 월드에 나타난다');

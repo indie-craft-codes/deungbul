@@ -24,22 +24,45 @@ const SAVE_EVERY_MS = 60000;
 const JOIN_WITHIN_MS = 10000; // 연결하고 이 안에 접속 절차를 밟지 않으면 끊는다 (빈 연결로 자리를 채우지 못하게)
 const MAX_PER_IP = 12; // 한 주소에서 동시에 열 수 있는 연결 (같은 집의 여러 사람은 되고, 수백 개는 안 된다)
 const MAX_AWAY = 60; // 주인 없이 사냥 중인 캐릭터의 상한
+// 대화량의 상한. 사람마다의 간격(CHAT_GAP_MS)만으로는 연결을 여러 개 열어 초당 수십 줄을 뿌릴 수 있었다.
+// 한 주소: 한꺼번에 6줄까지, 그 뒤로는 초당 3줄 (같은 집의 서너 사람이 함께 떠들 만큼은 된다)
+const CHAT_IP_BURST = 6;
+const CHAT_IP_PER_S = 3;
+// 서버 전체: 한꺼번에 40줄까지, 그 뒤로는 초당 20줄 (주소를 여럿 쓰더라도 모두의 화면과 회선에 가는 양에는 끝이 있게)
+const CHAT_ALL_BURST = 40;
+const CHAT_ALL_PER_S = 20;
+/** 사람별 제한 기록을 마지막으로 쓴 뒤 이만큼 지나고 접속해 있지도 않으면 지운다 (가장 긴 간격인 신고 간격과 같다) */
+const LIMIT_KEEP_MS = REPORT_GAP_MS;
 const AWAY_MIN_LV = 3; // 이 레벨부터 자리 비움 사냥이 된다 (막 만든 캐릭터를 수천 개 남겨 두지 못하게)
 
 interface Client {
   ws: WebSocket; ent: Ent | null; known: Set<number>;
-  tokens: number; lastChat: number; lastRename: number; alive: boolean;
+  tokens: number; alive: boolean;
+  /** 마지막으로 이름을 바꾼 시각. 연결이 아니라 사람의 기록(Person)을 읽고 쓴다 */
+  lastRename: number;
   /** 저장 키(접속 토큰의 해시). 토큰 없이 들어온 손님은 null이고 저장하지 않는다 */
   key: string | null;
-  /** 최근에 한 말 (가리기 전의 원문). 신고가 들어오면 함께 적는다 */
-  said: string[];
-  /** 내가 신고한 상대(엔티티 id)와 그 시각 */
-  reported: Map<number, number>;
   /** 접속한 주소 (주소별 연결 수를 세는 데 쓴다) */
   ip: string;
   /** 저장된 캐릭터가 있었는가. 없던 사람은 직업을 고르기 전에는 저장하지 않는다 */
   hadSave: boolean;
 }
+
+/**
+ * 사람마다의 제한 기록. 연결(Client)에 두면 연결을 여러 개 열거나 다시 접속해서 비켜 갈 수 있으므로,
+ * 저장 키(없으면 접속 주소)로 묶어 서버가 켜져 있는 동안 남긴다.
+ */
+interface Person {
+  lastChat: number; lastRename: number;
+  /** 최근에 한 말 (가리기 전의 원문). 신고가 들어오면 함께 적는다 */
+  said: string[];
+  /** 내가 신고한 상대(그 사람의 기록 열쇠)와 그 시각 */
+  reported: Map<string, number>;
+  /** 이 기록을 마지막으로 쓴 시각 (정리할 때 본다) */
+  used: number;
+}
+/** 대화량을 재는 통: 남은 양과 마지막으로 채운 시각 */
+interface Bucket { left: number; at: number }
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -84,6 +107,25 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const maxClients = opts.maxClients ?? MAX_CLIENTS;
   const maxPerIp = opts.maxPerIp ?? MAX_PER_IP, maxAway = opts.maxAway ?? MAX_AWAY;
   const perIp = new Map<string, number>();
+  const people = new Map<string, Person>();
+  /** 그 연결의 사람을 가리키는 열쇠: 저장 키가 있으면 그것, 손님은 접속 주소 (손님은 같은 주소의 손님끼리 한 사람으로 묶인다) */
+  const who = (c: Client): string => (c.key ? 'k:' + c.key : 'i:' + c.ip);
+  function person(c: Client): Person {
+    const k = who(c);
+    let p = people.get(k);
+    if (!p) people.set(k, p = { lastChat: 0, lastRename: 0, said: [], reported: new Map(), used: 0 });
+    p.used = Date.now();
+    return p;
+  }
+  const chatIp = new Map<string, Bucket>(), chatAll: Bucket = { left: CHAT_ALL_BURST, at: Date.now() };
+  /** 통에서 한 줄 몫을 꺼낸다. 비어 있으면 false */
+  function take(b: Bucket, now: number, burst: number, perS: number): boolean {
+    b.left = Math.min(burst, b.left + ((now - b.at) / 1000) * perS);
+    b.at = now;
+    if (b.left < 1) return false;
+    b.left--;
+    return true;
+  }
   // 측정: 구간 동안의 시간과 전송량을 모은다
   const m = { since: performance.now(), tick: [] as number[], flush: [] as number[], lag: [] as number[], bytes: 0, msgs: 0 };
 
@@ -195,11 +237,15 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
 
   function chat(c: Client, e: Ent, raw: unknown): void {
     const text = clean(raw, CHAT_MAX);
-    const now = Date.now();
-    if (!text || now - c.lastChat < CHAT_GAP_MS) return;
-    c.lastChat = now;
-    c.said.push(text);
-    if (c.said.length > REPORT_LINES) c.said.shift();
+    const now = Date.now(), me = person(c);
+    if (!text || now - me.lastChat < CHAT_GAP_MS) return;
+    me.lastChat = now;
+    // 한 주소가 보내는 양과 서버 전체의 양에도 끝이 있다. 넘친 말은 전하지 않고, 말한 사람에게만 알린다
+    let ip = chatIp.get(c.ip);
+    if (!ip) chatIp.set(c.ip, ip = { left: CHAT_IP_BURST, at: now });
+    if (!take(ip, now, CHAT_IP_BURST, CHAT_IP_PER_S) || !take(chatAll, now, CHAT_ALL_BURST, CHAT_ALL_PER_S)) { send(c, sys('chatWait')); return; }
+    me.said.push(text);
+    if (me.said.length > REPORT_LINES) me.said.shift();
     broadcast({ t: 'chat', id: e.id, name: e.name, text: mask(text) });
   }
 
@@ -208,10 +254,11 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (!num(id)) return;
     const target = byEnt.get(id);
     if (!target?.ent || target === c) return;
-    const now = Date.now();
-    if (now - (c.reported.get(id) ?? -Infinity) < REPORT_GAP_MS) { send(c, sys('reportWait')); return; }
-    c.reported.set(id, now);
-    try { store.saveReport({ at: now, by: e.name, byKey: c.key, target: target.ent.name, targetKey: target.key, lines: [...target.said] }); }
+    // 신고한 사람도 당한 사람도 연결이 아니라 사람으로 본다: 어느 쪽이 다시 접속해도 간격이 이어지고, 당한 사람이 한 말도 남아 있다
+    const now = Date.now(), me = person(c), tk = who(target);
+    if (now - (me.reported.get(tk) ?? -Infinity) < REPORT_GAP_MS) { send(c, sys('reportWait')); return; }
+    me.reported.set(tk, now);
+    try { store.saveReport({ at: now, by: e.name, byKey: c.key, target: target.ent.name, targetKey: target.key, lines: [...(people.get(tk)?.said ?? [])] }); }
     catch (err) { console.error('[server] 신고 저장 실패:', err); }
     console.log(`[server] 신고: ${e.name} → ${target.ent.name}`);
     send(c, sys('reported', target.ent.name));
@@ -258,7 +305,12 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (clients.size + away.size >= maxClients) { full(); return; }
     if ((perIp.get(ip) ?? 0) >= maxPerIp) { full(); return; }
     perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
-    const c: Client = { ws, ent: null, known: new Set(), tokens: MSG_BURST, lastChat: 0, lastRename: 0, alive: true, key: null, said: [], reported: new Map(), ip, hadSave: false };
+    const c: Client = {
+      ws, ent: null, known: new Set(), tokens: MSG_BURST, alive: true, key: null, ip, hadSave: false,
+      // 이름 바꾸기 간격도 사람의 기록에 둔다 (다시 접속해서 간격을 지우지 못하게)
+      get lastRename() { return people.get(who(c))?.lastRename ?? 0; },
+      set lastRename(at: number) { person(c).lastRename = at; },
+    };
     clients.add(c);
     // 접속 절차를 밟지 않는 연결은 오래 두지 않는다
     const joinTimer = setTimeout(() => { if (!c.ent && clients.has(c)) ws.close(1008, 'no join'); }, JOIN_WITHIN_MS);
@@ -376,6 +428,14 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
 
   // 응답 없는 연결 정리
   const heartbeat = setInterval(() => {
+    // 사람별 제한 기록도 여기서 정리한다: 접속해 있지 않고 오래 쓰지 않은 기록, 간격이 지난 신고 기록, 다시 가득 찼을 대화 통
+    const now = Date.now(), online = new Set<string>();
+    for (const c of clients) online.add(who(c));
+    for (const [k, p] of people) {
+      for (const [t, at] of p.reported) if (now - at >= REPORT_GAP_MS) p.reported.delete(t);
+      if (!online.has(k) && now - p.used >= LIMIT_KEEP_MS) people.delete(k);
+    }
+    for (const [k, b] of chatIp) if ((now - b.at) / 1000 * CHAT_IP_PER_S >= CHAT_IP_BURST) chatIp.delete(k);
     for (const c of clients) {
       if (!c.alive) { c.ws.terminate(); continue; }
       c.alive = false;

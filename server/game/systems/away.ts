@@ -7,10 +7,14 @@ import type { Game } from '../game';
 
 const ROAM = 60; // 자리를 비운 곳에서 이보다 먼 몬스터는 쫓지 않는다
 const THINK_S = 0.3;
-/** 자리를 비운 채 사냥을 이어 가는 최대 시간(초). 지나면 저장하고 월드에서 나간다 */
+/**
+ * 자리를 비운 채 사냥을 이어 가는 시간의 하루 한도(초). 다 쓰면 저장하고 월드에서 나가고, 그날은 끊겨도 캐릭터가 남지 않는다.
+ * 한 번 비울 때마다가 아니라 하루(자정 기준, 일일 임무와 같은 날짜)에 쓴 시간을 모아서 센다:
+ * 한 번마다 세면 잠깐 다시 접속하는 것만으로 처음부터 다시 세어 끝없이 이어진다. 쓴 시간은 캐릭터와 함께 저장한다(Ent.away).
+ */
 export const AWAY_MAX_S = 8 * 3600;
 
-interface Stay { x: number; z: number; until: number; at: number; sparks: number; gold: number; lv: number }
+interface Stay { x: number; z: number; at: number; sparks: number; gold: number; lv: number }
 
 export class Away {
   private stays = new Map<number, Stay>();
@@ -19,11 +23,30 @@ export class Away {
     // 클라이언트가 자동 사냥을 켜고 끌 때마다 알려 준다
     g.commands.set('auto', (p, m) => { p.auto = m.on === true; });
     g.on('playerLeft', (id) => { this.stays.delete(id); });
+    g.saves.push({
+      name: 'away',
+      save: (p) => ({ day: p.away.day, used: Math.round(p.away.used) }),
+      load: (p, raw) => {
+        if (typeof raw !== 'object' || raw === null) return;
+        const d = raw as { day?: unknown; used?: unknown };
+        if (typeof d.day !== 'string' || typeof d.used !== 'number' || !Number.isFinite(d.used)) return;
+        p.away = { day: d.day.slice(0, 10), used: Math.max(0, Math.min(AWAY_MAX_S, d.used)) };
+      },
+    });
   }
 
-  /** 접속이 끊겼다: 여기서부터 서버가 대신 사냥한다. */
+  /** 오늘 더 쓸 수 있는 자리 비움 사냥 시간(초). 날이 바뀌었으면 쓴 시간을 비운다 */
+  left(p: Ent): number {
+    const today = this.g.daily.dayOf(this.g.now());
+    if (p.away.day !== today) p.away = { day: today, used: 0 };
+    return Math.max(0, AWAY_MAX_S - p.away.used);
+  }
+
+  /** 접속이 끊겼다: 여기서부터 서버가 대신 사냥한다. 오늘 한도를 다 썼으면 남지 않는다. */
   start(p: Ent): void {
-    this.stays.set(p.id, { x: p.x, z: p.z, until: this.g.clock + AWAY_MAX_S, at: this.g.now(), sparks: p.sparks, gold: p.gold, lv: p.lv });
+    // 자동 사냥을 끄면 통신 계층이 다음 전송 때 저장하고 내보낸다 (시간이 다 됐을 때와 같은 길)
+    if (this.left(p) <= 0) { p.auto = false; return; }
+    this.stays.set(p.id, { x: p.x, z: p.z, at: this.g.now(), sparks: p.sparks, gold: p.gold, lv: p.lv });
     p.wait = 0;
   }
 
@@ -40,7 +63,10 @@ export class Away {
     const s = this.stays.get(p.id);
     if (!s) return;
     const g = this.g;
-    if (g.clock > s.until) { p.auto = false; return; } // 통신 계층이 저장하고 내보낸다
+    if (this.left(p) <= 0) { p.auto = false; p.unsaved = true; return; } // 통신 계층이 저장하고 내보낸다
+    // 쓴 시간이 분 단위로 넘어갈 때마다 저장할 것으로 표시한다 (서버가 갑자기 꺼져도 쓴 시간이 크게 되돌아가지 않게)
+    if (Math.floor((p.away.used + dt) / 60) !== Math.floor(p.away.used / 60)) p.unsaved = true;
+    p.away.used += dt;
     p.wait -= dt;
     if (p.wait > 0) return;
     p.wait = THINK_S;
