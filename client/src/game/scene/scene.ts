@@ -28,12 +28,15 @@ export function moodOf(s: Stage, raid: boolean, dark: boolean): Mood {
 
 /** 지금 맞춰 둔 구역. 구역을 넘어가면 분위기를 다시 맞춘다 */
 let shownZone = -1;
+/** 지금 맞춰 둔 분위기가 던전 안의 것인가. 던전을 드나들면 분위기를 다시 맞춘다 */
+let shownInside = false;
 /** 공유 상태(등탑 밝기, 습격)가 바뀌었거나 다른 구역으로 넘어갔을 때: 등불과 분위기를 내가 있는 구역에 맞춘다 */
 function render(): void {
   const zone = myZone(), glow = zoneGlow();
   shownZone = zone;
+  shownInside = inDungeon();
   GS.world.tower.glows.forEach((g, i) => scenery?.setTowerGlow(i, g));
-  view.setMood(moodOf(stage(), zone === 0 && GS.world.raid.phase === 'active', glow === 0 || inDungeon())); // 던전 안은 늘 어둡다
+  view.setMood(moodOf(stage(), zone === 0 && GS.world.raid.phase === 'active', glow === 0 || shownInside)); // 던전 안은 늘 어둡다
 }
 
 export function initScene(): void {
@@ -42,6 +45,8 @@ export function initScene(): void {
   view.scene.add(goalBeam);
   setMapPaint(mapPaint);
   onMsg('world', render);
-  onSlow(() => { if (S.me && myZone() !== shownZone) render(); });
+  // 던전은 구역 번호가 그 곁의 들판과 같다: 구역만 보면, 등탑이 켜진 구역에서 던전에 들어갔을 때 다음 공유 상태가 올 때까지 밖의 밝은 분위기가 남는다
+  // (나올 때도 던전의 어둠이 남는다). 그래서 던전을 드나든 것도 함께 본다
+  onSlow(() => { if (S.me && (myZone() !== shownZone || inDungeon() !== shownInside)) render(); });
   render();
 }
