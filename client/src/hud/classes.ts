@@ -1,17 +1,25 @@
-// 직업 고르기 창. 직업을 아직 고르지 않았으면 저절로 뜨고, 등탑 창의 단추로 다시 열 수 있다.
+// 직업 고르기 창. 직업을 아직 고르지 않았으면 저절로 뜨고, 게임이 둔 단추(openClasses: 이 게임에서는 등탑 창의 단추)로 다시 열 수 있다.
 import { CLASS_IDS, classOf } from '../../../shared/defs';
 import { chooseClass } from '../actions';
 import { $ } from '../app';
-import { L } from '../i18n';
+import { onMsg, onSlow } from '../bus';
+import { L, onLangChange } from '../i18n';
 import { S } from '../state';
 
-const ui = { pick: $('classPick'), list: $('classList') };
+let ui: Record<'pick' | 'list', HTMLElement>;
 let open = false;
 
+/** 직업을 다시 고르려고 창을 연다 */
+export function openClasses(): void { open = true; renderClasses(); classSlow(); }
+
 export function initClasses(): void {
-  $('classBtn').addEventListener('click', () => { open = true; renderClasses(); classSlow(); });
+  ui = { pick: $('classPick'), list: $('classList') };
   $('classClose').addEventListener('click', () => { open = false; classSlow(); });
   renderClasses();
+  // 내 수치(stat)를 받으면 곧바로 띄울지 정한다: 직업이 없는 새 캐릭터에게 느린 주기를 기다리지 않고 창을 띄운다
+  onMsg('stat', classSlow);
+  onSlow(classSlow);
+  onLangChange(renderClasses);
 }
 
 /** 언어가 바뀌면 다시 그린다. */

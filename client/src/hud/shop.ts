@@ -1,15 +1,18 @@
 // 상점 창(길 상인 가까이에서 열린다)과 물약 버튼.
-import { ITEMS, POTION_MAX, nearShop, SHOP_STOCK, itemDef, isItemId, type ItemId } from '../../../shared/defs';
+import { ITEMS, POTION_MAX, SHOPS, nearShop, SHOP_STOCK, itemDef, isItemId, type ItemId } from '../../../shared/defs';
 import { buy, usePotion } from '../actions';
 import { $ } from '../app';
-import { L, itemInfo, itemName, t } from '../i18n';
+import { onFrame, onMsg, onSlow } from '../bus';
+import { L, itemInfo, itemName, onLangChange, t } from '../i18n';
 import { rules } from '../rules';
 import { S } from '../state';
+import { addPlace } from './near';
 
-const ui = { panel: $('shop'), gold: $('shopGold'), list: $('shopList') };
+let ui: Record<'panel' | 'gold' | 'list', HTMLElement>;
 let potion: { button: HTMLButtonElement; count: HTMLElement; cd: HTMLElement; time: HTMLElement } | null = null;
 
 export function initShop(): void {
+  ui = { panel: $('shop'), gold: $('shopGold'), list: $('shopList') };
   // 물약 버튼: 기술 버튼 옆에 둔다 (단축키 Q)
   const b = document.createElement('button');
   b.type = 'button';
@@ -19,6 +22,13 @@ export function initShop(): void {
   $('skills').appendChild(b);
   potion = { button: b, count: b.querySelector<HTMLElement>('.n')!, cd: b.querySelector<HTMLElement>('.cd')!, time: b.querySelector<HTMLElement>('.t')! };
   renderShop();
+  addPlace('shop', SHOPS);
+  // 내 소지품(stat)이나 잠금 상태(공유 상태)가 바뀌면 다시 그린다
+  onMsg('stat', renderShop);
+  onMsg('world', renderShop);
+  onFrame(shopFrame);
+  onSlow(shopSlow);
+  onLangChange(renderShop);
 }
 
 /** 내 소지품, 잠금 상태(공유 상태), 언어가 바뀌면 다시 그린다. */

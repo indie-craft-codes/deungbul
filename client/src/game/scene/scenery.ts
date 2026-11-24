@@ -1,9 +1,9 @@
 // 이 게임의 건물: 연못, 마을의 집과 등탑, 던전의 문과 던전 안의 바닥·기둥. 화면의 틀(scene/view.ts)과 나눠 두어, 다른 게임은 이 파일만 바꾸면 된다.
 // 놓이는 자리는 맵 정의(shared/content/map.ts)에서 읽는다.
 import * as THREE from 'three';
-import { DUNGEONS, stageOf } from '../../../shared/defs';
-import { AREAS, HOUSES, PILLARS, POND, TOWERS } from '../../../shared/world';
-import { mat, part } from './models';
+import { DUNGEONS, stageOf } from '../../../../shared/defs';
+import { AREAS, HOUSES, PILLARS, POND, TOWERS } from '../../../../shared/world';
+import { mat, part } from '../../scene/models';
 
 /** 등탑 하나의 빛나는 부분: 등불, 빛무리, 실제 광원 */
 interface TowerLamp { lamp: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>; halo: THREE.Mesh<THREE.IcosahedronGeometry, THREE.MeshBasicMaterial>; light: THREE.PointLight }
@@ -113,6 +113,6 @@ export class Scenery {
   }
 }
 
-/** 세워 둔 건물들. 화면이 땅을 깐 뒤에 한 번 세우고(Look.scenery), 등불 밝기는 deungbul/scene.ts가 맞춘다 */
+/** 세워 둔 건물들. 화면이 땅을 깐 뒤에 한 번 세우고(Look.scenery), 등불 밝기는 scene.ts가 맞춘다 */
 export let scenery: Scenery | null = null;
 export function buildScenery(scene: THREE.Scene): void { scenery = new Scenery(scene); }

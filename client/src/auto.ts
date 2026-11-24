@@ -2,7 +2,7 @@
 // 직접 이동하거나 멈추면 꺼진다. 서버에는 사람이 누른 것과 같은 명령만 보낸다.
 import { AUTO, AWAY, pickPotion, pickSkill } from '../../shared/auto';
 import { DUNGEONS, isDungeonId } from '../../shared/defs';
-import { attack, autoWalk, goToTown, monstersNear, usePotion, useSkill } from './actions';
+import { attack, autoWalk, monstersNear, usePotion, useSkill } from './actions';
 import { $ } from './app';
 import { onMsg } from './bus';
 import { feed } from './hud/notify';
@@ -60,7 +60,6 @@ export function syncAuto(kept: boolean): void {
 
 export function initAuto(): void {
   btn.addEventListener('click', () => { toggleAuto(); btn.blur(); });
-  $('townBtn').addEventListener('click', (e) => { goToTown(); (e.currentTarget as HTMLElement).blur(); });
   setInterval(tick, 300);
   onMsg('welcome', (m) => syncAuto(m.auto === true));
 }

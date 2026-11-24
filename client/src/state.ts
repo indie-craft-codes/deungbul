@@ -1,8 +1,9 @@
 // 클라이언트가 아는 게임 상태. 모듈들은 이것을 읽고, 서버 메시지를 처리하는 쪽만 고친다.
-import { GLOW_START, RESIDENTS, SKILL_SLOTS, maxHpFor, stageOf, type Gear, type GuildView, type Mail, type RankRow, type Stage } from '../../shared/defs';
+// 틀의 상태만 둔다: 게임에만 있는 상태(이 게임에서는 등탑·습격의 공유 상태와 내 퀘스트·기여)는 게임의 상태 파일에 있다 (game/state.ts).
+import { SKILL_SLOTS, maxHpFor, type Gear, type GuildView, type Mail, type RankRow } from '../../shared/defs';
 import type { Point } from '../../shared/nav';
-import type { Kind, PartyMember, WorldState } from '../../shared/protocol';
-import { AREAS, TOWERS, areaAt, zoneOf } from '../../shared/world';
+import type { Kind, PartyMember } from '../../shared/protocol';
+import { AREAS, areaAt } from '../../shared/world';
 import type { Tag } from './hud/tags';
 import type { Model } from './scene/models';
 
@@ -49,16 +50,8 @@ export const S = {
   online: 0,
   pingMs: -1,
   zoom: 1,
-  /** 서버 전체가 공유하는 상태 */
-  world: {
-    tower: { glow: GLOW_START, glows: TOWERS.map((t) => t.start), residents: RESIDENTS.map(() => 0) },
-    keepers: [],
-    raid: { phase: 'idle', left: 0, foes: 0, towerHp: 0, towerMaxHp: 0 },
-  } as WorldState,
   /** 내 파티의 구성원 (나 포함). 파티가 없으면 비어 있다 */
   party: [] as PartyMember[],
-  /** 공유 상태를 받은 시각. 남은 시간을 직접 세는 데 쓴다 */
-  worldAt: 0,
   /** 기술별 쿨다운이 끝나는 시각과 길이(ms) */
   cdEnd: Array.from({ length: SKILL_SLOTS }, () => 0),
   cdLen: Array.from({ length: SKILL_SLOTS }, () => 1),
@@ -80,16 +73,8 @@ export const S = {
   itemCdLen: 1,
 };
 
-/** 내가 있는 구역의 번호 (접속 전에는 첫 구역) */
-export const myZone = (): number => zoneOf(S.me?.x ?? 0);
 /** 내가 들판이 아닌 지역(던전)에 있는가 */
 export const inDungeon = (): boolean => !!S.me && AREAS[areaAt(S.me.x, S.me.z)]?.id !== 'field';
-/** 내가 있는 구역의 등탑 밝기 */
-export const zoneGlow = (): number => S.world.tower.glows[myZone()] ?? 0;
-/** 내가 있는 구역의 등탑 밝기 단계. 이동 속도 예측과 화면 분위기에 쓴다 */
-export const stage = (): Stage => stageOf(zoneGlow());
-/** 공유 상태의 남은 시간(초)을 지금 기준으로 */
-export const raidLeft = (now: number): number => Math.max(0, S.world.raid.left - (now - S.worldAt) / 1000);
 
 export function newMe(id: number, name: string, x: number, z: number, model: Model, tag: Tag): Me {
   return {

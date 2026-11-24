@@ -2,13 +2,14 @@
 // 각 행동은 서버에 명령을 보내고, 응답을 기다리지 않고 화면에 먼저 반영할 것을 반영한다.
 import { POTIONS, potionOrder } from '../../shared/auto';
 import { SKILL_SLOTS, classOf, skillDef, type ClassId, type ItemId } from '../../shared/defs';
-import { TOWN, clampPoint } from '../../shared/world';
+import { clampPoint } from '../../shared/world';
 import { view } from './app';
 import { markMove } from './fx';
 import { feed } from './hud/notify';
 import { hideCard, showCard } from './hud/party';
 import { t } from './i18n';
 import { send } from './net';
+import { rules } from './rules';
 import { S, type Remote } from './state';
 
 const MOVE_SEND_MS = 100; // 방향 입력 중에 이동 명령을 보내는 간격
@@ -35,11 +36,12 @@ export function autoWalk(x: number, z: number): void {
   send({ t: 'move', x: me.tx, z: me.tz });
 }
 
-/** 첫불 마을의 등탑 앞까지 걸어간다 (물약을 사거나 불씨를 바치러 돌아갈 때). */
+/** 마을까지 걸어간다 (물약을 사거나 볼일을 보러 돌아갈 때). 어디가 마을인지는 게임의 규칙이 안다 (rules.home: 이 게임에서는 첫불 마을의 등탑 앞). */
 export function goToTown(): void {
   if (!S.me) return;
-  // 등탑 창이 열리는 거리 안까지 간다. 여럿이 눌러도 한 점에 겹치지 않게 조금씩 흩는다
-  moveTo(TOWN.x + (Math.random() - 0.5) * 1.6, TOWN.z + (Math.random() - 0.5) * 1.6);
+  // 여럿이 눌러도 한 점에 겹치지 않게 조금씩 흩는다
+  const town = rules.home();
+  moveTo(town.x + (Math.random() - 0.5) * 1.6, town.z + (Math.random() - 0.5) * 1.6);
   feed(t('goingTown'));
 }
 
@@ -132,12 +134,6 @@ export function steer(kx: number, kz: number, now: number): void {
     me.moving = false;
     send({ t: 'stop' });
   }
-}
-
-/** 등탑에 불씨를 바친다. 가진 것보다 많이 고르면 가진 만큼만 바친다. */
-export function offer(to: 'tower' | 'resident', n: number): void {
-  const me = S.me;
-  if (me && me.sparks > 0) send({ t: 'offer', to, n: Math.min(n, me.sparks) });
 }
 
 export function chooseClass(id: ClassId): void { send({ t: 'class', id }); }

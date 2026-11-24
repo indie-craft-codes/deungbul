@@ -14,11 +14,7 @@
     "server/game/systems/keepers.ts",
     "server/game/systems/quests.ts",
     "server/game/systems/rest.ts",
-    "client/src/game/i18n",
-    "client/src/game/words.ts",
-    "client/src/hud/quest.ts",
-    "client/src/hud/marks.ts",
-    "client/src/scene/scenery.ts",
+    "client/src/game",
     "client/src/guide"
   ]
 }
