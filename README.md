@@ -146,7 +146,8 @@ npm start          # http://localhost:3001
 npm test           # 모든 테스트: 틀의 시험(engine/test/) → 이 게임의 시험(games/deungbul/test/). test/all.ts가 차례로 돌린다
 npm run test:engine   # 틀만 (이 게임의 규칙 플러그인 없이 돈다)
 npm run test:game     # 이 게임만
-npx tsx test/all.ts growth server deungbul/quests   # 고른 것만. 틀: framework move shop classes monsters combat craft party nav boss growth channel build market guild dungeon bag compare salvage wallet ledger boundary harden security server
+npx tsx test/all.ts growth server deungbul/quests fx/shop   # 고른 것만. 틀(등불지기 내용 위): framework growth channel market dungeon bag compare salvage wallet ledger boundary harden security server
+                                                    #           틀(시험용 내용 위, 앞에 fx/): monsters move nav classes shop craft party build guild boss combat
                                                     #           이 게임(앞에 deungbul/): framework shop classes combat craft party keepers quests nav zone2 channel ledger harden guide server
 npm run typecheck          # 전체(틀 + 등불지기)와 틀만(tsconfig.engine.json)을 차례로 타입 검사한다
 npm run typecheck:engine   # 틀만: engine/의 소스가 이 게임의 선언 없이 컴파일되는가 (npm test의 framework도 같은 검사를 돌린다)

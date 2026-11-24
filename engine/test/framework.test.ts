@@ -31,6 +31,8 @@ const fixture = <T>(name: string): T => JSON.parse(fs.readFileSync(new URL(`../.
  */
 const ALIASES: [string, string][] = [['@engine/', 'engine/'], ['@game/', 'games/deungbul/']];
 function resolveSpec(root: URL, file: string, spec: string): string | null {
+  // 틀의 시험용 내용(engine/test/fx) 안에서는 @game이 그 폴더를 가리킨다 (engine/test/fx/tsconfig.json)
+  if (file.startsWith('engine/test/fx/') && spec.startsWith('@game/')) return `engine/test/fx/${spec.slice('@game/'.length)}`;
   const p = spec.startsWith('.') ? new URL(spec, new URL(file, root)).href.slice(root.href.length) : ALIASES.map(([alias, dir]) => (spec.startsWith(alias) ? dir + spec.slice(alias.length) : null)).find((x) => x !== null) ?? null;
   // 폴더를 가리키면 그 폴더의 입구(index.ts)다: 틀의 입구 '@engine/server', '@engine/client', '@engine/shared'
   return p !== null && !fs.existsSync(new URL(`${p}.ts`, root)) && fs.existsSync(new URL(`${p}/index.ts`, root)) ? `${p}/index` : p;
@@ -534,14 +536,14 @@ function noonOf(day: unknown): number {
   /** 틀의 시험이 읽어도 되는 게임의 파일: 내용 통로와 내용 정의뿐이다 (아직 등불지기의 맵 좌표와 몬스터·아이템 id 위에서 돈다. 별칭 @game으로만 읽는다) */
   const isContent = (f: string) => /^games\/deungbul\/shared\/(defs|world)\.ts$/.test(f) || f.startsWith('games/deungbul/shared/content/');
   const isGame = (f: string) => f.startsWith('games/') && !isContent(f);
-  const engineTests = fs.readdirSync(new URL('engine/test/', root)).filter((n) => n.endsWith('.test.ts') || n === 'harness.ts').map((n) => `engine/test/${n}`);
+  const engineTests = ['engine/test/', 'engine/test/fx/'].flatMap((d) => fs.readdirSync(new URL(d, root)).filter((n) => n.endsWith('.test.ts') || n === 'harness.ts').map((n) => `${d}${n}`));
   const gameTests = list('games/deungbul/test/');
   const testLeaks = engineTests.flatMap((f) => [
     ...importsOf(f).filter(isGame).map((to) => `${f} -> ${to}`),
     ...reach(f).filter(isGame).map((to) => `${f} => ${to}`),
   ]);
   for (const x of new Set(testLeaks)) console.log('  ' + x);
-  check(engineTests.length >= 15 && reach('engine/test/move.test.ts').includes('engine/server/game/systems/shop.ts') && reach('games/deungbul/test/game.ts').includes('games/deungbul/server/systems/tower.ts') && gameTests.some((f) => importsOf(f).some(isGame)),
+  check(engineTests.length >= 15 && reach('engine/test/fx/move.test.ts').includes('engine/server/game/systems/shop.ts') && reach('engine/test/fx/move.test.ts').includes('engine/test/fx/shared/content/index.ts') && reach('games/deungbul/test/game.ts').includes('games/deungbul/server/systems/tower.ts') && gameTests.some((f) => importsOf(f).some(isGame)),
     `시험 파일의 import를 따라가 읽어 낸다 (틀의 시험 파일 ${engineTests.length}개: harness.ts 포함, 게임의 시험 폴더의 파일 ${gameTests.length}개)`);
   check(testLeaks.length === 0, '틀의 시험 파일은 이 게임의 플러그인(games/deungbul/server/deungbul.ts), 규칙 시스템, 게임의 시험(games/deungbul/test/)을 import하지 않는다 (따라 들어오는 것까지)');
 }

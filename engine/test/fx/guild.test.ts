@@ -1,12 +1,12 @@
-// 길드 (서버 없이 게임 규칙만 돌린다)
-import { GUILD } from '../shared/defs';
-import type { ServerMsg } from '../shared/protocol';
-import { Game } from '../server/game/game';
-import { check } from './harness';
+// 길드 (서버 없이 게임 규칙만 돌린다. 시험용 내용 위에서)
+import { GUILD } from '../../shared/defs';
+import type { ServerMsg } from '../../shared/protocol';
+import { Game } from '../../server/game/game';
+import { check } from '../harness';
 
 {
   const g = new Game();
-  const mk = (name: string, pid: string, lv = 10) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'warrior'); p.lv = lv; p.gold = 5000; return p; };
+  const mk = (name: string, pid: string, lv = 10) => { const p = g.players.spawn(name, false, null, pid); g.classes.apply(p, 'knight'); p.lv = lv; p.gold = 5000; return p; };
   const said = (p: { id: number }) => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
   const cmd = (p: Parameters<typeof g.command>[0], m: Record<string, unknown>) => { g.notices = []; g.out = []; g.casts = []; g.command(p, m); };
   const view = (p: { id: number }) => (g.out.filter((o) => o.id === p.id && o.msg.t === 'guild').pop()?.msg as Extract<ServerMsg, { t: 'guild' }> | undefined);
@@ -51,10 +51,10 @@ import { check } from './harness';
   check(b.gold === 5000 - GUILD.expPerGuildLevel && view(a)?.g?.lv === 2 && said(a).includes('guildLevelUp') && Math.abs(g.mods.sum('exp', c) - 2 * GUILD.expPerLevel) < 1e-9, '기부하면 길드 레벨이 오르고 보너스가 커진다');
   cmd(b, { t: 'guild', a: 'give', n: 999999 });
   check(said(b).includes('noGold'), '가진 것보다 많이 기부할 수 없다');
-  const slime = [...g.ents.values()].find((e) => e.kind === 'm' && e.type === 'slime' && !e.dead)!;
+  const mite = [...g.ents.values()].find((e) => e.kind === 'm' && e.type === 'mite' && !e.dead)!;
   const exp0 = c.exp + c.lv * 1e6;
-  c.need = 1e9; c.x = slime.x + 1; c.z = slime.z;
-  g.combat.damage(c, slime, 99999, false);
+  c.need = 1e9; c.x = mite.x + 1; c.z = mite.z;
+  g.combat.damage(c, mite, 99999, false);
   check(c.exp + c.lv * 1e6 - exp0 === 12 + Math.round(12 * 2 * GUILD.expPerLevel), `길드 보너스만큼 처치 경험치를 더 받는다 (+${c.exp + c.lv * 1e6 - exp0})`);
 
   // 공지, 추방, 탈퇴

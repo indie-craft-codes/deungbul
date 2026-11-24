@@ -1,7 +1,7 @@
-// 파티 (서버 없이 게임 규칙만 돌린다)
-import { PARTY } from '../shared/defs';
-import { Game } from '../server/game/game';
-import { check } from './harness';
+// 파티 (서버 없이 게임 규칙만 돌린다. 시험용 내용 위에서)
+import { PARTY } from '../../shared/defs';
+import { Game } from '../../server/game/game';
+import { check } from '../harness';
 
 {
   const g = new Game();
@@ -25,15 +25,15 @@ import { check } from './harness';
   check(said(b).includes('partyGone') && members(b) === 2, '받은 초대가 없으면 수락해도 아무 일도 없다');
 
   // 보상 나눔: 한 대도 못 때린 파티원도 곁에 있으면 함께 받는다
-  const slime = [...g.ents.values()].find((x) => x.type === 'slime')!;
-  a.x = slime.x + 1; a.z = slime.z; b.x = slime.x + 6; b.z = slime.z; c.x = slime.x + 2; c.z = slime.z;
+  const mite = [...g.ents.values()].find((x) => x.type === 'mite')!;
+  a.x = mite.x + 1; a.z = mite.z; b.x = mite.x + 6; b.z = mite.z; c.x = mite.x + 2; c.z = mite.z;
   g.notices = [];
-  g.combat.damage(a, slime, 999, false);
-  check(a.exp > 0 && b.exp === a.exp && b.sparks > 0 && c.exp === 0 && g.notices.some((n) => n.id === b.id && n.k === 'kill'), '파티원이 잡으면 곁의 파티원도 경험치와 불씨를 받고, 파티가 아닌 사람은 받지 않는다');
-  const wolf = [...g.ents.values()].find((x) => x.type === 'wolf')!;
-  a.x = wolf.x + 1; a.z = wolf.z; b.x = wolf.x + PARTY.shareRange + 5; b.z = wolf.z;
+  g.combat.damage(a, mite, 999, false);
+  check(a.exp > 0 && b.exp === a.exp && b.sparks > 0 && c.exp === 0 && g.notices.some((n) => n.id === b.id && n.k === 'kill'), '파티원이 잡으면 곁의 파티원도 경험치와 두 번째 재화를 받고, 파티가 아닌 사람은 받지 않는다');
+  const hound = [...g.ents.values()].find((x) => x.type === 'hound')!;
+  a.x = hound.x + 1; a.z = hound.z; b.x = hound.x + PARTY.shareRange + 5; b.z = hound.z;
   const before = b.exp;
-  g.combat.damage(a, wolf, 999, false);
+  g.combat.damage(a, hound, 999, false);
   check(b.exp === before, '멀리 있는 파티원은 받지 않는다');
 
   // 인원 제한과 거절
