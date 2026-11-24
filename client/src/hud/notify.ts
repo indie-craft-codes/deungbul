@@ -3,22 +3,37 @@
 //   흘러가는 알림(feed):  방금 한 일의 결과. 처치, 바치기, 구매, 거절 사유. 몇 초 뒤 사라진다
 //   대화창(log):         사람들의 말과, 나중에 다시 볼 만한 소식
 // 이렇게 나누지 않으면 처치 알림이 대화와 중요한 소식을 밀어낸다.
+// 여기 적힌 것은 틀의 안내문(shared/messages.ts)의 분류다. 게임이 더한 안내문은 게임의 모듈이 addNotices로 자기 분류를 등록한다 (이 게임: game/words.ts).
 import type { MsgArg, MsgKey } from '../../../shared/messages';
 import { $ } from '../app';
 import { L, forInput, onLangChange } from '../i18n';
-import { rules } from '../rules';
 import { logText } from './chat';
 
 type Tone = '' | 'good' | 'bad';
+/** 가운데 알림의 덧붙는 줄을 만드는 함수 (안내문의 값을 받는다). 덧붙일 것이 없으면 빈 문자열 */
+type Sub = (a: MsgArg[]) => string;
 const BANNER: Partial<Record<MsgKey, Tone>> = {
-  raidSoon: 'bad', raidElsewhere: 'bad', raidStart: 'bad', raidWon: 'good', raidLost: 'bad', died: 'bad',
-  questDone: 'good', levelUp: 'good', residentBack: 'good', towerLit: 'good', stageChanged: '', bossUp: 'bad', bossDown: 'good', dungeonEnter: '', dungeonClear: 'good', dungeonFail: 'bad', awayBack: 'good',
+  died: 'bad',
+  levelUp: 'good', bossUp: 'bad', bossDown: 'good', dungeonEnter: '', dungeonClear: 'good', dungeonFail: 'bad', awayBack: 'good',
 };
-const FEED: ReadonlySet<MsgKey> = new Set<MsgKey>([
-  'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'mailLeft', 'marketMailFull', 'marketCrowded', 'chatWait', 'marketNeedLv', 'marketGuest', 'marketFull', 'marketPriceBad', 'marketCant', 'marketPosted', 'marketBought', 'marketGone', 'marketOwn', 'marketCanceled', 'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildCreated', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildInvited', 'guildJoined', 'guildLeft', 'guildYouLeft', 'guildKicked', 'guildGave', 'guildLevelUp', 'guildNone', 'channelMoved', 'channelDungeon', 'channelFight', 'channelWait', 'channelFull', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
-  'noTarget', 'tooFar', 'offerFar', 'noSparks', 'towerFull', 'noResident', 'shopFar', 'notStocked', 'alreadyBest',
+const BANNER_SUB: Partial<Record<MsgKey, Sub>> = {};
+const FEED = new Set<MsgKey>([
+  'kill', 'bought', 'rested', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'mailLeft', 'marketMailFull', 'marketCrowded', 'chatWait', 'marketNeedLv', 'marketGuest', 'marketFull', 'marketPriceBad', 'marketCant', 'marketPosted', 'marketBought', 'marketGone', 'marketOwn', 'marketCanceled', 'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildCreated', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildInvited', 'guildJoined', 'guildLeft', 'guildYouLeft', 'guildKicked', 'guildGave', 'guildLevelUp', 'guildNone', 'channelMoved', 'channelDungeon', 'channelFight', 'channelWait', 'channelFull', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
+  'noTarget', 'tooFar', 'shopFar', 'notStocked', 'alreadyBest',
   'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'nameTaken', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
 ]);
+
+/**
+ * 안내문의 분류를 더한다: 게임이 자기 안내문을 어디에 띄울지 등록한다. 어디에도 적지 않은 안내문은 대화창에만 남는다.
+ * banner: 가운데 알림으로 띄울 것과 그 색조. 덧붙는 줄이 있으면 { tone, sub }로 준다. feed: 흘러가는 알림으로 띄울 것
+ */
+export function addNotices(more: { banner?: Partial<Record<MsgKey, Tone | { tone: Tone; sub: Sub }>>; feed?: readonly MsgKey[] }): void {
+  for (const [k, v] of Object.entries(more.banner ?? {}) as [MsgKey, Tone | { tone: Tone; sub: Sub }][]) {
+    if (typeof v === 'string') BANNER[k] = v;
+    else { BANNER[k] = v.tone; BANNER_SUB[k] = v.sub; }
+  }
+  for (const k of more.feed ?? []) FEED.add(k);
+}
 
 const ui = { banner: $('banner'), bannerText: $('bannerText'), bannerSub: $('bannerSub'), feed: $('feed'), flash: $('flash') };
 const queue: { text: string; sub: string; tone: Tone; stale?: () => boolean }[] = [];
@@ -74,7 +89,6 @@ export function notifySys(k: MsgKey, a: MsgArg[] = []): void {
   if (FEED.has(k)) { feed(text); return; }
   logText(text);
   const tone = BANNER[k];
-  // 장을 마쳤는데 그 장의 이름으로 된 잠금이 아직 안 풀렸으면, 어떻게 푸는지 덧붙인다 (문장은 게임의 규칙이 만든다)
-  if (tone !== undefined) banner(text, tone, k === 'questDone' ? rules.lockHint(String(a[0])) : '');
+  if (tone !== undefined) banner(text, tone, BANNER_SUB[k]?.(a) ?? '');
   if (k === 'died') flash();
 }

@@ -286,3 +286,57 @@ function noonOf(day: unknown): number {
     `공유 상태의 칸은 게임이 등록한 것뿐이다: 틀만의 게임은 비어 있고 등불지기는 ${Object.keys(full.state()).join(', ')}`);
   check(!bare.commands.has('offer') && full.commands.has('offer') && bare.commands.has('move'), '게임이 더한 명령(바치기)은 틀만의 게임에 없다');
 }
+
+// ---------- 안내문의 분류와 소리: 틀의 표 + 이 게임이 등록한 것 (docs/framework-plan.md의 단계 8) ----------
+// 틀의 알림 분류표(client/src/hud/notify.ts)와 소리 대응표(client/src/sound.ts)에는 틀의 안내문만 있고, 이 게임의 안내문은 client/src/game/words.ts가 등록한다.
+// 둘을 합친 결과가 가르기 전의 표와 같아야 한다: 어느 안내문이 가운데 알림(색조)·흘러가는 알림·대화창에, 어떤 소리로 나오는가.
+// (화면 파일은 node에서 불러올 수 없어 소스의 글자를 읽는다.)
+{
+  const read = (file: string): string => fs.readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const between = (src: string, from: string, to: string): string => { const s = src.indexOf(from), e = src.indexOf(to, s + from.length); return s < 0 || e < 0 ? '' : src.slice(s + from.length, e); };
+  const notify = read('client/src/hud/notify.ts'), sound = read('client/src/sound.ts'), words = read('client/src/game/words.ts');
+  const tones = (src: string): [string, string][] => [...src.matchAll(/(\w+): (?:\{ tone: )?'(good|bad|)'/g)].map((m) => [m[1], m[2]]);
+  const quoted = (src: string): string[] => [...src.matchAll(/'(\w+)'/g)].map((m) => m[1]);
+  const sounds = (src: string): [string, string][] => [...src.matchAll(/(\w+): sfx\.(\w+)/g)].map((m) => [m[1], m[2]]);
+  const engine = {
+    banner: tones(between(notify, 'const BANNER: ', '};')),
+    feed: quoted(between(notify, 'new Set<MsgKey>([', ']);')),
+    sound: sounds(between(sound, 'const BY_MSG', '};')),
+  };
+  const game = {
+    banner: tones(between(words, 'banner: {', '\n    },')),
+    feed: quoted(between(words, 'feed: [', ']')),
+    sound: sounds(between(words, 'addMsgSounds({', '})')),
+  };
+  // 가르기 전의 표 (hud/notify.ts의 BANNER·FEED, sound.ts의 BY_MSG에 적혀 있던 그대로)
+  const BANNER: Record<string, string> = {
+    raidSoon: 'bad', raidElsewhere: 'bad', raidStart: 'bad', raidWon: 'good', raidLost: 'bad', died: 'bad',
+    questDone: 'good', levelUp: 'good', residentBack: 'good', towerLit: 'good', stageChanged: '', bossUp: 'bad', bossDown: 'good', dungeonEnter: '', dungeonClear: 'good', dungeonFail: 'bad', awayBack: 'good',
+  };
+  const FEED = [
+    'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'mailLeft', 'marketMailFull', 'marketCrowded', 'chatWait', 'marketNeedLv', 'marketGuest', 'marketFull', 'marketPriceBad', 'marketCant', 'marketPosted', 'marketBought', 'marketGone', 'marketOwn', 'marketCanceled', 'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildCreated', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildInvited', 'guildJoined', 'guildLeft', 'guildYouLeft', 'guildKicked', 'guildGave', 'guildLevelUp', 'guildNone', 'channelMoved', 'channelDungeon', 'channelFight', 'channelWait', 'channelFull', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
+    'noTarget', 'tooFar', 'offerFar', 'noSparks', 'towerFull', 'noResident', 'shopFar', 'notStocked', 'alreadyBest',
+    'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'nameTaken', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
+  ];
+  const SOUND: Record<string, string> = {
+    levelUp: 'fanfare', questDone: 'fanfare', dungeonClear: 'fanfare', raidWon: 'fanfare', residentBack: 'fanfare', bossDown: 'fanfare', enhanceOk: 'fanfare',
+    gearDrop: 'pickup', mailNew: 'pickup', loot: 'pickup', bought: 'pickup', crafted: 'pickup', mailGot: 'pickup',
+    died: 'bad', dungeonFail: 'bad', raidStart: 'bad', raidLost: 'bad', enhanceFail: 'bad',
+  };
+  const same = (got: [string, string][], want: Record<string, string>): boolean => got.length === Object.keys(want).length && new Set(got.map(([k]) => k)).size === got.length && got.every(([k, v]) => want[k] === v);
+  const gameKeys = [...(/interface MsgMap \{([\s\S]*?)\n  \}/.exec(read('shared/deungbul.ts'))?.[1] ?? '').matchAll(/^\s{4}(\w+):/gm)].map((m) => m[1]);
+  const isGame = (k: string): boolean => gameKeys.includes(k);
+  check(engine.banner.length === 8 && engine.feed.length > 70 && engine.sound.length === 13 && game.banner.length === 9 && game.feed.length === 8 && game.sound.length === 5, `알림 분류표와 소리 대응표를 읽어 낸다 (틀: 가운데 ${engine.banner.length}, 흘러가는 ${engine.feed.length}, 소리 ${engine.sound.length} / 게임: ${game.banner.length}, ${game.feed.length}, ${game.sound.length})`);
+  check(same([...engine.banner, ...game.banner], BANNER), '가운데 알림으로 뜨는 안내문과 그 색조가 가르기 전과 같다 (틀의 표 + 게임이 등록한 것)');
+  check([...engine.feed, ...game.feed].sort().join() === [...FEED].sort().join() && new Set([...engine.feed, ...game.feed]).size === FEED.length, `흘러가는 알림으로 뜨는 안내문 ${FEED.length}개가 가르기 전과 같다`);
+  check(same([...engine.sound, ...game.sound], SOUND), '안내문마다 나는 소리가 가르기 전과 같다');
+  check([...engine.banner, ...engine.sound].every(([k]) => !isGame(k)) && engine.feed.every((k) => !isGame(k)) && [...game.banner, ...game.sound].every(([k]) => isGame(k)) && game.feed.every(isGame),
+    '틀의 표에는 틀의 안내문만, 게임의 등록에는 이 게임의 안내문만 있다');
+  // 어디에도 분류하지 않은 게임의 안내문은 대화창에만 남는다 (가르기 전에도 그랬다)
+  const unsorted = gameKeys.filter((k) => !game.feed.includes(k) && !game.banner.some(([b]) => b === k));
+  check(unsorted.join() === 'raidAbandoned', `분류하지 않은 이 게임의 안내문은 대화창에만 남는다: ${unsorted.join(', ')}`);
+  check(words.includes("questDone: { tone: 'good', sub: (a) => rules.lockHint(String(a[0])) }") && !notify.includes('rules') && notify.includes('BANNER_SUB[k]?.(a)'), '장을 마쳤을 때 덧붙는 줄(주민을 되돌리는 법)은 게임이 등록한 함수가 만든다: 틀의 알림 코드는 퀘스트를 모른다');
+  // 언어 묶음의 등록은 init이 아니라 모듈이 읽히는 때에 한다 (진입점이 모듈의 init보다 먼저 화면의 문장을 채운다)
+  check(/^setLocales\(LOCALES\);$/m.test(words) && read('client/src/game/deungbul.ts').includes("from './words'") && read('client/src/modules.ts').includes("from './game/deungbul'"),
+    '이 게임의 언어 묶음은 게임 모듈이 읽히는 때(import)에 틀에 등록된다: modules.ts → game/deungbul.ts → game/words.ts');
+}

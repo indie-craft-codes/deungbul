@@ -392,9 +392,9 @@ function noonOf(day: unknown): number {
 
   // ---- 확장 지점과 게임의 선언 (단계 2) ----
   // 틀은 넓힐 자리(두 ext.ts)를 비워 두고, 게임은 자기 선언 파일에서 그 두 파일만 선언 병합으로 넓힌다.
-  const EXT = ['shared/ext.ts', 'server/game/ext.ts'];
-  /** 게임의 선언 파일: 공용(안내문, 메시지, 공유 상태)과 서버(시스템 칸, 사건) */
-  const GAME_DECL = ['shared/deungbul.ts', 'server/game/deungbul.ts'];
+  const EXT = ['shared/ext.ts', 'server/game/ext.ts', 'client/src/i18n/ext.ts'];
+  /** 게임의 선언 파일: 공용(안내문, 메시지, 공유 상태), 서버(시스템 칸, 사건), 클라이언트(언어 묶음의 모양) */
+  const GAME_DECL = ['shared/deungbul.ts', 'server/game/deungbul.ts', 'client/src/game/i18n/index.ts'];
   /** 이 게임에만 있는 공용 파일: 선언 파일과 등탑·습격·주민·퀘스트의 내용 */
   const GAME_SHARED = ['shared/deungbul.ts', ...['tower', 'raid', 'residents', 'quests'].map((n) => `shared/content/${n}.ts`)];
   /** 틀로 분류한 공용 파일. shared/defs.ts는 내용을 통째로 다시 내보내는 통로라 넣지 않았다 (내용을 별칭으로 갈아 끼우는 단계에서 정리한다) */
@@ -467,6 +467,87 @@ function noonOf(day: unknown): number {
   check(bare.entInit.length === 0 && Object.keys(bare.players.spawn('맨사람', false, null, 'ext-bare')).every((k) => k !== 'mark'), '등록하지 않은 게임의 엔티티에는 그 칸이 없다');
 }
 
+// ---------- 언어 파일: 틀의 몫 (docs/framework-plan.md의 단계 8) ----------
+// 화면의 문장은 틀의 몫(client/src/i18n/ko.ts, en.ts의 koBase·enBase)과 게임의 몫(client/src/game/i18n/)으로 나뉘고 mergeLocale로 합친다.
+// 여기서는 틀만 본다: 틀의 문장만으로 묶음이 완결되는가, 틀의 안내문에 모두 문장이 있는가, 합치는 규칙, 틀의 언어·알림·소리 파일에 이 게임의 낱말과 안내문이 남아 있지 않은가.
+// 게임의 문장과 합친 결과(문장이 예전과 글자까지 같은가, 덮어쓴 키의 목록)는 test/deungbul/guide.test.ts가 본다.
+{
+  const root = new URL('../', import.meta.url);
+  const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
+  /** 주석을 뺀 본문 (낱말 검사는 화면에 나갈 수 있는 글자와 코드만 본다) */
+  const body = (file: string): string => read(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+  const { koBase } = await import('../client/src/i18n/ko');
+  const { enBase } = await import('../client/src/i18n/en');
+  const { mergeLocale, overlaps } = await import('../client/src/i18n/merge');
+  const { idNames } = await import('../client/src/i18n/names');
+  type EngineLocale = import('../client/src/i18n/ko').EngineLocale;
+
+  // 틀만으로 완결: 게임의 문장 없이, 내용의 이름표만 넘기면 틀의 묶음이 채워진다 (타입으로도: 빠진 칸이 있으면 컴파일되지 않는다)
+  const ko: EngineLocale = koBase(idNames()), en: EngineLocale = enBase(idNames());
+  /** 두 묶음의 모양이 다른 자리: 키, 값의 종류, 목록의 길이, 함수의 인자 수 */
+  const shapeDiff = (x: unknown, y: unknown, at: string): string[] => {
+    if (typeof x !== typeof y || Array.isArray(x) !== Array.isArray(y)) return [`${at}: 종류가 다르다`];
+    if (typeof x === 'function') return x.length === (y as () => void).length ? [] : [`${at}: 인자의 수가 다르다`];
+    if (typeof x === 'string') return x.trim() && (y as string).trim() ? [] : [`${at}: 빈 문장`];
+    if (Array.isArray(x)) return [...(x.length === (y as unknown[]).length ? [] : [`${at}: 목록의 길이가 다르다`]), ...x.flatMap((v, i) => shapeDiff(v, (y as unknown[])[i], `${at}[${i}]`))];
+    if (typeof x !== 'object' || x === null || y === null) return [];
+    const X = x as Record<string, unknown>, Y = y as Record<string, unknown>;
+    return [...new Set([...Object.keys(X), ...Object.keys(Y)])].flatMap((k) => (k in X && k in Y ? shapeDiff(X[k], Y[k], `${at}.${k}`) : [`${at}.${k}: 한쪽에만 있다`]));
+  };
+  // (이름표가 id뿐이라 설명 칸이 비어 있다: 이름표에서 온 칸은 빼고 본다)
+  const own = (l: EngineLocale) => ({ ...l, monsters: 0, items: 0, classes: 0, skills: 0, dungeons: 0, nameA: 0, nameB: 0 });
+  const uneven = shapeDiff(own(ko), own(en), 'base');
+  for (const x of uneven.slice(0, 10)) console.log('  ' + x);
+  check(uneven.length === 0 && Object.keys(ko.ui).length > 100 && Object.keys(ko.fmt).length > 60, `틀의 언어 묶음은 두 언어가 같은 모양이다 (ui ${Object.keys(ko.ui).length}개, fmt ${Object.keys(ko.fmt).length}개, msg ${Object.keys(ko.msg).length}개)`);
+
+  // 틀의 안내문(shared/messages.ts에 적힌 종류) 전부에 문장이 있고, 틀의 묶음에는 그것만 있다
+  const engineKeys = [...read('shared/messages.ts').matchAll(/^\s*\|\s*'(\w+)'/gm)].map((m) => m[1]);
+  /** 게임이 확장 지점에 더한 안내문 (게임의 선언 파일을 글자로만 읽는다) */
+  const gameKeys = [...(/interface MsgMap \{([\s\S]*?)\n  \}/.exec(read('shared/deungbul.ts').replace(/\r\n/g, '\n'))?.[1] ?? '').matchAll(/^\s{4}(\w+):/gm)].map((m) => m[1]);
+  const sample = ['slime', 3, 2, 1500, 1];
+  const said = (l: EngineLocale) => engineKeys.filter((k) => { const f = (l.msg as Record<string, ((a: (string | number)[]) => string) | undefined>)[k]; return typeof f === 'function' && typeof f(sample) === 'string' && f(sample).length > 0; });
+  check(engineKeys.length > 90 && gameKeys.length >= 18 && said(ko).length === engineKeys.length && said(en).length === engineKeys.length
+    && [ko, en].every((l) => Object.keys(l.msg).sort().join() === [...engineKeys].sort().join()),
+    `틀의 안내문 ${engineKeys.length}개 모두에 두 언어의 문장이 있고, 틀의 묶음에 게임의 안내문(${gameKeys.length}개)은 없다`);
+  check(ko.msg.kill(['slime', 3, 2, 1500]).includes('slime') && ko.msg.kill(['slime', 3, 2, 1500]).includes('1,500') && ko.msg.died(['어딘가']).includes('어딘가') && ko.fmt.num(1234567) === '1,234,567' && en.fmt.num(1234567) === '1,234,567',
+    '이름표가 없으면 내용의 id가 그대로 이름이 되고(틀만 띄웠을 때), 자릿수 구분은 틀의 문장이 맡는다');
+
+  // 합치는 규칙: 묶음별로 한 단계, 같은 키는 게임이 이긴다, 틀의 묶음은 그대로 둔다
+  const b = { code: 'ko', ui: { a: '1', b: '2' }, fmt: { n: (x: number) => `b${x}` }, list: ['x'] }, g = { ui: { b: 'B', c: 'C' }, list: ['y'], extra: { z: 1 } };
+  const m = mergeLocale(b, g);
+  check(m.code === 'ko' && m.ui.a === '1' && m.ui.b === 'B' && m.ui.c === 'C' && m.fmt.n(1) === 'b1' && m.list.join() === 'y' && m.extra.z === 1,
+    'mergeLocale: 양쪽에 있는 묶음은 한 단계 깊이로 합치고, 같은 키는 게임의 것이 이긴다 (목록은 통째로 바뀐다)');
+  check(b.ui.b === '2' && !('c' in b.ui) && b.list.join() === 'x' && overlaps(b, g).join() === 'ui.b,list', 'mergeLocale은 틀의 묶음을 고치지 않고, 겹친 키의 목록을 따로 낼 수 있다');
+
+  // 틀의 언어·알림·소리 파일에 이 게임의 낱말과 안내문이 남아 있지 않다 (주석은 뺀다)
+  const FILES = ['i18n/ko.ts', 'i18n/en.ts', 'i18n/index.ts', 'i18n/merge.ts', 'i18n/names.ts', 'i18n/ext.ts', 'hud/notify.ts', 'sound.ts'].map((f) => `client/src/${f}`);
+  /** 이 게임의 낱말: 등탑·불씨·주민·습격·퀘스트와 고유한 이름들. 영어는 낱말의 앞머리로 본다 (raid, raids, raidSoon) */
+  const WORDS_KO = ['등탑', '불씨', '등불', '습격', '주민', '안개', '첫불', '잿빛', '브람', '미라', '할멈', '퀘스트', '기여', '마을', '그림자', '지하묘'];
+  const WORDS_EN = ['lamp', 'spark', 'raid', 'resident', 'mist', 'firstlight', 'ashwood', 'bram', 'mira', 'granny', 'quest', 'keeper', 'contribution', 'village', 'tower', 'ember', 'crypt', 'shade'];
+  /** 남길 수밖에 없는 것 → 그것이 있어도 되는 파일. 까닭:
+   *  raidFoe: 스냅샷의 '몰려온 적' 표시(EnterInfo.r)를 틀의 entities.ts가 읽어 이름을 꾸미는 자리(fmt.raidFoe)의 키 이름이다. 문장이 아니라 키이고
+   *  틀의 기본값은 이름 그대로다(게임이 덮어쓴다). 키 이름을 중립으로 바꾸는 일은 '습격 몹' 개념을 정리할 때 함께 한다 (계획서 8절) */
+  const WORD_EXCEPTIONS: Record<string, string[]> = { raidFoe: ['client/src/i18n/ko.ts', 'client/src/i18n/en.ts'] };
+  const wordHits = FILES.flatMap((f) => {
+    const src = body(f);
+    return [
+      ...WORDS_KO.filter((w) => src.includes(w)),
+      ...WORDS_EN.flatMap((w) => [...src.matchAll(new RegExp(`(?<![A-Za-z])${w}[A-Za-z]*`, 'gi'))].map((x) => x[0])).filter((w) => !WORD_EXCEPTIONS[w]?.includes(f)),
+    ].map((w) => `${f}: ${w}`);
+  });
+  for (const x of wordHits) console.log('  ' + x);
+  check(body('client/src/i18n/ko.ts').includes('raidFoe') && !body('client/src/i18n/ko.ts').includes('(예:') && body('client/src/i18n/ko.ts').includes('길드') && wordHits.length === 0,
+    `틀의 언어·알림·소리 파일 ${FILES.length}개의 본문에 이 게임의 낱말(${WORDS_KO.slice(0, 4).join(', ')} … ${WORDS_EN.slice(0, 3).join(', ')} … ${WORDS_KO.length + WORDS_EN.length}개)이 없다 (예외 ${Object.keys(WORD_EXCEPTIONS).length}건: ${Object.keys(WORD_EXCEPTIONS).join(', ')})`);
+  const keyHits = FILES.flatMap((f) => gameKeys.filter((k) => new RegExp(`\\b${k}\\b`).test(body(f))).map((k) => `${f}: ${k}`));
+  for (const x of keyHits) console.log('  ' + x);
+  check(/\bdied\b/.test(body('client/src/hud/notify.ts')) && /\blevelUp\b/.test(body('client/src/sound.ts')) && keyHits.length === 0,
+    '틀의 알림 분류표(hud/notify.ts)와 소리 대응표(sound.ts), 틀의 언어 파일은 게임의 안내문을 이름으로 적지 않는다 (게임의 모듈이 등록한다)');
+  // 이 파일들은 게임의 클라이언트 폴더(game/, deungbul/, guide/)를 import하지 않는다. 내용에서 가져오는 이름은 아래 6a 블록의 CLEAN이 본다
+  const gameImports = FILES.flatMap((f) => [...read(f).matchAll(/\bfrom\s*['"](\.[^'"]+)['"]/g)].map((x) => new URL(x[1], new URL(f, root)).href.slice(root.href.length)).filter((to) => /^client\/src\/(game|deungbul|guide)\//.test(to)).map((to) => `${f} -> ${to}`));
+  for (const x of gameImports) console.log('  ' + x);
+  check(read('client/src/game/words.ts').includes("from '../i18n'") && gameImports.length === 0, '틀의 언어·알림·소리 파일은 게임의 클라이언트 폴더를 import하지 않는다 (게임이 틀에 등록한다: client/src/game/words.ts)');
+}
+
 // ---------- 의존 방향: 클라이언트 (docs/framework-plan.md의 단계 6a) ----------
 // 6a에서 가른 틀 쪽 화면 파일은 이 게임의 것을 직접 읽지 않고 rules(client/src/rules.ts)와 등록 접점(addNpc, onKey)을 거친다.
 // 내용은 통로(shared/defs, shared/world)로 들어오므로 파일 경로만으로는 알 수 없다: 가져오는 이름까지 본다.
@@ -474,8 +555,8 @@ function noonOf(day: unknown): number {
 {
   const root = new URL('../', import.meta.url);
   const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
-  /** 이번에 깨끗해진 틀 쪽 클라이언트 파일 */
-  const CLEAN = ['rules.ts', 'bus.ts', 'input.ts', 'entities.ts', 'hud/shop.ts', 'hud/forge.ts', 'hud/notify.ts'].map((f) => `client/src/${f}`);
+  /** 깨끗해진 틀 쪽 클라이언트 파일 (6a의 것에, 8단계에서 가른 소리와 언어 파일을 더했다) */
+  const CLEAN = ['rules.ts', 'bus.ts', 'input.ts', 'entities.ts', 'hud/shop.ts', 'hud/forge.ts', 'hud/notify.ts', 'sound.ts', 'i18n/index.ts', 'i18n/ko.ts', 'i18n/en.ts', 'i18n/merge.ts', 'i18n/names.ts', 'i18n/ext.ts'].map((f) => `client/src/${f}`);
   /** 이 게임의 클라이언트 파일 (game/ 아래와, 아직 옮기지 않은 게임 전용 화면) */
   const isGameClient = (f: string): boolean => f.startsWith('client/src/game/') || ['client/src/hud/quest.ts', 'client/src/hud/marks.ts', 'client/src/scene/scenery.ts'].includes(f);
   /** 이 게임에만 있는 내용 정의 */

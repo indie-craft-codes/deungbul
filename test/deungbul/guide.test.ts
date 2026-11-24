@@ -10,10 +10,16 @@ import { LINK_TEXT } from '../../client/src/guide/link.text';
 import { optRange } from '../../client/src/guide/rules';
 import { textEn } from '../../client/src/guide/text.en';
 import { textKo } from '../../client/src/guide/text.ko';
-import { itemInfo } from '../../client/src/i18n/ko';
+import { LOCALES, en, ko } from '../../client/src/game/i18n';
+import { enGame, enNames } from '../../client/src/game/i18n/en';
+import { koGame, koNames } from '../../client/src/game/i18n/ko';
+import { enBase } from '../../client/src/i18n/en';
+import { itemInfo, keyHints, koBase } from '../../client/src/i18n/ko';
+import { overlaps } from '../../client/src/i18n/merge';
 import { AWAY } from '../../shared/auto';
 import { BUILD, CLASSES, COMBAT, FULL_TOWER_OFFER, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, GUILD, LEASH, LEVEL, MONSTER_AI, POWER, STATS, bossHp, gearScore, guildLevel, guildNeed, needFor, raidFoes, raidTowerHp, type Gear } from '../../shared/defs';
 import { newGame } from './game';
+import { compare, readFixture, snapshotOf } from './locale-snapshot';
 import {
   ATTEND, BUILD_STATS, CAMPS, CLASS_IDS, CONTRIB_TIERS, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MONSTERS, QUESTS, RARITIES, RECIPES,
   RESIDENTS, SHOP_STOCK, SKILL_DEFS, STAT_IDS, sellPrice, type MonsterId,
@@ -334,7 +340,7 @@ for (const P of PACKS) {
   // 진입점에서 시작해 불러오는 파일을 모두 따라간다 (형만 불러오는 import type은 번들에 들어가지 않으므로 건너뛴다).
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
   const seen = new Set<string>(), problems: string[] = [];
-  const allowed = (rel: string): boolean => rel.startsWith('shared/') || rel.startsWith('client/src/guide/') || /^client\/src\/i18n\/(ko|en)\.ts$/.test(rel);
+  const allowed = (rel: string): boolean => rel.startsWith('shared/') || rel.startsWith('client/src/guide/') || rel.startsWith('client/src/game/i18n/') || /^client\/src\/i18n\/(ko|en|merge|names|ext)\.ts$/.test(rel);
   const visit = (file: string): void => {
     const rel = path.relative(root, file).replace(/\\/g, '/');
     if (seen.has(rel)) return;
@@ -354,5 +360,83 @@ for (const P of PACKS) {
   visit(path.join(root, 'client/src/guide/main.ts'));
   check(problems.length === 0, `도감은 내용 정의와 언어 파일, 순수한 게임 규칙만 불러온다 (파일 ${seen.size}개)${problems.length ? ': ' + problems.join('; ') : ''}`);
   check(![...seen].some((f) => f.startsWith('server/')), '도감은 서버 코드를 불러오지 않는다');
-  check(seen.has('shared/content/monsters.ts') && seen.has('shared/content/growth.ts') && seen.has('client/src/i18n/ko.ts'), '도감은 게임의 정의와 언어 파일을 직접 읽는다');
+  check(seen.has('shared/content/monsters.ts') && seen.has('shared/content/growth.ts') && seen.has('client/src/i18n/ko.ts') && seen.has('client/src/game/i18n/ko.ts') && !seen.has('client/src/i18n/index.ts'), '도감은 게임의 정의와 언어 파일(틀의 문장과 이 게임의 문장을 합친 묶음)을 직접 읽는다. 화면을 건드리는 i18n/index.ts는 불러오지 않는다');
+}
+
+// ---------- 언어 묶음: 틀의 문장과 이 게임의 문장을 합친 결과 (docs/framework-plan.md의 단계 8) ----------
+// 화면의 문장은 틀의 몫(client/src/i18n)과 이 게임의 몫(client/src/game/i18n)으로 나뉘어 있다. 틀만 보는 검사는 test/framework.test.ts에 있고, 여기서는 합친 결과를 본다.
+{
+  const base = { ko: koBase(koNames), en: enBase(enNames) }, game = { ko: koGame, en: enGame };
+
+  // 문장이 그대로인가: 견본(test/fixtures/locale-*.json)은 언어 파일을 가르기 전의 문장에서 뜬 것이다. 키가 빠지거나 문장이 한 글자라도 달라지면 여기서 잡힌다.
+  // 문장을 일부러 바꾸거나 더했으면 견본을 새로 뜬다: npx tsx test/deungbul/locale-snapshot.ts --write (바뀐 줄을 git diff로 확인한 뒤 함께 커밋)
+  for (const loc of LOCALES) {
+    const was = readFixture(loc.code), d = compare(was, snapshotOf(loc));
+    for (const k of d.missing) console.log(`  [${loc.code}] 빠진 키: ${k}`);
+    for (const k of d.added) console.log(`  [${loc.code}] 새 키: ${k}`);
+    for (const k of d.changed) console.log(`  [${loc.code}] 달라진 문장: ${k}`);
+    check(Object.keys(was).length > 400 && d.missing.length + d.added.length + d.changed.length === 0,
+      `[${loc.code}] 화면의 문장 ${Object.keys(was).length}개가 견본과 글자까지 같다 (빠진 키 ${d.missing.length}, 새 키 ${d.added.length}, 달라진 문장 ${d.changed.length})`);
+  }
+  // 견본 비교가 실제로 잡아내는지: 문장 하나와 함수 꼴 문장 하나를 바꿔 보면 걸려야 한다
+  const bent = compare(readFixture('ko'), snapshotOf({ ...ko, ui: { ...ko.ui, tower: '등 탑' }, msg: { ...ko.msg, kill: () => '처치' }, zones: [] }));
+  check(bent.changed.includes('ui.tower') && bent.changed.includes('msg.kill') && bent.changed.includes('zones.length') && bent.missing.includes('zones[0]'), '견본 비교는 달라진 문장, 달라진 함수 꼴 문장, 빠진 키를 잡아낸다');
+
+  // 게임이 덮어쓴 틀의 키: 틀에 기본 문장이 있고 이 게임이 자기 말(등불지기의 이름, 브람의 대장간, 잿빛 숲 …)로 바꾼 것. 목록에 없는 겹침은 실수다
+  const OVERRIDES = [
+    'ui.title', // 게임의 이름
+    'ui.hint', // 조작 안내에 이 게임의 단축키(F: 퀘스트 이동, H: 마을로)가 더 있다
+    'ui.forge', // 브람의 대장간
+    'fmt.raidFoe', // 습격으로 온 적의 이름 앞에 '안개'를 붙인다 (틀의 기본은 이름 그대로)
+    'msg.classFar', // 직업은 등탑 가까이에서 바꾼다
+    'msg.bossUp', // 나타난 곳(잿빛 숲)을 말한다
+    'msg.loot', 'msg.forgeFar', 'msg.forgeClosed', // 대장간의 주인(브람)을 말한다
+    'msg.rested', // 휴식 보너스를 등탑에 맡긴 등불로 말한다
+  ];
+  for (const code of ['ko', 'en'] as const) {
+    const over = overlaps(base[code], game[code]);
+    check([...over].sort().join() === [...OVERRIDES].sort().join(), `[${code}] 게임이 덮어쓴 틀의 키는 정해 둔 ${OVERRIDES.length}개뿐이다 (${over.join(', ')})`);
+  }
+  check(OVERRIDES.every((at) => { const [b, k] = at.split('.'); const pick = (l: object) => (l as Record<string, Record<string, unknown>>)[b][k]; return pick(ko) === pick(koGame) && pick(en) === pick(enGame) && pick(ko) !== pick(base.ko); }),
+    '겹친 키는 합친 묶음에서 게임의 문장이다');
+
+  // 두 언어의 모양: 틀끼리는 test/framework.test.ts가 보고, 여기서는 게임끼리와 합친 것끼리 본다
+  const shapeDiff = (x: unknown, y: unknown, at: string): string[] => {
+    if (typeof x !== typeof y || Array.isArray(x) !== Array.isArray(y)) return [`${at}: 종류가 다르다`];
+    if (typeof x === 'function') return x.length === (y as () => void).length ? [] : [`${at}: 인자의 수가 다르다`];
+    if (typeof x === 'string') return x.trim() && (y as string).trim() ? [] : [`${at}: 빈 문장`];
+    if (Array.isArray(x)) return [...(x.length === (y as unknown[]).length ? [] : [`${at}: 목록의 길이가 다르다`]), ...x.flatMap((v, i) => shapeDiff(v, (y as unknown[])[i], `${at}[${i}]`))];
+    if (typeof x !== 'object' || x === null || y === null) return [];
+    const X = x as Record<string, unknown>, Y = y as Record<string, unknown>;
+    return [...new Set([...Object.keys(X), ...Object.keys(Y)])].flatMap((k) => (k in X && k in Y ? shapeDiff(X[k], Y[k], `${at}.${k}`) : [`${at}.${k}: 한쪽에만 있다`]));
+  };
+  const uneven = [...shapeDiff(koGame, enGame, 'game'), ...shapeDiff(koNames, enNames, 'names'), ...shapeDiff(ko, en, 'locale')];
+  for (const x of uneven.slice(0, 10)) console.log('  ' + x);
+  check(uneven.length === 0, `이 게임의 문장, 이름표, 합친 묶음은 두 언어가 같은 모양이다 (게임의 ui ${Object.keys(koGame.ui).length}개, fmt ${Object.keys(koGame.fmt).length}개, msg ${Object.keys(koGame.msg).length}개)`);
+
+  // 영어 파일에 한글이 남아 있지 않다 (주석은 뺀다: 틀의 것과 게임의 것 모두)
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const body = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+  const hangulIn = ['client/src/i18n/en.ts', 'client/src/game/i18n/en.ts'].filter((f) => /[가-힣]/.test(body(f)));
+  check(/[가-힣]/.test(body('client/src/game/i18n/ko.ts')) && hangulIn.length === 0, `영어 언어 파일(틀, 게임)의 본문에 한글이 섞여 있지 않다${hangulIn.length ? ': ' + hangulIn.join(', ') : ''}`);
+
+  // 안내문: 이 게임이 더한 종류(shared/deungbul.ts의 MsgMap) 전부에 게임 쪽 문장이 있고, 합친 묶음에는 틀의 것까지 모두 있다
+  const read = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8').replace(/\r\n/g, '\n');
+  const gameKeys = [...(/interface MsgMap \{([\s\S]*?)\n  \}/.exec(read('shared/deungbul.ts'))?.[1] ?? '').matchAll(/^\s{4}(\w+):/gm)].map((m) => m[1]);
+  const engineKeys = [...read('shared/messages.ts').matchAll(/^\s*\|\s*'(\w+)'/gm)].map((m) => m[1]);
+  const has = (o: object, k: string): boolean => typeof (o as Record<string, unknown>)[k] === 'function';
+  check(gameKeys.length === 18 && [koGame, enGame].every((g) => gameKeys.every((k) => has(g.msg, k))) && [base.ko, base.en].every((b) => gameKeys.every((k) => !has(b.msg, k))),
+    `이 게임의 안내문 ${gameKeys.length}개 모두에 게임 쪽 문장이 두 언어로 있다 (틀의 묶음에는 없다)`);
+  check(LOCALES.every((l) => Object.keys(l.msg).sort().join() === [...engineKeys, ...gameKeys].sort().join()), `합친 묶음의 안내문은 틀의 것 ${engineKeys.length}개와 게임의 것 ${gameKeys.length}개, 모두 ${engineKeys.length + gameKeys.length}개다`);
+
+  // 틀의 기능이 게임의 문장에도 똑같이 적용된다: 입력 장치 표시([[PC용|터치용]])는 같은 글꼴로 적혀 틀의 forInput이 풀고, 조작 안내는 틀의 keyHints로 잇고, 자릿수는 틀의 num이 넣는다
+  const marks = (l: object): string[] => Object.entries(l).filter(([, v]) => typeof v === 'string' && /\[\[[^|\]]*\|[^\]]*\]\]/.test(v)).map(([k]) => k);
+  check(marks(koGame.ui).includes('questGo') && marks(enGame.ui).includes('questGo') && marks(base.ko.ui).includes('chatPlaceholder') && LOCALES.every((l) => !/\[\[|\]\]/.test(Object.values(l.ui).join('').replace(/\[\[[^|\]]*\|[^\]]*\]\]/g, ''))),
+    '게임의 문장도 [[PC용|터치용]] 표시를 같은 꼴로 쓴다 (짝이 맞지 않는 표시가 없다)');
+  check(ko.ui.hint === keyHints(ko.ui.hint.split(' · ')) && ko.ui.hint.includes(' ') && ko.ui.hint.split(' · ').length === base.ko.ui.hint.split(' · ').length + 2 && ko.msg.tierUp([2, 1234567]).includes('1,234,567') && en.msg.tierUp([2, 1234567]).includes('1,234,567') && ko.fmt.num(1234567) === '1,234,567',
+    '게임의 조작 안내는 틀의 keyHints로 잇고(틀의 안내에 이 게임의 단축키 둘을 더했다), 게임의 안내문도 큰 수에 자릿수 구분을 넣는다');
+  // 불씨(두 번째 재화)를 말하는 틀의 문장은 재화의 이름을 이 게임의 이름표에서 읽는다
+  check(ko.msg.kill(['slime', 3, 2, 1500]) === '슬라임 처치. 경험치 +3, 불씨 +2, 골드 +1,500' && en.msg.kill(['slime', 3, 1, 1500]) === 'Slime defeated. +3 exp, +1 spark, +1,500 gold'
+    && ko.fmt.reward(100, 0, 5) === '골드 100 · 불씨 5' && en.fmt.reward(0, 20, 5) === 'Exp 20 · Sparks 5' && ko.msg.died(['ash']) === '쓰러졌습니다. 잿빛 숲 등탑에서 다시 일어났습니다. 잃은 것은 없습니다.',
+    '처치·보상 안내의 불씨와 다시 일어난 등탑의 이름은 이 게임의 이름표에서 온다 (문장은 틀의 것)');
 }

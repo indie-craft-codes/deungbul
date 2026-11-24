@@ -1,6 +1,6 @@
 // 도감의 내용을 만든다: 게임이 쓰는 정의(shared/content)를 돌며 구역과 표를 글자로 엮는다. 화면(DOM)은 모른다.
 // 표의 줄은 정의의 모든 항목을 돌며 만든다: 몬스터나 아이템을 정의에 더하면 도감에 저절로 나타난다.
-// 이름은 게임의 언어 파일(i18n/ko.ts, en.ts)에서, 도감에만 있는 문장은 도감의 언어 파일(text.*.ts)에서 온다.
+// 이름은 게임의 언어 묶음(game/i18n: 틀의 문장과 이 게임의 문장을 합친 것)에서, 도감에만 있는 문장은 도감의 언어 파일(text.*.ts)에서 온다.
 import {
   ATTACK_CD, ATTEND, BOSS, BUILD, BUILD_STATS, CAMPS, CHANNEL, CLASSES, CLASS_IDS, COMBAT, CONTRIB_TIERS, DAILIES, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS,
   ENHANCE, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, LEVEL, MAIL_MAX, MARKET, MAT_MAX,
@@ -11,8 +11,8 @@ import {
 } from '../../../shared/defs';
 import { AUTO, AWAY } from '../../../shared/auto';
 import { AOI_LEAVE, CHAT_MAX, NAME_MAX, PLAYER_SPEED, TOWERS, zoneOf } from '../../../shared/world';
-import { en } from '../i18n/en';
-import { ko, type Locale } from '../i18n/ko';
+import { en, ko } from '../game/i18n';
+import type { Locale } from '../i18n/ko';
 import {
   DROP_IDS, ITEM_IDS, MONSTER_IDS, avg, enhanceExpected, enhanceTries, expUpTo, gearChance, gearLevels, habitat, levelGrowth, monstersOfGearLv, plainSell,
   raidCapPlayers, rarityShares, raritySharesFrom, respawnOf, scoreOf, sellRange, slotChance, sourcesOf, statBase, tally,

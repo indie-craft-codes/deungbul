@@ -1,12 +1,22 @@
-// 다국어. 언어를 더하려면 ko.ts와 같은 모양의 파일을 만들고 아래 LOCALES에 한 줄 추가한다.
-// 화면에 보이는 문장은 코드에 직접 쓰지 않고 언제나 여기를 거친다.
+// 다국어. 화면에 보이는 문장은 코드에 직접 쓰지 않고 언제나 여기를 거친다.
+// 문장은 틀의 몫(이 폴더의 ko.ts, en.ts)과 게임의 몫으로 나뉘어 있고, 게임이 둘을 합친 묶음을 setLocales로 등록한다 (이 게임: game/words.ts).
+// 언어를 더하려면 틀과 게임에 각각 ko.ts와 같은 모양의 파일을 만들고 게임의 LOCALES에 한 줄 더한다.
+// [[PC용|터치용]] 표시(forInput), 자릿수 구분(fmt.num), 조작 안내 잇기(keyHints), HTML 채우기(applyDom)는 틀의 기능이고 게임의 문장에도 똑같이 적용된다.
 import { handOf, type ItemId } from '../../../shared/defs';
 import { NAME_MAX } from '../../../shared/world';
-import { en } from './en';
-import { itemInfo as itemInfoOf, ko, type Locale, type UiKey } from './ko';
+import { enBase } from './en';
+import { itemInfo as itemInfoOf, koBase, type Locale, type UiKey } from './ko';
+import { idNames } from './names';
 
-export const LOCALES: readonly Locale[] = [ko, en];
-let current: Locale = ko;
+export { mergeLocale } from './merge';
+export type { EngineLocale, Locale, UiKey } from './ko';
+
+/**
+ * 고를 수 있는 언어들. 맨 앞이 기본 언어다. 게임이 setLocales로 자기 묶음(틀의 문장 + 게임의 문장)을 등록한다.
+ * 등록 전의 값은 틀의 문장뿐인 묶음이다 (내용의 이름은 id 그대로): 게임이 등록하지 않아도 틀의 화면은 선다
+ */
+export let LOCALES: readonly Locale[] = [koBase(idNames()), enBase(idNames())] as unknown as readonly Locale[];
+let current: Locale = LOCALES[0];
 const listeners: (() => void)[] = [];
 
 function detect(): Locale {
@@ -14,7 +24,17 @@ function detect(): Locale {
   let saved: string | null = null;
   try { saved = localStorage.getItem('lang'); } catch { /* 저장소를 못 쓰는 환경 */ }
   // 주소의 ?lang= 이 가장 먼저, 그다음 저장된 선택, 그다음 브라우저 언어
-  return pick(new URLSearchParams(location.search).get('lang')) ?? pick(saved) ?? pick(navigator.language) ?? ko;
+  return pick(new URLSearchParams(location.search).get('lang')) ?? pick(saved) ?? pick(navigator.language) ?? LOCALES[0];
+}
+
+/**
+ * 게임의 언어 묶음을 등록한다. 문장을 처음 읽기 전에 불러야 한다: 모듈이 읽히는 때에 부른다 (init 안에서는 늦다. 진입점이 그 전에 applyDom으로 화면을 채운다).
+ * 이미 화면을 채운 뒤에 불렸으면 새 묶음으로 다시 채우고, 언어가 바뀐 것처럼 알린다
+ */
+export function setLocales(list: readonly Locale[]): void {
+  LOCALES = list;
+  current = detect();
+  if (applied) { applyDom(); for (const fn of listeners) fn(); }
 }
 
 /** 현재 언어의 문장 묶음 */
@@ -42,8 +62,11 @@ export function forInput(text: string): string {
 /** 고정 문구 */
 export const t = (key: UiKey): string => forInput(current.ui[key]);
 
+/** applyDom으로 화면을 한 번이라도 채웠는가 */
+let applied = false;
 /** HTML에 적어 둔 표시(data-i18n 등)를 현재 언어로 채운다. */
 export function applyDom(): void {
+  applied = true;
   document.documentElement.lang = current.code;
   document.title = current.ui.title;
   const each = (attr: string, set: (el: HTMLElement, text: string) => void) => {
