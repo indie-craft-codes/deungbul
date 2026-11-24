@@ -317,3 +317,45 @@ function noonOf(day: unknown): number {
   check(g.state().keepers.some((r) => r.name === '새이름' && r.n === 11), '이름을 바꾸면 등탑지기 명단의 내 줄도 따라 바뀐다');
   check(g.channels.busy?.() === false && g.channels.extraFoes?.() === undefined, '습격이 채널의 접점(바쁜 때, 남은 적)을 채워 두었다: 평소에는 바쁘지 않고 남은 적이 없다');
 }
+
+// ---------- 의존 방향: 클라이언트 (docs/framework-plan.md의 단계 6a) ----------
+// 6a에서 가른 틀 쪽 화면 파일은 이 게임의 것을 직접 읽지 않고 rules(client/src/rules.ts)와 등록 접점(addNpc, onKey)을 거친다.
+// 내용은 통로(shared/defs, shared/world)로 들어오므로 파일 경로만으로는 알 수 없다: 가져오는 이름까지 본다.
+// 아직 못 지키는 파일(main.ts, state.ts, actions.ts, hud/panels.ts, hud/near.ts, hud/minimap.ts, scene/view.ts 등)은 6b와 7에서 풀리는 대로 CLEAN에 더한다.
+{
+  const root = new URL('../', import.meta.url);
+  const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
+  /** 이번에 깨끗해진 틀 쪽 클라이언트 파일 */
+  const CLEAN = ['rules.ts', 'bus.ts', 'input.ts', 'entities.ts', 'hud/shop.ts', 'hud/forge.ts', 'hud/notify.ts'].map((f) => `client/src/${f}`);
+  /** 이 게임의 클라이언트 파일 (game/ 아래와, 아직 옮기지 않은 게임 전용 화면) */
+  const isGameClient = (f: string): boolean => f.startsWith('client/src/game/') || ['client/src/hud/quest.ts', 'client/src/hud/marks.ts', 'client/src/scene/scenery.ts'].includes(f);
+  /** 이 게임에만 있는 내용 정의 */
+  const GAME_CONTENT = ['residents', 'tower', 'raid', 'quests'].map((n) => `shared/content/${n}.ts`);
+  /** 그 내용 파일들이 내보내는 이름 + 맵 정의 가운데 이 게임의 것 + 클라이언트 상태 가운데 이 게임의 것 */
+  const GAME_NAMES = new Set([
+    ...GAME_CONTENT.flatMap((f) => [...read(f).matchAll(/^export\s+(?:const|function|type|interface|class|enum)\s+(\w+)/gm)].map((m) => m[1])),
+    'TOWERS', 'TOWER', 'TOWN', 'POND', 'HOUSES', 'CLEARINGS', 'ZONE_SPLIT', 'ZONE_COUNT', 'zoneOf', 'onPath',
+    'stage', 'zoneGlow', 'myZone', 'raidLeft',
+  ]);
+  /** 그 파일의 import: 저장소 안의 대상 파일과 가져오는 이름들 */
+  const importsOf = (file: string): { to: string; names: string[] }[] =>
+    [...read(file).matchAll(/\bimport\s+(?:type\s+)?(?:(\{[^}]*\}|\*\s+as\s+\w+|\w+)\s+from\s*)?['"](\.[^'"]+)['"]/g)].map((m) => ({
+      to: new URL(m[2], new URL(file, root)).href.slice(root.href.length).replace(/(\.ts)?$/, '.ts'),
+      names: (m[1] ?? '').startsWith('{') ? m[1].slice(1, -1).split(',').map((s) => s.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]).filter(Boolean) : [],
+    }));
+  const breaks = (file: string): string[] => [
+    ...importsOf(file).flatMap((i) => [
+      ...(isGameClient(i.to) || GAME_CONTENT.includes(i.to) ? [`${file} -> ${i.to}`] : []),
+      ...i.names.filter((n) => GAME_NAMES.has(n)).map((n) => `${file} -> ${n} (${i.to})`),
+    ]),
+    // 공유 상태(S.world)와 퀘스트 진행(S.quest)의 모양은 이 게임의 것이다: 틀은 rules에 묻는다
+    ...(/\bS\.(world|quest)\s*\./.test(read(file)) ? [`${file} -> S.world / S.quest`] : []),
+  ];
+  const found = CLEAN.flatMap(breaks);
+  for (const x of found) console.log('  ' + x);
+  const game = breaks('client/src/game/deungbul.ts');
+  check(GAME_NAMES.has('RESIDENTS') && GAME_NAMES.has('speedFor') && GAME_NAMES.has('QUESTS') && ['RESIDENTS', 'speedFor', 'TOWERS', 'stage', 'S.world'].every((n) => game.some((x) => x.includes(n))) && game.some((x) => x.endsWith('-> client/src/hud/quest.ts')),
+    `클라이언트의 import 문과 가져오는 이름을 읽어 낸다 (이 게임의 이름 ${GAME_NAMES.size}개, 게임 모듈에서 ${game.length}건)`);
+  check(found.length === 0, `6a에서 가른 틀 쪽 화면 파일 ${CLEAN.length}개는 이 게임의 클라이언트 모듈과 게임 전용 내용(주민, 등탑, 습격, 퀘스트)을 import하지 않는다`);
+  check(importsOf('client/src/modules.ts').some((i) => i.to === 'client/src/game/deungbul.ts') && !CLEAN.includes('client/src/modules.ts'), '이 게임의 클라이언트 모듈은 모듈 목록(modules.ts)만 안다');
+}
