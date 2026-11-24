@@ -1,11 +1,11 @@
 // 등탑지기의 일: 오늘의 명단과 기여 단계, 가득 찬 등탑에 바치기 (서버 없이 게임 규칙만 돌린다)
-import { TOWER } from '../shared/world';
-import { Game } from '../server/game/game';
-import { check } from './harness';
+import { TOWER } from '../../shared/world';
+import { newGame } from './game';
+import { check } from '../harness';
 
 {
   let clock = new Date(2026, 10, 23, 15, 0, 0).getTime();
-  const g = new Game({ now: () => clock });
+  const g = newGame({ now: () => clock });
   const p = g.players.spawn('지킴이', false, null, 'keeper-key'); // 명단은 저장 키로 사람을 구분한다 (손님은 오르지 않는다)
   const said = () => g.notices.filter((n) => n.id === p.id).map((n) => `${n.k}:${n.a.join(',')}`);
   const offer = (to: string, n: number) => { g.notices = []; p.x = TOWER.x + 2; p.z = TOWER.z + 2; g.command(p, { t: 'offer', to, n }); };
@@ -37,11 +37,11 @@ import { check } from './harness';
 
   // 저장했다가 읽는다: 같은 날이면 남고, 날이 바뀌면 비운다
   const world = g.exportWorld(), save = g.players.export(p);
-  const same = new Game({ now: () => clock });
+  const same = newGame({ now: () => clock });
   same.importWorld(world);
   check(same.state().keepers[0]?.n === before + 5 && same.players.spawn('지킴이', false, save).tier === 3, '명단과 기여 단계가 저장되고 다시 읽힌다');
   clock += 24 * 3600000;
-  const next = new Game({ now: () => clock });
+  const next = newGame({ now: () => clock });
   next.importWorld(world);
   check(next.state().keepers.length === 0, '날이 바뀌면 명단이 비워진다');
   for (let i = 0; i < 31 * 20; i++) g.tick(0.05);

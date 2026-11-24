@@ -1,7 +1,7 @@
 // 악용 막기(중간 등급): 허점 검토에서 재현됐던 것들이 다시 생기지 않게 지킨다.
 // 항목마다 "고치기 전에는 되던 악용이 이제 안 된다"와 "정상 플레이는 그대로 된다"를 함께 본다.
-import { BOSS, CHANNEL, GUILD, ITEMS, MAIL_MAX, MARKET, MAT_MAX, MONSTERS, PARTY, POTION_CD, RAID, REJOIN_KEEP_S } from '../shared/defs';
-import { NAME_MAX, TOWER } from '../shared/world';
+import { BOSS, CHANNEL, GUILD, ITEMS, MAIL_MAX, MARKET, MAT_MAX, MONSTERS, PARTY, POTION_CD, REJOIN_KEEP_S } from '../shared/defs';
+import { NAME_MAX } from '../shared/world';
 import type { Ent } from '../server/game/entity';
 import { Game } from '../server/game/game';
 import { fieldLayer } from '../server/game/layers';
@@ -16,128 +16,11 @@ const saidOn = (g: Game) => (p: Ent) => g.notices.filter((n) => n.id === p.id).m
 const mk = (g: Game, name: string, lv = 12, key = 'key-' + name): Ent => { const p = g.players.spawn(name, false, null, key); g.classes.apply(p, 'warrior'); p.lv = lv; g.players.refresh(p); p.hp = p.maxHp; return p; };
 const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind === 'mat')!;
 
-// ---------- 1. 습격: 서 있기만 한 부계정으로 적의 수를 부풀리지 못한다 ----------
-{
-  const solo = RAID.base + RAID.perPlayer;
-  const setup = () => {
-    const g = new Game({ raid: { hours: [] } });
-    const at = (p: Ent, ch = 1) => { p.layer = fieldLayer(ch); p.x = TOWER.x + 3; p.z = TOWER.z + 3; p.maxHp = p.hp = 1e7; return p; };
-    const foes = (ch: number) => [...g.ents.values()].filter((m) => m.raid && !m.dead && m.layer === fieldLayer(ch));
-    /** 습격이 끝날 때까지 돌린다. 1초마다 fighters가 명령을 내고(싸우려고 움직인다) 자기 채널의 적을 모두 쓰러뜨린다. 쓰러뜨린 수와 걸린 시간을 돌려준다 */
-    const fight = (fighters: () => Ent[], maxS = 200) => {
-      let killed = 0, t = 0;
-      for (; t < maxS && g.raid.phase === 'active'; t++) {
-        for (const p of fighters()) g.command(p, { t: 'stop' });
-        for (const p of fighters()) for (const m of [...g.ents.values()]) if (m.raid && !m.dead && m.layer === p.layer) { g.combat.damage(p, m, 99999, false); killed++; }
-        runOn(g)(1);
-      }
-      return { killed, t };
-    };
-    return { g, at, foes, fight, act: (p: Ent) => g.command(p, { t: 'stop' }) };
-  };
-
-  { // 부계정 다섯이 등탑 곁에 서 있기만 한다
-    const { g, at, act, fight } = setup();
-    const main = at(mk(g, '본캐'));
-    for (let i = 0; i < 5; i++) at(mk(g, '부캐' + i));
-    runOn(g)(1);
-    act(main);
-    const glow = g.tower.glow;
-    g.raid.start();
-    check(g.raid.phase === 'active' && g.raid.state().foes === solo, `서 있기만 한 부계정 다섯은 인원에 들지 않는다 (적 ${g.raid.state().foes}마리, 혼자일 때 ${solo}마리)`);
-    const r = fight(() => [main]);
-    check(r.killed === solo && g.tower.glow === glow + RAID.winGlow, `부계정이 끝까지 서 있어도 적은 늘지 않고, 혼자서 막아 낸다 (쓰러뜨린 적 ${r.killed}마리)`);
-  }
-  { // 혼자 가만히 기다리던 사람도 습격을 만나고 막을 수 있다
-    const { g, at, fight } = setup();
-    const p = at(mk(g, '기다린이'));
-    runOn(g)(RAID.activeS + 5);
-    const glow = g.tower.glow;
-    g.raid.start();
-    check(g.raid.phase === 'active' && g.raid.state().foes === solo, '아무 명령 없이 기다리던 사람 혼자여도 습격은 열린다 (1명 몫)');
-    const r = fight(() => [p]);
-    check(r.killed === solo && g.tower.glow === glow + RAID.winGlow && saidOn(g)(p).some((k) => k.startsWith('raidReward:')), '혼자 습격을 막아 내고 보상을 받는다');
-  }
-  { // 여럿이 실제로 싸우면 적이 늘어난다: 시작할 때 움직인 사람만큼, 뒤늦게 싸우기 시작한 사람은 다음 물결에
-    const { g, at, act, fight } = setup();
-    const three = [at(mk(g, '가')), at(mk(g, '나')), at(mk(g, '다'))];
-    runOn(g)(1);
-    three.forEach(act);
-    g.raid.start();
-    check(g.raid.state().foes === RAID.base + RAID.perPlayer * 3, `방금 움직인 세 사람이 있으면 세 사람 몫의 적이 온다 (${g.raid.state().foes}마리)`);
-    const r = fight(() => three.slice(0, 1)); // 그 뒤로 두 사람이 멈춰 서도 적은 줄지 않는다
-    check(r.killed === RAID.base + RAID.perPlayer * 3, `물결 사이에 멈춰 서도 적은 줄지 않는다 (쓰러뜨린 적 ${r.killed}마리)`);
-  }
-  {
-    const { g, at, fight } = setup();
-    const three = [at(mk(g, '가')), at(mk(g, '나')), at(mk(g, '다'))];
-    runOn(g)(RAID.activeS + 5);
-    g.raid.start();
-    const first = g.raid.state().foes;
-    const r = fight(() => three);
-    check(first === solo && r.killed === RAID.base + RAID.perPlayer * 3, `가만히 기다리던 세 사람도 싸우기 시작하면 다음 물결부터 세 사람 몫이 된다 (처음 ${first}마리, 모두 ${r.killed}마리)`);
-  }
-
-  // ---------- 9. 한 채널을 방치하거나 떠나도 서버 전체가 지지 않는다 ----------
-  { // 2채널에 서 있기만 한 사람: 그 채널에는 적을 만들지 않는다
-    const { g, at, act, fight } = setup();
-    const a = at(mk(g, '지킴이')); at(mk(g, '구경꾼'), 2);
-    runOn(g)(1);
-    act(a);
-    const glow = g.tower.glow;
-    g.raid.start();
-    check(g.raid.foesAt(fieldLayer(1)) === solo && g.raid.foesAt(fieldLayer(2)) === 0, '서 있기만 한 사람의 채널에는 적이 오지 않는다');
-    const r = fight(() => [a]);
-    check(g.tower.glow === glow + RAID.winGlow && r.t < RAID.durationS, `자기 채널을 다 막으면 막아 낸 것이다 (${r.t}초)`);
-  }
-  { // 시작 직후 접속을 끊은 사람: 그 채널은 버려진 것으로 보고, 남은 채널이 막으면 막아 낸 것이다
-    const { g, at, act, fight } = setup();
-    const a = at(mk(g, '지킴이')), b = at(mk(g, '떠난이'), 2);
-    runOn(g)(1);
-    act(a); act(b);
-    const glow = g.tower.glow;
-    g.raid.start();
-    const share = g.raid.state().towerMaxHp / 2;
-    check(g.raid.foesAt(fieldLayer(2)) === solo, '둘 다 움직였으면 두 채널에 적이 온다');
-    g.players.leave(b.id);
-    g.announces = [];
-    const r = fight(() => [a]);
-    const lost = g.announces.some((x) => x.k === 'raidLost');
-    check(!lost && g.tower.glow === glow + RAID.winGlow && r.t < RAID.durationS && g.announces.some((x) => x.k === 'raidAbandoned' && x.a[0] === 2), `남이 떠난 채널 때문에 시간 초과로 지지 않는다 (${r.t}초 만에 막아 냄)`);
-    void share;
-  }
-  { // 채널을 비워 적을 줄이면 그만큼 등탑 내구를 잃는다 (거저 사라지지 않는다). 그 피해는 그 채널이 보탠 몫을 넘지 않는다
-    const { g, at, act } = setup();
-    const a = at(mk(g, '가')), b = at(mk(g, '나'), 2);
-    runOn(g)(1);
-    act(a); act(b);
-    g.raid.start();
-    const full = g.raid.state().towerMaxHp, share = full / 2;
-    runOn(g)(1);
-    b.layer = fieldLayer(1); // 싸우다 다 같이 1채널로 옮긴다
-    for (let t = 0; t < RAID.abandonS + 2; t++) { act(a); act(b); runOn(g)(1); }
-    const hp = g.raid.state().towerHp, lostHp = full - hp;
-    check(g.raid.foesAt(fieldLayer(2)) === 0 && lostHp >= share * 0.5 && lostHp <= share + 1, `비운 채널의 적은 사라지지만 등탑이 그 값을 치른다 (내구 ${full} → ${hp}, 채널 하나의 몫 ${share})`);
-    check(g.raid.foesAt(fieldLayer(1)) + 0 >= RAID.base + RAID.perPlayer * 2 - solo, '옮겨 온 사람은 옮겨 온 채널의 인원으로 세어져 그 채널의 적이 늘어난다');
-  }
-  { // 모든 채널이 버려졌으면 막아 낸 것이 아니다 (움직였다가 멈춰 서서 거저 이기지 못한다)
-    const { g, at, act } = setup();
-    const a = at(mk(g, '가'));
-    runOn(g)(1);
-    act(a);
-    const glow = g.tower.glow;
-    g.raid.start();
-    g.announces = [];
-    runOn(g)(RAID.abandonS + 45);
-    check(g.raid.phase === 'idle' && g.tower.glow === Math.max(0, glow + RAID.loseGlow) && g.announces.some((x) => x.k === 'raidLost'), '시작만 시켜 놓고 아무도 막지 않으면 진다');
-  }
-}
-
 // ---------- 1·10. 필드 보스: 한 대 치고 떠난 사람으로 체력을 부풀리거나 되돌리지 못한다 ----------
 {
   const H = MONSTERS.ash_troll.hp, share = H * BOSS.hpPerPlayer;
   const setup = () => {
-    const g = new Game({ raid: { hours: [] } });
+    const g = new Game();
     const troll = [...g.ents.values()].find((e) => e.type === 'ash_troll' && e.layer === fieldLayer(1))!;
     troll.wait = 999;
     const fighter = (name: string, dx: number) => { const p = mk(g, name); p.x = troll.x + dx; p.z = troll.z; p.maxHp = p.hp = 1e7; return p; };
@@ -197,7 +80,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 // ---------- 3. 재접속으로 체력과 쿨다운을 되돌리지 못한다 ----------
 {
   let clock = new Date(2026, 10, 23, 15, 0, 0).getTime();
-  const g = new Game({ now: () => clock, raid: { hours: [] } }), run = runOn(g);
+  const g = new Game({ now: () => clock }), run = runOn(g);
   const p = mk(g, '끊는이');
   run(20);
   const m = [...g.ents.values()].find((e) => e.kind === 'm' && !e.dead && e.layer === p.layer)!;
@@ -232,10 +115,10 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   check(b4.hp === b4.maxHp && b4.cds.every((v) => Number.isFinite(v) && v >= 0 && v <= 600) && b4.itemCd <= POTION_CD, '깨진 값은 범위 안으로 맞춘다');
 }
 
-// ---------- 4. 순위와 오늘의 등탑지기: 이름이 아니라 저장 키로 사람을 구분한다 ----------
+// ---------- 4. 순위: 이름이 아니라 저장 키로 사람을 구분한다 (오늘의 등탑지기 명단은 test/deungbul/harden.test.ts) ----------
 {
   const clock = new Date(2026, 10, 23, 15, 0, 0).getTime();
-  const g = new Game({ now: () => clock, raid: { hours: [] } });
+  const g = new Game({ now: () => clock });
   const champ = mk(g, '챔피언', 30), low = mk(g, '도전자', 3), guest = g.players.spawn('손님', false);
   guest.lv = 99;
   g.rank.tick(99);
@@ -258,10 +141,10 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   check((g.out.find((o) => o.id === guest.id)!.msg as { me: number }).me === -1, '손님의 내 순위는 없다');
 
   // 저장했다 읽는다. 예전 형식(이름만 있는 줄)도 읽힌다
-  const g2 = new Game({ now: () => clock, raid: { hours: [] } });
+  const g2 = new Game({ now: () => clock });
   g2.importWorld(JSON.parse(JSON.stringify(g.exportWorld())));
   check(g2.rank.top().length === 2 && g2.rank.top()[0].power === power, '순위가 저장되고 다시 읽힌다');
-  const g3 = new Game({ now: () => clock, raid: { hours: [] } });
+  const g3 = new Game({ now: () => clock });
   g3.importWorld({ tower: {}, rank: [{ name: '옛사람', lv: 9, cls: 'warrior', power: 500 }, { name: '옛둘', lv: 2, cls: 'archer', power: 60 }] });
   check(g3.rank.top().length === 2 && g3.rank.top()[0].name === '옛사람', '이름만으로 저장된 예전 순위도 읽힌다');
   const fake = mk(g3, '옛사람', 2, 'key-fake');
@@ -271,34 +154,12 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   const owner = mk(g3, '옛둘', 12, 'key-owner');
   g3.rank.tick(99);
   check(g3.rank.top().filter((r) => r.name === '옛둘').length === 1 && g3.rank.top().find((r) => r.name === '옛둘')!.power === g3.rank.power(owner), '옛 줄의 주인이 접속하면 그 줄을 이어받는다 (두 줄이 되지 않는다)');
-
-  // 오늘의 등탑지기
-  const k = new Game({ now: () => clock, raid: { hours: [] } });
-  k.tower.load({ glow: 55, residents: [30, 60, 99] });
-  const a = mk(k, '지킴이'), b = mk(k, '흉내쟁이');
-  const open = (g: Game, p: Ent) => { p.sparks = 10; p.x = TOWER.x + 2; p.z = TOWER.z + 2; g.command(p, { t: 'offer', to: 'resident', n: 1 }); }; // 할멈이 돌아와야 명단이 열린다
-  open(k, a);
-  k.fire('offered', a, 'tower', 39, 0);
-  k.players.leave(a.id);
-  k.players.rename(b, '지킴이');
-  k.fire('offered', b, 'tower', 5, 0);
-  const list = k.state().keepers;
-  check(list.length === 2 && list[0].n === 40 && list[1].n === 5, `남의 이름으로 바꿔 바쳐도 남의 줄에 얹히지 않는다 (${JSON.stringify(list)})`);
-  k.players.rename(b, '본이름');
-  check(k.state().keepers[1].name === '본이름', '이름을 바꾸면 명단의 내 줄도 따라온다');
-  const k2 = new Game({ now: () => clock, raid: { hours: [] } });
-  k2.importWorld(JSON.parse(JSON.stringify(k.exportWorld())));
-  check(JSON.stringify(k2.state().keepers) === JSON.stringify(k.state().keepers) && !JSON.stringify(k2.state().keepers).includes('key-'), '명단이 저장되고 다시 읽히며, 화면에는 저장 키가 나가지 않는다');
-  const d = new Date(clock), k3 = new Game({ now: () => clock, raid: { hours: [] } });
-  k3.importWorld({ tower: { glow: 55, residents: [30, 60, 99] }, keepers: { day: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`, scores: [['옛지킴이', 12]] } });
-  open(k3, mk(k3, '새지킴이'));
-  check(JSON.stringify(k3.state().keepers) === JSON.stringify([{ name: '옛지킴이', n: 12 }, { name: '새지킴이', n: 1 }]), '이름으로 저장된 예전 명단도 읽힌다');
 }
 
 // ---------- 5. 자리 비움 사냥: 하루 누적 한도 ----------
 {
   let clock = new Date(2026, 10, 23, 9, 0, 0).getTime();
-  const g = new Game({ now: () => clock, raid: { hours: [] } });
+  const g = new Game({ now: () => clock });
   const p = mk(g, '비움이');
   p.x = 60; p.z = 60;
   // 한 시간 사냥하고 잠깐 다시 접속하기를 되풀이한다
@@ -330,7 +191,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 
 // ---------- 6·7. 거래소: 우편함을 창고로 쓰지 못하고, 전체 물건 수에 상한이 있다 ----------
 {
-  const g = new Game({ raid: { hours: [] } }), said = saidOn(g);
+  const g = new Game(), said = saidOn(g);
   const p = mk(g, '창고지기'), seller = mk(g, '판매자');
   p.items[MAT] = MAT_MAX; seller.items[MAT] = 50; p.gold = 1000;
   const post = (who: Ent, price = 10) => g.command(who, { t: 'market', a: 'post', item: MAT, n: 1, price });
@@ -371,7 +232,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 
 // ---------- 8. 깨진 저장 값 ----------
 {
-  const g = new Game({ raid: { hours: [] } });
+  const g = new Game();
   const p = mk(g, '우편주인');
   const save = JSON.parse(JSON.stringify(g.players.export(p)));
   (save.ext as Record<string, unknown>).mail = { seq: 9, list: [
@@ -389,9 +250,9 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 
   const errors: unknown[] = [], keepErr = console.error;
   console.error = (...a: unknown[]) => { errors.push(a); };
-  const g2 = new Game({ raid: { hours: [] } });
+  const g2 = new Game();
   g2.importWorld({ tower: {}, guilds: null, market: null, mailbox: null } as never);
-  const g3 = new Game({ raid: { hours: [] } });
+  const g3 = new Game();
   g3.importWorld({ tower: {}, guilds: { next: 'x', list: [null, 7, { id: 'x', name: '글자번호', members: [{ pid: 'k0', name: '영' }] }, { id: NaN, name: '깨진번호', members: [{ pid: 'k9', name: '구' }] },
     { id: 4, name: '멀쩡한길드', leader: 'k1', exp: -50, notice: 5, members: [null, { pid: 'k1', name: '하나'.repeat(20), lv: 'x', gave: Infinity }] }] },
     market: { next: 9, list: [null, { id: 1, seller: 'k1', name: '긴'.repeat(60), price: 10, until: Date.now() + 1e7, item: MAT, n: 1 }] } } as never);
@@ -411,7 +272,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 
 // ---------- 11·15. 채널: 재접속으로 이동 대기와 싸움 판정을 지우지 못한다 ----------
 {
-  const g = new Game({ raid: { hours: [] } }), run = runOn(g), said = saidOn(g);
+  const g = new Game(), run = runOn(g), said = saidOn(g);
   const rejoin = (p: Ent) => { g.fire('playerDropped', p); const save = JSON.parse(JSON.stringify(g.players.export(p))); g.players.leave(p.id); return g.players.spawn(p.name, false, save, p.pid); };
   const a = mk(g, '옮긴이');
   run(20);
@@ -453,7 +314,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 
 // ---------- 12·13. 초대: 길드 초대는 가까운 사람에게만, 거절당한 초대는 한동안 다시 보내지 못한다 ----------
 {
-  const g = new Game({ raid: { hours: [] } }), run = runOn(g), said = saidOn(g);
+  const g = new Game(), run = runOn(g), said = saidOn(g);
   const lead = mk(g, '길드장'), t = mk(g, '상대');
   lead.gold = 1000;
   g.command(lead, { t: 'guild', a: 'create', name: '초대길드' });

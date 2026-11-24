@@ -1,5 +1,4 @@
 // 길찾기 (서버 없이 공용 코드만 돌린다)
-import { QUESTS, SHOP_REACH, TOWER_REACH } from '../shared/defs';
 import { NavGrid, walk, type Walker } from '../shared/nav';
 import { PLAYER_SPEED, POND } from '../shared/world';
 import { Game } from '../server/game/game';
@@ -42,18 +41,6 @@ import { check } from './harness';
   const end = g.nav.find(0, 6, POND.x, POND.z);
   const last = end?.[end.length - 1];
   check(!!last && Math.hypot(last.x - POND.x, last.z - POND.z) > POND.r && Math.hypot(last.x - POND.x, last.z - POND.z) < POND.r + 3, '막힌 곳을 찍으면 가장 가까운 열린 자리까지 간다');
-
-  // 퀘스트 자동 이동: 마을에서 이동 명령 한 번으로 모든 퀘스트 목적지에 닿는다
-  const reach = (at: { x: number; z: number }, within: number) => {
-    const w = g.players.spawn('quester', false);
-    g.command(w, { t: 'move', x: at.x, z: at.z });
-    for (let i = 0; i < 20 * 50 && w.moving; i++) g.tick(0.05);
-    const left = Math.hypot(w.x - at.x, w.z - at.z);
-    g.players.leave(w.id);
-    return left <= within;
-  };
-  const stops = QUESTS.flatMap((c) => c.steps.map((st) => ({ at: st.at, within: st.goal.kind === 'offer' || st.goal.kind === 'raid' ? TOWER_REACH : st.goal.kind === 'buy' ? SHOP_REACH : st.goal.kind === 'visit' ? st.goal.r : 9 })));
-  check(stops.every((st) => reach(st.at, st.within)), `이동 명령 한 번으로 모든 퀘스트 목적지에 닿는다 (${stops.length}곳: 사냥터, 등탑, 상점, 대장간 터, 약초밭, 잿빛 숲 등탑, 트롤의 자리)`);
 
   // 쫓아가기: 움직이는 목표를 따라가도 길을 계속 다시 세운다
   const p = g.players.spawn('chaser', false);

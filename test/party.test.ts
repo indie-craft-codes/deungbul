@@ -30,7 +30,6 @@ import { check } from './harness';
   g.notices = [];
   g.combat.damage(a, slime, 999, false);
   check(a.exp > 0 && b.exp === a.exp && b.sparks > 0 && c.exp === 0 && g.notices.some((n) => n.id === b.id && n.k === 'kill'), '파티원이 잡으면 곁의 파티원도 경험치와 불씨를 받고, 파티가 아닌 사람은 받지 않는다');
-  check(b.qn === 1 && a.qn === 1, '퀘스트 진행도 함께 오른다');
   const wolf = [...g.ents.values()].find((x) => x.type === 'wolf')!;
   a.x = wolf.x + 1; a.z = wolf.z; b.x = wolf.x + PARTY.shareRange + 5; b.z = wolf.z;
   const before = b.exp;

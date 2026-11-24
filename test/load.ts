@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TICK_MS } from '../shared/world';
-import { startServer } from '../server/net/server';
+import { startDeungbul } from './deungbul/game';
 
 const SECONDS = 15;
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -17,7 +17,7 @@ interface Row { n: number; mode: string; joined: number; tick: string; flush: st
 
 async function run(n: number, mode: string): Promise<Row> {
   // 습격 흉내: 시작하자마자 습격을 열어 적을 불러낸다
-  const server = await startServer(0, { maxClients: 2000, maxPerIp: 5000, maxAway: 0, game: { raid: { hours: [], max: 200 } } });
+  const server = await startDeungbul(0, { maxClients: 2000, maxPerIp: 5000, maxAway: 0, game: { raid: { hours: [], max: 200 } } });
   const child = spawn(process.execPath, ['--import', 'tsx', path.join(here, 'load-clients.ts'), String(server.port), String(n), mode, String(SECONDS)], { stdio: ['ignore', 'pipe', 'inherit'] });
   let out = '';
   child.stdout.on('data', (d) => { out += d; });

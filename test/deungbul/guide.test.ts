@@ -3,23 +3,23 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { enhanceExpected, enhanceTries, expUpTo, gearChance, gearLevels, rarityShares, raritySharesFrom, sellRange } from '../client/src/guide/calc';
-import { LEVEL_ROWS, PACKS, buildGuide, tablesOf, type Section, type Table } from '../client/src/guide/data';
-import { num } from '../client/src/guide/fmt';
-import { LINK_TEXT } from '../client/src/guide/link.text';
-import { optRange } from '../client/src/guide/rules';
-import { textEn } from '../client/src/guide/text.en';
-import { textKo } from '../client/src/guide/text.ko';
-import { itemInfo } from '../client/src/i18n/ko';
-import { AWAY } from '../shared/auto';
-import { BUILD, CLASSES, COMBAT, FULL_TOWER_OFFER, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, GUILD, LEASH, LEVEL, MONSTER_AI, POWER, STATS, bossHp, gearScore, guildLevel, guildNeed, needFor, raidFoes, raidTowerHp, type Gear } from '../shared/defs';
-import { Game } from '../server/game/game';
+import { enhanceExpected, enhanceTries, expUpTo, gearChance, gearLevels, rarityShares, raritySharesFrom, sellRange } from '../../client/src/guide/calc';
+import { LEVEL_ROWS, PACKS, buildGuide, tablesOf, type Section, type Table } from '../../client/src/guide/data';
+import { num } from '../../client/src/guide/fmt';
+import { LINK_TEXT } from '../../client/src/guide/link.text';
+import { optRange } from '../../client/src/guide/rules';
+import { textEn } from '../../client/src/guide/text.en';
+import { textKo } from '../../client/src/guide/text.ko';
+import { itemInfo } from '../../client/src/i18n/ko';
+import { AWAY } from '../../shared/auto';
+import { BUILD, CLASSES, COMBAT, FULL_TOWER_OFFER, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, GUILD, LEASH, LEVEL, MONSTER_AI, POWER, STATS, bossHp, gearScore, guildLevel, guildNeed, needFor, raidFoes, raidTowerHp, type Gear } from '../../shared/defs';
+import { newGame } from './game';
 import {
   ATTEND, BUILD_STATS, CAMPS, CLASS_IDS, CONTRIB_TIERS, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MONSTERS, QUESTS, RARITIES, RECIPES,
   RESIDENTS, SHOP_STOCK, SKILL_DEFS, STAT_IDS, sellPrice, type MonsterId,
-} from '../shared/defs';
-import { TOWERS, rng } from '../shared/world';
-import { check } from './harness';
+} from '../../shared/defs';
+import { TOWERS, rng } from '../../shared/world';
+import { check } from '../harness';
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
 const near = (got: number, want: number, ratio: number): boolean => Math.abs(got - want) <= Math.abs(want) * ratio;
@@ -115,7 +115,7 @@ for (const P of PACKS) {
 
 // ---------- 서버를 실제로 돌린 결과와 맞는가 ----------
 {
-  const g = new Game({ now: () => new Date(2026, 0, 10, 12).getTime() });
+  const g = newGame({ now: () => new Date(2026, 0, 10, 12).getTime() });
   const p = g.players.spawn('도감검사', false);
   g.classes.apply(p, 'warrior');
   g.gear.random = rng(20261124);
@@ -200,7 +200,7 @@ for (const P of PACKS) {
 
 // ---------- 서버 코드에서 내용 정의로 옮긴 수치: 도감의 표가 서버를 실제로 굴린 결과와 맞는가 ----------
 {
-  const g = new Game({ now: () => new Date(2026, 0, 10, 12).getTime() });
+  const g = newGame({ now: () => new Date(2026, 0, 10, 12).getTime() });
   const tableOf = (P: (typeof PACKS)[number], id: string): Table => tablesOf(buildGuide(P)).find((x) => x.id === id)!;
   const cell = (P: (typeof PACKS)[number], id: string, key: string | number, col = 1): string => tableOf(P, id).rows.find((r) => r.key === String(key))!.cells[col];
   const fresh = (name: string, cls = 'warrior') => { const p = g.players.spawn(name, false); g.classes.apply(p, cls as 'warrior'); return p; };
@@ -332,7 +332,7 @@ for (const P of PACKS) {
 {
   // 도감은 정적 페이지다: 게임의 3D·통신 코드나 node 모듈, 서버의 코드(server/)가 딸려 오면 안 된다. 규칙의 식은 shared/content의 순수 함수로 읽는다.
   // 진입점에서 시작해 불러오는 파일을 모두 따라간다 (형만 불러오는 import type은 번들에 들어가지 않으므로 건너뛴다).
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
   const seen = new Set<string>(), problems: string[] = [];
   const allowed = (rel: string): boolean => rel.startsWith('shared/') || rel.startsWith('client/src/guide/') || /^client\/src\/i18n\/(ko|en)\.ts$/.test(rel);
   const visit = (file: string): void => {

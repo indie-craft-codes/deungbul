@@ -7,7 +7,7 @@
 //      ticks(주기 처리), saves(캐릭터 저장), worldSaves(월드 저장), shared(모두에게 보내는 공유 상태).
 //   3. 아래 Game 생성자에 한 줄 추가한다.
 // 이 게임에만 있는 규칙(등탑, 습격, 등탑지기, 퀘스트)은 생성자에 적지 않고 규칙 플러그인(GameOptions.plugins)으로 깐다: ./deungbul.ts
-import { SPAWN, type RaidConfig } from '../../shared/defs';
+import { SPAWN } from '../../shared/defs';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import { NavGrid } from '../../shared/nav';
 import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
@@ -17,7 +17,6 @@ import { PLAYER_SPEED, buildWorld } from '../../shared/world';
 import type { PlayerSave, WorldSave } from '../store';
 import type { Ent } from './entity';
 import type { EntExt, GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
-import { installDeungbul } from './deungbul';
 import { fieldLayer } from './layers';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
@@ -119,10 +118,8 @@ export class Modifiers {
 export type Plugin = (g: Game) => void;
 
 export interface GameOptions {
-  /** 규칙 플러그인들. 주지 않으면 이 게임(등불지기)의 규칙이 깔리고, 빈 목록이면 틀만으로 만들어진다 */
+  /** 규칙 플러그인들. 주지 않으면 틀만으로 만들어진다: 게임을 만드는 쪽이 자기 규칙을 적어 넘긴다 (이 게임은 server/main.ts와 test/deungbul/game.ts) */
   plugins?: Plugin[];
-  /** 습격 설정 덮어쓰기 (시험용). plugins를 주지 않았을 때만 쓰인다: 플러그인을 직접 줄 때는 installDeungbul의 인자로 넘긴다 */
-  raid?: Partial<RaidConfig>;
   /** 현재 시각(ms). 시험에서 시간을 다루려고 바꿀 수 있다 */
   now?: () => number;
 }
@@ -223,8 +220,8 @@ export class Game {
     this.monsters = new Monsters(this);
     this.bots = new Bots(this);
     this.away = new Away(this);
-    // 게임의 규칙이 깔리는 자리 (Plugin의 설명). 기본값이 이 게임의 규칙인 것은 기존 코드와 시험이 new Game()으로 등불지기를 만들기 때문이다
-    for (const install of opts.plugins ?? [(g: Game) => installDeungbul(g, { raid: opts.raid })]) install(this);
+    // 게임의 규칙이 깔리는 자리 (Plugin의 설명)
+    for (const install of opts.plugins ?? []) install(this);
     // 플러그인보다 먼저 만들어진 엔티티(첫 채널의 몬스터)도 게임이 더한 칸을 갖게 한다
     for (const e of this.ents.values()) for (const init of this.entInit) init(e);
     this.shop = new Shop(this);
