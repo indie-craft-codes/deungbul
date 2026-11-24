@@ -1,15 +1,18 @@
-// 통합 테스트: 서버를 띄우고 클라이언트를 붙여서 접속, 전투, 저장, 대화, 자리 비움 사냥을 확인한다. (등탑·퀘스트·습격은 이 게임의 것: games/deungbul/test/server.test.ts)
+// 통합 테스트: 서버를 띄우고 클라이언트를 붙여서 접속, 전투, 저장, 대화, 자리 비움 사냥을 확인한다. 시험용 내용 위에서. (등불지기의 등탑·퀘스트·습격은 games/deungbul/test/server.test.ts)
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { SHOPS } from '../shared/defs';
-import { MAX_X, MAX_Z, MIN_X, MIN_Z, PLAYER_SPEED } from '@game/shared/world';
-import { startServer } from '../server/net/server';
-import { MemoryStore, SqliteStore } from '../server/store';
-import { check, until, sleep, connect } from './harness';
+import { SHOPS } from '../../shared/defs';
+import { AREAS, PLAYER_SPEED } from '../../shared/world';
+import { startServer } from '../../server/net/server';
+import { MemoryStore, SqliteStore } from '../../server/store';
+import { check, until, sleep, connect } from '../harness';
 
-// A는 저장된 캐릭터가 있는 상태로 시작한다 (불씨 5개, 레벨 3)
+/** 들판(0번 지역)의 경계 */
+const { x0: MIN_X, x1: MAX_X, z0: MIN_Z, z1: MAX_Z } = AREAS[0];
+
+// A는 저장된 캐릭터가 있는 상태로 시작한다 (두 번째 재화 5, 레벨 3)
 const store = new MemoryStore();
 const TOKEN_A = 'test-token-aaaaaaaaaaaa';
 const keyA = createHash('sha256').update(TOKEN_A).digest('hex');
@@ -21,7 +24,7 @@ try {
   const b = await connect(server.port, '  <b>라마바사아자차카타파하</b>  ');
   const guest = await connect(server.port);
 
-  check(a.name === '가나다' && (await until(() => a.sparks === 5 && a.lv === 3)), '토큰으로 접속하면 저장된 이름, 레벨, 불씨를 이어받는다');
+  check(a.name === '가나다' && (await until(() => a.sparks === 5 && a.lv === 3)), '토큰으로 접속하면 저장된 이름, 레벨, 두 번째 재화를 이어받는다');
   check(guest.name.length >= 4 && guest.name.length <= 12, `이름 없이 접속하면 무작위 이름이 붙는다 (${guest.name})`);
   guest.ws.close();
 
@@ -79,10 +82,10 @@ try {
   a.send({ t: 'move', x: -55, z: 55 });
   check(await until(() => !b.seen.has(a.id), 15000), 'A가 시야 밖으로 나가면 B의 목록에서 빠진다');
 
-  // 전투: 슬라임 빈터로 가서 한 마리를 잡는다
+  // 전투: 진드기(mite) 무리로 가서 한 마리를 잡는다
   a.send({ t: 'move', x: -24, z: 22 });
-  check(await until(() => [...a.mons.values()].includes('slime'), 20000), 'A가 슬라임을 본다');
-  const slime = [...a.mons.entries()].find(([, type]) => type === 'slime')?.[0] ?? 0;
+  check(await until(() => [...a.mons.values()].includes('mite'), 20000), 'A가 진드기를 본다');
+  const slime = [...a.mons.entries()].find(([, type]) => type === 'mite')?.[0] ?? 0;
   a.send({ t: 'skill', n: 0 });
   check(await until(() => a.sys.some((s) => s === 'noTarget')) && a.cds.length === 0, '대상 없이 강타를 쓰면 거부된다');
   a.send({ t: 'attack', id: slime });
@@ -92,7 +95,7 @@ try {
   a.send({ t: 'skill', n: 0 });
   await sleep(300);
   check(a.cds.filter((n) => n === 0).length === 1, '쿨다운 중에는 강타가 다시 나가지 않는다');
-  check(await until(() => a.sparks >= 6, 20000), '처치하면 불씨를 받는다');
+  check(await until(() => a.sparks >= 6, 20000), '처치하면 두 번째 재화를 받는다');
   a.send({ t: 'attack', id: b.id });
   await sleep(300);
   check(a.you[2] === 0, '다른 플레이어는 공격 대상이 되지 않는다');
@@ -122,10 +125,10 @@ try {
     const TOKEN_AWAY = 'away-token-0123456789';
     const h = await connect(server.port, '사냥꾼', TOKEN_AWAY);
     const ent = server.game.ents.get(h.id)!;
-    const prey = [...server.game.ents.values()].find((m) => m.kind === 'm' && !m.dead && m.type === 'slime') ?? [...server.game.ents.values()].find((m) => m.kind === 'm' && !m.dead)!;
+    const prey = [...server.game.ents.values()].find((m) => m.kind === 'm' && !m.dead && m.type === 'mite') ?? [...server.game.ents.values()].find((m) => m.kind === 'm' && !m.dead)!;
     ent.x = prey.x + 3; ent.z = prey.z;
     // 자리 비움 사냥은 직업을 고르고 조금 키운 캐릭터만 된다
-    server.game.classes.apply(ent, 'warrior'); ent.lv = 5; server.game.players.refresh(ent); ent.hp = ent.maxHp;
+    server.game.classes.apply(ent, 'knight'); ent.lv = 5; server.game.players.refresh(ent); ent.hp = ent.maxHp;
     const exp0 = ent.exp, lv0 = ent.lv;
     h.send({ t: 'auto', on: true });
     await until(() => ent.auto);
@@ -141,17 +144,17 @@ try {
     check(await until(() => !server.game.ents.has(ent.id)), '자동 사냥을 끄고 나가면 캐릭터가 월드에서 빠진다');
   }
 
-  // 잿빛 숲 등탑 곁의 상인에게서도 살 수 있다
+  // 상인이 여럿이면 어느 상인에게서나 살 수 있다
   {
     const TOKEN_SHOP = 'shop-token-0123456789a';
     const h = await connect(server.port, '손님', TOKEN_SHOP);
     const ent = server.game.ents.get(h.id)!;
     ent.x = SHOPS[1].x + 1; ent.z = SHOPS[1].z; ent.gold = 100;
-    h.send({ t: 'buy', id: 'potion' });
-    check(await until(() => (ent.items.potion ?? 0) === 1), '잿빛 숲 등탑 곁의 상인에게서도 물약을 살 수 있다');
-    ent.x = 60; ent.z = 30;
-    h.send({ t: 'buy', id: 'potion' });
-    check(await until(() => h.sys.includes('shopFar')) && ent.items.potion === 1, '상인이 없는 곳에서는 살 수 없다');
+    h.send({ t: 'buy', id: 'draught' });
+    check(await until(() => (ent.items.draught ?? 0) === 1), '두 번째 상인에게서도 물약을 살 수 있다');
+    ent.x = -40; ent.z = 40; // 두 상인 모두에게서 먼 곳
+    h.send({ t: 'buy', id: 'draught' });
+    check(await until(() => h.sys.includes('shopFar')) && ent.items.draught === 1, '상인이 없는 곳에서는 살 수 없다');
     ent.auto = false;
     h.ws.close();
   }

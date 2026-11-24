@@ -25,7 +25,8 @@ export const SPOTS = {
   /** 들어갈 수 없는 웅덩이 */
   pool: { x: 14, z: -12, r: 4 },
 };
-export const SHOPS: readonly { x: number; z: number }[] = [{ x: -5.5, z: 3 }];
+/** 상인 둘: 상점이 여럿인 게임도 시험한다 (어느 상인 곁에서나 산다) */
+export const SHOPS: readonly { x: number; z: number }[] = [{ x: -5.5, z: 3 }, { x: 30, z: 40 }];
 export const SHOP_REACH = 5;
 export const CAMPS: readonly { x: number; z: number; types: readonly MonsterId[] }[] = [
   { x: -24, z: 18, types: ['mite', 'mite', 'mite', 'mite', 'mite'] },

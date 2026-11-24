@@ -14,7 +14,7 @@ import path from 'node:path';
 import { check, failures } from '../engine/test/harness';
 
 /** 아직 등불지기의 내용 위에서 도는 틀의 시험 (옮기면 여기서 빼고 engine/test/fx/all.ts의 FX에 더한다) */
-const ENGINE = ['framework', 'channel', 'boundary', 'harden', 'security', 'server'];
+const ENGINE = ['framework', 'boundary'];
 const GAME = ['framework', 'shop', 'classes', 'combat', 'craft', 'party', 'keepers', 'quests', 'nav', 'zone2', 'channel', 'ledger', 'harden', 'guide', 'server'].map((n) => `deungbul/${n}`);
 /** 이 게임의 규칙 파일: 틀의 시험을 도는 동안 로드되면 안 된다 (engine/test/framework.test.ts의 GAME_FILES와 같다) */
 const GAME_RULES = /\/games\/deungbul\/(server|test)\//;

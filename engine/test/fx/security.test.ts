@@ -1,13 +1,13 @@
-// 악용 막기: 서버 허점 검토에서 실제로 재현된 것들이 다시 생기지 않게 지킨다.
+// 악용 막기: 서버 허점 검토에서 실제로 재현된 것들이 다시 생기지 않게 지킨다. (시험용 내용 위에서)
 import http from 'node:http';
 import { WebSocket } from 'ws';
-import { DUNGEONS } from '../shared/defs';
-import { AREAS, areaAt } from '../shared/world';
-import { Game } from '../server/game/game';
-import { isClean, mask, tidy } from '../server/net/moderation';
-import { startServer } from '../server/net/server';
-import { MemoryStore } from '../server/store';
-import { check, connect, sleep, until } from './harness';
+import { DUNGEONS } from '../../shared/defs';
+import { AREAS, areaAt } from '../../shared/world';
+import { Game } from '../../server/game/game';
+import { isClean, mask, tidy } from '../../server/net/moderation';
+import { startServer } from '../../server/net/server';
+import { MemoryStore } from '../../server/store';
+import { check, connect, sleep, until } from '../harness';
 
 const get = (port: number, path: string): Promise<number> => new Promise((ok) => {
   const req = http.request({ host: '127.0.0.1', port, path, method: 'GET' }, (res) => { res.resume(); ok(res.statusCode ?? 0); });
@@ -18,7 +18,7 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
 // ---- 게임 규칙 (서버 없이)
 {
   const g = new Game();
-  const mk = (name: string) => { const p = g.players.spawn(name, false, null, 'key-' + name); g.classes.apply(p, 'warrior'); p.lv = 12; g.players.refresh(p); p.hp = p.maxHp; return p; };
+  const mk = (name: string) => { const p = g.players.spawn(name, false, null, 'key-' + name); g.classes.apply(p, 'knight'); p.lv = 12; g.players.refresh(p); p.hp = p.maxHp; return p; };
   const a = mk('가'), b = mk('나');
 
   // 직업을 바꿔도 쿨다운은 남는다
@@ -26,13 +26,13 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
   a.x = m.x + 1; a.z = m.z; a.targetId = m.id;
   g.command(a, { t: 'skill', n: 0 });
   const cd = a.cds[0];
-  g.classes.apply(a, 'archer'); g.classes.apply(a, 'warrior');
+  g.classes.apply(a, 'ranger'); g.classes.apply(a, 'knight');
   check(cd > 0 && a.cds[0] === cd, '직업을 바꿔도 기술 쿨다운은 지워지지 않는다');
 
   // 걸어서 갈 수 없는 다른 지역을 찍으면 지금 지역 안으로 맞춘다
-  a.x = 100; a.z = 0;
-  g.command(a, { t: 'move', x: 300, z: 0 });
-  check(AREAS[areaAt(a.tx, a.tz)]?.id === 'field', '들판에서 던전 지역을 찍어도 목적지는 들판 안이다');
+  a.x = AREAS[0].x1 - 10; a.z = 0;
+  g.command(a, { t: 'move', x: (AREAS[1].x0 + AREAS[1].x1) / 2, z: 0 });
+  check(areaAt(a.tx, a.tz) === 0, '들판에서 던전 지역을 찍어도 목적지는 들판 안이다');
   // 이동 명령을 몰아 보내도 길찾기가 틱 예산을 넘지 않는다
   const t0 = performance.now();
   for (let i = 0; i < 400; i++) { g.clock += 0.07; g.command(a, { t: 'move', x: -42 + (i % 2) * 0.5, z: -18 }); g.tick(0.05); }
@@ -47,9 +47,9 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
   a.x = b.x; a.z = b.z;
   g.command(a, { t: 'party', a: 'invite', id: b.id });
   g.command(b, { t: 'party', a: 'accept' });
-  const def = DUNGEONS.crypt;
+  const def = DUNGEONS.vault;
   for (const p of [a, b]) { p.x = def.portal.x + 1; p.z = def.portal.z; }
-  g.command(a, { t: 'dungeon', id: 'crypt' });
+  g.command(a, { t: 'dungeon', id: 'vault' });
   const boss = [...g.ents.values()].find((e) => e.kind === 'm' && e.layer === a.layer && e.type === def.boss.type)!;
   b.x = boss.x + 1; b.z = boss.z; // b는 들판 층에서 같은 좌표에 서 있다
   const gold0 = b.gold, exp0 = b.exp + b.lv * 1e9;
@@ -69,9 +69,9 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
 
   // 깨진 저장
   const save = g.players.export(d);
-  (save.ext as Record<string, unknown>).daily = { day: '2026-01-01', prog: { run_crypt: 'x', kill30: -5 }, got: [], streak: 2.5, last: '' };
+  (save.ext as Record<string, unknown>).daily = { day: '2026-01-01', prog: { run_vault: 'x', hunt30: -5 }, got: [], streak: 2.5, last: '' };
   const back = g.players.spawn('라2', false, JSON.parse(JSON.stringify(save)));
-  check(back.daily.prog.run_crypt === undefined && back.daily.prog.kill30 === undefined && Number.isInteger(back.daily.streak), '깨진 일일 진행 값은 버리고 출석 일수는 정수로 맞춘다');
+  check(back.daily.prog.run_vault === undefined && back.daily.prog.hunt30 === undefined && Number.isInteger(back.daily.streak), '깨진 일일 진행 값은 버리고 출석 일수는 정수로 맞춘다');
   const g2 = new Game();
   let threw = false;
   try { g2.importWorld({ guilds: null, market: 5, rank: 'x', tower: {} } as never); } catch { threw = true; }
@@ -101,7 +101,7 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
     // 밀려난 옛 연결은 캐릭터를 움직이거나 저장을 덮어쓰지 못한다
     const T = 'ghost-token-0123456789ab';
     const a1 = await connect(server.port, '유령', T);
-    a1.send({ t: 'class', id: 'warrior' });
+    a1.send({ t: 'class', id: 'knight' });
     await until(() => !!server.game.ents.get(a1.id)?.cls);
     server.game.ents.get(a1.id)!.gold = 4500;
     a1.ws.pause(); // 닫기 신호를 못 본 척한다
@@ -151,7 +151,7 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
     const stay: number[] = [];
     for (const k of ['aa', 'bb']) {
       const p = await connect(server.port, '키운이' + k, 'grown-token-0123456789' + k);
-      p.send({ t: 'class', id: 'warrior' });
+      p.send({ t: 'class', id: 'knight' });
       await until(() => !!server.game.ents.get(p.id)?.cls);
       const e = server.game.ents.get(p.id)!;
       e.lv = 5;

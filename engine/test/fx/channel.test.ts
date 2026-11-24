@@ -1,10 +1,10 @@
-// 채널: 같은 들판을 여러 벌로 돌린다 (서버 없이 게임 규칙만 돌린다. 시계는 시험이 직접 돌린다)
-import { BOSS, CAMPS, CHANNEL, DUNGEONS, MONSTERS, PARTY, RESPAWN_S, classOf, skillDef } from '../shared/defs';
-import type { Ent } from '../server/game/entity';
-import { Game } from '../server/game/game';
-import { DUNGEON_LAYER, channelOf, fieldLayer, isField } from '../server/game/layers';
-import { buildFrame, snapshotFor } from '../server/net/snapshot';
-import { check } from './harness';
+// 채널: 같은 들판을 여러 벌로 돌린다 (서버 없이 게임 규칙만 돌린다. 시계는 시험이 직접 돌린다) (시험용 내용 위에서)
+import { BOSS, CAMPS, CHANNEL, DUNGEONS, MONSTERS, PARTY, RESPAWN_S, classOf, skillDef } from '../../shared/defs';
+import type { Ent } from '../../server/game/entity';
+import { Game } from '../../server/game/game';
+import { DUNGEON_LAYER, channelOf, fieldLayer, isField } from '../../server/game/layers';
+import { buildFrame, snapshotFor } from '../../server/net/snapshot';
+import { check } from '../harness';
 
 const N = CHANNEL.count;
 const camps = CAMPS.reduce((s, c) => s + c.types.length, 0);
@@ -26,10 +26,10 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   const g = new Game(), run = runOn(g);
   const per = Array.from({ length: N }, (_, i) => mobsIn(g, i + 1).length);
   check(per.every((n) => n === camps) && [...g.ents.values()].filter((m) => m.kind === 'm').length === camps * N, `채널마다 들판 몬스터가 따로 있고 수가 같다 (채널마다 ${camps}마리)`);
-  check(Array.from({ length: N }, (_, i) => mobsIn(g, i + 1, 'ash_troll').length).every((n) => n === 1), '필드 보스도 채널마다 한 마리씩 있다');
+  check(Array.from({ length: N }, (_, i) => mobsIn(g, i + 1, 'colossus').length).every((n) => n === 1), '필드 보스도 채널마다 한 마리씩 있다');
 
   const p = g.players.spawn('하나', false);
-  const s1 = mobsIn(g, 1, 'slime')[0], s2 = mobsIn(g, 2, 'slime')[0];
+  const s1 = mobsIn(g, 1, 'mite')[0], s2 = mobsIn(g, 2, 'mite')[0];
   check(s1.hx === s2.hx && s1.hz === s2.hz && s1.id !== s2.id, '같은 빈터의 같은 자리에, 채널마다 다른 몬스터가 산다');
   p.x = s1.x + 1; p.z = s1.z;
   g.combat.damage(p, s1, 9999, false);
@@ -43,7 +43,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   const g = new Game(), run = runOn(g), said = saidOn(g);
   const a = g.players.spawn('일채널', false), b = g.players.spawn('이채널', false);
   put(b, 2);
-  const wolf1 = mobsIn(g, 1, 'wolf')[0], wolf2 = mobsIn(g, 2, 'wolf')[0];
+  const wolf1 = mobsIn(g, 1, 'hound')[0], wolf2 = mobsIn(g, 2, 'hound')[0];
   [wolf1, wolf2].forEach(still);
 
   // 때리기
@@ -68,8 +68,8 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
 
   // 회복 기술: 곁에 있어도 다른 채널의 사람은 살리지 못한다
   const mage = g.players.spawn('마법사', false), near = g.players.spawn('곁', false), other = g.players.spawn('딴채널', false);
-  g.classes.apply(mage, 'mage');
-  const slot = classOf('mage').skills.findIndex((id) => { const fx = skillDef(id).effect; return fx.kind === 'heal' && fx.allies; });
+  g.classes.apply(mage, 'sage');
+  const slot = classOf('sage').skills.findIndex((id) => { const fx = skillDef(id).effect; return fx.kind === 'heal' && fx.allies; });
   mage.x = -60; mage.z = -60; near.x = -58; near.z = -60; other.x = -58; other.z = -60;
   put(other, 2);
   near.hp = 10; other.hp = 10; mage.cds = mage.cds.map(() => 0);
@@ -90,7 +90,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   g.command(a, { t: 'party', a: 'invite', id: b.id });
   g.command(b, { t: 'party', a: 'accept' });
   put(b, 2);
-  const slime = mobsIn(g, 1, 'slime')[0];
+  const slime = mobsIn(g, 1, 'mite')[0];
   a.x = slime.x + 1; a.z = slime.z; b.x = slime.x + 2; b.z = slime.z;
   const exp = b.exp;
   g.combat.damage(a, slime, 9999, false);
@@ -131,7 +131,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   const g = new Game({ now: () => clock }), run = runOn(g), said = saidOn(g);
   const cmd = (p: Ent, m: Record<string, unknown>) => { g.notices = []; g.command(p, m); };
   const p = g.players.spawn('옮기는이', false);
-  g.classes.apply(p, 'warrior'); p.lv = 12; g.players.refresh(p); p.hp = p.maxHp;
+  g.classes.apply(p, 'knight'); p.lv = 12; g.players.refresh(p); p.hp = p.maxHp;
   run(0.1);
 
   // 잘못된 입력
@@ -144,7 +144,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   check(!threw && channelOf(p.layer) === 1 && said(p).length === 0, '잘못된 입력(문자열, 소수, 0, 음수, 범위 밖, 빈 값)에 죽지 않고 아무 일도 없다');
 
   // 성공: 자리는 그대로, 층만 바뀌고, 나를 노리던 몬스터는 대상을 잃는다
-  const wolf = mobsIn(g, 1, 'wolf')[0];
+  const wolf = mobsIn(g, 1, 'hound')[0];
   still(wolf);
   p.x = wolf.x + 12; p.z = wolf.z;
   wolf.targetId = p.id; wolf.hitters.add(p.id); p.targetId = wolf.id; // 오래전에 건드려 아직 쫓기는 중 (최근에 맞거나 때리지는 않았다)
@@ -172,7 +172,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   check(channelOf(p.layer) === 1 && said(p).includes('channelFight'), '방금 맞았으면 바꿀 수 없다 (싸움에서 도망치지 못한다)');
   run(CHANNEL.calmS + 0.1);
   // 싸우는 중: 때렸을 때, 그리고 쓰러뜨린 직후
-  const slime = mobsIn(g, 1, 'slime')[0];
+  const slime = mobsIn(g, 1, 'mite')[0];
   still(slime);
   p.x = slime.x + 1; p.z = slime.z;
   g.combat.damage(p, slime, 1, false);
@@ -202,9 +202,9 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   cmd(p, { t: 'channel', n: 2 });
 
   // 던전: 안에서는 바꿀 수 없고, 나오면 들어가기 전의 채널로 돌아온다
-  const def = DUNGEONS.crypt;
+  const def = DUNGEONS.vault;
   p.x = def.portal.x + 1; p.z = def.portal.z;
-  cmd(p, { t: 'dungeon', id: 'crypt' });
+  cmd(p, { t: 'dungeon', id: 'vault' });
   check(!isField(p.layer) && g.channels.of(p) === 2 && g.channels.counts()[1] === 1, '던전 안에 있는 동안에도 돌아갈 채널의 인원으로 센다');
   cmd(p, { t: 'channel', n: 1 });
   check(!isField(p.layer) && said(p).includes('channelDungeon'), '던전 안에서는 채널을 바꿀 수 없다');
@@ -213,12 +213,12 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   // 끊겨서 나온 경우도 같다
   clock += 1000;
   p.x = def.portal.x + 1; p.z = def.portal.z;
-  cmd(p, { t: 'dungeon', id: 'crypt' });
+  cmd(p, { t: 'dungeon', id: 'vault' });
   g.fire('playerDropped', p);
   check(channelOf(p.layer) === 2, '던전 안에서 접속이 끊겨도 있던 채널로 나온다');
 
   // 자리 비움 사냥: 있던 채널에 그대로 남고, 그 채널의 몬스터는 깨어 있다
-  const boar = mobsIn(g, 2, 'boar')[0];
+  const boar = mobsIn(g, 2, 'tusk')[0];
   p.x = boar.x + 3; p.z = boar.z; p.auto = true;
   g.away.start(p);
   run(3);
@@ -234,7 +234,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
 {
   const g = new Game(), run = runOn(g), said = saidOn(g);
   const a = g.players.spawn('남는이', false), b = g.players.spawn('떠나는이', false);
-  const troll = mobsIn(g, 1, 'ash_troll')[0];
+  const troll = mobsIn(g, 1, 'colossus')[0];
   still(troll);
   a.maxHp = a.hp = 99999; a.x = troll.x + 2; a.z = troll.z; b.x = troll.x - 2; b.z = troll.z;
   run(0.1);
@@ -254,7 +254,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
 {
   const g = new Game(), run = runOn(g);
   const a = g.players.spawn('혼자', false);
-  const w1 = mobsIn(g, 1, 'wisp')[0], w2 = mobsIn(g, 2, 'wisp')[0];
+  const w1 = mobsIn(g, 1, 'moth')[0], w2 = mobsIn(g, 2, 'moth')[0];
   w1.wait = 0; w2.wait = 0;
   const at = { x: w2.x, z: w2.z };
   run(12);
@@ -263,7 +263,7 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
   // 싸우다 채널이 비면 그 싸움은 지워진다. 쓰러진 것은 빈 채널에서도 되살아난다
   const b = g.players.spawn('둘째', false);
   put(b, 2);
-  const s = mobsIn(g, 2, 'slime'), hurt = s[0], dead = s[1];
+  const s = mobsIn(g, 2, 'mite'), hurt = s[0], dead = s[1];
   b.x = hurt.x + 1; b.z = hurt.z;
   run(0.1);
   g.combat.damage(b, hurt, 10, false);
@@ -276,9 +276,9 @@ const still = (m: Ent) => { m.wait = 999; m.moving = false; };
 
 // ---------- 필드 보스: 채널마다 따로 ----------
 {
-  const H = MONSTERS.ash_troll.hp;
+  const H = MONSTERS.colossus.hp;
   const g = new Game(), run = runOn(g), said = saidOn(g);
-  const t1 = mobsIn(g, 1, 'ash_troll')[0], t2 = mobsIn(g, 2, 'ash_troll')[0];
+  const t1 = mobsIn(g, 1, 'colossus')[0], t2 = mobsIn(g, 2, 'colossus')[0];
   [t1, t2].forEach(still);
   const fighter = (name: string, channel: number, dx: number) => { const p = g.players.spawn(name, false); put(p, channel); p.x = t1.x + dx; p.z = t1.z; p.maxHp = p.hp = 5000; return p; };
   const p1 = fighter('하나', 1, 3), p2 = fighter('둘', 1, -3), q = fighter('셋', 2, 3);

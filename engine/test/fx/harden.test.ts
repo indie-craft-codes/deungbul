@@ -1,27 +1,27 @@
-// 악용 막기(중간 등급): 허점 검토에서 재현됐던 것들이 다시 생기지 않게 지킨다.
+// 악용 막기(중간 등급): 허점 검토에서 재현됐던 것들이 다시 생기지 않게 지킨다. (시험용 내용 위에서)
 // 항목마다 "고치기 전에는 되던 악용이 이제 안 된다"와 "정상 플레이는 그대로 된다"를 함께 본다.
-import { BOSS, CHANNEL, GUILD, ITEMS, MAIL_MAX, MARKET, MAT_MAX, MONSTERS, PARTY, POTION_CD, REJOIN_KEEP_S } from '../shared/defs';
-import { NAME_MAX } from '../shared/world';
-import type { Ent } from '../server/game/entity';
-import { Game } from '../server/game/game';
-import { fieldLayer } from '../server/game/layers';
-import { AWAY_MAX_S } from '../server/game/systems/away';
-import { startServer } from '../server/net/server';
-import { MemoryStore } from '../server/store';
-import { check, connect, sleep, until } from './harness';
+import { BOSS, CHANNEL, GUILD, ITEMS, MAIL_MAX, MARKET, MAT_MAX, MONSTERS, PARTY, POTION_CD, REJOIN_KEEP_S } from '../../shared/defs';
+import { NAME_MAX } from '../../shared/world';
+import type { Ent } from '../../server/game/entity';
+import { Game } from '../../server/game/game';
+import { fieldLayer } from '../../server/game/layers';
+import { AWAY_MAX_S } from '../../server/game/systems/away';
+import { startServer } from '../../server/net/server';
+import { MemoryStore } from '../../server/store';
+import { check, connect, sleep, until } from '../harness';
 
 const runOn = (g: Game) => (seconds: number) => { for (let i = 0; i < Math.round(seconds * 20); i++) g.tick(0.05); };
 const saidOn = (g: Game) => (p: Ent) => g.notices.filter((n) => n.id === p.id).map((n) => [n.k, ...n.a].join(':'));
 /** 저장되는 사람(저장 키가 있다)을 만든다 */
-const mk = (g: Game, name: string, lv = 12, key = 'key-' + name): Ent => { const p = g.players.spawn(name, false, null, key); g.classes.apply(p, 'warrior'); p.lv = lv; g.players.refresh(p); p.hp = p.maxHp; return p; };
+const mk = (g: Game, name: string, lv = 12, key = 'key-' + name): Ent => { const p = g.players.spawn(name, false, null, key); g.classes.apply(p, 'knight'); p.lv = lv; g.players.refresh(p); p.hp = p.maxHp; return p; };
 const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind === 'mat')!;
 
 // ---------- 1·10. 필드 보스: 한 대 치고 떠난 사람으로 체력을 부풀리거나 되돌리지 못한다 ----------
 {
-  const H = MONSTERS.ash_troll.hp, share = H * BOSS.hpPerPlayer;
+  const H = MONSTERS.colossus.hp, share = H * BOSS.hpPerPlayer;
   const setup = () => {
     const g = new Game();
-    const troll = [...g.ents.values()].find((e) => e.type === 'ash_troll' && e.layer === fieldLayer(1))!;
+    const troll = [...g.ents.values()].find((e) => e.type === 'colossus' && e.layer === fieldLayer(1))!;
     troll.wait = 999;
     const fighter = (name: string, dx: number) => { const p = mk(g, name); p.x = troll.x + dx; p.z = troll.z; p.maxHp = p.hp = 1e7; return p; };
     runOn(g)(0.5);
@@ -53,7 +53,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
     const gold = b.gold;
     g.notices = [];
     g.combat.damage(a, troll, 99999, false);
-    check(troll.dead && b.gold === gold && saidOn(g)(a).includes('bossDown:ash_troll:1'), '인원에서 빠진 사람은 혼자 몫의 보스에서 보상을 받지 못한다');
+    check(troll.dead && b.gold === gold && saidOn(g)(a).includes('bossDown:colossus:1'), '인원에서 빠진 사람은 혼자 몫의 보스에서 보상을 받지 못한다');
   }
   { // 여럿이 깎고 흩어져 한 명이 마무리: 남은 사람이 덜 치게 되지 않는다
     const { g, troll, fighter, run } = setup();
@@ -115,7 +115,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   check(b4.hp === b4.maxHp && b4.cds.every((v) => Number.isFinite(v) && v >= 0 && v <= 600) && b4.itemCd <= POTION_CD, '깨진 값은 범위 안으로 맞춘다');
 }
 
-// ---------- 4. 순위: 이름이 아니라 저장 키로 사람을 구분한다 (오늘의 등탑지기 명단은 games/deungbul/test/harden.test.ts) ----------
+// ---------- 4. 순위: 이름이 아니라 저장 키로 사람을 구분한다 (등불지기의 오늘의 등탑지기 명단은 games/deungbul/test/harden.test.ts) ----------
 {
   const clock = new Date(2026, 10, 23, 15, 0, 0).getTime();
   const g = new Game({ now: () => clock });
@@ -145,7 +145,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   g2.importWorld(JSON.parse(JSON.stringify(g.exportWorld())));
   check(g2.rank.top().length === 2 && g2.rank.top()[0].power === power, '순위가 저장되고 다시 읽힌다');
   const g3 = new Game({ now: () => clock });
-  g3.importWorld({ tower: {}, rank: [{ name: '옛사람', lv: 9, cls: 'warrior', power: 500 }, { name: '옛둘', lv: 2, cls: 'archer', power: 60 }] });
+  g3.importWorld({ tower: {}, rank: [{ name: '옛사람', lv: 9, cls: 'knight', power: 500 }, { name: '옛둘', lv: 2, cls: 'ranger', power: 60 }] });
   check(g3.rank.top().length === 2 && g3.rank.top()[0].name === '옛사람', '이름만으로 저장된 예전 순위도 읽힌다');
   const fake = mk(g3, '옛사람', 2, 'key-fake');
   g3.rank.tick(99);
@@ -426,7 +426,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 
     // 재접속: 체력이 가득 차지 않는다
     const h1 = await connect(server.port, '다친이', tok('hurt'));
-    h1.send({ t: 'class', id: 'warrior' });
+    h1.send({ t: 'class', id: 'knight' });
     await until(() => !!game.ents.get(h1.id)?.cls);
     const e1 = game.ents.get(h1.id)!;
     e1.hp = e1.maxHp * 0.25; e1.lastHurt = game.clock; e1.unsaved = true;
@@ -440,7 +440,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
     // 자리 비움 사냥: 오늘 한도를 다 썼으면 끊겨도 남지 않고, 남았으면 남는다
     const stay = async (name: string, used: number) => {
       const p = await connect(server.port, name, tok(name));
-      p.send({ t: 'class', id: 'warrior' });
+      p.send({ t: 'class', id: 'knight' });
       await until(() => !!game.ents.get(p.id)?.cls);
       const e = game.ents.get(p.id)!;
       e.lv = 5; e.away = { day: game.daily.dayOf(Date.now()), used };
@@ -466,8 +466,8 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   const grow = async (port: number, game: Game, name: string, token: string, lv: number, auto: boolean) => {
     const p = await connect(port, name, token);
     const e = game.ents.get(p.id)!;
-    p.ws.send(JSON.stringify({ t: 'class', id: 'warrior' }));
-    await until(() => e.cls === 'warrior');
+    p.ws.send(JSON.stringify({ t: 'class', id: 'knight' }));
+    await until(() => e.cls === 'knight');
     e.lv = lv; game.players.refresh(e); e.hp = e.maxHp; e.unsaved = true;
     if (auto) { p.ws.send(JSON.stringify({ t: 'auto', on: true })); await until(() => e.auto); }
     return { p, e };
@@ -511,15 +511,15 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 {
   const g = new Game();
   g.rank.load([
-    { pid: 'pid-a', name: '두번나옴', lv: 17, cls: 'mage', power: 525 },
-    { pid: '', name: '두번나옴', lv: 10, cls: 'mage', power: 245 },
-    { pid: '', name: '옛사람', lv: 8, cls: 'warrior', power: 175 },
+    { pid: 'pid-a', name: '두번나옴', lv: 17, cls: 'sage', power: 525 },
+    { pid: '', name: '두번나옴', lv: 10, cls: 'sage', power: 245 },
+    { pid: '', name: '옛사람', lv: 8, cls: 'knight', power: 175 },
     { pid: '', name: '빈줄', lv: 1, cls: '', power: 35 },
   ]);
   const names = () => g.rank.top().map((r) => r.name);
   check(names().join() === '두번나옴,옛사람,빈줄', `읽을 때: pid 줄이 있는 이름의 옛 줄은 버린다 (${names().join(', ')})`);
   // 옛 줄보다 약한 캐릭터가 같은 이름으로 접속하면 새 줄이 생기는데, 그때도 옛 줄이 남지 않는다
-  g.rank.load([{ pid: '', name: '약해짐', lv: 10, cls: 'warrior', power: 9999 }]);
+  g.rank.load([{ pid: '', name: '약해짐', lv: 10, cls: 'knight', power: 9999 }]);
   const p = g.players.spawn('약해짐', false, null, 'pid-weak');
   g.command(p, { t: 'rank' });
   check(names().filter((n) => n === '약해짐').length === 1, '접속한 사람의 이름으로 된 옛 줄은 새 줄이 생길 때 지워진다');
