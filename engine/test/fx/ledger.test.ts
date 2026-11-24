@@ -123,14 +123,14 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
     const ok = (st: Store) => { const all = st.econ('2026-01-01'), h = find(all, '2026-01-10', 'gold', 'hunt', '+'); return all.length === 5 && h?.amount === 150 && h.n === 6 && find(all, '2026-01-10', 'gold', 'hunt', '-')?.amount === 7 && st.econ('2026-01-10').length === 4 && st.econ('2026-01-11').length === 1 && st.econ('2026-02-01').length === 0; };
     check(ok(s), `${name}: 두 번에 나눠 얹어도 같은 줄(날짜·재화·원인·방향)은 합쳐지고, 날짜로 걸러 읽힌다`);
     s.saveEconSnapshot('2026-01-10', { day: '2026-01-10', chars: 1 }); s.saveEconSnapshot('2026-01-11', { day: '2026-01-11', chars: 2 }); s.saveEconSnapshot('2026-01-11', { day: '2026-01-11', chars: 3 });
-    s.savePlayer('k1', { name: '하나', lv: 3, exp: 0, need: 60, maxHp: 100, sparks: 1, contrib: 0, gold: 5 }); s.savePlayer('k2', { name: '둘', lv: 4, exp: 0, need: 60, maxHp: 100, sparks: 2, contrib: 0, gold: 6 });
+    s.savePlayer('k1', { name: '하나', lv: 3, exp: 0, need: 60, maxHp: 100, sparks: 1, gold: 5 }); s.savePlayer('k2', { name: '둘', lv: 4, exp: 0, need: 60, maxHp: 100, sparks: 2, gold: 6 });
     if (reopens) { s.close(); s = open(); } // 재시작
     const seen: PlayerSave[] = [];
     s.eachPlayer((p) => seen.push(p));
     check(ok(s) && (s.econSnapshot()?.data as { chars: number }).chars === 3 && s.econSnapshot()?.day === '2026-01-11' && (s.econSnapshot('2026-01-10')?.data as { chars: number }).chars === 1 && s.econSnapshot('2026-01-12') === null
       && seen.length === 2 && seen.map((p) => p.gold).sort().join() === '5,6', `${name}: ${reopens ? '닫았다 다시 열어도 합계가 남아 있고, ' : ''}스냅샷을 날짜로(없으면 가장 최근 것을) 읽고, 모든 캐릭터를 훑는다`);
     // 캐릭터가 많아도 빠짐없이, 한 번씩만 훑는다 (SQLite는 여러 쪽으로 나눠 읽는다)
-    for (let i = 0; i < 1203; i++) s.savePlayer(`many-${i}`, { name: `n${i}`, lv: 2, exp: 0, need: 60, maxHp: 100, sparks: 0, contrib: 0, gold: i });
+    for (let i = 0; i < 1203; i++) s.savePlayer(`many-${i}`, { name: `n${i}`, lv: 2, exp: 0, need: 60, maxHp: 100, sparks: 0, gold: i });
     const ids = new Set<number>(); let calls = 0;
     s.eachPlayer((p) => { calls++; if (p.name.startsWith('n')) ids.add(p.gold ?? -1); });
     check(calls === 1205 && ids.size === 1203, `${name}: 캐릭터 1,205명을 빠짐없이 한 번씩 훑는다`);
@@ -202,10 +202,10 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
     // 새로 온 사람 넷(0~3): 레벨 5에는 넷 다, 10에는 둘이 닿았다. 수입은 어제 것만 센다
     const stats = i < 4 ? { born: now - (i + 1) * DAY, play: 5000, away: 100, reach: { 5: [100 * (i + 1), 10 * i], ...(i < 2 ? { 10: [1000 * (i + 1), 500] } : {}) }, d: i % 2 ? [today, 999, 0] : [yesterday, 100 * (i + 1), 5], y: i % 2 ? [yesterday, 100 * (i + 1), 5] : ['2026-01-01', 12345, 0] }
       : i === 4 ? { born: now - 30 * DAY, play: 9, away: 0, reach: { 5: [1, 1] }, d: ['2026-01-02', 4444, 0], y: ['', 0, 0] } : undefined;
-    store.savePlayer(`secret-key-${i}`, { name: `이름${i}`, lv: 2 + (i % 3), exp: 0, need: 60, maxHp: 100, sparks: 10 * i, contrib: 0, gold, seen: now - seenAgo[i] * DAY, ext: { gear: { list, worn: i === 11 ? {} : { weapon: 1, ring: 2 }, seq: 3 }, ...(stats ? { stats } : {}) } });
+    store.savePlayer(`secret-key-${i}`, { name: `이름${i}`, lv: 2 + (i % 3), exp: 0, need: 60, maxHp: 100, sparks: 10 * i, gold, seen: now - seenAgo[i] * DAY, ext: { gear: { list, worn: i === 11 ? {} : { weapon: 1, ring: 2 }, seq: 3 }, ...(stats ? { stats } : {}) } });
   });
-  store.savePlayer('secret-key-blank1', { name: '빈이름', lv: 1, exp: 0, need: 60, maxHp: 100, sparks: 0, contrib: 0, gold: 0, seen: now });
-  store.savePlayer('secret-key-blank2', { name: '빈이름둘', lv: 1, exp: 10, need: 60, maxHp: 100, sparks: 3, contrib: 0, seen: now });
+  store.savePlayer('secret-key-blank1', { name: '빈이름', lv: 1, exp: 0, need: 60, maxHp: 100, sparks: 0, gold: 0, seen: now });
+  store.savePlayer('secret-key-blank2', { name: '빈이름둘', lv: 1, exp: 10, need: 60, maxHp: 100, sparks: 3, seen: now });
   // 거래소: 반지 둘(100, 300)과 철 10개 묶음(50)
   const seller = g.players.spawn('장수', false, null, 'key-s');
   g.classes.apply(seller, 'knight');
@@ -230,14 +230,14 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   const text = JSON.stringify(snap);
   check(!/이름|secret|key-|장수/.test(text), '스냅샷에 이름이나 저장 키가 들어 있지 않다');
   // 깨진 저장이 섞여 있어도 만들어진다
-  store.savePlayer('broken', { name: 'x', lv: NaN, exp: 0, need: 0, maxHp: 0, sparks: -5, contrib: 0, gold: 50, ext: { gear: { list: [null, 3, { uid: 1 }], worn: { weapon: 1 } }, stats: 'no' } } as unknown as PlayerSave);
+  store.savePlayer('broken', { name: 'x', lv: NaN, exp: 0, need: 0, maxHp: 0, sparks: -5, gold: 50, ext: { gear: { list: [null, 3, { uid: 1 }], worn: { weapon: 1 } }, stats: 'no' } } as unknown as PlayerSave);
   check(g.ledger.snapshot((fn) => store.eachPlayer(fn)).chars === 13, '깨진 저장이 섞여 있어도 스냅샷이 만들어진다');
 }
 
 // ---------- 통신 계층: 켜질 때 스냅샷을 남기고, 끌 때 장부를 저장소에 얹는다 ----------
 {
   const store = new MemoryStore();
-  store.savePlayer('k', { name: '있던사람', lv: 5, exp: 0, need: 60, maxHp: 100, sparks: 0, contrib: 0, gold: 120, seen: Date.now() });
+  store.savePlayer('k', { name: '있던사람', lv: 5, exp: 0, need: 60, maxHp: 100, sparks: 0, gold: 120, seen: Date.now() });
   const server = await startServer(0, { store });
   const day = server.game.ledger.today();
   const snap = store.econSnapshot(day)?.data as EconSnapshot | undefined;

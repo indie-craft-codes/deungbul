@@ -18,7 +18,7 @@ export function initWords(): void {
       residentBack: 'good', towerLit: 'good', stageChanged: '',
     },
     // 흘러가는 알림: 방금 한 일의 결과와 거절 사유
-    feed: ['offered', 'questStep', 'raidReward', 'tierUp', 'offerFar', 'noSparks', 'towerFull', 'noResident'],
+    feed: ['offered', 'questStep', 'raidReward', 'tierUp', 'rested', 'offerFar', 'noSparks', 'towerFull', 'noResident'],
   });
   addMsgSounds({ questDone: sfx.fanfare, raidWon: sfx.fanfare, residentBack: sfx.fanfare, raidStart: sfx.bad, raidLost: sfx.bad });
 }

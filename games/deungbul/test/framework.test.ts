@@ -14,6 +14,8 @@ import { newGame, startDeungbul } from './game';
 import { WebSocket } from 'ws';
 import type { ServerMsg } from '@engine/shared';
 import { installDeungbul } from '../server/deungbul';
+/** 이 게임의 옛 저장의 모양: 틀의 칸에 더해, 칸을 ext로 옮기기 전에 최상위에 있던 이 게임의 칸 넷 (틀의 PlayerSave에는 없다. 읽는 길은 각 시스템의 Saver.legacy) */
+type OldSave = PlayerSave & { quest?: [number, number, number]; contrib?: number; tier?: number; rested?: number };
 
 const fixture = <T>(name: string): T => JSON.parse(fs.readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8')) as T;
 /** 두 값이 다른 자리의 목록 (칸의 순서는 따지지 않는다). 같으면 빈 목록 */
@@ -52,12 +54,12 @@ function noonOf(day: unknown): number {
 //   quest, contrib, tier, rested   옛 최상위 칸. 읽기만 하고 다시 적지 않는다: 견본의 옛 칸은 새로 쓴 저장의 새 칸(ext.quest, ext.tower, ext.keepers, ext.rest)과 견준다
 // 견본에 없던 칸(옛 저장의 ext, armor, at 등)은 새로 생기는 것이라 따지지 않는다. 대신 한 번 더 왕복해서 그대로인지 본다.
 {
-  const samples = fixture<{ note: string; save: PlayerSave }[]>('players');
+  const samples = fixture<{ note: string; save: OldSave }[]>('players');
   type Bag = Record<string, unknown>;
   type GearSave = { list: { uid: number }[]; worn: Bag; seq: number };
   const nonZero = (o: unknown): Bag => Object.fromEntries(Object.entries((o ?? {}) as Bag).filter(([, v]) => v !== 0));
   /** 비교할 모양으로 다듬는다 (위의 목록) */
-  const norm = (s: PlayerSave): Bag => {
+  const norm = (s: OldSave): Bag => {
     const { seen: _seen, ext, ...rest } = structuredClone(s);
     const { vitals: _vitals, ...kept } = (ext ?? {}) as Bag;
     if (kept.build) { const b = kept.build as { stats?: unknown; skillLv?: unknown }; kept.build = { stats: nonZero(b.stats), skillLv: b.skillLv ?? {} }; }
@@ -65,7 +67,7 @@ function noonOf(day: unknown): number {
     return { ...rest, ...(rest.items ? { items: nonZero(rest.items) } : {}), ext: kept };
   };
   /** 견본을 읽어 캐릭터를 만들고 다시 저장한 값 */
-  const roundTrip = (save: PlayerSave, now: number, pid: string): PlayerSave => {
+  const roundTrip = (save: OldSave, now: number, pid: string): OldSave => {
     const g = newGame({ now: () => now });
     const p = g.players.spawn(save.name, false, { ...structuredClone(save), seen: now }, pid);
     return structuredClone(g.players.export(p));
@@ -114,11 +116,11 @@ function noonOf(day: unknown): number {
 // 옛 형식(최상위 quest, contrib, tier, rested)도 계속 읽는다. 쓸 때는 새 칸에만 쓴다 (옛 칸에 함께 쓰던 것은 칸을 옮긴 배포 한 번 동안뿐이었다).
 // 기대값(games/deungbul/test/fixtures/players-read.json)은 칸을 옮기기 전의 코드가 각 견본을 읽은 상태다: rested5h는 5시간 떠나 있다 왔을 때의 휴식 보너스.
 {
-  const samples = fixture<{ note: string; save: PlayerSave }[]>('players');
+  const samples = fixture<{ note: string; save: OldSave }[]>('players');
   const expected = fixture<{ quest: number[]; contrib: number; tier: number; rested: number; rested5h: number }[]>('players-read');
-  type Read = { quest: number[]; contrib: number; tier: number; rested: number; told: boolean; out: PlayerSave };
+  type Read = { quest: number[]; contrib: number; tier: number; rested: number; told: boolean; out: OldSave };
   /** 저장을 읽은 뒤의 상태. 시계는 저장한 시각에서 gone만큼 지난 때 */
-  const read = (save: PlayerSave, gone = 0): Read => {
+  const read = (save: OldSave, gone = 0): Read => {
     const now = (typeof save.seen === 'number' ? save.seen : noonOf(null)) + gone;
     const g = newGame({ now: () => now });
     const p = g.players.spawn(save.name, false, structuredClone(save), 'fx-cells');
@@ -126,9 +128,9 @@ function noonOf(day: unknown): number {
   };
   const same = (r: Read, e: { quest: number[]; contrib: number; tier: number; rested: number }) => r.quest.join() === e.quest.join() && r.contrib === e.contrib && r.tier === e.tier && r.rested === e.rested;
   /** 옛 최상위 칸을 지운 저장: 지금 코드가 쓰는 모양 */
-  const newOnly = (save: PlayerSave): PlayerSave => { const { quest: _q, contrib: _c, tier: _t, rested: _r, ...rest } = structuredClone(save); return rest; };
+  const newOnly = (save: OldSave): OldSave => { const { quest: _q, contrib: _c, tier: _t, rested: _r, ...rest } = structuredClone(save); return rest; };
   /** 새 칸의 값을 옛 최상위 칸에도 적은 저장: 옛 칸을 함께 쓰던 배포가 남긴 모양 */
-  const both = (save: PlayerSave): PlayerSave => { const e = (save.ext ?? {}) as { quest?: [number, number, number]; tower?: { contrib?: number }; keepers?: { tier?: number }; rest?: { left?: number } }; return { ...structuredClone(save), quest: e.quest, contrib: e.tower?.contrib, tier: e.keepers?.tier, rested: e.rest?.left }; };
+  const both = (save: OldSave): OldSave => { const e = (save.ext ?? {}) as { quest?: [number, number, number]; tower?: { contrib?: number }; keepers?: { tier?: number }; rest?: { left?: number } }; return { ...structuredClone(save), quest: e.quest, contrib: e.tower?.contrib, tier: e.keepers?.tier, rested: e.rest?.left }; };
   const HOURS5 = 5 * 3600000;
   /** 방금 쓴 저장(저장한 시각이 적혀 있다)을 5시간 뒤에 읽었을 때의 휴식 보너스 */
   const after5h = (rested: number) => Math.min(REST.cap, rested + restGain(HOURS5));
@@ -174,7 +176,7 @@ function noonOf(day: unknown): number {
   try {
     cases.forEach(({ v, want }, i) => {
       const plain = newOnly(base);
-      const asOld = read({ ...plain, ...v } as PlayerSave);
+      const asOld = read({ ...plain, ...v } as OldSave);
       const asNew = read({ ...plain, ext: { ...plain.ext, quest: v.quest, tower: { contrib: v.contrib }, keepers: { tier: v.tier }, rest: { left: v.rested } } });
       if (!same(asOld, want)) wrong.push(`깨진 값 ${i + 1} (옛 칸): ${JSON.stringify([asOld.quest, asOld.contrib, asOld.tier, asOld.rested])}`);
       if (!same(asNew, want)) wrong.push(`깨진 값 ${i + 1} (새 칸): ${JSON.stringify([asNew.quest, asNew.contrib, asNew.tier, asNew.rested])}`);
@@ -212,7 +214,7 @@ function noonOf(day: unknown): number {
   const s = await startDeungbul(0, { store });
   const keyOf = (token: string) => createHash('sha256').update(token).digest('hex');
   /** 접속해서 캐릭터를 손본 뒤 끊는다. 저장됐으면 그 저장을 돌려준다 */
-  const visit = async (token: string, touch: (e: Ent, send: (m: Record<string, unknown>) => void) => void): Promise<PlayerSave | null> => {
+  const visit = async (token: string, touch: (e: Ent, send: (m: Record<string, unknown>) => void) => void): Promise<OldSave | null> => {
     const h = await connect(s.port, undefined, token);
     const e = s.game.ents.get(h.id)!;
     touch(e, (m) => h.ws.send(JSON.stringify(m)));
@@ -232,7 +234,7 @@ function noonOf(day: unknown): number {
   const contrib = await visit('touch-token-contr-008', (e) => { e.contrib = 5; e.tier = 1; e.rested = 40; });
   check(idle === null && contrib === null, '아무것도 하지 않은 새 캐릭터는 저장하지 않는다 (기여·기여 단계·휴식 칸만 있는 것도 전과 같이 세지 않는다)');
   check(renamed?.name === '이름만바꿈', '이름만 바꾼 캐릭터는 저장한다');
-  const q = (s: PlayerSave | null) => (s?.ext?.quest ?? []) as number[];
+  const q = (s: OldSave | null) => (s?.ext?.quest ?? []) as number[];
   check(q(quest)[2] === 1 && q(step)[1] === 1 && q(chapter)[0] === 1 && quest?.quest === undefined && step?.quest === undefined && chapter?.quest === undefined, '퀘스트만 진행한 캐릭터는 저장한다 (진행 수치, 단계, 장 가운데 하나만 있어도. 새 칸에만 적힌다)');
   check(sparks?.sparks === 3 && gold?.gold === 1, '불씨만 얻은 캐릭터와 골드만 얻은 캐릭터는 저장한다');
   // 한 번 저장된 캐릭터는 그 뒤로 계속 저장한다: 불씨를 다 바쳐 틀의 칸이 비어도 기여가 남는다
@@ -494,7 +496,7 @@ function noonOf(day: unknown): number {
   const same = (got: [string, string][], want: Record<string, string>): boolean => got.length === Object.keys(want).length && new Set(got.map(([k]) => k)).size === got.length && got.every(([k, v]) => want[k] === v);
   const gameKeys = [...(/interface MsgMap \{([\s\S]*?)\n  \}/.exec(read('games/deungbul/shared/deungbul.ts'))?.[1] ?? '').matchAll(/^\s{4}(\w+):/gm)].map((m) => m[1]);
   const isGame = (k: string): boolean => gameKeys.includes(k);
-  check(engine.banner.length === 8 && engine.feed.length > 70 && engine.sound.length === 13 && game.banner.length === 9 && game.feed.length === 8 && game.sound.length === 5, `알림 분류표와 소리 대응표를 읽어 낸다 (틀: 가운데 ${engine.banner.length}, 흘러가는 ${engine.feed.length}, 소리 ${engine.sound.length} / 게임: ${game.banner.length}, ${game.feed.length}, ${game.sound.length})`);
+  check(engine.banner.length === 8 && engine.feed.length > 70 && engine.sound.length === 13 && game.banner.length === 9 && game.feed.length === 9 && game.sound.length === 5, `알림 분류표와 소리 대응표를 읽어 낸다 (틀: 가운데 ${engine.banner.length}, 흘러가는 ${engine.feed.length}, 소리 ${engine.sound.length} / 게임: ${game.banner.length}, ${game.feed.length}, ${game.sound.length})`);
   check(same([...engine.banner, ...game.banner], BANNER), '가운데 알림으로 뜨는 안내문과 그 색조가 가르기 전과 같다 (틀의 표 + 게임이 등록한 것)');
   check([...engine.feed, ...game.feed].sort().join() === [...FEED].sort().join() && new Set([...engine.feed, ...game.feed]).size === FEED.length, `흘러가는 알림으로 뜨는 안내문 ${FEED.length}개가 가르기 전과 같다`);
   check(same([...engine.sound, ...game.sound], SOUND), '안내문마다 나는 소리가 가르기 전과 같다');

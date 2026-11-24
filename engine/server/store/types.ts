@@ -1,29 +1,28 @@
 // 저장 계층의 약속. 게임 규칙은 이 인터페이스만 알고, 실제 저장소는 갈아 끼운다.
 // 실시간 상태(체력, 몬스터)는 저장하지 않는다. 재시작을 넘어 남아야 하는 것만 적는다.
 
-export interface PlayerSave {
-  name: string; lv: number; exp: number; need: number; maxHp: number; sparks: number; /** 옛 칸 (읽기 전용 호환): 지금은 ext.tower.contrib. 옛 저장을 읽는 길(Saver.legacy)이 본다 */ contrib?: number;
+/**
+ * 캐릭터 저장의 틀의 칸. 게임의 시스템은 자기 몫을 ext의 자기 이름 칸에 적는다 (engine/server/game/game.ts의 Saver).
+ * 옛 형식의 저장에는 게임의 칸이 최상위에 있을 수 있다: 그것은 이 타입에 없고, 읽는 길(Saver.legacy)이 저장 전체를 이름-값 묶음으로 받아 스스로 찾는다.
+ * (interface가 아니라 type인 까닭: 이름-값 묶음(Record<string, unknown>)으로 넘길 수 있게)
+ */
+export type PlayerSave = {
+  name: string; lv: number; exp: number; need: number; maxHp: number; sparks: number;
   /** 마지막으로 저장된 시각(ms). 접속하지 않은 시간을 계산할 때 쓴다 */
   seen?: number;
-  /** 옛 칸 (읽기 전용 호환): 지금은 ext.quest. 메인 퀘스트 진행: [장, 단계, 진행 수치] */
-  quest?: [number, number, number];
   /** 직업. 아직 고르지 않았으면 빈 문자열 */
   cls?: string;
   gold?: number;
   weapon?: string;
   armor?: string;
   items?: Record<string, number>;
-  /** 옛 칸 (읽기 전용 호환): 지금은 ext.rest.left. 남은 휴식 보너스 */
-  rested?: number;
-  /** 옛 칸 (읽기 전용 호환): 지금은 ext.keepers.tier. 받은 기여 단계 보상의 수 */
-  tier?: number;
   /** 시스템마다 자기 이름의 칸에 저장하는 것 (장비, 우편, 일일 임무). engine/server/game/game.ts의 Saver */
   ext?: Record<string, unknown>;
   /** 마지막으로 있던 자리 [x, z]. 다시 접속하면 여기서 시작한다 */
   at?: [number, number];
   /** 자동 사냥을 켠 채로 나갔다. 다시 접속하면 켜진 채로 시작한다 */
   auto?: boolean;
-}
+};
 
 /** 신고 한 건 (engine/server/net/moderation.ts의 Report와 같은 모양) */
 export interface ReportSave { at: number; by: string; byKey: string | null; target: string; targetKey: string | null; lines: string[] }

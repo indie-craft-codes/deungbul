@@ -12,7 +12,7 @@ import { startDeungbul } from './game';
 const store = new MemoryStore();
 const TOKEN_A = 'test-token-aaaaaaaaaaaa';
 const keyA = createHash('sha256').update(TOKEN_A).digest('hex');
-store.savePlayer(keyA, { name: '가나다', lv: 3, exp: 5, need: 109, maxHp: 230, sparks: 5, contrib: 0 });
+store.savePlayer(keyA, { name: '가나다', lv: 3, exp: 5, need: 109, maxHp: 230, sparks: 5 });
 
 // 습격은 시험에서 직접 시작한다: 물결은 하나로 줄이고 시각표는 비운다
 const raidCfg = { hours: [], waveAtS: [0] };

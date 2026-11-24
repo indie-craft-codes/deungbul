@@ -1,7 +1,7 @@
 // 글 다듬기와 금칙어 가리기. 통신 계층(대화, 이름)과 게임 규칙(길드 이름과 공지)이 함께 쓰므로 어느 쪽에도 속하지 않는 자리에 둔다.
-// 금칙어 목록은 시작용의 짧은 목록이다. 운영하면서 늘리고, 규모가 커지면 외부 필터로 바꾼다.
+// 금칙어 목록은 시작용의 짧은 목록이다(한국어, 영어). 게임은 addBannedWords로 자기 언어와 자기 세계의 낱말을 더한다. 규모가 커지면 외부 필터로 바꾼다.
 
-const WORDS = [
+const WORDS: string[] = [
   // 한국어
   '씨발', '시발', '씨팔', '시팔', 'ㅅㅂ', '병신', 'ㅂㅅ', '좆', '개새끼', '개새', '지랄', '니애미', '느금마', '창녀', '걸레년',
   // 영어
@@ -12,7 +12,14 @@ const WORDS = [
 // '시 발표', '혹시?발견', '즉시-발송', '택시2발' 같은 정상 문장이 가려진다
 const GAP = '[.*_~^]*';
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const PATTERN = new RegExp(WORDS.map((w) => [...w].map(esc).join(GAP)).join('|'), 'giu');
+const build = (): RegExp => new RegExp(WORDS.map((w) => [...w].map(esc).join(GAP)).join('|'), 'giu');
+let PATTERN = build();
+
+/** 금칙어를 더한다 (게임의 서버 진입점이나 규칙 플러그인에서). 빈 낱말과 이미 있는 낱말은 건너뛴다. 다듬기(tidy)를 거친 모양으로 견주므로 낱말도 다듬어 넣는다 */
+export function addBannedWords(words: readonly string[]): void {
+  for (const w of words.map((x) => tidy(x).trim().toLowerCase())) if (w && !WORDS.includes(w)) WORDS.push(w);
+  PATTERN = build();
+}
 
 /**
  * 글자를 한 가지 모양으로 다듬는다: 전각 글자와 꾸밈 글자를 보통 글자로(NFKC), 눈에 보이지 않는 글자(폭 없는 공백, 방향 뒤집기,

@@ -312,7 +312,7 @@ const same = (a: object, b: object): boolean => JSON.stringify(a) === JSON.strin
   const g = new Game({ now: () => clock });
   const { cmd, said } = bench(g);
   // 물건이 붙기 전의 형식으로 저장된 우편
-  const old: PlayerSave = { name: '옛 사람', lv: 3, exp: 0, need: 100, maxHp: 100, sparks: 0, contrib: 0, seen: clock, gold: 10, cls: 'knight', ext: { mail: { seq: 2, list: [{ id: 1, k: 'idle', a: [30], r: { gold: 5, exp: 7 } }, { id: 2, k: 'attend', a: [1], r: { gold: 30 } }] } } };
+  const old: PlayerSave = { name: '옛 사람', lv: 3, exp: 0, need: 100, maxHp: 100, sparks: 0, seen: clock, gold: 10, cls: 'knight', ext: { mail: { seq: 2, list: [{ id: 1, k: 'idle', a: [30], r: { gold: 5, exp: 7 } }, { id: 2, k: 'attend', a: [1], r: { gold: 30 } }] } } };
   const p = g.players.spawn('옛 사람', false, copy(old), 'key-old');
   check(p.mail.filter((m) => m.id <= 2).length === 2 && p.mail[0].r.gold === 5 && p.mail[0].r.exp === 7, '예전 형식으로 저장된 우편도 그대로 읽힌다');
   cmd(p, { t: 'mailClaim', id: 1 });

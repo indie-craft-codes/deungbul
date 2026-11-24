@@ -16,7 +16,7 @@ const { x0: MIN_X, x1: MAX_X, z0: MIN_Z, z1: MAX_Z } = AREAS[0];
 const store = new MemoryStore();
 const TOKEN_A = 'test-token-aaaaaaaaaaaa';
 const keyA = createHash('sha256').update(TOKEN_A).digest('hex');
-store.savePlayer(keyA, { name: '가나다', lv: 3, exp: 5, need: 109, maxHp: 230, sparks: 5, contrib: 0 });
+store.savePlayer(keyA, { name: '가나다', lv: 3, exp: 5, need: 109, maxHp: 230, sparks: 5 });
 
 let server = await startServer(0, { store });
 try {
@@ -173,15 +173,15 @@ try {
   }
 
   // 파일 저장소: 쓰고 닫았다가 다시 열어 읽는다
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'deungbul-')), 'test.db');
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'engine-fx-')), 'test.db');
   const db1 = new SqliteStore(file);
-  db1.saveWorld({ glow: 77, residents: [30, 4, 0] });
-  db1.savePlayer('k1', { name: '파일', lv: 4, exp: 1, need: 148, maxHp: 245, sparks: 9, contrib: 12 });
-  db1.savePlayer('k1', { name: '파일2', lv: 5, exp: 2, need: 200, maxHp: 260, sparks: 1, contrib: 20 });
+  db1.saveWorld({ glow: 77, residents: [30, 4, 0] }); // 월드 저장은 시스템마다의 칸을 그대로 담는다 (이름은 아무것이나)
+  db1.savePlayer('k1', { name: '파일', lv: 4, exp: 1, need: 148, maxHp: 245, sparks: 9, gold: 12 });
+  db1.savePlayer('k1', { name: '파일2', lv: 5, exp: 2, need: 200, maxHp: 260, sparks: 1, gold: 20 });
   db1.close();
   const db2 = new SqliteStore(file);
   const w = db2.loadWorld(), pl = db2.loadPlayer('k1');
-  check(w?.glow === 77 && (w.residents as number[])[0] === 30 && pl?.name === '파일2' && pl.contrib === 20 && db2.loadPlayer('none') === null, '파일 저장소가 닫았다 열어도 값을 돌려준다');
+  check(w?.glow === 77 && (w.residents as number[])[0] === 30 && pl?.name === '파일2' && pl.gold === 20 && db2.loadPlayer('none') === null, '파일 저장소가 닫았다 열어도 값을 돌려준다');
   db2.close();
   fs.rmSync(path.dirname(file), { recursive: true, force: true });
 } finally {

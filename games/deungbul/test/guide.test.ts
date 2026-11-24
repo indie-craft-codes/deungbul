@@ -404,7 +404,6 @@ for (const P of PACKS) {
     'msg.classFar', // 직업은 등탑 가까이에서 바꾼다
     'msg.bossUp', // 나타난 곳(잿빛 숲)을 말한다
     'msg.loot', 'msg.forgeFar', 'msg.forgeClosed', // 대장간의 주인(브람)을 말한다
-    'msg.rested', // 휴식 보너스를 등탑에 맡긴 등불로 말한다
   ];
   for (const code of ['ko', 'en'] as const) {
     const over = overlaps(base[code], game[code]);
@@ -438,7 +437,7 @@ for (const P of PACKS) {
   const gameKeys = [...(/interface MsgMap \{([\s\S]*?)\n  \}/.exec(read('games/deungbul/shared/deungbul.ts'))?.[1] ?? '').matchAll(/^\s{4}(\w+):/gm)].map((m) => m[1]);
   const engineKeys = [...read('engine/shared/messages.ts').matchAll(/^\s*\|\s*'(\w+)'/gm)].map((m) => m[1]);
   const has = (o: object, k: string): boolean => typeof (o as Record<string, unknown>)[k] === 'function';
-  check(gameKeys.length === 18 && [koGame, enGame].every((g) => gameKeys.every((k) => has(g.msg, k))) && [base.ko, base.en].every((b) => gameKeys.every((k) => !has(b.msg, k))),
+  check(gameKeys.length === 19 && [koGame, enGame].every((g) => gameKeys.every((k) => has(g.msg, k))) && [base.ko, base.en].every((b) => gameKeys.every((k) => !has(b.msg, k))),
     `이 게임의 안내문 ${gameKeys.length}개 모두에 게임 쪽 문장이 두 언어로 있다 (틀의 묶음에는 없다)`);
   check(LOCALES.every((l) => Object.keys(l.msg).sort().join() === [...engineKeys, ...gameKeys].sort().join()), `합친 묶음의 안내문은 틀의 것 ${engineKeys.length}개와 게임의 것 ${gameKeys.length}개, 모두 ${engineKeys.length + gameKeys.length}개다`);
 

@@ -243,7 +243,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       power: (n) => `Power ${num(n)}`,
       streak: (n) => `Day ${n} streak`,
       reward: (gold, exp, second) => [gold ? `Gold ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you rested (${a[0]} min)` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
+      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
       potions: (n) => `Potions ${n}`,
       distance: (m) => `${m} m`,
       num: (n) => num(n),
@@ -378,7 +378,6 @@ export const enBase = (n: ContentNames): EngineLocale => {
       guildLevelUp: (a) => `The guild reached Lv ${a[0]}.`,
       guildNone: () => 'You are not in a guild. Create one or get invited under Menu > Guild.',
       awayBack: (a) => `Auto-hunt kept going for the ${a[0]} min you were away. ${coin ? `+${count(a[1], coin.one)}, ` : ''}+${num(a[2])} gold${Number(a[3]) > 0 ? `, +${count(a[3], 'level')}` : ''}`,
-      rested: (a) => `A rest bonus built up while you were away. Rested bonus ${a[0]} (double exp from kills)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       // ---- Salvage, lock, auto-salvage, bag expansion (economy stage 2). The dust's name comes from the game's item names ----
       salvaged: (a) => `Salvaged ${count(a[0], 'item')}. ${itemName(SALVAGE.item)} +${num(a[1])}`,
       salvageCant: () => 'Some of that gear cannot be salvaged. Equipped, Standard and locked gear cannot be salvaged.',

@@ -6,4 +6,4 @@ export { channelOf, fieldLayer, isField, notifyLayer } from './game/layers';
 export { startServer, type Options, type Running } from './net/server';
 export { runServer, type RunOptions } from './run';
 export { MemoryStore, SqliteStore, type EconRow, type PlayerSave, type Store, type WorldSave } from './store';
-export { isClean, mask } from './text';
+export { addBannedWords, isClean, mask } from './text';

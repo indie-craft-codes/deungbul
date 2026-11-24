@@ -6,7 +6,8 @@ import { check } from '@engine/testing';
 
 {
   const g = newGame();
-  const p = g.players.spawn('둘째장', false, { name: '둘째장', lv: 4, exp: 0, need: 148, maxHp: 245, sparks: 20, contrib: 6, quest: [1, 0, 0], gold: 40 });
+  const old = { name: '둘째장', lv: 4, exp: 0, need: 148, maxHp: 245, sparks: 20, contrib: 6, quest: [1, 0, 0] as [number, number, number], gold: 40 }; // 옛 형식: 이 게임의 칸이 최상위에
+  const p = g.players.spawn('둘째장', false, old);
   const at = (c: number, st: number, n = 0) => p.qc === c && p.qs === st && p.qn === n;
   const slay = (type: string, count: number) => {
     const list = [...g.ents.values()].filter((e) => e.type === type && !e.dead).slice(0, count);
@@ -57,6 +58,7 @@ import { check } from '@engine/testing';
   g.notices = [];
   g.fire('raidWon', [p, other]);
   check(at(QUESTS.length, 0) && g.notices.some((n) => n.k === 'questDone' && n.a[0] === 'halmeom'), '습격을 막아 내면 4장이 끝난다');
-  const lost = g.players.spawn('옛저장', false, { name: '옛저장', lv: 1, exp: 0, need: 60, maxHp: 200, sparks: 0, contrib: 0, quest: [9, 9, 9] });
+  const oldLost = { name: '옛저장', lv: 1, exp: 0, need: 60, maxHp: 200, sparks: 0, contrib: 0, quest: [9, 9, 9] as [number, number, number] }; // 옛 형식
+  const lost = g.players.spawn('옛저장', false, oldLost);
   check(lost.qc === QUESTS.length && lost.qs === 0 && lost.qn === 0, '없는 장을 가리키는 저장은 끝난 상태로 읽는다');
 }

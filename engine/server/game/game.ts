@@ -14,7 +14,7 @@ import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
 import { resolve } from '../../shared/sim';
 import { LEVEL } from '../../shared/defs';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
-import type { PlayerSave, WorldSave } from '../store';
+import type { WorldSave } from '../store';
 import type { Ent } from './entity';
 import type { EntExt, GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
 import { fieldLayer } from './layers';
@@ -92,9 +92,9 @@ export interface Rules extends RulesExt {
 
 /**
  * 캐릭터 저장의 한 칸. 시스템이 자기 몫을 직접 쓰고 읽는다 (PlayerSave.ext[name])
- * legacy: 자기 칸이 없는 저장(그 값이 PlayerSave의 최상위 칸에 있던 옛 형식)에서 자기 몫을 찾아 load가 읽는 모양으로 돌려준다. 없으면 undefined (월드 저장의 legacy와 같다). 옛 저장이 남아 있는 한 지우지 않는다
+ * legacy: 자기 칸이 없는 저장(그 값이 저장의 최상위 칸에 있던 옛 형식: 이름-값 묶음으로 받는다. 그 칸은 PlayerSave의 타입에 없다)에서 자기 몫을 찾아 load가 읽는 모양으로 돌려준다. 없으면 undefined (월드 저장의 legacy와 같다). 옛 저장이 남아 있는 한 지우지 않는다
  */
-export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: PlayerSave) => unknown }
+export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: Readonly<Record<string, unknown>>) => unknown }
 
 /** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (주민 혜택, 나중의 장비와 버프). */
 export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp' | keyof ModsExt;

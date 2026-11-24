@@ -179,3 +179,12 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
     await server.close();
   }
 }
+
+// ---------- 금칙어: 게임이 더한다 ----------
+// (더한 낱말은 이 프로세스가 끝날 때까지 남는다: 다른 시험의 이름과 겹치지 않을 낱말을 쓴다)
+{
+  const { addBannedWords, isClean, mask } = await import('../../server/text');
+  check(isClean('검은쭈꾸미') && mask('검은쭈꾸미') === '검은쭈꾸미', '더하기 전에는 그 낱말을 가리지 않는다');
+  addBannedWords(['쭈꾸미', '', 'ZQXW']);
+  check(!isClean('검은쭈꾸미') && mask('검은쭈꾸미') === '검은***' && mask('a z.q.x.w b') === 'a ******* b' && !isClean('씨발'), '게임이 더한 금칙어도 가리고(대소문자, 끼워 넣은 점까지), 틀의 금칙어는 그대로다');
+}

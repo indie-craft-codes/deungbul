@@ -32,6 +32,8 @@ declare module '@engine/shared/ext' {
     raidElsewhere: [channel: number];
     /** 그 채널을 지키는 사람이 없어, 남은 적이 등탑을 치고 사라졌다 */
     raidAbandoned: [channel: number];
+    /** 접속하지 않은 동안 휴식 보너스가 쌓였다 (systems/rest.ts) */
+    rested: [left: number];
   }
 
   interface ClientMsgs {

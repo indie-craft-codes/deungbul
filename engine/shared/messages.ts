@@ -30,7 +30,6 @@ export type MsgKey =
   | 'noGold' // []
   | 'noPotion' // []
   | 'hpFull' // []
-  | 'rested' // [쌓인 휴식 보너스]
   | 'gearDrop' // [칸 id, 등급 id] 장비를 주웠다
   | 'gearFull' // [] 가방이 가득 차서 줍지 못했다
   | 'gearSold' // [받은 골드]
