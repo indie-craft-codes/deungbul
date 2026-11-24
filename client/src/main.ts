@@ -16,7 +16,7 @@ import { forgeSlow, renderForge } from './hud/forge';
 import { notifySys } from './hud/notify';
 import { initParty, renderParty, setParty, showInvite } from './hud/party';
 import { classSlow, initClasses, renderClasses } from './hud/classes';
-import { hideGate, hudFrame, hudSlow, initPanels, renderTexts, renderWorld, setMyName, showGate } from './hud/panels';
+import { hideGate, hudFrame, hudSlow, initPanels, renderTexts, renderWorld, setMyName, showGate } from './hud/me';
 import { initQuest, questFrame, renderQuest } from './hud/quest';
 import { initShop, renderShop, shopFrame, shopSlow } from './hud/shop';
 import { speak, updateFloats } from './hud/tags';

@@ -7,7 +7,7 @@ import type { MeState, OldStatCells } from '../../../shared/deungbul';
 import { TOWER, TOWERS } from '../../../shared/world';
 import { onKey, onMsg } from '../bus';
 import { addNpc, setMerchantLook } from '../entities';
-import { hudSlow } from '../hud/panels';
+import { hudSlow } from '../hud/me';
 import { goToQuest, renderQuest } from '../hud/quest';
 import { L } from '../i18n';
 import { rules } from '../rules';
@@ -39,7 +39,7 @@ function setQuest(q: MeState['quest']): void {
 }
 
 /**
- * 개인 상태를 받는 길. 퀘스트 창은 받는 즉시 다시 쓴다. 수치(기여, 기여 단계, 휴식 보너스)는 내 정보 창(hud/panels.ts의 hudSlow)이 느린 주기마다 읽어 쓴다.
+ * 개인 상태를 받는 길. 퀘스트 창은 받는 즉시 다시 쓴다. 수치(기여, 기여 단계, 휴식 보너스)는 내 정보 창(hud/me.ts의 hudSlow)이 느린 주기마다 읽어 쓴다.
  * 다만 접속한 뒤 처음 받은 수치는 바로 쓴다: 옮기기 전에는 이 수치가 stat에 실려 왔고, 접속 뒤 첫 stat은 직업 글자를 다시 쓰면서(main.ts) 내 정보 창도 함께 썼다.
  * 그렇게 하지 않으면 다시 접속할 때마다 퀘스트 창은 제 값인데 기여가 0으로 보이는 순간(다음 주기까지 최대 0.25초)이 생긴다.
  * 서버는 한 번 내보낼 때 stat, meta를 먼저 보내고 개인 상태를 그 뒤에 보낸다: 퀘스트 창이 다시 쓰일 때 불씨 수(S.me.sparks)는 이미 새 값이다.
