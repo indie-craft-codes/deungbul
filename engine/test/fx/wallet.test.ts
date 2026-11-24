@@ -73,7 +73,9 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   // 저장을 읽을 때의 범위(players.ts의 spawn)가 재화의 표의 상한과 같다
   const save: PlayerSave = { name: '부자', lv: 3, exp: 0, need: 100, maxHp: 100, sparks: 5e12, gold: 5e12 };
   const rich = g.players.spawn('부자', false, save, 'key-rich');
-  check(rich.gold === GOLD_MAX && rich.sparks === SPARKS_MAX, '저장에서 읽을 때 잘라 내는 값이 재화의 표의 상한과 같다');
+  check(rich.gold === GOLD_MAX && rich.sparks === SPARKS_MAX && GOLD_MAX !== 1e9, `저장에서 읽을 때 잘라 내는 값이 재화의 표의 상한과 같다 (시험용 내용의 상한 ${GOLD_MAX}: 틀의 기본값 1e9가 아니다)`);
+  const keep = g.players.spawn('부자2', false, { ...save, gold: 4e10, sparks: 2e9 }, 'key-rich2');
+  check(keep.gold === 4e10 && keep.sparks === 2e9, '상한 안의 큰 값(1e9를 넘는 값)은 그대로 읽는다');
 
   // 경험치: 더하면 레벨이 오른다. 상한이 없다
   const q = hero('경험', 'key-e'), lv = q.lv, lots = q.need * 3;

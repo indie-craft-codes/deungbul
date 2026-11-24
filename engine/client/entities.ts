@@ -34,13 +34,19 @@ export function addNpc(x: number, z: number, model: Model, name: () => string, l
   npcs.push({ x, z, tag: makeTag(name(), 'npc', false), name });
 }
 
-/** 상인이 바라볼 곳. 틀은 정하지 않고(앞을 본다), 게임이 정한다 (이 게임은 곁의 등탑) */
-let merchantLook: ((shop: At, i: number) => At | undefined) | null = null;
-export function setMerchantLook(fn: (shop: At, i: number) => At | undefined): void { merchantLook = fn; }
+/** 상점 자리에 세울 상인의 모습. 빈 칸은 틀의 기본(갈색 옷의 사람, 이름 ui.shop, 앞을 본다)을 쓴다 */
+export interface MerchantLook { model?: Model; name?: () => string; look?: At }
+/** 상점 자리마다 상인을 어떻게 세우는가. null을 돌려주면 그 자리에는 아무도 세우지 않는다 (가판대나 게시판인 게임) */
+let merchantOf: (shop: At, i: number) => MerchantLook | null = () => ({});
+/** 게임이 상인의 모델·이름·바라볼 곳을 정한다. 시작할 때(접속 전) 한 번 부른다 */
+export function setMerchant(fn: (shop: At, i: number) => MerchantLook | null): void { merchantOf = fn; }
 
 /** 상인들: 늘 제자리(SHOPS)에 서 있다 */
 export function spawnMerchant(): void {
-  SHOPS.forEach((s, i) => addNpc(s.x, s.z, makeHumanoid(0xb5863c, false), () => L().ui.shop, merchantLook?.(s, i)));
+  SHOPS.forEach((s, i) => {
+    const m = merchantOf(s, i);
+    if (m) addNpc(s.x, s.z, m.model ?? makeHumanoid(0xb5863c, false), m.name ?? (() => L().ui.shop), m.look);
+  });
 }
 
 /** 이름표에 적는 글: 길드가 있으면 이름 뒤에 붙인다 */

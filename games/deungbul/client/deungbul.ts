@@ -5,7 +5,7 @@
 import { RESIDENTS, SHOPS, speedFor } from '../shared/defs';
 import type { MeState } from '../shared/deungbul';
 import { TOWER, TOWERS, TOWN } from '../shared/world';
-import { $, addNpc, goToTown, hudSlow, makeHumanoid, onKey, onMsg, rules, S, setMerchantLook } from '@engine/client';
+import { $, addNpc, goToTown, hudSlow, makeHumanoid, onKey, onMsg, rules, S, setMerchant } from '@engine/client';
 import { goToQuest, renderQuest } from './hud/quest';
 import { initWords } from './words';
 import { L } from '@engine/client/i18n';
@@ -101,7 +101,7 @@ export function initDeungbul(): void {
     return loc.fmt.residentHint(loc.residents[RESIDENTS[i].id].name, RESIDENTS[i].need - GS.world.tower.residents[i]);
   };
   // 상인은 곁의 등탑을 바라본다 (SHOPS의 tower는 TOWERS의 번호)
-  setMerchantLook((_s, i) => TOWERS[SHOPS[i].tower] ?? TOWER);
+  setMerchant((_s, i) => ({ look: TOWERS[SHOPS[i].tower] ?? TOWER }));
   // '마을로'(H 키, 단추)는 첫불 마을의 등탑 앞으로 간다. 단추는 이 게임의 것이다
   rules.home = () => TOWN;
   $('townBtn').addEventListener('click', (e) => { goToTown(); (e.currentTarget as HTMLElement).blur(); });

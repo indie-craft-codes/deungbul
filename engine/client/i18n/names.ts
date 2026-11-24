@@ -20,6 +20,8 @@ export interface ContentNames {
   buildStats: Record<BuildStat, string>;
   /** 쓰러진 뒤 다시 일어나는 곳의 이름 (안내문 'died'의 값). 없는 id는 id가 그대로 보인다 */
   places: Record<string, string>;
+  /** 첫 번째 재화(gold 칸)의 이름. name: 값 앞에 붙이는 이름('골드 100', 'Gold 100'), unit: 수 뒤에 붙이는 낱말('100골드', '100 gold'). 적지 않으면 골드 */
+  currency1?: { name: string; unit: string };
   /** 두 번째 재화의 이름. name: 값 앞에 붙이는 이름, one: 수를 셀 때의 낱말 (영어의 단수형). 그 재화를 쓰지 않는 게임(몬스터 정의에 sparks가 없다)은 적지 않는다: 틀의 문장에서 그 몫이 빠진다 */
   currency2?: { name: string; one: string };
   /** 처음 접속할 때 붙이는 무작위 이름의 재료 */

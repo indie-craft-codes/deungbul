@@ -143,12 +143,12 @@ npm start          # http://localhost:3001
 ## 확인
 
 ```
-npm test           # 모든 테스트: 틀의 시험(engine/test/) → 이 게임의 시험(games/deungbul/test/). test/all.ts가 차례로 돌린다
-npm run test:engine   # 틀만 (이 게임의 규칙 플러그인 없이 돈다)
-npm run test:game     # 이 게임만
-npx tsx test/all.ts boundary deungbul/quests fx/shop   # 고른 것만. 틀의 경계 검사: boundary / 이 게임(앞에 deungbul/): framework baseline split shop … / 틀(시험용 내용 위, 앞에 fx/): bare monsters move nav classes shop craft party build guild boss combat growth dungeon compare bag salvage wallet ledger market channel security harden server
-                                                    #           이 게임(앞에 deungbul/): framework shop classes combat craft party keepers quests nav zone2 channel ledger harden guide server
-npm run typecheck          # 전체(틀 + 등불지기)와 틀만(tsconfig.engine.json)을 차례로 타입 검사한다
+npm test           # 모든 테스트: 틀의 시험(engine/test/) → 게임마다의 시험(games/<게임>/test/all.ts가 있는 게임 모두: 등불지기와 예제). test/all.ts가 차례로 돌린다
+npm run test:engine   # 틀만 (게임 없이 시험용 내용 위에서 돈다)
+npm run test:game     # 게임 하나만 (GAME, 기본 deungbul). 뒤에 시험 이름을 주면 고른 것만: npm run test:game -- quests
+npx tsx test/all.ts boundary deungbul/quests fx/shop sample/docs   # 고른 것만. 틀의 경계 검사: boundary / 틀(시험용 내용 위, 앞에 fx/): engine/test/fx/all.ts의 FX
+                                                    #           게임(앞에 <게임>/): 그 게임의 test/all.ts의 목록 (등불지기: framework baseline split shop classes combat craft party keepers quests nav zone2 channel ledger harden guide server)
+npm run typecheck          # 전체(틀 + 등불지기), 등불지기의 설정, 틀만, 틀(시험용 내용), 틀(예제의 내용), 예제를 차례로 타입 검사한다
 npm run typecheck:engine   # 틀만: engine/의 소스가 이 게임의 선언 없이 컴파일되는가 (npm test의 framework도 같은 검사를 돌린다)
 npm run load       # 부하 측정: 가짜 접속자 50~500명을 붙여 서버 지표를 표로 출력 (약 4분)
 ```
@@ -218,8 +218,9 @@ games/deungbul/          이 게임 (틀을 @engine/…으로 읽는다)
     i18n/                이 게임의 문장과 내용의 이름
     guide.html, guide/   도감
     public/              아이콘, manifest
-  test/                  이 게임의 시험, fixtures/(저장·문장 견본), load.ts(부하 측정)
-test/all.ts              모든 테스트를 차례로 돌린다 (두 폴더의 시험을 예전 이름으로 가리킨다)
+  test/                  이 게임의 시험(all.ts가 목록), fixtures/(저장·문장 견본), load.ts(부하 측정)
+  tsconfig.json          이 게임의 별칭(@game → games/deungbul). 시험과 서버가 이것으로 돈다
+test/all.ts              모든 테스트를 차례로 돌린다: 틀의 시험, 그리고 게임마다 그 게임의 test/all.ts를 따로 된 프로세스로
 scripts/                 restart.sh pilot.mjs publish.sh econ.ts
 tsconfig.json            전체(틀 + 등불지기). 별칭 @engine/* → engine/*, @game/* → games/deungbul/*
 tsconfig.engine.json     틀만 (engine/의 소스)
@@ -377,7 +378,7 @@ data/, dist/             저장 파일과 빌드 결과 (저장소 뿌리, git�
 
 **새 안내문**: 어느 게임에나 있을 것이면 `engine/shared/messages.ts`에, 이 게임의 것이면 `games/deungbul/shared/deungbul.ts`의 `MsgMap`에 종류를 더한다. 모든 언어 파일이 그 문장을 갖춰야 컴파일된다.
 
-**새 테스트**: 틀의 기능이면 `engine/test/이름.test.ts`를, 이 게임의 규칙이면 `games/deungbul/test/이름.test.ts`를 만들고 `test/all.ts`의 목록(`ENGINE`, `GAME`)에 더한다.
+**새 테스트**: 틀의 기능이면 `engine/test/fx/이름.test.ts`를 만들어 `engine/test/fx/all.ts`의 `FX`에, 이 게임의 규칙이면 `games/deungbul/test/이름.test.ts`를 만들어 `games/deungbul/test/all.ts`의 `GAME`에 더한다.
 
 **저장소 교체**: `engine/server/store/types.ts`의 `Store`를 구현하고 `games/deungbul/server/main.ts`에서 고른다.
 
@@ -396,7 +397,7 @@ data/, dist/             저장 파일과 빌드 결과 (저장소 뿌리, git�
 ```
 npm run build:sample && npm run start:sample   # http://localhost:3002
 npm run dev:sample             # 개발: 서버(3002) + 클라이언트(5174)
-npm run test:sample            # 예제의 시험 + 문서의 코드 조각이 예제와 같은지
+npm run test:sample            # 예제의 시험 + 문서의 코드 조각이 예제와 같은지 (npm test도 함께 돌린다)
 npm run typecheck:sample       # 틀 + 예제
 npm run typecheck:engine:sample   # 틀만, 예제의 내용으로 (틀에 등불지기의 id가 박혀 있으면 여기서 드러난다)
 ```

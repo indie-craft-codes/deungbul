@@ -6,6 +6,7 @@
 import type { ClassDef, ClassId, SkillDef } from '@engine/shared/defs/combat';
 import type { ForgeDef, Recipe } from '@engine/shared/defs/craft';
 import type { DungeonDef } from '@engine/shared/defs/dungeons';
+import type { CurrencyDef } from '@engine/shared/defs/economy';
 import type { DailyDef } from '@engine/shared/defs/growth';
 import type { ItemDef, ItemId } from '@engine/shared/defs/items';
 import type { MapDef } from '@engine/shared/defs/map';
@@ -14,6 +15,8 @@ import { GEAR_BASE } from '@engine/shared/defaults';
 
 export * from '@engine/shared/defaults';
 export const GUEST_NAME = 'Tester';
+/** 재화: 상한을 기본값(1e9)과 다르게 둔다. 틀이 상한을 박아 두지 않고 이 표에서 읽는지 시험이 보게 한다 (wallet.test) */
+export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: true, max: 5e10 }, sparks: { tradable: false, max: 3e9 }, exp: { tradable: false } };
 
 // ---------- 맵: 들판 하나와 던전 하나 ----------
 /** 시험이 이름으로 찾는 자리 (계약 밖이라 틀은 모른다: 시험만 읽는다) */

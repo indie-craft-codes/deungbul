@@ -399,6 +399,7 @@ for (const P of PACKS) {
     'ui.title', // 게임의 이름
     'ui.hint', // 조작 안내에 이 게임의 단축키(F: 퀘스트 이동, H: 마을로)가 더 있다
     'ui.forge', // 브람의 대장간
+    'ui.shop', 'msg.shopFar', // 상인은 '길 상인'이다 (틀의 기본은 그냥 '상인')
     'ui.goingTown', // 돌아가는 곳(첫불 마을)을 말한다
     'fmt.swarmFoe', // 습격으로 온 적(몰려온 적)의 이름 앞에 '안개'를 붙인다 (틀의 기본은 이름 그대로)
     'msg.classFar', // 직업은 등탑 가까이에서 바꾼다

@@ -73,6 +73,7 @@ export const enNames: ContentNames = {
 export const enGame: GameLocale = {
   ui: {
     title: 'Lampkeeper',
+    shop: 'Road Merchant',
     hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'F: quest', 'R: auto-hunt', 'H: town', 'B: bag', 'M: menu', 'Tab: target', 'Enter: chat']),
     toTown: 'To town',
     mapLegend: '■ tower · ○ quest · green merchant',
@@ -164,6 +165,7 @@ export const enGame: GameLocale = {
     needsResident: (name) => `In stock once ${name} returns`,
   },
   msg: {
+    shopFar: () => 'Move closer to the road merchant to buy.',
     offerFar: () => 'Move closer to the lamp tower to offer sparks.',
     noSparks: () => 'You have no sparks.',
     towerFull: () => 'The lamp tower is already at its brightest.',

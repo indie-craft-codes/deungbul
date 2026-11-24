@@ -61,6 +61,9 @@ export class Wallet {
     this.max = { gold: max('gold'), sparks: max('sparks'), exp: max('exp') };
   }
 
+  /** 그 재화를 가질 수 있는 상한 (CURRENCIES의 max). 한도가 없으면 Number.MAX_SAFE_INTEGER: 저장을 읽을 때 범위를 잡는 데 쓴다 */
+  limit(cur: Cur): number { return Math.min(this.max[cur], Number.MAX_SAFE_INTEGER); }
+
   /**
    * 지금 더하면 실제로 더해질 양: 배율을 곱해 내림하고, 상한까지 남은 자리로 자른다. 아무것도 바꾸지 않는다.
    * 깨진 값(NaN, 무한대, 0 이하, 수가 아닌 값)은 0이다. 소수는 내린다

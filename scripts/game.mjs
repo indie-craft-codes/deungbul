@@ -4,14 +4,19 @@
 //         watch   서버, 파일을 고치면 다시 띄운다
 //         client  화면의 개발 서버 (games/<게임>/vite.config.ts)
 //         build   화면 빌드 (결과 폴더는 그 게임의 vite.config.ts가 정한다)
+//         test    그 게임의 시험 (games/<게임>/test/all.ts). 뒤에 이름을 주면 고른 것만
 //   게임: 인자, 없으면 환경 변수 GAME, 그것도 없으면 deungbul.
-// 게임마다 갖출 것: server/main.ts, vite.config.ts. tsconfig.json이 있으면 별칭(@game)을 그것으로 읽고(tsx --tsconfig), 없으면 뿌리의 tsconfig.json(등불지기)을 쓴다.
+// 게임마다 갖출 것: server/main.ts, vite.config.ts, (시험이 있으면) test/all.ts. tsconfig.json이 있으면 별칭(@game)을 그것으로 읽고(tsx --tsconfig), 없으면 뿌리의 tsconfig.json(등불지기)을 쓴다.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
-const [cmd, arg, ...rest] = process.argv.slice(2);
+const [cmd, ...more] = process.argv.slice(2);
+// test에서는 게임 이름을 빼고 시험 이름만 줄 수 있다 (npm run test:game -- quests): 첫 인자가 게임 폴더가 아니면 시험 이름으로 본다
+const isGame = (a) => a !== undefined && /^[a-z0-9_-]+$/i.test(a) && fs.existsSync(path.join(root, 'games', a));
+const arg = cmd === 'test' && more.length && !isGame(more[0]) ? undefined : more[0];
+const rest = arg === undefined ? more : more.slice(1);
 const game = arg ?? process.env.GAME ?? 'deungbul';
 const dir = path.join(root, 'games', game);
 const fail = (msg) => { console.error(msg); process.exit(1); };
@@ -29,6 +34,7 @@ const JOBS = {
   watch: [tsx, 'watch', ...tsxArgs, server],
   client: [vite, '-c', viteConfig],
   build: [vite, 'build', '-c', viteConfig],
+  test: [tsx, ...tsxArgs, path.join(dir, 'test', 'all.ts')],
 };
 const job = JOBS[cmd];
 if (!job) fail(`할 일을 고르세요: ${Object.keys(JOBS).join(', ')} (받은 것: ${cmd ?? '없음'})`);

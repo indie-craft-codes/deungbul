@@ -79,6 +79,7 @@ export const koGame = {
     title: '등불지기',
     hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 물약', 'F: 퀘스트 이동', 'R: 자동 사냥', 'H: 마을로', 'B: 가방', 'M: 메뉴', 'Tab: 대상', 'Enter: 대화']),
     toTown: '마을로',
+    shop: '길 상인',
     mapLegend: '■ 등탑 · ○ 퀘스트 · 초록 상인',
     goingTown: '첫불 마을로 걸어갑니다.',
     questNeedSparks: '바칠 불씨가 없습니다. 몬스터를 잡아 모으세요.',
@@ -173,6 +174,7 @@ export const koGame = {
   },
   /** 이 게임이 더한 서버 안내문(games/deungbul/shared/deungbul.ts의 MsgMap)과, 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것 */
   msg: {
+    shopFar: () => '길 상인 가까이에서 살 수 있습니다.',
     offerFar: () => '등탑 가까이에서 바칠 수 있습니다.',
     noSparks: () => '불씨가 없습니다.',
     towerFull: () => '등탑이 이미 가장 밝습니다.',

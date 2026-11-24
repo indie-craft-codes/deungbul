@@ -110,7 +110,7 @@ export default defineConfig({
 | `npm run build:sample` | `node scripts/game.mjs build sample`: `vite build -c games/sample/vite.config.ts` → `dist-sample/` |
 | `npm run start:sample` | `node scripts/game.mjs start sample`: `tsx --tsconfig games/sample/tsconfig.json games/sample/server/main.ts` (기본 포트 3002) |
 | `npm run dev:sample` | `watch`와 `client`를 함께: 서버(3002)와 vite 개발 서버(5174). 파일을 고치면 바로 반영 |
-| `npm run test:sample` | `tsx --tsconfig games/sample/tsconfig.json games/sample/test/all.ts` |
+| `npm run test:sample` | `node scripts/game.mjs test sample`: `tsx --tsconfig games/sample/tsconfig.json games/sample/test/all.ts`. 뒤에 시험 이름을 주면 고른 것만. `npm test`도 `games/<게임>/test/all.ts`가 있는 게임을 모두 함께 돌린다 |
 
 `tsx`를 직접 부를 때는 반드시 `--tsconfig`를 준다(`scripts/game.mjs`는 스스로 준다). 주지 않으면 뿌리의 `tsconfig.json`을 읽어 `@game`이 등불지기를 가리키고, 서버가 **오류 없이 다른 게임의 내용으로 뜬다**. 예제는 플러그인 파일의 맨 위에서 이것을 잡는다.
 
@@ -230,6 +230,8 @@ export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 
 - 무기는 한 줄기다. 직업마다 손에 든 모양(`hand`: `sword` / `bow` / `staff`)만 다르고, 이름은 언어 파일이 손 모양마다 따로 준다.
 - `price: 0`은 상점에서 팔지 않는다는 뜻이다.
 - 두 번째 재화(`sparks`)를 쓰지 않으면 몬스터에 `sparks`를 적지 않고, 이름표에 `currency2`를 적지 않는다. 틀의 문장에서 그 몫이 빠진다.
+- 첫 번째 재화(`gold` 칸)의 이름은 이름표의 `currency1`(`{ name, unit }`: 값 앞의 이름 '골드 100', 수 뒤의 낱말 '100골드')로 준다. 적지 않으면 골드다.
+- 재화의 상한은 `CURRENCIES`의 `max`다. 틀은 더할 때와 저장을 읽을 때 모두 이 값으로 자른다.
 - 계약에 없는 내용(이 게임만의 수치)은 다른 파일에 둔다. 예제의 `games/sample/shared/content/bonfire.ts`가 그렇다. 틀은 읽지 않고 게임의 서버와 화면만 읽는다.
 
 여기까지 하면 `npm run typecheck:engine:sample`이 통과해야 한다.
@@ -322,7 +324,7 @@ export const koNames: ContentNames = {
 ```
 
 - `[[PC용|터치용]]`으로 적으면 입력 장치에 맞는 쪽이 보인다. `'장작 넣기[[ (F)|]]'`는 폰에서 `(F)`가 빠진다.
-- 틀의 문장에서 덮어쓸 만한 것: `ui.shop`(상인의 이름표), `ui.forge`, `ui.bagMats`, `ui.bagPotions`, `fmt.potions`(물약 단추), `msg.loot`(틀의 기본 문장은 "대장간에서 쓸 수 있습니다"로 끝난다), `msg.classFar`, `msg.bossUp`, `msg.died`. 전체는 `engine/client/i18n/ko.ts`에 있다.
+- 틀의 문장에서 덮어쓸 만한 것: `ui.shop`(상인의 이름표. 틀의 기본은 '상인'), `msg.shopFar`, `ui.forge`, `ui.bagMats`, `ui.bagPotions`, `fmt.potions`(물약 단추), `msg.loot`(틀의 기본 문장은 "대장간에서 쓸 수 있습니다"로 끝난다), `msg.classFar`, `msg.bossUp`, `msg.died`. 전체는 `engine/client/i18n/ko.ts`에 있다.
 
 합치고, 틀의 타입에 이 게임의 문장 모양을 알린다.
 
@@ -619,8 +621,8 @@ export function initBonfire(): void {
 
 - 틀의 가짜 클라이언트는 틀의 메시지만 읽는다. 게임의 메시지(`world`, `me`)는 `connect`의 넷째 인자로 받는다.
 - 시험도 `tsx --tsconfig`로 돌린다(`npm run test:sample`).
-- `npm test`는 틀의 시험과 등불지기의 시험이다. 틀의 시험은 아직 등불지기의 내용 위에서 돈다. 새 게임의 설정으로는 돌지 않는다.
-- 틀을 고쳤으면 `npm run typecheck`(등불지기와 예제까지 넷을 검사한다), `npm test`, `npm run test:sample`을 모두 돌린다.
+- `npm test`는 틀의 시험(게임 없이 시험용 내용 `engine/test/fx/` 위에서)과 게임마다의 시험이다. `games/<게임>/test/all.ts`와 `tsconfig.json`을 두면 새 게임의 시험도 저절로 함께 돈다(이름은 `<게임>/이름`).
+- 틀을 고쳤으면 `npm run typecheck`(등불지기, 틀만, 시험용 내용, 예제까지 여섯 설정을 검사한다)와 `npm test`를 돌린다.
 
 화면은 브라우저로 본다. `?lang=en`은 언어, `?auto=이름`은 처음 접속할 때의 이름이다.
 
@@ -664,11 +666,11 @@ export function initBonfire(): void {
 
 알아 둘 한계:
 
-- 두 번째 재화는 한 가지(`sparks`)뿐이다. 이름은 이름표의 `currency2`로 준다.
+- 재화는 세 칸(`gold`, `sparks`, 경험치)으로 정해져 있다. 두 번째 재화는 한 가지(`sparks`)뿐이다. 이름은 이름표의 `currency1`·`currency2`로 준다.
 - 기술의 효과는 세 가지(`hit`, `area`, `heal`)다. 새 효과는 틀의 `engine/server/game/systems/combat.ts`를 고쳐야 한다.
 - 사람 모델은 틀의 것 하나다. 꾸밈만 더할 수 있다(`setHumanoidDeco`). 손 모양은 `sword` / `bow` / `staff` 셋이다.
 - 메뉴의 탭(장비, 성장, 우편, 일일, 거래소, 길드, 순위)은 내용과 무관하게 모두 보인다. 길드와 거래소는 내용 없이도 돈다.
-- 장부(`npm run econ`)와 서버 지표의 한 줄 요약은 등불지기의 낱말을 쓴다.
+- 장부를 보는 도구(`npm run econ`)는 등불지기의 것이다(`games/deungbul/scripts/econ.ts`). 장부 자체(`g.ledger`)와 서버 지표의 한 줄 요약은 틀의 것이라 어느 게임에서나 돈다.
 
 ## 11. 접점 일람표
 
@@ -732,7 +734,7 @@ export function initBonfire(): void {
 | `scene/view.ts`의 `Look` | 땅, 잎, 건물 | `client/scene.ts` |
 | `scene/models.ts`의 `registerMonsterModel`, `registerBlade`, `registerArmor`, `mat`, `part`, `limb` | 모델 | `client/scene.ts` |
 | `scene/models.ts`의 `setHumanoidDeco`, `makeHumanoid` | 사람 모델의 꾸밈, 사람형 NPC | |
-| `entities.ts`의 `addNpc`, `setMerchantLook` | 화면에만 서 있는 사람, 상인이 바라볼 곳 | |
+| `entities.ts`의 `addNpc`, `setMerchant` | 화면에만 서 있는 사람, 상점 자리마다 세울 상인(모델·이름·바라볼 곳, `null`이면 세우지 않는다) | |
 | `sound.ts`의 `addMsgSounds`, `sfx` | 안내문의 소리 | |
 | `actions.ts`의 `goToTown`, `autoWalk` | 걸어가게 하기 | |
 | `style.css`의 색 변수와 class | 창의 모양 | `client/sample.css` |

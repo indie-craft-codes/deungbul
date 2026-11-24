@@ -8,6 +8,9 @@ import type { Game } from '../game';
 import { isField } from '../layers';
 import { Shop } from './shop';
 
+/** 저장에서 읽는 레벨의 상한: 깨진 저장을 막는 틀의 상수다. 레벨에는 따로 상한이 없고, 이보다 높이 오르는 게임은 이 값을 올린다 */
+const LV_READ_MAX = 999;
+
 export class Players {
   /** 개발용: 접속 위치를 바꾼다 (부활 위치는 그대로 등탑 앞). */
   devSpawn: { x: number; z: number } | null = null;
@@ -59,7 +62,7 @@ export class Players {
       const n = (v: unknown, min: number, max: number, def: number) => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), min, max) : def);
       // 다음 레벨까지의 필요 경험치는 저장된 값이 아니라 레벨에서 다시 구한다 (체력과 같다): 레벨 업이 쓰는 수열과 같은 함수라 어긋날 수 없다.
       // 전에는 저장 값을 상한 1e9로 잘라 읽어서, 필요 경험치가 그것을 넘는 레벨(57부터)에서 다시 접속하면 필요 경험치가 줄었다
-      p.lv = n(save.lv, 1, 999, 1); p.need = needFor(p.lv); p.exp = n(save.exp, 0, p.need, 0);
+      p.lv = n(save.lv, 1, LV_READ_MAX, 1); p.need = needFor(p.lv); p.exp = n(save.exp, 0, p.need, 0);
       // 시스템마다 저장해 둔 몫(장비, 우편, 일일 임무)을 읽는다. 깨진 값은 그 시스템이 걸러 낸다
       const ext = typeof save.ext === 'object' && save.ext !== null ? save.ext : {};
       this.vitals = null;
@@ -69,8 +72,9 @@ export class Players {
       // 체력은 저장된 값이 아니라 직업과 레벨로 다시 구한다
       this.g.classes.apply(p, isClassId(save.cls) ? save.cls : '');
       p.hp = p.maxHp;
-      p.sparks = n(save.sparks, 0, 1e9, 0);
-      p.gold = n(save.gold, 0, 1e9, 0);
+      // 재화는 게임이 정한 상한(CURRENCIES의 max)까지 읽는다. 전에는 1e9로 박혀 있어, 상한이 더 큰 게임은 다시 접속할 때 재화가 잘렸다
+      p.sparks = n(save.sparks, 0, this.g.wallet.limit('sparks'), 0);
+      p.gold = n(save.gold, 0, this.g.wallet.limit('gold'), 0);
       if (isItemId(save.weapon) && itemDef(save.weapon).kind === 'weapon') p.weapon = save.weapon;
       if (isItemId(save.armor) && itemDef(save.armor).kind === 'armor') p.armor = save.armor;
       p.items = Shop.readItems(save.items);
