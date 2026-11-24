@@ -3,10 +3,10 @@
 // 이름은 게임의 언어 묶음(../i18n: 틀의 문장과 이 게임의 문장을 합친 것)에서, 도감에만 있는 문장은 도감의 언어 파일(text.*.ts)에서 온다.
 import {
   ATTACK_CD, ATTEND, BOSS, BUILD, BUILD_STATS, CAMPS, CHANNEL, CLASSES, CLASS_IDS, COMBAT, CONTRIB_TIERS, DAILIES, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS,
-  ENHANCE, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, LEVEL, MAIL_MAX, MARKET, MAT_MAX,
+  BAG_UP, ENHANCE, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, LEVEL, MAIL_MAX, MARKET, MAT_MAX,
   MONSTERS, MONSTER_AI, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, PARTY, PORTAL_REACH, POTION_CD, POTION_MAX, POWER, QUESTS, RAID, RAID_KEEP_POINTS, RANK, RARITIES,
-  RECIPES, RESIDENTS, RESPAWN_S, REST, SHOPS, SHOP_REACH, SHOP_STOCK, SKILL_DEFS, SLOW_FACTOR, SMITH, SMITHY_REACH, STAT_IDS, TOWER_REACH,
-  baseOpt, bossHp, guildNeed, marketFee, maxHpFor, needFor, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
+  RECIPES, RESIDENTS, RESPAWN_S, REST, SALVAGE, SHOPS, SHOP_REACH, SHOP_STOCK, SKILL_DEFS, SLOW_FACTOR, SMITH, SMITHY_REACH, STAT_IDS, TOWER_REACH,
+  bagSlots, baseOpt, bossHp, dustFor, isItemId, itemCap, salvageOn, guildNeed, marketFee, maxHpFor, needFor, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
   type ItemDef, type ItemId, type MonsterDef, type MonsterId, type QuestGoal, type Reward, type SkillDef, type SkillId, type Stage,
 } from '../../shared/defs';
 import { AUTO, AWAY } from '@engine/shared/auto';
@@ -274,8 +274,32 @@ function gear(P: Pack): Section {
       table('sellPlain', G.sellPlainHead, G.sellPlainCols, bases.map((id) => row(id, itemLabel(P, id), c.gold(num(plainSell(id)))))),
       table('sellDrop', G.sellDropHead, [G.rarityCol, ...lvs.map((lv) => c.level(lv))],
         rars.map((r) => row(RARITIES[r].id, rarityName(P, r), ...lvs.map((lv) => { const v = sellRange(r, lv); return v ? c.gold(span(v)) : c.none; })))),
+      ...salvageBlocks(P),
     ],
   };
+}
+
+/** 분해로 나오는 가루의 표와 가방 넓히기의 값 표: 정의(SALVAGE, BAG_UP)에서 읽는다. 분해나 넓히기가 없는 게임이면 그 부분은 싣지 않는다 */
+function salvageBlocks(P: Pack): Block[] {
+  const { T } = P, c = T.common, G = T.gear, out: Block[] = [];
+  const plus = Array.from({ length: ENHANCE.max + 1 }, (_, i) => i);
+  if (salvageOn() && isItemId(SALVAGE.item)) {
+    const dust = P.L.items[SALVAGE.item].name;
+    out.push(
+      h(G.salvageHead),
+      ul(G.salvageRules(dust, num(itemCap(SALVAGE.item)), num(SALVAGE.perPlus), rarityName(P, SALVAGE.autoMaxRar), num(SALVAGE.maxBatch))),
+      table('salvage', G.salvageTableHead(dust), [G.rarityCol, ...plus.map((n) => `+${n}`)], RARITIES.map((r, i) => row(r.id, rarityName(P, i), ...plus.map((n) => num(dustFor({ rar: i, plus: n })))))),
+    );
+  }
+  if (BAG_UP.prices.length) {
+    let paid = 0;
+    out.push(
+      h(G.bagUpHead),
+      p(G.bagUpNote(c.count(bagSlots(0)), num(BAG_UP.step), c.count(bagSlots(BAG_UP.prices.length)))),
+      table('bagUp', G.bagUpTableHead, G.bagUpCols, BAG_UP.prices.map((gold, i) => { paid += gold; return row(i + 1, c.times(i + 1), c.gold(num(gold)), c.count(bagSlots(i + 1)), c.gold(num(paid))); })),
+    );
+  }
+  return out;
 }
 
 // ---------- 성장 ----------

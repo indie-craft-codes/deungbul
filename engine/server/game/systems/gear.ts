@@ -2,7 +2,7 @@
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
 // 수치는 games/deungbul/shared/content/growth.ts에 있다.
-import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, baseOpt, gearStat, isGearSlot, isItemId, isStat, rollOpt, sellPrice, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, isGearSlot, isItemId, isStat, rollOpt, sellPrice, wornTotal, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { WHY } from './wallet';
@@ -70,16 +70,18 @@ export class GearSys {
   /** 낀 장비들이 주는 수치의 합 */
   total(p: Ent | undefined, stat: Stat): number {
     if (!p || p.kind !== 'p') return 0;
-    let sum = 0;
+    // 셈은 공용 함수에 있다 (화면의 장비 비교가 같은 식을 쓴다). 무기와 갑옷의 기본 수치는 상점 시스템이 이미 셈하므로 강화로 늘어난 몫만 더해진다
+    return wornTotal(this.worn(p), stat);
+  }
+
+  /** 낀 장비들 (칸의 순서대로) */
+  worn(p: Ent): Gear[] {
+    const out: Gear[] = [];
     for (const slot of GEAR_SLOTS) {
       const it = p.worn[slot] ? p.gear.find((x) => x.uid === p.worn[slot]) : undefined;
-      if (!it) continue;
-      sum += gearStat(it, stat);
-      // 무기와 갑옷의 기본 수치는 상점 시스템이 이미 셈한다. 여기서는 강화로 늘어난 몫만 더한다
-      const base = baseOpt(it);
-      if (base && base[0] === stat) sum += base[1] * it.plus * ENHANCE.perPlus;
+      if (it) out.push(it);
     }
-    return sum;
+    return out;
   }
 
   /** 장비 한 점을 무작위로 만든다 (uid는 줄 때 붙는다). slot을 정하지 않으면 칸도 무작위다 */

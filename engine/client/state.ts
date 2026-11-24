@@ -1,6 +1,6 @@
 // 클라이언트가 아는 게임 상태. 모듈들은 이것을 읽고, 서버 메시지를 처리하는 쪽만 고친다.
 // 틀의 상태만 둔다: 게임에만 있는 상태(이 게임에서는 등탑·습격의 공유 상태와 내 퀘스트·기여)는 게임의 상태 파일에 있다 (games/deungbul/client/state.ts).
-import { SKILL_SLOTS, maxHpFor, type Gear, type GuildView, type Mail, type RankRow } from '../shared/defs';
+import { GEAR, SKILL_SLOTS, maxHpFor, type Gear, type GuildView, type Mail, type RankRow } from '../shared/defs';
 import type { Point } from '../shared/nav';
 import type { Kind, PartyMember } from '../shared/protocol';
 import { AREAS, areaAt } from '../shared/world';
@@ -71,6 +71,10 @@ export const S = {
   /** 자동 사냥이 켜져 있는가 */
   auto: false,
   itemCdLen: 1,
+  /** 장비 가방: 칸 수, 넓힌 횟수, 가득 차 버려진 장비의 수 (서버의 개인 상태 bag). known: 서버에서 한 번이라도 받았다 (옛 서버는 보내지 않는다: 넓히기 단추를 그리지 않는다) */
+  bag: { max: GEAR.bagMax, up: 0, lost: 0, known: false },
+  /** 분해: 이 게임에 분해가 있는가와 자동 분해의 설정 (서버의 개인 상태 salvage. -1이면 끔) */
+  salvage: { on: false, auto: -1 },
 };
 
 /** 내가 들판이 아닌 지역(던전)에 있는가 */

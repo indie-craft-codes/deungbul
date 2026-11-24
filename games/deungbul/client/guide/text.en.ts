@@ -241,6 +241,22 @@ export const textEn: GuideText = {
     sellPlainHead: 'Sell price of gear without options (Standard, Crafted)',
     sellPlainCols: ['Gear', 'Sell price'],
     sellDropHead: 'Sell price range of dropped gear (ring, amulet, charm at +0; weapons and armor add their base tier)',
+    // ---- Salvage, lock, auto-salvage, bag expansion (economy stage 2) ----
+    salvageHead: 'Salvage, lock and auto-salvage',
+    salvageRules: (dust, dustMax, perPlus, autoMax, batch) => [
+      `Gear you do not use can be salvaged into ${dust}. In the menu's Gear tab, tap the piece to expand it, press Salvage and press again to confirm. The amount depends on tier and enhancement as in the table below (+${perPlus} per enhancement step).`,
+      `Equipped gear, Standard gear (bought from the shop) and locked gear cannot be salvaged. You can hold up to ${dustMax} ${dust}; a salvage that would go over the limit is refused, so nothing is thrown away.`,
+      `Salvage many: pick a tier and the game first shows how many pieces at or below it (skipping equipped, Standard and locked gear) would be salvaged and how much you would get. Confirm to salvage them at once (up to ${batch} pieces per go).`,
+      'Lock: press the padlock on a gear row. Locked gear cannot be sold, salvaged or listed on the market. It can still be equipped. Lock what you care about before salvaging many.',
+      `Auto-salvage: drops at or below the tier you pick never enter your bag and turn into ${dust} the moment a monster drops them. You can pick up to ${autoMax}. It works with a full bag and while auto-hunt runs in your absence. Gear from mail, the market, the shop, crafting and dungeon clear rewards is never auto-salvaged.`,
+      'If your bag is full and a drop is not covered by auto-salvage, that drop is left behind. The number left behind is shown in the bag and the Gear tab, and in the summary when you come back from being away.',
+      `${dust} can be listed on the market like other materials.`,
+    ],
+    salvageTableHead: (dust) => `${dust} from salvaging (by tier and enhancement)`,
+    bagUpHead: 'Expanding the bag',
+    bagUpNote: (base, step, max) => `The gear bag starts at ${base} slots and grows by ${step} each time you pay, up to ${max}. Expand it in the menu's Gear tab. The extra slots stay with the character.`,
+    bagUpTableHead: 'Cost of expanding the bag',
+    bagUpCols: ['Step', 'Cost', 'Slots after', 'Gold spent so far'],
   },
   growth: {
     title: 'Growth',

@@ -61,6 +61,95 @@ export const gearStat = (g: Gear, stat: Stat): number => g.opts.reduce((s, [k, v
 export const gearScore = (g: Gear): number => Math.round(g.opts.reduce((s, [k, v]) => s + optValue(g, v) / STATS[k].base, 0) * 10);
 export const sellPrice = (g: Gear): number => GEAR.sellBase + gearScore(g) + baseTier(g) * GEAR.sellPerTier;
 
+// ---------- 낀 장비의 효과와 장비 비교 ----------
+/** +from에서 +to까지 올리는 데 드는 골드의 기대값: 단계마다 (한 번의 값 ÷ 성공 확률)을 더한다. 도감의 표와 화면의 장비 비교가 이 함수 하나를 쓴다 (강화 규칙이 바뀌면 여기만 고친다) */
+export function enhanceExpected(to: number, rar: number, from = 0): number {
+  let sum = 0;
+  for (let plus = from; plus < to; plus++) sum += ENHANCE.gold(plus, rar) / ENHANCE.rate(plus);
+  return sum;
+}
+/** +from에서 +to까지 올리는 데 필요한 시도 횟수의 기대값 */
+export function enhanceTries(to: number, from = 0): number {
+  let sum = 0;
+  for (let plus = from; plus < to; plus++) sum += 1 / ENHANCE.rate(plus);
+  return sum;
+}
+
+/**
+ * 낀 장비들이 주는 어떤 수치의 합 (worn: 낀 장비들, 칸의 순서대로). 서버의 수치 보정(systems/gear.ts)과 화면의 장비 비교가 이 함수 하나를 쓴다.
+ * 옵션은 강화 단계만큼 커지고(optValue), 무기와 갑옷의 바탕이 주는 기본 수치는 강화로 늘어난 몫만 여기에 더한다 (바탕의 배율 자체는 따로 곱해진다: gearEffect)
+ */
+export function wornTotal(worn: readonly Gear[], stat: Stat): number {
+  let sum = 0;
+  for (const it of worn) {
+    sum += gearStat(it, stat);
+    const base = baseOpt(it);
+    if (base && base[0] === stat) sum += base[1] * it.plus * ENHANCE.perPlus;
+  }
+  return sum;
+}
+/** 낀 장비 묶음이 실제로 내는 효과. dmg: 공격 피해에 곱해지는 값, guard: 받는 피해에 곱해지는 값, crit: 치명타 확률에 더해지는 값(0~1), hp: 최대 체력에 더해지는 값 */
+export interface GearEffect { dmg: number; guard: number; crit: number; hp: number }
+/**
+ * 낀 장비 묶음의 효과를 서버와 같은 식으로 구한다: 무기 바탕의 배율 × (1 + 공격 피해 옵션의 합 ÷ 100),
+ * 갑옷 바탕의 배율 × (1 − 받는 피해 감소 옵션의 합(한도 GEAR.guardCap) ÷ 100), 치명타와 체력은 합 그대로 (systems/shop.ts와 gear.ts의 보정을 곱한 값과 같다)
+ */
+export function gearEffect(worn: readonly Gear[]): GearEffect {
+  const mult = (slot: string, key: 'damage' | 'guard'): number => {
+    const it = worn.find((x) => x.slot === slot);
+    return it && isItemId(it.base) ? (ITEMS[it.base] as { damage?: number; guard?: number })[key] ?? 1 : 1;
+  };
+  return {
+    dmg: mult('weapon', 'damage') * (1 + wornTotal(worn, 'dmg') / 100),
+    guard: mult('armor', 'guard') * (1 - Math.min(GEAR.guardCap, wornTotal(worn, 'guard')) / 100),
+    crit: wornTotal(worn, 'crit') / 100,
+    hp: wornTotal(worn, 'hp'),
+  };
+}
+/** 전투력 가운데 장비의 몫: 낀 장비의 값어치와 바탕의 등급 (powerOf의 장비 쪽) */
+export const gearPower = (worn: readonly Gear[]): number => powerOf(0, worn.reduce((s, it) => s + baseTier(it), 0), [], worn);
+
+/**
+ * 장비를 바꿨을 때의 변화. dmg: 실제 공격 피해의 변화(%), guard: 실제 받는 피해의 변화(%. 음수가 좋다), crit: 치명타 확률의 변화(%p),
+ * hp: 최대 체력의 변화, power: 전투력의 변화. 소수 한 자리로 맞춘다
+ */
+export interface GearDelta { dmg: number; guard: number; crit: number; hp: number; power: number }
+const round1 = (v: number): number => { const r = Math.round(v * 10) / 10; return r === 0 ? 0 : r; };
+/** worn에서 cand와 같은 칸의 장비를 cand로 바꾼 묶음 (그 칸이 비어 있었으면 더한다) */
+const swapIn = (worn: readonly Gear[], cand: Gear): Gear[] => (worn.some((x) => x.slot === cand.slot) ? worn.map((x) => (x.slot === cand.slot ? cand : x)) : [...worn, cand]);
+/** cand를 그 칸에 꼈을 때의 효과에서 지금(worn)의 효과를 뺀 것 */
+export function gearDelta(worn: readonly Gear[], cand: Gear): GearDelta {
+  const next = swapIn(worn, cand), a = gearEffect(worn), b = gearEffect(next);
+  return { dmg: round1((b.dmg / a.dmg - 1) * 100), guard: round1((b.guard / a.guard - 1) * 100), crit: round1((b.crit - a.crit) * 100), hp: round1(b.hp - a.hp), power: gearPower(next) - gearPower(worn) };
+}
+/** 한눈에 보는 결론: 모든 수치가 좋아지거나 그대로면 better, 모두 나빠지거나 그대로면 worse, 좋아진 것과 나빠진 것이 섞였으면 mixed, 달라진 것이 없으면 same */
+export type GearVerdict = 'better' | 'worse' | 'same' | 'mixed';
+/** 수치마다 좋아졌는가(1), 나빠졌는가(-1), 그대로인가(0). 받는 피해는 줄어야 좋다 */
+export const deltaSigns = (d: GearDelta): { dmg: number; guard: number; crit: number; hp: number } => ({ dmg: Math.sign(d.dmg), guard: Math.sign(-d.guard), crit: Math.sign(d.crit), hp: Math.sign(d.hp) });
+export function gearVerdict(d: GearDelta): GearVerdict {
+  const s = Object.values(deltaSigns(d)), up = s.some((v) => v > 0), down = s.some((v) => v < 0);
+  return up && down ? 'mixed' : up ? 'better' : down ? 'worse' : 'same';
+}
+/** 강화 단계를 plus까지 올린 것으로 친 사본 (그 장비의 한도까지만. 내리지는 않는다) */
+export const atPlus = (g: Gear, plus: number): Gear => ({ ...g, plus: Math.max(g.plus, Math.min(plus, enhanceMax(g))) });
+/** 맞춘 비교에서 한 장비가 올라간 것: 지금 단계, 맞춘 단계, 한도에 걸려 덜 올랐는가, 거기까지 드는 골드의 기대값 */
+export interface RaiseTo { from: number; to: number; capped: boolean; cost: number }
+/**
+ * 가방의 장비(cand)를 지금 낀 같은 칸의 장비와 견준다. 두 기준을 함께 낸다:
+ *   now   지금 그대로 바꿨을 때
+ *   even  두 장비를 둘 중 높은 강화 단계로 맞췄다고 쳤을 때 (강화 단계가 다르면 '그대로'의 비교는 강화한 쪽이 늘 좋아 보인다).
+ *         한도가 낮은 장비(보급형)는 제 한도까지만 올린다. 단계가 이미 같거나 그 칸에 낀 것이 없으면 null
+ */
+export interface GearCompare { worn: Gear | null; now: GearDelta; even: { plus: number; delta: GearDelta; cand: RaiseTo; worn: RaiseTo } | null }
+export function compareGear(worn: readonly Gear[], cand: Gear): GearCompare {
+  const mine = worn.find((x) => x.slot === cand.slot) ?? null, now = gearDelta(worn, cand);
+  if (!mine) return { worn: null, now, even: null };
+  const plus = Math.max(mine.plus, cand.plus), a = atPlus(mine, plus), b = atPlus(cand, plus);
+  if (a.plus === mine.plus && b.plus === cand.plus) return { worn: mine, now, even: null };
+  const raise = (it: Gear, to: Gear): RaiseTo => ({ from: it.plus, to: to.plus, capped: to.plus < plus, cost: Math.round(enhanceExpected(to.plus, it.rar, it.plus)) });
+  return { worn: mine, now, even: { plus, delta: gearDelta(swapIn(worn, a), b), cand: raise(cand, b), worn: raise(mine, a) } };
+}
+
 // ---------- 분해와 가방 넓히기 ----------
 /** 분해의 표 (게임의 SALVAGE). 서버의 시험이 다른 표를 넣어 볼 수 있게 모양을 따로 둔다 */
 export interface SalvageDef { item: string; dust: readonly number[]; perPlus: number; maxBatch: number; autoMaxRar: number; tellS: number }
