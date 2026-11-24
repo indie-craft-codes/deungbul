@@ -1,5 +1,5 @@
 // 제작: 몬스터가 재료를 떨어뜨리고, 브람의 대장간에서 재료와 골드로 무기를 만든다.
-import { DROPS, FORGES, MAT_MAX, RECIPES, SMITHY_REACH, isItemId, isMonsterId, itemDef, type ItemId } from '../../../shared/defs';
+import { DROPS, FORGES, RECIPES, SMITHY_REACH, isItemId, isMonsterId, itemDef, type ItemId } from '../../../shared/defs';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { Shop } from './shop';
@@ -13,9 +13,8 @@ export class Craft {
       const drop = isMonsterId(m.type) ? DROPS[m.type] : undefined;
       if (!drop) return;
       for (const p of hitters) {
-        if (Math.random() >= drop.chance || (p.items[drop.id] ?? 0) >= MAT_MAX) continue;
-        p.items[drop.id] = (p.items[drop.id] ?? 0) + 1;
-        p.dirty = true; p.unsaved = true;
+        // 한도까지 찼으면 버려진다 (가방이 실제로 받은 수가 0)
+        if (Math.random() >= drop.chance || !g.bag.putItem(p, drop.id, 1, g.players.huntWhy(p, m))) continue;
         g.notify(p, 'loot', drop.id);
       }
     });
@@ -31,11 +30,11 @@ export class Craft {
     const def = itemDef(id);
     if ((def.kind === 'weapon' || def.kind === 'armor') && (def.tier ?? 0) <= Shop.wornTier(p, def.kind)) { g.notify(p, 'alreadyBest'); return; }
     const mats = Object.entries(recipe.mats) as [ItemId, number][];
-    if (mats.some(([mat, n]) => (p.items[mat] ?? 0) < n)) { g.notify(p, 'noMats'); return; }
+    if (mats.some(([mat, n]) => g.bag.count(p, mat) < n)) { g.notify(p, 'noMats'); return; }
     if (!g.wallet.take(p, 'gold', recipe.gold, WHY.craft)) { g.notify(p, 'noGold'); return; }
 
-    for (const [mat, n] of mats) p.items[mat] -= n;
-    if (!Shop.wear(g, p, id, true)) p.items[id] = (p.items[id] ?? 0) + 1;
+    for (const [mat, n] of mats) g.bag.takeItem(p, mat, n, WHY.craft);
+    if (!Shop.wear(g, p, id, true, WHY.craft)) g.bag.putItem(p, id, 1, WHY.craft);
     p.dirty = true; p.unsaved = true;
     g.notify(p, 'crafted', id, p.cls);
   }

@@ -20,6 +20,7 @@ import type { EntExt, GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
 import { fieldLayer } from './layers';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
+import { Bag } from './systems/bag';
 import { Bots } from './systems/bots';
 import { Build } from './systems/build';
 import { Channels } from './systems/channels';
@@ -203,6 +204,8 @@ export class Game {
   // ---- 시스템 ----
   /** 재화(골드, 불씨, 경험치)를 더하고 빼는 한 통로. 다른 시스템과 규칙 플러그인이 만들어질 때부터 쓸 수 있게 가장 먼저 만든다 */
   readonly wallet: Wallet;
+  /** 아이템(재료, 물약)과 낱개 장비를 넣고 빼는 한 통로. 지갑과 같은 까닭으로 먼저 만든다 */
+  readonly bag: Bag;
   readonly movement: Movement;
   readonly players: Players;
   readonly combat: Combat;
@@ -229,6 +232,7 @@ export class Game {
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
     this.wallet = new Wallet(this);
+    this.bag = new Bag();
     this.movement = new Movement(this);
     this.players = new Players(this);
     this.combat = new Combat(this);

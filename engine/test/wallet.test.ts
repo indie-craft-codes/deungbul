@@ -103,7 +103,7 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   // 지갑 밖에서 고친 것은 어디서 드러나든 other·tick이다: 명령의 이름으로 숨지 않는다
   g.commands.set('cheat', (q) => { q.gold += 55; q.sparks += 2; q.items.iron = (q.items.iron ?? 0) + 1; });
   cmd(p, { t: 'cheat' });
-  check(same(fresh(), ['gold other +55', 'sparks other +2', 'item:iron cmd:cheat +1']), '명령 안에서 재화의 칸을 직접 고치면 그 명령의 이름이 아니라 other로 적힌다 (재료는 아직 경계의 차이로 센다)');
+  check(same(fresh(), ['gold other +55', 'sparks other +2', 'item:iron other +1']), '명령 안에서 재화의 칸을 직접 고치면 그 명령의 이름이 아니라 other로 적힌다 (재료도 같다: 가방 통로 밖의 변화다. bag.test.ts)');
   const orig = g.party.tick.bind(g.party);
   g.party.tick = (dt) => { p.gold += 9; w.add(p, 'gold', 4, 'drip'); orig(dt); };
   run(0.05);
@@ -137,7 +137,7 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
 
   at(p, SHOP.x + 1, SHOP.z);
   cmd(p, { t: 'buy', id: 'potion' });
-  check(same(fresh(), [`gold ${WHY.buy} -${ITEMS.potion.price}`, `item:potion ${WHY.buy} +1`]) && WHY.buy === 'cmd:buy', '상점: 낸 골드(지갑)와 받은 물약(경계의 차이)이 같은 이름 cmd:buy에 놓인다');
+  check(same(fresh(), [`gold ${WHY.buy} -${ITEMS.potion.price}`, `item:potion ${WHY.buy} +1`]) && WHY.buy === 'cmd:buy', '상점: 낸 골드(지갑)와 받은 물약(가방)이 같은 이름 cmd:buy에 놓인다');
   at(p, SMITHY.x + 1, SMITHY.z + 1);
   const recipe = RECIPES.find((r) => r.id === 'sword3')!;
   cmd(p, { t: 'craft', id: 'sword3' });

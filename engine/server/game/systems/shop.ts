@@ -1,6 +1,6 @@
 // 상점과 소지품: 길 상인에게서 무기와 물약을 사고, 물약을 마신다. 무기는 공격 피해를 올린다.
 // 돌아온 주민에 따라 상점에 들어오는 물건이 늘어난다.
-import { ITEMS, MAT_MAX, POTION_CD, POTION_MAX, nearShop, isItemId, itemDef, type ItemId } from '../../../shared/defs';
+import { ITEMS, POTION_CD, POTION_MAX, nearShop, isItemId, itemCap, itemDef, type ItemId } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { WHY } from './wallet';
@@ -27,10 +27,10 @@ export class Shop {
     if (def.price <= 0 || !this.stocked(id)) { g.notify(p, 'notStocked'); return; }
     if (def.kind === 'weapon' || def.kind === 'armor') {
       if ((def.tier ?? 0) <= Shop.wornTier(p, def.kind)) { g.notify(p, 'alreadyBest'); return; }
-    } else if ((p.items[id] ?? 0) >= POTION_MAX) { g.notify(p, 'potionFull'); return; }
+    } else if (g.bag.count(p, id) >= POTION_MAX) { g.notify(p, 'potionFull'); return; }
     if (!g.wallet.take(p, 'gold', def.price, WHY.buy)) { g.notify(p, 'noGold'); return; }
 
-    if (!Shop.wear(g, p, id)) p.items[id] = (p.items[id] ?? 0) + 1;
+    if (!Shop.wear(g, p, id, false, WHY.buy)) g.bag.putItem(p, id, 1, WHY.buy);
     p.dirty = true; p.unsaved = true;
     g.notify(p, 'bought', id, p.cls);
     g.fire('bought', p, id);
@@ -39,10 +39,10 @@ export class Shop {
   private use(p: Ent, id: ItemId): void {
     const g = this.g, def = itemDef(id);
     if (def.kind !== 'potion' || p.itemCd > 0) return;
-    if (!(p.items[id] > 0)) { g.notify(p, 'noPotion'); return; }
+    if (!g.bag.count(p, id)) { g.notify(p, 'noPotion'); return; }
     if (p.hp >= p.maxHp) { g.notify(p, 'hpFull'); return; }
     const amount = Math.round(Math.min(def.heal ?? 0, p.maxHp - p.hp));
-    p.items[id]--;
+    g.bag.takeItem(p, id, 1, WHY.use);
     p.hp += amount;
     p.itemCd = POTION_CD;
     p.dirty = true; p.unsaved = true;
@@ -56,9 +56,9 @@ export class Shop {
     return isItemId(id) ? itemDef(id).tier ?? 0 : 0;
   }
 
-  /** 무기나 갑옷이면 기본 장비로 가방에 넣고 바로 갈아 낀다 (systems/gear.ts). 장비가 아니면 false */
-  static wear(g: Game, p: Ent, id: ItemId, made = false): boolean {
-    return g.gear.acquire(p, id, made);
+  /** 무기나 갑옷이면 기본 장비로 가방에 넣고 바로 갈아 낀다 (systems/gear.ts). 장비가 아니면 false. why: 원인의 이름 (가방 통로가 장부에 알린다) */
+  static wear(g: Game, p: Ent, id: ItemId, made = false, why = ''): boolean {
+    return g.gear.acquire(p, id, made, why);
   }
 
   /** 저장된 소지품을 읽는다. 없어진 아이템이나 이상한 수는 버린다. */
@@ -68,7 +68,7 @@ export class Shop {
     for (const [id, n] of Object.entries(raw as Record<string, unknown>)) {
       if (!isItemId(id) || typeof n !== 'number' || !(n > 0)) continue;
       const kind = ITEMS[id].kind;
-      if (kind !== 'weapon' && kind !== 'armor') out[id] = Math.min(kind === 'potion' ? POTION_MAX : MAT_MAX, Math.floor(n));
+      if (kind !== 'weapon' && kind !== 'armor') out[id] = Math.min(itemCap(id), Math.floor(n));
     }
     return out;
   }

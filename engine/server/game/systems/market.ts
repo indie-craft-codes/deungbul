@@ -128,14 +128,13 @@ export class Market {
       const it = int(m.uid, 1, Number.MAX_SAFE_INTEGER) ? p.gear.find((x) => x.uid === m.uid) : undefined;
       // 낀 장비와 보급형(상점에서 산 것)은 올릴 수 없다
       if (!it || p.worn[it.slot] === it.uid || isSupply(it)) { g.notify(p, 'marketCant'); return; }
-      p.gear.splice(p.gear.indexOf(it), 1);
+      g.bag.removeGear(p, it.uid, WHY.marketPost);
       it.uid = 0; // 장비 번호는 캐릭터 안에서만 뜻이 있다. 받는 사람의 가방에 들어갈 때 새로 붙는다
       l.gear = it;
       p.metaDirty = true;
     } else {
       if (!isMat(m.item) || !int(m.n, 1, MAT_MAX)) { g.notify(p, 'marketCant'); return; }
-      if (!((p.items[m.item] ?? 0) >= m.n)) { g.notify(p, 'noMats'); return; }
-      p.items[m.item] -= m.n;
+      if (!g.bag.takeItem(p, m.item, m.n, WHY.marketPost)) { g.notify(p, 'noMats'); return; }
       l.item = m.item; l.n = m.n;
       p.dirty = true;
     }
@@ -147,13 +146,12 @@ export class Market {
   }
 
   /** 물건을 그 사람에게 건넨다. 가방에 자리가 없거나 재료가 한도를 넘으면 넘는 만큼은 우편으로 간다 */
-  private hand(p: Ent, l: Listing, kind: MailKind): void {
+  private hand(p: Ent, l: Listing, kind: MailKind, why: string): void {
     const g = this.g, what = Market.what(l);
     if (l.gear) {
-      if (!g.gear.put(p, l.gear)) g.mail.send(p, kind, [what, 1, l.price], { gear: [l.gear] });
+      if (!g.gear.put(p, l.gear, why)) g.mail.send(p, kind, [what, 1, l.price], { gear: [l.gear] });
     } else if (l.item) {
-      const got = Math.max(0, Math.min(l.n, MAT_MAX - (p.items[l.item] ?? 0)));
-      if (got > 0) p.items[l.item] = (p.items[l.item] ?? 0) + got;
+      const got = g.bag.putItem(p, l.item, l.n, why);
       if (l.n > got) g.mail.send(p, kind, [what, l.n - got, l.price], { items: { [l.item]: l.n - got } });
     }
     p.dirty = true; p.metaDirty = true; p.unsaved = true;
@@ -170,7 +168,7 @@ export class Market {
     // 값을 치른 뒤부터는 되돌리지 않는다: 먼저 목록에서 빼서 같은 물건이 두 번 팔리지 않게 한다
     if (!g.wallet.take(p, 'gold', l.price, WHY.marketBuy)) { g.notify(p, 'noGold'); return; }
     this.listings.delete(id);
-    this.hand(p, l, 'marketBought');
+    this.hand(p, l, 'marketBought', WHY.marketBuy);
     const fee = marketFee(l.price);
     this.burned += fee;
     g.mail.sendTo(l.seller, 'marketSold', [Market.what(l), l.n, l.price, fee], { gold: l.price - fee });
@@ -186,7 +184,7 @@ export class Market {
     // 남의 물건은 내릴 수 없다: 없는 물건과 똑같이 답해서 번호로 남의 물건을 알아낼 수 없게 한다
     if (!l || l.seller !== p.pid) { g.notify(p, 'marketGone'); this.tellMine(p); return; }
     this.listings.delete(id);
-    this.hand(p, l, 'marketBack');
+    this.hand(p, l, 'marketBack', WHY.marketCancel);
     g.saveDirty = true;
     g.notify(p, 'marketCanceled');
     this.tellMine(p);

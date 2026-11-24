@@ -17,7 +17,7 @@
 // 이름을 비워 두면('') 장부가 그때의 경계로 가려 적는다: 명령과 사건 밖(시험의 준비, 운영 도구)에서 준 것은 other로 남거나 g.ledger.note가 붙인 이름으로 적힌다.
 //
 // 재화의 표(이름, 거래 가능 여부, 상한)는 게임의 내용에 있다 (CURRENCIES). 틀이 아는 칸은 엔티티의 gold, sparks, exp 셋이고, 표에 없는 재화는 한도 없이 다룬다.
-// 장비(낱개)와 아이템(재료, 물약)은 아직 여기를 지나지 않는다: 바뀌는 곳은 gear.ts(give, put, acquire, sell), shop.ts, craft.ts, mail.ts, market.ts이고 장부가 경계의 차이로 센다.
+// 장비(낱개)와 아이템(재료, 물약)은 짝이 되는 통로인 가방(bag.ts)을 지난다. 원인의 이름은 아래 WHY를 함께 쓴다.
 import { CURRENCIES, type CurrencyDef } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
@@ -31,12 +31,13 @@ export type Cur = 'gold' | 'sparks' | 'exp';
 export type Scale = (p: Ent, cur: Cur, n: number, why: string) => number;
 
 /**
- * 틀의 시스템이 넘기는 원인의 이름. 장부가 명령의 앞뒤 차이에 붙이는 이름(cmd:명령[:하위 동작])과 같게 맞춘다:
- * 한 명령이 바꾼 골드(지갑이 알림)와 장비·재료(장부가 차이로 셈)가 같은 줄에 놓인다
+ * 틀의 시스템이 지갑과 가방(bag.ts)에 넘기는 원인의 이름. 장부가 명령에 붙이는 이름(cmd:명령[:하위 동작])과 같게 맞춘다:
+ * 한 명령이 바꾼 골드(지갑이 알림)와 장비·재료(가방이 알림)가 같은 줄에 놓인다
  */
 export const WHY = {
   buy: 'cmd:buy', craft: 'cmd:craft', sell: 'cmd:sell', enhance: 'cmd:enhance', statReset: 'cmd:statReset', skillUp: 'cmd:skillUp',
   guildCreate: 'cmd:guild:create', guildGive: 'cmd:guild:give', marketBuy: 'cmd:market:buy',
+  use: 'cmd:use', marketPost: 'cmd:market:post', marketCancel: 'cmd:market:cancel',
 } as const;
 /** 원인 이름에 넣어도 되는 낱말: 영문자, 숫자, 밑줄만 (장부의 줄을 가르는 글자가 섞이지 않게) */
 const WORD = /^[A-Za-z0-9_]{1,24}$/;

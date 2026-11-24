@@ -1,5 +1,5 @@
 // 아이템의 모양과 도우미. 아이템과 상점의 표는 게임의 내용에 있다 (@game/shared/content).
-import { ITEMS, SHOPS, SHOP_REACH } from '@game/shared/content';
+import { ITEMS, MAT_MAX, POTION_MAX, SHOPS, SHOP_REACH } from '@game/shared/content';
 
 export interface ItemDef {
   /** mat: 제작 재료 (games/deungbul/shared/content/craft.ts) */
@@ -23,5 +23,7 @@ export interface ItemDef {
 export type ItemId = keyof typeof ITEMS;
 export const isItemId = (v: unknown): v is ItemId => typeof v === 'string' && Object.hasOwn(ITEMS, v);
 export const itemDef = (id: ItemId): ItemDef => ITEMS[id];
+/** 그 아이템을 들 수 있는 한도: 재료와 물약은 종류마다의 한도, 낱개 장비로 다루는 무기와 갑옷은 0이다 (서버의 가방 통로 systems/bag.ts와 저장 읽기가 함께 쓴다) */
+export const itemCap = (id: ItemId): number => { const kind = itemDef(id).kind; return kind === 'mat' ? MAT_MAX : kind === 'potion' ? POTION_MAX : 0; };
 /** 이 자리에서 닿는 상인이 있는가 */
 export const nearShop = (at: { x: number; z: number }): boolean => SHOPS.some((s) => Math.hypot(at.x - s.x, at.z - s.z) <= SHOP_REACH);
