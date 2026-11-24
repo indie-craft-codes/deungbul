@@ -1,7 +1,7 @@
 // 사람을 눌렀을 때 뜨는 창(파티 초대, 차단, 신고), 받은 초대, 파티원 목록.
 import type { PartyMember } from '../../../shared/protocol';
 import { $ } from '../app';
-import { L } from '../i18n';
+import { L, t } from '../i18n';
 import { send } from '../net';
 import { isBlocked, toggleBlock } from '../social';
 import { S } from '../state';
@@ -23,7 +23,7 @@ export function initParty(): void {
   $('pcardGuild').addEventListener('click', () => { if (cardId) send({ t: 'guild', a: 'invite', id: cardId }); hideCard(); });
   $('pcardReport').addEventListener('click', () => {
     // 잘못 누르지 않게, 처음 누르면 확인 문구로 바뀌고 한 번 더 눌러야 접수된다
-    if (!reportArmed) { reportArmed = true; $('pcardReport').textContent = L().ui.reportConfirm; return; }
+    if (!reportArmed) { reportArmed = true; $('pcardReport').textContent = t('reportConfirm'); return; }
     if (cardId) send({ t: 'report', id: cardId });
     hideCard();
   });

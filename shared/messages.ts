@@ -53,6 +53,7 @@ export type MsgKey =
   | 'enhanceMax' // []
   | 'mailNew' // [] 우편이 왔다
   | 'mailGot' // [골드, 경험치, 불씨, 장비 수, 아이템 수] 우편의 보상을 받았다
+  | 'dungeonMate' // [들어간 사람 이름, 던전 id] 파티원이 던전에 들어갔다
   | 'dungeonFar' // [] 문에서 멀다
   | 'dungeonLevel' // [필요한 레벨]
   | 'dungeonNoRuns' // [] 오늘 들어갈 수 있는 횟수를 다 썼다

@@ -38,7 +38,6 @@
         <button type="button" class="plain" id="bagBtn" data-i18n="bag"></button>
         <button type="button" class="plain" id="menuBtn" data-i18n="menu"></button>
         <select id="channel" data-i18n-aria="channel" hidden></select>
-        <button type="button" class="plain" id="soundBtn"></button>
         <select id="lang" data-i18n-aria="language"></select>
       </div>
       <div id="party" hidden>
@@ -89,6 +88,7 @@
 
     <div class="panel" id="dungeon" hidden>
       <div class="row"><span class="ttitle" id="dgName"></span><span class="num" id="dgRuns"></span></div>
+      <div class="note" id="dgMates" hidden></div>
       <div class="note" id="dgInfo"></div>
       <button type="button" id="dgBtn"></button>
     </div>
@@ -138,10 +138,14 @@
       <button type="button" class="plain" id="bagClose" data-i18n="close"></button>
     </div>
     <div class="panel" id="menu" hidden>
-      <div class="row"><span class="ttitle" data-i18n="menu"></span><span class="gold" id="menuGold"></span></div>
+      <!-- 창의 머리: 소리 단추와 닫기 단추는 어느 탭에서나 같은 자리에 있다 -->
+      <div class="row" id="menuHead">
+        <span class="ttitle" data-i18n="menu"></span><span class="gold" id="menuGold"></span>
+        <button type="button" class="plain" id="soundBtn"></button>
+        <button type="button" class="plain" id="menuClose" data-i18n="close"></button>
+      </div>
       <div id="menuTabs"></div>
       <div id="menuList"></div>
-      <button type="button" class="plain" id="menuClose" data-i18n="close"></button>
     </div>
     <div class="panel" id="invite" hidden>
       <div id="inviteText"></div>

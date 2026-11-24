@@ -239,6 +239,10 @@ test/
 
 **새 기능(클라이언트 화면)**: 파일을 만들고 `client/src/modules.ts`에 init 한 줄을 더한다. init 안에서 `bus.onMsg('종류', ...)`(서버 메시지), `bus.onFrame`, `bus.onSlow`, `onLangChange`에 등록한다. `main.ts`는 고치지 않는다. 메뉴(`hud/menu.ts`)가 예다. 화면에 보이는 문장은 언제나 언어 파일에 넣는다.
 
+**화면 문장의 규칙**: 골드와 값처럼 큰 수는 언어 파일의 `num`(`fmt.num`)을 거쳐 자릿수 구분을 넣는다. 단축키처럼 PC에서만 뜻이 있는 부분은 문장 안에 `[[PC용|터치용]]`으로 적는다(터치용을 비우면 그 부분이 빠진다. 예: `'메뉴[[(M)|]]의 우편'`). 이 표시는 `t()`, `applyDom`, `notifySys`가 `forInput`으로 풀어 주므로, 표시가 든 문장은 `L().ui.x`로 직접 읽지 말고 `t('x')`로 읽는다. 조작 안내처럼 항목을 잇는 문장은 `keyHints([...])`로 만들면 줄이 항목 사이에서만 바뀐다.
+
+**메뉴 창**: 높이와 탭 줄·닫기 단추의 자리는 고정이고 내용만 스크롤한다. 탭을 더하려면 `hud/menu.ts`의 `TABS`에 더한다. 장비를 보여 줄 때는 `gearLabel`·`gearTitle`·`optsEl`을 써서 칸 이름 표, 합친 수치, 끊기지 않는 옵션 줄을 똑같이 맞춘다. 재료의 출처는 `hud/sources.ts`가 `DROPS`에서 읽어 만든다.
+
 **새 직업, 기술**: `shared/content/combat.ts`의 `CLASSES`와 `SKILL_DEFS`에 더하고 언어 파일에 이름을 넣는다. 기술은 효과의 종류(`SkillEffect`: 한 대상 피해, 범위 피해(+느려짐), 회복)로 처리하므로 서버, 자동 사냥, 이펙트가 함께 따라온다. 새 종류의 효과가 필요할 때만 `systems/combat.ts`의 `useSkill`을 고친다. 직업의 겉모습(`hand`, `shot`, `hitColor`)도 `CLASSES`에 적는다. 새로운 손 모양이 필요하면 `scene/models.ts`에 더한다.
 
 **새 던전**: `shared/content/map.ts`의 `AREAS`에 지역을, `shared/content/dungeons.ts`의 `DUNGEONS`에 문·무리·우두머리·보상을 더하고 언어 파일에 이름을 넣는다. 지형(기둥)은 `PILLARS`, 모양은 `scene/scenery.ts`다.

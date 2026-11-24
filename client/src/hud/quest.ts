@@ -4,7 +4,7 @@ import { QUESTS, goalCount, type QuestStep } from '../../../shared/defs';
 import { moveTo } from '../actions';
 import { $, view } from '../app';
 import { L, t } from '../i18n';
-import { S } from '../state';
+import { S, inDungeon } from '../state';
 
 const ui = { panel: $('quest'), title: $('questTitle'), step: $('questStep'), prog: $('questProg'), dist: $('questDist'), arrow: $('goalArrow'), go: $('questGo') };
 
@@ -17,7 +17,7 @@ function current(): QuestStep | null {
 /** 지금 단계의 목적지로 걸어간다. 길은 길찾기가 알아서 잡고, 직접 움직이면 그만둔다. */
 export function goToQuest(): void {
   const step = current();
-  if (S.me && step) moveTo(step.at.x, step.at.z);
+  if (S.me && step && !inDungeon()) moveTo(step.at.x, step.at.z); // 던전 안에서는 들판의 목적지로 걸어갈 수 없다
 }
 
 export function initQuest(): void {
@@ -37,7 +37,7 @@ export function renderQuest(): void {
   }
   ui.go.hidden = false;
   needSparks = step.goal.kind === 'offer' && (S.me?.sparks ?? 0) === 0;
-  ui.go.textContent = t(needSparks ? 'questNeedSparks' : matchMedia('(pointer: coarse)').matches ? 'questGoTouch' : 'questGo'); // 터치 화면에는 단축키 안내를 빼고 보여 준다
+  ui.go.textContent = t(needSparks ? 'questNeedSparks' : 'questGo'); // 터치 화면에는 단축키 안내가 빠진다 (i18n의 forInput)
   const text = loc.quests[chapter.id];
   ui.title.textContent = text.title;
   ui.step.textContent = text.steps[S.quest.s] ?? '';
@@ -48,7 +48,10 @@ export function renderQuest(): void {
 /** 매 프레임: 목적지에 빛기둥을 세우고, 화면 밖이면 가장자리 화살표로 방향을 알린다. */
 export function questFrame(now: number): void {
   const me = S.me, step = current();
-  if (!me || !step) { view.goalBeam.visible = false; ui.arrow.hidden = true; ui.dist.textContent = ''; return; }
+  // 던전 안에서는 들판의 목적지까지의 거리와 방향이 뜻이 없다: 거리, 화살표, 걸어가기 안내를 숨기고 할 일만 남긴다
+  const away = inDungeon();
+  ui.panel.classList.toggle('away', away);
+  if (!me || !step || away) { view.goalBeam.visible = false; ui.arrow.hidden = true; ui.dist.textContent = ''; return; }
   if ((step.goal.kind === 'offer' && me.sparks === 0) !== needSparks) renderQuest(); // 불씨가 생기거나 떨어지면 안내를 바꾼다
   const dx = step.at.x - me.x, dz = step.at.z - me.z, d = Math.hypot(dx, dz);
   view.goalBeam.visible = true;
