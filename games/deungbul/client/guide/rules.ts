@@ -1,5 +1,5 @@
 // 도감이 게임의 규칙에서 값을 얻는 곳. 규칙의 식은 내용 정의(games/deungbul/shared/content)의 순수 함수로 있고, 서버와 도감이 같은 함수를 부른다:
-// 도감은 서버 코드(engine/server/)를 불러오지 않는다 (engine/test/guide.test.ts가 도감이 불러오는 파일 전체를 따라가며 검사한다).
+// 도감은 서버 코드(engine/server/)를 불러오지 않는다 (games/deungbul/test/guide.test.ts가 도감이 불러오는 파일 전체를 따라가며 검사한다).
 import { RARITIES, rollOpt, type Stat } from '../../shared/defs';
 
 /** 난수의 가장 큰 값 (Math.random은 1 미만이다) */

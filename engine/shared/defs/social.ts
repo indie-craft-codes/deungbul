@@ -3,7 +3,7 @@ import { GEAR_SLOTS, GUILD, MARKET } from '@game/shared/content';
 import type { Gear } from './growth';
 
 // ---------- 길드 ----------
-/** 길드 레벨: 쌓인 기부(골드)로 정한다. 서버의 systems/guild.ts와 도감이 함께 쓴다 */
+/** 길드 레벨: 쌓인 기부(골드)로 정한다. 서버의 engine/server/game/systems/guild.ts와 도감이 함께 쓴다 */
 export const guildLevel = (exp: number): number => Math.min(GUILD.maxLevel, 1 + Math.floor(exp / GUILD.expPerGuildLevel));
 /** 그 길드 레벨이 되는 데 필요한 누적 기부 (guildLevel을 거꾸로 푼 것) */
 export const guildNeed = (lv: number): number => (lv - 1) * GUILD.expPerGuildLevel;

@@ -29,10 +29,15 @@ export interface DungeonDef {
 export type DungeonId = keyof typeof DUNGEONS;
 export const DUNGEON_IDS = Object.keys(DUNGEONS) as DungeonId[];
 export const isDungeonId = (v: unknown): v is DungeonId => typeof v === 'string' && Object.hasOwn(DUNGEONS, v);
-export const dungeonDef = (id: DungeonId): DungeonDef => DUNGEONS[id];
+/**
+ * 던전의 표를 id가 문자열인 표로 본 것. 던전이 없는 게임(DUNGEONS = {})에서는 DungeonId가 never가 되어 DUNGEONS[id]로는 아무것도 읽을 수 없으므로,
+ * 틀의 코드는 표를 이것으로 읽는다 (없는 id를 넣으면 undefined다: isDungeonId로 먼저 거른다)
+ */
+export const DUNGEON_TABLE: Readonly<Record<string, DungeonDef>> = DUNGEONS;
+export const dungeonDef = (id: string): DungeonDef => DUNGEON_TABLE[id];
 /**
  * 끝냈을 때 받는 장비의 등급: 평소처럼 굴린 등급(rolled)이 그 던전의 가장 낮은 등급보다 낮으면 그 등급으로 올린다.
- * 서버의 systems/dungeon.ts와 도감(등급별 확률)이 함께 쓴다
+ * 서버의 engine/server/game/systems/dungeon.ts와 도감(등급별 확률)이 함께 쓴다
  */
 export const clearRar = (def: Pick<DungeonDef, 'dropRar'>, rolled: number): number => Math.max(def.dropRar, rolled);
 /** 하루 입장 횟수를 일일 진행(DailyState.prog)에 적는 이름 */

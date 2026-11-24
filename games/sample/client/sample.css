@@ -1,0 +1,16 @@
+/* 이 게임(모닥불 사냥터)의 스타일. 틀의 스타일(engine/client/style.css) 뒤에 읽혀 같은 무게의 규칙을 덮어쓴다 */
+/* 색: 틀의 색 변수를 덮어써 분위기를 정한다 (저녁의 야영지) */
+:root {
+  --sky: #d9b48a;
+  --ink: #1d1712;
+  --panel: rgba(29, 23, 18, .86);
+  --line: rgba(255, 190, 120, .3);
+  --gold: #ffb057;
+}
+/* 모닥불 창: 오른쪽 위에 쌓이는 창의 하나라 자리는 틀이 잡는다 */
+#bonfire { display: flex; flex-direction: column; gap: 6px; }
+.bar.heat i { background: var(--gold); }
+/* 좁은 화면: 모닥불 창과 상점 창은 가까운 쪽 하나만 보인다 (틀의 hud/near.ts가 data-near를 적는다) */
+@media (max-width: 720px) {
+  #rightcol[data-near="bonfire"] #shop, #rightcol[data-near="shop"] #bonfire { display: none; }
+}

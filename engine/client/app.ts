@@ -1,4 +1,7 @@
 // 여러 모듈이 함께 쓰는 것: 월드 정의, 3D 화면, 작은 도우미.
+// 뼈대를 붙이는 모듈(hud/shell.ts)을 맨 먼저 읽는다: 읽히는 때에 화면의 뼈대가 문서에 붙는다.
+// 요소를 잡는 파일은 모두 아래의 $를 쓰려고 이 파일을 import하므로, 어느 파일이 읽히는 때에 요소를 잡아도 그때는 뼈대가 이미 있다.
+import './hud/shell';
 import { NavGrid } from '../shared/nav';
 import { buildWorld } from '../shared/world';
 import { View, type Look } from './scene/view';

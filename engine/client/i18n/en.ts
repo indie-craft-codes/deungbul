@@ -1,10 +1,12 @@
 // English, the engine's share. Must have the same shape as ko.ts (the EngineLocale type enforces it).
 // 이 게임의 문장과 내용의 이름은 games/deungbul/client/i18n/en.ts에 있다. 이 파일은 게임의 파일을 import하지 않고 게임의 낱말을 적지 않는다.
+import { AWAY } from '../../shared/auto';
+import { BUILD, ENHANCE, GUILD, MARKET, PARTY } from '../../shared/defs';
 import type { ClassId, ItemId, MonsterId } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { keyHints, type EngineLocale } from './ko';
 import { SALVAGE } from '../../shared/defs';
-import { itemNameOf, type ContentNames } from './names';
+import { dungeonLabel, itemNameOf, type ContentNames } from './names';
 
 /** 1 item, 2 items */
 export const count = (n: MsgArg, word: string) => `${n} ${word}${Number(n) === 1 ? '' : 's'}`;
@@ -22,6 +24,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
   /** The second currency's name (shown in kill, mail and away rewards) */
   const coin = n.currency2;
   const itemName = itemNameOf(items);
+  const dungeonName = (id: MsgArg) => dungeonLabel(n, id).name;
   /** The name of the place you rise at after falling */
   const place = (id: MsgArg) => n.places[String(id)] ?? String(id);
   /** Item name for market mail titles: [item id or gear slot, count] */
@@ -53,9 +56,6 @@ export const enBase = (n: ContentNames): EngineLocale => {
       bag: 'Bag',
       minimap: 'Minimap',
       mapLegendDungeon: 'red ○ boss · blue party',
-      bagWeapon: 'Weapon',
-      bagArmor: 'Armor',
-      bagArmorHint: 'Sold by the Road Merchant',
       bagPotions: 'Potions',
       bagMats: 'Crafting materials',
       dungeonEnter: 'Enter',
@@ -94,11 +94,11 @@ export const enBase = (n: ContentNames): EngineLocale => {
       tabGuild: 'Guild',
       guildInvite: 'Invite to guild',
       guildCreate: 'Create',
-      guildNameHint: 'Guild name (2–12 characters)',
+      guildNameHint: `Guild name (${GUILD.nameMin}–${GUILD.nameMax} characters)`,
       guildNoticeHint: 'Guild notice',
       guildNoticeSet: 'Post notice',
       guildKick: 'Kick',
-      guildLeader: 'leader',
+      guildLeader: 'Leader',
       guildLeave: 'Leave guild',
       guildMaxLv: 'The guild is at its highest level',
       guildGiveInfo: 'Donated gold raises the guild level, which gives every member more exp.',
@@ -119,7 +119,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       dailyDone: 'Done',
       dailyNote: 'Finish a task and the reward arrives by mail. Tasks reset at midnight.',
       none: 'None',
-      autoOn: 'Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting (up to 8 hours).',
+      autoOn: `Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting (up to ${AWAY.maxS / 3600} hours).`,
       autoOff: 'Auto-hunt off.',
       noTargetNearby: 'No targets nearby.',
       goingTown: 'Walking back to the start.',
@@ -136,7 +136,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       partyDecline: 'Decline',
       report: 'Report',
       reportConfirm: '[[Click|Tap]] again to report',
-      currentClass: 'current',
+      currentClass: 'Current',
       block: 'Mute chat',
       unblock: 'Unmute',
       owned: 'Owned',
@@ -205,22 +205,21 @@ export const enBase = (n: ContentNames): EngineLocale => {
       marketConfirm: (gold) => `Confirm · ${num(gold)} gold`,
       marketSeller: (name) => `Seller: ${name}`,
       marketLeft: (h, m) => (h > 0 ? `${h} h ${m} min left` : `${m} min left`),
-      marketPage: (page, pages, total) => `Page ${page} / ${pages} · ${count(total, 'item')}`,
       marketMineHead: (n, max) => `My listings ${n} / ${max}`,
       marketPrice: (gold) => `Price: ${num(gold)} gold`,
       marketStack: (name, n) => (n > 1 ? `${name} ×${n}` : name),
       marketPicked: (name) => `Listing: ${name}`,
       marketFeeInfo: (pct, hours) => `When it sells, the price minus a ${pct}% fee arrives by mail. If it does not sell within ${hours} hours, the item is mailed back to you.`,
       marketNet: (price, fee, net) => `Price ${num(price)} − fee ${num(fee)} = you receive ${num(net)} gold`,
-      marketPriceRange: (max) => `Enter a whole number from 2 to ${num(max)}. For materials this is the price of the whole stack, not each.`,
+      marketPriceRange: (max) => `Enter a whole number from ${MARKET.minPrice} to ${num(max)}. For materials this is the price of the whole stack, not each.`,
       marketCountRange: (max) => `Enter a quantity from 1 to ${max}.`,
       guildCreateInfo: (lv, gold) => `Creating a guild takes level ${lv} and ${num(gold)} gold. To join another guild, ask its leader for an invite.`,
       guildInviteFrom: (guild, from) => `${from} invited you to the guild "${guild}"`,
-      guildHead: (name, lv, pct) => `${name} · guild Lv ${lv} · kill exp +${pct}%`,
+      guildHead: (name, lv, pct) => `${name} · Guild Lv ${lv} · Kill exp +${pct}%`,
       guildExp: (exp, need) => `${num(exp)} / ${num(need)} to next level`,
       guildGive: (n) => `Donate ${num(n)}`,
       guildMembers: (n, max) => `Members ${n} / ${max}`,
-      guildGave: (n) => `donated ${num(n)}`,
+      guildGave: (n) => `Donated ${num(n)}`,
       channelShort: (n) => `Ch ${n}`,
       channelOpt: (n, people, foes) => `Ch ${n} · ${people}${foes > 0 ? ` · ${foes} foes` : ''}`,
       statLeft: (n, perLevel) => `Attributes · ${n} points left (${perLevel} per level)`,
@@ -231,15 +230,15 @@ export const enBase = (n: ContentNames): EngineLocale => {
       dungeonRuns: (left, max) => `${left} / ${max} runs today`,
       dungeonNeedLv: (lv) => `Opens at level ${lv}.`,
       dungeonInfo: (minutes, info) => `${info} Time limit: ${minutes} min.`,
-      dungeonFoes: (n) => `Enemies left: ${n}`,
-      dungeonExit: (s) => `Cleared. Leaving in ${s} s.`,
+      dungeonFoes: (n) => `Foes left: ${n}`,
+      dungeonExit: (s) => `Cleared. Leaving in ${s}s.`,
       gearName: (what, rarity, plus, lv) => `${rarity ? rarity + ' ' : ''}${what}${plus > 0 ? ` +${plus}` : ''} (Lv ${lv})`,
       enhanceCost: (gold, pct) => `Enhance · ${num(gold)} gold · ${pct}%`,
       sellFor: (gold) => `Sell · ${num(gold)} gold`,
       power: (n) => `Power ${num(n)}`,
       streak: (n) => `Day ${n} streak`,
-      reward: (gold, exp, second) => [gold ? `Gold ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you rested (${a[0]} min)` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeons[a[0] as keyof typeof dungeons]?.name ?? a[0]} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
+      reward: (gold, exp, second) => [gold ? `Gold ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
+      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you rested (${a[0]} min)` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
       potions: (n) => `Potions ${n}`,
       distance: (m) => `${m} m`,
       num: (n) => num(n),
@@ -282,14 +281,15 @@ export const enBase = (n: ContentNames): EngineLocale => {
       replaced: () => 'Signed in elsewhere. This connection is closing.',
       noTarget: () => 'No target.',
       tooFar: () => 'Target is too far away.',
-      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} defeated. +${a[1]} exp, +${count(a[2], coin.one)}, +${num(a[3])} gold`,
-      levelUp: (a) => `Level up! You are now Lv ${a[0]}.`,
+      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} defeated. +${a[1]} exp${coin ? `, +${count(a[2], coin.one)}` : ''}, +${num(a[3])} gold`,
+      levelUp: (a) => `Level up! Lv ${a[0]} · +${BUILD.pointsPerLevel} attribute points (Menu > Growth)`,
       died: (a) => `You fell. You rose again at ${place(a[0])}. Nothing was lost.`,
       bought: (a) => `Bought ${itemName(a[0], a[1])}.`,
       classChanged: (a) => `You are now ${withArticle(classes[a[0] as ClassId]?.name ?? String(a[0]))}.`,
       classFar: () => 'You cannot change class here.', // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       bossUp: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} has appeared.`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
-      bossDown: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} has fallen. ${a[1]} fought together.`,
+      // Solo kill: no second sentence (never '1 fought together')
+      bossDown: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} has fallen.${Number(a[1]) > 1 ? ` ${a[1]} players fought together.` : ''}`,
       shopFar: () => 'Move closer to the road merchant to buy.',
       notStocked: () => 'The shop does not stock that yet.',
       alreadyBest: () => 'You already have equal or better gear.',
@@ -308,7 +308,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       reportWait: () => 'You can report the same player again later.',
       partyInvited: (a) => `Party invite sent to ${a[0]}.`,
       partyBusy: (a) => `${a[0]} cannot be invited right now.`,
-      partyFull: () => 'The party is full. (4 at most)',
+      partyFull: () => `The party is full. (${PARTY.max} at most)`,
       partyGone: () => 'That invite is no longer there.',
       partyDeclined: (a) => `${a[0]} declined your invite.`,
       partyJoined: (a) => `${a[0]} joined the party.`,
@@ -320,23 +320,24 @@ export const enBase = (n: ContentNames): EngineLocale => {
       gearSold: (a) => `Gear sold. +${num(a[0])} gold`,
       enhanceOk: (a) => `Enhancement succeeded. +${a[0]}`,
       enhanceFail: () => 'Enhancement failed. The gear is unchanged.',
-      enhanceMax: () => 'This cannot be enhanced further. (Standard gear stops at +5, crafted or dropped gear at +10.)',
+      enhanceMax: () => `This cannot be enhanced further. (Standard gear stops at +${ENHANCE.supplyMax}, crafted or dropped gear at +${ENHANCE.max}.)`,
       mailNew: () => 'You have mail. Claim it under Menu[[ (M)|]] > Mail.',
-      mailGot: (a) => `Mail claimed.${Number(a[0]) ? ` Gold +${num(a[0])}` : ''}${Number(a[1]) ? ` Exp +${num(a[1])}` : ''}${Number(a[2]) ? ` ${coin.name} +${a[2]}` : ''}${Number(a[3]) ? ` Gear +${a[3]}` : ''}${Number(a[4]) ? ` Materials +${a[4]}` : ''}`,
-      dungeonMate: (a) => `${a[0]} entered ${dungeons[a[1] as keyof typeof dungeons]?.name ?? a[1]}. Enter at the gate to join the same run.`,
+      // Reward lines in the feed are all written '+N unit' (kill, quest step, raid reward, mail, away)
+      mailGot: (a) => ['Mail claimed.', [Number(a[0]) ? `+${num(a[0])} gold` : '', Number(a[1]) ? `+${num(a[1])} exp` : '', Number(a[2]) && coin ? `+${count(a[2], coin.one)}` : '', Number(a[3]) ? `+${a[3]} gear` : '', Number(a[4]) ? `+${count(a[4], 'material')}` : ''].filter(Boolean).join(', ')].filter(Boolean).join(' '),
+      dungeonMate: (a) => `${a[0]} entered ${dungeonName(a[1])}. Enter at the gate to join the same run.`,
       dungeonFar: () => 'Move closer to the gate.',
       dungeonLevel: (a) => `Opens at level ${a[0]}.`,
       dungeonNoRuns: () => 'No more runs today. It opens again at midnight.',
-      dungeonEnter: (a) => `You entered ${dungeons[a[0] as keyof typeof dungeons]?.name ?? a[0]}. Defeat the boss to finish.`,
-      dungeonClear: (a) => `${dungeons[a[0] as keyof typeof dungeons]?.name ?? a[0]} cleared. Your reward is in the mail.`,
+      dungeonEnter: (a) => `You entered ${dungeonName(a[0])}. Defeat the boss to finish.`,
+      dungeonClear: (a) => `${dungeonName(a[0])} cleared. Your reward is in the mail.`,
       dungeonFail: () => 'Time ran out. You were sent back outside.',
       dungeonLeft: () => 'You left the dungeon.',
       channelMoved: (a) => `Moved to channel ${a[0]}.`,
-      channelDungeon: () => `You can't change channels inside a dungeon.`,
-      channelFight: () => `You can't change channels while fighting. Try again once the fight is over.`,
+      channelDungeon: () => 'You cannot change channels inside a dungeon.',
+      channelFight: () => 'You cannot change channels while fighting. Try again once the fight is over.',
       channelWait: (a) => `You can change channels again in ${a[0]}s.`,
       channelFull: (a) => `Channel ${a[0]} is full. Pick another one.`,
-      statNone: () => 'No attribute points to spend. You get 3 each level.',
+      statNone: () => `No attribute points to spend. You get ${BUILD.pointsPerLevel} each level.`,
       statReset: () => 'All attribute points refunded. You can spend them again.',
       skillUp: (a) => `Skill upgraded to rank ${a[1]}.`,
       skillMax: () => 'This skill is at its highest rank.',
@@ -344,7 +345,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       mailLeft: () => 'Some items did not fit and were left in your mail. Make room, then claim again.',
       marketGuest: () => 'This browser cannot save your character, so you cannot use the market.',
       marketFull: (a) => `You can have up to ${a[0]} listings at once. Take one down or wait for a sale.`,
-      marketPriceBad: (a) => `The price must be a whole number from 2 to ${a[0]} gold.`,
+      marketPriceBad: (a) => `The price must be a whole number from ${MARKET.minPrice} to ${a[0]} gold.`,
       marketMailFull: (a) => `You have ${a[0]} or more mails with items attached. Claim your mail first. You can still take your listings down.`,
       marketCrowded: () => 'The market is full. Try listing again in a little while.',
       chatWait: () => 'Chat is too busy, so your last message was not sent. Try again in a moment.',
@@ -357,7 +358,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       marketCanceled: () => 'You took the listing down.',
       guildGuest: () => 'This browser cannot save your character, so you cannot join a guild.',
       guildNeedLv: (a) => `You can create a guild at level ${a[0]}.`,
-      guildNameBad: () => 'That guild name cannot be used. Use 2–12 characters.',
+      guildNameBad: () => `That guild name cannot be used. Use ${GUILD.nameMin}–${GUILD.nameMax} characters.`,
       guildNameTaken: () => 'That guild name is taken.',
       guildCreated: (a) => `You created the guild "${a[0]}".`,
       guildNotLeader: () => 'Only the guild leader can do that.',
@@ -371,7 +372,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       guildGave: (a) => `You donated ${num(a[0])} gold to the guild.`,
       guildLevelUp: (a) => `The guild reached Lv ${a[0]}.`,
       guildNone: () => 'You are not in a guild. Create one or get invited under Menu > Guild.',
-      awayBack: (a) => `Auto-hunt kept going for the ${a[0]} min you were away. ${coin.name} +${a[1]}, gold +${num(a[2])}${Number(a[3]) > 0 ? `, level +${a[3]}` : ''}`,
+      awayBack: (a) => `Auto-hunt kept going for the ${a[0]} min you were away. ${coin ? `+${count(a[1], coin.one)}, ` : ''}+${num(a[2])} gold${Number(a[3]) > 0 ? `, +${count(a[3], 'level')}` : ''}`,
       rested: (a) => `A rest bonus built up while you were away. Rested bonus ${a[0]} (double exp from kills)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       // ---- Salvage, lock, auto-salvage, bag expansion (economy stage 2). The dust's name comes from the game's item names ----
       salvaged: (a) => `Salvaged ${count(a[0], 'item')}. ${itemName(SALVAGE.item)} +${num(a[1])}`,

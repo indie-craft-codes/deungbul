@@ -1,6 +1,6 @@
 // 자동 사냥의 판단. 클라이언트(engine/client/auto.ts)와 서버의 자리 비움 사냥(engine/server/game/systems/away.ts)이
 // 같은 기준으로 움직이도록 여기에 한 번만 적는다. 무엇을 누를지만 정하고, 실제 명령은 부른 쪽이 낸다.
-import { ITEMS, SKILL_SLOTS, classOf, skillDef, type ItemDef, type ItemId } from './defs';
+import { ITEMS, SKILL_SLOTS, classOf, skillDef, type ItemDef, type ItemId, itemDef } from './defs';
 
 export const AUTO = {
   /** 이 거리 안의 몬스터를 찾는다 */
@@ -46,7 +46,7 @@ export function pickSkill(cls: string, ratio: number, dist: number, ready: (n: n
 
 const healOf = (id: ItemId): number => (ITEMS[id] as ItemDef).heal ?? 0;
 /** 물약들, 진한 것(회복량이 큰 것)부터. 아이템 id를 적지 않고 정의에서 고른다: 물약을 더하거나 이름을 바꿔도 여기는 그대로다 */
-export const POTIONS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filter((id) => ITEMS[id].kind === 'potion').sort((a, b) => healOf(b) - healOf(a));
+export const POTIONS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filter((id) => itemDef(id).kind === 'potion').sort((a, b) => healOf(b) - healOf(a));
 
 /** 마실 물약 (진한 것부터). 마실 때가 아니거나 가진 것이 없으면 null */
 export function pickPotion(ratio: number, items: Record<string, number>): ItemId | null {

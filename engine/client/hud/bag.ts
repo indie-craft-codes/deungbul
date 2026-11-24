@@ -1,6 +1,6 @@
 // 가방 창: 물약과 제작 재료를 어디서나 볼 수 있다. 장비는 메뉴의 장비 탭에서 다룬다. (단축키 B)
 // 장비 가방의 칸 수와 분해 설정(서버의 개인 상태 bag, salvage)도 여기서 받아 넣고, 가방이 가득 찼으면 가방 단추에 표시한다.
-import { GEAR, ITEMS, SALVAGE, itemCap, type ItemId } from '../../shared/defs';
+import { GEAR, ITEMS, SALVAGE, itemCap, itemDef, type ItemId } from '../../shared/defs';
 import { $ } from '../app';
 import { onMsg } from '../bus';
 import { L, onLangChange, t } from '../i18n';
@@ -53,10 +53,10 @@ export function renderBag(): void {
   ui.list.append(row(t('tabGear'), loc.fmt.have(gearCount, S.bag.max), ''));
   if (gearFull()) { const warn = document.createElement('div'); warn.className = 'note gwarn'; warn.setAttribute('role', 'status'); warn.textContent = S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull'); ui.list.append(warn); }
   ui.list.append(head(t('bagPotions')));
-  for (const id of ids) if (ITEMS[id].kind === 'potion') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), ''));
+  for (const id of ids) if (itemDef(id).kind === 'potion') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), ''));
   ui.list.append(head(t('bagMats')));
   // 재료마다 어떤 몬스터가 떨어뜨리는지 적어 준다 (어디서 구하는지 화면 어디에도 없었다). 분해로 나오는 가루는 그렇게 적는다
-  for (const id of ids) if (ITEMS[id].kind === 'mat') ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), id === SALVAGE.item ? t('salvageSource') : sourceText(id)));
+  for (const id of ids) if (itemDef(id).kind === 'mat') ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), id === SALVAGE.item ? t('salvageSource') : sourceText(id)));
 }
 
 /** 가방이 가득 찼으면 가방 단추를 눈에 띄게 한다 (style.css의 #bagBtn.alert) */

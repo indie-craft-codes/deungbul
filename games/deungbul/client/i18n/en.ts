@@ -1,4 +1,4 @@
-// English, this game's share (Lamp Tower). Must have the same shape as ko.ts in this folder (GameLocale and ContentNames enforce it).
+// English, this game's share (Lampkeeper). Must have the same shape as ko.ts in this folder (GameLocale and ContentNames enforce it).
 // 틀의 문장(engine/client/i18n/en.ts의 enBase)과 합쳐 한 언어 묶음이 된다 (index.ts).
 import type { ClassId, ItemId, MonsterId, QuestId, ResidentId } from '../../shared/defs';
 import type { MsgArg } from '@engine/shared/messages';
@@ -69,7 +69,7 @@ export const enNames: ContentNames = {
 
 export const enGame: GameLocale = {
   ui: {
-    title: 'Lamp Tower',
+    title: 'Lampkeeper',
     hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'F: quest', 'R: auto-hunt', 'H: town', 'B: bag', 'M: menu', 'Tab: target', 'Enter: chat']),
     toTown: 'To town',
     mapLegend: '■ tower · ○ quest · green merchant',
@@ -173,14 +173,14 @@ export const enGame: GameLocale = {
     raidStart: (a) => `A raid on Firstlight Village has begun. ${a[0]} foes marked "Mist" are heading for the tower.`,
     raidWon: (a) => `The raid was held off. Village tower light ${signed(a[0])}`,
     raidLost: (a) => (Number(a[0]) === 0 ? 'The lamp tower fell. Its light could not drop any lower.' : `The lamp tower fell. Village tower light ${signed(a[0])}`),
-    raidReward: (a) => `Raid reward: +${count(a[0], 'spark')}, +${a[1]} exp`,
+    raidReward: (a) => `Raid reward: +${a[1]} exp, +${count(a[0], 'spark')}`,
     questStep: (a) => `Quest step complete. +${a[0]} exp${Number(a[1]) > 0 ? `, +${count(a[1], 'spark')}` : ''}`,
     classFar: () => 'Move closer to the lamp tower to change class.',
     bossUp: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} has appeared deep in the Ashwood.`,
     tierUp: (a) => `You reached contribution tier ${a[0]}. Granny hands you ${num(a[1])} gold.`,
     loot: (a) => `Picked up ${itemName(a[0])}. Bram can use it at the forge.`,
-    forgeFar: () => 'Move closer to Bram the smith to forge.',
-    forgeClosed: () => 'Bram the smith has not returned yet.',
+    forgeFar: () => 'Move closer to Bram the Smith to forge.',
+    forgeClosed: () => 'Bram the Smith has not returned yet.',
     raidElsewhere: (a) => `No Mist foes in this channel. Some remain in channel ${a[0]}. Switch there to help hold the tower.`,
     raidAbandoned: (a) => `No one held channel ${a[0]}, so the foes there struck the tower and went back into the Mist.`,
     rested: (a) => `Your lamp gathered light at the tower while you were away. Rested bonus ${a[0]} (double exp from kills)`,

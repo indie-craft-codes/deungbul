@@ -7,7 +7,7 @@ const plural = (n: number, word: string) => `${num(n)} ${word}${n === 1 ? '' : '
 
 export const textEn: GuideText = {
   page: {
-    title: 'Lamp Tower Codex',
+    title: 'Lampkeeper Codex',
     subtitle: 'Every number and rule the game actually uses. Odds are the real values.',
     filterLabel: 'Filter',
     filterPlaceholder: 'Filter by name',
@@ -43,7 +43,7 @@ export const textEn: GuideText = {
   },
   start: {
     title: 'Getting started',
-    intro: 'Lamp Tower is a quarter-view MMORPG that runs in the browser. You join right away under a random name, and you can change it by tapping your name at the top left. There are no accounts: the browser keeps a secret value that brings your character back.',
+    intro: 'Lampkeeper is a quarter-view MMORPG that runs in the browser. You join right away under a random name, and you can change it by tapping your name at the top left. There are no accounts: the browser keeps a secret value that brings your character back.',
     controlsHead: 'Controls (PC)',
     touch: 'On a phone you move with the on-screen joystick and use the on-screen buttons for skills, potions and auto-hunt.',
     flowHead: 'How the game flows',

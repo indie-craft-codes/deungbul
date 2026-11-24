@@ -1,5 +1,5 @@
 // 플레이어: 생성, 저장 값 주고받기, 성장(경험치와 불씨).
-import { CLASS_IDS, ECON_HUNT, ITEMS, LEVEL, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, nextNeed } from '../../../shared/defs';
+import { CLASS_IDS, ECON_HUNT, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, needFor, nextNeed, itemDef } from '../../../shared/defs';
 import type { PlayerSave } from '../../store';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
@@ -7,13 +7,6 @@ import { clamp, type Ent } from '../entity';
 import type { Game } from '../game';
 import { isField } from '../layers';
 import { Shop } from './shop';
-
-/**
- * 호환: 다음 배포에서 뺀다 (false로 바꾸거나, 이 상수와 Saver.legacySave를 함께 지운다).
- * 게임의 칸(퀘스트, 기여, 기여 단계, 휴식)을 ext로 옮긴 배포 한 번 동안은 옛 최상위 칸에도 함께 적는다: 코드를 이전으로 되돌려도 진행이 남는다.
- * 옛 칸을 읽는 길(Saver.legacy)은 이것과 무관하게 계속 둔다.
- */
-const WRITE_OLD_CELLS = true;
 
 export class Players {
   /** 개발용: 접속 위치를 바꾼다 (부활 위치는 그대로 등탑 앞). */
@@ -64,7 +57,9 @@ export class Players {
     if (save) {
       // 저장된 값은 믿되, 깨진 값이 섞여 있어도 서버가 죽지 않게 범위를 잡는다
       const n = (v: unknown, min: number, max: number, def: number) => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), min, max) : def);
-      p.lv = n(save.lv, 1, 999, 1); p.need = n(save.need, 1, 1e9, LEVEL.firstNeed); p.exp = n(save.exp, 0, p.need, 0);
+      // 다음 레벨까지의 필요 경험치는 저장된 값이 아니라 레벨에서 다시 구한다 (체력과 같다): 레벨 업이 쓰는 수열과 같은 함수라 어긋날 수 없다.
+      // 전에는 저장 값을 상한 1e9로 잘라 읽어서, 필요 경험치가 그것을 넘는 레벨(57부터)에서 다시 접속하면 필요 경험치가 줄었다
+      p.lv = n(save.lv, 1, 999, 1); p.need = needFor(p.lv); p.exp = n(save.exp, 0, p.need, 0);
       // 시스템마다 저장해 둔 몫(장비, 우편, 일일 임무)을 읽는다. 깨진 값은 그 시스템이 걸러 낸다
       const ext = typeof save.ext === 'object' && save.ext !== null ? save.ext : {};
       this.vitals = null;
@@ -76,8 +71,8 @@ export class Players {
       p.hp = p.maxHp;
       p.sparks = n(save.sparks, 0, 1e9, 0);
       p.gold = n(save.gold, 0, 1e9, 0);
-      if (isItemId(save.weapon) && ITEMS[save.weapon].kind === 'weapon') p.weapon = save.weapon;
-      if (isItemId(save.armor) && ITEMS[save.armor].kind === 'armor') p.armor = save.armor;
+      if (isItemId(save.weapon) && itemDef(save.weapon).kind === 'weapon') p.weapon = save.weapon;
+      if (isItemId(save.armor) && itemDef(save.armor).kind === 'armor') p.armor = save.armor;
       p.items = Shop.readItems(save.items);
       p.auto = save.auto === true;
       // 마지막으로 있던 자리에서 시작한다 (개발용 접속 위치가 정해져 있으면 그쪽이 먼저다)
@@ -125,9 +120,8 @@ export class Players {
   export(p: Ent): PlayerSave {
     const ext: Record<string, unknown> = {};
     for (const s of this.g.saves) ext[s.name] = s.save(p);
-    const out: PlayerSave = { ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, seen: this.g.now(), gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, cls: p.cls, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
-    if (WRITE_OLD_CELLS) for (const s of this.g.saves) Object.assign(out, s.legacySave?.(p));
-    return out;
+    // 시스템의 몫은 ext에만 적는다. 옛 최상위 칸은 읽기만 한다 (spawn의 Saver.legacy): 칸을 옮긴 배포 한 번 동안 함께 적던 것은 껐다
+    return { ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, seen: this.g.now(), gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, cls: p.cls, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
   }
 
   rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; this.g.rank.renamed(p); this.g.fire('playerRenamed', p); }

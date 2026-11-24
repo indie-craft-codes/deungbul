@@ -27,7 +27,7 @@ export const DEFAULT_CLASS: ClassId = 'warrior';
 
 export const HP_PER_LEVEL = 15;
 
-/** 전투 공통 수치: 치명타와 자연 회복 (서버의 systems/combat.ts가 읽는다) */
+/** 전투 공통 수치: 치명타와 자연 회복 (서버의 engine/server/game/systems/combat.ts가 읽는다) */
 export const COMBAT = {
   /** 기본 공격이 치명타가 될 확률 (장비 옵션과 능력치의 치명타 확률이 여기에 더해진다) */
   critChance: 0.15,

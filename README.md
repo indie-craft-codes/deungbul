@@ -295,7 +295,7 @@ data/, dist/             저장 파일과 빌드 결과 (저장소 뿌리, git�
 - 이 게임에만 있는 규칙은 `games/deungbul/server/systems/`에 시스템을 만든 뒤 `installDeungbul`과 그 위의 `interface GameSystems` 선언에 한 줄씩 더한다. 플러그인은 바탕 시스템 뒤, 상점 앞에서 불리므로 생성자에서는 등록만 한다. 뒤에 만들어지는 시스템의 접점을 채우는 일은 `g.ready.push(() => …)`에 넣는다.
 - 틀의 시스템이 게임의 규칙을 알아야 할 때는 직접 부르지 않고, 틀 쪽에 선택 접점을 두고 게임이 채운다(`g.rules`, `Channels.extraFoes`·`busy`, `worldSaves`의 `legacy`). 게임의 규칙이 틀을 부르는 것은 된다(예: 등탑이 `g.daily.add(p, 'offer', n)`).
 - **확장 지점**: 틀이 가진 목록(안내문 종류, 메시지 종류, 공유 상태의 칸, 사건, `Game`의 시스템 칸, 엔티티 칸, `g.rules`의 칸, 보정 이름, 언어 묶음의 모양)은 게임이 선언 병합으로 넓힌다. 넓힐 자리는 빈 인터페이스로 `engine/shared/ext.ts`(`MsgMap`, `ServerMsgs`, `ClientMsgs`, `WorldState`), `engine/server/game/ext.ts`(`GameSystems`, `EntExt`, `HooksExt`, `RulesExt`, `ModsExt`), `engine/client/i18n/ext.ts`(`LocaleExt`)에 모여 있고, 이 게임의 선언은 `games/deungbul/shared/deungbul.ts`(안내문, 메시지, 공유 상태), `games/deungbul/server/deungbul.ts`(시스템 칸, 사건), `games/deungbul/client/i18n/index.ts`(문장의 모양)에 있다. 공용 선언 파일은 아무도 import하지 않고 `tsconfig.json`의 `include`(`games/deungbul`)로 컴파일에 들어간다. 새 안내문·메시지·공유 상태 칸·사건이 이 게임의 것이면 틀의 파일(`engine/shared/messages.ts`, `protocol.ts`, `game.ts`)이 아니라 이 선언 파일들에 적는다. 선언에서 빼면 그것을 쓰는 코드가 컴파일되지 않는다. 엔티티에 칸을 더할 때는 `EntExt`에 선언하고 `g.entInit.push((e) => { … })`로 처음 값을 채운다(플러그인이 설치되는 동안 등록한다). `RulesExt`의 칸은 선택(`?`)으로 선언한다. `declare module`은 이 선언 파일들에서 세 `ext.ts`만 가리킨다(`engine/test/framework.test.ts`가 검사한다).
-- **캐릭터 저장의 칸**: 시스템은 `g.saves.push({ name, save, load })`로 자기 몫을 `PlayerSave.ext[name]`에 쓰고 읽는다. 이 게임의 칸은 퀘스트(`ext.quest`), 기여(`ext.tower`), 기여 단계(`ext.keepers`), 휴식 보너스(`ext.rest`)이고 각각 `quests.ts`, `tower.ts`, `keepers.ts`, `rest.ts`가 맡는다. 값이 `PlayerSave`의 최상위 칸에 있던 옛 저장은 `legacy: (whole) => …`가 찾아 읽는다(둘 다 있으면 `ext`가 이긴다). 이 읽는 길은 지우지 않는다(쓰는 쪽의 호환은 아래 '저장·프로토콜의 호환').
+- **캐릭터 저장의 칸**: 시스템은 `g.saves.push({ name, save, load })`로 자기 몫을 `PlayerSave.ext[name]`에 쓰고 읽는다. 이 게임의 칸은 퀘스트(`ext.quest`), 기여(`ext.tower`), 기여 단계(`ext.keepers`), 휴식 보너스(`ext.rest`)이고 각각 `quests.ts`, `tower.ts`, `keepers.ts`, `rest.ts`가 맡는다. 값이 `PlayerSave`의 최상위 칸에 있던 옛 저장은 `legacy: (whole) => …`가 찾아 읽는다(둘 다 있으면 `ext`가 이긴다). 이 읽는 길은 지우지 않는다. 쓸 때는 `ext`에만 쓴다(아래 '저장·프로토콜의 호환').
 - **개인 상태**: 본인에게만 알리는 값은 시스템이 `g.personal.push({ name, state: (p) => 값 })`으로 등록하고, 통신 계층이 `{ t: 'me', k: name, s: 값 }`으로 보낸다: 접속 직후에 전부, 그 뒤로는 바뀐 칸만(모두에게 보내는 `g.shared`의 짝). `dirty`를 주지 않으면 그 연결에 마지막으로 보낸 값과 달라졌을 때 가고, `dirty: (p) => boolean`을 주면 그것이 참일 때 간 뒤 `sent(p)`가 불린다. 틀은 칸의 이름도 모양도 모른다. 이 게임의 칸은 퀘스트 진행(`quest`), 기여(`contrib`), 기여 단계(`tier`), 휴식 보너스(`rested`)이고 모양은 `games/deungbul/shared/deungbul.ts`의 `MeState`다. 불씨는 틀의 두 번째 재화라 `stat`에 남는다.
 - 아무것도 하지 않은 새 캐릭터는 저장하지 않는다. 틀은 자기 칸(직업, 레벨, 경험치, 골드, 불씨)만 보고, 게임의 진행은 `g.rules.touched`가 답한다(이 게임에서는 퀘스트). 처치 경험치에 덧붙는 값은 `g.killBonus.push((p, m) => n)`으로 등록한다(휴식 보너스).
 
@@ -317,10 +317,10 @@ data/, dist/             저장 파일과 빌드 결과 (저장소 뿌리, git�
 - **화면의 뼈대와 스타일**: 뼈대(`games/deungbul/client/index.html`의 body)와 틀의 스타일(`engine/client/style.css`)에는 틀의 창(내 정보, 대화, 상점, 대장간, 던전, 가방, 메뉴, 접속 화면 등)만 있다. 이 게임의 창(등탑 창, 퀘스트 창과 길잡이 화살표, 습격 알림, 내 정보의 불씨·휴식·등탑·기여·습격 표시, '마을로' 단추)은 `games/deungbul/client/markup.ts`가 `engine/client/hud/shell.ts`의 `mountPanel(자리, html)`로 틀의 빈 자리에 붙이고, 모양은 `deungbul.css`에 있다. 자리의 목록은 `shell.ts`의 `SLOTS`에 있고, 감싸는 요소 없이 그 자리의 형제로 붙는다. 붙이는 일은 게임의 진입점이 `startClient`를 부르기 전에 한다: 화면 코드가 init에서 요소를 잡기 전이어야 하기 때문이다. 틀의 스타일은 틀의 진입 모듈(`engine/client/main.ts`)이 맨 먼저 읽고 게임의 스타일은 그 뒤에 읽히므로 같은 무게의 규칙은 게임 쪽이 이기고, 색 변수(`--gold`, `--panel` 등)는 틀이 기본값을 갖고 게임이 덮어쓴다. 새 창이 이 게임의 것이면 `index.html`과 `style.css`가 아니라 `markup.ts`와 `deungbul.css`에 적는다(`framework.test.ts`가 뼈대와 틀의 스타일에 게임의 창이 남아 있지 않은지 검사한다). 뼈대의 파일 자체는 아직 게임의 폴더에 있다: `index.html`의 머리(제목, 아이콘, manifest)와 script는 게임의 것이고 body는 틀의 것이라, 다른 게임은 지금은 body를 그대로 베껴야 한다(뼈대를 `shell.ts`가 붙이게 올리는 일이 남아 있다).
 - 화면 빌드(`vite.config.ts`): 뿌리는 `games/deungbul/client`(그 안의 `index.html`, `guide.html`, `public/`), 결과는 저장소 뿌리의 `dist/`다. 틀의 코드는 뿌리 밖(`engine/client`)에 있어 개발 서버는 저장소 전체를 읽게 열어 둔다(`server.fs.allow`).
 
-*저장·프로토콜의 호환* (다음 배포에서 끌 것들)
+*저장·프로토콜의 호환*
 
-- 캐릭터 저장: 이 게임의 네 칸을 `ext`로 옮긴 배포 한 번 동안은 `legacySave`로 옛 최상위 칸에도 함께 쓴다(`engine/server/game/systems/players.ts`의 `WRITE_OLD_CELLS`). 다음 배포에서 끈다(그때 `games/deungbul/test/framework.test.ts`의 "옛 최상위 칸이 함께 적힌다" 검사도 함께 고친다. 끈 뒤에는 3단계 이전 코드로 되돌리면 이 네 칸을 잃는다). 옛 칸을 읽는 길(`legacy`)은 계속 둔다.
-- 개인 상태: 통로를 옮긴 배포 한 번 동안은 옛 화면이 읽던 `quest` 메시지와 `stat`의 `contrib·rested·tier` 칸도 전과 같은 모양·때에 함께 보내고(`games/deungbul/server/deungbul.ts`의 `SEND_OLD_MSGS`, 틀 쪽 접점은 `g.oldMsgs`), 새 화면은 옛 서버의 것도 받는다. 다음 배포에서 끄면서 `PROTOCOL`을 올린다(서버를 먼저 재시작하고 곧바로 화면을 올린다. 화면 쪽의 `onMsg('quest')`·`onMsg('stat')` 호환 처리기와 `games/deungbul/shared/deungbul.ts`의 `ServerMsgs.quest`·`OldStatCells`도 함께 지운다).
+- 캐릭터 저장: 이 게임의 네 칸(퀘스트, 기여, 기여 단계, 휴식)은 `ext`에만 쓴다. 칸을 옮긴 배포 한 번 동안 옛 최상위 칸(`quest`, `contrib`, `tier`, `rested`)에도 함께 쓰던 것(`WRITE_OLD_CELLS`, `Saver.legacySave`)은 껐고 코드도 지웠다. 옛 칸을 읽는 길(`legacy`)은 계속 둔다: 옛 저장은 그대로 읽히고, 다시 저장될 때 새 칸만 남는다. 이 커밋부터는 3단계 이전 코드로 되돌리면 그 뒤에 저장된 캐릭터의 이 네 칸을 잃는다(그 직전 커밋이 되돌릴 수 있는 마지막 지점이다).
+- 개인 상태: 퀘스트 진행과 기여·기여 단계·휴식 보너스는 `me` 메시지로만 간다. 통로를 옮긴 배포 한 번 동안 옛 화면을 위해 함께 보내던 `quest` 메시지와 `stat`의 `contrib·rested·tier` 칸(`SEND_OLD_MSGS`, `g.oldMsgs`), 새 화면이 옛 서버의 것을 받던 처리기는 지웠고, 그러면서 `PROTOCOL`을 2로 올렸다. 배포는 서버를 먼저 재시작하고 곧바로 화면을 올린다: 그 사이에 열려 있던 옛 화면은 다시 접속할 때 새로고침 안내를 본다.
 - 메시지의 모양이나 뜻을 바꾸면 `engine/shared/protocol.ts`의 `PROTOCOL`을 올린다. 옛 화면은 접속할 때 새로고침 안내를 본다.
 - 맵이나 저장 형식을 고치면 `npm test`의 `framework`가 맵 지문과 저장 견본(`games/deungbul/test/fixtures/`)으로 확인한다. 맵을 일부러 바꿨으면 지문 값을 새로 적는다. 폴더 이동(9단계)은 저장 형식과 프로토콜을 건드리지 않았다.
 
@@ -329,6 +329,10 @@ data/, dist/             저장 파일과 빌드 결과 (저장소 뿌리, git�
 - **시험도 둘로 나뉜다**: 틀의 기능을 보는 시험은 `engine/test/이름.test.ts`(`test/all.ts`의 `ENGINE`)에 두고 `new Game()`으로 돌린다. 등탑·습격·퀘스트·등탑지기·휴식처럼 이 게임의 규칙을 보는 시험은 `games/deungbul/test/이름.test.ts`(`GAME`)에 두고 `newGame()`으로 돌린다. 틀의 시험이 게임의 규칙에 달린 것(잠금, 직업을 바꾸는 자리)을 봐야 할 때는 시험용 규칙을 넣는다(`g.rules.unlocked = (key) => …`, `g.rules.canChangeClass = …`). 틀의 시험 파일은 이 게임의 규칙·선언·화면·시험을 import하지 않는다(`framework.test.ts`가 import를 따라가 검사하고, `npm run test:engine`이 실행 중에 게임의 규칙 파일이 하나도 로드되지 않았는지 확인한다). 명령: `npm test`(전부), `npm run test:engine`(틀만), `npm run test:game`(이 게임만), `npx tsx test/all.ts growth deungbul/quests`(고른 것만: 이 게임의 시험은 예전처럼 앞에 `deungbul/`을 붙인다).
 - 틀의 시험은 아직 등불지기의 내용(맵 좌표, 몬스터·아이템 id) 위에서 돈다: 이 게임만의 이름(`TOWER`, `POND`, `SHOP`, `SMITHY` 등)이 필요한 시험은 게임의 통로를 별칭으로 읽고(`@game/shared/defs`, `@game/shared/world`), 저장 견본도 게임의 `test/fixtures/`를 읽는다. 틀의 시험이 `@game`으로 읽어도 되는 것은 이 둘뿐이다(`framework.test.ts`). 이것을 떼는 일이 13단계다.
 - 시험의 가짜 클라이언트: 틀의 `Peer`(`engine/test/harness.ts`)는 틀의 메시지만 읽고, 게임의 칸은 `games/deungbul/test/peer.ts`의 `connectDeungbul`이 `connect(port, name, token, onMsg)`로 넘겨받아 채운다.
+
+**레벨과 필요 경험치**: 다음 레벨까지의 필요 경험치는 저장하지만 읽지 않는다. 접속할 때 레벨에서 다시 구한다(`needFor`: 레벨 업이 쓰는 수열과 같은 함수). 레벨 상한은 없고(읽을 때만 999), 필요 경험치는 Lv 110에서 Number의 안전한 정수 범위를 넘는다.
+
+**문장 속의 수와 이름**: 문장에 들어가는 수(레벨당 능력치 점수, 강화 한도, 파티 인원, 자리 비움 사냥 한도, 길드 이름 길이, 거래소의 가장 싼 값)는 언어 파일이 내용 정의에서 읽는다. 서버 안내문의 인자를 늘리지 않는다. 피드의 보상 줄은 한국어 '이름 +N', 영어 '+N unit'으로 적는다. 영어 게임 이름은 Lampkeeper이고, 홈 화면 이름(manifest, `apple-mobile-web-app-title`)은 언어와 무관하게 '등불지기'다.
 
 **재시작과 자리 비움 사냥**: 서버를 끌 때(`scripts/restart.sh`의 저장하고 끄기) 사냥 중이던 캐릭터(자리 비움 사냥 중인 것과, 자동 사냥을 켠 채 접속해 있던 것)의 목록을 월드 저장의 `awayAtClose` 칸에 적고, 켤 때 다시 세워 이어서 사냥하게 한다(`engine/server/net/server.ts`). 목록이 없으면(갑자기 죽었을 때) 마지막 저장 무렵에 자동 사냥을 켠 채 저장된 캐릭터를 찾아 세운다. 주인이 접속하면 평소처럼 넘겨받고, 하루 한도·레벨·수의 제한은 그대로다.
 
@@ -378,3 +382,20 @@ data/, dist/             저장 파일과 빌드 결과 (저장소 뿌리, git�
 
 검증판 범위의 기능은 모두 들어갔고, 주민 세 명의 혜택도 모두 정식 기능이 됐다. 
 알려진 한계: 길찾기는 고정된 장애물(집, 나무, 연못)만 피한다. 캐릭터끼리는 서로 지나다닌다.
+
+## 예제 게임
+
+`games/sample`("모닥불 사냥터")은 같은 틀로 만든 아주 작은 두 번째 게임이다. 틀이 다른 게임을 받는지 확인하는 본보기이고, 새 게임을 만들 때 베끼는 출발점이다. 만드는 차례는 [docs/making-a-game.md](docs/making-a-game.md)에 있다.
+
+- 직업 둘, 몬스터 셋, 지역 하나, 상인 하나, 이 게임만의 규칙 하나(모닥불에 장작을 넣으면 곁에 있는 동안 회복이 빨라진다). 던전, 대장간, 보스, 불씨는 없다.
+- 등불지기와 따로 돈다: 별칭 `@game`이 `games/sample`을 가리키는 자기 설정(`games/sample/tsconfig.json`, `vite.config.ts`), 포트 3002, 저장 `data/sample/`, 빌드 결과 `dist-sample/`.
+
+```
+npm run build:sample && npm run start:sample   # http://localhost:3002
+npm run dev:sample             # 개발: 서버(3002) + 클라이언트(5174)
+npm run test:sample            # 예제의 시험 + 문서의 코드 조각이 예제와 같은지
+npm run typecheck:sample       # 틀 + 예제
+npm run typecheck:engine:sample   # 틀만, 예제의 내용으로 (틀에 등불지기의 id가 박혀 있으면 여기서 드러난다)
+```
+
+틀(`engine/`)이나 내용 계약을 고치면 예제도 통과해야 한다. `npm run typecheck`가 예제까지 검사한다.

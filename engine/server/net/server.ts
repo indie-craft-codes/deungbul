@@ -402,7 +402,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       if (me.dirty) {
         me.dirty = false;
         const stat: Extract<ServerMsg, { t: 'stat' }> = { t: 'stat', maxHp: me.maxHp, lv: me.lv, exp: me.exp, need: me.need, sparks: me.sparks, gold: me.gold, weapon: me.weapon, armor: me.armor, cls: me.cls, items: me.items };
-        send(c, game.oldMsgs?.stat(me, stat) ?? stat); // 호환: 다음 배포에서 뺀다 (stat을 그대로 보낸다)
+        send(c, stat);
       }
       if (me.metaDirty) {
         me.metaDirty = false;
@@ -417,8 +417,6 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         c.mine.set(it.name, json);
         it.sent?.(me);
         send(c, { t: 'me', k: it.name, s });
-        const old = game.oldMsgs?.msg(me, it.name); // 호환: 다음 배포에서 뺀다 (이 두 줄)
-        if (old) send(c, old);
       }
     }
     for (const n of game.notices) { const c = byEnt.get(n.id); if (c) send(c, { t: 'sys', k: n.k, a: n.a }); }
