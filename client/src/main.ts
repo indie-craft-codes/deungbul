@@ -4,6 +4,7 @@
 //   actions   플레이어가 할 수 있는 일     input     마우스, 터치, 키보드
 //   hud/      패널, 대화창, 이름표         i18n/     언어
 //   bus       모듈이 스스로 끼어드는 자리   modules   덧붙는 기능 모듈의 목록
+import { PROTOCOL } from '../../shared/protocol';
 import { dispatch, onMsg, runFrame, runSlow } from './bus';
 import { initModules } from './modules';
 import { steer } from './actions';
@@ -92,10 +93,25 @@ function lost(code: number): void {
 }
 onMsg('welcome', () => { retryMs = 2000; clearTimeout(retryTimer); });
 
+// 서버의 프로토콜 번호가 이 화면의 것과 다르다(서버만 새 버전이고 화면은 옛 빌드가 남았다): 게임을 진행하지 않고 새로고침을 권한다.
+// 번호를 보내지 않는 옛 서버에는 지금처럼 그냥 접속한다. 한번 어긋난 것을 안 뒤로는 메시지를 처리하지 않고 다시 접속하지도 않는다.
+let stale = false;
+function outdated(): void {
+  stale = true;
+  showGate('stale', true);
+  const btn = $('joinBtn');
+  btn.setAttribute('data-i18n', 'reload'); // 언어를 바꿔도 따라 바뀌게 한다
+  btn.textContent = t('reload');
+}
+
 initNet({
-  message: (m) => dispatch(m, performance.now()),
+  message: (m) => {
+    if (stale) return;
+    if (m.t === 'welcome' && m.v !== undefined && m.v !== PROTOCOL) { outdated(); return; }
+    dispatch(m, performance.now());
+  },
   opening: () => { clearEntities(); setParty([]); showGate('connecting', false); },
-  closed: (code) => { clearEntities(); lost(code); },
+  closed: (code) => { clearEntities(); if (!stale) lost(code); },
 });
 
 /**
@@ -123,7 +139,7 @@ resize();
 
 // 이름을 묻지 않고 바로 들어간다. 처음이면 무작위 이름이 붙고, 이름은 화면에서 눌러 바꾼다.
 // 개발 편의: 주소에 ?auto=이름 을 붙이면 처음 접속할 때 그 이름을 쓴다.
-$('joinForm').addEventListener('submit', (ev) => { ev.preventDefault(); connect(); });
+$('joinForm').addEventListener('submit', (ev) => { ev.preventDefault(); if (stale) location.reload(); else connect(); });
 connect(new URLSearchParams(location.search).get('auto') ?? undefined);
 
 setInterval(() => { if (S.me) send({ t: 'ping', c: performance.now() }); }, 2000);

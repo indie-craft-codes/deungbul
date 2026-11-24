@@ -70,6 +70,8 @@ export const ko = {
     title: '등불지기',
     connecting: '접속 중…',
     disconnected: '서버와 연결이 끊어졌습니다.',
+    stale: '새 버전이 나왔습니다. 새로고침해 주세요.',
+    reload: '새로고침',
     reconnecting: '연결이 끊어져 다시 접속하는 중입니다…',
     channel: '채널',
     soundOn: '소리 켬',

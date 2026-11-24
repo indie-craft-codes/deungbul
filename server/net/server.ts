@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { AWAY } from '../../shared/auto';
 import type { MsgArg, MsgKey } from '../../shared/messages';
-import type { ServerMsg } from '../../shared/protocol';
+import { PROTOCOL, type ServerMsg } from '../../shared/protocol';
 import { CHAT_MAX, NAME_MAX, SNAP_EVERY, TICK_MS } from '../../shared/world';
 import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
@@ -196,7 +196,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         byEnt.set(kept.id, c);
         kept.dirty = true; kept.questDirty = true; kept.metaDirty = true;
         game.away.stop(kept);
-        send(c, { t: 'welcome', id: kept.id, name: kept.name, x: r2(kept.x), z: r2(kept.z), auto: true });
+        send(c, { t: 'welcome', id: kept.id, name: kept.name, x: r2(kept.x), z: r2(kept.z), auto: true, v: PROTOCOL });
         send(c, { t: 'world', s: game.state() });
         game.party.resend(kept.id);
         game.channels.tell(kept); // 있던 채널 그대로다: 화면에 다시 알린다
@@ -213,7 +213,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (let i = 0; i < 5 && taken(name, undefined, c.key); i++) name = ([...name].slice(0, NAME_MAX - 3).join('') + (100 + Math.floor(Math.random() * 900)));
     c.ent = game.players.spawn(name, false, save, c.key ?? '');
     byEnt.set(c.ent.id, c);
-    send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: c.ent.auto || undefined });
+    send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: c.ent.auto || undefined, v: PROTOCOL });
     send(c, { t: 'world', s: game.state() });
     broadcast(sys('joined', name));
     saveTogether(); // 접속하며 받은 것(맡아 둔 우편)이 월드에서 빠진 것과 함께 저장되게

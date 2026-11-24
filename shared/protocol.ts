@@ -5,6 +5,12 @@ import type { GuildView, MarketItem } from './content/social';
 import type { RaidPhase } from './content/raid';
 import type { MsgArg, MsgKey } from './messages';
 
+/**
+ * 프로토콜 번호. 서버가 welcome에 실어 보내고, 클라이언트는 자기 빌드의 번호와 다르면 새로고침을 권한다
+ * (서버만 새로 올라가고 화면은 옛 빌드가 남아 있는 때). 메시지의 모양이나 뜻을 바꾸면 올린다. 칸을 덧붙이기만 한 것은 올리지 않는다.
+ */
+export const PROTOCOL = 1;
+
 /** 'p' 플레이어, 'm' 몬스터 */
 export type Kind = 'p' | 'm';
 
@@ -123,8 +129,11 @@ export type ServerMsg =
   | { t: 'party'; m: PartyMember[] }
   /** 파티 초대를 받았다: 보낸 사람과 유효 시간(초) */
   | { t: 'pinv'; id: number; name: string; s: number }
-  /** auto: 자동 사냥을 켠 채로 나갔던 캐릭터다 (자리를 비운 동안 사냥하던 캐릭터를 이어받았거나, 저장에서 읽었다) */
-  | { t: 'welcome'; id: number; name: string; x: number; z: number; auto?: boolean }
+  /**
+   * auto: 자동 사냥을 켠 채로 나갔던 캐릭터다 (자리를 비운 동안 사냥하던 캐릭터를 이어받았거나, 저장에서 읽었다)
+   * v: 서버의 프로토콜 번호(PROTOCOL). 이 칸이 생기기 전의 서버는 보내지 않는다
+   */
+  | { t: 'welcome'; id: number; name: string; x: number; z: number; auto?: boolean; v?: number }
   | {
       t: 'snap';
       /** 접속자 수 */
