@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["shared", "server", "client/src"],
+  "exclude": [
+    "shared/deungbul.ts",
+    "shared/content/tower.ts",
+    "shared/content/raid.ts",
+    "shared/content/residents.ts",
+    "shared/content/quests.ts",
+    "server/game/deungbul.ts",
+    "server/game/systems/tower.ts",
+    "server/game/systems/raid.ts",
+    "server/game/systems/keepers.ts",
+    "server/game/systems/quests.ts",
+    "client/src/hud/quest.ts",
+    "client/src/hud/marks.ts",
+    "client/src/scene/scenery.ts",
+    "client/src/guide"
+  ]
+}

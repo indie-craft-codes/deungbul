@@ -1,11 +1,13 @@
 // 서버가 플레이어에게 보내는 안내문의 종류.
 // 서버는 문장을 보내지 않고 종류(k)와 값(a)만 보낸다. 문장은 클라이언트의 언어 파일이 만든다.
 // 새 안내문을 더하면 모든 언어 파일이 그 문장을 갖춰야 컴파일된다.
+import type { MsgMap } from './ext';
 
 export type MsgArg = string | number;
 
 /** 종류별로 a에 들어가는 값은 주석에 적는다. id류(몬스터, 주민)는 클라이언트가 이름으로 바꾼다. */
 export type MsgKey =
+  | keyof MsgMap // 게임이 더한 안내문 (shared/ext.ts의 MsgMap. 이 게임의 것은 shared/deungbul.ts)
   | 'joined' // [이름]
   | 'left' // [이름]
   | 'renamed' // [이전 이름, 새 이름]
@@ -16,25 +18,9 @@ export type MsgKey =
   | 'kill' // [몬스터 id, 경험치, 불씨, 골드]
   | 'levelUp' // [레벨]
   | 'died' // [다시 일어난 등탑 id]
-  | 'offerFar' // []
-  | 'noSparks' // []
-  | 'towerFull' // []
-  | 'noResident' // []
-  | 'offered' // [바친 수, 누적 기여, 'tower' 또는 'resident']
-  | 'stageChanged' // [단계 0~2, 등탑 id]
-  | 'towerLit' // [등탑 id] 꺼져 있던 등탑이 켜졌다
-  | 'residentBack' // [주민 id]
-  | 'raidSoon' // [남은 초]
-  | 'raidStart' // [적의 수]
-  | 'raidWon' // [밝기 변화]
-  | 'raidLost' // [밝기 변화]
-  | 'raidReward' // [불씨, 경험치]
-  | 'questStep' // [경험치, 불씨] 단계를 마침
-  | 'questDone' // [장 id] 장을 마침
   | 'bought' // [아이템 id, 직업 id]
   | 'classChanged' // [직업 id]
   | 'classFar' // []
-  | 'tierUp' // [단계, 골드] 기여 단계가 올랐다
   | 'bossUp' // [몬스터 id] 필드 보스가 나타났다
   | 'bossDown' // [몬스터 id, 함께 싸운 사람 수]
   | 'shopFar' // []
@@ -66,7 +52,6 @@ export type MsgKey =
   | 'channelFight' // [] 싸우는 중에는 바꿀 수 없다
   | 'channelWait' // [남은 초] 방금 바꿨다
   | 'channelFull' // [채널 번호] 그 채널이 가득 찼다
-  | 'raidElsewhere' // [채널 번호] 습격의 적이 내 채널에는 없고 그 채널에 있다
   | 'statNone' // [] 찍을 점수가 없다
   | 'statReset' // [] 능력치를 모두 돌려받았다
   | 'skillUp' // [기술 id, 단계]
@@ -84,7 +69,6 @@ export type MsgKey =
   | 'marketCanceled' // [] 올린 물건을 내렸다
   | 'marketMailFull' // [우편 한도] 물건이 붙은 우편이 너무 많아 거래소에서 올리거나 살 수 없다
   | 'marketCrowded' // [] 거래소 전체에 올라온 물건이 한도에 닿아 더 올릴 수 없다
-  | 'raidAbandoned' // [채널 번호] 그 채널을 지키는 사람이 없어, 남은 적이 등탑을 치고 사라졌다
   | 'chatWait' // [] 같은 주소(또는 서버 전체)의 대화가 너무 많아 방금 한 말이 전해지지 않았다
   | 'marketNeedLv' // [필요한 레벨]
   | 'guildGuest' // [] 손님은 길드에 들 수 없다

@@ -1,9 +1,10 @@
 import type { DailyState, Gear, Mail, MonsterDef } from '../../shared/defs';
 import type { Point } from '../../shared/nav';
 import type { Kind } from '../../shared/protocol';
+import type { EntExt } from './ext';
 
-/** 월드에 있는 것 하나: 플레이어 또는 몬스터. */
-export interface Ent {
+/** 월드에 있는 것 하나: 플레이어 또는 몬스터. 게임에만 있는 칸은 EntExt(./ext.ts)에 게임이 더한다 */
+export interface Ent extends EntExt {
   id: number; kind: Kind; type: string; name: string;
   x: number; z: number; face: number;
   tx: number; tz: number; moving: boolean; stuck: number;
