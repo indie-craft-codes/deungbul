@@ -1,13 +1,29 @@
-// 3D 화면: 렌더러, 카메라, 빛, 지형과 나무. 게임 규칙은 모른다. 건물은 scene/scenery.ts가 세운다.
+// 3D 화면: 렌더러, 카메라, 빛, 지형과 나무. 게임 규칙도, 이 게임의 맵도 모른다.
+// 땅과 잎의 색, 건물, 분위기의 값은 게임이 넘긴다 (Look, setMood). 그 밖의 물체는 게임이 scene에 직접 더한다.
 import * as THREE from 'three';
-import type { Stage } from '../../../shared/defs';
-import { MAX_X, MAX_Z, MIN_X, MIN_Z, POND, TOWERS, ZONE_SPLIT, onPath, rng, zoneOf, type World } from '../../../shared/world';
+import { MAX_X, MAX_Z, MIN_X, MIN_Z, rng, type World } from '../../../shared/world';
 import { mat } from './models';
-import { Scenery } from './scenery';
 
 const SKY = 0xa9cdd0;
 const CAM_DIR = new THREE.Vector3(1, 1.25, 1).normalize();
 export type Ring = THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+
+/** 장면의 분위기: 하늘빛(안개도 같은 색), 두 빛의 세기, 안개가 끼기 시작하는 거리와 다 덮는 거리 */
+export interface Mood { sky: number; hemi: number; sun: number; fogNear: number; fogFar: number }
+
+/** 게임이 넘기는 지형의 겉모습. 넘기지 않은 것은 기본(한 가지 풀빛, 한 가지 잎 색 묶음, 건물 없음)으로 그린다 */
+export interface Look {
+  /** 땅의 삼각형 하나의 색을 c에 적는다. (x, z)는 삼각형의 가운데, j는 삼각형마다 다른 0~1의 난수 */
+  ground?: (x: number, z: number, j: number, c: THREE.Color) => void;
+  /** 나무 한 그루의 잎 색. k는 나무마다 다른 0~1의 값 */
+  leaf?: (x: number, z: number, k: number) => number;
+  /** 땅을 깐 바로 뒤에 한 번 불린다: 게임의 건물과 지형물을 장면에 더한다 */
+  scenery?: (scene: THREE.Scene, world: World) => void;
+}
+const GRASS = [new THREE.Color(0x74ad5e), new THREE.Color(0x5f9a52)];
+const LEAVES = [0x3f8a4f, 0x4c9a52, 0x357a4a, 0x5aa45a, 0x6aa04a];
+const plainGround = (_x: number, _z: number, j: number, c: THREE.Color): void => { c.copy(GRASS[0]).lerp(GRASS[1], j); };
+const plainLeaf = (_x: number, _z: number, k: number): number => LEAVES[Math.floor(k * LEAVES.length) % LEAVES.length];
 
 
 export class View {
@@ -16,21 +32,14 @@ export class View {
   readonly camera = new THREE.PerspectiveCamera(30, 1, 1, 320);
   readonly moveMark: Ring;
   readonly targetRing: Ring;
-  /** 퀘스트 목적지에 세우는 빛기둥 */
-  readonly goalBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 14, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
   private readonly sun = new THREE.DirectionalLight(0xfff0d2, 2.3);
   private readonly hemi = new THREE.HemisphereLight(0xe6f5ff, 0x5e7050, 2.1);
-  /** 이 게임의 건물들 (마을 집, 등탑) */
-  private readonly scenery: Scenery;
   private readonly ray = new THREE.Raycaster();
   private readonly ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private readonly v = new THREE.Vector3();
-  private stage: Stage = 1;
-  private raid = false;
-  private dark = false;
   width = 1; height = 1;
 
-  constructor(canvas: HTMLCanvasElement, world: World) {
+  constructor(canvas: HTMLCanvasElement, world: World, look: Look = {}) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
@@ -47,16 +56,11 @@ export class View {
     this.sun.shadow.normalBias = 0.05;
     this.scene.add(this.sun, this.sun.target);
 
-    this.buildGround();
-    this.scenery = new Scenery(this.scene);
-    this.buildNature(world);
+    this.buildGround(look.ground ?? plainGround);
+    look.scenery?.(this.scene, world);
+    this.buildNature(world, look.leaf ?? plainLeaf);
     this.moveMark = this.ring(0.45, 0.62, 0xf0bb55);
     this.targetRing = this.ring(0.95, 1.12, 0xff6b5e);
-    this.goalBeam.position.y = 7;
-    this.goalBeam.visible = false;
-    this.scene.add(this.goalBeam);
-    TOWERS.forEach((t, i) => this.setTowerGlow(i, t.start));
-    this.applyMood();
   }
 
   /** 땅에 눕힌 고리. 이동 표시, 대상 표시, 기술 이펙트에 쓴다. */
@@ -70,7 +74,7 @@ export class View {
     return m;
   }
 
-  private buildGround(): void {
+  private buildGround(paint: NonNullable<Look['ground']>): void {
     const rnd = rng(7);
     // 월드보다 사방으로 40씩 넓게 깔아서 가장자리 너머가 비어 보이지 않게 한다
     const w = MAX_X - MIN_X + 80, h = MAX_Z - MIN_Z + 80;
@@ -81,21 +85,10 @@ export class View {
     const p = g.getAttribute('position');
     const col = new Float32Array(p.count * 3);
     const c = new THREE.Color();
-    const dirt = new THREE.Color(0xb99c6c), sand = new THREE.Color(0xd0bd88), stone = new THREE.Color(0xb9aa8c);
-    // 구역마다 풀빛이 다르다: 등불 들판은 푸르고, 잿빛 숲은 바랜 빛이다
-    const grass = [[new THREE.Color(0x74ad5e), new THREE.Color(0x5f9a52)], [new THREE.Color(0x7b8f72), new THREE.Color(0x667a62)]];
     for (let i = 0; i < p.count; i += 3) {
       const x = (p.getX(i) + p.getX(i + 1) + p.getX(i + 2)) / 3, z = (p.getZ(i) + p.getZ(i + 1) + p.getZ(i + 2)) / 3;
       const j = rnd();
-      if (TOWERS.some((t) => Math.hypot(x - t.x, z - t.z - 3.2) < 7.5)) c.copy(stone); // 등탑 앞마당
-      else if (onPath(x, z, 1.9)) c.copy(dirt);
-      else if (Math.hypot(x - POND.x, z - POND.z) < POND.r + 1.8) c.copy(sand);
-      else {
-        // 구역의 경계에서는 두 빛깔을 섞어 띠가 지지 않게 한다
-        const k = Math.min(1, Math.max(0, (x - (ZONE_SPLIT - 8)) / 16));
-        const [a0, b0] = grass[0], [a1, b1] = grass[1];
-        c.copy(a0).lerp(b0, j).lerp(new THREE.Color().copy(a1).lerp(b1, j), k);
-      }
+      paint(x, z, j, c);
       c.offsetHSL(0, 0, (j - 0.5) * 0.045);
       for (let k = 0; k < 3; k++) { col[(i + k) * 3] = c.r; col[(i + k) * 3 + 1] = c.g; col[(i + k) * 3 + 2] = c.b; }
     }
@@ -103,28 +96,19 @@ export class View {
     const ground = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, flatShading: true }));
     ground.receiveShadow = true;
     this.scene.add(ground);
-
-    const pg = new THREE.CircleGeometry(POND.r, 11);
-    pg.rotateX(-Math.PI / 2);
-    const pond = new THREE.Mesh(pg, new THREE.MeshStandardMaterial({ color: 0x4f9fb8, roughness: 0.35, metalness: 0.1, flatShading: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-    pond.position.set(POND.x, 0.05, POND.z);
-    this.scene.add(pond);
   }
 
-  private buildNature(world: World): void {
+  private buildNature(world: World, leaf: NonNullable<Look['leaf']>): void {
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.34, 1.6, 5), mat(0x7a5536), world.trees.length);
     const leaves = new THREE.InstancedMesh(new THREE.ConeGeometry(1.5, 3.2, 6), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, flatShading: true }), world.trees.length);
     const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.75, 0), mat(0x8f9590), world.rocks.length);
     const d = new THREE.Object3D(), c = new THREE.Color();
-    // 구역마다 잎의 빛깔이 다르다
-    const leafColors = [[0x3f8a4f, 0x4c9a52, 0x357a4a, 0x5aa45a, 0x6aa04a], [0x4f6b58, 0x5d7862, 0x47604f, 0x6a8068, 0x748a6c]];
     world.trees.forEach((t, i) => {
       d.rotation.set(0, t.rot * 6.28, 0);
       d.scale.setScalar(t.s);
       d.position.set(t.x, 0.8 * t.s, t.z); d.updateMatrix(); trunks.setMatrixAt(i, d.matrix);
       d.position.set(t.x, 3.0 * t.s, t.z); d.updateMatrix(); leaves.setMatrixAt(i, d.matrix);
-      const colors = leafColors[zoneOf(t.x)];
-      leaves.setColorAt(i, c.setHex(colors[Math.floor(t.rot * colors.length) % colors.length]));
+      leaves.setColorAt(i, c.setHex(leaf(t.x, t.z, t.rot)));
     });
     world.rocks.forEach((t, i) => {
       d.rotation.set(t.rot * 3, t.rot * 6.28, 0);
@@ -135,28 +119,18 @@ export class View {
     for (const m of [trunks, leaves, rocks]) { m.castShadow = true; m.receiveShadow = true; this.scene.add(m); }
   }
 
-  /** i번 등탑의 등불을 밝기에 맞춘다 (scene/scenery.ts) */
-  setTowerGlow(i: number, glow: number): void { this.scenery.setTowerGlow(i, glow); }
-
   /**
-   * 내가 있는 구역의 분위기를 맞춘다: 등탑 밝기 단계, 습격 중인지, 등탑이 꺼져 있는지.
-   * 모델은 그대로 두고 하늘빛과 안개만 바꾼다.
+   * 분위기를 맞춘다. 모델은 그대로 두고 하늘빛, 빛의 세기, 안개만 바꾼다.
+   * 값만 받는다: 어떤 때 어떤 값을 쓸지(밝기 단계, 습격, 던전)는 게임이 정한다. 부르기 전에는 맑은 낮이다.
    */
-  setMood(stage: Stage, raid: boolean, dark = false): void {
-    if (stage === this.stage && raid === this.raid && dark === this.dark) return;
-    this.stage = stage; this.raid = raid; this.dark = dark;
-    this.applyMood();
-  }
-  private applyMood(): void {
-    const s = this.stage, gloom = this.raid || this.dark; // 습격 중이거나 등탑이 꺼진 구역: 안개가 짙고 하늘이 어둡다
-    this.hemi.intensity = [1.55, 2.1, 2.3][s] * (gloom ? 0.72 : 1);
-    this.sun.intensity = gloom ? 1.3 : 2.3;
-    const sky = gloom ? 0x6f8490 : [0x8fa9b0, SKY, 0xb4d6d4][s];
-    (this.scene.background as THREE.Color).setHex(sky);
+  setMood(m: Mood): void {
+    this.hemi.intensity = m.hemi;
+    this.sun.intensity = m.sun;
+    (this.scene.background as THREE.Color).setHex(m.sky);
     const fog = this.scene.fog as THREE.Fog;
-    fog.color.setHex(sky);
-    fog.near = gloom ? 40 : 58;
-    fog.far = gloom ? 95 : 125;
+    fog.color.setHex(m.sky);
+    fog.near = m.fogNear;
+    fog.far = m.fogFar;
   }
 
   resize(w: number, h: number): void {

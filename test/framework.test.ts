@@ -734,3 +734,44 @@ function noonOf(day: unknown): number {
   check(found.length === 0, `6a에서 가른 틀 쪽 화면 파일 ${CLEAN.length}개는 이 게임의 클라이언트 모듈과 게임 전용 내용(주민, 등탑, 습격, 퀘스트)을 import하지 않는다`);
   check(importsOf('client/src/modules.ts').some((i) => i.to === 'client/src/game/deungbul.ts') && !CLEAN.includes('client/src/modules.ts'), '이 게임의 클라이언트 모듈은 모듈 목록(modules.ts)만 안다');
 }
+
+// ---------- 의존 방향: 화면의 틀 (7a단계: 장면의 겉모습을 게임이 넘긴다) ----------
+// 틀로 가른 장면 파일(3D 화면, 모델, 미니맵)은 이 게임의 클라이언트 파일(client/src/deungbul/ 과 이 게임의 건물·표식·퀘스트 화면)을 import하지 않고,
+// 내용 정의에서 이 게임에만 있는 이름(등탑·습격·주민·퀘스트의 정의, 맵의 등탑·연못·길·구역)을 가져오지 않는다. 반대 방향(게임이 틀을 import)은 된다.
+// client/src/app.ts는 틀에 이 게임의 지형을 넘기는 자리라 대상이 아니다 (게임의 진입점이 생기면 그리로 옮긴다).
+{
+  const root = new URL('../', import.meta.url);
+  const ENGINE = ['client/src/scene/view.ts', 'client/src/scene/models.ts', 'client/src/hud/minimap.ts'];
+  /** 이 게임의 클라이언트 파일: 폴더 하나와, 아직 옛 자리에 있는 것들 */
+  const isGameFile = (f: string): boolean => f.startsWith('client/src/deungbul/') || ['client/src/scene/scenery.ts', 'client/src/hud/marks.ts', 'client/src/hud/quest.ts'].includes(f);
+  /** 맵 정의에서 이 게임의 것 (docs/framework-plan.md 2절). 범위·지역·문·기둥·뿌리는 규칙은 틀과의 계약이라 넣지 않는다 */
+  const MAP_NAMES = ['TOWERS', 'TOWER', 'TOWN', 'POND', 'HOUSES', 'CLEARINGS', 'ZONE_SPLIT', 'ZONE_COUNT', 'zoneOf', 'onPath', 'isFree', 'TowerDef'];
+  const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
+  /** 그 파일이 내보내는 이름들 */
+  const exportsOf = (file: string): string[] => [...read(file).matchAll(/^export\s+(?:declare\s+)?(?:const|let|function|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]);
+  const GAME_NAMES = new Set([...MAP_NAMES, ...['tower', 'raid', 'residents', 'quests'].flatMap((n) => exportsOf(`shared/content/${n}.ts`))]);
+  /** 그 파일의 import 문들: 저장소 안의 어느 파일에서(상대 경로만) 어떤 이름을 가져오는가. 통째로 가져오면(* as) 이름은 '*' */
+  const importsOf = (file: string): { from: string; names: string[] }[] =>
+    [...read(file).matchAll(/\b(?:import|export)\b([^;'"]*?)\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm)]
+      .filter((m) => (m[2] ?? m[3]).startsWith('.'))
+      .map((m) => {
+        const to = new URL(m[2] ?? m[3], new URL(file, root)).href.slice(root.href.length);
+        const braces = /\{([^}]*)\}/.exec(m[1] ?? '')?.[1] ?? '';
+        const names = braces.split(',').map((x) => x.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]).filter(Boolean);
+        return { from: to.endsWith('.ts') ? to : `${to}.ts`, names: /\*/.test(m[1] ?? '') ? ['*'] : names };
+      });
+  /** 틀의 파일이 지키지 않는 것: 게임의 파일을 import하거나, 공용 정의에서 게임의 이름을 가져온다 */
+  const breaks = (file: string): string[] => importsOf(file).flatMap((im) => [
+    ...(isGameFile(im.from) ? [`${file} -> ${im.from}`] : []),
+    ...(im.from.startsWith('shared/') ? im.names.filter((n) => n === '*' || GAME_NAMES.has(n)).map((n) => `${file} -> ${im.from}의 ${n}`) : []),
+  ]);
+  // 검사가 실제로 잡아내는지: 게임 쪽 파일에 대면 걸려야 한다
+  const paint = breaks('client/src/deungbul/paint.ts'), scene = breaks('client/src/deungbul/scene.ts');
+  check(GAME_NAMES.has('stageOf') && GAME_NAMES.has('RESIDENTS') && GAME_NAMES.has('QUESTS') && GAME_NAMES.has('RAID')
+    && paint.some((x) => x.endsWith('의 POND')) && paint.some((x) => x.endsWith('의 onPath')) && scene.some((x) => x.endsWith('의 Stage')) && scene.includes('client/src/deungbul/scene.ts -> client/src/scene/scenery.ts')
+    && importsOf('client/src/scene/view.ts').some((im) => im.from === 'shared/world.ts' && im.names.includes('World')),
+    `import 문에서 가져오는 이름을 읽어 낸다 (이 게임에만 있는 이름 ${GAME_NAMES.size}개)`);
+  const found = ENGINE.flatMap(breaks);
+  for (const x of found) console.log('  ' + x);
+  check(found.length === 0, `화면의 틀(${ENGINE.map((f) => f.replace('client/src/', '')).join(', ')})은 이 게임의 클라이언트 파일과 게임에만 있는 내용 정의를 import하지 않는다`);
+}

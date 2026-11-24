@@ -1,8 +1,8 @@
-// 이 게임의 건물: 마을의 집과 등탑, 던전의 문과 던전 안의 바닥·기둥. 화면의 틀(scene/view.ts)과 나눠 두어, 다른 게임은 이 파일만 바꾸면 된다.
+// 이 게임의 건물: 연못, 마을의 집과 등탑, 던전의 문과 던전 안의 바닥·기둥. 화면의 틀(scene/view.ts)과 나눠 두어, 다른 게임은 이 파일만 바꾸면 된다.
 // 놓이는 자리는 맵 정의(shared/content/map.ts)에서 읽는다.
 import * as THREE from 'three';
 import { DUNGEONS, stageOf } from '../../../shared/defs';
-import { AREAS, HOUSES, PILLARS, TOWERS } from '../../../shared/world';
+import { AREAS, HOUSES, PILLARS, POND, TOWERS } from '../../../shared/world';
 import { mat, part } from './models';
 
 /** 등탑 하나의 빛나는 부분: 등불, 빛무리, 실제 광원 */
@@ -12,9 +12,19 @@ export class Scenery {
   private readonly towers: TowerLamp[] = [];
 
   constructor(private scene: THREE.Scene) {
+    this.buildPond();
     this.buildVillage();
     this.buildTowers();
     this.buildDungeons();
+    TOWERS.forEach((t, i) => this.setTowerGlow(i, t.start));
+  }
+
+  private buildPond(): void {
+    const pg = new THREE.CircleGeometry(POND.r, 11);
+    pg.rotateX(-Math.PI / 2);
+    const pond = new THREE.Mesh(pg, new THREE.MeshStandardMaterial({ color: 0x4f9fb8, roughness: 0.35, metalness: 0.1, flatShading: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    pond.position.set(POND.x, 0.05, POND.z);
+    this.scene.add(pond);
   }
 
   private buildVillage(): void {
@@ -102,3 +112,7 @@ export class Scenery {
     t.light.intensity = lit ? [25, 110, 260][s] : 0;
   }
 }
+
+/** 세워 둔 건물들. 화면이 땅을 깐 뒤에 한 번 세우고(Look.scenery), 등불 밝기는 deungbul/scene.ts가 맞춘다 */
+export let scenery: Scenery | null = null;
+export function buildScenery(scene: THREE.Scene): void { scenery = new Scenery(scene); }

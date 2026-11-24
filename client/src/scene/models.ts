@@ -1,4 +1,5 @@
 // 캐릭터 모델(임시 도형)과 동작. 나중에 실제 에셋으로 바꿀 때 이 파일만 고친다.
+// 몬스터 종류별 생김새와 무기·갑옷의 겉모습은 게임이 등록한다 (registerMonsterModel, registerBlade, registerArmor). 여기에는 기본 모델만 있다.
 // 약속: 발이 원점, +Z를 바라본다. 사람형 키는 약 2.1.
 import * as THREE from 'three';
 
@@ -40,15 +41,12 @@ const G = {
   bow: new THREE.BoxGeometry(0.08, 1.7, 0.14), quiver: new THREE.BoxGeometry(0.22, 0.62, 0.18), lamp: new THREE.BoxGeometry(0.2, 0.26, 0.2),
   staff: new THREE.BoxGeometry(0.1, 1.9, 0.1), orb: new THREE.IcosahedronGeometry(0.2, 0), hat: new THREE.ConeGeometry(0.42, 0.7, 5),
   slime: new THREE.IcosahedronGeometry(0.8, 0), eye: new THREE.BoxGeometry(0.13, 0.16, 0.08),
-  wisp: new THREE.IcosahedronGeometry(0.42, 0), halo: new THREE.IcosahedronGeometry(0.7, 0),
-  wBody: new THREE.BoxGeometry(0.7, 0.7, 1.5), wHead: new THREE.BoxGeometry(0.55, 0.5, 0.6), wSnout: new THREE.BoxGeometry(0.3, 0.26, 0.4),
-  tusk: new THREE.BoxGeometry(0.08, 0.08, 0.3), wEar: new THREE.ConeGeometry(0.12, 0.3, 4), wLeg: new THREE.BoxGeometry(0.18, 0.6, 0.18), wTail: new THREE.BoxGeometry(0.16, 0.16, 0.6),
 };
 const lampMat = new THREE.MeshBasicMaterial({ color: 0xffc766 });
 const wispMat = new THREE.MeshBasicMaterial({ color: 0xbfefff });
-const haloMat = new THREE.MeshBasicMaterial({ color: 0x8fd8ff, transparent: true, opacity: 0.28, depthWrite: false });
 
-function limb(geo: THREE.BufferGeometry, m: THREE.Material, x: number, y: number, z: number, drop: number): THREE.Group {
+/** 어깨나 엉덩이를 축으로 흔들리는 팔다리 */
+export function limb(geo: THREE.BufferGeometry, m: THREE.Material, x: number, y: number, z: number, drop: number): THREE.Group {
   const pivot = new THREE.Group();
   pivot.position.set(x, y, z);
   pivot.add(part(geo, m, 0, -drop, 0));
@@ -83,30 +81,29 @@ export function makeHumanoid(cloth: number, armed: boolean | 'bow' | 'staff' = t
   return { root, rig, blade };
 }
 
-// 무기 등급별 칼날 모양. 가장 좋은 검은 등불처럼 빛난다
-const BLADES: Record<string, { color: number; scale: number; glow: boolean }> = {
-  sword1: { color: 0xd8dde0, scale: 1, glow: false },
-  sword2: { color: 0x9fc0dc, scale: 1.15, glow: false },
-  sword3: { color: 0xffc766, scale: 1.3, glow: true },
-  sword4: { color: 0xff7a3a, scale: 1.45, glow: false }, // 잿불검: 달군 쇠 빛
-};
+/** 무기의 겉모습: 칼날의 색과 크기, 빛나는가(등불처럼 빛나는 재질로 바꾼다) */
+export interface BladeLook { color: number; scale: number; glow: boolean }
+// 무기별 칼날 모양은 게임이 등록한다. 등록되지 않은 무기는 기본 모양으로 그린다
+const BLADES = new Map<string, BladeLook>();
+const PLAIN_BLADE: BladeLook = { color: 0xd8dde0, scale: 1, glow: false };
+export function registerBlade(id: string, look: BladeLook): void { BLADES.set(id, look); }
 /** 든 무기에 맞춰 칼날 모양을 바꾼다. */
 export function setBlade(m: Model, weapon: string): void {
   if (!m.blade) return;
-  const b = BLADES[weapon] ?? BLADES.sword1;
+  const b = BLADES.get(weapon) ?? PLAIN_BLADE;
   m.blade.material = b.glow ? lampMat : mat(b.color);
   m.blade.scale.setScalar(b.scale);
 }
 
-// 갑옷 등급별 모습: 가죽은 가슴받이와 허리띠, 쇠는 여기에 어깨받이가 붙는다
-const ARMORS: Record<string, { color: number; pads: boolean }> = {
-  armor1: { color: 0x7a5230, pads: false },
-  armor2: { color: 0xaab4bc, pads: true },
-};
+/** 갑옷의 겉모습: 가슴받이와 허리띠의 색, 어깨받이가 붙는가 */
+export interface ArmorLook { color: number; pads: boolean }
+// 갑옷별 모습은 게임이 등록한다. 등록되지 않은 갑옷은 덧대지 않는다
+const ARMORS = new Map<string, ArmorLook>();
+export function registerArmor(id: string, look: ArmorLook): void { ARMORS.set(id, look); }
 /** 입은 갑옷에 맞춰 몸에 덧댄다. 빈 문자열이면 벗긴다. */
 export function setArmor(m: Model, armor: string): void {
   if (m.armor) { m.root.remove(m.armor); m.armor = undefined; }
-  const a = ARMORS[armor];
+  const a = ARMORS.get(armor);
   if (!a || !m.rig) return;
   const g = new THREE.Group(), am = mat(a.color);
   g.add(part(G.plate, am, 0, 1.2, 0), part(G.belt, mat(0x3b2a1a), 0, 0.78, 0));
@@ -115,66 +112,23 @@ export function setArmor(m: Model, armor: string): void {
   m.armor = g;
 }
 
-/** 몬스터 모델. type은 MONSTERS의 키. 모르는 종류는 슬라임 모양으로 그린다. */
-export function makeMonster(type: string): Model {
-  if (type.startsWith('shade_')) {
-    // 안개에 삼켜진 사람: 잿빛 사람형을 조금 크게. 누구의 그림자인지는 옷 색으로 가른다
-    const cloth: Record<string, number> = { shade_bram: 0x4a5258, shade_mira: 0x3f5a4c };
-    const m = makeHumanoid(cloth[type] ?? 0x4a5258, type === 'shade_bram', 0x8d979c);
-    m.root.scale.setScalar(1.2);
-    const inner = new THREE.Group();
-    inner.add(m.root);
-    return { root: inner, rig: m.rig };
-  }
-  if (type === 'ash_troll' || type === 'crypt_lord') {
-    // 보스: 사람형 뼈대를 크게 키워 쓴다. 손에 든 것은 몽둥이. 지하묘의 주인은 조금 작고 보랏빛이다
-    const lord = type === 'crypt_lord';
-    const m = makeHumanoid(lord ? 0x4a3f6b : 0x56665a, true, lord ? 0xb7b0c8 : 0x7f9280);
-    m.root.scale.setScalar(lord ? 1.9 : 2.3);
-    if (m.blade) { m.blade.material = mat(0x6b4a2e); m.blade.scale.set(2.6, 1.3, 2.2); }
-    const inner = new THREE.Group();
-    inner.add(m.root);
-    return { root: inner, rig: m.rig };
-  }
-  if (type === 'goblin' || type === 'lost_soldier') {
-    // 사람형 뼈대를 크기와 색만 바꿔 쓴다: 고블린은 작고 푸르고, 잊힌 병사는 크고 잿빛이다
-    const goblin = type === 'goblin';
-    const m = makeHumanoid(goblin ? 0x6b5a3a : 0x5d6670, true, goblin ? 0x7fae5a : 0x9aa3a8);
-    m.root.scale.setScalar(goblin ? 0.78 : 1.12);
-    if (!goblin) m.root.add(part(new THREE.BoxGeometry(0.66, 0.3, 0.66), mat(0x4a5258), 0, 2.16, 0)); // 투구
-    const inner = new THREE.Group();
-    inner.add(m.root);
-    return { root: inner, rig: m.rig };
-  }
+export type MonsterBuilder = (type: string) => Model;
+// 몬스터 종류별 생김새는 게임이 등록한다. type은 MONSTERS의 키
+const MONSTER_MODELS = new Map<string, MonsterBuilder>();
+export function registerMonsterModel(type: string, build: MonsterBuilder): void { MONSTER_MODELS.set(type, build); }
+
+/** 기본 몬스터 모델: 눈이 달린 말랑한 덩어리 */
+export function makeBlob(): Model {
   const root = new THREE.Group();
-  if (type === 'wisp') {
-    const blob = new THREE.Mesh(G.wisp, wispMat);
-    blob.position.y = 1.3;
-    blob.add(new THREE.Mesh(G.halo, haloMat));
-    root.add(blob);
-    return { root, blob, float: 1.3 };
-  }
-  if (type === 'wolf' || type === 'boar') {
-    // 네발 뼈대: 늑대와 멧돼지가 함께 쓴다
-    const boar = type === 'boar';
-    const fur = mat(boar ? 0x7b5a44 : 0x7d8288), dark = mat(boar ? 0x4f3a2e : 0x4b4f55), legs: THREE.Group[] = [];
-    if (boar) { root.scale.set(1.15, 1, 1.05); root.add(part(G.tusk, mat(0xf2ead8), -0.2, 0.98, 1.5), part(G.tusk, mat(0xf2ead8), 0.2, 0.98, 1.5)); }
-    root.add(part(G.wBody, fur, 0, 0.95, 0), part(G.wHead, fur, 0, 1.2, 0.95), part(G.wSnout, dark, 0, 1.1, 1.38));
-    root.add(part(G.wEar, dark, -0.18, 1.58, 0.85), part(G.wEar, dark, 0.18, 1.58, 0.85));
-    const tail = part(G.wTail, dark, 0, 1.15, -0.95);
-    tail.rotation.x = 0.5;
-    root.add(tail);
-    for (const [lx, lz] of [[-0.25, 0.55], [0.25, 0.55], [-0.25, -0.55], [0.25, -0.55]]) {
-      const pivot = limb(G.wLeg, dark, lx, 0.6, lz, 0.3);
-      legs.push(pivot);
-      root.add(pivot);
-    }
-    return { root, legs };
-  }
   const blob = part(G.slime, mat(0x7ccf5a), 0, 0.6, 0);
   blob.scale.y = 0.75;
   root.add(blob, part(G.eye, mat(0x1a1f22), -0.26, 0.72, 0.66), part(G.eye, mat(0x1a1f22), 0.26, 0.72, 0.66));
   return { root, blob };
+}
+
+/** 몬스터 모델. type은 MONSTERS의 키. 등록되지 않은 종류는 기본 모델로 그린다. */
+export function makeMonster(type: string): Model {
+  return (MONSTER_MODELS.get(type) ?? makeBlob)(type);
 }
 
 /**
