@@ -3,6 +3,7 @@ import { NavGrid } from '../../shared/nav';
 import { buildWorld } from '../../shared/world';
 import { View, type Look } from './scene/view';
 
+
 export const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 export const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 

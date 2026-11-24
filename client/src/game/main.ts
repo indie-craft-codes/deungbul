@@ -5,6 +5,7 @@ import { startClient } from '../main';
 import { initDeungbul, initResidents } from './deungbul';
 import { initGuideLink } from './hud/guidelink';
 import { initMarks } from './hud/marks';
+import { mountMarkup } from './markup';
 import { initQuest } from './hud/quest';
 import { initRaid } from './hud/raid';
 import { initTower } from './hud/tower';
@@ -13,6 +14,9 @@ import { initModels } from './scene/models';
 import { ground, leaf } from './scene/paint';
 import { initScene } from './scene/scene';
 import { buildScenery } from './scene/scenery';
+
+// 이 게임의 창을 틀의 빈 자리에 붙인다 (틀의 index.html에는 틀의 창만 있다). 틀을 시작시키기 전이어야 한다: 모듈들이 init에서 요소를 잡는다
+mountMarkup();
 
 startClient({
   look: { ground, leaf, scenery: buildScenery },

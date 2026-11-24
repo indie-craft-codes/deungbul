@@ -643,3 +643,50 @@ function noonOf(day: unknown): number {
   for (const x of found) console.log('  ' + x);
   check(found.length === 0, `화면의 틀(${ENGINE.map((f) => f.replace('client/src/', '')).join(', ')})은 이 게임의 클라이언트 파일과 게임에만 있는 내용 정의를 import하지 않는다`);
 }
+
+// ---------- 의존 방향: 화면의 뼈대와 스타일 (7b단계: 게임의 창은 게임이 붙인다) ----------
+// 틀의 index.html과 style.css에는 틀의 창만 있다. 이 게임의 창(등탑, 퀘스트, 습격 알림, 내 정보에 덧붙는 표시, '마을로' 단추)은
+// 게임의 마크업(client/src/game/markup.ts)이 틀의 빈 자리(hud/shell.ts의 mountPanel)에 붙이고, 모양은 게임의 스타일(game/deungbul.css)에 있다.
+// 옮긴 창의 id는 게임의 마크업에서 읽어 낸다: 창을 더 옮기면 검사도 따라간다.
+{
+  const root = new URL('../', import.meta.url);
+  const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
+  /** css에서 주석을 뺀 것 (주석은 등탑·퀘스트를 말해도 된다) */
+  const css = (file: string): string => read(file).replace(/\/\*[\s\S]*?\*\//g, '');
+  const html = read('client/index.html'), markup = read('client/src/game/markup.ts');
+  const frameCss = css('client/style.css'), gameCss = css('client/src/game/deungbul.css');
+  const ids = [...new Set([...markup.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]))];
+  /** 그 id의 요소가 마크업에 있는가 */
+  const hasId = (text: string, id: string): boolean => new RegExp(`\\bid="${id}"`).test(text);
+  /** 그 선택자(#id, .class)가 css에 쓰였는가. 더 긴 이름의 앞머리(#questGo의 #quest)는 세지 않는다 */
+  const hasSel = (text: string, sel: string): boolean => new RegExp(`${sel.replace(/[.#]/g, '\\$&')}(?![\\w-])`).test(text);
+  /** 이 게임의 창에만 쓰는 class (막대의 색, 불씨 글자, 습격 알림의 줄, 습격 몹의 이름표) */
+  const GAME_CLASSES = ['.spark', '.rtext', '.rhp', '.bar.glow', '.bar.res', '.tag.raid'];
+
+  // 검사가 실제로 읽어 내는지: 옮긴 창의 대표들이 게임의 마크업과 스타일에 있어야 한다
+  const core = ['tower', 'villageBox', 'keepBox', 'classBtn', 'quest', 'questGo', 'goalArrow', 'raid', 'raidMini', 'towerMini', 'contrib', 'rested', 'sparks', 'townBtn'];
+  check(core.every((id) => ids.includes(id)) && ids.length >= 30 && ['tower', 'quest', 'raid', 'goalArrow', 'townBtn', 'raidMini', 'contrib'].every((id) => hasSel(gameCss, `#${id}`))
+    && GAME_CLASSES.every((c) => hasSel(gameCss, c)) && hasSel('#questGo { }', '#questGo') && !hasSel('#questGo { }', '#quest') && hasId(markup, 'tower'),
+    `게임의 마크업과 스타일에서 이 게임의 창을 읽어 낸다 (id ${ids.length}개)`);
+
+  const inHtml = ids.filter((id) => hasId(html, id));
+  check(inHtml.length === 0, `틀의 index.html에 이 게임의 창이 남아 있지 않다${inHtml.length ? ': ' + inHtml.join(', ') : ''}`);
+  // 붙는 자리의 기준이 되는 틀의 요소는 index.html에 있어야 한다 (없으면 mountPanel이 시작할 때 던진다)
+  const anchors = [...read('client/src/hud/shell.ts').matchAll(/byId\('([^']+)'\)/g)].map((m) => m[1]);
+  check(anchors.length >= 5 && anchors.every((id) => hasId(html, id)), `붙는 자리의 기준 요소(${[...new Set(anchors)].join(', ')})가 틀의 index.html에 있다`);
+
+  const inCss = [...ids.map((id) => `#${id}`), ...GAME_CLASSES].filter((sel) => hasSel(frameCss, sel));
+  check(inCss.length === 0, `틀의 style.css에 이 게임의 창을 가리키는 선택자가 남아 있지 않다${inCss.length ? ': ' + inCss.join(', ') : ''}`);
+
+  // 뼈대는 게임을 모른다: 게임이 뼈대를 import하고, 진입 쪽(app.ts)이 게임의 mountMarkup을 맨 먼저 부른다.
+  // app.ts를 import하지 않는 것은 순서 때문이다: app.ts가 이 파일에 기대어 먼저 붙인 뒤에야 다른 파일이 요소를 잡는다
+  const imports = (file: string): string[] => [...read(file).matchAll(/\b(?:import|export)\b[^;'"]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm)].map((m) => m[1] ?? m[2]);
+  const shell = imports('client/src/hud/shell.ts');
+  check(imports('client/src/game/markup.ts').includes('../hud/shell') && imports('client/src/game/markup.ts').includes('./deungbul.css')
+    && !shell.some((to) => /(^|\/)(game|deungbul)(\/|$)|\/(quest|marks|scenery|app)$|\.css$/.test(to)),
+    `hud/shell.ts는 게임 파일(마크업, 스타일)과 app.ts를 import하지 않는다 (import ${shell.length}개)`);
+  const app = read('client/src/app.ts');
+  // 6b 뒤로 진입점은 게임의 것(client/src/game/main.ts)이다: 틀을 시작시키기(startClient) 전에 게임의 창을 붙이고, 틀의 app.ts는 그 일을 모른다
+  const entry = read('client/src/game/main.ts');
+  check(/^mountMarkup\(\);/m.test(entry) && entry.indexOf('mountMarkup();') < entry.indexOf('startClient(') && !app.includes('mountMarkup'), '게임의 진입점이 틀을 시작시키기 전에 게임의 창을 붙인다 (틀의 app.ts는 모른다)');
+}
