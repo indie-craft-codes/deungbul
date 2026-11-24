@@ -1,7 +1,7 @@
 // 채널 시험에서 가른 이 게임의 검사: 습격과 채널 (서버 없이 게임 규칙만 돌린다. 시계는 시험이 직접 돌린다)
 // 채널 자체의 검사는 틀의 시험 test/channel.test.ts에 있다.
-import { CHANNEL, RAID } from '@engine/shared/defs';
-import { TOWER } from '@engine/shared/world';
+import { CHANNEL, RAID } from '../shared/defs';
+import { TOWER } from '../shared/world';
 import type { Ent } from '@engine/server/game/entity';
 import type { Game } from '@engine/server/game/game';
 import { fieldLayer } from '@engine/server/game/layers';

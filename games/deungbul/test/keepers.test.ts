@@ -1,5 +1,5 @@
 // 등탑지기의 일: 오늘의 명단과 기여 단계, 가득 찬 등탑에 바치기 (서버 없이 게임 규칙만 돌린다)
-import { TOWER } from '@engine/shared/world';
+import { TOWER } from '../shared/world';
 import { newGame } from './game';
 import { check } from '@engine/test/harness';
 

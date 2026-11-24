@@ -1,32 +1,7 @@
 // 직업, 기술, 전투 수치. 이름과 설명은 언어 파일에 있다. 수치는 모두 잠정값이다.
-// 틀의 것(타입과 도우미 함수)과 이 게임의 것(표와 수치)이 한 파일에 있어 [틀] / [이 게임] 구역 주석으로 갈라 둔다 (파일은 9단계에서 갈린다).
-import { MAP } from './map';
+// 모양(SkillDef, ClassDef)과 도우미(classOf, maxHpFor 등)는 틀에 있다: engine/shared/defs/combat.ts
+import type { ClassDef, ClassId, SkillDef } from '@engine/shared/defs/combat';
 
-// ===== [틀] 기술의 모양 =====
-
-/**
- * 기술이 하는 일. 서버(systems/combat.ts)는 기술 이름이 아니라 이 종류만 보고 처리하므로,
- * 새 기술은 여기에 한 줄 더하면 된다. 새 종류의 효과가 필요할 때만 서버 코드를 고친다.
- */
-export type SkillEffect =
-  /** 대상 하나에게 피해 (치명타로 표시) */
-  | { kind: 'hit'; dmg: readonly [number, number] }
-  /** 범위(SkillDef.radius) 안 모든 적에게 피해. at: 범위의 중심이 나인가 대상인가. slow: 맞으면 이 시간(초) 동안 느려진다 */
-  | { kind: 'area'; at: 'self' | 'target'; dmg: readonly [number, number]; slow?: number }
-  /** 체력 회복. allies가 켜져 있으면 범위(SkillDef.radius) 안의 사람 모두 */
-  | { kind: 'heal'; amount: number; allies?: boolean };
-
-export interface SkillDef {
-  cd: number;
-  /** 대상이 이 거리 안에 있어야 쓸 수 있다 (대상이 필요한 기술) */
-  range?: number;
-  /** 범위 피해나 범위 회복의 반경 */
-  radius?: number;
-  effect: SkillEffect;
-  /** 이펙트 색 (없으면 기본색) */
-  color?: number;
-}
-// ===== [이 게임] 기술 =====
 export const SKILL_DEFS = {
   smash: { cd: 4, range: 2.9, effect: { kind: 'hit', dmg: [28, 36] } }, // 전사: 대상에게 큰 피해
   whirl: { cd: 8, radius: 4.2, effect: { kind: 'area', at: 'self', dmg: [14, 20] } }, // 전사: 내 주변 모두에게 피해
@@ -37,49 +12,20 @@ export const SKILL_DEFS = {
   mend: { cd: 12, radius: 7, effect: { kind: 'heal', amount: 45, allies: true }, color: 0x7fd68a }, // 마법사: 나와 주변 사람들의 체력 회복
   breath: { cd: 15, effect: { kind: 'heal', amount: 60 }, color: 0x7fd68a }, // 전사, 궁수: 체력 회복
 } as const satisfies Record<string, SkillDef>;
-// ===== [틀] 기술 도우미, 직업의 모양 =====
-export type SkillId = keyof typeof SKILL_DEFS;
-export const skillDef = (id: SkillId): SkillDef => SKILL_DEFS[id];
-export const isSkillId = (v: unknown): v is SkillId => typeof v === 'string' && Object.hasOwn(SKILL_DEFS, v);
 
 /** 직업마다 기술 칸은 세 개다 (단축키 1~3) */
 export const SKILL_SLOTS = 3;
 
-export interface ClassDef {
-  /** 1레벨 체력 */
-  hp: number;
-  /** 기본 공격 사거리 */
-  range: number;
-  /** 기본 공격 피해 범위 */
-  basic: readonly [number, number];
-  skills: readonly [SkillId, SkillId, SkillId];
-  /** 손에 드는 것의 모양. 캐릭터 모델과 무기 이름(검/활/지팡이)이 이것을 따른다 */
-  hand: 'sword' | 'bow' | 'staff';
-  /** 멀리서 쏘는 직업이면 날아가는 것의 모양. 없으면 붙어서 친다 */
-  shot?: 'arrow' | 'bolt';
-  /** 때릴 때 튀는 불티의 색 (없으면 기본색) */
-  hitColor?: number;
-}
-// ===== [이 게임] 직업 =====
 export const CLASSES = {
   warrior: { hp: 200, range: 2.3, basic: [10, 15], skills: ['smash', 'whirl', 'breath'], hand: 'sword' },
   archer: { hp: 170, range: 9, basic: [9, 13], skills: ['aimed', 'volley', 'breath'], hand: 'bow', shot: 'arrow' },
   // 마법사: 가장 약하지만 적을 묶고 곁의 사람을 살린다. 여럿이 있을 때 빛난다
   mage: { hp: 150, range: 8, basic: [11, 15], skills: ['bolt', 'frost', 'mend'], hand: 'staff', shot: 'bolt', hitColor: 0xffa24a },
 } as const satisfies Record<string, ClassDef>;
-// ===== [틀] 직업 도우미 (DEFAULT_CLASS의 값은 [이 게임]의 것) =====
-export type ClassId = keyof typeof CLASSES;
-export const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
-export const isClassId = (v: unknown): v is ClassId => typeof v === 'string' && Object.hasOwn(CLASSES, v);
 /** 직업을 아직 고르지 않았으면('') 전사로 친다 */
 export const DEFAULT_CLASS: ClassId = 'warrior';
-/** 무기 이름을 고를 때 쓰는 손 모양 (직업이 없으면 기본 직업의 것) */
-export const handOf = (cls: unknown): ClassDef['hand'] => classOf(typeof cls === 'string' ? cls : '').hand;
-export const classOf = (cls: string): ClassDef => CLASSES[isClassId(cls) ? cls : DEFAULT_CLASS];
 
-// ===== [이 게임] 전투 수치 (maxHpFor는 [틀]의 도우미) =====
 export const HP_PER_LEVEL = 15;
-export const maxHpFor = (cls: string, lv: number): number => classOf(cls).hp + HP_PER_LEVEL * (lv - 1);
 
 /** 전투 공통 수치: 치명타와 자연 회복 (서버의 systems/combat.ts가 읽는다) */
 export const COMBAT = {
@@ -102,6 +48,5 @@ export const ATTACK_CD = 1.0;
  * 재접속으로 체력을 채우고 쿨다운을 지우지 못하게 한다. 더 오래 떠나 있었으면 쉬다 온 것이므로 가득 찬 채로 시작한다.
  */
 export const REJOIN_KEEP_S = 300;
-export const SPAWN = MAP.spawn; // 등탑 앞: 접속과 부활 지점 (자리는 맵 정의에 있다)
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 (뒤에 숫자 네 자리가 붙는다) */
 export const GUEST_NAME = 'Keeper';

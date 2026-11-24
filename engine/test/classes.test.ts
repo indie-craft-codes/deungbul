@@ -1,5 +1,5 @@
 // 직업 (서버 없이 게임 규칙만 돌린다)
-import { SHOP } from '../shared/defs';
+import { SHOP } from '@game/shared/defs';
 import { Game } from '../server/game/game';
 import { check } from './harness';
 

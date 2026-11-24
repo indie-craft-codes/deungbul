@@ -1,9 +1,7 @@
-// 사람들 사이의 것: 길드와 거래소, 채널의 규칙과 수치. 모두 잠정값이다.
-// 틀의 것(타입과 도우미 함수)과 이 게임의 것(표와 수치)이 한 파일에 있어 [틀] / [이 게임] 구역 주석으로 갈라 둔다 (파일은 9단계에서 갈린다).
-import { GEAR_SLOTS, type Gear } from './growth';
+// 사람들 사이의 것: 길드와 거래소, 채널의 수치. 모두 잠정값이다.
+// 화면에 보이는 모양(GuildView, MarketItem)과 도우미(guildLevel, marketFee 등)는 틀에 있다: engine/shared/defs/social.ts
 
 // ---------- 채널 ----------
-// ===== [이 게임] 채널의 수치 =====
 // 같은 들판을 여러 벌로 돌린다. 채널이 다르면 서로 보이지 않고 몬스터도 따로다 (server/game/systems/channels.ts).
 export const CHANNEL = {
   /** 채널의 수. 서버를 켤 때 정해진다 */
@@ -25,7 +23,6 @@ export const CHANNEL = {
 };
 
 // ---------- 길드 ----------
-// ===== [이 게임] 길드의 수치 =====
 export const GUILD = {
   /** 만들 수 있는 레벨과 드는 골드 */
   createLv: 5,
@@ -50,27 +47,8 @@ export const GUILD = {
   /** 길드 대화를 다시 보낼 수 있는 간격(초) */
   chatGapS: 0.7,
 };
-/** 길드 레벨: 쌓인 기부(골드)로 정한다. 서버의 systems/guild.ts와 도감이 함께 쓴다 */
-export const guildLevel = (exp: number): number => Math.min(GUILD.maxLevel, 1 + Math.floor(exp / GUILD.expPerGuildLevel));
-/** 그 길드 레벨이 되는 데 필요한 누적 기부 (guildLevel을 거꾸로 푼 것) */
-export const guildNeed = (lv: number): number => (lv - 1) * GUILD.expPerGuildLevel;
-
-// ===== [틀] 길드 화면의 모양 =====
-/** 길드 화면에 보이는 길드원 한 사람. pid는 내 것이거나 내가 길드장일 때만 채워진다(추방에 쓴다) */
-export interface GuildMember { pid: string; name: string; lv: number; cls: string; gave: number; leader: boolean; on: boolean; me: boolean }
-/** 내 길드의 모습 */
-export interface GuildView {
-  name: string; lv: number;
-  /** 이번 레벨에서 쌓인 기부와 다음 레벨까지 필요한 양 */
-  exp: number; need: number; max: boolean;
-  notice: string;
-  /** 내가 길드장인가 */
-  leader: boolean;
-  members: GuildMember[];
-}
 
 // ---------- 거래소 ----------
-// ===== [이 게임] 거래소의 수치 =====
 export const MARKET = {
   /** 값의 한도(골드). 값은 minPrice 이상 이 값 이하의 정수다 */
   maxPrice: 1_000_000,
@@ -93,31 +71,3 @@ export const MARKET = {
   /** 기간이 지난 물건을 거두는 주기(초) */
   sweepS: 5,
 };
-// ===== [틀] 거래소 도우미와 물건의 모양 =====
-/** 그 값에 팔렸을 때 떼는 수수료 */
-// 올림이고 적어도 1골드다: 내림이면 싼 값으로 쪼개 팔아 수수료 없이 큰 돈을 옮길 수 있다
-export const marketFee = (price: number): number => Math.max(1, Math.ceil(price * MARKET.tax));
-/** 목록을 거르는 종류: 전체, 장비 칸, 재료 */
-export const MARKET_FILTERS = ['all', ...GEAR_SLOTS, 'mat'] as const;
-export type MarketFilter = (typeof MARKET_FILTERS)[number];
-export const isMarketFilter = (v: unknown): v is MarketFilter => typeof v === 'string' && (MARKET_FILTERS as readonly string[]).includes(v);
-/** 목록의 순서: 새로 올라온 순, 싼 순, 비싼 순 */
-export const MARKET_SORTS = ['new', 'cheap', 'costly'] as const;
-export type MarketSort = (typeof MARKET_SORTS)[number];
-export const isMarketSort = (v: unknown): v is MarketSort => typeof v === 'string' && (MARKET_SORTS as readonly string[]).includes(v);
-
-/** 거래소에 올라온 물건 하나. 장비(gear)이거나 재료 묶음(item과 n)이다. 값은 묶음 전체의 값이다 */
-export interface MarketItem {
-  /** 물건 번호 */
-  id: number;
-  gear?: Gear;
-  item?: string;
-  n: number;
-  price: number;
-  /** 올릴 때의 판매자 이름 */
-  seller: string;
-  /** 내가 올린 것인가 */
-  mine: boolean;
-  /** 남은 시간(초) */
-  left: number;
-}

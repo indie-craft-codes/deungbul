@@ -1,6 +1,6 @@
 // 두 번째 구역 '잿빛 숲'과 두 번째 등탑 (서버 없이 게임 규칙만 돌린다)
-import { RAID } from '@engine/shared/defs';
-import { TOWER, TOWERS, ZONE_SPLIT } from '@engine/shared/world';
+import { RAID } from '../shared/defs';
+import { TOWER, TOWERS, ZONE_SPLIT } from '../shared/world';
 import { newGame } from './game';
 import { check } from '@engine/test/harness';
 

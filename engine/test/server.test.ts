@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { SHOPS } from '../shared/defs';
-import { MAX_X, MAX_Z, MIN_X, MIN_Z, PLAYER_SPEED } from '../shared/world';
+import { MAX_X, MAX_Z, MIN_X, MIN_Z, PLAYER_SPEED } from '@game/shared/world';
 import { startServer } from '../server/net/server';
 import { MemoryStore, SqliteStore } from '../server/store';
 import { check, until, sleep, connect } from './harness';

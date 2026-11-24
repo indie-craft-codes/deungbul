@@ -1,6 +1,6 @@
 // 제작 시험에서 가른 이 게임의 검사: 대장간은 대장장이가 돌아와야 열린다 (서버 없이 게임 규칙만 돌린다)
 // 제작 자체의 검사는 틀의 시험 test/craft.test.ts에 있다.
-import { SMITHY, RESIDENTS } from '@engine/shared/defs';
+import { SMITHY, RESIDENTS } from '../shared/defs';
 import { check } from '@engine/test/harness';
 import { newGame } from './game';
 

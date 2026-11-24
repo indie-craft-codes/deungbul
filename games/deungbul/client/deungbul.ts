@@ -2,9 +2,9 @@
 // 서버가 알려 주는 공유 상태(등탑, 주민, 습격)와 내 진행(개인 상태: 퀘스트, 기여, 기여 단계, 휴식 보너스)을 받아 이 게임의 상태(./state.ts의 GS, G)에 넣는다.
 // 서버의 server/game/deungbul.ts(installDeungbul)와 짝이다. 틀의 파일은 이 파일을 import하지 않는다 (이 게임의 진입점 ./main.ts의 목록만 안다).
 // 등탑이 정하는 것: 이동 속도(환한 구역에서 빨라진다)와, 주민이 돌아와야 풀리는 것(상점 물건, 대장간).
-import { RESIDENTS, SHOPS, speedFor } from '@engine/shared/defs';
+import { RESIDENTS, SHOPS, speedFor } from '../shared/defs';
 import type { MeState, OldStatCells } from '../shared/deungbul';
-import { TOWER, TOWERS, TOWN } from '@engine/shared/world';
+import { TOWER, TOWERS, TOWN } from '../shared/world';
 import { goToTown } from '@engine/client/actions';
 import { $ } from '@engine/client/app';
 import { onKey, onMsg } from '@engine/client/bus';

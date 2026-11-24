@@ -1,5 +1,5 @@
 // 제작 (서버 없이 게임 규칙만 돌린다)
-import { SMITHY, RECIPES } from '../shared/defs';
+import { SMITHY, RECIPES } from '@game/shared/defs';
 import { Game } from '../server/game/game';
 import { check } from './harness';
 

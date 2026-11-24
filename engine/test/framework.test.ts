@@ -9,11 +9,11 @@
 //   - 확장 지점: 게임이 선언으로 더한 칸(사건, 공유 상태, 명령)이 틀만의 게임에는 실행 중에도 없는가
 import { createHash } from 'node:crypto';
 import { AUTO, AWAY, POTIONS, pickPotion, potionOrder } from '../shared/auto';
-import { BOSS, COMBAT, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GUILD, LEVEL, MONSTERS, MONSTER_AI, POTION_MAX, POWER, RAID, RARITIES, STATS, STAT_IDS, baseTier, bossHp, clearRar, gearScore, guildLevel, needFor, nextNeed, powerOf, raidFoes, raidTowerHp, sellPrice, speedFor, type Gear, type GearSlot, type ItemId, type Stat } from '../shared/defs';
-import { AREAS, EDGE, MAP, MAX_X, MAX_Z, MIN_X, MIN_Z, PILLARS, POND, PORTALS, TOWERS, rng } from '../shared/world';
+import { BOSS, COMBAT, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GUILD, LEVEL, MONSTERS, MONSTER_AI, POTION_MAX, POWER, RAID, RARITIES, STATS, STAT_IDS, baseTier, bossHp, clearRar, gearScore, guildLevel, needFor, nextNeed, powerOf, raidFoes, raidTowerHp, sellPrice, speedFor, type Gear, type GearSlot, type ItemId, type Stat } from '@game/shared/defs';
+import { AREAS, EDGE, MAP, MAX_X, MAX_Z, MIN_X, MIN_Z, PILLARS, POND, PORTALS, TOWERS, rng } from '@game/shared/world';
 import fs from 'node:fs';
 import { WebSocket } from 'ws';
-import { CHANNEL, DUNGEONS, SHOP, SPAWN } from '../shared/defs';
+import { CHANNEL, DUNGEONS, SHOP, SPAWN } from '@game/shared/defs';
 import { NavGrid } from '../shared/nav';
 import { PROTOCOL, type ServerMsg } from '../shared/protocol';
 import { PLAYER_SPEED, buildWorld } from '../shared/world';
@@ -445,12 +445,14 @@ function noonOf(day: unknown): number {
     while (todo.length) for (const to of importsOf(todo.pop()!)) { const f = fileOf(to); if (f && !seen.has(f)) { seen.add(f); todo.push(f); } }
     return [...seen];
   };
-  const isGame = (f: string) => f.startsWith('games/');
+  /** 틀의 시험이 읽어도 되는 게임의 파일: 내용 통로와 내용 정의뿐이다 (아직 등불지기의 맵 좌표와 몬스터·아이템 id 위에서 돈다. 별칭 @game으로만 읽는다) */
+  const isContent = (f: string) => /^games\/deungbul\/shared\/(defs|world)\.ts$/.test(f) || f.startsWith('games/deungbul/shared/content/');
+  const isGame = (f: string) => f.startsWith('games/') && !isContent(f);
   const engineTests = fs.readdirSync(new URL('engine/test/', root)).filter((n) => n.endsWith('.test.ts') || n === 'harness.ts').map((n) => `engine/test/${n}`);
   const gameTests = list('games/deungbul/test/');
   const testLeaks = engineTests.flatMap((f) => [
     ...importsOf(f).filter(isGame).map((to) => `${f} -> ${to}`),
-    ...reach(f).filter((to) => GAME_FILES.includes(to) || to.startsWith('games/deungbul/test/')).map((to) => `${f} => ${to}`),
+    ...reach(f).filter(isGame).map((to) => `${f} => ${to}`),
   ]);
   for (const x of new Set(testLeaks)) console.log('  ' + x);
   check(engineTests.length >= 15 && reach('engine/test/move.test.ts').includes('engine/server/game/systems/shop.ts') && reach('games/deungbul/test/game.ts').includes('games/deungbul/server/systems/tower.ts') && gameTests.some((f) => importsOf(f).some(isGame)),

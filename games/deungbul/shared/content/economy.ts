@@ -1,21 +1,25 @@
 // 재화 흐름 지표(경제 장부)의 내용: 무엇을 어떤 원인으로 적을지와, 지표를 읽을 때의 판단 기준.
-// 장부의 틀(server/game/systems/ledger.ts)은 이 게임의 낱말을 모르고 여기만 본다. 보는 도구는 scripts/econ.ts(npm run econ)다.
-import type { MsgKey } from '@engine/shared/messages';
+// 장부의 틀(engine/server/game/systems/ledger.ts)은 이 게임의 낱말을 모르고 여기만 본다. 보는 도구는 scripts/econ.ts(npm run econ)다.
+// 모양(EconCur, EconNotice)과 도우미(isEconMove)는 틀에 있다: engine/shared/defs/economy.ts
+import type { EconNotice } from '@engine/shared/defs/economy';
 
 /** 장부가 적는 재화. 장비는 `gear:등급`, 재료와 물약은 `item:아이템 id`로 따로 적힌다 */
 export const ECON_CURS = ['gold', 'sparks', 'exp'] as const;
-export type EconCur = (typeof ECON_CURS)[number];
 
 /**
  * 안내문으로 원인을 가리는 보상: 명령이나 처치의 한가운데, 또는 틱 안에서 주는 것(퀘스트 단계, 습격, 기여 단계)은
  * 앞뒤 차이만으로는 원인을 알 수 없다. 그 보상을 알리는 안내문의 종류와, 안내문의 몇 번째 값이 어느 재화인지를 적어 두면
- * 장부가 그만큼을 그 원인으로 먼저 적는다. 값의 순서는 shared/messages.ts의 주석과 같다
+ * 장부가 그만큼을 그 원인으로 먼저 적는다. 값의 순서는 안내문 선언(games/deungbul/shared/deungbul.ts의 MsgMap)의 주석과 같다
  */
-export const ECON_NOTICES: Partial<Record<MsgKey, { why: string } & Partial<Record<EconCur, number>>>> = {
+const notices = {
   questStep: { why: 'quest', exp: 0, sparks: 1 },
   raidReward: { why: 'raid', sparks: 0, exp: 1 },
   tierUp: { why: 'tier', gold: 1 },
-};
+} satisfies Record<string, EconNotice>;
+/** 위 표에 적은 안내문의 종류. 모두 실제 안내문(MsgKey)인지는 이 게임의 선언 파일(shared/deungbul.ts)이 컴파일할 때 검사한다 */
+export type EconNoticeKey = keyof typeof notices;
+// 이 파일은 틀이 읽는 내용이라 이 게임의 선언(안내문의 목록)에 기대지 않는다: 틀만 타입 검사할 때(npm run typecheck:engine)도 그대로 컴파일된다
+export const ECON_NOTICES: Readonly<Partial<Record<string, EconNotice>>> = notices;
 
 /**
  * 생성도 소멸도 아닌 이동: 사람 사이를 건너가는 골드는 원인의 이름을 바꿔 적는다.
@@ -28,7 +32,6 @@ export const ECON_MOVES: readonly { cur: string; why: string; dir: '+' | '-'; as
 ];
 /** 이 머리말로 시작하는 원인은 이동이다 (거래소에 올리고 사고 돌려받는 물건 포함). 생성·소멸의 합계에서는 빼고 따로 보여 준다 */
 export const ECON_MOVE_PREFIXES: readonly string[] = ['market:', 'cmd:market:', 'mail:market'];
-export const isEconMove = (why: string): boolean => ECON_MOVE_PREFIXES.some((p) => why.startsWith(p));
 
 /** 원인을 가리지 못한 변화가 적히는 칸: 틱 안에서 생긴 것(tick)과 그 밖(other). 이 칸이 크면 빠뜨린 통로나 재화 복사 버그가 있다는 뜻이다 */
 export const ECON_UNKNOWN: readonly string[] = ['other', 'tick'];

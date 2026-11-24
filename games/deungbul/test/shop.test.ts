@@ -1,7 +1,7 @@
 // 상점의 잠금과 등불 맡기기(휴식 보너스): 이 게임의 규칙이 깔려 있어야 하는 검사 (서버 없이 게임 규칙만 돌린다)
 // 상점 자체의 검사(사기, 마시기, 저장)는 틀의 시험 test/shop.test.ts에 있다. 여기서는 같은 차례로 사고 마신 뒤 이 게임의 것만 본다:
 // 주민이 돌아와야 풀리는 물건(등탑이 g.rules.unlocked를 채운다)과 휴식 보너스.
-import { REST, SHOP, restGain } from '@engine/shared/defs';
+import { REST, SHOP, restGain } from '../shared/defs';
 import { check } from '@engine/test/harness';
 import { newGame } from './game';
 

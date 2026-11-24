@@ -2,7 +2,7 @@
 // 틀의 문장(client/src/i18n/ko.ts의 koBase)과 합쳐 한 언어 묶음이 된다 (index.ts). 같은 키가 양쪽에 있으면 여기 것이 이긴다:
 // 틀의 기본 문장을 이 게임의 말로 덮어쓴 것이고, 그 목록은 test/deungbul/guide.test.ts에 고정해 두었다 (뜻하지 않은 겹침을 잡는다).
 // 기준 언어다: en.ts는 이 파일과 같은 모양을 갖춰야 컴파일된다.
-import type { ClassId, DailyId, DungeonId, ItemId, MonsterId, QuestId, ResidentId, SkillId } from '@engine/shared/defs';
+import type { ClassId, DailyId, DungeonId, ItemId, MonsterId, QuestId, ResidentId, SkillId } from '../../shared/defs';
 import type { MsgMap } from '@engine/shared/ext';
 import type { MsgArg, MsgKey } from '@engine/shared/messages';
 import { josa, keyHints, num, signed } from '@engine/client/i18n/ko';

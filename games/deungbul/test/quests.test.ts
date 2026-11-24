@@ -1,6 +1,6 @@
 // 메인 퀘스트 (서버 없이 게임 규칙만 돌린다)
-import { HERB_FIELD, QUESTS, SHOP } from '@engine/shared/defs';
-import { TOWER, TOWERS } from '@engine/shared/world';
+import { HERB_FIELD, QUESTS, SHOP } from '../shared/defs';
+import { TOWER, TOWERS } from '../shared/world';
 import { newGame } from './game';
 import { check } from '@engine/test/harness';
 

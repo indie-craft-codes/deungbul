@@ -8,9 +8,9 @@ import {
   RECIPES, RESIDENTS, RESPAWN_S, REST, SHOPS, SHOP_REACH, SHOP_STOCK, SKILL_DEFS, SLOW_FACTOR, SMITH, SMITHY_REACH, STAT_IDS, TOWER_REACH,
   baseOpt, bossHp, guildNeed, marketFee, maxHpFor, needFor, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
   type ItemDef, type ItemId, type MonsterDef, type MonsterId, type QuestGoal, type Reward, type SkillDef, type SkillId, type Stage,
-} from '@engine/shared/defs';
+} from '../../shared/defs';
 import { AUTO, AWAY } from '@engine/shared/auto';
-import { AOI_LEAVE, CHAT_MAX, NAME_MAX, PLAYER_SPEED, TOWERS, zoneOf } from '@engine/shared/world';
+import { AOI_LEAVE, CHAT_MAX, NAME_MAX, PLAYER_SPEED, TOWERS, zoneOf } from '../../shared/world';
 import { en, ko } from '../i18n';
 import type { Locale } from '@engine/client/i18n/ko';
 import {

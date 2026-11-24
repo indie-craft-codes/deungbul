@@ -121,6 +121,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       autoOn: 'Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting (up to 8 hours).',
       autoOff: 'Auto-hunt off.',
       noTargetNearby: 'No targets nearby.',
+      goingTown: 'Walking back to the start.',
       language: 'Language',
       chooseClass: 'Choose your class',
       changeClass: 'Change class',

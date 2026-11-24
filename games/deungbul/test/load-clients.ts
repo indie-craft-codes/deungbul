@@ -5,7 +5,7 @@
 // fight:   등탑 주변에 모여 가까운 몬스터를 계속 공격한다 (습격을 흉내 낸다)
 import { WebSocket } from 'ws';
 import type { ClientMsg, ServerMsg } from '@engine/shared/protocol';
-import { TOWER } from '@engine/shared/world';
+import { TOWER } from '../shared/world';
 
 const [port, count, mode, seconds] = [Number(process.argv[2]), Number(process.argv[3]), process.argv[4] ?? 'cluster', Number(process.argv[5] ?? 15)];
 let joined = 0, bytesIn = 0, closed = 0;

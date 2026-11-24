@@ -1,6 +1,6 @@
 // 전투와 기술 (서버 없이 게임 규칙만 돌린다)
 import { MONSTERS } from '../shared/defs';
-import { TOWER } from '../shared/world';
+import { TOWER } from '@game/shared/world';
 import { Game } from '../server/game/game';
 import { check } from './harness';
 

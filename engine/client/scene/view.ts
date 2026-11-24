@@ -1,7 +1,7 @@
 // 3D 화면: 렌더러, 카메라, 빛, 지형과 나무. 게임 규칙도, 이 게임의 맵도 모른다.
 // 땅과 잎의 색, 건물, 분위기의 값은 게임이 넘긴다 (Look, setMood). 그 밖의 물체는 게임이 scene에 직접 더한다.
 import * as THREE from 'three';
-import { MAX_X, MAX_Z, MIN_X, MIN_Z, rng, type World } from '../../shared/world';
+import { MAP, rng, type World } from '../../shared/world';
 import { mat } from './models';
 
 const SKY = 0xa9cdd0;
@@ -76,7 +76,8 @@ export class View {
 
   private buildGround(paint: NonNullable<Look['ground']>): void {
     const rnd = rng(7);
-    // 월드보다 사방으로 40씩 넓게 깔아서 가장자리 너머가 비어 보이지 않게 한다
+    // 들판(0번 지역)의 범위. 월드보다 사방으로 40씩 넓게 깔아서 가장자리 너머가 비어 보이지 않게 한다
+    const { x0: MIN_X, x1: MAX_X, z0: MIN_Z, z1: MAX_Z } = MAP.areas[0];
     const w = MAX_X - MIN_X + 80, h = MAX_Z - MIN_Z + 80;
     let g: THREE.BufferGeometry = new THREE.PlaneGeometry(w, h, Math.round(w / 1.82), Math.round(h / 1.82));
     g.rotateX(-Math.PI / 2);

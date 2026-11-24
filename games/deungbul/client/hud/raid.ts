@@ -1,6 +1,6 @@
 // 습격 알림: 진행 중이거나 곧 시작이면 가운데 위에 크게, 평소에는 내 정보 창에 다음 습격의 시각만 작게.
 // (습격의 시작과 결과를 알리는 가운데 알림은 서버의 안내문으로 온다: hud/notify.ts)
-import { RAID } from '@engine/shared/defs';
+import { RAID } from '../../shared/defs';
 import { $ } from '@engine/client/app';
 import { onMsg, onSlow } from '@engine/client/bus';
 import { L, clock, onLangChange } from '@engine/client/i18n';

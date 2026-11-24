@@ -2,8 +2,8 @@
 import {
   CAMPS, DROPS, DUNGEONS, ENHANCE, GEAR, GEAR_SLOTS, LEVEL, MONSTERS, RAID, RARITIES, RECIPES, RESPAWN_S, SHOP_STOCK, STATS, STAT_IDS, START_WEAPON,
   ITEMS, clearRar, gearScore, needFor, sellPrice, type Gear, type GearSlot, type ItemId, type MonsterDef, type MonsterId, type Stat,
-} from '@engine/shared/defs';
-import { zoneOf } from '@engine/shared/world';
+} from '../../shared/defs';
+import { zoneOf } from '../../shared/world';
 import { optRange } from './rules';
 
 export const MONSTER_IDS = Object.keys(MONSTERS) as MonsterId[];

@@ -1,7 +1,7 @@
 // 서버와 클라이언트가 주고받는 메시지. 지금은 JSON이고, 트래픽이 문제가 되면 이진 형식으로 바꾼다.
 // 화면에 보일 문장은 싣지 않는다: 종류와 값만 보내고 문장은 클라이언트가 언어에 맞게 만든다.
-import type { Gear, Mail, RankRow } from '@game/shared/content/growth';
-import type { GuildView, MarketItem } from '@game/shared/content/social';
+import type { Gear, Mail, RankRow } from './defs/growth';
+import type { GuildView, MarketItem } from './defs/social';
 import type { ClientMsgs, ServerMsgs, WorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
 

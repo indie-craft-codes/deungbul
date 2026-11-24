@@ -1,8 +1,8 @@
 // 재화 흐름 지표(경제 장부): 서버 없이 게임 규칙만 돌려, 장부에 적힌 것이 실제로 바뀐 것과 맞는지 센다.
 // 가장 중요한 것은 대조 검사다: 긴 시나리오를 돌린 뒤 재화마다 "장부의 생김 − 사라짐 = 모든 캐릭터가 가진 것의 실제 변화"가 정확히 맞아야 한다.
 // 이 파일은 장부 시험에서 가른 이 게임의 몫이다: 대조 검사의 긴 시나리오가 등탑·퀘스트·기여 단계·습격을 거친다. 장부 자체의 나머지 검사는 틀의 시험 test/ledger.test.ts에 있다.
-import { CAMPS, CONTRIB_TIERS, DUNGEONS, FORGE, RARITIES, SHOPS, SMITHY, marketFee, type MarketItem } from '@engine/shared/defs';
-import { TOWER } from '@engine/shared/world';
+import { CAMPS, CONTRIB_TIERS, DUNGEONS, FORGE, RARITIES, SHOPS, SMITHY, marketFee, type MarketItem } from '../shared/defs';
+import { TOWER } from '../shared/world';
 import type { Ent } from '@engine/server/game/entity';
 import type { Game } from '@engine/server/game/game';
 import { isField } from '@engine/server/game/layers';

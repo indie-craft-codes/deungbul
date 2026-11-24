@@ -1,7 +1,7 @@
 // 등탑 창(내가 있는 구역의 등탑: 밝기, 바치기, 주민의 귀환, 오늘의 등탑지기)과 내 정보 창에 덧붙는 이 게임의 줄(불씨, 휴식 보너스, 등탑 밝기, 기여).
 // 틀의 내 정보 창(hud/me.ts)은 이 줄들을 모른다: 여기서 bus에 스스로 등록해 그린다 (느린 주기, 공유 상태를 받았을 때, 언어가 바뀔 때).
-import { CONTRIB_TIERS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, RESIDENTS, TOWER_REACH } from '@engine/shared/defs';
-import { TOWERS } from '@engine/shared/world';
+import { CONTRIB_TIERS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, RESIDENTS, TOWER_REACH } from '../../shared/defs';
+import { TOWERS } from '../../shared/world';
 import { $ } from '@engine/client/app';
 import { onMsg, onSlow } from '@engine/client/bus';
 import { openClasses } from '@engine/client/hud/classes';

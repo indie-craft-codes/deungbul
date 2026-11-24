@@ -1,9 +1,10 @@
 // 메인 퀘스트. 장(chapter)마다 단계가 차례로 이어지고, 진행은 플레이어마다 따로 저장한다.
 // 주민이 서버 전체에서 이미 돌아왔더라도, 늦게 온 사람은 그 장을 처음부터 겪는다.
 // 제목과 단계 문장은 언어 파일에 있다 (quests[장 id]).
-import { SHOP, type ItemId } from './items';
-import type { MonsterId } from './monsters';
-import { CLEARINGS, TOWER, TOWERS } from '@engine/shared/world';
+import type { ItemId } from '@engine/shared/defs/items';
+import type { MonsterId } from '@engine/shared/defs/monsters';
+import { SHOP } from './items';
+import { CLEARINGS, TOWER, TOWERS } from './map';
 
 export type QuestGoal =
   /** 몬스터를 n마리 잡는다 */

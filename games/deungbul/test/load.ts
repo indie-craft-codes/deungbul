@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TICK_MS } from '@engine/shared/world';
+import { TICK_MS } from '../shared/world';
 import { startDeungbul } from './game';
 
 const SECONDS = 15;

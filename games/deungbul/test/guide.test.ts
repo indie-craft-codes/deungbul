@@ -17,14 +17,14 @@ import { enBase } from '@engine/client/i18n/en';
 import { itemInfo, keyHints, koBase } from '@engine/client/i18n/ko';
 import { overlaps } from '@engine/client/i18n/merge';
 import { AWAY } from '@engine/shared/auto';
-import { BUILD, CLASSES, COMBAT, FULL_TOWER_OFFER, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, GUILD, LEASH, LEVEL, MONSTER_AI, POWER, STATS, bossHp, gearScore, guildLevel, guildNeed, needFor, raidFoes, raidTowerHp, type Gear } from '@engine/shared/defs';
+import { BUILD, CLASSES, COMBAT, FULL_TOWER_OFFER, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, GUILD, LEASH, LEVEL, MONSTER_AI, POWER, STATS, bossHp, gearScore, guildLevel, guildNeed, needFor, raidFoes, raidTowerHp, type Gear } from '../shared/defs';
 import { newGame } from './game';
 import { compare, readFixture, snapshotOf } from './locale-snapshot';
 import {
   ATTEND, BUILD_STATS, CAMPS, CLASS_IDS, CONTRIB_TIERS, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MONSTERS, QUESTS, RARITIES, RECIPES,
   RESIDENTS, SHOP_STOCK, SKILL_DEFS, STAT_IDS, sellPrice, type MonsterId,
-} from '@engine/shared/defs';
-import { TOWERS, rng } from '@engine/shared/world';
+} from '../shared/defs';
+import { TOWERS, rng } from '../shared/world';
 import { check } from '@engine/test/harness';
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
@@ -389,6 +389,7 @@ for (const P of PACKS) {
     'ui.title', // 게임의 이름
     'ui.hint', // 조작 안내에 이 게임의 단축키(F: 퀘스트 이동, H: 마을로)가 더 있다
     'ui.forge', // 브람의 대장간
+    'ui.goingTown', // 돌아가는 곳(첫불 마을)을 말한다
     'fmt.raidFoe', // 습격으로 온 적의 이름 앞에 '안개'를 붙인다 (틀의 기본은 이름 그대로)
     'msg.classFar', // 직업은 등탑 가까이에서 바꾼다
     'msg.bossUp', // 나타난 곳(잿빛 숲)을 말한다

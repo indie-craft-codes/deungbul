@@ -1,5 +1,5 @@
 // 안개 습격: 정해진 시각에 안개에서 나온 것들이 등탑으로 몰려온다. 수치는 모두 잠정값이다.
-import type { MonsterId } from './monsters';
+import type { MonsterId } from '@engine/shared/defs/monsters';
 
 export interface RaidConfig {
   /** 습격이 시작되는 시각 (서버 현지 시간의 시). 매시 정각에 시작한다 */

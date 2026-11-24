@@ -1,7 +1,7 @@
 // 이 게임(등불지기)의 시험이 함께 쓰는 것: 등불지기의 규칙을 깐 게임과 서버를 만든다.
 // new Game()과 startServer()는 틀만으로 만들어진다(규칙 플러그인 없음). 등탑·습격·퀘스트·등탑지기·휴식이 있어야 하는 시험은 여기를 거친다.
 // 틀의 시험(test/*.test.ts)은 이 폴더를 import하지 않는다 (test/framework.test.ts가 검사한다).
-import type { RaidConfig } from '@engine/shared/defs';
+import type { RaidConfig } from '../shared/defs';
 import { installDeungbul } from '../server/deungbul';
 import { Game, type GameOptions } from '@engine/server/game/game';
 import { startServer, type Options, type Running } from '@engine/server/net/server';

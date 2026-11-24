@@ -1,5 +1,5 @@
 // 필드 보스 (서버 없이 게임 규칙만 돌린다)
-import { ZONE_SPLIT } from '../shared/world';
+import { ZONE_SPLIT } from '@game/shared/world';
 import { MONSTERS } from '../shared/defs';
 import { Game } from '../server/game/game';
 import { check } from './harness';

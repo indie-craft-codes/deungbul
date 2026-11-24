@@ -1,5 +1,5 @@
 // 상점, 갑옷 (서버 없이 게임 규칙만 돌린다). 등불 맡기기(휴식 보너스)와 주민의 귀환은 이 게임의 것이라 test/deungbul/shop.test.ts에 있다
-import { SHOP } from '../shared/defs';
+import { SHOP } from '@game/shared/defs';
 import { Game } from '../server/game/game';
 import { check } from './harness';
 

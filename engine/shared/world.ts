@@ -1,10 +1,12 @@
 // 서버와 클라이언트가 함께 쓰는 월드: 엔진 상수와, 맵 정의로 장애물을 만드는 코드.
 // 같은 시드로 같은 장애물을 만들어서, 서버의 충돌 판정과 클라이언트의 그림이 항상 일치한다.
-// 맵 자체(범위, 구역, 등탑, 빈터, 길, 나무 뿌리는 규칙)는 shared/content/map.ts에 있고, 여기서 그대로 다시 내보낸다.
+// 맵 자체(범위, 구역, 등탑, 빈터, 길, 나무 뿌리는 규칙)는 게임의 내용(@game/shared/content의 MAP)이고, 여기서는 그 모양과 거기서 꺼낸 것(defs/map.ts)만 다시 내보낸다.
 // 이 파일은 그 가운데 맵 정의(MAP)만 읽는다: 연못이나 등탑 같은 이 게임의 낱말은 모른다.
-import { AREAS, EDGE, MAP, areaAt } from '@game/shared/content/map';
+import { MAP } from '@game/shared/content';
+import { AREAS, EDGE, areaAt } from './defs/map';
 
-export * from '@game/shared/content/map';
+export * from './defs/map';
+export { MAP };
 
 const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 /**

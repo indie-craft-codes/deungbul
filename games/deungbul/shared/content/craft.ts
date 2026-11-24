@@ -1,22 +1,10 @@
 // 제작: 잿빛 숲의 몬스터가 떨어뜨린 재료를 브람의 대장간에 가져가 무기를 만든다. 수치는 모두 잠정값이다.
-// 틀의 것(타입과 도우미 함수)과 이 게임의 것(표와 수치)이 한 파일에 있어 [틀] / [이 게임] 구역 주석으로 갈라 둔다 (파일은 9단계에서 갈린다).
-import type { ItemId } from './items';
-import type { MonsterId } from './monsters';
+// 모양(ForgeDef, Recipe)은 틀에 있다: engine/shared/defs/craft.ts
+import type { ForgeDef, Recipe } from '@engine/shared/defs/craft';
+import type { ItemId } from '@engine/shared/defs/items';
+import type { MonsterId } from '@engine/shared/defs/monsters';
 import { RESIDENTS, type ResidentId } from './residents';
 
-// ===== [틀] 제작의 모양 =====
-/** 대장간 하나: 이 자리에 가까이 서야 제작할 수 있다. needs는 잠금 열쇠다 (ItemDef.needs와 같다: 틀은 g.rules.unlocked(열쇠)에 묻기만 한다) */
-export interface ForgeDef { x: number; z: number; needs?: string }
-
-export interface Recipe {
-  /** 만들어지는 아이템 */
-  id: ItemId;
-  gold: number;
-  /** 필요한 재료와 수 */
-  mats: Partial<Record<ItemId, number>>;
-}
-
-// ===== [이 게임] 대장간, 제작법, 재료 =====
 /** 대장간을 여는 주민. 이 주민이 마을로 돌아와야 제작할 수 있다 */
 export const SMITH: ResidentId = 'bram';
 /** 대장간들. 지금은 하나다: 대장장이가 서 있는 곳이고, 그가 돌아와야 열린다. 대장간을 더하려면 여기에 한 줄 더한다 */

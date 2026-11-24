@@ -6,8 +6,8 @@
 //   - 확장 지점: 게임이 선언으로 더한 것(사건, 공유 상태, 명령)이 등불지기에는 실행 중에 있고 틀만의 게임에는 없는가
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, restGain } from '@engine/shared/defs';
-import { TOWER } from '@engine/shared/world';
+import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, restGain } from '../shared/defs';
+import { TOWER } from '../shared/world';
 import type { Ent } from '@engine/server/game/entity';
 import { Game } from '@engine/server/game/game';
 import { MemoryStore, type PlayerSave, type WorldSave } from '@engine/server/store';

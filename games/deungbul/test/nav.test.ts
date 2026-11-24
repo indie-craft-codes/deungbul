@@ -1,6 +1,6 @@
 // 길찾기 시험에서 가른 이 게임의 검사: 퀘스트의 목적지 (서버 없이 게임 규칙만 돌린다)
 // 길찾기 자체의 검사는 틀의 시험 test/nav.test.ts에 있다.
-import { QUESTS, SHOP_REACH, TOWER_REACH } from '@engine/shared/defs';
+import { QUESTS, SHOP_REACH, TOWER_REACH } from '../shared/defs';
 import { check } from '@engine/test/harness';
 import { newGame } from './game';
 

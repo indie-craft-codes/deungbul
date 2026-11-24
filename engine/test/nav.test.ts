@@ -1,6 +1,6 @@
 // 길찾기 (서버 없이 공용 코드만 돌린다)
 import { NavGrid, walk, type Walker } from '../shared/nav';
-import { PLAYER_SPEED, POND } from '../shared/world';
+import { PLAYER_SPEED, POND } from '@game/shared/world';
 import { Game } from '../server/game/game';
 import { check } from './harness';
 

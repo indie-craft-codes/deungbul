@@ -1,7 +1,7 @@
 // 이 게임의 생김새: 몬스터 종류별 모델, 무기와 갑옷의 겉모습. 틀(scene/models.ts)에는 기본 모델만 있고, 여기서 등록한다.
 // 새 몬스터나 장비를 더하면 아래 표에 한 줄을 더한다 (몬스터는 빠뜨리면 컴파일이 실패한다).
 import * as THREE from 'three';
-import type { ItemId, MonsterId } from '@engine/shared/defs';
+import type { ItemId, MonsterId } from '../../shared/defs';
 import { limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerMonsterModel, type ArmorLook, type BladeLook, type Model, type MonsterBuilder } from '@engine/client/scene/models';
 
 const G = {

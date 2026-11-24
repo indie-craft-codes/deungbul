@@ -1,7 +1,7 @@
 // 이 게임의 장면: 등탑의 등불 밝기, 구역의 분위기(등탑 밝기 단계·습격·꺼진 등탑·던전), 퀘스트 목적지의 빛기둥, 미니맵의 바탕.
 // 틀(scene/view.ts)은 값만 받아 그리고, 언제 어떤 값을 쓸지는 여기서 정한다. 필요한 것은 bus에 스스로 등록한다.
 import * as THREE from 'three';
-import type { Stage } from '@engine/shared/defs';
+import type { Stage } from '../../shared/defs';
 import { view } from '@engine/client/app';
 import { onMsg, onSlow } from '@engine/client/bus';
 import { setMapPaint } from '@engine/client/hud/minimap';

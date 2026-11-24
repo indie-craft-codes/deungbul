@@ -1,5 +1,5 @@
 // 이동: 장애물을 돌아서 도착한다 (서버 없이 게임 규칙만 돌린다)
-import { POND, TOWER } from '../shared/world';
+import { POND, TOWER } from '@game/shared/world';
 import { Game } from '../server/game/game';
 import { check } from './harness';
 

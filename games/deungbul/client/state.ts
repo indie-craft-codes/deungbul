@@ -2,10 +2,10 @@
 //   G    개인 상태: 서버가 me 메시지로 알려 주는 내 진행 (퀘스트, 기여, 기여 단계, 휴식 보너스)
 //   GS   공유 상태: 서버가 world 메시지로 모두에게 알려 주는 것 (등탑 밝기, 주민, 오늘의 등탑지기, 습격)
 // 고치는 곳은 메시지를 받는 game/deungbul.ts 하나이고, 이 게임의 화면이 읽는다.
-import { GLOW_START, RESIDENTS, stageOf, type Stage } from '@engine/shared/defs';
+import { GLOW_START, RESIDENTS, stageOf, type Stage } from '../shared/defs';
 import type { MeState } from '../shared/deungbul';
 import type { WorldState } from '@engine/shared/protocol';
-import { TOWERS, zoneOf } from '@engine/shared/world';
+import { TOWERS, zoneOf } from '../shared/world';
 import { S } from '@engine/client/state';
 
 export const G: MeState = {

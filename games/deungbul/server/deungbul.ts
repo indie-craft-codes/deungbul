@@ -3,7 +3,7 @@
 // 공용 쪽의 짝(안내문, 메시지, 공유 상태)은 shared/deungbul.ts에 있다.
 // 쓰는 법: new Game({ plugins: [installDeungbul] }), 설정을 줄 때는 plugins: [(g) => installDeungbul(g, { raid: { everyMin: 5 } })].
 // plugins를 주지 않은 new Game()은 틀만으로 만들어진다: 이 게임의 서버(server/main.ts)와 시험(test/deungbul/game.ts)이 이 플러그인을 적어 넘긴다.
-import type { RaidConfig } from '@engine/shared/defs';
+import type { RaidConfig } from '../shared/defs';
 import type { OldStatCells } from '../shared/deungbul';
 import type { Ent } from '@engine/server/game/entity';
 import type { Game } from '@engine/server/game/game';

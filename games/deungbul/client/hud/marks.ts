@@ -1,7 +1,7 @@
 // 이 게임의 미니맵 표식: 등탑(켜졌으면 금빛, 꺼졌으면 회색), 상인, 던전의 문, 퀘스트 목적지.
 // 미니맵 자체(hud/minimap.ts)는 무엇을 찍는지 모른다. 다른 게임은 이 파일만 바꾸면 된다.
-import { DUNGEONS, QUESTS, SHOPS, isDungeonId } from '@engine/shared/defs';
-import { TOWERS } from '@engine/shared/world';
+import { DUNGEONS, QUESTS, SHOPS, isDungeonId } from '../../shared/defs';
+import { TOWERS } from '../../shared/world';
 import { $ } from '@engine/client/app';
 import { onSlow } from '@engine/client/bus';
 import { MARK, addMarks, type Mark } from '@engine/client/hud/minimap';
