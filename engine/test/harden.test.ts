@@ -455,3 +455,51 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
     await server.close();
   }
 }
+
+// ---------- 서버를 껐다 켜도 자리 비움 사냥은 이어진다 ----------
+// 자리 비움 사냥 중인 캐릭터는 서버의 기억에만 있어서, 전에는 다시 켜면 월드에서 빠진 채 주인이 접속할 때까지 멈춰 있었다.
+// 끌 때 사냥 중이던 캐릭터(자리 비움 사냥 중 + 자동 사냥을 켠 채 접속해 있던 사람)를 적어 두고, 켤 때 다시 세운다.
+{
+  const store = new MemoryStore();
+  const grow = async (port: number, game: Game, name: string, token: string, lv: number, auto: boolean) => {
+    const p = await connect(port, name, token);
+    const e = game.ents.get(p.id)!;
+    p.ws.send(JSON.stringify({ t: 'class', id: 'warrior' }));
+    await until(() => e.cls === 'warrior');
+    e.lv = lv; game.players.refresh(e); e.hp = e.maxHp; e.unsaved = true;
+    if (auto) { p.ws.send(JSON.stringify({ t: 'auto', on: true })); await until(() => e.auto); }
+    return { p, e };
+  };
+  let first = await startServer(0, { store });
+  const gone = await grow(first.port, first.game, '이어사냥', 'restore-token-away-0001', 6, true);
+  gone.p.ws.close();
+  await sleep(400);
+  const here = await grow(first.port, first.game, '켜둔사람', 'restore-token-conn-0002', 6, true);
+  const idle = await grow(first.port, first.game, '안켠사람', 'restore-token-idle-0003', 6, false);
+  const low = await grow(first.port, first.game, '낮은사람', 'restore-token-low-00004', 1, true);
+  check(first.game.ents.has(gone.p.id) && first.game.away.active(gone.e), '끄기 전: 자동 사냥을 켠 채 끊긴 캐릭터가 남아 사냥한다');
+  await first.close();
+  void here; void idle; void low;
+
+  const second = await startServer(0, { store });
+  try {
+    const names = () => [...second.game.ents.values()].filter((e) => e.kind === 'p').map((e) => e.name).sort();
+    check(names().join() === ['이어사냥', '켜둔사람'].sort().join(), `다시 켜면 사냥 중이던 캐릭터만 다시 선다: ${names().join(', ')} (자동 사냥을 켜지 않았거나 레벨이 모자란 캐릭터는 서지 않는다)`);
+    const back = [...second.game.ents.values()].find((e) => e.name === '이어사냥')!;
+    check(back.lv === 6 && back.auto && second.game.away.active(back), '다시 선 캐릭터는 저장된 그대로이고 서버가 이어서 사냥한다');
+    // 주인이 돌아오면 평소처럼 그 캐릭터를 넘겨받는다 (둘이 되지 않는다)
+    const again = await connect(second.port, undefined, 'restore-token-away-0001');
+    check(again.id === back.id && [...second.game.ents.values()].filter((e) => e.name === '이어사냥').length === 1 && !second.game.away.active(back), '주인이 접속하면 그 캐릭터를 넘겨받는다');
+    again.ws.close();
+  } finally {
+    await second.close();
+  }
+  // 되살린 뒤에 다시 꺼도 같다: 그때 사냥 중이던 캐릭터(넘겨받았다가 다시 끊긴 것 포함)가 또 적히고 또 선다
+  const third = await startServer(0, { store });
+  try {
+    const left = [...third.game.ents.values()].filter((e) => e.kind === 'p').map((e) => e.name).sort();
+    check(left.join() === ['이어사냥', '켜둔사람'].sort().join(), `둘째로 끌 때도 그때 사냥 중이던 캐릭터가 적힌다: ${left.join(', ')}`);
+  } finally {
+    await third.close();
+  }
+}

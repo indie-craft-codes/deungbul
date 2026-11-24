@@ -93,6 +93,10 @@ export interface Metrics {
   /** 틱 간격이 목표(50ms)보다 얼마나 늦었는가(ms): 평균, 최대. 서버가 밀리면 커진다 */
   lagAvg: number; lagMax: number;
 }
+/** 월드 저장에 덧붙이는 칸: 끌 때 사냥 중이던 캐릭터의 [저장 키, 주소] 목록. 게임 규칙의 칸이 아니라 통신 계층의 것이라 importWorld는 읽지 않는다 */
+const AWAY_AT_CLOSE = 'awayAtClose';
+/** 목록 없이 되살릴 때: 가장 늦게 저장된 캐릭터와 이만큼 안에 저장된 것만 '끄기 직전에 사냥 중이던 것'으로 본다 */
+const AWAY_RESTORE_MS = 90_000;
 export interface Running { port: number; game: Game; metrics(): Metrics; close(): Promise<void> }
 export interface Options { bots?: number; store?: Store; game?: GameOptions; maxClients?: number; maxPerIp?: number; maxAway?: number; /** 빌드된 화면(dist/)의 자리. 주지 않으면 저장소 뿌리의 dist/ */ staticDir?: string }
 
@@ -114,6 +118,27 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   let tick = 0;
   const maxClients = opts.maxClients ?? MAX_CLIENTS;
   const maxPerIp = opts.maxPerIp ?? MAX_PER_IP, maxAway = opts.maxAway ?? MAX_AWAY;
+  // 서버를 껐다 켜도 자리 비움 사냥은 이어진다: 끄기 직전에 사냥 중이던 캐릭터를 다시 세운다 (주인이 접속하면 평소처럼 넘겨받는다).
+  // 끌 때 적어 둔 목록이 있으면 그것을 쓰고, 없으면(갑자기 죽었거나 이 기능 이전의 저장) 마지막 저장 무렵에 자동 사냥을 켠 채 저장된 캐릭터를 찾는다
+  try {
+    let list = Array.isArray(saved?.[AWAY_AT_CLOSE]) ? (saved[AWAY_AT_CLOSE] as unknown[]).filter((v): v is [string, string] => Array.isArray(v) && typeof v[0] === 'string').map((v) => [v[0], String(v[1] ?? '')] as [string, string]) : null;
+    if (!list && saved) {
+      const found: { name: string; seen: number }[] = [];
+      store.eachPlayer((p) => { if (p.auto && typeof p.seen === 'number') found.push({ name: p.name, seen: p.seen }); });
+      let newest = 0;
+      store.eachPlayer((p) => { if (typeof p.seen === 'number' && p.seen > newest) newest = p.seen; });
+      list = found.filter((p) => newest - p.seen < AWAY_RESTORE_MS).map((p) => [store.keyOfName(p.name) ?? '', ''] as [string, string]).filter(([key]) => key !== '');
+    }
+    for (const [key, ip] of list ?? []) {
+      if (away.has(key) || away.size >= maxAway) continue;
+      const save = store.loadPlayer(key);
+      if (!save || !save.auto) continue;
+      const e = game.players.spawn(save.name, false, save, key);
+      if (!e.auto || e.cls === '' || e.lv < AWAY_MIN_LV) { game.players.leave(e.id); continue; }
+      away.set(key, e); awayIp.set(key, ip); game.away.start(e);
+    }
+    if (away.size) console.log(`[server] 자리 비움 사냥을 이어 갑니다: ${away.size}명`);
+  } catch (err) { console.error('[server] 자리 비움 사냥을 되살리지 못했습니다:', err); }
   const perIp = new Map<string, number>();
   const people = new Map<string, Person>();
   /** 그 연결의 사람을 가리키는 열쇠: 저장 키가 있으면 그것, 손님은 접속 주소 (손님은 같은 주소의 손님끼리 한 사람으로 묶인다) */
@@ -164,8 +189,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     const touched = e.cls !== '' || e.lv > 1 || e.exp > 0 || e.gold > 0 || e.sparks > 0 || !!game.rules.touched?.(e);
     if (c.hadSave || touched) { saveEnt(c.key, e); c.hadSave = true; }
   }
-  function saveWorld(): boolean {
-    try { store.saveWorld(game.exportWorld()); return true; }
+  function saveWorld(extra: Record<string, unknown> = {}): boolean {
+    try { store.saveWorld({ ...game.exportWorld(), ...extra }); return true; }
     catch (err) { console.error('[server] 월드 저장 실패:', err); return false; }
   }
   /**
@@ -497,7 +522,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
           // 끄기 전에 전원과 월드를 저장한다
           for (const c of clients) savePlayer(c);
           for (const [key, e] of away) saveEnt(key, e);
-          saveWorld();
+          // 다시 켰을 때 이어서 사냥할 캐릭터를 적어 둔다: 자리 비움 사냥 중이던 것과, 자동 사냥을 켠 채 접속해 있던 것(재시작으로 끊긴다)
+          const hunting: [string, string][] = [...away.keys()].map((key) => [key, awayIp.get(key) ?? '']);
+          for (const c of clients) if (c.key && c.ent && c.ent.auto && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && !away.has(c.key)) hunting.push([c.key, c.ip]);
+          saveWorld({ [AWAY_AT_CLOSE]: hunting });
           saveEcon();
           for (const c of clients) c.ws.terminate();
           wss.close(() => httpServer.close(() => ok()));
