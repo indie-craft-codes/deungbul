@@ -1,4 +1,4 @@
-/* 게임 화면에 붙는 도감 단추. 화면 왼쪽 가장자리에 혼자 떠 있다: 다른 창의 자리에 기대지 않는다 (client/src/hud/guidelink.ts).
+/* 게임 화면에 붙는 도감 단추. 화면 왼쪽 가장자리에 혼자 떠 있다: 다른 창의 자리에 기대지 않는다 (client/src/game/hud/guidelink.ts).
    색은 게임의 것(client/style.css의 변수)을 쓰되, 이 파일만으로도 보이도록 기본값을 함께 적는다. */
 #guideLink {
   position: fixed; left: 0; top: 60%; transform: translateY(-50%); z-index: 1;
@@ -11,3 +11,6 @@
 #guideLink:hover, #guideLink:focus-visible { border-color: var(--gold, #f0bb55); }
 /* 손가락으로 누르는 화면에서는 조금 크게 */
 @media (pointer: coarse) { #guideLink { padding-top: 8px; padding-bottom: 8px; font-size: 13px; } }
+/* 좁은 화면(폰 세로)에서는 직업 고르기 창(접속 직후, 직업을 바꿀 때)이 화면 폭을 다 써서 이 단추가 창의 왼쪽 모서리에 겹친다: 창이 떠 있는 동안에는 숨긴다.
+   단추는 body의 맨 끝에 붙으므로(guidelink.ts) 그 앞의 형제인 창(#classPick)을 본다. 폭의 기준은 게임의 좁은 화면 기준(style.css의 720px)과 같다 */
+@media (max-width: 720px) { #classPick:not([hidden]) ~ #guideLink { display: none; } }
