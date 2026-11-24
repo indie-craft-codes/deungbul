@@ -729,7 +729,7 @@ export function initBonfire(): void {
 | `rules.ts`의 `rules` | 화면 쪽 규칙 | `client/bonfire.ts` (`home`) |
 | `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳 | `client/bonfire.ts` |
 | `hud/near.ts`의 `addPlace` | 가까이 가면 열리는 창 | `client/bonfire.ts` |
-| `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도에 적는 이름(구역, 마을 …). 전체 지도(`hud/worldmap.ts`, N 키·미니맵·`지도` 단추)는 틀이 그리고 누른 곳으로 걸어가게 한다: 게임은 표식·바탕·이름만 등록한다 | `client/bonfire.ts`, `client/scene.ts` |
+| `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels`. `hud/worldmap.ts`의 `addMapPlaces`, `travelTo`, `stopTravel` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도의 큰 이름(구역)과 장소. 전체 지도(N 키·미니맵·`지도` 단추)는 틀이 그린다: 상점·대장간·던전의 문·사냥터(`CAMPS`)·우두머리는 틀이 내용에서 스스로 장소로 찍고, 게임은 자기 장소(거점, 목적지 …)를 `addMapPlaces`로 더한다(갈래 `PlaceKind`: goal, town, shop, forge, dungeon, hunt, boss, other). 장소를 누르면 정보 카드, 목록에서 '자동 이동'과 '가서 자동 사냥'(`hunt: true`) | `client/bonfire.ts`, `client/scene.ts` |
 | `hud/classes.ts`의 `openClasses` | 직업 고르기 창 열기 | `client/bonfire.ts` |
 | `scene/view.ts`의 `Look` | 땅, 잎, 건물 | `client/scene.ts` |
 | `scene/models.ts`의 `registerMonsterModel`, `registerBlade`, `registerArmor`, `mat`, `part`, `limb` | 모델 | `client/scene.ts` |

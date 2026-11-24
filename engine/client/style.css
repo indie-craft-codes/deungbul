@@ -309,11 +309,38 @@ html, body { height: var(--app-h, 100%); }
 /* 미니맵: PC에서만 오른쪽 아래에 둔다 */
 #mapBox { position: absolute; right: 16px; bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; pointer-events: none; }
 #minimap { pointer-events: auto; cursor: pointer; }
-/* 전체 지도: 화면 가운데의 창. 캔버스의 크기는 worldmap.ts가 지역의 모양에 맞춰 정한다 */
-#wmap { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min-content; max-width: 96%; max-height: 94%; display: flex; flex-direction: column; gap: 6px; align-items: center; background: var(--ink); z-index: 5; }
+/* 전체 지도: 화면 가운데의 창. 지도와 장소 목록이 나란히(좁은 화면에서는 목록이 지도 위에 겹친다). 캔버스의 크기는 worldmap.ts가 창에 맞춘다 */
+#wmap { left: 50%; top: 50%; transform: translate(-50%, -50%); width: max-content; max-width: 98%; max-height: 98%; display: flex; flex-direction: column; gap: 6px; background: var(--ink); z-index: 5; padding: 8px; }
 #wmap[hidden] { display: none; }
-#wmap .row { align-self: stretch; }
-#wmapCanvas { cursor: crosshair; touch-action: manipulation; }
+#wmapHead { gap: 8px; }
+#wmapHead #wmapArea { flex: 1; }
+#wmapListBtn[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+#wmapBody { display: flex; gap: 10px; align-items: stretch; position: relative; }
+#wmapStage { position: relative; flex: none; }
+#wmapCanvas { display: block; cursor: crosshair; touch-action: none; border-radius: 4px; }
+#wmapTools { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 5px; }
+#wmapTools button { min-width: 34px; height: 34px; padding: 0 8px; font-size: 17px; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 700; }
+#wmapTools #wmapMe { font-size: 12px; font-weight: 400; }
+#wmapTravel { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); background: rgba(14, 34, 39, .9); border: 1px solid var(--gold); border-radius: 4px; padding: 4px 8px; font-size: 12px; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+#wmapTravel[hidden] { display: none; }
+#wmapTip { position: absolute; pointer-events: none; background: rgba(14, 34, 39, .92); border: 1px solid var(--line); border-radius: 3px; padding: 2px 7px; font-size: 12px; white-space: nowrap; }
+#wmapCard { left: 8px; top: 8px; width: 230px; max-width: calc(100% - 70px); display: flex; flex-direction: column; gap: 4px; background: rgba(14, 34, 39, .95); }
+#wmapCard[hidden] { display: none; }
+#wmapCardInfo { font-size: 12.5px; line-height: 1.4; }
+#wmapCard .btns { margin-top: 4px; }
+#wmapCard #wmapHunt[hidden] { display: none; }
+#wmapList { width: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; max-height: calc(94vh - 92px); }
+#wmapList[hidden] { display: none; }
+.wmkind { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--kc, var(--gold)); border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+.wmrow { display: flex; gap: 6px; align-items: center; }
+.wmrow .wmname { flex: 1; text-align: left; border: 0; padding: 3px 2px; line-height: 1.25; font-size: 13px; }
+.wmrow .wmname .note { font-size: 11px; }
+.wmrow.locked .wmname { color: var(--dim); }
+.wmrow .wmgo { flex: none; padding: 4px 7px; font-size: 11.5px; white-space: nowrap; }
+@media (max-width: 759px) {
+  #wmapList { position: absolute; right: 0; top: 0; bottom: 0; max-height: none; background: rgba(14, 34, 39, .96); border-left: 1px solid var(--line); padding: 4px 8px; z-index: 2; width: min(230px, 70%); }
+}
+#mapBtn.on { border-color: var(--gold); color: var(--gold); }
 #minimap { width: 150px; height: 150px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); }
 #mapLegend { background: rgba(14, 34, 39, .6); padding: 1px 7px; border-radius: 3px; font-size: 10.5px; white-space: nowrap; }
 @media (pointer: coarse), (max-width: 900px), (max-height: 520px) { #mapBox { display: none; } }

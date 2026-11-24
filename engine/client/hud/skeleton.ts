@@ -82,8 +82,32 @@ export const SKELETON = `
       <button type="button" class="plain" id="bagClose" data-i18n="close"></button>
     </div>
     <div class="panel" id="wmap" hidden>
-      <div class="row"><span class="ttitle" data-i18n="worldMap"></span><button type="button" class="plain" id="wmapClose" data-i18n="close"></button></div>
-      <canvas id="wmapCanvas" data-i18n-aria="worldMap"></canvas>
+      <!-- 전체 지도(hud/worldmap.ts): 머리, 지도와 그 위의 단추·카드, 장소 목록 -->
+      <div class="row" id="wmapHead">
+        <span class="ttitle" data-i18n="worldMap"></span><span class="note" id="wmapArea"></span>
+        <button type="button" class="plain" id="wmapListBtn" aria-pressed="true" data-i18n="mapList"></button>
+        <button type="button" class="plain" id="wmapClose" data-i18n="close"></button>
+      </div>
+      <div id="wmapBody">
+        <div id="wmapStage">
+          <canvas id="wmapCanvas" data-i18n-aria="worldMap"></canvas>
+          <div id="wmapTools">
+            <button type="button" id="wmapIn" data-i18n-aria="mapZoomIn">+</button>
+            <button type="button" id="wmapOut" data-i18n-aria="mapZoomOut">−</button>
+            <button type="button" id="wmapMe" data-i18n="mapMe"></button>
+          </div>
+          <div id="wmapTravel" hidden><span data-i18n="mapTraveling"></span> <b id="wmapTravelName"></b> <button type="button" class="plain" id="wmapStop" data-i18n="mapStop"></button></div>
+          <div id="wmapTip" hidden></div>
+          <div class="panel" id="wmapCard" hidden>
+            <div class="ttitle" id="wmapCardName"></div>
+            <div class="note" id="wmapCardKind"></div>
+            <div id="wmapCardInfo"></div>
+            <div class="note" id="wmapCardDist"></div>
+            <div class="btns"><button type="button" id="wmapGo" data-i18n="mapGo"></button><button type="button" id="wmapHunt" data-i18n="mapHunt"></button></div>
+          </div>
+        </div>
+        <div id="wmapList"></div>
+      </div>
       <div class="note" data-i18n="worldMapHint"></div>
     </div>
     <div class="panel" id="menu" hidden>

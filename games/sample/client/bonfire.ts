@@ -3,7 +3,7 @@
 import { SHOPS } from '../shared/content';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MeState } from '../shared/sample';
-import { $, addMapLabels, addMarks, addNotices, addPlace, type Mark, MARK, mountPanel, onKey, onMsg, onSlow, openClasses, rules, S, send } from '@engine/client';
+import { $, addMapPlaces, addMarks, addNotices, addPlace, type Mark, MARK, mountPanel, onKey, onMsg, onSlow, openClasses, rules, S, send } from '@engine/client';
 import { L, t } from '@engine/client/i18n';
 import './sample.css';
 
@@ -49,8 +49,8 @@ export function initBonfire(): void {
   addPlace('bonfire', [BONFIRE]);
   // 미니맵의 표식: 모닥불(불이 있으면 금빛)과 상인
   addMarks(() => [{ x: BONFIRE.x, z: BONFIRE.z, color: G.heat > 0 ? MARK.lit : MARK.dark, shape: 'square', edge: true }, ...SHOPS.map((s): Mark => ({ x: s.x, z: s.z, color: MARK.shop, shape: 'dot' }))]);
-  // 전체 지도(N)에 적는 이름: 모닥불
-  addMapLabels(() => [{ x: BONFIRE.x + 4, z: BONFIRE.z + 4, text: t('bonfire') }]);
+  // 전체 지도(N)의 장소: 모닥불. 상인과 사냥터는 틀이 내용에서 스스로 찍는다
+  addMapPlaces(() => [{ x: BONFIRE.x, z: BONFIRE.z, name: t('bonfire'), kind: 'town', info: G.heat > 0 ? t('bonfireWarm') : t('bonfireCold') }]);
 
   ui.one.addEventListener('click', () => { feed(1); ui.one.blur(); });
   ui.all.addEventListener('click', () => { feed(logs()); ui.all.blur(); });

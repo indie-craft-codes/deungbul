@@ -13,7 +13,7 @@ export { addMsgSounds, sfx } from './sound';
 export { mountPanel } from './hud/shell';
 export { addPlace } from './hud/near';
 export { addMapLabels, addMarks, setMapPaint, MARK, type MapLabel, type Mark, type MapBrush } from './hud/minimap';
-export { closeWorldMap, toggleWorldMap, worldMapOpen } from './hud/worldmap';
+export { addMapPlaces, closeWorldMap, stopTravel, toggleWorldMap, travelTo, worldMapOpen, type MapPlace, type PlaceKind } from './hud/worldmap';
 export { addNotices, banner } from './hud/notify';
 export { openClasses } from './hud/classes';
 export { hudSlow } from './hud/me';
