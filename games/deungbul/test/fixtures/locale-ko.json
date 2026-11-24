@@ -535,13 +535,6 @@
   "첫불 마을 습격 · 남은 적 1 · undefined",
   "첫불 마을 습격 · 남은 적 2 · undefined"
  ],
- "fmt.raidFoe": [
-  "93c2c822c7413ad8",
-  "안개 undefined",
-  "안개 0",
-  "안개 1",
-  "안개 2"
- ],
  "fmt.raidNext": [
   "bd85c55cad487e9b",
   "다음 습격 undefined · 하루 undefined번",
@@ -716,6 +709,13 @@
   "출석 0일째",
   "출석 1일째",
   "출석 2일째"
+ ],
+ "fmt.swarmFoe": [
+  "93c2c822c7413ad8",
+  "안개 undefined",
+  "안개 0",
+  "안개 1",
+  "안개 2"
  ],
  "fmt.tier": [
   "548c4980b100c96a",

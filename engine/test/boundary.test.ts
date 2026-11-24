@@ -77,13 +77,11 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
    * 알고 남겨 둔 것 → 그것이 있어도 되는 파일. 까닭:
    * crypto: node의 모듈 이름 ('crypt'의 앞머리가 같을 뿐) /
    * sparks, sparkBonus: 두 번째 재화의 칸 이름. 재화를 일반화하지 않기로 했다 (계획 7절, 점검 11번). 저장·지갑·장부·우편의 칸 이름으로 남는다 /
-   * raid: 몰려온 적의 표시(EnterInfo.r)를 읽는 자리. 점검 14번(습격 몹의 이름을 중립으로)에서 지운다
    */
   const KNOWN: Record<string, string[]> = {
     crypto: ['engine/server/net/server.ts'],
     sparks: ['engine/shared/defaults.ts', 'engine/server/game/systems/ledger.ts', 'engine/server/game/systems/mail.ts', 'engine/server/game/systems/players.ts', 'engine/server/game/systems/wallet.ts'],
     sparkBonus: ['engine/server/game/game.ts', 'engine/server/game/systems/players.ts'],
-    raid: ['engine/client/entities.ts'],
   };
   const used = new Set<string>();
   const ok = (f: string, w: string): boolean => { const hit = KNOWN[w]?.includes(f) ?? false; if (hit) used.add(`${w}@${f}`); return !hit; };

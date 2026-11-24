@@ -58,7 +58,7 @@ try {
   const isAt = (c: number, st: number, n = 0) => () => q.quest[0] === c && q.quest[1] === st && q.quest[2] === n;
   const place = (x: number, z: number) => { qEnt.x = x; qEnt.z = z; qEnt.moving = false; };
   const slay = (type: string, count: number) => {
-    const list = [...g0.ents.values()].filter((e) => e.type === type && !e.dead && !e.raid).slice(0, count);
+    const list = [...g0.ents.values()].filter((e) => e.type === type && !e.dead && !e.swarm).slice(0, count);
     for (const m of list) { place(m.x + 1, m.z); g0.combat.damage(qEnt, m, 9999, false); }
     return list.length;
   };
@@ -102,23 +102,23 @@ try {
   await until(() => [a, b].every((p) => game.clock - game.ents.get(p.id)!.lastAct < 5));
   game.raid.start();
   check(await until(() => a.raid.phase === 'active' && a.raid.foes === 10 && a.raid.towerMaxHp === RAID.towerHpBase + glow0 * 3), `습격이 시작되면 인원에 맞는 적이 온다 (2명: ${a.raid.foes}마리, 등탑 내구 ${a.raid.towerMaxHp})`);
-  check(await until(() => [...game.ents.values()].filter((e) => e.raid).length === 10), '습격 적이 월드에 나타난다');
-  const before = [...game.ents.values()].filter((e) => e.raid).map((e) => Math.hypot(e.x - TOWER.x, e.z - TOWER.z));
+  check(await until(() => [...game.ents.values()].filter((e) => e.swarm).length === 10), '습격 적이 월드에 나타난다');
+  const before = [...game.ents.values()].filter((e) => e.swarm).map((e) => Math.hypot(e.x - TOWER.x, e.z - TOWER.z));
   await sleep(1500);
-  const after = [...game.ents.values()].filter((e) => e.raid).map((e) => Math.hypot(e.x - TOWER.x, e.z - TOWER.z));
+  const after = [...game.ents.values()].filter((e) => e.swarm).map((e) => Math.hypot(e.x - TOWER.x, e.z - TOWER.z));
   check(after.length === 10 && after.reduce((s, d) => s + d, 0) < before.reduce((s, d) => s + d, 0) - 10, '습격 적이 등탑으로 다가온다');
   const aEnt = game.ents.get(a.id)!;
-  for (const m of [...game.ents.values()]) if (m.raid) game.combat.damage(aEnt, m, 9999, false);
+  for (const m of [...game.ents.values()]) if (m.swarm) game.combat.damage(aEnt, m, 9999, false);
   check(await until(() => a.raid.phase === 'idle' && a.glow === glow0 + 10), '다 막으면 습격이 끝나고 밝기가 10 오른다');
   check(a.sys.some((s) => s === 'raidWon:10') && (await until(() => a.sys.some((s) => s.startsWith('raidReward:')) && a.sparks >= 5)), '막아 낸 사람은 보상을 받는다');
-  check([...game.ents.values()].every((e) => !e.raid), '습격이 끝나면 습격 적이 남지 않는다');
+  check([...game.ents.values()].every((e) => !e.swarm), '습격이 끝나면 습격 적이 남지 않는다');
 
   // 습격: 시간 안에 못 막으면 밝기가 내려간다
   const glow1 = a.glow;
   Object.assign(game.raid.cfg, { durationS: 1 });
   game.raid.start();
   check(await until(() => a.raid.phase === 'idle' && a.glow === glow1 + RAID.loseGlow, 5000) && a.sys.some((s) => s === `raidLost:${RAID.loseGlow}`), `못 막으면 밝기가 10 내려간다 (${glow1} → ${a.glow})`);
-  check([...game.ents.values()].every((e) => !e.raid), '진 뒤에도 습격 적이 남지 않는다');
+  check([...game.ents.values()].every((e) => !e.swarm), '진 뒤에도 습격 적이 남지 않는다');
   await sleep(300);
   const glowEnd = a.glow, contribEnd = a.contrib, sparksEnd = a.sparks, resEnd = a.residents[0];
 

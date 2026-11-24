@@ -69,8 +69,8 @@ export interface Ent extends EntExt {
   respawn: number;
   /** 피해를 준 플레이어들 */
   hitters: Set<number>;
-  /** 습격으로 나타난 적: 등탑으로 향하고, 죽으면 다시 나오지 않는다 */
-  raid: boolean;
+  /** 몰려온 적: 게임의 규칙이 정한 목표(g.rules.siege)로 향하고, 집으로 돌아가지 않으며, 죽으면 다시 나오지 않는다 (등불지기의 습격이 부른다) */
+  swarm: boolean;
   /** 필드 보스: 체력에 반영한 인원, 다음 내려치기까지 남은 시간, 예고 중이면 남은 시간 */
   scale: number; cast: number; windup: number;
   /** 이 시각(게임 시계)까지 느려져 있다 */

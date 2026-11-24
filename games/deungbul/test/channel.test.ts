@@ -15,7 +15,7 @@ const put = (p: Ent, channel: number) => { p.layer = fieldLayer(channel); };
 {
   const g = newGame({ raid: { hours: [], waveAtS: [0, 2] } }), run = runOn(g), said = saidOn(g);
   const c = g.raid.cfg, perChannel = RAID.base + RAID.perPlayer;
-  const foes = (channel: number) => [...g.ents.values()].filter((m) => m.raid && !m.dead && m.layer === fieldLayer(channel));
+  const foes = (channel: number) => [...g.ents.values()].filter((m) => m.swarm && !m.dead && m.layer === fieldLayer(channel));
   const near = (p: Ent) => { p.x = TOWER.x + 3; p.z = TOWER.z + 3; p.maxHp = p.hp = 99999; };
   const kill = (p: Ent, channel: number) => { for (const m of foes(channel)) g.combat.damage(p, m, 99999, false); };
   const a = g.players.spawn('일', false), b = g.players.spawn('이', false);
@@ -63,7 +63,7 @@ const put = (p: Ent, channel: number) => { p.layer = fieldLayer(channel); };
   kill(b2, 2);
   run(0.1);
   check(g.raid.phase === 'idle' && g.tower.glow === glow + RAID.winGlow && g.announces.filter((x) => x.k === 'raidWon').length === 1, '모든 채널의 적을 쓰러뜨리면 막아 낸 것이고, 밝기는 한 번만 오른다');
-  check(said(a).some((k) => k.startsWith('raidReward:')) && said(b2).some((k) => k.startsWith('raidReward:')) && [...g.ents.values()].every((m) => !m.raid), '어느 채널에서 싸웠든 보상을 받고, 습격 적은 남지 않는다');
+  check(said(a).some((k) => k.startsWith('raidReward:')) && said(b2).some((k) => k.startsWith('raidReward:')) && [...g.ents.values()].every((m) => !m.swarm), '어느 채널에서 싸웠든 보상을 받고, 습격 적은 남지 않는다');
 
   // 적이 오지 않는 채널에 있던 사람에게는 어디로 가야 하는지 알린다
   const far = g.players.spawn('멀리', false);

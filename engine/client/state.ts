@@ -20,8 +20,8 @@ export interface Remote {
   weapon: string; cls: string;
   /** 입은 갑옷 (플레이어만) */
   armor: string;
-  /** 습격으로 온 적 */
-  raid: boolean;
+  /** 몰려온 적 (게임의 규칙이 부른 적: 이름 앞에 게임의 말을 붙인다) */
+  swarm: boolean;
   /** 죽는 연출의 남은 시간 */
   dying: number;
   /** 서버가 시야에서 뺐다: 연출이 끝나면 지운다 */

@@ -54,10 +54,10 @@ export function setGuildTag(id: number, guild: string): void {
   if (r && r.kind === 'p') setTagName(r.tag, withGuild(id, r.name));
 }
 
-/** 몬스터의 이름. 습격으로 온 적은 앞에 '안개'가 붙어서 평소의 몬스터와 구별된다 */
-const monsterName = (type: string, raid = false): string => {
+/** 몬스터의 이름. 몰려온 적은 게임의 말(fmt.swarmFoe)로 꾸며 평소의 몬스터와 구별한다 */
+const monsterName = (type: string, swarm = false): string => {
   const name = isMonsterId(type) ? L().monsters[type] : type;
-  return raid ? L().fmt.raidFoe(name) : name;
+  return swarm ? L().fmt.swarmFoe(name) : name;
 };
 
 // ---------- 만들고 지우기 ----------
@@ -79,13 +79,13 @@ function addRemote(e: EnterInfo): void {
   const name = monster ? monsterName(e.type, e.r === 1) : e.name;
   const boss = monster && isMonsterId(e.type) && !!monsterDef(e.type).boss;
   if (!monster && e.g) S.gtags.set(e.id, e.g);
-  const tag = makeTag(monster ? name : withGuild(e.id, name), monster ? (boss ? 'mon boss' : e.r === 1 ? 'mon raid' : 'mon') : '', monster);
+  const tag = makeTag(monster ? name : withGuild(e.id, name), monster ? (boss ? 'mon boss' : e.r === 1 ? 'mon swarm' : 'mon') : '', monster);
   setTagHp(tag, e.hp, e.maxHp);
   if (!monster) { setBlade(model, e.w); setArmor(model, e.a ?? ''); tag.el.classList.toggle('ally', S.party.some((m) => m.id === e.id)); }
   S.others.set(e.id, {
     id: e.id, kind: e.kind, type: e.type, name, model, tag, h: monster && isMonsterId(e.type) ? MONSTERS[e.type].h : 2.5,
     buf: [{ t: performance.now(), x: e.x, z: e.z, face: e.face, moving: false }], x: e.x, z: e.z, face: e.face, walking: false, phase: Math.random() * 6,
-    hp: e.hp, maxHp: e.maxHp, swing: 0, weapon: e.w, armor: e.a ?? '', cls: e.c, raid: e.r === 1, dying: 0, gone: false,
+    hp: e.hp, maxHp: e.maxHp, swing: 0, weapon: e.w, armor: e.a ?? '', cls: e.c, swarm: e.r === 1, dying: 0, gone: false,
   });
 }
 
@@ -104,7 +104,7 @@ export function clearEntities(): void {
 
 /** 언어가 바뀌면 몬스터와 NPC의 이름표를 다시 쓴다. */
 export function relabel(): void {
-  for (const r of S.others.values()) if (r.kind === 'm') { r.name = monsterName(r.type, r.raid); setTagName(r.tag, r.name); }
+  for (const r of S.others.values()) if (r.kind === 'm') { r.name = monsterName(r.type, r.swarm); setTagName(r.tag, r.name); }
   for (const n of npcs) setTagName(n.tag, n.name());
 }
 

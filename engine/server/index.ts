@@ -5,5 +5,7 @@ export { clamp, dist, readInt, type Ent } from './game/entity';
 export { channelOf, fieldLayer, isField, notifyLayer } from './game/layers';
 export { startServer, type Options, type Running } from './net/server';
 export { runServer, type RunOptions } from './run';
+export { WHY, mailWhy, type Cur } from './game/systems/wallet';
+export type { EconSnapshot } from './game/systems/ledger';
 export { MemoryStore, SqliteStore, type EconRow, type PlayerSave, type Store, type WorldSave } from './store';
 export { addBannedWords, isClean, mask } from './text';

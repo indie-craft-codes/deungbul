@@ -17,13 +17,13 @@ const mk = (g: Game, name: string, lv = 12, key = 'key-' + name): Ent => { const
   const setup = () => {
     const g = newGame({ raid: { hours: [] } });
     const at = (p: Ent, ch = 1) => { p.layer = fieldLayer(ch); p.x = TOWER.x + 3; p.z = TOWER.z + 3; p.maxHp = p.hp = 1e7; return p; };
-    const foes = (ch: number) => [...g.ents.values()].filter((m) => m.raid && !m.dead && m.layer === fieldLayer(ch));
+    const foes = (ch: number) => [...g.ents.values()].filter((m) => m.swarm && !m.dead && m.layer === fieldLayer(ch));
     /** 습격이 끝날 때까지 돌린다. 1초마다 fighters가 명령을 내고(싸우려고 움직인다) 자기 채널의 적을 모두 쓰러뜨린다. 쓰러뜨린 수와 걸린 시간을 돌려준다 */
     const fight = (fighters: () => Ent[], maxS = 200) => {
       let killed = 0, t = 0;
       for (; t < maxS && g.raid.phase === 'active'; t++) {
         for (const p of fighters()) g.command(p, { t: 'stop' });
-        for (const p of fighters()) for (const m of [...g.ents.values()]) if (m.raid && !m.dead && m.layer === p.layer) { g.combat.damage(p, m, 99999, false); killed++; }
+        for (const p of fighters()) for (const m of [...g.ents.values()]) if (m.swarm && !m.dead && m.layer === p.layer) { g.combat.damage(p, m, 99999, false); killed++; }
         runOn(g)(1);
       }
       return { killed, t };

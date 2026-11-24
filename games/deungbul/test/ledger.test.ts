@@ -198,7 +198,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   cmd(a, { t: 'stop' }); // 방금 움직인 사람이어야 인원으로 센다
   g.raid.start();
   run(0.2);
-  for (const m of [...g.ents.values()]) if (m.raid && !m.dead) { at(a, m.x + 1, m.z); g.combat.damage(a, m, 1e6, false); }
+  for (const m of [...g.ents.values()]) if (m.swarm && !m.dead) { at(a, m.x + 1, m.z); g.combat.damage(a, m, 1e6, false); }
   run(0.2);
   check(g.raid.phase === 'idle' && sum(g.ledger.rows(), 'sparks', 'raid') === g.raid.cfg.rewardSparks && sum(g.ledger.rows(), 'exp', 'raid') === g.raid.cfg.rewardExp, '습격 보상은 틱 안에서 받아도 raid로 적힌다');
 

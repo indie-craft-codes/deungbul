@@ -196,7 +196,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       itemGuard: (pct) => `Damage taken -${pct}%`,
       itemHeal: (n) => `Restores ${n} health`,
       skillLabel: (name, info, key) => `${name}: ${info} (key ${key})`,
-      raidFoe: (name) => name, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      swarmFoe: (name) => name, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       short: (n) => `${num(n)} gold short`,
       mat: (name, have, need) => `${name} ${have}/${need}`,
       blocked: (name) => `You muted ${name}. Their chat is now hidden for you only.`,

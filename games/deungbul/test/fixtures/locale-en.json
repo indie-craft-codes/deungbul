@@ -535,13 +535,6 @@
   "Raid on Firstlight Village · 1 left · undefined",
   "Raid on Firstlight Village · 2 left · undefined"
  ],
- "fmt.raidFoe": [
-  "90dfb7fa104d73d2",
-  "Mist undefined",
-  "Mist 0",
-  "Mist 1",
-  "Mist 2"
- ],
  "fmt.raidNext": [
   "6a8d36e843f1acca",
   "Next raid undefined · undefined a day",
@@ -716,6 +709,13 @@
   "Day 0 streak",
   "Day 1 streak",
   "Day 2 streak"
+ ],
+ "fmt.swarmFoe": [
+  "90dfb7fa104d73d2",
+  "Mist undefined",
+  "Mist 0",
+  "Mist 1",
+  "Mist 2"
  ],
  "fmt.tier": [
   "2133fedeaeba9b67",

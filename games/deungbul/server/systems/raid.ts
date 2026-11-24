@@ -51,7 +51,7 @@ export class Raid {
     g.shared.push({ name: 'raid', state: () => this.state() });
     this.cfg = { ...RAID, ...override };
     this.startAt = nextRaidAt(g.now(), this.cfg);
-    g.on('monsterKilled', (m, hitters) => { if (m.raid) for (const p of hitters) this.fighters.add(p.id); });
+    g.on('monsterKilled', (m, hitters) => { if (m.swarm) for (const p of hitters) this.fighters.add(p.id); });
     g.on('playerLeft', (id) => this.fighters.delete(id));
     // 채널 화면의 '채널별 남은 적'과 습격 중의 잦은 알림. 채널 시스템은 습격을 모르므로 여기서 채운다 (채널이 더 늦게 만들어져서 ready에 맡긴다)
     g.ready.push(() => {
@@ -62,7 +62,7 @@ export class Raid {
 
   private foes(): Ent[] {
     const list: Ent[] = [];
-    for (const e of this.g.ents.values()) if (e.raid && !e.dead) list.push(e);
+    for (const e of this.g.ents.values()) if (e.swarm && !e.dead) list.push(e);
     return list;
   }
 
@@ -176,7 +176,7 @@ export class Raid {
     const f = this.phase === 'active' ? this.fronts.get(layer) : undefined;
     if (!f) return 0;
     let n = f.total - f.spawned;
-    for (const e of this.g.ents.values()) if (e.raid && !e.dead && e.layer === layer) n++;
+    for (const e of this.g.ents.values()) if (e.swarm && !e.dead && e.layer === layer) n++;
     return n;
   }
 
@@ -219,7 +219,7 @@ export class Raid {
     const foes = this.foes(), alive = new Map<number, number>();
     for (const m of foes) {
       alive.set(m.layer, (alive.get(m.layer) ?? 0) + 1);
-      if (!g.monsters.asleep(m.layer) && g.monsters.atTower(m)) this.towerHp -= c.drainPerS * dt;
+      if (!g.monsters.asleep(m.layer) && g.monsters.atSiege(m)) this.towerHp -= c.drainPerS * dt;
     }
     // 막아야 할 적이 있는데 아무도 움직이지 않는 층: 시간이 차면 버려진 것으로 본다 (다음 물결을 기다리며 서 있는 것은 세지 않는다)
     const acted = new Map<number, number>();

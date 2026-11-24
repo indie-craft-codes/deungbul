@@ -12,7 +12,7 @@ const runOn = (g: Game) => (seconds: number) => { for (let i = 0; i < Math.round
 const saidOn = (g: Game) => (p: { id: number }) => g.notices.filter((n) => n.id === p.id).map((n) => [n.k, ...n.a].join(':'));
 /** 시험의 준비 단계에서 조건(쿨다운, 싸움)과 무관하게 채널에 세운다. 명령으로 옮기는 것은 따로 검사한다 */
 const put = (p: Ent, channel: number) => { p.layer = fieldLayer(channel); };
-const mobsIn = (g: Game, channel: number, type?: string) => [...g.ents.values()].filter((m) => m.kind === 'm' && !m.raid && m.layer === fieldLayer(channel) && (!type || m.type === type));
+const mobsIn = (g: Game, channel: number, type?: string) => [...g.ents.values()].filter((m) => m.kind === 'm' && !m.swarm && m.layer === fieldLayer(channel) && (!type || m.type === type));
 const still = (m: Ent) => { m.wait = 999; m.moving = false; };
 
 // ---------- 층 번호의 뜻 ----------

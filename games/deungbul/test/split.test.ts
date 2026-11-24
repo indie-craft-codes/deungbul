@@ -268,10 +268,8 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
   /** 이 게임의 낱말: 등탑·불씨·주민·습격·퀘스트와 고유한 이름들. 영어는 낱말의 앞머리로 본다 (raid, raids, raidSoon) */
   const WORDS_KO = ['등탑', '불씨', '등불', '습격', '주민', '안개', '첫불', '잿빛', '브람', '미라', '할멈', '퀘스트', '기여', '마을', '그림자', '지하묘'];
   const WORDS_EN = ['lamp', 'spark', 'raid', 'resident', 'mist', 'firstlight', 'ashwood', 'bram', 'mira', 'granny', 'quest', 'keeper', 'contribution', 'village', 'tower', 'ember', 'crypt', 'shade'];
-  /** 남길 수밖에 없는 것 → 그것이 있어도 되는 파일. 까닭:
-   *  raidFoe: 스냅샷의 '몰려온 적' 표시(EnterInfo.r)를 틀의 entities.ts가 읽어 이름을 꾸미는 자리(fmt.raidFoe)의 키 이름이다. 문장이 아니라 키이고
-   *  틀의 기본값은 이름 그대로다(게임이 덮어쓴다). 키 이름을 중립으로 바꾸는 일은 '습격 몹' 개념을 정리할 때 함께 한다 (계획서 8절) */
-  const WORD_EXCEPTIONS: Record<string, string[]> = { raidFoe: ['engine/client/i18n/ko.ts', 'engine/client/i18n/en.ts'] };
+  /** 남길 수밖에 없는 것 → 그것이 있어도 되는 파일 (지금은 없다: 몰려온 적의 이름 꾸미기는 2026-11-25에 중립 이름 fmt.swarmFoe로 바꿨다) */
+  const WORD_EXCEPTIONS: Record<string, string[]> = {};
   const wordHits = FILES.flatMap((f) => {
     const src = body(f);
     return [
@@ -280,8 +278,8 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
     ].map((w) => `${f}: ${w}`);
   });
   for (const x of wordHits) console.log('  ' + x);
-  check(body('engine/client/i18n/ko.ts').includes('raidFoe') && !body('engine/client/i18n/ko.ts').includes('(예:') && body('engine/client/i18n/ko.ts').includes('길드') && wordHits.length === 0,
-    `틀의 언어·알림·소리 파일 ${FILES.length}개의 본문에 이 게임의 낱말(${WORDS_KO.slice(0, 4).join(', ')} … ${WORDS_EN.slice(0, 3).join(', ')} … ${WORDS_KO.length + WORDS_EN.length}개)이 없다 (예외 ${Object.keys(WORD_EXCEPTIONS).length}건: ${Object.keys(WORD_EXCEPTIONS).join(', ')})`);
+  check(body('engine/client/i18n/ko.ts').includes('swarmFoe') && !body('engine/client/i18n/ko.ts').includes('(예:') && body('engine/client/i18n/ko.ts').includes('길드') && wordHits.length === 0,
+    `틀의 언어·알림·소리 파일 ${FILES.length}개의 본문에 이 게임의 낱말(${WORDS_KO.slice(0, 4).join(', ')} … ${WORDS_EN.slice(0, 3).join(', ')} … ${WORDS_KO.length + WORDS_EN.length}개)이 없다 (예외 ${Object.keys(WORD_EXCEPTIONS).length}건)`);
   const keyHits = FILES.flatMap((f) => gameKeys.filter((k) => new RegExp(`\\b${k}\\b`).test(body(f))).map((k) => `${f}: ${k}`));
   for (const x of keyHits) console.log('  ' + x);
   check(/\bdied\b/.test(body('engine/client/hud/notify.ts')) && /\blevelUp\b/.test(body('engine/client/sound.ts')) && keyHits.length === 0,
@@ -404,7 +402,7 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
   /** 그 선택자(#id, .class)가 css에 쓰였는가. 더 긴 이름의 앞머리(#questGo의 #quest)는 세지 않는다 */
   const hasSel = (text: string, sel: string): boolean => new RegExp(`${sel.replace(/[.#]/g, '\\$&')}(?![\\w-])`).test(text);
   /** 이 게임의 창에만 쓰는 class (막대의 색, 불씨 글자, 습격 알림의 줄, 습격 몹의 이름표) */
-  const GAME_CLASSES = ['.spark', '.rtext', '.rhp', '.bar.glow', '.bar.res', '.tag.raid'];
+  const GAME_CLASSES = ['.spark', '.rtext', '.rhp', '.bar.glow', '.bar.res', '.tag.swarm'];
 
   // 검사가 실제로 읽어 내는지: 옮긴 창의 대표들이 게임의 마크업과 스타일에 있어야 한다
   const core = ['tower', 'villageBox', 'keepBox', 'classBtn', 'quest', 'questGo', 'goalArrow', 'raid', 'raidMini', 'towerMini', 'contrib', 'rested', 'sparks', 'townBtn'];

@@ -106,7 +106,7 @@ import { check, connect, until } from '@engine/testing';
     const st = g.personal.find((x) => x.name === 'salvage')!.state(p) as { on: boolean; auto: number };
     check(p.gear.length === n && p.autoSalvage === -1 && p.bagUp === 0 && p.gold === gold && st.on === false && st.auto === -1, '분해·자동 분해·가방 넓히기가 없는 게임이다: 명령은 아무것도 바꾸지 않고, 개인 상태는 분해가 꺼져 있다고 알린다');
   }
-  check(p.cls === 'woodcutter' && p.weapon === 'axe2' && g.dungeon.count === 0 && [...g.ents.values()].every((e) => !e.def?.boss && !e.raid), '없는 던전·제작·아이템·직업을 가리키는 명령은 아무 일도 하지 않는다 (보스와 습격 몹도 없다)');
+  check(p.cls === 'woodcutter' && p.weapon === 'axe2' && g.dungeon.count === 0 && [...g.ents.values()].every((e) => !e.def?.boss && !e.swarm), '없는 던전·제작·아이템·직업을 가리키는 명령은 아무 일도 하지 않는다 (보스와 습격 몹도 없다)');
   check(CAMPS.every((c) => c.types.every((t) => t in MONSTERS)), '무리의 몬스터는 모두 이 게임의 몬스터다');
 }
 

@@ -263,7 +263,7 @@ export const koBase = (n: ContentNames) => {
       itemGuard: (pct: number) => `받는 피해 -${pct}%`,
       itemHeal: (n: number) => `체력 ${n} 회복`,
       skillLabel: (name: string, info: string, key: number) => `${name}: ${info} (단축키 ${key})`,
-      raidFoe: (name: string) => name, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      swarmFoe: (name: string) => name, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       short: (n: number) => `골드 ${num(n)} 모자람`,
       mat: (name: string, have: number, need: number) => `${name} ${have}/${need}`,
       blocked: (name: string) => `${name} 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다.`,

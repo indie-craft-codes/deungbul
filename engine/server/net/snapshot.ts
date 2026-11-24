@@ -59,7 +59,7 @@ export function snapshotFor(me: Ent, known: Set<number>, frame: Frame, events: r
         seen.add(e.id);
         if (!was) {
           const info: EnterInfo = { id: e.id, kind: e.kind, type: e.type, name: e.name, w: e.weapon, a: e.armor || undefined, c: e.cls, x: r2(e.x), z: r2(e.z), face: r2(e.face), hp: Math.ceil(e.hp), maxHp: e.maxHp };
-          if (e.raid) info.r = 1;
+          if (e.swarm) info.r = 1; // 줄 위의 칸 이름은 그대로 r (몰려온 적)
           if (e.guild) info.g = e.guild;
           enter.push(info);
         }

@@ -22,7 +22,7 @@
     "test:game": "tsx test/all.ts --game",
     "test:sample": "tsx --tsconfig games/sample/tsconfig.json games/sample/test/all.ts",
     "load": "tsx games/deungbul/test/load.ts",
-    "econ": "tsx scripts/econ.ts"
+    "econ": "tsx games/deungbul/scripts/econ.ts"
   },
   "dependencies": {
     "three": "^0.187.0",

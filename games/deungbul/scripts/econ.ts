@@ -4,18 +4,17 @@
 //   npm run econ -- 14 경로/game.db   다른 파일 (DB 환경 변수로도 받는다)
 //   npm run econ -- --json           같은 내용을 JSON으로
 //   npm run econ -- --to=2026-11-20  그 날짜까지의 N일 (기본은 오늘)
+// 이 게임(등불지기)의 운영 도구다: 재화의 이름(골드, 불씨, 경험치)과 판단 기준이 이 게임의 것이다. 장부 자체는 틀의 것이라 다른 게임은 이 파일을 본떠 자기 도구를 만든다.
 // 저장 파일은 읽기 전용으로 연다: 운영 중인 서버가 쓰고 있는 파일을 열어도 방해하지 않는다.
 // 판단 기준(정상 범위)은 games/deungbul/shared/content/economy.ts의 ECON_WATCH에 있다. 모두 임시값이다.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { ECON_HUNT, ECON_LOST_FULL, ECON_UNKNOWN, ECON_WATCH, ENHANCE, RARITIES, isEconMove } from '../engine/shared/defs';
-import type { EconSnapshot } from '../engine/server/game/systems/ledger';
-import { WHY } from '../engine/server/game/systems/wallet';
-import type { EconRow } from '../engine/server/store';
+import { WHY, type EconRow, type EconSnapshot } from '@engine/server';
+import { ECON_HUNT, ECON_LOST_FULL, ECON_UNKNOWN, ECON_WATCH, ENHANCE, RARITIES, isEconMove } from '../shared/defs';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const args = process.argv.slice(2);
 const flags = args.filter((a) => a.startsWith('--')), rest = args.filter((a) => !a.startsWith('--'));
 const json = flags.includes('--json');

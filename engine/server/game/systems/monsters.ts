@@ -5,7 +5,8 @@ import type { Game } from '../game';
 import { fieldLayer, notifyLayer } from '../layers';
 
 /** 습격 적이 등탑에 이만큼 다가오면 등탑을 공격한다 */
-export const TOWER_ATTACK_RANGE = 3.2;
+/** 몰려온 적이 목표(g.rules.siege)에 이만큼 다가가면 도착한 것이다 (게임의 규칙이 그때 목표에 피해를 센다) */
+export const SIEGE_REACH = 3.2;
 
 export class Monsters {
   /**
@@ -17,7 +18,7 @@ export class Monsters {
   constructor(private g: Game) {
     this.populate(fieldLayer(1)); // 나머지 채널은 채널 시스템이 놓는다
     // 습격 적은 죽으면 다시 나오지 않는다
-    g.on('monsterKilled', (m) => { if (m.raid) g.remove(m.id); });
+    g.on('monsterKilled', (m) => { if (m.swarm) g.remove(m.id); });
   }
 
   /** 들판의 한 층(채널)에 빈터의 몬스터를 놓는다. 층마다 따로 살고 따로 되살아난다 */
@@ -30,17 +31,17 @@ export class Monsters {
     }
   }
 
-  spawn(type: MonsterId, x: number, z: number, raid = false): Ent {
+  spawn(type: MonsterId, x: number, z: number, swarm = false): Ent {
     const def = MONSTERS[type];
     const m = this.g.create('m', type, '', x, z, def.hp);
-    m.def = def; m.raid = raid; m.wait = Math.random() * 4;
+    m.def = def; m.swarm = swarm; m.wait = Math.random() * 4;
     return m;
   }
 
   /** 습격 적이 등탑에 붙어 있는가 */
-  atTower(m: Ent): boolean {
+  atSiege(m: Ent): boolean {
     const at = this.g.rules.siege;
-    return !!at && m.raid && !m.dead && !m.targetId && dist(m, at) <= TOWER_ATTACK_RANGE;
+    return !!at && m.swarm && !m.dead && !m.targetId && dist(m, at) <= SIEGE_REACH;
   }
 
   /**
@@ -48,7 +49,7 @@ export class Monsters {
    * 사람이 다시 왔을 때 지난 싸움이 이어져 있으면 안 된다. 습격 적은 그 자리에 멈춰만 있는다 (없어지면 습격을 피하는 수가 된다).
    */
   private rest(m: Ent): void {
-    if (m.raid || (!m.targetId && !m.homing && !m.moving && m.hp >= m.maxHp && m.hitters.size === 0)) return;
+    if (m.swarm || (!m.targetId && !m.homing && !m.moving && m.hp >= m.maxHp && m.hitters.size === 0)) return;
     m.targetId = 0; m.homing = false; m.moving = false; m.path = null; m.hp = m.maxHp; m.hitters.clear();
     m.x = m.hx; m.z = m.hz; m.tx = m.x; m.tz = m.z;
   }
@@ -75,17 +76,17 @@ export class Monsters {
       return;
     }
 
-    if (!m.targetId && def.aggro > 0 && !m.raid) {
+    if (!m.targetId && def.aggro > 0 && !m.swarm) {
       for (const p of g.ents.values()) {
         if (p.kind === 'p' && p.layer === m.layer && dist(p, m) < def.aggro) { m.targetId = p.id; break; }
       }
     }
     if (m.targetId) {
       const t = g.ents.get(m.targetId);
-      const lost = !t || t.layer !== m.layer || dist(m, t) > MONSTER_AI.loseRange || (!m.raid && Math.hypot(m.x - m.hx, m.z - m.hz) > LEASH);
+      const lost = !t || t.layer !== m.layer || dist(m, t) > MONSTER_AI.loseRange || (!m.swarm && Math.hypot(m.x - m.hx, m.z - m.hz) > LEASH);
       if (lost) {
         m.targetId = 0;
-        if (!m.raid) { m.hp = m.maxHp; m.hitters.clear(); g.movement.goTo(m, m.hx, m.hz); m.homing = Math.hypot(m.x - m.hx, m.z - m.hz) > 2; } // 집으로 돌아가며 회복한다
+        if (!m.swarm) { m.hp = m.maxHp; m.hitters.clear(); g.movement.goTo(m, m.hx, m.hz); m.homing = Math.hypot(m.x - m.hx, m.z - m.hz) > 2; } // 집으로 돌아가며 회복한다
         return;
       }
       if (dist(m, t) > MONSTER_ATTACK_RANGE) {
@@ -100,9 +101,9 @@ export class Monsters {
     }
 
     const siege = g.rules.siege;
-    if (m.raid && siege) {
+    if (m.swarm && siege) {
       // 습격 적: 맞서는 사람이 없으면 지켜야 할 곳(등탑)으로 간다. 그곳을 치는 것은 습격 시스템이 센다
-      if (dist(m, siege) > TOWER_ATTACK_RANGE) { g.movement.goTo(m, siege.x, siege.z); g.movement.walk(m, speed, dt); }
+      if (dist(m, siege) > SIEGE_REACH) { g.movement.goTo(m, siege.x, siege.z); g.movement.walk(m, speed, dt); }
       else { m.moving = false; m.face = Math.atan2(siege.x - m.x, siege.z - m.z); }
       return;
     }

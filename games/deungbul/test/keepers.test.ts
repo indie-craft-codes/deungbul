@@ -31,7 +31,7 @@ import { check } from '@engine/testing';
   Object.assign(g.raid.cfg, { waveAtS: [0] });
   g.raid.start();
   for (let i = 0; i < 4; i++) g.tick(0.05);
-  for (const m of [...g.ents.values()]) if (m.raid) { p.x = m.x + 1; p.z = m.z; g.combat.damage(p, m, 9999, false); }
+  for (const m of [...g.ents.values()]) if (m.swarm) { p.x = m.x + 1; p.z = m.z; g.combat.damage(p, m, 9999, false); }
   for (let i = 0; i < 4; i++) g.tick(0.05);
   check(g.raid.phase === 'idle' && g.state().keepers[0].n === before + 5, '습격을 막아 내면 명단 점수가 5 오른다');
 

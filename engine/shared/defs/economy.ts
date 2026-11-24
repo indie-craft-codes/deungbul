@@ -1,6 +1,6 @@
 // 경제의 모양과 도우미: 재화의 정의, 재화 흐름 지표(경제 장부). 재화의 표(CURRENCIES)와 수치, 무엇을 어떤 원인으로 적을지와 판단 기준(ECON_*)은 게임의 내용에 있다 (@game/shared/content).
 // 값을 셈하는 도우미는 그 수치의 모양 곁에 있다: 파는 값 sellPrice는 defs/growth.ts, 거래소 수수료 marketFee와 길드 레벨 guildLevel은 defs/social.ts.
-// 장부의 틀은 engine/server/game/systems/ledger.ts, 보는 도구는 scripts/econ.ts(npm run econ)다.
+// 장부의 틀은 engine/server/game/systems/ledger.ts, 보는 도구는 게임마다 둔다 (등불지기: games/deungbul/scripts/econ.ts, npm run econ).
 import { ECON_CURS, ECON_MOVE_PREFIXES } from '@game/shared/content';
 
 /**

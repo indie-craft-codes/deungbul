@@ -40,8 +40,8 @@
   border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 22px solid var(--gold);
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .7));
 }
-.tag.raid { color: #d9c2ff; }
-.tag.raid .hpw i { background: #a98bea; }
+.tag.swarm { color: #d9c2ff; } /* 습격으로 몰려온 적 (틀의 이름표 클래스 swarm) */
+.tag.swarm .hpw i { background: #a98bea; }
 #townBtn { pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
 @media (pointer: coarse) {
   /* 등탑·상점·대장간이 열려도 대화와 퀘스트는 남긴다: 창은 설명을 빼서 줄이고, 퀘스트는 할 일만 보여 준다 */
