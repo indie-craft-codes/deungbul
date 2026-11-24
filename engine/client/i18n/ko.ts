@@ -3,12 +3,12 @@
 // 이 게임의 문장(등탑, 퀘스트 등)과 내용의 이름(몬스터, 아이템, 직업 …)은 여기 없다: 게임의 언어 파일(games/deungbul/client/i18n/)에 있고 mergeLocale로 합친다.
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (engine/test/framework.test.ts가 검사한다).
-import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemDef, ItemId, MonsterId, Stat } from '../../shared/defs';
+import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat } from '../../shared/defs';
 import { ITEMS } from '../../shared/defs';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { LocaleExt } from './ext';
-import { itemNameOf, type ContentNames } from './names';
+import { dungeonLabel, itemNameOf, type ContentNames } from './names';
 
 /** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
 export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
@@ -42,9 +42,11 @@ export const num = (n: MsgArg) => Number(n).toLocaleString('ko-KR');
  */
 export const koBase = (n: ContentNames) => {
   const { monsters, items, classes, dungeons, dailies } = n;
-  /** 두 번째 재화의 이름 (처치·우편·자리 비움 보상에 적힌다) */
+  /** 두 번째 재화의 이름 (처치·우편·자리 비움 보상에 적힌다). 그 재화를 쓰지 않는 게임은 이름표에 적지 않고, 그러면 문장에서 그 몫이 빠진다 */
   const coin = n.currency2;
   const itemName = itemNameOf(items);
+  /** 던전의 이름 (없는 id는 id 그대로) */
+  const dungeonName = (id: MsgArg) => dungeonLabel(n, id).name;
   /** 쓰러진 뒤 다시 일어나는 곳의 이름 */
   const place = (id: MsgArg) => n.places[String(id)] ?? String(id);
   /** 거래소 우편 제목에 넣을 물건의 이름: [아이템 id나 장비 칸, 수량] */
@@ -232,8 +234,8 @@ export const koBase = (n: ContentNames) => {
       sellFor: (gold: number) => `팔기 ${num(gold)}골드`,
       power: (n: number) => `전투력 ${num(n)}`,
       streak: (n: number) => `출석 ${n}일째`,
-      reward: (gold: number, exp: number, second: number) => [gold ? `골드 ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeons[a[0] as DungeonId]?.name ?? a[0]} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : String(k)),
+      reward: (gold: number, exp: number, second: number) => [gold ? `골드 ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
+      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : String(k)),
       status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
       itemDamage: (pct: number) => `공격 피해 +${pct}%`,
       itemGuard: (pct: number) => `받는 피해 -${pct}%`,
@@ -269,7 +271,7 @@ export const koBase = (n: ContentNames) => {
       replaced: () => '다른 곳에서 접속해 연결을 끊습니다.',
       noTarget: () => '대상이 없습니다.',
       tooFar: () => '대상이 너무 멉니다.',
-      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} 처치. 경험치 +${a[1]}, ${coin.name} +${a[2]}, 골드 +${num(a[3])}`,
+      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} 처치. 경험치 +${a[1]}${coin ? `, ${coin.name} +${a[2]}` : ''}, 골드 +${num(a[3])}`,
       levelUp: (a) => `레벨이 올랐습니다. Lv ${a[0]} · 능력치 3점 (메뉴의 성장)`,
       died: (a) => `쓰러졌습니다. ${place(a[0])}에서 다시 일어났습니다. 잃은 것은 없습니다.`,
       bought: (a) => `${josa(itemName(a[0], a[1]), '을', '를')} 샀습니다.`,
@@ -309,13 +311,13 @@ export const koBase = (n: ContentNames) => {
       enhanceFail: () => '강화에 실패했습니다. 장비는 그대로입니다.',
       enhanceMax: () => '더 강화할 수 없습니다. (보급형은 +5, 만들거나 주운 장비는 +10까지)',
       mailNew: () => '우편이 왔습니다. 메뉴[[(M)|]]의 우편에서 받으세요.',
-      mailGot: (a) => `우편을 받았습니다.${Number(a[0]) ? ` 골드 +${num(a[0])}` : ''}${Number(a[1]) ? ` 경험치 +${num(a[1])}` : ''}${Number(a[2]) ? ` ${coin.name} +${a[2]}` : ''}${Number(a[3]) ? ` 장비 +${a[3]}` : ''}${Number(a[4]) ? ` 재료 +${a[4]}` : ''}`,
-      dungeonMate: (a) => `${a[0]} 님이 ${dungeons[a[1] as DungeonId]?.name ?? a[1]}에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다.`,
+      mailGot: (a) => `우편을 받았습니다.${Number(a[0]) ? ` 골드 +${num(a[0])}` : ''}${Number(a[1]) ? ` 경험치 +${num(a[1])}` : ''}${Number(a[2]) && coin ? ` ${coin.name} +${a[2]}` : ''}${Number(a[3]) ? ` 장비 +${a[3]}` : ''}${Number(a[4]) ? ` 재료 +${a[4]}` : ''}`,
+      dungeonMate: (a) => `${a[0]} 님이 ${dungeonName(a[1])}에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다.`,
       dungeonFar: () => '문에 더 가까이 가세요.',
       dungeonLevel: (a) => `레벨 ${a[0]}부터 들어갈 수 있습니다.`,
       dungeonNoRuns: () => '오늘은 더 들어갈 수 없습니다. 자정에 다시 열립니다.',
-      dungeonEnter: (a) => `${dungeons[a[0] as DungeonId]?.name ?? a[0]}에 들어왔습니다. 우두머리를 쓰러뜨리면 끝납니다.`,
-      dungeonClear: (a) => `${dungeons[a[0] as DungeonId]?.name ?? a[0]}${josa(dungeons[a[0] as DungeonId]?.name ?? String(a[0]), '을', '를').slice((dungeons[a[0] as DungeonId]?.name ?? String(a[0])).length)} 끝냈습니다. 보상은 우편으로 왔습니다.`,
+      dungeonEnter: (a) => `${dungeonName(a[0])}에 들어왔습니다. 우두머리를 쓰러뜨리면 끝납니다.`,
+      dungeonClear: (a) => `${dungeonName(a[0])}${josa(dungeonName(a[0]), '을', '를').slice(dungeonName(a[0]).length)} 끝냈습니다. 보상은 우편으로 왔습니다.`,
       dungeonFail: () => '제한 시간이 지나 밖으로 나왔습니다.',
       dungeonLeft: () => '던전에서 나왔습니다.',
       channelMoved: (a) => `${a[0]}채널로 옮겼습니다.`,
@@ -358,7 +360,7 @@ export const koBase = (n: ContentNames) => {
       guildGave: (a) => `길드에 골드 ${num(a[0])}을 기부했습니다.`,
       guildLevelUp: (a) => `길드 레벨이 올랐습니다. Lv ${a[0]}`,
       guildNone: () => '길드가 없습니다. 메뉴의 길드에서 만들거나 초대를 받으세요.',
-      awayBack: (a) => `자리를 비운 ${a[0]}분 동안 자동 사냥을 이어 갔습니다. ${coin.name} +${a[1]}, 골드 +${num(a[2])}${Number(a[3]) > 0 ? `, 레벨 +${a[3]}` : ''}`,
+      awayBack: (a) => `자리를 비운 ${a[0]}분 동안 자동 사냥을 이어 갔습니다. ${coin ? `${coin.name} +${a[1]}, ` : ''}골드 +${num(a[2])}${Number(a[3]) > 0 ? `, 레벨 +${a[3]}` : ''}`,
       rested: (a) => `쉬는 동안 휴식 보너스가 쌓였습니다. 휴식 보너스 ${a[0]} (처치 경험치 2배)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */

@@ -3,7 +3,7 @@
 import { SKILL_SLOTS, maxHpFor, type Gear, type GuildView, type Mail, type RankRow } from '../shared/defs';
 import type { Point } from '../shared/nav';
 import type { Kind, PartyMember } from '../shared/protocol';
-import { AREAS, areaAt } from '../shared/world';
+import { areaAt } from '../shared/world';
 import type { Tag } from './hud/tags';
 import type { Model } from './scene/models';
 
@@ -73,8 +73,8 @@ export const S = {
   itemCdLen: 1,
 };
 
-/** 내가 들판이 아닌 지역(던전)에 있는가 */
-export const inDungeon = (): boolean => !!S.me && AREAS[areaAt(S.me.x, S.me.z)]?.id !== 'field';
+/** 내가 들판이 아닌 지역(던전)에 있는가. 들판은 0번 지역이다 (MapDef.areas의 약속): 지역의 id는 게임이 붙이는 이름이라 틀은 읽지 않는다 */
+export const inDungeon = (): boolean => !!S.me && areaAt(S.me.x, S.me.z) !== 0;
 
 export function newMe(id: number, name: string, x: number, z: number, model: Model, tag: Tag): Me {
   return {

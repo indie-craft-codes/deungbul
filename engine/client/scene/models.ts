@@ -38,10 +38,11 @@ const G = {
   leg: new THREE.BoxGeometry(0.28, 0.7, 0.28), body: new THREE.BoxGeometry(0.8, 0.8, 0.45), head: new THREE.BoxGeometry(0.56, 0.56, 0.56),
   arm: new THREE.BoxGeometry(0.24, 0.7, 0.24), sword: new THREE.BoxGeometry(0.1, 1.15, 0.16),
   plate: new THREE.BoxGeometry(0.9, 0.62, 0.55), pad: new THREE.BoxGeometry(0.34, 0.2, 0.34), belt: new THREE.BoxGeometry(0.86, 0.14, 0.5),
-  bow: new THREE.BoxGeometry(0.08, 1.7, 0.14), quiver: new THREE.BoxGeometry(0.22, 0.62, 0.18), lamp: new THREE.BoxGeometry(0.2, 0.26, 0.2),
+  bow: new THREE.BoxGeometry(0.08, 1.7, 0.14), quiver: new THREE.BoxGeometry(0.22, 0.62, 0.18),
   staff: new THREE.BoxGeometry(0.1, 1.9, 0.1), orb: new THREE.IcosahedronGeometry(0.2, 0), hat: new THREE.ConeGeometry(0.42, 0.7, 5),
   slime: new THREE.IcosahedronGeometry(0.8, 0), eye: new THREE.BoxGeometry(0.13, 0.16, 0.08),
 };
+/** 빛나는 재질 (실제 광원이 아니다): 빛나는 무기의 날에 쓴다 */
 const lampMat = new THREE.MeshBasicMaterial({ color: 0xffc766 });
 const wispMat = new THREE.MeshBasicMaterial({ color: 0xbfefff });
 
@@ -52,6 +53,10 @@ export function limb(geo: THREE.BufferGeometry, m: THREE.Material, x: number, y:
   pivot.add(part(geo, m, 0, -drop, 0));
   return pivot;
 }
+
+/** 사람형 모델에 게임이 덧붙이는 꾸밈. 사람형을 만들 때마다 맨 끝에 불린다 (플레이어, 상인, 게임이 세운 NPC 모두). 등록하지 않으면 덧붙는 것이 없다 */
+let humanoidDeco: ((root: THREE.Group) => void) | null = null;
+export function setHumanoidDeco(fn: (root: THREE.Group) => void): void { humanoidDeco = fn; }
 
 /** 사람형 캐릭터. armed: true면 검, 'bow'면 활과 화살통, 'staff'면 지팡이와 고깔모자, false면 빈손(마을 주민). */
 export function makeHumanoid(cloth: number, armed: boolean | 'bow' | 'staff' = true, skin = 0xf0c9a0): Model {
@@ -75,9 +80,7 @@ export function makeHumanoid(cloth: number, armed: boolean | 'bow' | 'staff' = t
     blade.rotation.x = Math.PI / 2;
     rig.ra.add(blade);
   }
-  const lamp = new THREE.Mesh(G.lamp, lampMat); // 허리춤의 등불: 실제 광원이 아니라 빛나는 재질
-  lamp.position.set(-0.46, 0.92, 0.1);
-  root.add(lamp);
+  humanoidDeco?.(root); // 게임의 꾸밈 (등불지기는 허리춤의 등불)
   return { root, rig, blade };
 }
 

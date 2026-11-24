@@ -14,8 +14,8 @@ export interface ContentNames {
   dailies: Record<DailyId, string>;
   /** 쓰러진 뒤 다시 일어나는 곳의 이름 (안내문 'died'의 값). 없는 id는 id가 그대로 보인다 */
   places: Record<string, string>;
-  /** 두 번째 재화의 이름. name: 값 앞에 붙이는 이름, one: 수를 셀 때의 낱말 (영어의 단수형) */
-  currency2: { name: string; one: string };
+  /** 두 번째 재화의 이름. name: 값 앞에 붙이는 이름, one: 수를 셀 때의 낱말 (영어의 단수형). 그 재화를 쓰지 않는 게임(몬스터 정의에 sparks가 없다)은 적지 않는다: 틀의 문장에서 그 몫이 빠진다 */
+  currency2?: { name: string; one: string };
   /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
   nameA: string[];
   nameB: string[];
@@ -28,6 +28,13 @@ export const itemNameOf = (items: ContentNames['items']) => (id: MsgArg, cls?: M
   const hand = handOf(cls);
   return (hand !== 'sword' && it[hand]) || it.name;
 };
+
+/**
+ * 던전의 이름표를 문자열 id로 읽는다. 없는 id는 id가 그대로 이름이 된다.
+ * 던전이 없는 게임에서는 DungeonId가 never라서 이름표(dungeons[id])를 바로 읽으면 컴파일되지 않는다: 틀의 문장과 화면은 이것으로 읽는다
+ */
+export const dungeonLabel = (n: Pick<ContentNames, 'dungeons'>, id: MsgArg): { name: string; info: string } =>
+  (n.dungeons as Record<string, { name: string; info: string } | undefined>)[String(id)] ?? { name: String(id), info: '' };
 
 const byId = <K extends string, V>(ids: readonly K[], make: (id: K) => V): Record<K, V> => Object.fromEntries(ids.map((id) => [id, make(id)])) as Record<K, V>;
 const keysOf = <T extends object>(o: T) => Object.keys(o) as (keyof T & string)[];
@@ -43,7 +50,6 @@ export const idNames = (): ContentNames => ({
   dungeons: byId(DUNGEON_IDS, (id) => ({ name: id, info: '' })),
   dailies: byId(DAILY_IDS, (id) => id),
   places: {},
-  currency2: { name: '+', one: '+' },
   nameA: ['Player'],
   nameB: [''],
 });

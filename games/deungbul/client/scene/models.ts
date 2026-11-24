@@ -2,7 +2,7 @@
 // 새 몬스터나 장비를 더하면 아래 표에 한 줄을 더한다 (몬스터는 빠뜨리면 컴파일이 실패한다).
 import * as THREE from 'three';
 import type { ItemId, MonsterId } from '../../shared/defs';
-import { limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerMonsterModel, type ArmorLook, type BladeLook, type Model, type MonsterBuilder } from '@engine/client/scene/models';
+import { limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco, type ArmorLook, type BladeLook, type Model, type MonsterBuilder } from '@engine/client/scene/models';
 
 const G = {
   wisp: new THREE.IcosahedronGeometry(0.42, 0), halo: new THREE.IcosahedronGeometry(0.7, 0),
@@ -10,6 +10,10 @@ const G = {
   tusk: new THREE.BoxGeometry(0.08, 0.08, 0.3), wEar: new THREE.ConeGeometry(0.12, 0.3, 4), wLeg: new THREE.BoxGeometry(0.18, 0.6, 0.18), wTail: new THREE.BoxGeometry(0.16, 0.16, 0.6),
 };
 const wispMat = new THREE.MeshBasicMaterial({ color: 0xbfefff });
+// 이 게임의 사람은 누구나 허리춤에 등불을 찬다 (실제 광원이 아니라 빛나는 재질). 틀의 사람형 모델에는 없고 여기서 덧붙인다.
+// init이 아니라 이 모듈이 읽히는 때에 등록한다: 어떤 사람형이 만들어지기보다 먼저여야 한다
+const lampGeo = new THREE.BoxGeometry(0.2, 0.26, 0.2), lampMat = new THREE.MeshBasicMaterial({ color: 0xffc766 });
+setHumanoidDeco((root) => { const lamp = new THREE.Mesh(lampGeo, lampMat); lamp.position.set(-0.46, 0.92, 0.1); root.add(lamp); });
 const haloMat = new THREE.MeshBasicMaterial({ color: 0x8fd8ff, transparent: true, opacity: 0.28, depthWrite: false });
 
 function shade(type: string): Model {

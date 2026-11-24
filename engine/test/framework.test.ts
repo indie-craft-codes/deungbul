@@ -514,7 +514,8 @@ function noonOf(day: unknown): number {
   check(GAME_DECL.every((f) => included.some((d) => f.startsWith(`${d}/`))) && engineOnly.length > 0 && engineOnly.every((d) => d.startsWith('engine/')) && [...GAME_FILES, ...GAME_SHARED].every((f) => f.startsWith('games/')),
     '게임의 선언 파일은 컴파일 대상(tsconfig.json의 include)에 들어 있고, 틀만 검사하는 설정은 게임의 파일을 뺀다');
   // 선언 병합(declare module)은 게임의 선언 파일에만 있고, 확장 지점만 가리킨다: 틀의 다른 타입을 직접 넓히지 않는다
-  const merges = [...list('engine/'), ...list('games/')].flatMap((f) => [...fs.readFileSync(new URL(f, root), 'utf8').matchAll(/^\s*declare\s+module\s*['"]([^'"]+)['"]/gm)]
+  // (다른 게임 폴더는 보지 않는다: 예제 games/sample의 선언은 자기 설정으로 따로 컴파일되고 자기 시험이 본다)
+  const merges = [...list('engine/'), ...list('games/deungbul/')].flatMap((f) => [...fs.readFileSync(new URL(f, root), 'utf8').matchAll(/^\s*declare\s+module\s*['"]([^'"]+)['"]/gm)]
     .map((m) => ({ from: f, to: `${resolveSpec(root, f, m[1])}.ts` })));
   const badMerges = merges.filter((m) => !GAME_DECL.includes(m.from) || !EXT.includes(m.to));
   for (const m of badMerges) console.log(`  ${m.from} => ${m.to}`);
@@ -740,8 +741,8 @@ function noonOf(day: unknown): number {
   check(found.length === 0, `화면의 틀(${ENGINE.map((f) => f.replace('engine/client/', '')).join(', ')})은 이 게임의 클라이언트 파일과 게임에만 있는 내용 정의를 import하지 않는다`);
 }
 
-// ---------- 의존 방향: 화면의 뼈대와 스타일 (7b단계: 게임의 창은 게임이 붙인다) ----------
-// 틀의 index.html과 style.css에는 틀의 창만 있다. 이 게임의 창(등탑, 퀘스트, 습격 알림, 내 정보에 덧붙는 표시, '마을로' 단추)은
+// ---------- 의존 방향: 화면의 뼈대와 스타일 (7b단계: 게임의 창은 게임이 붙인다. 11단계: 뼈대는 틀이 붙인다) ----------
+// 틀의 뼈대(engine/client/hud/skeleton.ts)와 style.css에는 틀의 창만 있다. 게임의 index.html에는 머리와 진입점만 있고, 뼈대는 hud/shell.ts가 붙인다. 이 게임의 창(등탑, 퀘스트, 습격 알림, 내 정보에 덧붙는 표시, '마을로' 단추)은
 // 게임의 마크업(games/deungbul/client/markup.ts)이 틀의 빈 자리(hud/shell.ts의 mountPanel)에 붙이고, 모양은 게임의 스타일(games/deungbul/client/deungbul.css)에 있다.
 // 옮긴 창의 id는 게임의 마크업에서 읽어 낸다: 창을 더 옮기면 검사도 따라간다.
 {
@@ -749,7 +750,7 @@ function noonOf(day: unknown): number {
   const read = (file: string): string => fs.readFileSync(new URL(file, root), 'utf8');
   /** css에서 주석을 뺀 것 (주석은 등탑·퀘스트를 말해도 된다) */
   const css = (file: string): string => read(file).replace(/\/\*[\s\S]*?\*\//g, '');
-  const html = read('games/deungbul/client/index.html'), markup = read('games/deungbul/client/markup.ts');
+  const html = read('engine/client/hud/skeleton.ts'), gameHtml = read('games/deungbul/client/index.html'), markup = read('games/deungbul/client/markup.ts');
   const frameCss = css('engine/client/style.css'), gameCss = css('games/deungbul/client/deungbul.css');
   const ids = [...new Set([...markup.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]))];
   /** 그 id의 요소가 마크업에 있는가 */
@@ -766,10 +767,10 @@ function noonOf(day: unknown): number {
     `게임의 마크업과 스타일에서 이 게임의 창을 읽어 낸다 (id ${ids.length}개)`);
 
   const inHtml = ids.filter((id) => hasId(html, id));
-  check(inHtml.length === 0, `틀의 index.html에 이 게임의 창이 남아 있지 않다${inHtml.length ? ': ' + inHtml.join(', ') : ''}`);
-  // 붙는 자리의 기준이 되는 틀의 요소는 index.html에 있어야 한다 (없으면 mountPanel이 시작할 때 던진다)
+  check(inHtml.length === 0, `틀의 뼈대에 이 게임의 창이 남아 있지 않다${inHtml.length ? ': ' + inHtml.join(', ') : ''}`);
+  // 붙는 자리의 기준이 되는 틀의 요소는 뼈대에 있어야 한다 (없으면 mountPanel이 시작할 때 던진다)
   const anchors = [...read('engine/client/hud/shell.ts').matchAll(/byId\('([^']+)'\)/g)].map((m) => m[1]);
-  check(anchors.length >= 5 && anchors.every((id) => hasId(html, id)), `붙는 자리의 기준 요소(${[...new Set(anchors)].join(', ')})가 틀의 index.html에 있다`);
+  check(anchors.length >= 5 && anchors.every((id) => hasId(html, id)), `붙는 자리의 기준 요소(${[...new Set(anchors)].join(', ')})가 틀의 뼈대에 있다`);
 
   const inCss = [...ids.map((id) => `#${id}`), ...GAME_CLASSES].filter((sel) => hasSel(frameCss, sel));
   check(inCss.length === 0, `틀의 style.css에 이 게임의 창을 가리키는 선택자가 남아 있지 않다${inCss.length ? ': ' + inCss.join(', ') : ''}`);
@@ -782,6 +783,15 @@ function noonOf(day: unknown): number {
     && !shell.some((to) => /^@game\/|(^|\/)(games?|deungbul)(\/|$)|\/(quest|marks|scenery|app)$|\.css$/.test(to)),
     `hud/shell.ts는 게임 파일(마크업, 스타일)과 app.ts를 import하지 않는다 (import ${shell.length}개)`);
   const app = read('engine/client/app.ts');
+  // 뼈대는 틀이 붙인다 (11단계): 게임의 index.html의 body에는 진입점 script만 있고, 틀의 창(#hud, #gate 등)은 뼈대에만 있다.
+  // 차례: 요소를 id로 잡는 길은 app.ts의 $ 하나뿐이고(shell.ts의 자리 찾기는 따로다), app.ts는 뼈대를 붙이는 shell.ts를 맨 먼저 import한다.
+  // 그래서 어느 파일이 읽히는 때에 요소를 잡아도($('banner')) 그때는 뼈대가 문서에 있다. 뼈대 파일은 아무것도 import하지 않는다
+  const list = (dir: string): string[] => fs.readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? list(`${dir}${d.name}/`) : d.name.endsWith('.ts') ? [`${dir}${d.name}`] : []));
+  const direct = list('engine/client/').filter((f) => /document\.getElementById\(/.test(read(f)));
+  check(/<body><script type="module" src="\.\/main\.ts"><\/script><\/body>/.test(gameHtml) && !/\bid="(hud|gate|view|me)"/.test(gameHtml) && ['view', 'tags', 'hud', 'me', 'rightcol', 'chat', 'menu', 'classPick', 'flash', 'gate'].every((id) => hasId(html, id))
+    && imports('engine/client/app.ts')[0] === './hud/shell' && shell.includes('./skeleton') && /^mountShell\(\);/m.test(read('engine/client/hud/shell.ts')) && imports('engine/client/hud/skeleton.ts').length === 0
+    && direct.sort().join() === 'engine/client/app.ts,engine/client/hud/shell.ts',
+    '뼈대는 틀이 붙인다: 게임의 index.html의 body에는 진입점뿐이고, 요소를 잡는 길($)이 있는 app.ts가 뼈대를 붙이는 shell.ts를 맨 먼저 읽는다');
   // 6b 뒤로 진입점은 게임의 것(games/deungbul/client/main.ts)이다: 틀을 시작시키기(startClient) 전에 게임의 창을 붙이고, 틀의 app.ts는 그 일을 모른다
   const entry = read('games/deungbul/client/main.ts');
   check(/^mountMarkup\(\);/m.test(entry) && entry.indexOf('mountMarkup();') < entry.indexOf('startClient(') && !app.includes('mountMarkup'), '게임의 진입점이 틀을 시작시키기 전에 게임의 창을 붙인다 (틀의 app.ts는 모른다)');

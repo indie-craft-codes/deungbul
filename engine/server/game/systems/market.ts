@@ -1,7 +1,7 @@
 // 거래소: 플레이어끼리 장비와 제작 재료를 골드로 사고판다. 올린 물건은 판매자에게서 빠져 거래소가 맡는다(복사가 생기지 않게).
 // 판 값과 돌아오는 물건은 우편으로 간다: 판매자가 접속해 있지 않아도 받아야 하므로 사람을 저장 키(Ent.pid)로 가리킨다.
 // 손님(저장 키가 없는 접속)은 쓸 수 없다. 거래소는 월드와 함께 저장되고, 규칙의 수치는 games/deungbul/shared/content/social.ts의 MARKET에 있다.
-import { ITEMS, MAIL_MAX, MARKET, MAT_MAX, hasGoods, isItemId, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward } from '../../../shared/defs';
+import { MAIL_MAX, MARKET, MAT_MAX, hasGoods, isItemId, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward, itemDef } from '../../../shared/defs';
 import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
@@ -23,7 +23,7 @@ interface Listing {
 
 /** 명령으로 들어온 값이 그 범위의 정수인가. 문자열, 소수, NaN, 무한대, 범위 밖의 수를 모두 걸러 낸다 */
 const int = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
-const isMat = (v: unknown): v is ItemId => isItemId(v) && ITEMS[v].kind === 'mat';
+const isMat = (v: unknown): v is ItemId => isItemId(v) && itemDef(v).kind === 'mat';
 
 export class Market {
   private listings = new Map<number, Listing>();

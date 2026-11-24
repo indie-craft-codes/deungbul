@@ -3,7 +3,7 @@
 import type { ClassId, ItemId, MonsterId } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { keyHints, type EngineLocale } from './ko';
-import { itemNameOf, type ContentNames } from './names';
+import { dungeonLabel, itemNameOf, type ContentNames } from './names';
 
 /** 1 item, 2 items */
 export const count = (n: MsgArg, word: string) => `${n} ${word}${Number(n) === 1 ? '' : 's'}`;
@@ -21,6 +21,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
   /** The second currency's name (shown in kill, mail and away rewards) */
   const coin = n.currency2;
   const itemName = itemNameOf(items);
+  const dungeonName = (id: MsgArg) => dungeonLabel(n, id).name;
   /** The name of the place you rise at after falling */
   const place = (id: MsgArg) => n.places[String(id)] ?? String(id);
   /** Item name for market mail titles: [item id or gear slot, count] */
@@ -218,8 +219,8 @@ export const enBase = (n: ContentNames): EngineLocale => {
       sellFor: (gold) => `Sell · ${num(gold)} gold`,
       power: (n) => `Power ${num(n)}`,
       streak: (n) => `Day ${n} streak`,
-      reward: (gold, exp, second) => [gold ? `Gold ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you rested (${a[0]} min)` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeons[a[0] as keyof typeof dungeons]?.name ?? a[0]} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
+      reward: (gold, exp, second) => [gold ? `Gold ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
+      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you rested (${a[0]} min)` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
       potions: (n) => `Potions ${n}`,
       distance: (m) => `${m} m`,
       num: (n) => num(n),
@@ -239,7 +240,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       replaced: () => 'Signed in elsewhere. This connection is closing.',
       noTarget: () => 'No target.',
       tooFar: () => 'Target is too far away.',
-      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} defeated. +${a[1]} exp, +${count(a[2], coin.one)}, +${num(a[3])} gold`,
+      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} defeated. +${a[1]} exp${coin ? `, +${count(a[2], coin.one)}` : ''}, +${num(a[3])} gold`,
       levelUp: (a) => `Level up! You are now Lv ${a[0]}.`,
       died: (a) => `You fell. You rose again at ${place(a[0])}. Nothing was lost.`,
       bought: (a) => `Bought ${itemName(a[0], a[1])}.`,
@@ -279,13 +280,13 @@ export const enBase = (n: ContentNames): EngineLocale => {
       enhanceFail: () => 'Enhancement failed. The gear is unchanged.',
       enhanceMax: () => 'This cannot be enhanced further. (Standard gear stops at +5, crafted or dropped gear at +10.)',
       mailNew: () => 'You have mail. Claim it under Menu[[ (M)|]] > Mail.',
-      mailGot: (a) => `Mail claimed.${Number(a[0]) ? ` Gold +${num(a[0])}` : ''}${Number(a[1]) ? ` Exp +${num(a[1])}` : ''}${Number(a[2]) ? ` ${coin.name} +${a[2]}` : ''}${Number(a[3]) ? ` Gear +${a[3]}` : ''}${Number(a[4]) ? ` Materials +${a[4]}` : ''}`,
-      dungeonMate: (a) => `${a[0]} entered ${dungeons[a[1] as keyof typeof dungeons]?.name ?? a[1]}. Enter at the gate to join the same run.`,
+      mailGot: (a) => `Mail claimed.${Number(a[0]) ? ` Gold +${num(a[0])}` : ''}${Number(a[1]) ? ` Exp +${num(a[1])}` : ''}${Number(a[2]) && coin ? ` ${coin.name} +${a[2]}` : ''}${Number(a[3]) ? ` Gear +${a[3]}` : ''}${Number(a[4]) ? ` Materials +${a[4]}` : ''}`,
+      dungeonMate: (a) => `${a[0]} entered ${dungeonName(a[1])}. Enter at the gate to join the same run.`,
       dungeonFar: () => 'Move closer to the gate.',
       dungeonLevel: (a) => `Opens at level ${a[0]}.`,
       dungeonNoRuns: () => 'No more runs today. It opens again at midnight.',
-      dungeonEnter: (a) => `You entered ${dungeons[a[0] as keyof typeof dungeons]?.name ?? a[0]}. Defeat the boss to finish.`,
-      dungeonClear: (a) => `${dungeons[a[0] as keyof typeof dungeons]?.name ?? a[0]} cleared. Your reward is in the mail.`,
+      dungeonEnter: (a) => `You entered ${dungeonName(a[0])}. Defeat the boss to finish.`,
+      dungeonClear: (a) => `${dungeonName(a[0])} cleared. Your reward is in the mail.`,
       dungeonFail: () => 'Time ran out. You were sent back outside.',
       dungeonLeft: () => 'You left the dungeon.',
       channelMoved: (a) => `Moved to channel ${a[0]}.`,
@@ -328,7 +329,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       guildGave: (a) => `You donated ${num(a[0])} gold to the guild.`,
       guildLevelUp: (a) => `The guild reached Lv ${a[0]}.`,
       guildNone: () => 'You are not in a guild. Create one or get invited under Menu > Guild.',
-      awayBack: (a) => `Auto-hunt kept going for the ${a[0]} min you were away. ${coin.name} +${a[1]}, gold +${num(a[2])}${Number(a[3]) > 0 ? `, level +${a[3]}` : ''}`,
+      awayBack: (a) => `Auto-hunt kept going for the ${a[0]} min you were away. ${coin ? `${coin.name} +${a[1]}, ` : ''}gold +${num(a[2])}${Number(a[3]) > 0 ? `, level +${a[3]}` : ''}`,
       rested: (a) => `A rest bonus built up while you were away. Rested bonus ${a[0]} (double exp from kills)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
     },
     nameA: n.nameA,
