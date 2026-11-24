@@ -13,7 +13,7 @@
     "build:sample": "node scripts/game.mjs build sample",
     "start:sample": "node scripts/game.mjs start sample",
     "pilot": "node scripts/pilot.mjs",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.engine.json && tsc --noEmit -p games/sample/tsconfig.engine.json && tsc --noEmit -p games/sample/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.engine.json && tsc --noEmit -p engine/test/fx/tsconfig.json && tsc --noEmit -p games/sample/tsconfig.engine.json && tsc --noEmit -p games/sample/tsconfig.json",
     "typecheck:engine": "tsc --noEmit -p tsconfig.engine.json",
     "typecheck:engine:sample": "tsc --noEmit -p games/sample/tsconfig.engine.json",
     "typecheck:sample": "tsc --noEmit -p games/sample/tsconfig.json",

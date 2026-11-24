@@ -15,5 +15,6 @@
       "@game/*": ["./games/deungbul/*"]
     }
   },
-  "include": ["engine", "games/deungbul", "test", "scripts"]
+  "include": ["engine", "games/deungbul", "test", "scripts"],
+  "exclude": ["engine/test/fx"]
 }
