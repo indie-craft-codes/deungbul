@@ -43,6 +43,8 @@ export class Rank {
       if (i < 0) this.rows.push(row);
       else if (this.rows[i].pid !== row.pid || this.rows[i].name !== row.name || this.rows[i].power !== row.power || this.rows[i].lv !== row.lv || this.rows[i].cls !== row.cls) this.rows[i] = row;
       else continue;
+      // 같은 이름의 옛 줄(pid 없음)이 따로 남아 있으면 지운다: 이름은 한 사람만 쓰므로 그것도 이 사람의 것이고, 두면 순위에 두 번 나온다
+      this.rows = this.rows.filter((r) => r.pid || r.name !== p.name);
       this.g.saveDirty = true;
     }
     this.rows.sort((a, b) => b.power - a.power || b.lv - a.lv);
@@ -71,6 +73,8 @@ export class Rank {
       // 예전 저장에는 pid가 없다: 빈 값으로 읽어 두고, 그 사람이 접속하면 이어받는다 (update)
       .map((r): Row => ({ pid: typeof r.pid === 'string' ? r.pid : '', name: r.name.slice(0, NAME_MAX), lv: r.lv, cls: r.cls, power: r.power }))
       .filter((r) => !r.pid || (!seen.has(r.pid) && !!seen.add(r.pid)))
+      // 옛 줄 가운데 이미 pid 줄이 있는 이름의 것은 버린다 (순위에 같은 사람이 두 번 나오지 않게)
+      .filter((r, _i, all) => r.pid || !all.some((o) => o.pid && o.name === r.name))
       .slice(0, RANK.keep);
   }
 }

@@ -14,3 +14,5 @@
 /* 좁은 화면(폰 세로)에서는 직업 고르기 창(접속 직후, 직업을 바꿀 때)이 화면 폭을 다 써서 이 단추가 창의 왼쪽 모서리에 겹친다: 창이 떠 있는 동안에는 숨긴다.
    단추는 body의 맨 끝에 붙으므로(guidelink.ts) 그 앞의 형제인 창(#classPick)을 본다. 폭의 기준은 게임의 좁은 화면 기준(style.css의 720px)과 같다 */
 @media (max-width: 720px) { #classPick:not([hidden]) ~ #guideLink { display: none; } }
+/* 좁은 화면에서 메뉴나 가방 창이 떠 있는 동안에도 숨는다: 창이 화면 폭을 다 써서 단추가 목록의 글자를 가린다 */
+@media (max-width: 720px) { body:has(#menu:not([hidden])) #guideLink, body:has(#bag:not([hidden])) #guideLink { display: none; } }

@@ -149,7 +149,9 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   check(g3.rank.top().length === 2 && g3.rank.top()[0].name === '옛사람', '이름만으로 저장된 예전 순위도 읽힌다');
   const fake = mk(g3, '옛사람', 2, 'key-fake');
   g3.rank.tick(99);
-  check(g3.rank.top()[0].power === 500 && g3.rank.top().filter((r) => r.name === '옛사람').length === 2, '옛 줄의 이름만 맞춰 온 약한 캐릭터는 그 줄을 덮어쓰지 못한다');
+  // 이름은 한 사람만 쓴다(서버가 저장된 남의 이름을 막는다). 그래서 같은 이름의 옛 줄은 그 사람의 것으로 보고, 새 줄이 생기면 옛 줄은 지운다:
+  // 전에는 옛 줄보다 약할 때 둘 다 남겨서 순위에 같은 이름이 두 번 나왔다 (전투력 식이 바뀌어 주인이 옛 줄보다 약해진 경우에 실제로 생겼다)
+  check(g3.rank.top().filter((r) => r.name === '옛사람').length === 1 && g3.rank.top().find((r) => r.name === '옛사람')!.power === g3.rank.power(fake), '옛 줄과 같은 이름으로 접속하면 옛 줄은 지워지고 지금의 줄 하나만 남는다 (순위에 두 번 나오지 않는다)');
   g3.players.leave(fake.id);
   const owner = mk(g3, '옛둘', 12, 'key-owner');
   g3.rank.tick(99);
@@ -502,4 +504,23 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   } finally {
     await third.close();
   }
+}
+
+// ---------- 순위에 같은 사람이 두 번 나오지 않는다 ----------
+// 이름으로만 저장하던 때의 줄(pid 없음)이 그 사람의 새 줄과 따로 남아, 순위에 같은 이름이 두 번 보였다.
+{
+  const g = new Game();
+  g.rank.load([
+    { pid: 'pid-a', name: '두번나옴', lv: 17, cls: 'mage', power: 525 },
+    { pid: '', name: '두번나옴', lv: 10, cls: 'mage', power: 245 },
+    { pid: '', name: '옛사람', lv: 8, cls: 'warrior', power: 175 },
+    { pid: '', name: '빈줄', lv: 1, cls: '', power: 35 },
+  ]);
+  const names = () => g.rank.top().map((r) => r.name);
+  check(names().join() === '두번나옴,옛사람,빈줄', `읽을 때: pid 줄이 있는 이름의 옛 줄은 버린다 (${names().join(', ')})`);
+  // 옛 줄보다 약한 캐릭터가 같은 이름으로 접속하면 새 줄이 생기는데, 그때도 옛 줄이 남지 않는다
+  g.rank.load([{ pid: '', name: '약해짐', lv: 10, cls: 'warrior', power: 9999 }]);
+  const p = g.players.spawn('약해짐', false, null, 'pid-weak');
+  g.command(p, { t: 'rank' });
+  check(names().filter((n) => n === '약해짐').length === 1, '접속한 사람의 이름으로 된 옛 줄은 새 줄이 생길 때 지워진다');
 }
