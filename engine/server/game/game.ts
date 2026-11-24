@@ -20,6 +20,7 @@ import type { EntExt, GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
 import { fieldLayer } from './layers';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
+import { Bag } from './systems/bag';
 import { Bots } from './systems/bots';
 import { Build } from './systems/build';
 import { Channels } from './systems/channels';
@@ -35,6 +36,7 @@ import { Ledger } from './systems/ledger';
 import { MailSys } from './systems/mail';
 import { Market } from './systems/market';
 import { Rank } from './systems/rank';
+import { Salvage } from './systems/salvage';
 import { Monsters } from './systems/monsters';
 import { Party } from './systems/party';
 import { Movement } from './systems/movement';
@@ -196,6 +198,8 @@ export class Game {
   // ---- 시스템 ----
   /** 재화(골드, 불씨, 경험치)를 더하고 빼는 한 통로. 다른 시스템과 규칙 플러그인이 만들어질 때부터 쓸 수 있게 가장 먼저 만든다 */
   readonly wallet: Wallet;
+  /** 아이템(재료, 물약)과 낱개 장비를 넣고 빼는 한 통로. 지갑과 같은 까닭으로 먼저 만든다 */
+  readonly bag: Bag;
   readonly movement: Movement;
   readonly players: Players;
   readonly combat: Combat;
@@ -208,6 +212,7 @@ export class Game {
   readonly craft: Craft;
   readonly party: Party;
   readonly gear: GearSys;
+  readonly salvage: Salvage;
   readonly mail: MailSys;
   readonly idle: Idle;
   readonly ledger: Ledger;
@@ -222,6 +227,7 @@ export class Game {
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
     this.wallet = new Wallet(this);
+    this.bag = new Bag(this);
     this.movement = new Movement(this);
     this.players = new Players(this);
     this.combat = new Combat(this);
@@ -238,6 +244,7 @@ export class Game {
     this.craft = new Craft(this);
     this.party = new Party(this);
     this.gear = new GearSys(this);
+    this.salvage = new Salvage(this);
     this.mail = new MailSys(this);
     this.idle = new Idle(this);
     this.ledger = new Ledger(this);
@@ -267,7 +274,7 @@ export class Game {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, lastAct: -99, path: null, pgx: x, pgz: z, pat: 0,
       hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
       bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: LEVEL.firstNeed, sparks: 0, cds: [], dirty: false, unsaved: false, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0,
-      gear: [], worn: {}, gearSeq: 0, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
+      gear: [], worn: {}, gearSeq: 0, bagUp: 0, lostFull: 0, autoSalvage: -1, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), raid: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
     };
     const e = base as Ent;

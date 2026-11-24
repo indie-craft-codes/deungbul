@@ -5,6 +5,7 @@ import { BUILD, ENHANCE, GUILD, MARKET, PARTY } from '../../shared/defs';
 import type { ClassId, ItemId, MonsterId } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { keyHints, type EngineLocale } from './ko';
+import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
 
 /** 1 item, 2 items */
@@ -140,6 +141,25 @@ export const enBase = (n: ContentNames): EngineLocale => {
       unblock: 'Unmute',
       owned: 'Owned',
       chatOpen: 'Chat',
+      // ---- Salvage, lock, auto-salvage, bag expansion, gear comparison (economy stage 2) ----
+      gearLockOn: 'Lock: blocks selling, salvaging and listing',
+      gearLockOff: 'Unlock',
+      gearMore: 'Show enhance, sell, salvage and comparison',
+      gearLess: 'Collapse',
+      gearTapHint: 'Tap gear to enhance, sell or salvage it and compare it with what you wear. ▲ means better than your current piece.',
+      bagFull: 'Your gear bag is full. New drops are left behind. Salvage or sell gear, or expand the bag.',
+      salvageAll: 'Salvage many…',
+      salvageCancel: 'Cancel',
+      autoSalvageOff: 'off',
+      salvageSource: 'From salvaging gear',
+      cmpNow: 'If you swap now',
+      cmpNone: 'Slot is empty',
+      cmpBetter: 'Better',
+      cmpWorse: 'Worse',
+      cmpSame: 'About the same',
+      cmpMixed: 'Mixed',
+      cmpThis: 'This piece',
+      cmpWorn: 'Worn piece',
     },
     monsters,
     dungeons,
@@ -229,6 +249,29 @@ export const enBase = (n: ContentNames): EngineLocale => {
       matFrom: (names) => `Dropped by: ${names.join(', ')}`,
       matSource: (mat, names) => `${mat}: dropped by ${names.join(', ')}`,
       dungeonMateIn: (names) => `Party members inside: ${names}. Enter to join them.`,
+      // ---- Salvage, lock, auto-salvage, bag expansion, gear comparison (economy stage 2). The dust's name comes from the game's item names ----
+      rarAtMost: (rarity) => `${rarity} and below`,
+      salvageFor: (dust) => `Salvage · ${itemName(SALVAGE.item)} +${num(dust)}`,
+      salvageConfirm: (dust) => `Confirm · ${itemName(SALVAGE.item)} +${num(dust)}`,
+      salvageAllPreview: (upTo, n, dust) => `${upTo}: ${count(n, 'piece')} → ${itemName(SALVAGE.item)} +${num(dust)} (equipped, Standard and locked gear is skipped)`,
+      salvageAllGo: (n) => `Salvage ${n}`,
+      salvageAllNone: (upTo) => `${upTo}: nothing to salvage (equipped, Standard and locked gear is skipped)`,
+      salvageOver: (room) => `You cannot hold that much ${itemName(SALVAGE.item)} (room for ${num(room)}). Salvage fewer pieces.`,
+      autoSalvageOpt: (v) => `Auto-salvage: ${v}`,
+      autoSalvageOn: (upTo) => `Drops that are ${upTo} turn into ${itemName(SALVAGE.item)} as you pick them up, even while you are away. Lower the tier if you want to keep some.`,
+      dustHave: (n, max) => `${itemName(SALVAGE.item)} ${num(n)} / ${num(max)}`,
+      bagUpFor: (step, gold) => `Expand +${step} · ${num(gold)} gold`,
+      bagLost: (n) => `${count(num(n), 'drop')} left behind because your bag was full. Salvage or sell gear, or expand the bag.`,
+      cmpEven: (plus) => `If both were +${plus}`,
+      cmpDmg: (v) => `Damage ${signed(v)}%`,
+      cmpGuard: (v) => `Damage taken ${signed(v)}%`,
+      cmpCrit: (v) => `Crit ${signed(v)}%p`,
+      cmpHp: (v) => `Health ${signed(v)}`,
+      cmpPower: (v) => `Power ${signed(v)}`,
+      cmpRaise: (who, from, to, gold) => `${who} +${from}→+${to}: about ${num(gold)} gold expected`,
+      cmpCapped: (who, max) => `${who} only enhances to +${max}`,
+      cmpArrow: (verdict) => `If you swap now: ${verdict}`,
+      haveBig: (n, max) => `${num(n)} / ${num(max)}`,
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -331,6 +374,15 @@ export const enBase = (n: ContentNames): EngineLocale => {
       guildNone: () => 'You are not in a guild. Create one or get invited under Menu > Guild.',
       awayBack: (a) => `Auto-hunt kept going for the ${a[0]} min you were away. ${coin ? `+${count(a[1], coin.one)}, ` : ''}+${num(a[2])} gold${Number(a[3]) > 0 ? `, +${count(a[3], 'level')}` : ''}`,
       rested: (a) => `A rest bonus built up while you were away. Rested bonus ${a[0]} (double exp from kills)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      // ---- Salvage, lock, auto-salvage, bag expansion (economy stage 2). The dust's name comes from the game's item names ----
+      salvaged: (a) => `Salvaged ${count(a[0], 'item')}. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      salvageCant: () => 'Some of that gear cannot be salvaged. Equipped, Standard and locked gear cannot be salvaged.',
+      salvageFull: (a) => `You cannot hold that much ${itemName(SALVAGE.item)}, so nothing was salvaged. Would give ${num(a[0])}, room for ${num(a[1])}`,
+      gearLocked: () => 'That gear is locked. Unlock it to sell, salvage or list it.',
+      autoSalvaged: (a) => `Auto-salvaged ${count(a[0], 'drop')}. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      awayGear: (a) => ['While you were away:', Number(a[0]) > 0 ? `${count(num(a[0]), 'drop')} left behind because your bag was full.` : '', Number(a[1]) > 0 ? `${count(num(a[1]), 'drop')} auto-salvaged. ${itemName(SALVAGE.item)} +${num(a[2])}` : ''].filter(Boolean).join(' '),
+      bagUpDone: (a) => `Bag expanded. ${a[0]} gear slots`,
+      bagUpMax: () => 'Your bag cannot be expanded any further.',
     },
     nameA: n.nameA,
     nameB: n.nameB,

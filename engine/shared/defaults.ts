@@ -61,6 +61,12 @@ export const ENHANCE = {
   rate: (plus: number): number => Math.max(0.2, 1 - plus * 0.1),
   gold: (plus: number, rar: number): number => 30 * (plus + 1) * (rar + 1),
 };
+/**
+ * 장비 분해와 가방 넓히기는 기본으로 꺼 둔다: 가루 아이템은 게임의 id라 여기서 정할 수 없고, 넓히기 값은 게임의 경제에 달렸다.
+ * 켜려면 게임이 같은 이름으로 SALVAGE(item에 자기 아이템 id, dust에 등급별 양)와 BAG_UP(prices)을 내보낸다 (등불지기의 economy.ts가 예)
+ */
+export const SALVAGE = { item: '', dust: [] as readonly number[], perPlus: 0, maxBatch: 0, autoMaxRar: -1, tellS: 10 };
+export const BAG_UP = { step: 0, prices: [] as readonly number[] };
 export const BUILD = {
   pointsPerLevel: 3, pow: 1, vit: 8, luck: 0.4,
   resetGold: (lv: number): number => 30 * lv,

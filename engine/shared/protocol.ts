@@ -111,6 +111,13 @@ export type ClientMsg =
   /** 다른 사람을 신고한다 (id는 상대). 서버는 그 사람의 최근 대화와 함께 기록한다 */
   | { t: 'report'; id: number }
   | { t: 'ping'; c: number }
+  /** 장비를 분해해 가루로 바꾼다 (uids: 장비 번호들. 하나라도 안 되면 모두 거절된다) / 장비를 잠그거나 푼다 */
+  | { t: 'salvage'; uids: number[] }
+  | { t: 'gearLock'; uid: number; on: boolean }
+  /** 자동 분해: 주운 장비가 이 등급 이하면 그 자리에서 분해한다 (rar: RARITIES의 번호. -1이면 끈다) */
+  | { t: 'autoSalvage'; rar: number }
+  /** 골드를 내고 장비 가방을 넓힌다 */
+  | { t: 'bagUp' }
   | Added<ClientMsgs>;
 
 export type ServerMsg =

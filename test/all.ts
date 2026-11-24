@@ -9,7 +9,7 @@
 import { registerHooks } from 'node:module';
 import { check, failures } from '../engine/test/harness';
 
-const ENGINE = ['framework', 'move', 'shop', 'classes', 'monsters', 'combat', 'craft', 'party', 'nav', 'boss', 'growth', 'channel', 'build', 'market', 'guild', 'dungeon', 'wallet', 'ledger', 'harden', 'security', 'server'];
+const ENGINE = ['framework', 'move', 'shop', 'classes', 'monsters', 'combat', 'craft', 'party', 'nav', 'boss', 'growth', 'channel', 'build', 'market', 'guild', 'dungeon', 'bag', 'compare', 'salvage', 'wallet', 'ledger', 'harden', 'security', 'server'];
 const GAME = ['framework', 'shop', 'classes', 'combat', 'craft', 'party', 'keepers', 'quests', 'nav', 'zone2', 'channel', 'ledger', 'harden', 'guide', 'server'].map((n) => `deungbul/${n}`);
 /** 이 게임의 규칙 파일: 틀의 시험을 도는 동안 로드되면 안 된다 (engine/test/framework.test.ts의 GAME_FILES와 같다) */
 const GAME_RULES = /\/games\/deungbul\/(server|test)\//;

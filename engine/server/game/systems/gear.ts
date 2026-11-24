@@ -2,7 +2,7 @@
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
 // 수치는 games/deungbul/shared/content/growth.ts에 있다.
-import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, baseOpt, gearStat, isGearSlot, isItemId, isStat, rollOpt, sellPrice, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, isGearSlot, isItemId, isStat, rollOpt, sellPrice, wornTotal, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { WHY } from './wallet';
@@ -26,7 +26,9 @@ export class GearSys {
       if (!def) return;
       for (const p of hitters) {
         if (p.bot || (!def.boss && this.random() >= GEAR.dropChance)) continue;
-        this.give(p, this.roll(GEAR.levelOf(def.exp)));
+        // 떨어진 장비: 자동 분해를 켜 둔 등급이면 가방에 넣지 않고 그 자리에서 가루로 바꾼다 (systems/salvage.ts)
+        const it = this.roll(GEAR.levelOf(def.exp)), why = g.players.huntWhy(p, m);
+        if (!g.salvage.auto(p, it, why)) this.give(p, it, why);
       }
     });
 
@@ -45,7 +47,7 @@ export class GearSys {
         // 한도를 넘게 들어 있으면(가방이 찬 채 사거나 만든 경우) 끼고 있던 것부터 남긴다: 잘려 나가 기본 장비로 바뀌지 않게
         const worn0 = (typeof d.worn === 'object' && d.worn !== null ? Object.values(d.worn as Record<string, unknown>) : []);
         const all = d.list.filter(GearSys.valid);
-        p.gear = [...all.filter((x) => worn0.includes(x.uid)), ...all.filter((x) => !worn0.includes(x.uid))].slice(0, GEAR.bagMax);
+        p.gear = [...all.filter((x) => worn0.includes(x.uid)), ...all.filter((x) => !worn0.includes(x.uid))].slice(0, g.bag.slots(p));
         p.gearSeq = Math.max(num(d.seq) ? d.seq : 0, ...p.gear.map((x) => x.uid));
         const worn = (typeof d.worn === 'object' && d.worn !== null ? d.worn : {}) as Record<string, unknown>;
         for (const slot of GEAR_SLOTS) {
@@ -61,23 +63,25 @@ export class GearSys {
     const it = x as Gear;
     return typeof x === 'object' && x !== null && num(it.uid) && isGearSlot(it.slot) && num(it.rar) && it.rar >= 0 && it.rar < RARITIES.length
       && (it.base === undefined || (isItemId(it.base) && ITEMS[it.base].kind === it.slot)) && (it.base !== undefined) === (it.slot === 'weapon' || it.slot === 'armor')
-      && (it.made === undefined || typeof it.made === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= 4 && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
+      && (it.made === undefined || typeof it.made === 'boolean') && (it.lock === undefined || typeof it.lock === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= 4 && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
       && Number.isInteger(it.lv) && it.lv >= 1 && it.lv <= 20 && Number.isInteger(it.plus) && Number.isInteger(it.uid);
   }
 
   /** 낀 장비들이 주는 수치의 합 */
   total(p: Ent | undefined, stat: Stat): number {
     if (!p || p.kind !== 'p') return 0;
-    let sum = 0;
+    // 셈은 공용 함수에 있다 (화면의 장비 비교가 같은 식을 쓴다). 무기와 갑옷의 기본 수치는 상점 시스템이 이미 셈하므로 강화로 늘어난 몫만 더해진다
+    return wornTotal(this.worn(p), stat);
+  }
+
+  /** 낀 장비들 (칸의 순서대로) */
+  worn(p: Ent): Gear[] {
+    const out: Gear[] = [];
     for (const slot of GEAR_SLOTS) {
       const it = p.worn[slot] ? p.gear.find((x) => x.uid === p.worn[slot]) : undefined;
-      if (!it) continue;
-      sum += gearStat(it, stat);
-      // 무기와 갑옷의 기본 수치는 상점 시스템이 이미 셈한다. 여기서는 강화로 늘어난 몫만 더한다
-      const base = baseOpt(it);
-      if (base && base[0] === stat) sum += base[1] * it.plus * ENHANCE.perPlus;
+      if (it) out.push(it);
     }
-    return sum;
+    return out;
   }
 
   /** 장비 한 점을 무작위로 만든다 (uid는 줄 때 붙는다). slot을 정하지 않으면 칸도 무작위다 */
@@ -106,14 +110,13 @@ export class GearSys {
     return { uid: 0, slot: def.kind === 'armor' ? 'armor' : 'weapon', base, rar: 0, lv: def.tier ?? 1, plus: 0, opts: [] };
   }
 
-  /** 무기나 갑옷을 얻어 바로 낀다 (상점, 대장간). 산 것이 사라지지 않게 가방이 가득 차도 들어간다. 장비가 아니면 false */
-  acquire(p: Ent, id: ItemId, made = false): boolean {
+  /** 무기나 갑옷을 얻어 바로 낀다 (상점, 대장간). 산 것이 사라지지 않게 가방이 가득 차도 들어간다. 장비가 아니면 false. why: 원인의 이름 (systems/bag.ts) */
+  acquire(p: Ent, id: ItemId, made = false, why = ''): boolean {
     const kind = ITEMS[id].kind;
     if (kind !== 'weapon' && kind !== 'armor') return false;
     const it = this.plain(id);
     if (made) it.made = true;
-    it.uid = ++p.gearSeq;
-    p.gear.push(it);
+    this.g.bag.giveGear(p, it, why, true);
     this.equip(p, it.uid);
     return true;
   }
@@ -129,32 +132,25 @@ export class GearSys {
       if (worn?.base) { if (slot === 'weapon') p.weapon = worn.base; else p.armor = worn.base; }
       else if (isItemId(held) && ITEMS[held].kind === slot) {
         const it = this.plain(held);
-        it.uid = ++p.gearSeq;
-        p.gear.push(it);
+        // 접속 처리의 일부라 저장할 것으로 표시하지 않는다 (아무것도 하지 않은 새 캐릭터를 저장하지 않는 규칙)
+        const unsaved = p.unsaved;
+        this.g.bag.giveGear(p, it, '', true);
+        p.unsaved = unsaved;
         p.worn[slot] = it.uid;
       }
     }
     p.metaDirty = true;
   }
 
-  /** 가방에 넣는다. 가득 찼으면 넣지 못하고 알린다 */
-  give(p: Ent, it: Gear): boolean {
-    if (p.gear.length >= GEAR.bagMax) { this.g.notify(p, 'gearFull'); return false; }
-    it.uid = ++p.gearSeq;
-    p.gear.push(it);
-    p.metaDirty = true; p.unsaved = true;
+  /** 가방에 넣는다. 가득 찼으면 넣지 못하고 알린다: 그 장비는 버려진다. why: 원인의 이름 (systems/bag.ts) */
+  give(p: Ent, it: Gear, why = ''): boolean {
+    if (!this.g.bag.giveGear(p, it, why)) { this.g.notify(p, 'gearFull'); this.g.bag.lost(p, it, why); this.g.away.tally(p, 'lost', 1); return false; }
     this.g.notify(p, 'gearDrop', it.slot, RARITIES[it.rar].id);
     return true;
   }
 
   /** 알림 없이 가방에 넣는다 (우편에서 받거나 거래소에서 온 것). 가득 찼으면 넣지 않고 false: 부른 쪽이 물건을 다른 곳에 보관해야 한다 */
-  put(p: Ent, it: Gear): boolean {
-    if (p.gear.length >= GEAR.bagMax) return false;
-    it.uid = ++p.gearSeq;
-    p.gear.push(it);
-    p.metaDirty = true; p.unsaved = true;
-    return true;
-  }
+  put(p: Ent, it: Gear, why = ''): boolean { return this.g.bag.giveGear(p, it, why); }
 
   private find(p: Ent, uid: number): Gear | undefined { return p.gear.find((x) => x.uid === uid); }
   private changed(p: Ent): void { p.metaDirty = true; p.unsaved = true; this.g.players.refresh(p); }
@@ -185,12 +181,13 @@ export class GearSys {
   sell(p: Ent, uid: number): void {
     const it = this.find(p, uid);
     if (!it) return;
+    if (it.lock) { this.g.notify(p, 'gearLocked'); return; }
     if (p.worn[it.slot] === uid) {
       if (it.slot === 'weapon') return; // 들고 있는 무기는 팔 수 없다
       delete p.worn[it.slot];
       this.look(p, it.slot);
     }
-    p.gear.splice(p.gear.indexOf(it), 1);
+    this.g.bag.removeGear(p, uid, WHY.sell);
     const gold = this.g.wallet.add(p, 'gold', sellPrice(it), WHY.sell);
     this.g.notify(p, 'gearSold', gold);
     this.changed(p);

@@ -39,6 +39,34 @@
   "Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level 1.)",
   "Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level 2.)"
  ],
+ "fmt.autoSalvageOn": [
+  "deed9d961c2fa773",
+  "Drops that are undefined turn into Gear Dust as you pick them up, even while you are away. Lower the tier if you want to keep some.",
+  "Drops that are 0 turn into Gear Dust as you pick them up, even while you are away. Lower the tier if you want to keep some.",
+  "Drops that are 1 turn into Gear Dust as you pick them up, even while you are away. Lower the tier if you want to keep some.",
+  "Drops that are 2 turn into Gear Dust as you pick them up, even while you are away. Lower the tier if you want to keep some."
+ ],
+ "fmt.autoSalvageOpt": [
+  "e326dc5291dd38b1",
+  "Auto-salvage: undefined",
+  "Auto-salvage: 0",
+  "Auto-salvage: 1",
+  "Auto-salvage: 2"
+ ],
+ "fmt.bagLost": [
+  "a32171e59c79d5a0",
+  "NaN drops left behind because your bag was full. Salvage or sell gear, or expand the bag.",
+  "0 drops left behind because your bag was full. Salvage or sell gear, or expand the bag.",
+  "1 drop left behind because your bag was full. Salvage or sell gear, or expand the bag.",
+  "2 drops left behind because your bag was full. Salvage or sell gear, or expand the bag."
+ ],
+ "fmt.bagUpFor": [
+  "dae0c27645399279",
+  "Expand +undefined · NaN gold",
+  "Expand +0 · NaN gold",
+  "Expand +1 · NaN gold",
+  "Expand +2 · NaN gold"
+ ],
  "fmt.blocked": [
   "d21ef6566af7c94f",
   "You muted undefined. Their chat is now hidden for you only.",
@@ -59,6 +87,69 @@
   "Ch 0",
   "Ch 1",
   "Ch 2"
+ ],
+ "fmt.cmpArrow": [
+  "f627618c9243d2de",
+  "If you swap now: undefined",
+  "If you swap now: 0",
+  "If you swap now: 1",
+  "If you swap now: 2"
+ ],
+ "fmt.cmpCapped": [
+  "40de205c8cb1cecd",
+  "undefined only enhances to +undefined",
+  "0 only enhances to +undefined",
+  "1 only enhances to +undefined",
+  "2 only enhances to +undefined"
+ ],
+ "fmt.cmpCrit": [
+  "1ea2719e4dd75220",
+  "Crit undefined%p",
+  "Crit 0%p",
+  "Crit +1%p",
+  "Crit +2%p"
+ ],
+ "fmt.cmpDmg": [
+  "f3f64aa242cef9b8",
+  "Damage undefined%",
+  "Damage 0%",
+  "Damage +1%",
+  "Damage +2%"
+ ],
+ "fmt.cmpEven": [
+  "e28d2db9a44aaf02",
+  "If both were +undefined",
+  "If both were +0",
+  "If both were +1",
+  "If both were +2"
+ ],
+ "fmt.cmpGuard": [
+  "1a139f5836803d8c",
+  "Damage taken undefined%",
+  "Damage taken 0%",
+  "Damage taken +1%",
+  "Damage taken +2%"
+ ],
+ "fmt.cmpHp": [
+  "8fbf8251b2e0fa9b",
+  "Health undefined",
+  "Health 0",
+  "Health +1",
+  "Health +2"
+ ],
+ "fmt.cmpPower": [
+  "0486ea5e87a92ec3",
+  "Power undefined",
+  "Power 0",
+  "Power +1",
+  "Power +2"
+ ],
+ "fmt.cmpRaise": [
+  "b620e8a53c7c371a",
+  "undefined +undefined→+undefined: about NaN gold expected",
+  "0 +undefined→+undefined: about NaN gold expected",
+  "1 +undefined→+undefined: about NaN gold expected",
+  "2 +undefined→+undefined: about NaN gold expected"
  ],
  "fmt.contrib": [
   "7679cf1a7b600f6a",
@@ -115,6 +206,13 @@
   "0 / undefined runs today",
   "1 / undefined runs today",
   "2 / undefined runs today"
+ ],
+ "fmt.dustHave": [
+  "91856c17c2f28197",
+  "Gear Dust NaN / NaN",
+  "Gear Dust 0 / NaN",
+  "Gear Dust 1 / NaN",
+  "Gear Dust 2 / NaN"
  ],
  "fmt.enhanceCost": [
   "fd17d68455d56577",
@@ -213,6 +311,13 @@
   "0 / undefined",
   "1 / undefined",
   "2 / undefined"
+ ],
+ "fmt.haveBig": [
+  "de289be7dfa5c404",
+  "NaN / NaN",
+  "0 / NaN",
+  "1 / NaN",
+  "2 / NaN"
  ],
  "fmt.itemDamage": [
   "d0c669482dd42c3c",
@@ -451,6 +556,13 @@
   "Mist is closing on Firstlight Village · in 1s",
   "Mist is closing on Firstlight Village · in 2s"
  ],
+ "fmt.rarAtMost": [
+  "8ab24a09e95aa656",
+  "undefined and below",
+  "0 and below",
+  "1 and below",
+  "2 and below"
+ ],
  "fmt.residentHint": [
   "e4a837e818890cd5",
   "undefined has not returned yet. Add sparks at the lamp tower to bring them back (undefined to go).",
@@ -471,6 +583,48 @@
   "Gold 1",
   "Gold 2",
   "Gold 5"
+ ],
+ "fmt.salvageAllGo": [
+  "c0b571e85909b704",
+  "Salvage undefined",
+  "Salvage 0",
+  "Salvage 1",
+  "Salvage 2"
+ ],
+ "fmt.salvageAllNone": [
+  "bba9afa692b6b09a",
+  "undefined: nothing to salvage (equipped, Standard and locked gear is skipped)",
+  "0: nothing to salvage (equipped, Standard and locked gear is skipped)",
+  "1: nothing to salvage (equipped, Standard and locked gear is skipped)",
+  "2: nothing to salvage (equipped, Standard and locked gear is skipped)"
+ ],
+ "fmt.salvageAllPreview": [
+  "03343ceff3933414",
+  "undefined: undefined pieces → Gear Dust +NaN (equipped, Standard and locked gear is skipped)",
+  "0: undefined pieces → Gear Dust +NaN (equipped, Standard and locked gear is skipped)",
+  "1: undefined pieces → Gear Dust +NaN (equipped, Standard and locked gear is skipped)",
+  "2: undefined pieces → Gear Dust +NaN (equipped, Standard and locked gear is skipped)"
+ ],
+ "fmt.salvageConfirm": [
+  "22fab60665555107",
+  "Confirm · Gear Dust +NaN",
+  "Confirm · Gear Dust +0",
+  "Confirm · Gear Dust +1",
+  "Confirm · Gear Dust +2"
+ ],
+ "fmt.salvageFor": [
+  "80155523129b8d3f",
+  "Salvage · Gear Dust +NaN",
+  "Salvage · Gear Dust +0",
+  "Salvage · Gear Dust +1",
+  "Salvage · Gear Dust +2"
+ ],
+ "fmt.salvageOver": [
+  "b26ceaac6af2f98c",
+  "You cannot hold that much Gear Dust (room for NaN). Salvage fewer pieces.",
+  "You cannot hold that much Gear Dust (room for 0). Salvage fewer pieces.",
+  "You cannot hold that much Gear Dust (room for 1). Salvage fewer pieces.",
+  "You cannot hold that much Gear Dust (room for 2). Salvage fewer pieces."
  ],
  "fmt.sellConfirm": [
   "8643198b4dde2768",
@@ -644,6 +798,8 @@
  "items.armor2.name": "Iron Armor",
  "items.ashcore.info": "Material dropped by the Ash Troll",
  "items.ashcore.name": "Ash Core",
+ "items.dust.info": "Material you get by salvaging gear",
+ "items.dust.name": "Gear Dust",
  "items.hide.info": "Material dropped by boars",
  "items.hide.name": "Tough Hide",
  "items.iron.info": "Material dropped by goblins and lost soldiers",
@@ -675,6 +831,13 @@
  "monsters.wisp": "Wisp",
  "monsters.wolf": "Wolf",
  "msg.alreadyBest": "You already have equal or better gear.",
+ "msg.autoSalvaged": [
+  "5b324cb0e8a18622",
+  "Auto-salvaged undefined drops. Gear Dust +NaN",
+  "Auto-salvaged 0 drops. Gear Dust +0",
+  "Auto-salvaged 1 drop. Gear Dust +1",
+  "Auto-salvaged 2 drops. Gear Dust +3"
+ ],
  "msg.awayBack": [
   "d6e1d8cca9820991",
   "Auto-hunt kept going for the undefined min you were away. +undefined sparks, +NaN gold",
@@ -682,6 +845,21 @@
   "Auto-hunt kept going for the 1 min you were away. +1 spark, +1 gold, +1 level",
   "Auto-hunt kept going for the 2 min you were away. +3 sparks, +4 gold, +5 levels"
  ],
+ "msg.awayGear": [
+  "5927ea59b53a400e",
+  "While you were away:",
+  "While you were away: 1 drop left behind because your bag was full. 1 drop auto-salvaged. Gear Dust +1",
+  "While you were away: 2 drops left behind because your bag was full. 3 drops auto-salvaged. Gear Dust +4",
+  "While you were away: 1,234,567 drops left behind because your bag was full. 1,234,567 drops auto-salvaged. Gear Dust +1,234,567"
+ ],
+ "msg.bagUpDone": [
+  "bedfa6e890997c83",
+  "Bag expanded. undefined gear slots",
+  "Bag expanded. 0 gear slots",
+  "Bag expanded. 1 gear slots",
+  "Bag expanded. 2 gear slots"
+ ],
+ "msg.bagUpMax": "Your bag cannot be expanded any further.",
  "msg.bossDown": [
   "b536eca0aa5a659b",
   "undefined has fallen.",
@@ -800,6 +978,7 @@
   "You picked up a 3 2. Equip it under Menu[[ (M)|]] > Gear."
  ],
  "msg.gearFull": "Your gear bag is full, so the drop was left behind. Sell spare gear in the menu.",
+ "msg.gearLocked": "That gear is locked. Unlock it to sell, salvage or list it.",
  "msg.gearSold": [
   "69c2acaf783089b8",
   "Gear sold. +NaN gold",
@@ -1115,6 +1294,21 @@
   "Your lamp gathered light at the tower while you were away. Rested bonus 1 (double exp from kills)",
   "Your lamp gathered light at the tower while you were away. Rested bonus 2 (double exp from kills)"
  ],
+ "msg.salvageCant": "Some of that gear cannot be salvaged. Equipped, Standard and locked gear cannot be salvaged.",
+ "msg.salvageFull": [
+  "9ee2ca13c6d983d2",
+  "You cannot hold that much Gear Dust, so nothing was salvaged. Would give NaN, room for NaN",
+  "You cannot hold that much Gear Dust, so nothing was salvaged. Would give 0, room for 0",
+  "You cannot hold that much Gear Dust, so nothing was salvaged. Would give 1, room for 1",
+  "You cannot hold that much Gear Dust, so nothing was salvaged. Would give 2, room for 3"
+ ],
+ "msg.salvaged": [
+  "4606ec6bba4d3585",
+  "Salvaged undefined items. Gear Dust +NaN",
+  "Salvaged 0 items. Gear Dust +0",
+  "Salvaged 1 item. Gear Dust +1",
+  "Salvaged 2 items. Gear Dust +3"
+ ],
  "msg.shopFar": "Move closer to the road merchant to buy.",
  "msg.skillMax": "This skill is at its highest rank.",
  "msg.skillNeedLv": [
@@ -1238,7 +1432,9 @@
  "ui.auto": "Auto-hunt",
  "ui.autoOff": "Auto-hunt off.",
  "ui.autoOn": "Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting (up to 8 hours).",
+ "ui.autoSalvageOff": "off",
  "ui.bag": "Bag",
+ "ui.bagFull": "Your gear bag is full. New drops are left behind. Salvage or sell gear, or expand the bag.",
  "ui.bagMats": "Crafting materials",
  "ui.bagPotions": "Potions",
  "ui.bagToGear": "View gear (Menu > Gear)",
@@ -1253,6 +1449,14 @@
  "ui.claimAll": "Claim all",
  "ui.classHint": "You can change class later at a lamp tower.",
  "ui.close": "Close",
+ "ui.cmpBetter": "Better",
+ "ui.cmpMixed": "Mixed",
+ "ui.cmpNone": "Slot is empty",
+ "ui.cmpNow": "If you swap now",
+ "ui.cmpSame": "About the same",
+ "ui.cmpThis": "This piece",
+ "ui.cmpWorn": "Worn piece",
+ "ui.cmpWorse": "Worse",
  "ui.connecting": "Connecting…",
  "ui.count1": "1",
  "ui.count5": "5",
@@ -1271,6 +1475,11 @@
  "ui.forge": "Bram's Forge",
  "ui.full": "The server is full. Please try again shortly.",
  "ui.gearEmpty": "No spare gear. Monsters drop some now and then.",
+ "ui.gearLess": "Collapse",
+ "ui.gearLockOff": "Unlock",
+ "ui.gearLockOn": "Lock: blocks selling, salvaging and listing",
+ "ui.gearMore": "Show enhance, sell, salvage and comparison",
+ "ui.gearTapHint": "Tap gear to enhance, sell or salvage it and compare it with what you wear. ▲ means better than your current piece.",
  "ui.goingTown": "Walking back to Firstlight Village.",
  "ui.guildChatHint": "Type '/g message' in chat to talk to your guild only. The leader invites people by [[clicking|tapping]] them.",
  "ui.guildChatTag": "[Guild]",
@@ -1341,6 +1550,9 @@
  "ui.report": "Report",
  "ui.reportConfirm": "[[Click|Tap]] again to report",
  "ui.residents": "Residents",
+ "ui.salvageAll": "Salvage many…",
+ "ui.salvageCancel": "Cancel",
+ "ui.salvageSource": "From salvaging gear",
  "ui.shop": "Road Merchant",
  "ui.skillUpBtn": "Upgrade",
  "ui.skillUpHead": "Skill upgrades",

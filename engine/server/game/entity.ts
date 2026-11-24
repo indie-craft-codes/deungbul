@@ -45,6 +45,10 @@ export interface Ent extends EntExt {
   itemCd: number;
   /** 드롭 장비: 가방에 든 것 전부, 칸마다 낀 것의 uid, 다음 uid를 정하는 번호 (systems/gear.ts) */
   gear: Gear[]; worn: Record<string, number>; gearSeq: number;
+  /** 가방을 넓힌 횟수와, 가방이 가득 차 버려진 장비의 수 (가방에 자리가 다시 나면 0으로 돌아간다. systems/bag.ts) */
+  bagUp: number; lostFull: number;
+  /** 자동 분해: 주운 장비가 이 등급 이하면 그 자리에서 분해한다 (RARITIES의 번호. -1이면 끔. systems/salvage.ts) */
+  autoSalvage: number;
   /** 받지 않은 우편 (systems/mail.ts) */
   mail: Mail[]; mailSeq: number;
   /** 일일 임무와 출석 (systems/daily.ts) */

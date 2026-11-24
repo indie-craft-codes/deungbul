@@ -1,14 +1,16 @@
-// 메뉴 창: 드롭 장비(끼기·강화·팔기), 우편, 일일 임무와 출석, 거래소, 길드, 순위를 탭으로 나눠 보여 준다. (단축키 M)
+// 메뉴 창: 드롭 장비(끼기·강화·팔기·분해·잠금·비교, 가방 넓히기), 우편, 일일 임무와 출석, 거래소, 길드, 순위를 탭으로 나눠 보여 준다. (단축키 M)
 // 새 탭을 더하려면 TABS에 이름과 그리는 함수를 더한다.
 // 창의 높이와 탭 줄, 닫기 단추의 자리는 고정이고(style.css의 #menu) 내용만 창 안에서 스크롤한다.
-import { BUILD, BUILD_STATS, GUILD, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, MAT_MAX, RARITIES, baseOpt, enhanceMax, classOf, isItemId, isSupply, marketFee, optValue, sellPrice, type Gear, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
+import { BAG_UP, BUILD, BUILD_STATS, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
 import { onMsg, onSlow } from '../bus';
-import { L, itemName, onLangChange, t } from '../i18n';
+import { L, forInput, itemName, onLangChange, t } from '../i18n';
+import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { UiKey } from '../i18n/ko';
 import { send } from '../net';
 import { S } from '../state';
+import { addNotices } from './notify';
 
 const ui = { panel: $('menu'), tabs: $('menuTabs'), list: $('menuList'), gold: $('menuGold'), btn: $('menuBtn') };
 const TABS: readonly { key: UiKey; draw: () => void }[] = [
@@ -93,39 +95,171 @@ function goodsText(r: Reward): string {
  * 장비 줄에서 방금 일어난 일: 강화 결과(그 줄에 잠깐 보여 준다)와, 팔기를 한 번 누른 장비(한 번 더 눌러야 팔린다).
  * 화면 아래의 한 줄 알림만으로는 강화가 됐는지 눈에 띄지 않았고, 팔기는 한 번에 팔려 잘못 누르기 쉬웠다
  */
-const act = { enhUid: 0, enhWait: false, enhOk: false, enhPlus: 0, sellUid: 0, enhTimer: 0, sellTimer: 0 };
+const act = {
+  enhUid: 0, enhWait: false, enhOk: false, enhPlus: 0, sellUid: 0, enhTimer: 0, sellTimer: 0,
+  /** 펼쳐 둔 가방 장비 (강화·팔기·분해 단추와 비교가 그 줄 아래에 보인다) */
+  openUid: 0,
+  /** 분해를 한 번 누른 장비, 넓히기를 한 번 눌렀는가 (한 번 더 눌러야 된다), 일괄 분해로 고른 등급 (-1이면 고르지 않음) */
+  salvUid: 0, salvTimer: 0, upArmed: false, upTimer: 0, bulk: -1,
+  /** 장비 탭에서 방금 한 일(분해, 넓히기)의 서버 답: 창 안에 잠깐 보여 준다. 흘러가는 알림은 메뉴 창에 가려 보이지 않는다 */
+  res: null as { k: MsgKey; a: MsgArg[] } | null, resTimer: 0,
+};
 
-function gearRow(g: Gear, worn: boolean): HTMLDivElement {
-  const loc = L(), me = S.me, label = gearLabel(g);
-  const cost = ENHANCE.gold(g.plus, g.rar), maxed = g.plus >= enhanceMax(g), price = sellPrice(g);
+/** 장비 탭 안에 보여 줄 서버의 답: 된 것과 거절된 것 (자동 분해는 사냥 중에 자주 오므로 흘러가는 알림에만 둔다) */
+const GEAR_OK: ReadonlySet<MsgKey> = new Set<MsgKey>(['salvaged', 'bagUpDone']);
+const GEAR_FAIL: ReadonlySet<MsgKey> = new Set<MsgKey>(['salvageCant', 'salvageFull', 'gearLocked', 'bagUpMax']);
+/** 지금 낀 장비들 (칸의 순서대로): 장비 비교의 기준 */
+const wornNow = (): Gear[] => { const m = S.meta, out: Gear[] = []; for (const slot of GEAR_SLOTS) { const it = m.gear.find((x) => x.uid === m.worn[slot]); if (it) out.push(it); } return out; };
+/** 비교의 결론을 나타내는 표시: 색만으로 가르지 않게 모양도 다르다 (▲ 더 좋음, ▼ 더 나쁨, ◆ 엇갈림, = 비슷) */
+const VERDICT: Record<GearVerdict, { mark: string; key: UiKey }> = { better: { mark: '▲', key: 'cmpBetter' }, worse: { mark: '▼', key: 'cmpWorse' }, mixed: { mark: '◆', key: 'cmpMixed' }, same: { mark: '=', key: 'cmpSame' } };
+function span(cls: string, text: string): HTMLSpanElement { const s = document.createElement('span'); s.className = cls; s.textContent = text; return s; }
+
+/** 강화 단추: 서버의 답(성공/실패)을 그 장비의 줄에 보여 준다 */
+function enhanceButton(g: Gear): HTMLButtonElement {
+  const me = S.me, cost = ENHANCE.gold(g.plus, g.rar), maxed = g.plus >= enhanceMax(g);
+  return button(maxed ? t('enhanceMaxed') : L().fmt.enhanceCost(cost, Math.round(ENHANCE.rate(g.plus) * 100)), () => {
+    act.enhUid = g.uid; act.enhWait = true;
+    send({ t: 'enhance', uid: g.uid });
+  }, maxed || !me || me.gold < cost);
+}
+/** 한 번 더 눌러야 되는 단추 (팔기, 분해): 처음 누르면 확인으로 바뀌고, 몇 초 안에 다시 누르지 않으면 원래대로 돌아간다 (거래소의 사기 단추와 같은 방식) */
+function armButton(text: string, confirm: string, armed: boolean, arm: (on: boolean) => void, timer: 'sellTimer' | 'salvTimer' | 'upTimer', go: () => void, disabled = false): HTMLButtonElement {
+  const b = button(armed ? confirm : text, () => {
+    clearTimeout(act[timer]);
+    if (armed) { arm(false); go(); renderMenu(); return; }
+    arm(true);
+    act[timer] = window.setTimeout(() => { arm(false); renderMenu(); }, 4000);
+    renderMenu();
+  }, disabled);
+  b.classList.toggle('armed', armed);
+  return b;
+}
+/** 잠금 단추 (자물쇠): 잠근 장비는 팔기·분해·거래소 올리기가 막힌다 */
+function lockButton(g: Gear): HTMLButtonElement {
+  const b = button(g.lock ? '🔒' : '🔓', () => send({ t: 'gearLock', uid: g.uid, on: !g.lock }));
+  b.classList.add('glock');
+  b.classList.toggle('on', !!g.lock);
+  b.setAttribute('aria-pressed', String(!!g.lock));
+  b.setAttribute('aria-label', t(g.lock ? 'gearLockOff' : 'gearLockOn'));
+  b.title = t(g.lock ? 'gearLockOff' : 'gearLockOn');
+  return b;
+}
+
+/** 비교 한 줄: 기준의 이름, 결론(더 좋음/더 나쁨/엇갈림/비슷), 수치별 증감. 좋아진 것은 ▲ 초록, 나빠진 것은 ▼ 빨강이다 (받는 피해는 줄어야 좋다) */
+function cmpLine(head: string, d: GearDelta, notes: string[]): HTMLDivElement {
+  const loc = L(), v = VERDICT[gearVerdict(d)], sign = deltaSigns(d), line = el('gcmpline');
+  const top = el('gcmptop');
+  top.append(span('ghead', head), span('gv ' + gearVerdict(d), `${v.mark} ${t(v.key)}`));
+  const stats = el('gstats');
+  const stat = (good: number, text: string) => stats.append(span('opt ' + (good > 0 ? 'up' : 'down'), `${good > 0 ? '▲' : '▼'} ${text}`));
+  if (d.dmg) stat(sign.dmg, loc.fmt.cmpDmg(d.dmg));
+  if (d.guard) stat(sign.guard, loc.fmt.cmpGuard(d.guard));
+  if (d.crit) stat(sign.crit, loc.fmt.cmpCrit(d.crit));
+  if (d.hp) stat(sign.hp, loc.fmt.cmpHp(d.hp));
+  if (d.power) stats.append(span('opt', loc.fmt.cmpPower(d.power)));
+  line.append(top);
+  if (stats.childElementCount) line.append(stats);
+  for (const n of notes) line.append(el('note', n));
+  return line;
+}
+/** 가방의 장비를 지금 낀 같은 칸의 장비와 견준다: 지금 그대로 바꿨을 때와, 두 장비를 둘 중 높은 강화 단계로 맞췄을 때 (셈은 서버와 같은 공용 함수 compareGear) */
+function compareEl(g: Gear): HTMLDivElement {
+  const loc = L(), c = compareGear(wornNow(), g), box = el('gcmp');
+  box.append(cmpLine(c.worn ? t('cmpNow') : `${t('cmpNow')} (${t('cmpNone')})`, c.now, []));
+  if (c.even) {
+    const notes: string[] = [];
+    for (const [who, r] of [[t('cmpThis'), c.even.cand], [t('cmpWorn'), c.even.worn]] as const) {
+      if (r.to > r.from) notes.push(loc.fmt.cmpRaise(who, r.from, r.to, r.cost));
+      if (r.capped) notes.push(loc.fmt.cmpCapped(who, r.to));
+    }
+    box.append(cmpLine(loc.fmt.cmpEven(c.even.plus), c.even.delta, notes));
+  }
+  return box;
+}
+
+/** 펼친 가방 장비의 아래 줄: 강화·팔기·분해 단추와 장비 비교 */
+function gearMore(g: Gear, cls: string): HTMLDivElement {
+  const loc = L(), price = sellPrice(g), box = el('mrow gear gmore ' + cls), acts = el('acts');
+  acts.append(enhanceButton(g));
+  acts.append(armButton(loc.fmt.sellFor(price), loc.fmt.sellConfirm(price), act.sellUid === g.uid, (on) => { act.sellUid = on ? g.uid : 0; }, 'sellTimer', () => send({ t: 'sell', uid: g.uid }), !!g.lock));
+  if (S.salvage.on && !isSupply(g)) {
+    const dust = dustFor(g);
+    acts.append(armButton(loc.fmt.salvageFor(dust), loc.fmt.salvageConfirm(dust), act.salvUid === g.uid, (on) => { act.salvUid = on ? g.uid : 0; }, 'salvTimer', () => send({ t: 'salvage', uids: [g.uid] }), !!g.lock));
+  }
+  box.append(acts, compareEl(g));
+  return box;
+}
+
+/** 장비 한 줄. 낀 장비는 빼기·강화·잠금이 바로 보이고, 가방의 장비는 끼기·잠금만 보이다가 누르면 강화·팔기·분해와 비교가 그 아래에 펼쳐진다 */
+function gearRow(g: Gear, worn: boolean): HTMLElement[] {
+  const loc = L(), label = gearLabel(g), open = !worn && act.openUid === g.uid;
+  const toggle = () => { act.openUid = open ? 0 : g.uid; renderMenu(); };
   const buttons: HTMLElement[] = [];
   if (!worn) buttons.push(button(t('equip'), () => send({ t: 'equip', uid: g.uid })));
   else if (g.slot !== 'weapon') buttons.push(button(t('unequip'), () => send({ t: 'unequip', slot: g.slot }))); // 무기는 빼지 못한다: 다른 무기를 끼면 바뀐다
-  buttons.push(button(maxed ? t('enhanceMaxed') : loc.fmt.enhanceCost(cost, Math.round(ENHANCE.rate(g.plus) * 100)), () => {
-    act.enhUid = g.uid; act.enhWait = true; // 서버의 답(성공/실패)을 이 줄에 보여 준다
-    send({ t: 'enhance', uid: g.uid });
-  }, maxed || !me || me.gold < cost));
+  if (worn) buttons.push(enhanceButton(g));
+  buttons.push(lockButton(g));
+  const title = gearTitle(label.slot, label.name);
   if (!worn) {
-    const armed = act.sellUid === g.uid;
-    const sell = button(armed ? loc.fmt.sellConfirm(price) : loc.fmt.sellFor(price), () => {
-      clearTimeout(act.sellTimer);
-      if (armed) { act.sellUid = 0; send({ t: 'sell', uid: g.uid }); return; }
-      // 처음 누르면 확인으로 바뀌고, 몇 초 안에 다시 누르지 않으면 원래대로 돌아간다 (거래소의 사기 단추와 같은 방식)
-      act.sellUid = g.uid;
-      act.sellTimer = window.setTimeout(() => { act.sellUid = 0; renderMenu(); }, 4000);
-      renderMenu();
-    });
-    sell.classList.toggle('armed', armed);
-    buttons.push(sell);
+    // 지금 낀 것과 바꾸면 나은지를 줄에서 바로 알린다 (지금 그대로의 기준. 자세한 비교는 펼치면 나온다)
+    const verdict = gearVerdict(compareGear(wornNow(), g).now), v = VERDICT[verdict];
+    const mark = span('garrow ' + verdict, v.mark);
+    mark.setAttribute('role', 'img');
+    mark.setAttribute('aria-label', loc.fmt.cmpArrow(t(v.key)));
+    mark.title = loc.fmt.cmpArrow(t(v.key));
+    title.prepend(mark);
+    const more = button(open ? '▴' : '▾', toggle);
+    more.classList.add('gmorebtn');
+    more.setAttribute('aria-expanded', String(open));
+    more.setAttribute('aria-label', t(open ? 'gearLess' : 'gearMore'));
+    buttons.push(more);
   }
-  const r = row(gearTitle(label.slot, label.name), optsEl(label.opts), buttons, 'gear ' + label.cls);
+  // 가방의 줄은 단추가 셋뿐이라 이름 옆에 둔다 (줄이 낮아져 한 화면에 더 많이 보인다)
+  const r = row(title, optsEl(label.opts), buttons, 'gear ' + (worn ? '' : 'gside ') + label.cls);
+  r.dataset.uid = String(g.uid);
+  if (!worn) { const what = r.querySelector<HTMLElement>('.what'); what?.classList.add('tap'); what?.addEventListener('click', toggle); }
   if (act.enhUid === g.uid && !act.enhWait) {
     r.classList.add(act.enhOk ? 'ok' : 'fail');
     const res = el('mresult', act.enhOk ? loc.fmt.enhanceDone(act.enhPlus) : t('enhanceFailed'));
     res.setAttribute('role', 'status');
     r.querySelector('.what')?.append(res);
   }
-  return r;
+  return open ? [r, gearMore(g, label.cls)] : [r];
+}
+
+/** 가방의 머리줄: 든 수와 칸 수, 넓히기 단추 (다음 값을 보여 주고 한 번 더 눌러 확인한다) */
+function bagHead(): HTMLDivElement {
+  const loc = L(), me = S.me, m = S.meta, head = el('baghead gbag');
+  head.append(span('', `${t('tabGear')} ${loc.fmt.have(m.gear.length, S.bag.max)}`));
+  const price = S.bag.known ? bagUpPrice(S.bag.up) : null;
+  if (price !== null) head.append(armButton(loc.fmt.bagUpFor(BAG_UP.step, price), loc.fmt.sellConfirm(price), act.upArmed, (on) => { act.upArmed = on; }, 'upTimer', () => send({ t: 'bagUp' }), !me || me.gold < price));
+  return head;
+}
+
+/** 분해의 도구들: 가진 가루, 일괄 분해(등급을 고르면 대상 수와 나올 가루를 보여 주고 확인을 받는다), 자동 분해의 설정 */
+function salvageTools(rest: Gear[]): HTMLElement[] {
+  const loc = L(), me = S.me, out: HTMLElement[] = [];
+  if (!me || !isItemId(SALVAGE.item)) return out;
+  const item = SALVAGE.item, have = me.items[item] ?? 0, cap = itemCap(item);
+  const rarName = (v: string): string => loc.fmt.rarAtMost(loc.gear.rarities[RARITIES[Number(v)].id]);
+  const choices = autoSalvageChoices().map(String), tools = el('mtools gtools');
+  tools.append(
+    select(t('salvageAll'), choices, String(act.bulk), (v) => (v === '-1' ? t('salvageAll') : rarName(v)), (v) => { act.bulk = Number(v); renderMenu(); }),
+    select(loc.fmt.autoSalvageOpt(''), choices, String(S.salvage.auto), (v) => loc.fmt.autoSalvageOpt(v === '-1' ? t('autoSalvageOff') : rarName(v)), (v) => { send({ t: 'autoSalvage', rar: Number(v) }); }),
+  );
+  out.push(el('note gdust', loc.fmt.dustHave(have, cap)), tools);
+  if (act.bulk >= 0) {
+    // 일괄 분해의 대상: 가방의 장비 가운데 고른 등급 이하이고, 보급형도 잠근 것도 아닌 것 (낀 장비는 rest에 없다)
+    const targets = rest.filter((x) => x.rar <= act.bulk && canSalvage(x)), dust = targets.reduce((s, x) => s + dustFor(x), 0), over = dust > cap - have;
+    const upTo = rarName(String(act.bulk));
+    const go = button(loc.fmt.salvageAllGo(targets.length), () => { send({ t: 'salvage', uids: targets.map((x) => x.uid) }); act.bulk = -1; renderMenu(); }, !targets.length || over || targets.length > SALVAGE.maxBatch);
+    go.classList.add('armed');
+    const r = row(targets.length ? loc.fmt.salvageAllPreview(upTo, targets.length, dust) : loc.fmt.salvageAllNone(upTo), over ? loc.fmt.salvageOver(cap - have) : '', [...(targets.length ? [go] : []), button(t('salvageCancel'), () => { act.bulk = -1; renderMenu(); })], 'gbulk'); // 대상이 없으면 분해 단추를 그리지 않는다 (0점 분해는 뜻이 없다)
+    r.setAttribute('role', 'status');
+    out.push(r);
+  }
+  if (S.salvage.auto >= 0) out.push(el('note', loc.fmt.autoSalvageOn(rarName(String(S.salvage.auto)))));
+  return out;
 }
 
 function drawGear(): void {
@@ -135,13 +269,18 @@ function drawGear(): void {
   ui.list.append(el('note', loc.fmt.gearHint(ENHANCE.supplyMax, ENHANCE.max)));
   for (const slot of GEAR_SLOTS) {
     const g = m.gear.find((x) => x.uid === m.worn[slot]);
-    if (g) ui.list.append(gearRow(g, true));
+    if (g) ui.list.append(...gearRow(g, true));
     else ui.list.append(row(gearTitle(loc.gear.slots[slot], t('none')), '', [], 'empty'));
   }
   const rest = m.gear.filter((x) => m.worn[x.slot] !== x.uid).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
-  ui.list.append(el('baghead', `${t('tabGear')} ${loc.fmt.have(m.gear.length, GEAR.bagMax)}`));
+  ui.list.append(bagHead());
+  if (act.res) { const ok = GEAR_OK.has(act.res.k), r = el('note gres ' + (ok ? 'ok' : 'fail'), forInput(L().msg[act.res.k](act.res.a))); r.setAttribute('role', 'status'); ui.list.append(r); }
+  // 가방이 가득 찼으면 눈에 띄게 알린다: 새로 떨어지는 장비가 조용히 버려진다
+  if (m.gear.length >= S.bag.max) { const warn = el('note gwarn', S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull')); warn.setAttribute('role', 'status'); ui.list.append(warn); }
+  if (S.salvage.on) ui.list.append(...salvageTools(rest));
   if (!rest.length) ui.list.append(el('note', t('gearEmpty')));
-  for (const g of rest) ui.list.append(gearRow(g, false));
+  else ui.list.append(el('note', t('gearTapHint')));
+  for (const g of rest) ui.list.append(...gearRow(g, false));
 }
 
 function drawBuild(): void {
@@ -317,7 +456,7 @@ function drawMarketPost(): void {
   const loc = L(), me = S.me, m = S.meta;
   if (!me || mk.guest) return;
   // 올릴 수 있는 것: 끼고 있지 않고 보급형이 아닌 장비, 그리고 가진 제작 재료
-  const gear = m.gear.filter((x) => m.worn[x.slot] !== x.uid && !isSupply(x)).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
+  const gear = m.gear.filter((x) => m.worn[x.slot] !== x.uid && !isSupply(x) && !x.lock).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
   const mats = (Object.keys(ITEMS) as ItemId[]).filter((id) => itemDef(id).kind === 'mat' && (me.items[id] ?? 0) > 0);
   const full = mk.mine.length >= MARKET.maxListings;
   ui.list.append(el('note', loc.fmt.marketFeeInfo(Math.round(MARKET.tax * 100), MARKET.hours)));
@@ -350,7 +489,7 @@ function drawMarketPost(): void {
       post.disabled = full || !v.okPrice || !v.okN;
     };
     if (item) {
-      const count = numInput(t('marketCountHint'), mk.n, String(MAT_MAX).length, (s) => { mk.n = s; show(); }, () => post.click());
+      const count = numInput(t('marketCountHint'), mk.n, String(itemCap(item)).length, (s) => { mk.n = s; show(); }, () => post.click());
       count.classList.add('short');
       box.append(count);
     }
@@ -367,7 +506,7 @@ function drawMarketPost(): void {
     ui.list.append(row(gearTitle(label.slot, label.name), optsEl(label.opts), [button(t('marketPick'), () => choose({ uid: g.uid }, 1), picked === g)], label.cls));
   }
   if (mats.length) ui.list.append(el('baghead', t('bagMats')));
-  for (const id of mats) ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, MAT_MAX), [button(t('marketPick'), () => choose({ item: id }, me.items[id] ?? 1), item === id)]));
+  for (const id of mats) ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), [button(t('marketPick'), () => choose({ item: id }, me.items[id] ?? 1), item === id)]));
 }
 
 function drawMarket(): void {
@@ -405,7 +544,7 @@ export function renderMenu(soft = false): void {
   if ((focus instanceof HTMLInputElement || focus instanceof HTMLSelectElement) && ui.list.contains(focus)) { ui.gold.textContent = L().fmt.gold(S.me.gold); return; }
   // 전투 중에는 상태 메시지가 초당 여러 번 온다. 그때마다 단추를 새로 만들면 누르는 사이에 단추가 사라져 클릭이 먹지 않으므로,
   // 화면에 영향을 주는 값이 그대로면 다시 그리지 않는다
-  const sig = JSON.stringify([tab, L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid]);
+  const sig = JSON.stringify([tab, L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid, act.openUid, act.salvUid, act.upArmed, act.bulk, act.res, S.bag, S.salvage, S.me.items]);
   if (soft === true && sig === lastSig) return;
   lastSig = sig;
   ui.gold.textContent = L().fmt.gold(S.me.gold);
@@ -452,6 +591,10 @@ export function toggleMenu(): void {
 
 export function initMenu(): void {
   ui.btn.addEventListener('click', (e) => { toggleMenu(); (e.currentTarget as HTMLElement).blur(); });
+  // 분해·잠금·가방 넓히기의 안내문을 어디에 띄울지: 한 일의 결과는 흘러가는 알림, 자리를 비운 동안의 장비 소식은 가운데 알림
+  addNotices({ banner: { awayGear: '' }, feed: ['salvaged', 'salvageCant', 'salvageFull', 'gearLocked', 'autoSalvaged', 'bagUpDone', 'bagUpMax'] });
+  // 가방 칸 수와 분해 설정(개인 상태)이 바뀌면 다시 그린다. 값은 가방 창(hud/bag.ts)이 먼저 받아 넣는다
+  onMsg('me', (m) => { if (m.k === 'bag' || m.k === 'salvage') renderMenu(true); });
   $('menuClose').addEventListener('click', () => { ui.panel.hidden = true; });
   onMsg('meta', (m) => { S.meta = { gear: m.gear, worn: m.worn, mail: m.mail, daily: m.daily, power: m.power, build: m.build }; renderMenu(true); });
   onMsg('guild', (m) => { S.guild = m.g; S.guildInvite = m.invite ?? null; renderMenu(); });
@@ -465,6 +608,14 @@ export function initMenu(): void {
   onMsg('rank', (m) => { S.rank = { list: m.list, me: m.me }; renderMenu(); });
   onMsg('stat', () => renderMenu(true)); // 골드가 바뀌면 강화 단추의 상태도 바뀐다
   // 강화의 결과를 누른 그 줄에 잠깐 보여 준다
+  // 분해·넓히기의 답을 장비 탭 안에 보여 준다 (5초)
+  onMsg('sys', (m) => {
+    if (!GEAR_OK.has(m.k) && !GEAR_FAIL.has(m.k)) return;
+    act.res = { k: m.k, a: m.a ?? [] };
+    clearTimeout(act.resTimer);
+    act.resTimer = window.setTimeout(() => { act.res = null; renderMenu(true); }, 5000);
+    renderMenu(true);
+  });
   onMsg('sys', (m) => {
     if (!act.enhWait) return;
     if (m.k === 'enhanceOk' || m.k === 'enhanceFail') {

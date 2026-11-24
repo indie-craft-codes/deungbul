@@ -441,3 +441,57 @@ html:lang(en) body { overflow-wrap: break-word; }
 @media (max-width: 720px), (max-height: 480px) {
   #channel { -webkit-appearance: none; appearance: none; flex: 1 1 2.6em; min-width: 2.6em; max-width: 3.3em; padding: 1px 3px; overflow: hidden; white-space: nowrap; text-overflow: clip; }
 }
+
+/* ---- 경제 2단계: 장비의 잠금·분해·비교, 가방 넓히기 (메뉴의 장비 탭, 가방 창) ---- */
+/* 가방의 머리줄: 든 수와 넓히기 단추를 한 줄에 */
+.baghead.gbag { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.baghead.gbag button { flex: none; padding: 4px 8px; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.baghead.gbag button:disabled { opacity: .4; cursor: default; }
+.baghead.gbag button.armed { border-color: var(--gold); color: var(--gold); font-weight: 700; }
+/* 가방이 가득 찼다는 경고 */
+.note.gwarn { color: #ffb3a8; border-left: 3px solid var(--hp); padding-left: 7px; }
+#bagBtn.alert { border-color: #ff8a7a; color: #ffb3a8; }
+#bagBtn.alert::after { content: ' !'; font-weight: 700; }
+/* 분해의 도구 줄: 일괄 분해와 자동 분해를 고르는 상자 둘 */
+.gtools { flex: none; }
+.note.gdust { color: var(--fg); }
+.mrow.gbulk { border-left-color: var(--gold); background: rgba(240, 200, 110, .08); padding-top: 3px; padding-bottom: 3px; }
+/* 장비 줄: 이름을 누르면 펼쳐진다. 잠금과 펼치기 단추는 폭을 맞춘다 */
+.mrow.gear .what.tap { cursor: pointer; }
+.mrow .acts button.glock, .mrow .acts button.gmorebtn { min-width: 34px; padding-left: 4px; padding-right: 4px; }
+.mrow .acts button.glock { opacity: .55; }
+.mrow .acts button.glock.on { opacity: 1; border-color: var(--gold); }
+/* 지금 낀 것과 견준 결론: 색만으로 가르지 않게 모양(▲ ▼ ◆ =)도 다르다 */
+.garrow { display: inline-block; margin-right: 5px; font-size: 11px; }
+.garrow.better, .gv.better, .gstats .up { color: #7fd68a; }
+.garrow.worse, .gv.worse, .gstats .down { color: #ff9a8c; }
+.garrow.mixed, .gv.mixed { color: #f0c86e; }
+.garrow.same, .gv.same { color: var(--dim); }
+/* 펼친 줄: 강화·팔기·분해 단추와 비교. 폰 가로에서도 위아래로 쌓는다 */
+.mrow.gear.gmore { flex-direction: column; align-items: stretch; margin-top: -3px; padding-top: 0; padding-bottom: 5px; background: rgba(0, 0, 0, .18); }
+.mrow.gear.gmore .acts { flex-wrap: wrap; justify-content: flex-start; padding-top: 4px; }
+.gcmp { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.gcmpline { display: flex; flex-direction: column; gap: 1px; border-top: 1px dashed var(--line); padding-top: 3px; }
+.gcmptop { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; }
+.gcmptop .ghead { color: var(--dim); }
+.gcmptop .gv { font-weight: 700; white-space: nowrap; }
+.gstats { display: flex; flex-wrap: wrap; gap: 1px 10px; }
+/* 손가락으로 누르는 곳은 높이 36px 이상 */
+@media (pointer: coarse) {
+  .mrow.gear .acts button, .baghead.gbag button, .mrow.gbulk .acts button { min-height: 36px; }
+  .mrow .acts button.glock, .mrow .acts button.gmorebtn { min-width: 40px; }
+  .gtools select { min-height: 36px; }
+  .mrow.gear .what.tap { min-height: 36px; }
+}
+/* 가방의 장비 줄: 단추(끼기, 잠금, 펼치기)를 이름 옆에 둔다 */
+.mrow.gear.gside { flex-direction: row; align-items: center; }
+.mrow.gear.gside .what { flex: 1 1 auto; }
+.mrow.gear.gside .acts { flex: none; flex-wrap: nowrap; }
+/* 고르는 상자 둘이 한 줄에 다 들어가지 않으면(폰 세로) 두 줄로 내린다: 고른 값의 글이 잘리지 않게 */
+.gtools { flex-wrap: wrap; }
+.gtools select { flex: 1 1 150px; }
+@media (pointer: coarse) { .gtools select { flex-basis: 230px; } }
+/* 장비 탭 안의 분해·넓히기 결과 (흘러가는 알림은 메뉴 창에 가려진다) */
+.note.gres { font-weight: 700; padding: 2px 7px; border-left: 3px solid; }
+.note.gres.ok { color: #a6efae; border-color: #7fd68a; background: rgba(127, 214, 138, .12); }
+.note.gres.fail { color: #ffb3a8; border-color: var(--hp); background: rgba(220, 90, 76, .14); }

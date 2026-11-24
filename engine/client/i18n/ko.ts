@@ -4,7 +4,7 @@
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (engine/test/framework.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat } from '../../shared/defs';
-import { BUILD, ENHANCE, GUILD, ITEMS, MARKET, PARTY } from '../../shared/defs';
+import { BUILD, ENHANCE, GUILD, ITEMS, MARKET, PARTY, SALVAGE } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
@@ -165,6 +165,25 @@ export const koBase = (n: ContentNames) => {
       unblock: '차단 풀기',
       owned: '보유 중',
       chatOpen: '대화하기',
+      // ---- 분해, 잠금, 자동 분해, 가방 넓히기, 장비 비교 (경제 2단계) ----
+      gearLockOn: '잠그기: 팔기·분해·거래소 올리기를 막습니다',
+      gearLockOff: '잠금 풀기',
+      gearMore: '강화·팔기·분해와 비교 펼치기',
+      gearLess: '접기',
+      gearTapHint: '장비를 누르면 강화·팔기·분해와, 지금 낀 장비와의 비교가 펼쳐집니다. ▲는 지금 낀 것보다 좋다는 뜻입니다.',
+      bagFull: '장비 가방이 가득 찼습니다. 새로 떨어지는 장비는 버려집니다. 분해하거나 팔고, 가방을 넓히세요.',
+      salvageAll: '일괄 분해…',
+      salvageCancel: '취소',
+      autoSalvageOff: '끔',
+      salvageSource: '장비를 분해하면 나옵니다',
+      cmpNow: '지금 바꾸면',
+      cmpNone: '이 칸이 비어 있음',
+      cmpBetter: '더 좋음',
+      cmpWorse: '더 나쁨',
+      cmpSame: '비슷',
+      cmpMixed: '엇갈림',
+      cmpThis: '이 장비',
+      cmpWorn: '낀 장비',
     },
     monsters,
     dungeons,
@@ -259,6 +278,29 @@ export const koBase = (n: ContentNames) => {
       matFrom: (names: string[]) => `얻는 곳: ${names.join(', ')}`,
       matSource: (mat: string, names: string[]) => `${mat} 얻는 곳: ${names.join(', ')}`,
       dungeonMateIn: (names: string) => `파티원(${names})이 안에 있습니다. 들어가면 같은 곳으로 갑니다.`,
+      // ---- 분해, 잠금, 자동 분해, 가방 넓히기, 장비 비교 (경제 2단계). 가루의 이름은 게임의 아이템 이름에서 읽는다 ----
+      rarAtMost: (rarity: string) => `${rarity} 장비까지`,
+      salvageFor: (dust: number) => `분해 · ${itemName(SALVAGE.item)} +${num(dust)}`,
+      salvageConfirm: (dust: number) => `확인 · ${itemName(SALVAGE.item)} +${num(dust)}`,
+      salvageAllPreview: (upTo: string, n: number, dust: number) => `${upTo} ${n}점 → ${itemName(SALVAGE.item)} +${num(dust)} (낀 장비·보급형·잠근 장비는 빠집니다)`,
+      salvageAllGo: (n: number) => `${n}점 분해`,
+      salvageAllNone: (upTo: string) => `${upTo}: 분해할 장비가 없습니다 (낀 장비·보급형·잠근 장비는 빠집니다)`,
+      salvageOver: (room: number) => `${josa(itemName(SALVAGE.item), '을', '를')} 더 들 수 없습니다 (남은 자리 ${num(room)}). 수를 줄여 분해하세요.`,
+      autoSalvageOpt: (v: string) => `자동 분해: ${v}`,
+      autoSalvageOn: (upTo: string) => `${upTo}는 줍자마자 ${josa(itemName(SALVAGE.item), '이', '가')} 됩니다 (자리를 비운 동안에도). 남기고 싶은 등급이면 한 단계 낮추세요.`,
+      dustHave: (n: number, max: number) => `${itemName(SALVAGE.item)} ${num(n)} / ${num(max)}`,
+      bagUpFor: (step: number, gold: number) => `넓히기 +${step}칸 · ${num(gold)}골드`,
+      bagLost: (n: number) => `가방이 가득 차 장비 ${num(n)}점을 줍지 못했습니다. 분해하거나 팔고, 가방을 넓히세요.`,
+      cmpEven: (plus: number) => `둘 다 +${plus}이면`,
+      cmpDmg: (v: number) => `공격 피해 ${signed(v)}%`,
+      cmpGuard: (v: number) => `받는 피해 ${signed(v)}%`,
+      cmpCrit: (v: number) => `치명타 ${signed(v)}%p`,
+      cmpHp: (v: number) => `체력 ${signed(v)}`,
+      cmpPower: (v: number) => `전투력 ${signed(v)}`,
+      cmpRaise: (who: string, from: number, to: number, gold: number) => `${who} +${from}→+${to}: 기대 약 ${num(gold)}골드`,
+      cmpCapped: (who: string, max: number) => `${josa(who, '은', '는')} +${max}까지만 강화됩니다`,
+      cmpArrow: (verdict: string) => `지금 바꾸면: ${verdict}`,
+      haveBig: (n: number, max: number) => `${num(n)} / ${num(max)}`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -361,6 +403,15 @@ export const koBase = (n: ContentNames) => {
       guildNone: () => '길드가 없습니다. 메뉴의 길드에서 만들거나 초대를 받으세요.',
       awayBack: (a) => `자리를 비운 ${a[0]}분 동안 자동 사냥을 이어 갔습니다. ${coin ? `${coin.name} +${a[1]}, ` : ''}골드 +${num(a[2])}${Number(a[3]) > 0 ? `, 레벨 +${a[3]}` : ''}`,
       rested: (a) => `쉬는 동안 휴식 보너스가 쌓였습니다. 휴식 보너스 ${a[0]} (처치 경험치 2배)`, // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      // ---- 분해, 잠금, 자동 분해, 가방 넓히기 (경제 2단계). 가루의 이름은 게임의 아이템 이름에서 읽는다 ----
+      salvaged: (a) => `장비 ${a[0]}점을 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      salvageCant: () => '분해할 수 없는 장비가 섞여 있습니다. 낀 장비, 보급형, 잠근 장비는 분해할 수 없습니다.',
+      salvageFull: (a) => `${josa(itemName(SALVAGE.item), '을', '를')} 더 들 수 없어 분해하지 않았습니다. 나올 양 ${num(a[0])}, 남은 자리 ${num(a[1])}`,
+      gearLocked: () => '잠근 장비입니다. 잠금을 풀어야 팔거나 분해하거나 거래소에 올릴 수 있습니다.',
+      autoSalvaged: (a) => `주운 장비 ${a[0]}점을 자동으로 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      awayGear: (a) => ['자리를 비운 동안:', Number(a[0]) > 0 ? `가방이 가득 차 장비 ${num(a[0])}점을 줍지 못했습니다.` : '', Number(a[1]) > 0 ? `장비 ${num(a[1])}점을 자동으로 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[2])}` : ''].filter(Boolean).join(' '),
+      bagUpDone: (a) => `가방을 넓혔습니다. 장비 ${a[0]}칸`,
+      bagUpMax: () => '가방을 더 넓힐 수 없습니다.',
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

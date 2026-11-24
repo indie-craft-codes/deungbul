@@ -1,6 +1,6 @@
 // 도감의 계산: 내용 정의(games/deungbul/shared/content)의 수치로 확률, 기대값, 범위를 구한다. 화면(DOM)도 문장도 모른다.
 import {
-  CAMPS, DROPS, DUNGEONS, ENHANCE, GEAR, GEAR_SLOTS, LEVEL, MONSTERS, RAID, RARITIES, RECIPES, RESPAWN_S, SHOP_STOCK, STATS, STAT_IDS, START_WEAPON,
+  CAMPS, DROPS, DUNGEONS, GEAR, GEAR_SLOTS, LEVEL, MONSTERS, RAID, RARITIES, RECIPES, RESPAWN_S, SHOP_STOCK, STATS, STAT_IDS, START_WEAPON,
   ITEMS, clearRar, gearScore, needFor, sellPrice, type Gear, type GearSlot, type ItemId, type MonsterDef, type MonsterId, type Stat,
 } from '../../shared/defs';
 import { zoneOf } from '../../shared/world';
@@ -36,18 +36,8 @@ export const gearChance = (def: MonsterDef): number => (def.boss ? 1 : GEAR.drop
 /** 떨어진 장비가 그 칸일 확률 (칸은 고르게 나온다) */
 export const slotChance = (): number => 1 / GEAR_SLOTS.length;
 
-/** +from에서 +to까지 올리는 데 드는 골드의 기대값: 단계마다 (한 번의 값 ÷ 성공 확률)을 더한다 */
-export function enhanceExpected(to: number, rar: number, from = 0): number {
-  let sum = 0;
-  for (let plus = from; plus < to; plus++) sum += ENHANCE.gold(plus, rar) / ENHANCE.rate(plus);
-  return sum;
-}
-/** +from에서 +to까지 올리는 데 필요한 시도 횟수의 기대값 */
-export function enhanceTries(to: number, from = 0): number {
-  let sum = 0;
-  for (let plus = from; plus < to; plus++) sum += 1 / ENHANCE.rate(plus);
-  return sum;
-}
+// 강화의 기대 골드와 기대 시도 횟수는 틀의 공용 함수다 (게임 화면의 장비 비교가 같은 식을 쓴다): engine/shared/defs/growth.ts
+export { enhanceExpected, enhanceTries } from '../../shared/defs';
 
 /** 크기가 k인 부분집합 전부 */
 function subsets<T>(list: readonly T[], k: number): T[][] {

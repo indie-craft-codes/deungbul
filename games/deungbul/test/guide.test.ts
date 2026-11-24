@@ -25,6 +25,7 @@ import {
   RESIDENTS, SHOP_STOCK, SKILL_DEFS, STAT_IDS, sellPrice, type MonsterId,
 } from '../shared/defs';
 import { TOWERS, rng } from '../shared/world';
+import { BAG_UP, SALVAGE, bagSlots, dustFor, itemCap } from '../shared/defs';
 import { check } from '@engine/test/harness';
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
@@ -61,6 +62,15 @@ for (const P of PACKS) {
   check(sameSet(keys('residents'), RESIDENTS.map((r) => r.id)) && sameSet(keys('towers'), TOWERS.map((t) => t.id)), `[${lang}] 모든 주민과 등탑이 있다`);
   check(sameSet(keys('rarities'), RARITIES.map((r) => r.id)) && sameSet(keys('buildStats'), BUILD_STATS) && keys('options').length === STAT_IDS.length * RARITIES.length, `[${lang}] 모든 등급, 능력치, 장비 옵션이 있다`);
   check(keys('enhance').length === ENHANCE.max && keys('enhanceTotal').length === ENHANCE.max, `[${lang}] 강화 표에 모든 단계가 있다 (+${ENHANCE.max}까지)`);
+  // 분해로 나오는 가루의 표와 가방 넓히기의 값 표: 정의(SALVAGE, BAG_UP)를 따른다
+  const salvageRows = byId.get('salvage')?.rows ?? [], bagUpRows = byId.get('bagUp')?.rows ?? [];
+  check(sameSet(keys('salvage'), RARITIES.map((r) => r.id)) && salvageRows.every((r, i) => r.cells.length === ENHANCE.max + 2 && r.cells.slice(1).every((c, plus) => c === num(dustFor({ rar: i, plus })))) && salvageRows[0].cells[1] === num(SALVAGE.dust[0]),
+    `[${lang}] 분해 표: 등급마다 +0부터 +${ENHANCE.max}까지의 가루가 정의의 식(dustFor)과 같다`);
+  check(bagUpRows.length === BAG_UP.prices.length && bagUpRows.every((r, i) => r.cells[1].includes(num(BAG_UP.prices[i])) && r.cells[2].includes(num(bagSlots(i + 1))) && r.cells[3].includes(num(BAG_UP.prices.slice(0, i + 1).reduce((s, n) => s + n, 0)))),
+    `[${lang}] 가방 넓히기 표: 차례마다의 값과 칸 수, 누적 골드가 정의(BAG_UP)와 같다`);
+  const gearText = JSON.stringify(sections.find((s) => s.id === 'gear'));
+  check(gearText.includes(P.L.items[SALVAGE.item as keyof typeof ITEMS].name) && gearText.includes(num(itemCap(SALVAGE.item as keyof typeof ITEMS))) && gearText.includes(P.L.gear.rarities[RARITIES[SALVAGE.autoMaxRar].id]),
+    `[${lang}] 분해·잠금·자동 분해의 설명에 가루의 이름과 한도, 자동 분해의 가장 높은 등급이 정의에서 읽혀 들어간다`);
   check(GEAR_SLOTS.every((s) => JSON.stringify(sections.find((x) => x.id === 'gear')).includes(P.L.gear.slots[s])), `[${lang}] 장비 칸의 이름이 모두 나온다`);
 
   // 표의 모양: 머리와 줄의 칸 수가 같고, 빈 칸이 없다

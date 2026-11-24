@@ -14,7 +14,8 @@ const THINK_S = 0.3;
  */
 export const AWAY_MAX_S = AWAY.maxS; // 값은 engine/shared/auto.ts에 있다 (화면과 도감이 같은 수를 쓴다)
 
-interface Stay { x: number; z: number; at: number; sparks: number; gold: number; lv: number }
+/** lost, salv, dust: 그동안 가방이 가득 차 버려진 장비, 자동 분해한 장비, 그것으로 얻은 가루 */
+interface Stay { x: number; z: number; at: number; sparks: number; gold: number; lv: number; lost: number; salv: number; dust: number }
 
 export class Away {
   private stays = new Map<number, Stay>();
@@ -46,12 +47,18 @@ export class Away {
   start(p: Ent): void {
     // 자동 사냥을 끄면 통신 계층이 다음 전송 때 저장하고 내보낸다 (시간이 다 됐을 때와 같은 길)
     if (this.left(p) <= 0) { p.auto = false; return; }
-    this.stays.set(p.id, { x: p.x, z: p.z, at: this.g.now(), sparks: p.sparks, gold: p.gold, lv: p.lv });
+    this.stays.set(p.id, { x: p.x, z: p.z, at: this.g.now(), sparks: p.sparks, gold: p.gold, lv: p.lv, lost: 0, salv: 0, dust: 0 });
     p.wait = 0;
   }
 
   /** 지금 서버가 대신 사냥하고 있는 캐릭터인가 (지표가 접속 중의 사냥과 가려 적는 데 쓴다) */
   active(p: Ent): boolean { return this.stays.has(p.id); }
+
+  /** 자리를 비운 동안의 장비를 센다: 버려진 것(lost), 자동 분해한 것(salv), 얻은 가루(dust). 사냥 중이 아니면 아무것도 하지 않는다 */
+  tally(p: Ent, what: 'lost' | 'salv' | 'dust', n: number): void {
+    const s = this.stays.get(p.id);
+    if (s) s[what] += n;
+  }
 
   /** 주인이 돌아왔다: 그동안 얻은 것을 알려 주고 손을 뗀다. */
   stop(p: Ent): void {
@@ -60,6 +67,8 @@ export class Away {
     this.stays.delete(p.id);
     const minutes = Math.max(1, Math.round((this.g.now() - s.at) / 60000));
     this.g.notify(p, 'awayBack', minutes, Math.max(0, p.sparks - s.sparks), Math.max(0, p.gold - s.gold), p.lv - s.lv);
+    // 버려지거나 자동으로 분해된 장비가 있었으면 이어서 알린다 (조용히 사라지면 몰라서 손해 본다)
+    if (s.lost || s.salv) this.g.notify(p, 'awayGear', s.lost, s.salv, s.dust);
   }
 
   think(p: Ent, dt: number): void {
