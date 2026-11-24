@@ -1,6 +1,6 @@
 // 등탑과 주민: 서버 전체가 공유하는 진행. 불씨를 바쳐 밝기를 올리고 주민을 되돌린다.
 // 등탑은 구역마다 하나씩 있다. 바깥 구역의 등탑은 꺼진 채로 시작하고, 모두가 불씨를 모아 밝혀야 한다.
-import { GLOW_MAX, RESIDENTS, TOWER_REACH, speedFor, stageOf, type ResidentId, type Stage } from '../../../shared/defs';
+import { FULL_TOWER_OFFER, GLOW_BRIGHT_REGEN, GLOW_MAX, RESIDENTS, TOWER_REACH, speedFor, stageOf, type ResidentId, type Stage } from '../../../shared/defs';
 import type { WorldState } from '../../../shared/protocol';
 import { TOWERS, zoneOf, type TowerDef } from '../../../shared/world';
 import { clamp, dist, type Ent } from '../entity';
@@ -26,7 +26,7 @@ export class Tower {
     });
     // 밝기 혜택: 내가 있는 구역의 등탑이 환하면 회복이 빨라진다.
     // 주민이 돌아와 생기는 일은 다른 시스템이 맡는다: 상점 물건(shop.ts), 등탑지기의 일(keepers.ts)
-    g.mods.provide('regen', (p) => (p && this.stageAt(p.x) === 2 ? 2 : 1));
+    g.mods.provide('regen', (p) => (p && this.stageAt(p.x) === 2 ? GLOW_BRIGHT_REGEN : 1));
   }
 
   /** 첫불 마을 등탑의 밝기 (습격의 대상) */
@@ -74,9 +74,9 @@ export class Tower {
     if (to === 'tower') {
       // 등탑이 이미 가장 밝아도 바칠 수 있다: 밝기는 더 오르지 않지만 기여와 퀘스트에는 세어진다
       // (가득 찬 서버에 새로 온 사람이 '등탑에 바치기' 단계에서 막히지 않게)
-      // 다만 '전부'로 불씨를 몽땅 태우지 않게, 가득 찬 등탑은 한 번에 5개까지만 받는다
+      // 다만 '전부'로 불씨를 몽땅 태우지 않게, 가득 찬 등탑은 한 번에 조금(FULL_TOWER_OFFER)만 받는다
       const room = GLOW_MAX - this.glows[ti];
-      used = Math.min(want, p.sparks, room > 0 ? room : 5);
+      used = Math.min(want, p.sparks, room > 0 ? room : FULL_TOWER_OFFER);
       if (room > 0) this.changeGlow(used, ti);
     } else {
       // 주민은 첫불 마을의 등탑에서만 되돌린다

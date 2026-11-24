@@ -15,18 +15,18 @@ const classes: Record<ClassId, { name: string; info: string }> = {
   archer: { name: 'Archer', info: 'Shoots from afar. Less health.' },
   mage: { name: 'Mage', info: 'Casts from afar. Slows foes and heals those nearby. Least health.' },
 };
-const items: Record<ItemId, { name: string; info: string; bow?: string; staff?: string }> = {
+const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?: string }> = {
   sword1: { name: 'Worn Sword', bow: 'Worn Bow', staff: 'Worn Staff', info: 'Starting weapon' },
-  sword2: { name: 'Iron Sword', bow: 'Sturdy Bow', staff: 'Sturdy Staff', info: 'Damage +20%' },
-  sword3: { name: 'Lamp Sword', bow: 'Lamp Bow', staff: 'Lamp Staff', info: 'Damage +45%' },
-  sword4: { name: 'Ember Sword', bow: 'Ember Bow', staff: 'Ember Staff', info: 'Damage +75%' },
-  armor1: { name: 'Leather Armor', info: 'Damage taken -12%' },
-  armor2: { name: 'Iron Armor', info: 'Damage taken -24%' },
+  sword2: { name: 'Iron Sword', bow: 'Sturdy Bow', staff: 'Sturdy Staff' },
+  sword3: { name: 'Lamp Sword', bow: 'Lamp Bow', staff: 'Lamp Staff' },
+  sword4: { name: 'Ember Sword', bow: 'Ember Bow', staff: 'Ember Staff' },
+  armor1: { name: 'Leather Armor' },
+  armor2: { name: 'Iron Armor' },
   hide: { name: 'Tough Hide', info: 'Material dropped by boars' },
   iron: { name: 'Iron Scrap', info: 'Material dropped by goblins and lost soldiers' },
   ashcore: { name: 'Ash Core', info: 'Material dropped by the Ash Troll' },
-  potion: { name: 'Potion', info: 'Restores 80 health' },
-  tonic: { name: 'Strong Potion', info: 'Restores 160 health' },
+  potion: { name: 'Potion' },
+  tonic: { name: 'Strong Potion' },
 };
 const itemName = (id: MsgArg, cls?: MsgArg) => { const it = items[id as ItemId]; if (!it) return String(id); const hand = handOf(cls); return (hand !== 'sword' && it[hand]) || it.name; };
 const towers: Record<string, string> = { first: 'Firstlight Village Tower', ash: 'Ashwood Tower', crypt: 'the crypt entrance' };
@@ -271,7 +271,10 @@ export const en: Locale = {
     status: (online, near, ping) => `Online ${online} · Nearby ${near} · Ping ${ping}`,
     towerMini: (stage, glow) => `Tower: ${stages[stage]} ${glow}`,
     glow: (stage, glow, max) => `${stages[stage]} · ${glow} / ${max}`,
-    stageNote: (stage) => ['The light is weak. No bonuses.', 'At 70 it turns bright: +10% move speed, 2x recovery', 'Bright: +10% move speed, 2x recovery'][stage],
+    itemDamage: (pct) => `Damage +${pct}%`,
+    itemGuard: (pct) => `Damage taken -${pct}%`,
+    itemHeal: (n) => `Restores ${n} health`,
+    stageNote: (stage, bright, speedPct, regen) => ['The light is weak. No bonuses.', `At ${bright} it turns bright: +${speedPct}% move speed, ${regen}x recovery`, `Bright: +${speedPct}% move speed, ${regen}x recovery`][stage],
     nextResident: (name) => `Bring back: ${name}`,
     whenBack: (bonus) => `On return: ${bonus}`,
     skillLabel: (name, info, key) => `${name}: ${info} (key ${key})`,
@@ -313,7 +316,7 @@ export const en: Locale = {
     guildGave: (n) => `donated ${num(n)}`,
     channelShort: (n) => `Ch ${n}`,
     channelOpt: (n, people, foes) => `Ch ${n} · ${people}${foes > 0 ? ` · ${foes} foes` : ''}`,
-    statLeft: (n) => `Attributes · ${n} points left (3 per level)`,
+    statLeft: (n, perLevel) => `Attributes · ${n} points left (${perLevel} per level)`,
     statResetFor: (gold) => `Refund all · ${num(gold)} gold`,
     skillLv: (lv, max) => `rank ${lv} / ${max}`,
     skillBonus: (pct) => `Damage and healing +${pct}%`,

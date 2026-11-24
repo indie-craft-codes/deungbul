@@ -12,3 +12,5 @@ export * from './content/raid';
 export * from './content/residents';
 export * from './content/social';
 export * from './content/tower';
+// 맵 정의는 shared/world.ts가 통째로 다시 내보낸다. 여기서는 내용 계약(shared/contract.ts)이 요구하는 MAP만 내보낸다
+export { MAP } from './content/map';

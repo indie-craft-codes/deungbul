@@ -1,5 +1,5 @@
 // 플레이어: 생성, 저장 값 주고받기, 성장(경험치와 불씨).
-import { CLASS_IDS, ITEMS, POTION_CD, QUESTS, REJOIN_KEEP_S, REST, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, goalCount, isClassId, isItemId, maxHpFor, restGain } from '../../../shared/defs';
+import { CLASS_IDS, ITEMS, LEVEL, POTION_CD, QUESTS, REJOIN_KEEP_S, REST, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, goalCount, isClassId, isItemId, maxHpFor, nextNeed, restGain } from '../../../shared/defs';
 import type { PlayerSave } from '../../store';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
@@ -33,7 +33,7 @@ export class Players {
       if (!def) return;
       for (const p of hitters) {
         const roll = (r: readonly [number, number]) => r[0] + Math.floor(Math.random() * (r[1] - r[0] + 1));
-        const sparks = roll(def.sparks) + g.mods.sum('sparkBonus', p), gold = roll(def.gold);
+        const sparks = (def.sparks ? roll(def.sparks) : 0) + g.mods.sum('sparkBonus', p), gold = roll(def.gold);
         // 휴식 보너스가 남아 있으면 그만큼 경험치를 더 받는다 (최대 2배)
         const bonus = Math.min(def.exp, p.rested);
         p.rested -= bonus;
@@ -55,7 +55,7 @@ export class Players {
     if (save) {
       // 저장된 값은 믿되, 깨진 값이 섞여 있어도 서버가 죽지 않게 범위를 잡는다
       const n = (v: unknown, min: number, max: number, def: number) => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), min, max) : def);
-      p.lv = n(save.lv, 1, 999, 1); p.need = n(save.need, 1, 1e9, 60); p.exp = n(save.exp, 0, p.need, 0);
+      p.lv = n(save.lv, 1, 999, 1); p.need = n(save.need, 1, 1e9, LEVEL.firstNeed); p.exp = n(save.exp, 0, p.need, 0);
       // 시스템마다 저장해 둔 몫(장비, 우편, 일일 임무)을 읽는다. 깨진 값은 그 시스템이 걸러 낸다
       const ext = typeof save.ext === 'object' && save.ext !== null ? save.ext : {};
       this.vitals = null;
@@ -142,7 +142,7 @@ export class Players {
   grant(p: Ent, exp: number, sparks: number): void {
     p.exp += exp; p.sparks += sparks; p.dirty = true; p.unsaved = true;
     while (p.exp >= p.need) {
-      p.exp -= p.need; p.need = Math.round(p.need * 1.35); p.lv++; this.refresh(p); p.hp = p.maxHp;
+      p.exp -= p.need; p.need = nextNeed(p.need); p.lv++; this.refresh(p); p.hp = p.maxHp;
       this.g.notify(p, 'levelUp', p.lv);
       p.metaDirty = true; // 찍을 능력치 점수가 생겼다
     }

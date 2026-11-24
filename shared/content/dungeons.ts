@@ -1,9 +1,11 @@
 // 던전: 문으로 들어가는 따로 떨어진 지역. 들어간 사람(과 그 파티)만의 인스턴스가 만들어진다.
 // 규칙은 server/game/systems/dungeon.ts가 맡는다. 수치는 모두 잠정값이다.
+// 틀의 것(타입과 도우미 함수)과 이 게임의 것(표와 수치)이 한 파일에 있어 [틀] / [이 게임] 구역 주석으로 갈라 둔다 (파일은 9단계에서 갈린다).
 import type { Reward } from './growth';
 import { PORTALS } from './map';
 import type { MonsterId } from './monsters';
 
+// ===== [틀] 던전의 모양 =====
 export interface DungeonDef {
   /** 들판에 있는 문의 자리 */
   portal: { x: number; z: number };
@@ -27,6 +29,7 @@ export interface DungeonDef {
   dropRar: number; dropLv: number;
 }
 
+// ===== [이 게임] 던전 =====
 export const DUNGEONS = {
   crypt: {
     portal: PORTALS.crypt,
@@ -46,10 +49,16 @@ export const DUNGEONS = {
     dropRar: 2, dropLv: 5,
   },
 } as const satisfies Record<string, DungeonDef>;
+// ===== [틀] 던전 도우미 (PORTAL_REACH의 값은 [이 게임]의 것) =====
 export type DungeonId = keyof typeof DUNGEONS;
 export const DUNGEON_IDS = Object.keys(DUNGEONS) as DungeonId[];
 export const isDungeonId = (v: unknown): v is DungeonId => typeof v === 'string' && Object.hasOwn(DUNGEONS, v);
 export const dungeonDef = (id: DungeonId): DungeonDef => DUNGEONS[id];
+/**
+ * 끝냈을 때 받는 장비의 등급: 평소처럼 굴린 등급(rolled)이 그 던전의 가장 낮은 등급보다 낮으면 그 등급으로 올린다.
+ * 서버의 systems/dungeon.ts와 도감(등급별 확률)이 함께 쓴다
+ */
+export const clearRar = (def: Pick<DungeonDef, 'dropRar'>, rolled: number): number => Math.max(def.dropRar, rolled);
 /** 문에 이만큼 다가가야 들어갈 수 있다 */
 export const PORTAL_REACH = 4;
 /** 하루 입장 횟수를 일일 진행(DailyState.prog)에 적는 이름 */

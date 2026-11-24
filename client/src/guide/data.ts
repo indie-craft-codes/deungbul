@@ -2,11 +2,11 @@
 // 표의 줄은 정의의 모든 항목을 돌며 만든다: 몬스터나 아이템을 정의에 더하면 도감에 저절로 나타난다.
 // 이름은 게임의 언어 파일(i18n/ko.ts, en.ts)에서, 도감에만 있는 문장은 도감의 언어 파일(text.*.ts)에서 온다.
 import {
-  ATTACK_CD, ATTEND, BOSS, BUILD, BUILD_STATS, CAMPS, CHANNEL, CLASSES, CLASS_IDS, CONTRIB_TIERS, DAILIES, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS,
-  ENHANCE, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, MAIL_MAX, MARKET, MAT_MAX,
-  MONSTERS, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, PARTY, PORTAL_REACH, POTION_CD, POTION_MAX, QUESTS, RAID, RAID_KEEP_POINTS, RANK, RARITIES,
+  ATTACK_CD, ATTEND, BOSS, BUILD, BUILD_STATS, CAMPS, CHANNEL, CLASSES, CLASS_IDS, COMBAT, CONTRIB_TIERS, DAILIES, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS,
+  ENHANCE, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, LEVEL, MAIL_MAX, MARKET, MAT_MAX,
+  MONSTERS, MONSTER_AI, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, PARTY, PORTAL_REACH, POTION_CD, POTION_MAX, POWER, QUESTS, RAID, RAID_KEEP_POINTS, RANK, RARITIES,
   RECIPES, RESIDENTS, RESPAWN_S, REST, SHOPS, SHOP_REACH, SHOP_STOCK, SKILL_DEFS, SLOW_FACTOR, SMITH, SMITHY_REACH, STAT_IDS, TOWER_REACH,
-  baseOpt, marketFee, maxHpFor, restGain, speedFor, stageOf,
+  baseOpt, bossHp, guildNeed, marketFee, maxHpFor, needFor, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
   type ItemDef, type ItemId, type MonsterDef, type MonsterId, type QuestGoal, type Reward, type SkillDef, type SkillId, type Stage,
 } from '../../../shared/defs';
 import { AUTO, AWAY } from '../../../shared/auto';
@@ -14,11 +14,11 @@ import { AOI_LEAVE, CHAT_MAX, NAME_MAX, PLAYER_SPEED, TOWERS, zoneOf } from '../
 import { en } from '../i18n/en';
 import { ko, type Locale } from '../i18n/ko';
 import {
-  DROP_IDS, ITEM_IDS, MONSTER_IDS, avg, bossHp, enhanceExpected, enhanceTries, gearChance, gearLevels, habitat, monstersOfGearLv, plainSell,
-  raidCapPlayers, raidFoes, raidTowerHp, rarityShares, raritySharesFrom, respawnOf, sellRange, slotChance, sourcesOf, tally,
+  DROP_IDS, ITEM_IDS, MONSTER_IDS, avg, enhanceExpected, enhanceTries, expUpTo, gearChance, gearLevels, habitat, levelGrowth, monstersOfGearLv, plainSell,
+  raidCapPlayers, rarityShares, raritySharesFrom, respawnOf, scoreOf, sellRange, slotChance, sourcesOf, statBase, tally,
 } from './calc';
 import { num, pct, span } from './fmt';
-import { AWAY_MAX_S, optRange } from './rules';
+import { optRange } from './rules';
 import { textEn } from './text.en';
 import { textKo, type GuideText } from './text.ko';
 
@@ -122,6 +122,14 @@ function classes(P: Pack): Section {
         const users = CLASS_IDS.flatMap((cls) => { const n = (CLASSES[cls].skills as readonly string[]).indexOf(id); return n < 0 ? [] : [T.classes.slot(L.classes[cls].name, n + 1)]; });
         return row(id, L.skills[id].name, list(users) || c.none, L.skills[id].info, effectText(P, d), c.sec(d.cd), d.range === undefined ? c.none : c.m(d.range));
       })),
+      facts(P, 'combat', T.classes.combatHead, T.classes.combat, {
+        critChance: pct(COMBAT.critChance),
+        critMult: c.mult(COMBAT.critMult),
+        regenAfter: c.sec(COMBAT.regenAfterS),
+        regenPerS: T.classes.hpPerSec(num(COMBAT.regenPerS)),
+        regenBright: T.classes.hpPerSec(num(COMBAT.regenPerS * GLOW_BRIGHT_REGEN)),
+        guardCap: `${num(GEAR.guardCap)}%`,
+      }),
       ul(T.classes.notes(c.sec(ATTACK_CD), num(BUILD.skillMax), pct(BUILD.skillPerLevel))),
     ],
   };
@@ -141,13 +149,20 @@ function monsters(P: Pack): Section {
   return {
     id: 'monsters', title: M.title, blocks: [
       ul(M.rules(num(AOI_LEAVE), num(PARTY.shareRange), c.sec(RESPAWN_S), c.m(LEASH), c.m(MONSTER_ATTACK_RANGE), c.sec(MONSTER_ATTACK_CD), c.perSec(PLAYER_SPEED))),
+      facts(P, 'monsterAi', M.aiHead, M.ai, {
+        loseRange: c.m(MONSTER_AI.loseRange),
+        leash: c.m(LEASH),
+        homeSpeed: M.homeSpeedValue(c.mult(MONSTER_AI.homeSpeed)),
+        wanderSpeed: c.perSec(MONSTER_AI.wanderSpeed),
+      }),
+      p(M.aiNote),
       table('monsters', M.combatHead, M.combatCols, MONSTER_IDS.map((id) => {
         const d: MonsterDef = MONSTERS[id], back = respawnOf(id);
         return row(id, monsterName(P, id), whereText(P, id), num(d.hp), span(d.dmg), c.perSec(d.speed), d.aggro > 0 ? c.m(d.aggro) : M.passive, back === null ? M.noRespawn : c.sec(back));
       })),
       table('monsterRewards', M.rewardHead, M.rewardCols, MONSTER_IDS.map((id) => {
-        const d: MonsterDef = MONSTERS[id], drop = DROPS[id], lv = GEAR.levelOf(d.exp);
-        return row(id, monsterName(P, id), num(d.exp), `${span(d.gold)} (${num(avg(d.gold))})`, `${span(d.sparks)} (${num(avg(d.sparks))})`,
+        const d: MonsterDef = MONSTERS[id], drop = DROPS[id], lv = GEAR.levelOf(d.exp), sparks = d.sparks ?? [0, 0];
+        return row(id, monsterName(P, id), num(d.exp), `${span(d.gold)} (${num(avg(d.gold))})`, `${span(sparks)} (${num(avg(sparks))})`,
           pct(gearChance(d)), c.level(lv), drop ? `${itemLabel(P, drop.id)} ${pct(drop.chance)}` : c.none);
       })),
       p(M.rewardNote),
@@ -179,7 +194,11 @@ function sourceText(P: Pack, id: ItemId): string {
   if (s.gearLv.length) parts.push(T.srcGear(list(s.gearLv.map((lv) => P.T.common.level(lv)))));
   return list(parts) || P.T.common.none;
 }
-const needText = (P: Pack, d: ItemDef): string => (d.needs ? P.T.items.needs(P.L.residents[d.needs].name) : P.T.common.none);
+/** 상점 물건의 잠금: 틀에서는 뜻 없는 열쇠이고, 이 게임에서는 돌아와야 하는 주민이다 */
+function needText(P: Pack, d: ItemDef): string {
+  const r = RESIDENTS.find((x) => x.id === d.needs);
+  return r ? P.T.items.needs(P.L.residents[r.id].name) : P.T.common.none;
+}
 function items(P: Pack): Section {
   const { L, T } = P, c = T.common, I = T.items;
   return {
@@ -239,7 +258,7 @@ function gear(P: Pack): Section {
       table('gearLevels', G.levelHead, G.levelCols, lvs.map((lv) => row(lv, c.level(lv), list(monstersOfGearLv(lv).map((m) => monsterName(P, m))) || c.none,
         itemLabel(P, GEAR.weaponFor(lv)), itemLabel(P, GEAR.armorFor(lv))))),
       h(G.optHead),
-      p(G.optNote),
+      p(G.optNote(num(GEAR.optMin), num(GEAR.optMin + GEAR.optSpan), pct(GEAR.optPerLevel))),
       table('options', G.optTableHead, [G.optCol, G.rarityCol, ...lvs.map((lv) => c.level(lv))],
         STAT_IDS.flatMap((s) => rars.map((r) => row(`${s}:${RARITIES[r].id}`, G.stats[s], rarityName(P, r), ...lvs.map((lv) => { const v = optRange(s, r, lv); return v ? span(v) : c.none; }))))),
       h(G.enhanceHead),
@@ -251,7 +270,7 @@ function gear(P: Pack): Section {
       table('enhanceTotal', G.totalHead, [G.targetCol, G.totalTriesCol, ...rars.map((r) => G.totalCol(rarityName(P, r)))],
         steps.map((s) => row(s + 1, `+${s + 1}`, num(enhanceTries(s + 1)), ...rars.map((r) => c.gold(num(Math.round(enhanceExpected(s + 1, r)))))))),
       h(G.sellHead),
-      p(G.sellNote),
+      p(G.sellNote(num(GEAR.sellBase), num(GEAR.sellPerTier))),
       table('sellPlain', G.sellPlainHead, G.sellPlainCols, bases.map((id) => row(id, itemLabel(P, id), c.gold(num(plainSell(id)))))),
       table('sellDrop', G.sellDropHead, [G.rarityCol, ...lvs.map((lv) => c.level(lv))],
         rars.map((r) => row(RARITIES[r].id, rarityName(P, r), ...lvs.map((lv) => { const v = sellRange(r, lv); return v ? c.gold(span(v)) : c.none; })))),
@@ -261,6 +280,8 @@ function gear(P: Pack): Section {
 
 // ---------- 성장 ----------
 const RESET_LEVELS = [5, 10, 20, 30];
+/** 레벨 표에 보여 주는 가장 높은 레벨 */
+export const LEVEL_ROWS = 60;
 /** 능력치 표의 본보기 레벨 */
 const STAT_SAMPLE_LV = 10;
 function growth(P: Pack): Section {
@@ -270,7 +291,8 @@ function growth(P: Pack): Section {
   const points = (STAT_SAMPLE_LV - 1) * BUILD.pointsPerLevel;
   return {
     id: 'growth', title: W.title, blocks: [
-      ul(W.levelRules(num(HP_PER_LEVEL), num(BUILD.pointsPerLevel))),
+      ul(W.levelRules(num(HP_PER_LEVEL), num(BUILD.pointsPerLevel), num(LEVEL.firstNeed), pct(levelGrowth()))),
+      table('levels', W.levelHead, W.levelCols, Array.from({ length: LEVEL_ROWS }, (_, i) => i + 1).map((lv) => row(lv, c.level(lv), num(needFor(lv)), num(expUpTo(lv))))),
       table('buildStats', W.statHead, W.statCols(num(STAT_SAMPLE_LV), num(points)), BUILD_STATS.map((k) => row(k, L.build.stats[k].name, L.build.stats[k].info(BUILD[k]), L.build.stats[k].info(Math.round(BUILD[k] * points * 10) / 10)))),
       table('statReset', W.resetHead, [T.common.levelCol, W.resetCol], RESET_LEVELS.map((lv) => row(lv, c.level(lv), c.gold(num(BUILD.resetGold(lv)))))),
       h(W.skillHead),
@@ -281,6 +303,13 @@ function growth(P: Pack): Section {
       })),
       h(W.rankHead),
       p(W.rankNote(num(RANK.show))),
+      facts(P, 'power', W.powerHead, W.power, {
+        level: W.points(num(POWER.perLevel)),
+        tier: W.points(num(POWER.perTier)),
+        skill: W.points(num(POWER.perSkillLevel)),
+        gear: W.points(num(scoreOf(STAT_IDS[0], statBase(STAT_IDS[0])))),
+      }),
+      p(W.powerNote(list(STAT_IDS.map((s) => `${T.gear.stats[s]} ${num(statBase(s))}`)))),
     ],
   };
 }
@@ -316,11 +345,11 @@ function tower(P: Pack): Section {
   let need = 0, gold = 0;
   return {
     id: 'tower', title: W.title, blocks: [
-      ul(W.rules(c.m(TOWER_REACH), num(GLOW_MAX))),
+      ul(W.rules(c.m(TOWER_REACH), num(GLOW_MAX), c.count(FULL_TOWER_OFFER))),
       table('towers', W.towerHead, W.towerCols, TOWERS.map((t, i) => row(t.id, towerName(P, i), L.zones[i], t.start > 0 ? `${num(t.start)} (${L.stages[stageOf(t.start)]})` : W.unlit, num(t.floor)))),
       table('stages', W.stageHead, W.stageCols, stages.map((s) => {
         const bonus = speedFor(s) / PLAYER_SPEED - 1;
-        return row(s, L.stages[s], stageRange[s], bonus > 0 ? `+${pct(bonus)}` : c.none, s === 2 ? W.regenFast : c.none);
+        return row(s, L.stages[s], stageRange[s], bonus > 0 ? `+${pct(bonus)}` : c.none, s === 2 ? c.mult(GLOW_BRIGHT_REGEN) : c.none);
       })),
       h(W.residentHead),
       p(W.residentNote(towerName(P, 0))),
@@ -421,10 +450,11 @@ function daily(P: Pack): Section {
       h(D.awayHead),
       facts(P, 'away', '', D.away, {
         minLv: c.level(AWAY.minLv),
-        maxTime: c.hour(AWAY_MAX_S / 3600),
+        maxTime: c.hour(AWAY.maxS / 3600),
         max: c.people(AWAY.max),
         maxPerIp: c.people(AWAY.maxPerIp),
         seek: c.m(AUTO.seek),
+        roam: c.m(AWAY.roam),
         healAt: pct(AUTO.healAt),
         potionAt: pct(AUTO.potionAt),
       }),
@@ -454,12 +484,14 @@ function guild(P: Pack): Section {
         notice: c.chars(GUILD.noticeMax),
         members: c.people(GUILD.maxMembers),
         inviteS: c.sec(GUILD.inviteS),
+        noticeGap: c.sec(GUILD.noticeGapS),
+        chatGap: c.sec(GUILD.chatGapS),
         gives: list(GUILD.gives.map((n) => c.gold(num(n)))),
         perLevel: c.gold(num(GUILD.expPerGuildLevel)),
         maxLevel: num(GUILD.maxLevel),
         bonus: `+${pct(GUILD.expPerLevel)}`,
       }),
-      table('guildLevels', G.levelHead, G.levelCols, levels.map((lv) => row(lv, c.level(lv), c.gold(num((lv - 1) * GUILD.expPerGuildLevel)), `+${pct(lv * GUILD.expPerLevel)}`))),
+      table('guildLevels', G.levelHead, G.levelCols, levels.map((lv) => row(lv, c.level(lv), c.gold(num(guildNeed(lv))), `+${pct(lv * GUILD.expPerLevel)}`))),
       ul(G.rules),
     ],
   };

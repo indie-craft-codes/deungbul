@@ -2,7 +2,7 @@
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
 // 수치는 shared/content/growth.ts에 있다.
-import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STATS, STAT_IDS, baseOpt, gearStat, isGearSlot, isItemId, isStat, sellPrice, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, baseOpt, gearStat, isGearSlot, isItemId, isStat, rollOpt, sellPrice, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -31,7 +31,7 @@ export class GearSys {
 
     // 낀 장비의 옵션이 수치 보정으로 들어간다
     g.mods.provide('damage', (p) => 1 + this.total(p, 'dmg') / 100);
-    g.mods.provide('guard', (p) => 1 - Math.min(60, this.total(p, 'guard')) / 100);
+    g.mods.provide('guard', (p) => 1 - Math.min(GEAR.guardCap, this.total(p, 'guard')) / 100);
     g.mods.provide('crit', (p) => this.total(p, 'crit') / 100);
     g.mods.provide('hp', (p) => this.total(p, 'hp'));
 
@@ -90,7 +90,7 @@ export class GearSys {
     const def = RARITIES[rar], pool = [...STAT_IDS], opts: [Stat, number][] = [];
     for (let i = 0; i < def.opts && pool.length; i++) {
       const stat = pool.splice(Math.floor(rnd() * pool.length), 1)[0];
-      opts.push([stat, Math.max(1, Math.round(STATS[stat].base * def.mult * (0.8 + rnd() * 0.4) * (1 + (lv - 1) * 0.15)))]);
+      opts.push([stat, rollOpt(stat, rar, lv, rnd())]); // 값의 식은 내용 정의에 있다 (도감이 같은 함수로 범위를 구한다)
     }
     slot ??= GEAR_SLOTS[Math.floor(rnd() * GEAR_SLOTS.length)];
     const base = slot === 'weapon' ? GEAR.weaponFor(lv) : slot === 'armor' ? GEAR.armorFor(lv) : undefined;

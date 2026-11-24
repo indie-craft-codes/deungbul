@@ -1,6 +1,6 @@
 // 자동 사냥의 판단. 클라이언트(client/src/auto.ts)와 서버의 자리 비움 사냥(server/game/systems/away.ts)이
 // 같은 기준으로 움직이도록 여기에 한 번만 적는다. 무엇을 누를지만 정하고, 실제 명령은 부른 쪽이 낸다.
-import { SKILL_SLOTS, classOf, skillDef } from './defs';
+import { ITEMS, SKILL_SLOTS, classOf, skillDef, type ItemDef, type ItemId } from './defs';
 
 export const AUTO = {
   /** 이 거리 안의 몬스터를 찾는다 */
@@ -18,6 +18,13 @@ export const AWAY = {
   /** 서버 전체에서 남을 수 있는 수, 한 주소에서 남길 수 있는 수 */
   max: 60,
   maxPerIp: 3,
+  /**
+   * 자리를 비운 채 사냥을 이어 가는 시간의 하루 한도(초). 다 쓰면 저장하고 월드에서 나가고, 그날은 끊겨도 캐릭터가 남지 않는다.
+   * 한 번 비울 때마다가 아니라 하루(자정 기준, 일일 임무와 같은 날짜)에 쓴 시간을 모아서 센다 (server/game/systems/away.ts)
+   */
+  maxS: 8 * 3600,
+  /** 자리를 비운 곳에서 이보다 먼 몬스터는 쫓지 않는다 */
+  roam: 60,
 };
 
 /**
@@ -37,8 +44,17 @@ export function pickSkill(cls: string, ratio: number, dist: number, ready: (n: n
   return -1;
 }
 
+const healOf = (id: ItemId): number => (ITEMS[id] as ItemDef).heal ?? 0;
+/** 물약들, 진한 것(회복량이 큰 것)부터. 아이템 id를 적지 않고 정의에서 고른다: 물약을 더하거나 이름을 바꿔도 여기는 그대로다 */
+export const POTIONS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filter((id) => ITEMS[id].kind === 'potion').sort((a, b) => healOf(b) - healOf(a));
+
 /** 마실 물약 (진한 것부터). 마실 때가 아니거나 가진 것이 없으면 null */
-export function pickPotion(ratio: number, items: Record<string, number>): 'tonic' | 'potion' | null {
+export function pickPotion(ratio: number, items: Record<string, number>): ItemId | null {
   if (ratio >= AUTO.potionAt) return null;
-  return (items.tonic ?? 0) > 0 ? 'tonic' : (items.potion ?? 0) > 0 ? 'potion' : null;
+  return POTIONS.find((id) => (items[id] ?? 0) > 0) ?? null;
+}
+
+/** 손으로 마실 때 살펴보는 순서: 가장 진한 물약의 회복량만큼 다쳤으면 진한 것부터, 아니면 약한 것부터 (조금 다쳤을 때 진한 물약을 버리지 않게) */
+export function potionOrder(hurt: number): readonly ItemId[] {
+  return POTIONS.length && hurt >= healOf(POTIONS[0]) ? POTIONS : [...POTIONS].reverse();
 }

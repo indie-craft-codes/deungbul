@@ -1,6 +1,6 @@
 // 필드 보스: 맞서는 사람이 늘수록 체력이 늘고, 예고한 뒤에 주변을 내려친다.
 // 보스도 몬스터의 하나라서 이동과 기본 공격은 monsters.ts가 맡고, 여기서는 보스만의 것을 더한다.
-import { BOSS } from '../../../shared/defs';
+import { BOSS, bossHp } from '../../../shared/defs';
 import { dist, ri, type Ent } from '../entity';
 import type { Game } from '../game';
 import { notifyLayer } from '../layers';
@@ -57,7 +57,7 @@ export class Boss {
     }
     const n = Math.min(BOSS.maxScale, m.hitters.size), who = [...m.hitters].sort((a, b) => a - b).join(',');
     if (n === m.scale && (!f || who === f.who)) return;
-    const max = Math.round(base * (1 + BOSS.hpPerPlayer * Math.max(0, n - 1)));
+    const max = bossHp(base, n);
     if (n === 0) { m.hp = max; this.fights.delete(m.id); } // 아무도 없으면 가득 채우고 새 싸움으로 친다
     else if (f) {
       const share = base * BOSS.hpPerPlayer;

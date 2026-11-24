@@ -1,9 +1,11 @@
 // 성장의 틀: 드롭 장비(등급, 무작위 옵션, 강화), 우편, 방치 보상, 일일 임무와 출석, 순위.
 // 수치는 모두 잠정값이다. 규칙은 server/game/systems/의 gear, mail, idle, daily, rank가 맡는다.
+// 틀의 것(타입과 도우미 함수)과 이 게임의 것(표와 수치)이 한 파일에 있어 [틀] / [이 게임] 구역 주석으로 갈라 둔다 (파일은 9단계에서 갈린다).
 
 import { ITEMS, isItemId, type ItemId } from './items';
 
 // ---------- 장비 ----------
+// ===== [이 게임] 옵션의 종류, 장비 칸, 등급 (isStat, isGearSlot 같은 판별 함수는 [틀]의 도우미) =====
 /** 장비 옵션의 종류: 공격 피해(%), 받는 피해 감소(%), 치명타 확률(%p), 최대 체력 */
 export const STATS = {
   dmg: { base: 3 },
@@ -31,6 +33,7 @@ export const RARITIES = [
   { id: 'epic', weight: 1, opts: 4, mult: 2.2 },
 ] as const;
 
+// ===== [틀] 장비의 모양 =====
 /** 장비 한 점. 종류가 아니라 낱개로 다룬다 */
 export interface Gear {
   /** 그 캐릭터 안에서 겹치지 않는 번호 */
@@ -50,11 +53,24 @@ export interface Gear {
   opts: [Stat, number][];
 }
 
+// ===== [이 게임] 장비와 강화의 수치 =====
 export const GEAR = {
   /** 몬스터 한 마리가 장비를 떨어뜨릴 확률 (보스는 반드시) */
   dropChance: 0.06,
   /** 가방에 넣어 둘 수 있는 수 (낀 것 포함) */
   bagMax: 30,
+  /** 낀 장비의 '받는 피해 감소' 옵션은 합쳐서 이만큼(%)까지만 듣는다 (갑옷 바탕의 배율과는 따로 곱해진다) */
+  guardCap: 60,
+  /**
+   * 옵션 값의 굴림: 값 = 종류의 기본값 × 등급 배율 × (optMin + 난수 × optSpan) × (1 + (장비 레벨 − 1) × optPerLevel). 아래 rollOpt
+   * 지금은 0.8배에서 1.2배 사이로 흩어지고, 장비 레벨 하나마다 15%씩 커진다
+   */
+  optMin: 0.8,
+  optSpan: 0.4,
+  optPerLevel: 0.15,
+  /** 파는 값 = sellBase + 값어치(gearScore) + 바탕의 등급 × sellPerTier. 아래 sellPrice */
+  sellBase: 5,
+  sellPerTier: 10,
   /** 장비 레벨에 따라 떨어지는 무기와 갑옷의 바탕 (가장 높은 것은 보스만 떨어뜨린다) */
   weaponFor: (lv: number): ItemId => (lv >= 6 ? 'sword4' : lv >= 4 ? 'sword3' : lv >= 2 ? 'sword2' : 'sword1'),
   armorFor: (lv: number): ItemId => (lv >= 3 ? 'armor2' : 'armor1'),
@@ -75,6 +91,13 @@ export const ENHANCE = {
   gold: (plus: number, rar: number): number => 30 * (plus + 1) * (rar + 1),
 };
 
+// ===== [틀] 장비 도우미: 위의 수치와 아이템 정의에서 값을 구한다 =====
+/**
+ * 떨어진 장비에 붙는 옵션 하나의 값. roll은 0 이상 1 미만의 난수다.
+ * 서버의 장비 굴림(systems/gear.ts의 roll)과 도감의 값 범위(가장 작은 난수와 가장 큰 난수를 넣는다)가 이 함수 하나를 쓴다
+ */
+export const rollOpt = (stat: Stat, rar: number, lv: number, roll: number): number =>
+  Math.max(1, Math.round(STATS[stat].base * RARITIES[rar].mult * (GEAR.optMin + roll * GEAR.optSpan) * (1 + (lv - 1) * GEAR.optPerLevel)));
 /** 무기와 갑옷의 바탕이 주는 기본 수치: [종류, 값]. 무기는 공격 피해(%), 갑옷은 받는 피해 감소(%) */
 export function baseOpt(g: Gear): [Stat, number] | null {
   if (!isItemId(g.base)) return null;
@@ -97,9 +120,30 @@ export const optValue = (g: Gear, v: number): number => Math.round(v * (1 + g.pl
 export const gearStat = (g: Gear, stat: Stat): number => g.opts.reduce((s, [k, v]) => (k === stat ? s + optValue(g, v) : s), 0);
 /** 장비의 값어치: 순위의 전투력과 파는 값에 쓴다 */
 export const gearScore = (g: Gear): number => Math.round(g.opts.reduce((s, [k, v]) => s + optValue(g, v) / STATS[k].base, 0) * 10);
-export const sellPrice = (g: Gear): number => 5 + gearScore(g) + baseTier(g) * 10;
+export const sellPrice = (g: Gear): number => GEAR.sellBase + gearScore(g) + baseTier(g) * GEAR.sellPerTier;
+
+// ---------- 레벨 ----------
+// ===== [이 게임] 레벨 업에 필요한 경험치의 수치 / [틀] 그것으로 값을 구하는 도우미 =====
+export const LEVEL = {
+  /** 레벨 1에서 2로 오르는 데 필요한 경험치 */
+  firstNeed: 60,
+  /** 레벨이 하나 오를 때마다 필요 경험치에 곱하는 값 (곱한 뒤 반올림한다) */
+  growth: 1.35,
+};
+/** 레벨이 올랐을 때의 새 필요 경험치: 지금 값에서 구한다 (서버의 systems/players.ts가 레벨이 오를 때 부른다) */
+export const nextNeed = (need: number): number => Math.round(need * LEVEL.growth);
+/**
+ * 레벨 lv에서 다음 레벨로 오르는 데 필요한 경험치.
+ * 서버가 하는 대로 반올림을 단계마다 되풀이한다: 닫힌 식(firstNeed × growth^(lv−1))은 반올림이 쌓여 어긋난다
+ */
+export function needFor(lv: number): number {
+  let need = LEVEL.firstNeed;
+  for (let i = 1; i < lv; i++) need = nextNeed(need);
+  return need;
+}
 
 // ---------- 성장 선택: 능력치와 기술 강화 ----------
+// ===== [이 게임] 능력치의 종류와 수치 (isBuildStat은 [틀]의 도우미) =====
 /** 찍을 수 있는 능력치: 힘(공격 피해), 체력(최대 체력), 행운(치명타 확률) */
 export const BUILD_STATS = ['pow', 'vit', 'luck'] as const;
 export type BuildStat = (typeof BUILD_STATS)[number];
@@ -121,6 +165,7 @@ export const BUILD = {
 };
 
 // ---------- 우편 ----------
+// ===== [틀] 우편과 보상의 모양, 우편 도우미 (MAIL_MAX의 값은 [이 게임]의 것) =====
 /**
  * 우편의 종류. 제목과 내용은 언어 파일이 만든다 (fmt.mailTitle).
  * 거래소: marketSold 팔린 값, marketExpired 기간이 지나 돌아온 물건, marketBought 산 물건(가방에 자리가 없었다), marketBack 내린 물건(가방에 자리가 없었다)
@@ -144,6 +189,7 @@ export const hasGoods = (r: Reward): boolean => !!r.gear?.length || (!!r.items &
 export const mailKept = (m: { k: string; r: Reward }): boolean => hasGoods(m.r) || TRADE_MAILS.includes(m.k);
 
 // ---------- 방치 보상 ----------
+// ===== [이 게임] 방치 보상의 수치 =====
 export const IDLE = {
   /** 이보다 짧게 비웠으면 보상이 없다(분) */
   minMin: 10,
@@ -157,6 +203,7 @@ export const IDLE = {
 };
 
 // ---------- 일일 임무와 출석 ----------
+// ===== [틀] 임무의 모양(DailyKind, DailyDef, 아래의 DailyState) / [이 게임] 임무와 출석 보상의 표(DAILIES, ATTEND) =====
 /** 임무의 종류. 틀이 세는 것은 'kill'(처치)과 'enhance'(강화)이고, 그 밖의 것은 게임의 규칙이 센다 (이 게임의 'offer': 불씨 바치기) */
 export type DailyKind = string;
 export interface DailyDef { kind: DailyKind; n: number; r: Reward }
@@ -187,5 +234,17 @@ export interface DailyState {
 }
 
 // ---------- 순위 ----------
+// ===== [틀] 순위 한 줄의 모양 / [이 게임] 순위의 수치(RANK) =====
 export interface RankRow { name: string; lv: number; cls: string; power: number }
 export const RANK = { keep: 50, show: 20, everyS: 5 };
+/** 전투력의 식에 드는 점수: 캐릭터 레벨 하나, 낀 무기·갑옷 바탕의 등급 하나, 기술 강화 한 단계(1단계는 0)마다 */
+export const POWER = { perLevel: 20, perTier: 15, perSkillLevel: 10 };
+/**
+ * 전투력: 순위와 화면 표시에 쓴다 (서버의 systems/rank.ts와 도감이 함께 쓴다).
+ * lv 캐릭터 레벨, tiers 낀 무기와 갑옷 바탕의 등급 합, skillLvs 기술마다의 강화 단계, worn 낀 장비들(값어치 gearScore가 더해진다)
+ */
+export function powerOf(lv: number, tiers: number, skillLvs: readonly number[], worn: readonly Gear[]): number {
+  let score = skillLvs.reduce((s, n) => s + (n - 1) * POWER.perSkillLevel, 0) + lv * POWER.perLevel + tiers * POWER.perTier;
+  for (const it of worn) score += gearScore(it);
+  return score;
+}

@@ -1,6 +1,6 @@
 // 화면의 패널들: 내 정보, 대상 정보, 기술 버튼, 등탑 창, 습격 알림, 접속 화면, 언어 선택.
 import { RAID } from '../../../shared/defs';
-import { CONTRIB_TIERS, GLOW_MAX, RESIDENTS, SKILL_SLOTS, TOWER_REACH, classOf, isClassId } from '../../../shared/defs';
+import { CONTRIB_TIERS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, RESIDENTS, SKILL_SLOTS, TOWER_REACH, classOf, isClassId } from '../../../shared/defs';
 import { TOWERS } from '../../../shared/world';
 import { nextTarget, offer, rename, useSkill } from '../actions';
 import { $, clamp, view } from '../app';
@@ -102,7 +102,7 @@ export function renderWorld(): void {
   $('towerTitle').textContent = loc.towers[TOWERS[zone].id] ?? loc.ui.tower;
   $('glowText').textContent = glow > 0 ? loc.fmt.glow(st, glow, GLOW_MAX) : `${loc.ui.towerOff} · 0 / ${GLOW_MAX}`;
   $('glowBar').style.transform = `scaleX(${glow / GLOW_MAX})`;
-  $('stageNote').textContent = glow > 0 ? loc.fmt.stageNote(st) : loc.ui.towerDark;
+  $('stageNote').textContent = glow > 0 ? loc.fmt.stageNote(st, GLOW_BRIGHT, Math.round((GLOW_BRIGHT_SPEED - 1) * 100), GLOW_BRIGHT_REGEN) : loc.ui.towerDark;
   $('villageBox').hidden = zone !== 0; // 주민과 등탑지기의 일은 첫불 마을 등탑에만 있다
   const next = RESIDENTS.findIndex((def, i) => residents[i] < def.need);
   $('resBtns').hidden = next < 0;

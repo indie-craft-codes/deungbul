@@ -3,7 +3,7 @@
 import { handOf, type ItemId } from '../../../shared/defs';
 import { NAME_MAX } from '../../../shared/world';
 import { en } from './en';
-import { ko, type Locale, type UiKey } from './ko';
+import { itemInfo as itemInfoOf, ko, type Locale, type UiKey } from './ko';
 
 export const LOCALES: readonly Locale[] = [ko, en];
 let current: Locale = ko;
@@ -26,6 +26,9 @@ export function itemName(id: ItemId, cls: string): string {
   return (hand !== 'sword' && it[hand]) || it.name;
 }
 /** 터치 화면인가. 키보드가 없으니 단축키 안내를 빼고 보여 준다 */
+/** 아이템의 한 줄 설명: 수치로 된 효과는 아이템 정의에서 읽어 만든다 (ko.ts의 itemInfo) */
+export const itemInfo = (id: ItemId): string => itemInfoOf(current, id);
+
 export const isTouch = (): boolean => matchMedia('(pointer: coarse)').matches;
 /**
  * 문장 안의 [[PC용|터치용]] 표시를 지금 입력 장치에 맞게 고른다. 터치용을 비우면([[ (F)|]]) 그 부분이 빠진다.

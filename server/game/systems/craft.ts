@@ -1,5 +1,5 @@
 // 제작: 몬스터가 재료를 떨어뜨리고, 브람의 대장간에서 재료와 골드로 무기를 만든다.
-import { DROPS, MAT_MAX, RECIPES, SMITH, SMITHY, SMITHY_REACH, isItemId, isMonsterId, itemDef, type ItemId } from '../../../shared/defs';
+import { DROPS, FORGES, MAT_MAX, RECIPES, SMITHY_REACH, isItemId, isMonsterId, itemDef, type ItemId } from '../../../shared/defs';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { Shop } from './shop';
@@ -23,8 +23,10 @@ export class Craft {
   private craft(p: Ent, id: ItemId): void {
     const g = this.g, recipe = RECIPES.find((r) => r.id === id);
     if (!recipe) return;
-    if (dist(p, SMITHY) > SMITHY_REACH) { g.notify(p, 'forgeFar'); return; }
-    if (!g.rules.unlocked(SMITH)) { g.notify(p, 'forgeClosed'); return; }
+    // 닿는 대장간이 있어야 하고, 그 대장간의 잠금(이 게임에서는 대장장이 주민)이 풀려 있어야 한다
+    const forge = FORGES.find((f) => dist(p, f) <= SMITHY_REACH);
+    if (!forge) { g.notify(p, 'forgeFar'); return; }
+    if (forge.needs && !g.rules.unlocked(forge.needs)) { g.notify(p, 'forgeClosed'); return; }
     const def = itemDef(id);
     if ((def.kind === 'weapon' || def.kind === 'armor') && (def.tier ?? 0) <= Shop.wornTier(p, def.kind)) { g.notify(p, 'alreadyBest'); return; }
     const mats = Object.entries(recipe.mats) as [ItemId, number][];

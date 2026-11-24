@@ -10,7 +10,7 @@
 //   - 버려진 채널: 막아야 할 적이 있는데 RAID.abandonS 동안 아무도 움직이지 않은 채널은 싸움을 끝낸다. 남은 적은 등탑을 한 번 치고 사라진다.
 //     그 피해는 그 채널이 보탠 내구(전체 내구 ÷ 채널 수)를 넘지 않는다: 남이 방치한 채널 때문에, 자기 채널을 다 막은 사람들이 지지 않는다.
 //     거저 사라지지도 않는다: 채널을 비워 적을 줄이면 그만큼 내구를 잃는다. 모든 채널이 버려졌으면 막아 낸 것이 아니다.
-import { CHANNEL, RAID, nextRaidAt, type RaidConfig, type RaidPhase } from '../../../shared/defs';
+import { CHANNEL, RAID, nextRaidAt, raidFoes, raidTowerHp, type RaidConfig, type RaidPhase } from '../../../shared/defs';
 import type { WorldState } from '../../../shared/protocol';
 import { TOWER } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -91,13 +91,13 @@ export class Raid {
     // 막을 사람이 없는 채널에는 적을 만들지 않는다: 아무도 못 막는 적이 내구를 깎으면 안 된다
     this.fronts.clear(); this.total = 0;
     for (const [layer, n] of [...awake].sort((a, b) => a[0] - b[0])) {
-      const total = Math.min(c.max, c.base + c.perPlayer * n);
+      const total = raidFoes(n, c);
       this.fronts.set(layer, { total, due: 0, spawned: 0, told: false, idle: 0, checked: g.clock, gone: false });
       this.total += total;
     }
     this.phase = 'active'; this.t = 0; this.wave = 0; this.spawned = 0; this.lastSecond = -1;
     // 내구는 하나지만 여러 채널의 적이 함께 깎으므로, 싸우는 채널 수만큼 키워서 채널이 하나일 때와 같은 시간을 버티게 한다
-    this.towerMaxHp = this.towerHp = (c.towerHpBase + g.tower.glow * c.towerHpPerGlow) * this.fronts.size;
+    this.towerMaxHp = this.towerHp = raidTowerHp(g.tower.glow, c) * this.fronts.size;
     this.fighters.clear();
     // 적의 수는 내 채널에 오는 수로 알린다. 적이 오지 않는 채널에 있으면 어느 채널로 가야 하는지 함께 알린다
     const first = channelOf(Math.min(...this.fronts.keys()));
@@ -126,7 +126,7 @@ export class Raid {
   private regrow(): void {
     const c = this.cfg, awake = this.awake();
     for (const [layer, f] of this.fronts) {
-      const want = Math.min(c.max, c.base + c.perPlayer * (awake.get(layer) ?? 0));
+      const want = raidFoes(awake.get(layer) ?? 0, c);
       if (f.gone || want <= f.total) continue;
       this.total += want - f.total;
       f.total = want;

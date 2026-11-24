@@ -1,5 +1,5 @@
 // 몬스터: 빈터에 사는 것들의 생성과 AI. 습격으로 온 적도 여기서 움직인다.
-import { CAMPS, LEASH, MONSTERS, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, type MonsterId, SLOW_FACTOR } from '../../../shared/defs';
+import { CAMPS, LEASH, MONSTERS, MONSTER_AI, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, type MonsterId, SLOW_FACTOR } from '../../../shared/defs';
 import { dist, ri, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, notifyLayer } from '../layers';
@@ -70,7 +70,7 @@ export class Monsters {
     // 집으로 돌아가는 중: 도착할 때까지 아무도 쫓지 않는다 (돌아서자마자 다시 대상을 잡아 제자리에 얼어붙지 않게)
     if (m.homing) {
       m.targetId = 0; m.hp = m.maxHp; m.hitters.clear();
-      g.movement.walk(m, def.speed * 1.5, dt);
+      g.movement.walk(m, def.speed * MONSTER_AI.homeSpeed, dt);
       if (!m.moving || Math.hypot(m.x - m.hx, m.z - m.hz) < 2) m.homing = false;
       return;
     }
@@ -82,7 +82,7 @@ export class Monsters {
     }
     if (m.targetId) {
       const t = g.ents.get(m.targetId);
-      const lost = !t || t.layer !== m.layer || dist(m, t) > 26 || (!m.raid && Math.hypot(m.x - m.hx, m.z - m.hz) > LEASH);
+      const lost = !t || t.layer !== m.layer || dist(m, t) > MONSTER_AI.loseRange || (!m.raid && Math.hypot(m.x - m.hx, m.z - m.hz) > LEASH);
       if (lost) {
         m.targetId = 0;
         if (!m.raid) { m.hp = m.maxHp; m.hitters.clear(); g.movement.goTo(m, m.hx, m.hz); m.homing = Math.hypot(m.x - m.hx, m.z - m.hz) > 2; } // 집으로 돌아가며 회복한다
@@ -108,7 +108,7 @@ export class Monsters {
     }
 
     // 평소: 집 근처를 어슬렁거린다
-    if (m.moving) { g.movement.walk(m, 1.3, dt); return; }
+    if (m.moving) { g.movement.walk(m, MONSTER_AI.wanderSpeed, dt); return; }
     m.wait -= dt;
     if (m.wait <= 0) {
       m.wait = 2 + Math.random() * 3;

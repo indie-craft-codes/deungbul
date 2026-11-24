@@ -1,7 +1,7 @@
 // 길드: 만들고, 초대하고, 함께 대화하고, 골드를 기부해 길드를 키운다. 길드 레벨만큼 길드원의 경험치가 늘어난다.
 // 길드원은 접속해 있지 않아도 길드에 남으므로, 사람을 엔티티 번호가 아니라 저장 키(Ent.pid)로 가리킨다.
 // 손님(저장 키가 없는 접속)은 가입할 수 없다. 규칙의 수치는 shared/content/social.ts의 GUILD에 있다.
-import { GUILD, PARTY, type GuildMember, type GuildView } from '../../../shared/defs';
+import { GUILD, PARTY, guildLevel, type GuildMember, type GuildView } from '../../../shared/defs';
 import { CHAT_MAX, NAME_MAX } from '../../../shared/world';
 import { isClean, mask, tidy } from '../../text';
 import { dist, type Ent } from '../entity';
@@ -69,7 +69,7 @@ export class Guild {
   }
 
   /** 길드 레벨: 쌓인 기부로 정한다 */
-  level(rec: GuildRec): number { return Math.min(GUILD.maxLevel, 1 + Math.floor(rec.exp / GUILD.expPerGuildLevel)); }
+  level(rec: GuildRec): number { return guildLevel(rec.exp); }
   /** 그 사람의 길드 이름 (없으면 빈 문자열). 이름표에 쓴다 */
   nameOf(p: Ent): string { return (p.pid && this.of.get(p.pid)?.name) || ''; }
 
@@ -203,7 +203,7 @@ export class Guild {
     if (!rec) return;
     if (rec.leader !== p.pid) { this.g.notify(p, 'guildNotLeader'); return; }
     // 공지는 올릴 때마다 월드를 저장하므로 간격을 둔다
-    if (this.g.clock - (this.lastNotice.get(rec.id) ?? -99) < 5) return;
+    if (this.g.clock - (this.lastNotice.get(rec.id) ?? -99) < GUILD.noticeGapS) return;
     this.lastNotice.set(rec.id, this.g.clock);
     rec.notice = mask(s);
     this.sync(rec);
@@ -213,7 +213,7 @@ export class Guild {
     const g = this.g, rec = this.of.get(p.pid);
     if (!s) return;
     if (!rec) { g.notify(p, 'guildNone'); return; }
-    if (g.clock - (this.lastChat.get(p.id) ?? -99) < 0.7) return;
+    if (g.clock - (this.lastChat.get(p.id) ?? -99) < GUILD.chatGapS) return;
     this.lastChat.set(p.id, g.clock);
     const msg = { t: 'chat' as const, id: p.id, name: p.name, text: mask(s), ch: 'g' as const };
     for (const e of this.online(rec)) g.out.push({ id: e.id, msg });
