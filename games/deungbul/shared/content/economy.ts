@@ -44,7 +44,7 @@ export const CURRENCIES = {
 /** 물약은 종류마다 이만큼까지 들 수 있다 */
 export const POTION_MAX = 10;
 /** 재료는 종류마다 이만큼까지 들 수 있다. 넘는 드롭은 버려지고, 우편과 거래소에서 받는 것은 넘는 만큼 우편에 남는다 */
-export const MAT_MAX = 99;
+export const MAT_MAX = 9999;
 /** 장비 가루는 이만큼까지 들 수 있다 (content/items.ts의 dust가 읽는다). 분해로 모이는 양이 커서 다른 재료의 한도와 따로 둔다 */
 export const DUST_MAX = 9999;
 
