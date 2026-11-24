@@ -1,3 +1,6 @@
+/* 틀의 스타일: 바탕, 공용 창·단추·목록, 틀의 창들(내 정보, 대화, 상점, 대장간, 가방, 메뉴, 던전, 미니맵, 접속 화면).
+   이 게임의 창(등탑, 습격, 퀘스트)과 색은 게임의 스타일(src/game/deungbul.css)에 있고, 그 파일이 이 파일 뒤에 읽힌다.
+   아래의 색 변수는 게임이 정하지 않았을 때의 기본값이다 */
 :root {
   color-scheme: dark;
   --sky: #a9cdd0;
@@ -44,17 +47,11 @@ body {
 /* 좁은 창에서 '변경'이 두 줄로 꺾이지 않게: 단추는 제 너비를 지키고 입력칸이 줄어든다 */
 #renameForm input { flex: 1 1 auto; min-width: 0; }
 #renameForm button { padding: 4px 10px; flex: none; white-space: nowrap; }
-#tower {
-  right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); width: 250px;
-  display: flex; flex-direction: column; gap: 6px;
-}
 .ttitle { font-weight: 700; color: var(--gold); }
 .note { font-size: 11.5px; color: var(--dim); }
 .btns { display: flex; gap: 6px; }
 .btns button { flex: 1; padding: 6px 4px; font-size: 12px; }
 .btns button:disabled { opacity: .4; cursor: default; }
-.bar.glow i { background: var(--gold); }
-.bar.res i { background: #7fd68a; }
 .tag.npc { color: #b9f0c0; }
 .tag.ally { color: #8fd8ff; }
 /* 파티 */
@@ -88,26 +85,18 @@ button { background: var(--gold); color: #1c1405; font-weight: 700; padding: 8px
 .bar.xp { height: 5px; }
 .bar.xp i { background: var(--xp); transform: scaleX(0); }
 #me { display: flex; flex-direction: column; gap: 5px; width: 220px; }
-.spark { color: var(--gold); font-weight: 700; font-size: 12px; }
 #topmid {
   position: absolute; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; max-width: 100%;
 }
 #topmid .panel { position: static; }
 #tgt { width: 220px; display: flex; flex-direction: column; gap: 5px; }
-#raid { width: 300px; max-width: 100%; display: flex; flex-direction: column; gap: 5px; text-align: center; border-color: var(--gold); }
-#raid.active { border-color: var(--hp); }
-#raid .rtext { font-weight: 700; color: var(--gold); }
-#raid.active .rtext { color: #ffd9d2; }
-#raid .rhp { display: flex; flex-direction: column; gap: 3px; }
 /* 오른쪽 위에 쌓이는 창들: 등탑, 상점, 퀘스트. 열린 것만 위에서부터 차례로 놓인다 */
 #rightcol {
   position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px));
   width: 250px; display: flex; flex-direction: column; gap: 8px; pointer-events: none;
 }
 #rightcol .panel { position: static; width: auto; }
-#keepBox, #villageBox { display: flex; flex-direction: column; gap: 4px; }
-#villageBox { gap: 6px; }
 #shop { right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); width: 250px; display: flex; flex-direction: column; gap: 6px; }
 #shopList, #forge, #forgeList { display: flex; flex-direction: column; gap: 6px; }
 #forge[hidden] { display: none; }
@@ -118,19 +107,6 @@ button { background: var(--gold); color: #1c1405; font-weight: 700; padding: 8px
 .gold { color: #ffe08a; font-weight: 700; font-size: 12px; }
 .skill.potion { border-color: rgba(127, 214, 138, .5); }
 .skill.potion.empty .n { opacity: .45; }
-#shop:not([hidden]) ~ #quest { top: calc(268px + env(safe-area-inset-top, 0px)); }
-#quest { right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); width: 250px; display: flex; flex-direction: column; gap: 4px; }
-/* 등탑 창이 뜨면 그 아래로 내려간다 */
-#tower:not([hidden]) ~ #quest { top: calc(308px + env(safe-area-inset-top, 0px)); }
-#questStep { font-size: 12.5px; }
-#quest { cursor: pointer; }
-#quest:hover { border-color: var(--gold); }
-#questGo { color: var(--gold); }
-#goalArrow {
-  position: fixed; left: 0; top: 0; width: 0; height: 0; pointer-events: none;
-  border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 22px solid var(--gold);
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .7));
-}
 #classPick {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 20, 24, .45);
   padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
@@ -175,8 +151,6 @@ button.plain:hover { border-color: var(--gold); }
 
 .tag.mon { color: #ffd9d2; }
 .tag.boss { font-size: 14px; color: #ffb3a8; }
-.tag.raid { color: #d9c2ff; }
-.tag.raid .hpw i { background: #a98bea; }
 .tag.boss .hpw { width: 110px; height: 7px; }
 .tag > div { text-align: center; }
 .tag .hpw { width: 54px; height: 5px; margin: 2px auto 0; background: rgba(0, 0, 0, .6); border-radius: 2px; overflow: hidden; }
@@ -205,7 +179,7 @@ button.plain:hover { border-color: var(--gold); }
 .skill .t { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 17px; color: #fff; }
 #actRow { display: flex; gap: 6px; justify-content: center; }
 @media (pointer: coarse) { #skills { justify-content: flex-end; } }
-#autoBtn, #townBtn { pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
+#autoBtn { pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
 #autoBtn.on { background: var(--gold); color: #1c1405; font-weight: 700; border-color: transparent; }
 #tabBtn { flex: 1; display: none; pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; }
 #stick {
@@ -239,9 +213,6 @@ button.plain:hover { border-color: var(--gold); }
   #chatBtn { display: block; }
   #chat.typing #chatBtn { display: none; }
   #log { pointer-events: none; }
-  /* 등탑·상점·대장간이 열려도 대화와 퀘스트는 남긴다: 창은 설명을 빼서 줄이고, 퀘스트는 할 일만 보여 준다 */
-  #tower > .note, #resNote, #keepBox { display: none; }
-  #tower:not([hidden]) ~ #quest #questGo, #shop:not([hidden]) ~ #quest #questGo, #forge:not([hidden]) ~ #quest #questGo { display: none; }
   #rightcol { max-height: calc(100% - 310px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; scrollbar-width: none; pointer-events: auto; }
   /* 알림 줄이 기술 단추 줄의 너비를 바꾸지 않게 그 위에 띄운다 */
   #feed { position: absolute; right: 0; bottom: 100%; margin-bottom: 6px; align-items: flex-end; width: max-content; max-width: 92vw; }
@@ -260,10 +231,8 @@ button.plain:hover { border-color: var(--gold); }
   #status { display: none; }
   /* 내 정보 창의 실제 높이(--me-h, main.ts가 잰다) 바로 아래에 둔다: 글자 크기나 줄 수가 달라져도 겹치지 않는다 */
   #topmid { left: max(16px, env(safe-area-inset-left, 0px)); top: calc(20px + var(--me-h, 200px) + env(safe-area-inset-top, 0px)); transform: none; align-items: flex-start; }
-  /* 세로 화면은 위쪽 창이 길어지면 싸움터를 가린다: 습격 안내는 한 줄로 줄인다 */
-  #raidMini { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #me { gap: 4px; }
-  #tgt, #raid { width: 168px; }
+  #tgt { width: 168px; }
   #rightcol { width: 160px; }
   #shop { width: 200px; }
   #chat { width: 160px; }
@@ -291,10 +260,9 @@ button.plain:hover { border-color: var(--gold); }
   #me { width: 200px; gap: 3px; padding: 6px 9px; }
   #me .name { font-size: 14px; }
   #me .row:first-child { flex-wrap: nowrap; }
-  #me .row:has(#towerMini) { display: none; }
   #stick { width: 104px; height: 104px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
   #topmid { left: calc(max(16px, env(safe-area-inset-left, 0px)) + 208px); top: calc(12px + env(safe-area-inset-top, 0px)); transform: none; align-items: flex-start; }
-  #tgt, #raid { width: 170px; }
+  #tgt { width: 170px; }
   /* 오른쪽 위: 기술 단추 위쪽까지만 쓴다 */
   #rightcol {
     top: calc(12px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
@@ -302,25 +270,8 @@ button.plain:hover { border-color: var(--gold); }
     max-height: calc(100% - 136px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; pointer-events: auto;
   }
   #rightcol .panel { padding: 6px 9px; }
-  #rightcol #quest, #rightcol #shop, #rightcol #forge { width: 230px; max-width: 100%; }
-  /* 등탑·상점·대장간이 열려 있으면 퀘스트는 대화창 위에 한 줄로 줄여 보여 준다 */
-  #rightcol #tower:not([hidden]) ~ #quest, #rightcol #shop:not([hidden]) ~ #quest, #rightcol #forge:not([hidden]) ~ #quest {
-    position: fixed; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 124px); top: calc(var(--app-h, 100vh) - 116px - env(safe-area-inset-bottom, 0px));
-    width: 210px; padding: 3px 8px;
-  }
-  #tower:not([hidden]) ~ #quest > .row, #shop:not([hidden]) ~ #quest > .row, #forge:not([hidden]) ~ #quest > .row,
-  #tower:not([hidden]) ~ #quest #questProg, #shop:not([hidden]) ~ #quest #questProg, #forge:not([hidden]) ~ #quest #questProg { display: none; }
-  #tower:not([hidden]) ~ #quest #questStep, #shop:not([hidden]) ~ #quest #questStep, #forge:not([hidden]) ~ #quest #questStep { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* 등탑 창: 등탑과 주민을 옆으로 나란히 놓고, 설명 글은 뺀다 */
-  #rightcol #tower { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; align-items: center; }
-  #tower > .row, #tower > .bar, #tower > .btns { grid-column: 1; }
-  #tower > .note, #resNote, #keepBox { display: none; }
-  #villageBox { grid-column: 2; grid-row: 1 / span 3; }
-  #classBtn { grid-column: 1 / -1; padding: 3px 8px; }
+  #rightcol #shop, #rightcol #forge { width: 230px; max-width: 100%; }
   .btns button { padding: 5px 2px; font-size: 11.5px; white-space: nowrap; }
-  #tower .ttitle { font-size: 12.5px; }
-  #tower .num { white-space: nowrap; }
-  #tower .row { flex-wrap: wrap; gap: 0 8px; }
   #rightcol { scrollbar-width: none; }
   .skill { width: 62px; height: 56px; }
   .banner { top: 16%; }
@@ -346,7 +297,6 @@ html, body { height: var(--app-h, 100%); }
 #bagBtn { white-space: nowrap; flex: none; }
 
 .classopt.current { border-color: var(--gold); }
-@media (max-height: 480px) { #raidMini { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
 
 .btns { align-items: center; }
 .blabel { flex: none; font-size: 11.5px; color: var(--dim); white-space: nowrap; }
@@ -363,17 +313,11 @@ html, body { height: var(--app-h, 100%); }
   /* 자리가 모자라면 등탑·상점·대장간 창이 줄어들고(그 안에서 스크롤) 퀘스트와 던전 창은 온전히 남는다.
      예전에는 기둥 전체가 잘려서 맨 아래의 퀘스트 글이 미니맵 쪽으로 잘려 나갔다 */
   #rightcol > .panel { flex: none; }
-  #rightcol > #tower, #rightcol > #shop, #rightcol > #forge { flex: 0 1 auto; min-height: 84px; overflow-y: auto; scrollbar-width: thin; }
-}
-/* 낮은 PC 창: 등탑 창의 설명 글을 빼서 스크롤 없이 퀘스트와 함께 들어가게 한다. 더 낮으면 등탑지기 명단과 퀘스트의 걸어가기 안내도 뺀다 */
-@media (pointer: fine) and (max-height: 710px) { #tower > .note, #resNote { display: none; } }
-@media (pointer: fine) and (max-height: 600px) {
-  #keepBox { display: none; }
-  #tower:not([hidden]) ~ #quest #questGo { display: none; }
+  #rightcol > #shop, #rightcol > #forge { flex: 0 1 auto; min-height: 84px; overflow-y: auto; scrollbar-width: thin; }
 }
 
-/* 짧은 숫자 표시는 낱말 중간에서 끊기지 않게 한다 (영어 화면에서 'Offere/d 4'처럼 끊겼다) */
-#questDist, #contrib, #lv { white-space: nowrap; flex: none; }
+/* 짧은 숫자 표시는 낱말 중간에서 끊기지 않게 한다 */
+#lv { white-space: nowrap; flex: none; }
 html:lang(en) .skill .n { font-size: 12px; }
 html:lang(en) body { overflow-wrap: break-word; }
 
@@ -440,18 +384,12 @@ html:lang(en) body { overflow-wrap: break-word; }
   #forgeList .shoprow { flex-direction: column; align-items: stretch; gap: 3px; }
   #forgeList .shoprow button { align-self: flex-end; }
 }
-/* 던전 안: 퀘스트 창은 할 일만 보여 준다 (들판의 목적지까지 걸어갈 수 없다) */
-#quest.away { cursor: default; }
-#quest.away:hover { border-color: var(--line); }
-#quest.away #questGo { display: none; }
 
 .mrow.supply .iname { color: var(--dim); }
 
-/* 좁은 화면: 등탑·상점·대장간 창은 가장 가까운 것 하나만 보인다 (hud/near.ts가 data-near를 적는다) */
+/* 좁은 화면: 오른쪽에 쌓이는 창은 가장 가까운 것 하나만 보인다 (hud/near.ts가 data-near를 적는다). 이 게임의 창이 끼는 짝은 게임의 스타일에 있다 */
 @media (max-width: 720px) {
-  #rightcol[data-near="tower"] #shop, #rightcol[data-near="tower"] #forge,
-  #rightcol[data-near="shop"] #tower, #rightcol[data-near="shop"] #forge,
-  #rightcol[data-near="forge"] #tower, #rightcol[data-near="forge"] #shop { display: none; }
+  #rightcol[data-near="shop"] #forge, #rightcol[data-near="forge"] #shop { display: none; }
 }
 @media (pointer: coarse) { #menuHead button { font-size: 14px; padding: 5px 12px; } }
 .mrow.made { border-left-color: var(--gold); } .mrow.made .iname { color: var(--gold); }
@@ -462,12 +400,9 @@ html:lang(en) body { overflow-wrap: break-word; }
 .mfield button { flex: none; white-space: nowrap; padding: 4px 10px; }
 #log .gchat { color: #9fe0a8; }
 
-/* 폰 세로: 위쪽 창이 싸움터를 덮지 않게 줄인다. 등탑 밝기와 다음 습격은 등탑 창과 알림으로 알 수 있으니 내 정보에서는 뺀다 */
+/* 폰 세로: 위쪽 창이 싸움터를 덮지 않게 줄인다 */
 @media (pointer: coarse) and (max-width: 720px) {
-  #me .row:has(#towerMini), #raidMini { display: none; }
   #log { height: 40px; }
-  #questGo { display: none; }
-  #quest { gap: 2px; }
 }
 
 /* 거래소의 위쪽 줄: 화면을 고르는 단추 셋과 둘러보기 도구(종류, 정렬, 새로 고침, 쪽 넘기기).

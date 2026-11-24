@@ -2,8 +2,13 @@
 import { NavGrid } from '../../shared/nav';
 import { buildWorld } from '../../shared/world';
 import { ground, leaf } from './deungbul/paint';
+import { mountMarkup } from './game/markup';
 import { buildScenery } from './scene/scenery';
 import { View } from './scene/view';
+
+// 이 게임의 창을 틀의 빈 자리에 붙인다 (틀의 index.html에는 틀의 창만 있다). 화면 코드보다 먼저여야 한다:
+// 요소를 잡는 파일은 모두 아래의 $를 여기서 가져가므로 이 파일이 그 파일들보다 먼저 읽히고, 그때 창이 이미 붙어 있다
+mountMarkup();
 
 export const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 export const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
