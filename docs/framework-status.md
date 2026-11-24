@@ -29,7 +29,8 @@
 | A. 두 번째 내용과 게임 고르기 | **거의 끝(2026-11-24).** 틀을 두 번째 내용(예제)으로 타입 검사하는 것과 빈 표 변형 셋(`bare`, `weaponOnly`, `otherGear`)은 예제 작업 때 들어갔다. 게임 고르기는 `scripts/game.mjs <start\|watch\|client\|build> [게임]`(인자, `GAME`, 기본 `deungbul`) 한곳으로: 뿌리의 `vite.config.ts`를 `games/deungbul/vite.config.ts`로 옮겼고 `package.json`의 서버·화면 스크립트는 전부 이것을 부른다. 남은 것: 시험 도구(`test/all.ts`)와 뿌리 `tsconfig.json`은 아직 등불지기를 기본으로 안다(F에서 틀의 시험을 떼면서 함께) |
 | B. 장비·능력치·이름의 고정 풀기 | **끝(2026-11-24).** `STATS[id] = { base, mod }`, `BUILD_STATS[id] = { mod, per }`(전에는 id 목록과 `BUILD.pow/vit/luck`). `mod`는 틀의 효과 넷(`StatMod`: `damage`, `guard`, `crit`, `hp`)이고 서버의 보정(`modValue`, `wornMod`)과 화면의 문장은 효과로 만든다. 칸·등급·능력치의 이름은 이름표(`ContentNames`)의 `gearSlots`, `rarities`, `buildStats`로 게임에. 무기·갑옷 바탕의 기본 수치는 그 효과에 드는 첫 옵션(`statFor`)으로 보인다. 저장을 읽을 때의 옵션 수·장비 레벨 상한도 내용에서(`OPTS_MAX`) 또는 넉넉하게(999). 화면의 문장은 견본과 글자까지 같다. 남은 것: 안내문 `rested`를 게임으로, 첫 번째 재화의 이름 '골드'를 이름표로(점검 13·26번) |
 | C. 빈 표와 낱개 | **거의 끝.** `ATTEND = []`면 출석을 세지 않는다, 처음 필요 경험치는 `needFor(1)`, 접속 전 카메라는 `MAP.spawn` 둘레, 대장간 창은 닿는 곳의 잠금 풀린 대장간이면 어느 것이나(서버와 같은 규칙), 직업의 기술 수는 `SKILL_SLOTS`를 따른다(`readonly SkillId[]`). `loc.items.potion`·`'field'`·개발 포트·`itemDef().kind`는 예제 작업 때 고쳤다. 남은 것: 상인 NPC를 게임에게(20번), 레벨·재화 상한을 `CURRENCIES.max`에서(24번) |
-| D, E, F | 아직 |
+| E. 경계 검사와 공개 표면 | **반쯤(2026-11-24).** 새 시험 `engine/test/boundary.test.ts`: (1) 틀의 소스가 게임의 내용 id를 문자열로 적는가(틀의 낱말 9개와 기본값 묶음은 뺀다), (2) 틀의 모든 소스의 문자열과 css에 이 게임의 낱말이 있는가(알고 남긴 것 4가지: `sparks`·`sparkBonus`(두 번째 재화의 칸), `raid`(점검 14번에서 지운다), `crypto`), (3) 타입 검사를 피하는 캐스팅이 지금(6개)보다 늘었는가, (4) 층을 넘는 import(화면 → 서버, 게임 규칙 → 저장소 구현, 공용 → 서버·화면). 지갑 검사는 `p['gold']`와 `Object.assign(p, { gold })`도 잡는다. 검사마다 스스로를 시험하고, 틀의 파일에 위반 넷을 일부러 넣어 넷 다 잡히는 것을 확인했다. 장부의 한 줄 요약은 재화를 `ECON_CURS`의 id로 찍는다(점검 10번의 반). 남은 것: 입구 다섯(`engine/{shared,server,client}/index.ts`, `engine/testing.ts`)과 게임의 깊은 import 금지, `framework.test.ts`를 셋으로 |
+| D, F | 아직 |
 
 ## 1. 단계별 상태
 

@@ -73,7 +73,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   kill(p, 'wolf'); kill(p, 'wolf');
   const cur = `gear:${RARITIES[0].id}`;
   check(p.gear.length === had && sum(rows(), cur, 'lostFull', '-') === 2 && sum(rows(), cur, ECON_HUNT.live, '+') === 2, '가방이 가득 차 버려진 장비가 세어진다 (떨어진 것 2, 버려진 것 2, 가방은 그대로)');
-  check(/버려진 장비 2/.test(g.ledger.line()) && /골드 \+0 -0/.test(g.ledger.line()), '지표 로그 한 줄에 구간의 합계가 찍히고, 찍은 뒤에는 구간이 새로 시작된다');
+  check(/버려진 장비 2/.test(g.ledger.line()) && /gold \+0 -0/.test(g.ledger.line()), '지표 로그 한 줄에 구간의 합계가 찍히고, 찍은 뒤에는 구간이 새로 시작된다');
 
   // 날짜가 바뀌면 새 날짜의 줄에 적힌다
   t.clock = new Date(2026, 0, 11, 0, 0, 5).getTime();

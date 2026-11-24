@@ -235,8 +235,11 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   const games = fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
   const dirs = ['engine/server', 'engine/shared', ...games.flatMap((n) => [`games/${n}/server`, `games/${n}/shared`])];
   const files = dirs.flatMap((d) => walk(path.join(root, d))).map(rel).filter((f) => !/\.test\.ts$/.test(f));
-  /** 재화의 칸에 값을 넣는 모양: .gold = / += / -= / *= / ++ / -- (견주기 ==, 화살표 =>는 아니다) */
-  const WRITE = /\.(gold|sparks|exp)\s*(?:[-+*/%]?=(?![=>])|\+\+|--)/;
+  /**
+   * 재화의 칸에 값을 넣는 모양: .gold = / += / -= / *= / ++ / -- (견주기 ==, 화살표 =>는 아니다).
+   * 돌아가는 길도 잡는다: 대괄호(p['gold'] +=)와 Object.assign(p, { gold: … })
+   */
+  const WRITE = /(?:\.(gold|sparks|exp)|\[\s*['"`](gold|sparks|exp)['"`]\s*\])\s*(?:[-+*/%]?=(?![=>])|\+\+|--)|Object\.assign\([^)]*\b(gold|sparks|exp)\s*[:,}]/;
   /** 직접 고쳐도 되는 곳: 파일, 그 줄의 모양, 까닭. 이 목록에 없는 곳에서 재화의 칸을 고치면 실패한다 */
   const ALLOWED: { file: string; line: RegExp; why: string }[] = [
     { file: 'engine/server/game/systems/players.ts', line: /p\.exp = n\(save\.exp,/, why: '저장을 읽는다 (spawn): 새로 생긴 재화가 아니다' },
@@ -268,9 +271,9 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   const unused = ALLOWED.filter((_, k) => !used.has(k));
   check(unused.length === 0, `허용 목록의 줄이 모두 실제로 있다 (${ALLOWED.length}곳)${unused.length ? ': 없는 것 ' + unused.map((a) => `${a.file} ${a.line}`).join(', ') : ''}`);
   // 검사가 실제로 잡아내는가
-  const hits = ['p.gold += 5;', 'p.gold -= cost;', 'p.sparks=0', 'q.exp ++', 'e.gold--;', 'this.p.gold *= 2', 'a.gold = b.gold'].filter((s) => WRITE.test(s));
-  const misses = ['if (p.gold === 5)', 'p.gold >= cost', 'x = p.gold;', '{ gold: 5, exp: 0 }', 'p.gold == 1', '(r) => r.gold', 'm.r.gold ?? 0', 'p.golden = 1'].filter((s) => WRITE.test(s));
-  check(hits.length === 7 && misses.length === 0, '검사의 모양: 값을 넣는 줄은 잡고, 읽거나 견주는 줄은 잡지 않는다');
+  const hits = ['p.gold += 5;', 'p.gold -= cost;', 'p.sparks=0', 'q.exp ++', 'e.gold--;', 'this.p.gold *= 2', 'a.gold = b.gold', "p['gold'] += 0", 'p["sparks"]--', 'Object.assign(p, { sparks })', 'Object.assign(p, { gold: 9 })'].filter((s) => WRITE.test(s));
+  const misses = ['if (p.gold === 5)', 'p.gold >= cost', 'x = p.gold;', '{ gold: 5, exp: 0 }', 'p.gold == 1', '(r) => r.gold', 'm.r.gold ?? 0', 'p.golden = 1', "p['gold'] === 1", 'Object.assign(p, { goldBonus: 1 })'].filter((s) => WRITE.test(s));
+  check(hits.length === 11 && misses.length === 0, '검사의 모양: 값을 넣는 줄은 잡고, 읽거나 견주는 줄은 잡지 않는다');
   // 지갑의 통로를 실제로 쓰고 있는가 (틀의 시스템과 게임의 규칙 시스템)
   const uses = files.filter((f) => f !== WALLET && /\.wallet\.(add|take|can|amount)\(/.test(fs.readFileSync(path.join(root, f), 'utf8')));
   const want = ['players', 'gear', 'shop', 'craft', 'build', 'guild', 'market', 'mail'].map((n) => `engine/server/game/systems/${n}.ts`);

@@ -182,7 +182,7 @@ A의 시제품을 측정 스크립트로 만들어 돌렸습니다(`econ/ledger-
 - `Store`에 `addEcon(rows)`, `econ(days)`, `saveSnapshot(day, json)`, `snapshots(days)`, `eachPlayer(fn)`을 더합니다. 메모리 저장소는 배열로 흉내 냅니다.
 - 장부는 메모리에 모았다가 지금의 저장 주기(60초, `saveTogether`)에 `amount = amount + excluded.amount`로 얹습니다. 강제 종료 때는 최대 60초분을 잃습니다.
 - 크기: 하루 약 150줄(약 10KB), 스냅샷 약 2KB. 1년에 5MB 미만입니다.
-- 보는 방법: `npm run econ -- 14`(새 파일 `scripts/econ.ts`). DB를 읽기 전용으로 열어 최근 14일의 표와 아래 판단 기준의 정상/주의 표시를 찍습니다. `METRICS`가 켜져 있으면 한 시간마다 `[econ] 골드 +x -y 총량 z` 한 줄을 찍습니다.
+- 보는 방법: `npm run econ -- 14`(새 파일 `scripts/econ.ts`). DB를 읽기 전용으로 열어 최근 14일의 표와 아래 판단 기준의 정상/주의 표시를 찍습니다. `METRICS`가 켜져 있으면 한 시간마다 `[econ] gold +x -y | sparks +x -y | exp +x -y | 장비 +n | …` 한 줄을 찍습니다(재화는 `ECON_CURS`의 id로).
 - 공개 통계 페이지에 내도 되는 것: 활동 인원, 레벨 분포, 등탑에 바친 불씨의 합, 재료·가루의 거래소 중간값.
 - 내면 안 되는 것: 개인별 보유와 순위, 원인별 수급(가장 좋은 사냥터와 조정 문턱이 드러남), 주소별 자료.
 

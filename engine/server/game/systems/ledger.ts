@@ -28,7 +28,7 @@
 //
 // 저장: 게임 계층은 저장소를 모른다. 아직 저장하지 않은 줄을 drain()으로 내어 주고 통신 계층이 저장소에 얹는다(월드 저장과 같은 방향).
 // 캐릭터별 기록(플레이 시간, 레벨 도달, 오늘 번·쓴 골드)은 g.saves로 캐릭터와 함께 저장된다(PlayerSave.ext.stats).
-import { ECON_FRESH_DAYS, ECON_LEVEL_MARKS, ECON_LOST_FULL, ECON_MOVES, ECON_UNKNOWN, GEAR_SLOTS, RARITIES, isEconMove, type Gear } from '../../../shared/defs';
+import { ECON_CURS, ECON_FRESH_DAYS, ECON_LEVEL_MARKS, ECON_LOST_FULL, ECON_MOVES, ECON_UNKNOWN, GEAR_SLOTS, RARITIES, isEconMove, type Gear } from '../../../shared/defs';
 import type { EconRow, PlayerSave } from '../../store';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
@@ -446,7 +446,8 @@ export class Ledger {
       if (ECON_UNKNOWN.includes(why)) unknown += v.n;
     }
     this.span = {};
-    return `[econ] 골드 ${f('gold')} | 불씨 ${f('sparks')} | 경험치 ${f('exp')} | 장비 +${gear} | 오늘 버려진 장비 ${lost}, 원인 모름 ${unknown}건`;
+    // 재화는 게임이 적은 것(ECON_CURS)을 id로 찍는다: 재화의 이름은 게임의 말이라 틀이 모른다
+    return `[econ] ${ECON_CURS.map((c) => `${c} ${f(c)}`).join(' | ')} | 장비 +${gear} | 오늘 버려진 장비 ${lost}, 원인 모름 ${unknown}건`;
   }
 
   private static pack(r: CharStats): CharStats {
