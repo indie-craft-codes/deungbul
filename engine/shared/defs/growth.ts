@@ -103,6 +103,8 @@ export type DailyKind = string;
 export interface DailyDef { kind: DailyKind; n: number; r: Reward }
 export type DailyId = keyof typeof DAILIES;
 export const DAILY_IDS = Object.keys(DAILIES) as DailyId[];
+/** 임무의 정의를 문자열 id로 읽는다. 임무가 없는 게임(DAILIES = {})에서는 DailyId가 never라서 DAILIES[id]로는 아무것도 읽을 수 없다 (던전의 DUNGEON_TABLE과 같다) */
+export const dailyDef = (id: string): DailyDef => (DAILIES as Readonly<Record<string, DailyDef>>)[id];
 
 export interface DailyState {
   /** 이 진행이 속한 날 (YYYY-MM-DD) */

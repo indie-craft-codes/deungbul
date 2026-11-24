@@ -382,3 +382,20 @@ data/, dist/             저장 파일과 빌드 결과 (저장소 뿌리, git�
 
 검증판 범위의 기능은 모두 들어갔고, 주민 세 명의 혜택도 모두 정식 기능이 됐다. 
 알려진 한계: 길찾기는 고정된 장애물(집, 나무, 연못)만 피한다. 캐릭터끼리는 서로 지나다닌다.
+
+## 예제 게임
+
+`games/sample`("모닥불 사냥터")은 같은 틀로 만든 아주 작은 두 번째 게임이다. 틀이 다른 게임을 받는지 확인하는 본보기이고, 새 게임을 만들 때 베끼는 출발점이다. 만드는 차례는 [docs/making-a-game.md](docs/making-a-game.md)에 있다.
+
+- 직업 둘, 몬스터 셋, 지역 하나, 상인 하나, 이 게임만의 규칙 하나(모닥불에 장작을 넣으면 곁에 있는 동안 회복이 빨라진다). 던전, 대장간, 보스, 불씨는 없다.
+- 등불지기와 따로 돈다: 별칭 `@game`이 `games/sample`을 가리키는 자기 설정(`games/sample/tsconfig.json`, `vite.config.ts`), 포트 3002, 저장 `data/sample/`, 빌드 결과 `dist-sample/`.
+
+```
+npm run build:sample && npm run start:sample   # http://localhost:3002
+npm run dev:sample             # 개발: 서버(3002) + 클라이언트(5174)
+npm run test:sample            # 예제의 시험 + 문서의 코드 조각이 예제와 같은지
+npm run typecheck:sample       # 틀 + 예제
+npm run typecheck:engine:sample   # 틀만, 예제의 내용으로 (틀에 등불지기의 id가 박혀 있으면 여기서 드러난다)
+```
+
+틀(`engine/`)이나 내용 계약을 고치면 예제도 통과해야 한다. `npm run typecheck`가 예제까지 검사한다.

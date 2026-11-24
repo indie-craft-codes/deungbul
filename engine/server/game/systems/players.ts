@@ -1,5 +1,5 @@
 // 플레이어: 생성, 저장 값 주고받기, 성장(경험치와 불씨).
-import { CLASS_IDS, ECON_HUNT, ITEMS, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, needFor, nextNeed } from '../../../shared/defs';
+import { CLASS_IDS, ECON_HUNT, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, needFor, nextNeed, itemDef } from '../../../shared/defs';
 import type { PlayerSave } from '../../store';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
@@ -71,8 +71,8 @@ export class Players {
       p.hp = p.maxHp;
       p.sparks = n(save.sparks, 0, 1e9, 0);
       p.gold = n(save.gold, 0, 1e9, 0);
-      if (isItemId(save.weapon) && ITEMS[save.weapon].kind === 'weapon') p.weapon = save.weapon;
-      if (isItemId(save.armor) && ITEMS[save.armor].kind === 'armor') p.armor = save.armor;
+      if (isItemId(save.weapon) && itemDef(save.weapon).kind === 'weapon') p.weapon = save.weapon;
+      if (isItemId(save.armor) && itemDef(save.armor).kind === 'armor') p.armor = save.armor;
       p.items = Shop.readItems(save.items);
       p.auto = save.auto === true;
       // 마지막으로 있던 자리에서 시작한다 (개발용 접속 위치가 정해져 있으면 그쪽이 먼저다)

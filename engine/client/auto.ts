@@ -1,7 +1,7 @@
 // 자동 사냥: 가까운 몬스터를 골라 공격하고, 기술과 물약을 알아서 쓴다.
 // 직접 이동하거나 멈추면 꺼진다. 서버에는 사람이 누른 것과 같은 명령만 보낸다.
 import { AUTO, AWAY, pickPotion, pickSkill } from '../shared/auto';
-import { DUNGEONS, isDungeonId } from '../shared/defs';
+import { dungeonDef, isDungeonId } from '../shared/defs';
 import { attack, autoWalk, monstersNear, usePotion, useSkill } from './actions';
 import { $ } from './app';
 import { onMsg } from './bus';
@@ -41,7 +41,7 @@ function tick(): void {
     if (target) attack(target.id);
     // 던전 안에서 보이는 적이 없으면 우두머리가 있는 곳으로 걸어간다 (졸개를 다 잡고 멈춰 서 있지 않게)
     else if (isDungeonId(S.dungeon.id) && !S.dungeon.cleared && !me.moving) {
-      const boss = DUNGEONS[S.dungeon.id].boss;
+      const boss = dungeonDef(S.dungeon.id).boss;
       if (Math.hypot(boss.x - me.x, boss.z - me.z) > 6) autoWalk(boss.x, boss.z);
     }
   }

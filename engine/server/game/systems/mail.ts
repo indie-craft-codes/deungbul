@@ -2,7 +2,7 @@
 // 방치 보상, 출석, 일일 임무, 거래소가 이 통로를 쓴다. 새 보상도 send()만 부르면 된다.
 // 우편에는 골드·경험치·불씨뿐 아니라 장비와 재료도 붙는다. 접속해 있지 않은 사람에게는 sendTo()로 보내면
 // 월드와 함께 맡아 두었다가 그 사람이 접속할 때 우편함에 넣는다.
-import { ITEMS, MAIL_MAX, MAT_MAX, POTION_MAX, isItemId, mailKept, type Gear, type ItemId, type Mail, type MailKind, type Reward } from '../../../shared/defs';
+import { MAIL_MAX, MAT_MAX, POTION_MAX, isItemId, mailKept, type Gear, type ItemId, type Mail, type MailKind, type Reward, itemDef } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { GearSys } from './gear';
@@ -13,7 +13,7 @@ const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinit
 interface Waiting { k: MailKind; a: (string | number)[]; r: Reward }
 
 /** 그 아이템을 들 수 있는 한도. 낱개 장비로 다루는 무기와 갑옷은 0이다 */
-const cap = (id: ItemId): number => (ITEMS[id].kind === 'mat' ? MAT_MAX : ITEMS[id].kind === 'potion' ? POTION_MAX : 0);
+const cap = (id: ItemId): number => (itemDef(id).kind === 'mat' ? MAT_MAX : itemDef(id).kind === 'potion' ? POTION_MAX : 0);
 
 /** 우편 한 통에 붙을 수 있는 골드·경험치·불씨의 상한. 정상적인 보상(거래소의 가장 비싼 값 100만)보다 넉넉하고, 깨진 저장이 캐릭터를 망가뜨릴 만큼 크지는 않다 */
 const REWARD_MAX = 1e7;

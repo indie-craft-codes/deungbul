@@ -1,6 +1,6 @@
 // 일일 임무와 출석: 날마다 새로 시작하는 임무의 진행을 세고, 채우면 보상을 우편으로 보낸다.
 // 그날 처음 접속하면 출석 보상이 온다. 임무와 보상은 games/deungbul/shared/content/growth.ts의 DAILIES, ATTEND에 있다.
-import { ATTEND, DAILIES, DAILY_IDS, type DailyKind } from '../../../shared/defs';
+import { ATTEND, DAILY_IDS, type DailyKind, dailyDef } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -51,7 +51,7 @@ export class Daily {
     this.roll(p); // 접속한 채로 날이 바뀌었을 수 있다
     const d = p.daily;
     for (const id of DAILY_IDS) {
-      const def = DAILIES[id];
+      const def = dailyDef(id);
       if (def.kind !== kind || d.got.includes(id)) continue;
       d.prog[id] = Math.min(def.n, (d.prog[id] ?? 0) + n);
       p.metaDirty = true; p.unsaved = true;

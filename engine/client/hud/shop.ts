@@ -1,4 +1,5 @@
 // 상점 창(길 상인 가까이에서 열린다)과 물약 버튼.
+import { POTIONS } from '../../shared/auto';
 import { ITEMS, POTION_MAX, SHOPS, nearShop, SHOP_STOCK, itemDef, isItemId, type ItemId } from '../../shared/defs';
 import { buy, usePotion } from '../actions';
 import { $ } from '../app';
@@ -68,9 +69,11 @@ export function renderShop(): void {
     ui.list.appendChild(row);
   }
   if (potion) {
-    const total = (Object.keys(ITEMS) as ItemId[]).filter((id) => ITEMS[id].kind === 'potion').reduce((n, id) => n + (items[id] ?? 0), 0);
+    const total = (Object.keys(ITEMS) as ItemId[]).filter((id) => itemDef(id).kind === 'potion').reduce((n, id) => n + (items[id] ?? 0), 0);
     potion.count.textContent = loc.fmt.potions(total);
-    potion.button.setAttribute('aria-label', `${loc.items.potion.name} (Q)`);
+    // 단추의 이름: 가장 순한 물약의 이름 (물약이 없는 게임이면 가방의 '물약' 낱말). 틀은 물약의 id를 모른다
+    const basic = POTIONS[POTIONS.length - 1];
+    potion.button.setAttribute('aria-label', `${basic ? loc.items[basic].name : loc.ui.bagPotions} (Q)`);
     potion.button.classList.toggle('empty', total === 0);
   }
 }

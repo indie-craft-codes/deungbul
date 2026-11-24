@@ -16,8 +16,9 @@ function url(): string {
   const fixed = import.meta.env.VITE_SERVER_URL as string | undefined;
   if (fixed) return fixed;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  // 개발 중에는 Vite(5173)와 게임 서버(3001)가 따로 돈다. 빌드본은 서버가 같은 포트에서 함께 서비스한다.
-  return import.meta.env.DEV ? `${proto}://${location.hostname}:3001` : `${proto}://${location.host}`;
+  // 개발 중에는 Vite와 게임 서버가 따로 돈다. 빌드본은 서버가 같은 포트에서 함께 서비스한다.
+  // 게임 서버의 포트는 게임의 vite 설정이 VITE_DEV_PORT로 알려 준다 (없으면 3001): 게임마다 포트가 달라야 한 PC에서 남의 서버에 붙지 않는다
+  return import.meta.env.DEV ? `${proto}://${location.hostname}:${(import.meta.env.VITE_DEV_PORT as string | undefined) ?? '3001'}` : `${proto}://${location.host}`;
 }
 
 /**

@@ -94,7 +94,9 @@ export class GearSys {
       opts.push([stat, rollOpt(stat, rar, lv, rnd())]); // 값의 식은 내용 정의에 있다 (도감이 같은 함수로 범위를 구한다)
     }
     slot ??= GEAR_SLOTS[Math.floor(rnd() * GEAR_SLOTS.length)];
-    const base = slot === 'weapon' ? GEAR.weaponFor(lv) : slot === 'armor' ? GEAR.armorFor(lv) : undefined;
+    // 계약의 모양으로 부른다: 게임이 인자를 받지 않는 함수(() => 'coat')로 적어도 컴파일된다
+    const pick: { weaponFor: (lv: number) => string; armorFor: (lv: number) => string } = GEAR;
+    const base = slot === 'weapon' ? pick.weaponFor(lv) : slot === 'armor' ? pick.armorFor(lv) : undefined;
     return { uid: 0, slot, base, rar, lv, plus: 0, opts };
   }
 

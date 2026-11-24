@@ -1,5 +1,5 @@
 // 가방 창: 물약과 제작 재료를 어디서나 볼 수 있다. 장비는 메뉴의 장비 탭에서 다룬다. (단축키 B)
-import { ITEMS, MAT_MAX, POTION_MAX, type ItemId } from '../../shared/defs';
+import { ITEMS, MAT_MAX, POTION_MAX, type ItemId, itemDef } from '../../shared/defs';
 import { $ } from '../app';
 import { onMsg } from '../bus';
 import { L, onLangChange, t } from '../i18n';
@@ -46,10 +46,10 @@ export function renderBag(): void {
   gear.addEventListener('click', () => { ui.panel.hidden = true; openMenu('tabGear'); });
   ui.list.append(gear);
   ui.list.append(head(t('bagPotions')));
-  for (const id of ids) if (ITEMS[id].kind === 'potion') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, POTION_MAX), ''));
+  for (const id of ids) if (itemDef(id).kind === 'potion') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, POTION_MAX), ''));
   ui.list.append(head(t('bagMats')));
   // 재료마다 어떤 몬스터가 떨어뜨리는지 적어 준다 (어디서 구하는지 화면 어디에도 없었다)
-  for (const id of ids) if (ITEMS[id].kind === 'mat') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, MAT_MAX), sourceText(id)));
+  for (const id of ids) if (itemDef(id).kind === 'mat') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, MAT_MAX), sourceText(id)));
 }
 
 export function toggleBag(): void {

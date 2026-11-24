@@ -1,8 +1,23 @@
-// 화면의 뼈대에서 게임이 자기 창을 붙이는 자리. 틀의 index.html에는 틀의 창과 빈 자리만 있고,
-// 게임은 자기 창의 마크업을 mountPanel(자리, html)로 붙인다. 틀은 무엇이 붙는지 모른다.
+// 화면의 뼈대를 문서에 붙이고(mountShell), 그 뼈대에서 게임이 자기 창을 붙이는 자리를 내준다(mountPanel).
+// 뼈대(./skeleton.ts)에는 틀의 창과 빈 자리만 있고, 게임은 자기 창의 마크업을 mountPanel(자리, html)로 붙인다. 틀은 무엇이 붙는지 모른다.
 // 붙은 마크업은 틀의 마크업과 똑같이 다뤄진다: data-i18n 표시는 applyDom이 채우고, 요소는 $('id')로 잡는다.
-// 그래서 붙이는 일은 화면 코드가 요소를 잡기 전에 끝나야 한다 (app.ts가 맨 먼저 게임의 mountMarkup을 부른다).
+// 차례: 뼈대는 이 파일이 읽히는 때에 붙는다. 틀의 화면 파일 여럿이 읽히는 때에 요소를 잡아 두는데($('banner') 같은 것), 그 파일들은 모두 $를 쓰려고
+// app.ts를 import하고 app.ts는 이 파일을 맨 먼저 import한다: 그래서 게임의 진입점이 무엇을 어떤 순서로 import하든 요소를 잡는 때에는 뼈대가 있다.
+// 게임의 창(mountPanel)은 그 뒤, 게임의 진입점이 startClient를 부르기 전에 붙인다 (게임의 모듈은 init 안에서 요소를 잡는다).
 // 이 파일은 app.ts를 import하지 않는다: app.ts가 이 파일에 기대어 먼저 붙이기 때문이다.
+import { SKELETON } from './skeleton';
+
+let mounted = false;
+/**
+ * 틀의 뼈대를 문서의 body 맨 앞에 붙인다. 한 번만 붙는다 (이 파일이 읽히는 때에 스스로 부르므로 게임이 따로 부를 일은 없다).
+ * 게임의 index.html은 body에 진입점 script만 둔다: 그 앞에 뼈대가 들어간다.
+ */
+export function mountShell(): void {
+  if (mounted || typeof document === 'undefined') return; // 화면이 없는 곳(node의 시험)에서 읽혀도 죽지 않는다
+  mounted = true;
+  document.body.insertAdjacentHTML('afterbegin', SKELETON);
+}
+mountShell();
 
 /** 붙는 자리: 기준이 되는 틀의 요소와, 그 요소의 어느 쪽에 놓는가 */
 interface SlotDef { at: () => Element | null | undefined; where: InsertPosition }

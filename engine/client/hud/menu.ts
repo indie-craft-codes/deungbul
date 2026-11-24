@@ -1,7 +1,7 @@
 // 메뉴 창: 드롭 장비(끼기·강화·팔기), 우편, 일일 임무와 출석, 거래소, 길드, 순위를 탭으로 나눠 보여 준다. (단축키 M)
 // 새 탭을 더하려면 TABS에 이름과 그리는 함수를 더한다.
 // 창의 높이와 탭 줄, 닫기 단추의 자리는 고정이고(style.css의 #menu) 내용만 창 안에서 스크롤한다.
-import { BUILD, BUILD_STATS, GUILD, DAILIES, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, MAT_MAX, RARITIES, baseOpt, enhanceMax, classOf, isItemId, isSupply, marketFee, optValue, sellPrice, type Gear, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat } from '../../shared/defs';
+import { BUILD, BUILD_STATS, GUILD, DAILY_IDS, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, MAT_MAX, RARITIES, baseOpt, enhanceMax, classOf, isItemId, isSupply, marketFee, optValue, sellPrice, type Gear, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
 import { onMsg, onSlow } from '../bus';
@@ -175,7 +175,7 @@ function drawDaily(): void {
   const loc = L(), d = S.meta.daily;
   ui.list.append(el('baghead', loc.fmt.streak(d.streak)));
   for (const id of DAILY_IDS) {
-    const def = DAILIES[id], done = d.got.includes(id);
+    const def = dailyDef(id), done = d.got.includes(id);
     ui.list.append(row(loc.gear.dailies[id], rewardText(def.r), [el('num', done ? t('dailyDone') : loc.fmt.have(d.prog[id] ?? 0, def.n))], done ? 'done' : ''));
   }
   ui.list.append(el('note', t('dailyNote')));
@@ -318,7 +318,7 @@ function drawMarketPost(): void {
   if (!me || mk.guest) return;
   // 올릴 수 있는 것: 끼고 있지 않고 보급형이 아닌 장비, 그리고 가진 제작 재료
   const gear = m.gear.filter((x) => m.worn[x.slot] !== x.uid && !isSupply(x)).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
-  const mats = (Object.keys(ITEMS) as ItemId[]).filter((id) => ITEMS[id].kind === 'mat' && (me.items[id] ?? 0) > 0);
+  const mats = (Object.keys(ITEMS) as ItemId[]).filter((id) => itemDef(id).kind === 'mat' && (me.items[id] ?? 0) > 0);
   const full = mk.mine.length >= MARKET.maxListings;
   ui.list.append(el('note', loc.fmt.marketFeeInfo(Math.round(MARKET.tax * 100), MARKET.hours)));
   if (full) ui.list.append(el('note', loc.msg.marketFull([MARKET.maxListings])));
