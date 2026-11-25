@@ -9,6 +9,7 @@ data/
 start.ps1
 resume.ps1
 .pages/
+.pages-*/
 
 # 헤드리스 Chrome의 임시 프로필 (그림 변환·화면 확인 도구가 만든다)
 chrome-webp-*/

@@ -1,0 +1,7 @@
+{
+  "port": 3001,
+  "db": "data/game.db",
+  "dist": "dist",
+  "bots": 6,
+  "pages": { "repo": "indie-craft-codes/deungbul-play", "dir": ".pages" }
+}

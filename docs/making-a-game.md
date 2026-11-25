@@ -709,13 +709,20 @@ export function initBonfire(): void {
 
 - **한 곳에 올리기**: 서버가 빌드된 화면을 같은 포트로 내보낸다. Node가 도는 곳 하나면 된다. `npm run build:sample` 뒤 `npm run start:sample`(환경 변수 `PORT`, `DB`).
 - **화면만 따로 올리기**(정적 호스팅): 화면은 접속할 때 옆의 `server.json`(`{ "url": "wss://…" }`)을 읽어 서버를 찾는다. 없으면 화면을 내보낸 곳이 곧 서버다. 빌드할 때 `VITE_SERVER_URL=wss://…`로 박아 넣을 수도 있다.
-- **저장소의 배포 스크립트는 등불지기 기준이다.** 다른 게임에 쓰려면 고친다.
+- **운영 설정은 게임 폴더의 `deploy.json` 하나다.** 운영 스크립트 셋이 이것을 읽는다(`scripts/deploy.mjs`). 서버 진입점(`server/main.ts`)의 기본 포트·저장 파일과 같게 적는다.
 
-| 스크립트 | 등불지기에 박힌 것 | 바꿀 것 |
+```json
+{ "port": 3002, "db": "data/sample/game.db", "dist": "dist-sample", "bots": 0 }
+```
+
+  GitHub Pages에 화면을 올리는 게임은 `"pages": { "repo": "계정/저장소", "dir": ".pages-이름" }`을 더한다(등불지기: `games/deungbul/deploy.json`). 게임마다 포트·저장 폴더·빌드 폴더·Pages 폴더를 따로 둔다(서버를 끄는 깃발 `stop.flag`가 저장 파일 옆에 놓이므로 저장 폴더가 같으면 남의 서버가 꺼진다).
+
+| 스크립트 | 하는 일 | 게임 고르기 |
 |---|---|---|
-| `scripts/pilot.mjs` | `npm run build`, `dist/`, 포트 3001, 공개 저장소 `PAGES_REPO`의 기본값, 작업 폴더 `.pages/` | 빌드 명령과 결과 폴더(`dist-sample`), `PORT`, `PAGES_REPO`, 작업 폴더 |
-| `scripts/publish.sh` | `dist/`, `.pages/` | 같은 두 곳 |
-| `scripts/restart.sh` | 포트 3001, `data/stop.flag`, `npm start` | `PORT`, 그 게임의 저장 폴더의 `stop.flag`, 시작 명령 |
+| `bash scripts/restart.sh [로그]` | 저장하고 끈 뒤(`stop.flag`) 다시 띄운다. 10초 안에 안 꺼지면 강제로. `DRY=1`이면 할 일만 찍는다 | `GAME=sample bash scripts/restart.sh` |
+| `node scripts/pilot.mjs [게임]` | 그 게임을 빌드하고 임시 외부 주소(cloudflared)를 붙여 화면과 `server.json`을 Pages에 올린다 | 인자나 `GAME` |
+| `bash scripts/publish.sh` | 터널을 그대로 두고 화면만 다시 올린다(먼저 그 게임을 빌드) | `GAME=sample bash scripts/publish.sh` |
+| `node scripts/deploy.mjs <칸> [게임]` | 설정의 값 하나를 찍는다(`port`, `db`, `stop`, `dist`, `pagesDir` …) | 인자나 `GAME` |
 
 - 서버와 화면은 같은 순간에 바뀌지 않는다. 열려 있던 탭은 새로고침 전까지 옛 화면이다(7절의 프로토콜 번호).
 

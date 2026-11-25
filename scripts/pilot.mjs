@@ -1,5 +1,6 @@
-// 파일럿 공개: 이 PC의 게임 서버(3001)에 임시 외부 주소를 붙이고, 화면을 GitHub Pages에 올린다.
-//   node scripts/pilot.mjs          (게임 서버는 따로 켜 둔다: npm start)
+// 파일럿 공개: 이 PC의 게임 서버에 임시 외부 주소를 붙이고, 화면을 GitHub Pages에 올린다.
+//   node scripts/pilot.mjs [게임]   (게임: 인자, 없으면 GAME, 없으면 deungbul. 게임 서버는 따로 켜 둔다: npm start)
+// 포트, 빌드 결과, 공개용 저장소와 그 폴더는 그 게임의 games/<게임>/deploy.json에서 읽는다(PORT, PAGES_REPO 환경 변수가 있으면 그것이 이긴다).
 // 하는 일:
 //   1. 화면을 빌드해서 공개용 저장소(.pages/, 빌드 결과만 들어 있다)에 넣는다. 소스는 올라가지 않는다.
 //   2. cloudflared로 임시 주소(https://....trycloudflare.com)를 받는다. 이 창을 닫으면 주소도 사라진다.
@@ -9,18 +10,21 @@ import { execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { deployOf } from './deploy.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const pages = path.join(root, '.pages');
-const REPO = process.env.PAGES_REPO ?? 'indie-craft-codes/deungbul-play';
-const PORT = process.env.PORT ?? '3001';
+const cfg = deployOf(process.argv[2] ?? process.env.GAME ?? 'deungbul');
+if (!cfg.pagesDir && !process.env.PAGES_REPO) { console.error(`[pilot] ${cfg.game}의 deploy.json에 pages(repo, dir)가 없습니다`); process.exit(1); }
+const pages = cfg.pagesDir || path.join(root, `.pages-${cfg.game}`);
+const REPO = process.env.PAGES_REPO ?? cfg.pagesRepo;
+const PORT = process.env.PORT ?? String(cfg.port);
 const run = (cmd, cwd = root) => execSync(cmd, { cwd, stdio: 'inherit' });
 const quiet = (cmd, cwd = root) => execSync(cmd, { cwd, stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
 
 function publish(serverUrl) {
   // 예전 파일을 지우고 새 빌드를 넣는다 (.git은 남긴다)
   for (const f of fs.readdirSync(pages)) if (f !== '.git') fs.rmSync(path.join(pages, f), { recursive: true, force: true });
-  fs.cpSync(path.join(root, 'dist'), pages, { recursive: true });
+  fs.cpSync(cfg.dist, pages, { recursive: true });
   fs.writeFileSync(path.join(pages, 'server.json'), JSON.stringify({ url: serverUrl }) + '\n');
   fs.writeFileSync(path.join(pages, '.nojekyll'), '');
   quiet('git add -A', pages);
@@ -31,7 +35,7 @@ function publish(serverUrl) {
 }
 
 if (!fs.existsSync(path.join(pages, '.git'))) run(`gh repo clone ${REPO} "${pages}"`);
-run('npm run build');
+run(`node scripts/game.mjs build ${cfg.game}`);
 
 const exe = ['cloudflared', 'C:/Program Files (x86)/cloudflared/cloudflared.exe', 'C:/Program Files/cloudflared/cloudflared.exe']
   .find((c) => { try { execSync(`"${c}" --version`, { stdio: 'ignore' }); return true; } catch { return false; } });
