@@ -1,0 +1,23 @@
+/* 이 게임(돌담 마을)의 스타일. 틀의 스타일(engine/client/style.css) 뒤에 읽혀 같은 무게의 규칙을 덮어쓴다 */
+/* 색: 맑은 낮의 돌담 마을 (짙은 남색의 창, 물빛의 선) */
+:root {
+  --sky: #bcd8e8;
+  --ink: #16202a;
+  --ink-rgb: 22, 32, 42;
+  --panel: rgba(var(--ink-rgb), .86);
+  --cover-rgb: 12, 18, 26;
+  --line: rgba(120, 190, 240, .32);
+  --gold: #ffc85a;
+}
+#wellPanel { display: flex; flex-direction: column; gap: 5px; }
+.bar.wellhp i { background: #5ab4e0; }
+.bar.wellhp[data-low="true"] i { background: var(--bad); }
+/* 가운데 위의 초읽기 */
+.waveclock { padding: 4px 12px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); font-weight: 700; font-size: 14px; text-align: center; white-space: nowrap; }
+.waveclock[data-phase="soon"], .waveclock[data-phase="active"] { color: #ffb0a0; border-color: rgba(255, 110, 90, .6); }
+.waveclock[data-phase="broken"] { color: var(--dim); }
+@media (max-width: 560px) { .waveclock { font-size: 12px; padding: 3px 8px; } }
+/* 폰에서 "내구 292 / 400"이 가운데서 쪼개지지 않게: 좁으면 통째로 다음 줄 오른쪽으로 */
+#wellPanel .row { flex-wrap: wrap; }
+#wellPanel .row .ttitle, #wellPanel .row .num { white-space: nowrap; }
+#wellPanel .row .num { margin-left: auto; }

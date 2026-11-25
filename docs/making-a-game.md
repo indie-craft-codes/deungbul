@@ -503,6 +503,7 @@ declare module '@engine/shared/ext' {
 
 - `MsgMap`에 안내문을 더하면 **모든 언어 파일의 `msg`에 그 문장이 있어야** 컴파일된다. 언어 파일을 아직 만들지 않았으면 틀의 `engine/client/hud/notify.ts`와 `hud/menu.ts`에서 오류가 난다("Property '…' does not exist on type …": 문장이 없는 안내문의 이름이 '…'에 나온다). 언어 파일의 `msg`에 그 문장을 채우면 사라진다.
 - 서버는 문장을 보내지 않는다. 종류와 값만 보낸다.
+- 인자가 없는 명령은 빈 칸으로 적는다: `interface ClientMsgs { restore: Record<never, never> }` (화면은 `send({ t: 'restore' })`).
 
 ### (2) 서버 쪽 선언과 플러그인
 
@@ -670,7 +671,8 @@ export function initBonfire(): void {
 | 캐릭터에 딸린 값 | `EntExt`에 선언, `g.entInit.push`, `g.saves.push` | |
 | 서버 전체의 값을 저장 | `g.worldSaves.push` + `g.saveDirty` | |
 | 시간이 흐르면 | `g.ticks.push((dt) => …)` | `onFrame`, `onSlow` |
-| 몬스터를 잡으면, 샀으면 … | `g.on('monsterKilled', …)` (사건의 목록: `engine/server/game/game.ts`의 `Hooks`) | |
+| 몬스터를 잡으면, 샀으면 … | `g.on('monsterKilled', (m, hitters) => …)`: `hitters`는 그 몬스터를 때린 사람들. `g.on('hit', (p, m, amount) => …)`: 사람이 몬스터를 때려 실제로 깎은 체력(쓰러뜨렸으면 `monsterKilled`보다 먼저). 사건의 목록과 인자: `engine/server/game/game.ts`의 `Hooks` | |
+| 적이 한 곳으로 몰려온다 (습격, 물결 막기) | `g.rules.siege = { x, z }`(목표), `g.monsters.spawn(종류, x, z, true)`(셋째 인자 `true`가 '몰려온 적'). 몰려온 적은 집도 줄도 없이 목표로 걸어가고, **스스로 사람에게 덤비지 않으며** 맞으면 때린 사람을 쫓는다. 쓰러지면 다시 나지 않고 사라진다. 목표에 붙었는지는 `g.monsters.atSiege(m)`, 목표의 피해는 게임이 센다. 층은 `spawn`이 돌려준 몬스터의 `layer`로 정한다 | `games/bastion/server/waves.ts`, `games/deungbul/server/systems/raid.ts` |
 | 틀의 수치를 바꾼다 | `g.mods.provide('damage' \| 'guard' \| 'regen' \| 'crit' \| 'hp' \| 'exp', (p) => 값)`. `damage`·`guard`·`regen`은 **곱하는 값**(1이 그대로, 1.1이면 10% 더), `crit`·`hp`·`exp`는 **더하는 값**(0이 그대로. `crit`은 확률, `hp`는 최대 체력, `exp`는 처치 경험치에 더하는 비율). 잘못 적어도 오류 없이 엉뚱한 값이 된다 | |
 | 틀의 규칙을 바꾼다 | `g.rules.respawn / speed / canChangeClass / unlocked` | `rules.speed / unlocked / lockNote / home` (속도와 잠금은 서버와 같은 답을 내야 한다) |
 | 보상을 준다 | `g.players.grant(p, exp, 0)`, `g.wallet.add(p, 'gold', n, 원인)`·`g.wallet.take(…)`(재화는 **지갑으로만** 바꾼다: `p.gold`를 직접 고치면 경제 장부에 '그 밖'으로 남고 `npm test`의 지갑 검사가 잡는다. 원인은 `WHY`의 것이나 영문 낱말), `g.bag.putItem(p, 아이템, n, 원인)`, `g.mail.send(p, 종류, 값, 보상)`, `g.daily.add(p, 종류, n)` | |

@@ -61,7 +61,7 @@ body {
 .note { font-size: 11.5px; color: var(--dim); }
 .btns { display: flex; gap: 6px; }
 .btns button { flex: 1; padding: 6px 4px; font-size: 12px; }
-.btns button:disabled { opacity: .4; cursor: default; }
+.btns button:disabled { opacity: .4; filter: grayscale(1); cursor: default; }
 .tag.npc { color: #b9f0c0; }
 .tag.ally { color: var(--ally); }
 /* 파티 */

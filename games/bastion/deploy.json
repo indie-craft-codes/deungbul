@@ -1,0 +1,6 @@
+{
+  "port": 3005,
+  "db": "data/bastion/game.db",
+  "dist": "dist-bastion",
+  "bots": 0
+}
