@@ -202,7 +202,7 @@ engine/                  틀: 이 게임을 모른다 (games/를 import하지 �
   test/                  틀의 시험: boundary.test.ts(경계 검사), fx/(시험용 내용 "시험 들판" 위의 기능 시험, all.ts가 목록), harness.ts(검사 기록, 가짜 클라이언트)
 games/deungbul/          이 게임 (틀을 @engine/…으로 읽는다)
   server/
-    main.ts              실행 진입점 (환경 변수, 저장소, 종료 처리). 규칙 플러그인을 깔아 틀의 startServer를 부른다
+    main.ts              실행 진입점: 틀의 runServer에 규칙 플러그인과 폴더를 넘긴다 (환경 변수, 저장소, 종료 처리는 runServer가)
     deungbul.ts          규칙 플러그인(installDeungbul)과 서버 쪽 선언 병합
     systems/             이 게임의 규칙: tower raid keepers quests rest
   shared/

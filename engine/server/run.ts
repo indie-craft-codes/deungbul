@@ -1,11 +1,12 @@
 // 서버를 실행하는 흔한 절차를 한 함수로: 환경 변수를 읽어 저장소와 서버를 띄우고, 종료 신호에 저장하고 끈다.
-// 게임의 실행 진입점(server/main.ts)이 자기 규칙 플러그인과 폴더만 넘겨 부른다 (예: games/sample/server/main.ts).
-// 더 손대야 하는 게임은 이것을 쓰지 않고 startServer를 직접 부른다 (등불지기의 games/deungbul/server/main.ts가 그렇다: 이 파일은 그 절차를 옮겨 적은 것이다).
+// 게임의 실행 진입점(server/main.ts)이 자기 규칙 플러그인과 폴더만 넘겨 부른다 (등불지기 games/deungbul/server/main.ts, 예제 games/sample/server/main.ts).
+// 플러그인의 설정(등불지기의 습격 간격 같은 것)은 진입점이 자기 환경 변수를 읽어 플러그인을 만들 때 넘긴다. 더 손대야 하는 게임은 startServer를 직접 부른다.
+// 기본 포트와 저장 파일은 그 게임의 운영 설정(games/<게임>/deploy.json)과 같게 준다.
 //   PORT=…               포트 (없으면 opts.port)
 //   BOTS=6               돌아다니는 봇 수
 //   DB=경로 | memory      저장 파일 (없으면 opts.db. memory면 저장하지 않는다)
 //   DEV_SPAWN=-24,24     처음 자리 대신 이 좌표에서 접속한다
-//   METRICS=10           10초마다 서버 지표를 한 줄로 찍는다
+//   METRICS=10           10초마다 서버 지표와 재화 흐름(경제 장부)을 한 줄씩 찍는다
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from './game/game';
@@ -46,6 +47,7 @@ export async function runServer(opts: RunOptions): Promise<Running> {
     setInterval(() => {
       const x = s.metrics(), f = (v: number) => v.toFixed(2);
       console.log(`[metrics] 접속 ${x.clients} 엔티티 ${x.entities} | 틱 ${f(x.tickAvg)}/${f(x.tickP95)}/${f(x.tickMax)}ms | 전송 ${f(x.flushAvg)}/${f(x.flushP95)}/${f(x.flushMax)}ms | 지연 ${f(x.lagAvg)}/${f(x.lagMax)}ms | ${(x.bytesPerS / 1024).toFixed(1)}KB/s`);
+      console.log(s.game.ledger.line()); // 같은 간격으로 재화 흐름 한 줄 (systems/ledger.ts)
     }, every * 1000).unref();
   }
   // 어디선가 놓친 예외 하나로 모두의 게임이 꺼지지 않게 한다: 적어 두고 계속 돈다

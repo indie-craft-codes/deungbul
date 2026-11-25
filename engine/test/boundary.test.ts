@@ -190,3 +190,26 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
   ];
   check(probe.length === 3, '검사의 모양: 폴더를 넘는 상대 경로, 통로가 아닌 곳의 @game, 내용 통로가 아닌 @game 경로는 잡고, 통로의 내용 통로 읽기는 지나간다');
 }
+
+// ---------- 7. 게임의 운영 설정(deploy.json)과 서버 진입점의 기본값이 같다 ----------
+// 운영 스크립트(restart.sh 등)는 deploy.json을 읽어 그 포트를 지켜보고 그 저장 폴더에 깃발을 세운다: 진입점의 기본값과 다르면 서버를 끄지 못하거나 남의 서버를 끈다
+{
+  const dirs = fs.existsSync(path.join(root, 'games')) ? fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name) : [];
+  const games = dirs.filter((g) => fs.existsSync(path.join(root, 'games', g, 'deploy.json')));
+  const wrong: string[] = [], ports = new Map<number, string>(), dbs = new Map<string, string>();
+  for (const g of games) {
+    const c = JSON.parse(fs.readFileSync(path.join(root, 'games', g, 'deploy.json'), 'utf8')) as { port: number; db: string; dist: string };
+    const main = fs.readFileSync(path.join(root, 'games', g, 'server', 'main.ts'), 'utf8');
+    // 진입점은 저장 파일과 화면 폴더를 path.join(root, '폴더', …)로 적는다: 그 조각들이 deploy.json의 경로와 같아야 한다
+    const parts = (p: string) => p.split('/').map((x) => `'${x}'`).join(', ');
+    if (!new RegExp(`port:\\s*${c.port}\\b`).test(main)) wrong.push(`${g}: 포트 ${c.port}`);
+    if (!main.includes(parts(c.db))) wrong.push(`${g}: 저장 ${c.db}`);
+    if (!main.includes(parts(c.dist))) wrong.push(`${g}: 화면 ${c.dist}`);
+    if (ports.has(c.port)) wrong.push(`${g}: 포트 ${c.port}가 ${ports.get(c.port)}와 겹친다`);
+    const dir = path.dirname(c.db);
+    if (dbs.has(dir)) wrong.push(`${g}: 저장 폴더 ${dir}가 ${dbs.get(dir)}와 겹친다 (stop.flag가 남의 서버를 끈다)`);
+    ports.set(c.port, g); dbs.set(dir, g);
+  }
+  for (const w of wrong) console.log('  ' + w);
+  check(wrong.length === 0, `게임의 운영 설정(deploy.json)이 서버 진입점의 기본값과 같고, 게임끼리 포트·저장 폴더가 겹치지 않는다 (${games.join(', ') || '없음'})`);
+}

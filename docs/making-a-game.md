@@ -444,11 +444,15 @@ export function initScene(): void {
 :root {
   --sky: #d9b48a;
   --ink: #1d1712;
-  --panel: rgba(29, 23, 18, .86);
+  --ink-rgb: 29, 23, 18;
+  --panel: rgba(var(--ink-rgb), .86);
+  --cover-rgb: 20, 14, 9;
   --line: rgba(255, 190, 120, .3);
   --gold: #ffb057;
 }
 ```
+
+- 틀의 색 변수: `--sky`(문서 바탕), `--ink`와 `--ink-rgb`(창의 바탕색. 둘을 같은 색으로: 반투명한 바탕들이 `--ink-rgb`를 쓴다), `--panel`, `--cover-rgb`(화면을 덮는 막), `--line`, `--fg`, `--dim`, `--gold`, `--on-gold`(금빛 단추 위의 글자), `--good`·`--bad`·`--ally`(좋음·나쁨·파티원), `--hp`, `--xp`, `--icon-bg`(그림 칸의 바탕), `--font`, `--mono`. 기본값과 뜻은 `engine/client/style.css`의 맨 위.
 
 ## 6. 이 게임만의 규칙 하나 더하기
 

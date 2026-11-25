@@ -23,7 +23,7 @@ import { dungeonLabel } from '../i18n/names';
 import { rules } from '../rules';
 import { S } from '../state';
 import { feed } from './notify';
-import { allLabels, allMarks, paintWith } from './minimap';
+import { allLabels, allMarks, cssVar, paintWith } from './minimap';
 
 /** 장소의 갈래. 틀이 아는 것 여덟이고, 게임은 이 가운데 하나를 고른다 (목록의 묶음과 표식의 모양이 갈래를 따른다) */
 export type PlaceKind = 'goal' | 'town' | 'shop' | 'forge' | 'dungeon' | 'hunt' | 'boss' | 'other';
@@ -212,7 +212,9 @@ function draw(): void {
   if (areaOfMe() !== view.area) { measure(true); selected = null; showCard(); renderList(); } // 던전에 들어가거나 나오면 그 지역으로
   const a = AREAS[view.area], font = getComputedStyle(document.body).fontFamily, k = view.k;
   c.clearRect(0, 0, view.w, view.h);
-  c.fillStyle = COLOR.out; c.fillRect(0, 0, view.w, view.h);
+  // 지역 밖의 바탕과 글자 테두리는 게임의 창 색(--ink)을 따른다
+  const inkRgb = cssVar('--ink-rgb', '14, 34, 39');
+  c.fillStyle = cssVar('--ink', COLOR.out); c.fillRect(0, 0, view.w, view.h);
   // 지역 안만 칠한다
   const corners = [toMap(a.x0, a.z0), toMap(a.x1, a.z0), toMap(a.x1, a.z1), toMap(a.x0, a.z1)];
   c.save();
@@ -273,7 +275,7 @@ function draw(): void {
     const w = c.measureText(text).width + 6, box = { x0: x - w / 2, y0: y - size / 2 - 2, x1: x + w / 2, y1: y + size / 2 + 2 };
     if (taken.some((b) => b.x0 < box.x1 && box.x0 < b.x1 && b.y0 < box.y1 && box.y0 < b.y1)) return;
     taken.push(box);
-    c.strokeStyle = 'rgba(14, 34, 39, .88)'; c.lineWidth = 3.5; c.strokeText(text, x, y);
+    c.strokeStyle = `rgba(${inkRgb}, .88)`; c.lineWidth = 3.5; c.strokeText(text, x, y);
     c.fillStyle = fill; c.fillText(text, x, y);
   };
   const zoomed = k >= view.fitK * 1.8;

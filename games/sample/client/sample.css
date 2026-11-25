@@ -3,7 +3,9 @@
 :root {
   --sky: #d9b48a;
   --ink: #1d1712;
-  --panel: rgba(29, 23, 18, .86);
+  --ink-rgb: 29, 23, 18;
+  --panel: rgba(var(--ink-rgb), .86);
+  --cover-rgb: 20, 14, 9;
   --line: rgba(255, 190, 120, .3);
   --gold: #ffb057;
 }

@@ -10,6 +10,8 @@ const SIZE = 150, HALF = SIZE / 2;
 /** 가운데에서 가장자리까지 보이는 거리(m) */
 const RANGE = 70;
 const K = (HALF / RANGE) * Math.SQRT1_2;
+/** css의 색 변수 하나 (게임이 덮어쓴 값). 캔버스는 var()를 모르므로 그릴 때 읽는다 */
+export const cssVar = (name: string, fallback: string): string => (typeof document === 'undefined' ? fallback : getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback);
 const COLOR = { ground: '#3d6b45', out: '#0e2227', tower: '#f0bb55', dark: '#8a8f8c', shop: '#7fd68a', quest: '#ffe08a', foe: '#e0705f', other: '#eef3ee', ally: '#8fd8ff', me: '#ffffff' };
 
 let ctx: CanvasRenderingContext2D | null = null;
@@ -71,7 +73,7 @@ function draw(): void {
   c.save();
   c.clearRect(0, 0, SIZE, SIZE);
   c.beginPath(); c.arc(HALF, HALF, HALF - 1, 0, Math.PI * 2); c.clip();
-  c.fillStyle = COLOR.out; c.fillRect(0, 0, SIZE, SIZE);
+  c.fillStyle = cssVar('--ink', COLOR.out); c.fillRect(0, 0, SIZE, SIZE);
   // 바탕: 땅과 물은 게임이 칠한다 (setMapPaint)
   paint({
     quad: (x0, z0, x1, z1, color) => quad(c, x0, z0, x1, z1, color),
