@@ -162,10 +162,26 @@ function named(ps: MapPlace[]): MapPlace[] {
 
 // ---------- 자동 이동 ----------
 /** 자동으로 가는 중인 곳. 도착하면 알리고(hunt면 자동 사냥을 켠다), 목적지가 바뀌면(직접 움직이면) 그친다 */
-let travel: { x: number; z: number; name: string; hunt: boolean; retry: number } | null = null;
+let travel: { x: number; z: number; name: string; hunt: boolean; retry: number; door?: string } | null = null;
+/** 그 지역(던전)으로 들어가는 들판의 문: 던전의 들어서는 자리(entry)가 그 지역에 있는 던전의 portal */
+function doorOf(area: number): { x: number; z: number; name: string } | null {
+  const id = DUNGEON_IDS.find((d) => areaAt(dungeonDef(d).entry.x, dungeonDef(d).entry.z) === area);
+  return id ? { ...dungeonDef(id).portal, name: dungeonLabel(L(), id).name } : null;
+}
 /** 장소로 자동 이동한다. hunt면 도착해서 자동 사냥을 켠다 */
 export function travelTo(p: Pick<MapPlace, 'x' | 'z' | 'name'>, hunt = false): void {
-  if (!S.me) return;
+  const me = S.me;
+  if (!me) return;
+  // 다른 지역(던전 안)의 자리: 지역 사이는 문으로만 오간다. 들판에서는 그 던전의 문까지 데려가고(들어가는 것은 사람이 정한다: 하루 횟수를 쓰므로),
+  // 던전 안에서는 먼저 나가야 한다고 알린다. 그대로 걸으면 지역의 가장자리에서 멈춰 헤맸다
+  const here = areaAt(me.x, me.z), there = areaAt(p.x, p.z);
+  if (here >= 0 && there >= 0 && here !== there) {
+    const door = here === 0 ? doorOf(there) : null;
+    if (!door) { feed(L().fmt.mapOtherArea(p.name)); return; }
+    travelTo({ x: door.x, z: door.z, name: door.name }, false);
+    if (travel) travel.door = p.name;
+    return;
+  }
   const to = clampPoint(p.x, p.z);
   if (S.auto) toggleAuto(); // 사냥하던 중이면 끄고 간다 (가는 길에 몬스터를 쫓지 않게)
   moveTo(to.x, to.z);
@@ -188,7 +204,7 @@ function travelTick(): void {
   if (left < 2.5 || (!me.moving && left < 8)) {
     const done = travel;
     travel = null; showTravel();
-    feed(L().fmt.mapArrived(done.name, done.hunt));
+    feed(done.door ? L().fmt.mapAtDoor(done.name, done.door) : L().fmt.mapArrived(done.name, done.hunt));
     if (done.hunt && !S.auto) toggleAuto();
     return;
   }

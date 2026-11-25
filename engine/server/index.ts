@@ -2,6 +2,7 @@
 // 게임이 틀의 시스템에 붙는 접점(g.commands, g.on, g.mods, g.saves, g.wallet …)은 Game의 칸으로 닿는다.
 export { Game, Modifiers, type GameOptions, type ModName, type Plugin, type Saver } from './game/game';
 export { clamp, dist, readInt, type Ent } from './game/entity';
+export type { MonsterAct, MonsterBehavior } from './game/systems/monsters';
 export { channelOf, fieldLayer, isField, notifyLayer } from './game/layers';
 export { startServer, type Options, type Running } from './net/server';
 export { runServer, type RunOptions } from './run';

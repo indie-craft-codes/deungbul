@@ -7,7 +7,7 @@
 //      ticks(주기 처리), saves(캐릭터 저장), worldSaves(월드 저장), shared(모두에게 보내는 공유 상태).
 //   3. 아래 Game 생성자에 한 줄 추가한다.
 // 이 게임에만 있는 규칙(등탑, 습격, 등탑지기, 퀘스트)은 생성자에 적지 않고 규칙 플러그인(GameOptions.plugins)으로 깐다: ./deungbul.ts
-import { SPAWN } from '../../shared/defs';
+import { MONSTERS, SPAWN, type MonsterDef } from '../../shared/defs';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import { NavGrid } from '../../shared/nav';
 import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
@@ -129,6 +129,9 @@ export interface GameOptions {
 /** 게임의 규칙 시스템이 다는 칸(g.tower 같은 것)을 Game의 타입에 잇는다: GameSystems(./ext.ts)에 게임이 더한다 */
 export interface Game extends GameSystems {}
 
+/** 등록되지 않은 싸우는 법을 이미 알린 몬스터 (한 프로세스에 한 번만 알린다: 시험은 게임을 여러 번 만든다) */
+const warnedBehavior = new Set<string>();
+
 export class Game {
   readonly world = buildWorld();
   /** 길찾기용 격자 */
@@ -236,6 +239,8 @@ export class Game {
     this.away = new Away(this);
     // 게임의 규칙이 깔리는 자리 (Plugin의 설명)
     for (const install of opts.plugins ?? []) install(this);
+    // 몬스터가 적은 싸우는 법이 등록되어 있는가 (없으면 기본대로 싸운다: 이름을 잘못 적은 것을 서버를 띄울 때 알린다)
+    for (const [type, def] of Object.entries(MONSTERS as Readonly<Record<string, MonsterDef>>)) if (def.behavior && !this.monsters.hasBehavior(def.behavior) && !warnedBehavior.has(type) && warnedBehavior.add(type)) console.warn(`[monsters] ${type}의 behavior '${def.behavior}'가 등록되어 있지 않습니다 (g.monsters.addBehavior). 기본대로 싸웁니다`);
     // 플러그인보다 먼저 만들어진 엔티티(첫 채널의 몬스터)도 게임이 더한 칸을 갖게 한다
     for (const e of this.ents.values()) for (const init of this.entInit) init(e);
     this.shop = new Shop(this);

@@ -175,8 +175,11 @@ function onEvent(e: Ev, me: Me): void {
       // 쏘는 직업이면(ClassDef.shot) 화살이나 불꽃이 날아간다. 몬스터는 직업이 없다
       const srcR = src === me.id ? null : S.others.get(src);
       const look = src === me.id || srcR?.kind === 'p' ? classOf(src === me.id ? me.cls : srcR!.cls) : null;
-      const ranged = !!look?.shot && !!from && !!p;
-      if (ranged) arrow(from!.x, from!.z, p!.x, p!.z, look!.shot);
+      // 몬스터는 정의의 shot (떨어져서 때리는 몬스터: MonsterDef.behavior 'ranged')
+      const mShot = srcR?.kind === 'm' && isMonsterId(srcR.type) ? monsterDef(srcR.type).shot : undefined;
+      const shot = look?.shot ?? mShot;
+      const ranged = !!shot && !!from && !!p;
+      if (ranged) arrow(from!.x, from!.z, p!.x, p!.z, shot!);
       // 타격감: 내가 때리거나 맞을 때는 크게(화면도 흔들린다), 남의 싸움은 작게
       if (p) {
         const mine = src === me.id, hurt = dst === me.id;

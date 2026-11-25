@@ -221,6 +221,8 @@ export const enBase = (n: ContentNames): EngineLocale => {
       mapDist: (m, sec) => `${num(Math.round(m))} m · ~${sec >= 90 ? `${Math.round(sec / 60)} min` : `${Math.max(1, Math.round(sec))} s`} walk`,
       mapHuntInfo: (mobs, exp, gold) => `${mobs} · ${num(exp)} exp and about ${num(gold)} ${G.unit} each`,
       mapTravel: (name) => `Auto-traveling to ${name}.`,
+      mapOtherArea: (name) => `${name} is in another area. Leave this place first.`,
+      mapAtDoor: (door, place) => `You reached the entrance of ${door}. ${place} is inside: press Enter in the dungeon panel.`,
       mapArrived: (name, hunt) => `Arrived at ${name}.${hunt ? ' Starting auto-hunt.' : ''}`,
       mapMobs: (name, n) => (n > 1 ? `${name} ×${n}` : name),
       fxBuff: (mod, pct, sec, allies, radius) =>

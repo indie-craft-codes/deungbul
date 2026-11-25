@@ -101,6 +101,10 @@ export const MONSTERS = {
   husk: { hp: 190, dmg: [9, 13], speed: 3.8, exp: 45, sparks: [3, 4], gold: [10, 16], aggro: 7, h: 2.7 },
   colossus: { hp: 1600, dmg: [14, 20], speed: 3.4, exp: 300, sparks: [10, 14], gold: [80, 120], aggro: 9, h: 5.0, boss: true, respawn: 300 },
   warden: { hp: 2600, dmg: [16, 24], speed: 3.6, exp: 500, sparks: [12, 16], gold: [120, 160], aggro: 10, h: 4.2 },
+  // 싸우는 법(behavior)의 시험용: 떨어져서 쏘는 것, 체력이 낮으면 달아나는 것, 게임이 등록한 것. 빈터(CAMPS)에는 두지 않는다
+  slinger: { hp: 80, dmg: [4, 6], speed: 4.0, exp: 18, sparks: [1, 2], gold: [4, 8], aggro: 9, h: 1.8, behavior: 'ranged', range: 7, shot: 'arrow' },
+  skulk: { hp: 120, dmg: [4, 7], speed: 4.8, exp: 20, sparks: [1, 2], gold: [4, 8], aggro: 6, h: 1.6, behavior: 'flee', fleeAt: 0.4 },
+  bouncer: { hp: 120, dmg: [4, 7], speed: 4.0, exp: 20, sparks: [1, 2], gold: [4, 8], aggro: 6, h: 1.6, behavior: 'shove' },
 } as const satisfies Record<string, MonsterDef>;
 
 // ---------- 아이템, 상점, 대장간 ----------

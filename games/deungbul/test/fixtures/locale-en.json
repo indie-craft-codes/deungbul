@@ -410,6 +410,13 @@
   "Arrived at 1.",
   "Arrived at 2."
  ],
+ "fmt.mapAtDoor": [
+  "7ed3ab709760b877",
+  "You reached the entrance of undefined. undefined is inside: press Enter in the dungeon panel.",
+  "You reached the entrance of 0. undefined is inside: press Enter in the dungeon panel.",
+  "You reached the entrance of 1. undefined is inside: press Enter in the dungeon panel.",
+  "You reached the entrance of 2. undefined is inside: press Enter in the dungeon panel."
+ ],
  "fmt.mapDist": [
   "ea9c5930abbb3951",
   "NaN m · ~NaN s walk",
@@ -430,6 +437,13 @@
   "0",
   "1",
   "2"
+ ],
+ "fmt.mapOtherArea": [
+  "cae2fcf74e150b7d",
+  "undefined is in another area. Leave this place first.",
+  "0 is in another area. Leave this place first.",
+  "1 is in another area. Leave this place first.",
+  "2 is in another area. Leave this place first."
  ],
  "fmt.mapTravel": [
   "d99816222266c0c0",

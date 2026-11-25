@@ -249,6 +249,8 @@ export const koBase = (n: ContentNames) => {
       mapDist: (m: number, sec: number) => `${num(Math.round(m))}m · 걸어서 약 ${sec >= 90 ? `${Math.round(sec / 60)}분` : `${Math.max(1, Math.round(sec))}초`}`,
       mapHuntInfo: (mobs: string, exp: number, gold: number) => `${mobs} · 한 마리에 경험치 ${num(exp)}, ${G.name} 약 ${num(gold)}`,
       mapTravel: (name: string) => `${ro(name)} 자동 이동합니다.`,
+      mapOtherArea: (name: string) => `${josa(name, '은', '는')} 다른 지역에 있습니다. 먼저 이곳을 나가세요.`,
+      mapAtDoor: (door: string, place: string) => `${door}의 입구에 왔습니다. ${josa(place, '은', '는')} 안에 있습니다: 들어가려면 던전 창의 '들어가기'를 누르세요.`,
       mapArrived: (name: string, hunt: boolean) => `${name}에 도착했습니다.${hunt ? ' 자동 사냥을 시작합니다.' : ''}`,
       mapMobs: (name: string, n: number) => (n > 1 ? `${name} ${n}마리` : name),
       // 기술 효과의 설명 (도감·기술 창이 쓴다). mod는 강화가 바꾸는 것(BuffMod)
