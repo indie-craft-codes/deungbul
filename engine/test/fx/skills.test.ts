@@ -117,7 +117,7 @@ function bench() {
   p.hp = p.maxHp * 0.2;
   for (let i = 0; i < 20; i++) g.tick(0.05);
   check(p.targetId !== far.id, '쉬는 동안 떨어진 몬스터(6m)에게 새로 덤비지 않는다');
-  const near = dummy(41.5, 40);
+  const near = dummy(p.x + 1.5, p.z); // 물러난 자리 곁에 붙는다
   for (let i = 0; i < 20; i++) g.tick(0.05);
   check(p.targetId === near.id, `쉬는 중에도 내게 붙은 몬스터(${AUTO.restGuard}m 안)와는 싸운다`);
   g.combat.damage(p, near, 1e9, false); // 쓰러뜨린다 (곧 같은 자리에 다시 나지 않게 멀리 옮긴다)
@@ -125,5 +125,17 @@ function bench() {
   p.hp = p.maxHp;
   for (let i = 0; i < 20; i++) g.tick(0.05);
   check(p.targetId === far.id, '체력이 차면 다시 떨어진 몬스터에게 간다');
+  // 쉴 자리: 둘레 몬스터의 반대쪽으로 물러난다
+  const { restSpot } = await import('../../shared/auto');
+  const spot = restSpot({ x: 0, z: 0 }, [{ x: 3, z: 0 }, { x: 4, z: 1 }]);
+  check(!!spot && spot.x < -AUTO.restStep * 0.9 && restSpot({ x: 0, z: 0 }, [{ x: 30, z: 0 }]) === null, '쉬는 동안 둘레의 몬스터 반대쪽으로 물러나고, 둘레에 없으면 그 자리에서 쉰다');
+  const p2 = hero('물러나는이', 0, 0);
+  for (const id of POTIONS) p2.items[id] = 0;
+  p2.auto = true; g.away.start(p2);
+  dummy(5, 0);
+  p2.hp = p2.maxHp * 0.2;
+  for (let i = 0; i < 40; i++) g.tick(0.05);
+  check(p2.x < -3, `자리 비움 사냥도 쉴 때 몬스터에게서 물러난다 (x ${p2.x.toFixed(1)})`);
+  g.away.stop(p2);
   g.away.stop(p);
 }

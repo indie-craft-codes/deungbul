@@ -1,7 +1,7 @@
 // 자리 비움 자동 사냥: 자동 사냥을 켠 채 접속이 끊기면(창을 닫음, 폰 화면이 꺼짐) 캐릭터가 월드에 남아 계속 사냥한다.
 // 다시 접속하면 그 캐릭터를 그대로 이어받는다. 판단은 클라이언트의 자동 사냥(engine/client/auto.ts)과 같고,
 // 사람이 누른 것과 같은 명령(g.command)만 내므로 전투 규칙은 그대로다.
-import { AUTO, AWAY, pickPotion, pickSkill, shouldRest } from '../../../shared/auto';
+import { AUTO, AWAY, pickPotion, pickSkill, restSpot, shouldRest } from '../../../shared/auto';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -108,6 +108,12 @@ export class Away {
         if (d < nd) { nd = d; target = m; }
       }
       if (target) g.command(p, { t: 'attack', id: target.id });
+      // 쉬는 중: 둘레의 몬스터에게서 물러난다 (화면의 자동 사냥과 같은 규칙)
+      else if (resting && !p.moving) {
+        const foes = [...g.ents.values()].filter((m) => m.kind === 'm' && !m.dead && m.layer === p.layer && dist(p, m) < AUTO.restClear);
+        const to = restSpot(p, foes);
+        if (to) g.movement.goTo(p, to.x, to.z);
+      }
       // 쓰러져 등탑에서 일어났거나 멀리 끌려갔으면 자리를 비운 곳으로 돌아간다
       else if (!p.moving && dist(p, s) > 4) g.movement.goTo(p, s.x, s.z);
     }

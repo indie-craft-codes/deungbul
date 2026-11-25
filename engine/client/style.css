@@ -79,7 +79,7 @@ body {
 .num { font-family: var(--mono); font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
 
 #chat { left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: 320px; display: flex; flex-direction: column; gap: 6px; }
-#log { height: 132px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; font-size: 12px; }
+#log { height: 132px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; font-size: 12px; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12px); mask-image: linear-gradient(to bottom, transparent, #000 12px); } /* 위로 밀려 잘린 줄은 흐리게 사라진다 */
 /* 대화가 아직 없으면 기록 칸을 접는다 (빈 상자가 자리를 차지하지 않게) */
 #log:empty { display: none; }
 #log div { overflow-wrap: anywhere; }
@@ -106,7 +106,7 @@ button { background: var(--gold); color: var(--on-gold); font-weight: 700; paddi
 /* 오른쪽 위에 쌓이는 창들: 등탑, 상점, 퀘스트. 열린 것만 위에서부터 차례로 놓인다 */
 #rightcol {
   position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px));
-  width: 250px; display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  width: 250px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; z-index: 2; /* 게임의 길잡이 화살표(hud)가 창의 글자를 덮지 않게 */
 }
 #rightcol .panel { position: static; width: auto; }
 #shop { right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); width: 250px; display: flex; flex-direction: column; gap: 6px; }
@@ -151,7 +151,7 @@ button.plain:hover { border-color: var(--gold); }
 .banner {
   position: absolute; left: 50%; top: 26%; transform: translateX(-50%); width: max-content; max-width: min(560px, 92%);
   background: var(--panel); border: 1px solid var(--gold); border-radius: 6px; padding: 12px 20px; text-align: center; pointer-events: none;
-  animation: bannerIn .25s ease-out;
+  animation: bannerIn .25s ease-out; z-index: 8; /* 메뉴·가방이 열려 있어도 가리지 않게 (누르기는 통과한다) */
 }
 .banner #bannerText { font-size: 19px; font-weight: 800; color: var(--gold); }
 .banner #bannerSub { margin-top: 5px; font-size: 13px; color: var(--fg); }
@@ -199,8 +199,8 @@ button.plain:hover { border-color: var(--gold); }
 }
 .skill:hover { border-color: var(--gold); }
 .skill .k { position: absolute; left: 5px; top: 3px; font-family: var(--mono); font-size: 10px; color: var(--gold); font-weight: 400; }
-.skill .n { font-size: 13px; margin-top: 8px; }
-.skill .cd { position: absolute; inset: 0; background: rgba(0, 0, 0, .55); transform-origin: bottom; transform: scaleY(0); }
+.skill .n { font-size: 13px; margin-top: 8px; position: relative; z-index: 1; text-shadow: 0 0 3px #000; } /* 쿨다운 막 위에서도 읽힌다 */
+.skill .cd { position: absolute; inset: 0; background: rgba(0, 0, 0, .4); transform-origin: bottom; transform: scaleY(0); }
 .skill .t { position: absolute; right: 4px; bottom: 2px; font-family: var(--mono); font-size: 13px; color: #fff; text-shadow: 0 0 3px #000; }
 #actRow { display: flex; gap: 6px; justify-content: center; }
 @media (pointer: coarse) { #skills { justify-content: flex-end; } }
@@ -321,7 +321,7 @@ html, body { height: var(--app-h, 100%); }
 .baghead { color: var(--gold); font-weight: 700; font-size: 12px; border-top: 1px solid var(--line); padding-top: 6px; }
 #bagBtn { padding: 1px 8px; font-size: 11px; }
 @media (pointer: coarse) { #bagBtn { font-size: 14px; padding: 3px 10px; } }
-#bag { background: rgba(var(--ink-rgb), .96); z-index: 6; }
+#bag { background: var(--ink); z-index: 6; }
 #bagClose { position: sticky; bottom: 0; }
 #bagBtn { white-space: nowrap; flex: none; }
 

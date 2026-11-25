@@ -17,6 +17,9 @@ export const AUTO = {
   restUntil: 0.9,
   /** 쉬는 중에도 이 거리 안에 붙은 몬스터와는 싸운다 (맞고만 있지 않게) */
   restGuard: 3,
+  /** 쉬는 동안 이 거리 안에 몬스터가 있으면 그 반대쪽으로 restStep만큼 물러난다 (적 사이에서 맞으며 쉬지 않게) */
+  restClear: 10,
+  restStep: 12,
 };
 
 /** 자리 비움 사냥(켠 채 접속이 끊기면 서버가 이어서 사냥)의 조건. 서버와 화면의 안내가 같은 수를 쓴다 */
@@ -75,6 +78,18 @@ export function pickPotion(ratio: number, items: Record<string, number>): ItemId
 export function shouldRest(ratio: number, items: Record<string, number>, resting: boolean): boolean {
   if (resting) return ratio < AUTO.restUntil;
   return ratio < AUTO.restAt && !POTIONS.some((id) => (items[id] ?? 0) > 0);
+}
+
+/** 쉴 자리: 둘레(restClear 안)의 몬스터들에게서 멀어지는 쪽으로 restStep만큼. 둘레에 없으면 null */
+export function restSpot(me: { x: number; z: number }, foes: readonly { x: number; z: number }[]): { x: number; z: number } | null {
+  let dx = 0, dz = 0;
+  for (const f of foes) {
+    const d = Math.hypot(f.x - me.x, f.z - me.z);
+    if (d < AUTO.restClear && d > 0.01) { dx += (me.x - f.x) / d; dz += (me.z - f.z) / d; }
+  }
+  const len = Math.hypot(dx, dz);
+  if (len < 0.01) return null;
+  return { x: me.x + (dx / len) * AUTO.restStep, z: me.z + (dz / len) * AUTO.restStep };
 }
 
 /** 손으로 마실 때 살펴보는 순서: 가장 진한 물약의 회복량만큼 다쳤으면 진한 것부터, 아니면 약한 것부터 (조금 다쳤을 때 진한 물약을 버리지 않게) */

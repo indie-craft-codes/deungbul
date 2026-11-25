@@ -76,6 +76,7 @@ export const enGame: GameLocale = {
     shop: 'Road Merchant',
     hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'F: quest', 'R: auto-hunt', 'H: town', 'B: bag', 'M: menu', 'N: map', 'Tab: target', 'Enter: chat']),
     toTown: 'To town',
+    questGoal: 'Quest goal',
     mapLegend: '■ tower · ○ quest · green merchant',
     goingTown: 'Walking back to Firstlight Village.',
     questNeedSparks: 'You have no sparks to offer. Defeat monsters to gather some.',
@@ -112,7 +113,7 @@ export const enGame: GameLocale = {
         'Offer a spark at the lamp tower in the village',
         'Find the old forge beyond the western woods',
         "Defeat Bram's Shade, lost to the mist",
-        'Use "Give" in the lamp tower panel to bring Bram the blacksmith back to the village',
+        'Use "Give" in the lamp tower panel to bring villagers back (the panel shows who is next)',
       ],
     },
     mira: {
@@ -122,7 +123,7 @@ export const enGame: GameLocale = {
         'Hunt wisps in the southern woods',
         'Find the old herb field east of the pond',
         "Defeat Mira's Shade, lost to the mist",
-        'Use "Give" in the lamp tower panel to bring Mira the herbalist back to the village',
+        'Use "Give" in the lamp tower panel to bring more villagers back',
       ],
     },
     ashwood: {

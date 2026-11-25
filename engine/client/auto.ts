@@ -1,6 +1,6 @@
 // 자동 사냥: 가까운 몬스터를 골라 공격하고, 기술과 물약을 알아서 쓴다.
 // 직접 이동하거나 멈추면 꺼진다. 서버에는 사람이 누른 것과 같은 명령만 보낸다.
-import { AUTO, AWAY, pickPotion, pickSkill, shouldRest } from '../shared/auto';
+import { AUTO, AWAY, pickPotion, pickSkill, restSpot, shouldRest } from '../shared/auto';
 import { dungeonDef, isDungeonId } from '../shared/defs';
 import { attack, autoWalk, monstersNear, usePotion, useSkill } from './actions';
 import { $ } from './app';
@@ -50,6 +50,8 @@ function tick(): void {
       if (Math.hypot(boss.x - me.x, boss.z - me.z) > 6) autoWalk(boss.x, boss.z);
     }
   }
+  // 쉬는 중이고 싸울 것이 없으면 둘레의 몬스터에게서 물러난다
+  if (resting && !target && !me.moving) { const to = restSpot(me, monstersNear(AUTO.restClear)); if (to) autoWalk(to.x, to.z); }
   const dist = target ? Math.hypot(target.x - me.x, target.z - me.z) : Infinity;
 
   const n = pickSkill(me.cls, ratio, dist, (i) => now >= S.cdEnd[i]);

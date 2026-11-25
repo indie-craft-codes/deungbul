@@ -23,6 +23,8 @@
   #tower .btns { flex-wrap: wrap; }
   #tower .btns .blabel { flex-basis: 100%; }
   #tower .btns button { min-height: 38px; font-size: 14px; }
+  #tower .row { flex-wrap: wrap; column-gap: 8px; }
+  #tower .num { white-space: nowrap; margin-left: auto; }
 }
 /* 퀘스트가 가리키는 '보태기' 단추 */
 #resBtns.hint button { box-shadow: 0 0 0 1px var(--gold), 0 0 8px rgba(255, 200, 90, .55); animation: hintPulse 1.6s ease-in-out infinite; }

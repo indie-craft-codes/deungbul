@@ -70,6 +70,8 @@ games/sample/
   test/                    시험
 ```
 
+**예제를 베껴 시작할 때**: `games/sample`을 통째로 `games/<내 게임>`에 복사한 뒤 `test/docs.test.ts`(이 문서와 예제가 같은지 보는 예제 전용 시험)와 `test/empty.test.ts`(예제의 빈 표 검사)는 지우거나 경로를 고친다: 둘은 `games/sample`을 경로로 적어 두었다. 뿌리의 `package.json`에 `start:<게임>`·`build:<게임>`·`test:<게임>`을 예제 줄을 베껴 더하고(`node scripts/game.mjs start <게임>` …), `typecheck`에 그 게임의 두 설정(`tsconfig.json`, `tsconfig.engine.json`)을 더한다. 운영 스크립트를 쓰려면 `deploy.json`(9절).
+
 **별칭이 전부다.** `@game`이 어느 폴더를 가리키느냐가 "어느 게임인가"를 정한다. 두 파일에서 같아야 한다: `tsconfig.json`(타입 검사와 `tsx`), `vite.config.ts`(화면 빌드). 게임을 돌리는 도구 `scripts/game.mjs`가 게임 폴더의 이 두 파일을 골라 쓴다: `node scripts/game.mjs <start|watch|client|build> <게임 폴더 이름>`.
 
 ```json games/sample/tsconfig.json
@@ -248,7 +250,7 @@ export const MONSTERS = {
 - `'ranged'`: 사거리 `range`(기본 8m)에서 서서 쏘고, 사거리의 절반보다 붙으면 물러선다. `shot: 'arrow'`를 적으면 화면에 날아가는 것이 보인다(`registerShot`의 id).
 - `'flee'`: 체력이 `fleeAt`(기본 0.3) 아래면 대상의 반대쪽으로 달아난다. 거리가 벌어지면 놓치고 집으로 돌아가 회복한다. 예제의 토끼.
 
-게임만의 싸우는 법은 서버의 플러그인에서 `g.monsters.addBehavior('이름', (a) => boolean)`로 등록하고 정의에 그 이름을 적는다. `a`는 `{ g, m, t, d, dt, strike, walkTo }`(몬스터, 대상, 거리, 때리기, 걷기)이고, true를 돌려주면 그 틱은 이 행동이 맡는다(false면 기본이 이어서 돈다). 등록하지 않은 이름을 적으면 서버를 띄울 때 한 번 알리고 기본대로 싸운다. 타입은 `@engine/server`의 `MonsterBehavior`, 예: `engine/test/fx/monsters.test.ts`의 'shove'.
+게임만의 싸우는 법은 서버의 플러그인에서 `g.monsters.addBehavior('이름', (a) => boolean)`로 등록하고 정의에 그 이름을 적는다. `a`는 `{ g, m, t, d, dt, strike, walkTo }`다: `g` 게임, `m` 몬스터와 `t` 대상(둘 다 `Ent`), `d` 둘 사이의 거리(m), `dt` 이번 틱의 길이(초), `strike()` 쿨다운이 끝났으면 대상을 때리고 true, `walkTo(x, z)` 그쪽으로 한 틱만큼 걷는다(느려짐이 반영된 빠르기). true를 돌려주면 그 틱은 이 행동이 맡고, false면 같은 틱에 기본(다가가서 때리기)이 그대로 돈다. `m.x`·`m.z`를 직접 옮겨도 된다(순간 이동, 덤벼들기). 몬스터마다의 상태는 `WeakMap<Ent, …>`에 둔다. 기절(`stun`) 중이거나 우두머리가 내려치려고 힘을 모으는 동안에는 불리지 않는다. 등록하지 않은 이름을 적으면 서버를 띄울 때 한 번 알리고 기본대로 싸운다. 타입은 `@engine/server`의 `MonsterBehavior`, 예: `engine/test/fx/monsters.test.ts`의 'shove'.
 
 ```ts games/sample/shared/content/index.ts
 export const ITEMS = {
@@ -271,7 +273,7 @@ export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 
 ```
 
 - 무기는 한 줄기다. 직업마다 손에 든 모양(`hand`)만 다르고, 이름은 언어 파일이 손 모양마다 따로 준다(아이템 이름표에 손 모양의 id 칸: `bow`, `staff` …. 칸이 없으면 `name`). 틀에는 `sword` / `bow` / `staff`가 있고, 다른 모양은 화면에서 `registerHand`로 등록한다. 예제의 나무꾼은 도끼(`axe`)를 든다(`client/scene.ts`).
-- 쏘는 직업의 날아가는 것(`shot`)도 같다: 틀에는 `arrow`, `bolt`가 있고, 다른 것은 `registerShot(id, { shape: 'stick' | 'ball', color, size })`.
+- 쏘는 직업의 날아가는 것(`shot`)도 같다: 틀에는 `arrow`, `bolt`가 있고, 다른 것은 `registerShot(id, { shape: 'stick' | 'ball', color, size })`. `size`는 틀의 크기에 곱하는 배율이다(기본 1: 막대는 길이 1m, 공은 반지름 0.22m). 0.35쯤이면 거의 점이 된다.
 - `price: 0`은 상점에서 팔지 않는다는 뜻이다.
 - 기술의 효과(`SKILL_DEFS`의 `effect`)는 여섯 가지다. 서버·화면·자동 사냥·도감이 종류만 보고 처리하므로 기술은 표에 한 줄 더하면 된다.
 
@@ -297,6 +299,7 @@ export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 
 - `MAP.areas`에 들판과 떨어진 네모를 더하고, 그 **지역 id를 던전 id와 같게** 짓는다. 틀은 내가 서 있는 지역의 id로 던전 정의를 찾는다(밖으로 나갈 때 등).
 - 문은 들판 안의 한 자리다: `DungeonDef.portal`과 `MAP.portals[던전 id]`에 같은 좌표를 적는다(앞의 것은 들어가는 곳, 뒤의 것은 그 둘레에서 나무와 바위를 치우는 자리). 상수 하나를 두 곳에 넣으면 어긋나지 않는다.
 - `entry`(들어서는 자리), `packs`(무리), `boss`(우두머리)의 좌표는 그 던전 지역 안이다.
+- 나머지 칸: `minLv` 이 레벨부터 들어간다, `perDay` 하루에 들어가는 횟수(자정에 새로), `timeS` 제한 시간(초, 넘기면 실패하고 밖으로), `exitS` 우두머리를 잡은 뒤 밖으로 나가기까지(초), `reward` 끝냈을 때 각자 우편으로 받는 보상(`Reward`), `dropRar`·`dropLv` 끝냈을 때 각자 받는 장비의 가장 낮은 등급(`RARITIES`의 번호)과 장비 레벨. 던전의 우두머리 몬스터에는 `boss: true`를 붙이지 않는다(그것은 들판의 필드 보스: 사람 수에 따라 체력이 늘고 내려친다).
 - 땅은 지역마다 틀이 깔고 게임의 `look.ground`가 칠한다(5절). 던전의 바닥을 다르게 하려면 `ground`에서 그 지역의 좌표일 때 다른 색을 주거나, `scenery`에서 바닥 판을 조금 위(y 0.02쯤)에 깐다.
 - 들어가기는 문 곁에서 던전 창의 '들어가기'(명령 `{ t: 'dungeon', id }`)다.
 
@@ -710,7 +713,7 @@ export function initBonfire(): void {
 ```
 
 - `startServer(port, …)`는 `{ port, game, close() }`를 돌려준다(포트 0이면 `port`가 고른 포트). 시험의 끝에 `await server.close()`.
-- 가짜 클라이언트 `connect(port, 이름, 토큰, onMsg?)`(`@engine/testing`)는 접속한 피어를 돌려준다: `id`, `name`, `lv`, 받은 안내문 `sys`(이름의 목록), `send(메시지)`, 그리고 `ws`(끊을 때 `ws.close()`). 기다릴 때는 `until(() => 조건)`, `sleep(ms)`. 모양은 `engine/test/harness.ts`의 `Peer`.
+- 가짜 클라이언트 `connect(port, 이름, 토큰, onMsg?)`(`@engine/testing`)는 접속한 피어를 돌려준다. 토큰은 영문·숫자·`-`로 16~64자여야 저장된 캐릭터로 이어진다(아니면 손님으로 들어가 저장되지 않는다). 피어는 `id`, `name`, `lv`, 받은 안내문 `sys`(이름의 목록), `send(메시지)`, 그리고 `ws`(끊을 때 `ws.close()`). 기다릴 때는 `until(() => 조건)`, `sleep(ms)`. 모양은 `engine/test/harness.ts`의 `Peer`.
 - 틀의 가짜 클라이언트는 틀의 메시지만 읽는다. 게임의 메시지(`world`, `me`)는 `connect`의 넷째 인자로 받는다.
 - 시험에서 플레이어의 행동은 명령으로 낸다: `g.command(p, { t: '명령', … })`. 틀의 명령은 `engine/shared/protocol.ts`의 `ClientMsg`에 모두 있다(예: `{ t: 'attack', id }`, `{ t: 'skill', n }`, `{ t: 'class', id }`, `{ t: 'dungeon', id }`, `{ t: 'craft', id }`, `{ t: 'buy', id }`).
 - 서버 없이 규칙만 볼 때는 `new Game({ plugins: [installSample] })`로 만들고 `g.tick(초)`로 시간을 흘린다. 기술의 효과만 내려면 `g.combat.cast(플레이어, 기술 id, 대상)`(대상이 없으면 `undefined`. 쿨다운·사거리는 보지 않는다. 예: `engine/test/fx/skills.test.ts`).

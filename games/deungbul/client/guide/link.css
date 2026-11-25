@@ -16,3 +16,4 @@
 @media (max-width: 720px) { #classPick:not([hidden]) ~ #guideLink { display: none; } }
 /* 좁은 화면에서 메뉴나 가방 창이 떠 있는 동안에도 숨는다: 창이 화면 폭을 다 써서 단추가 목록의 글자를 가린다 */
 @media (max-width: 720px) { body:has(#menu:not([hidden])) #guideLink, body:has(#bag:not([hidden])) #guideLink { display: none; } }
+body:has(#wmap:not([hidden])) #guideLink { display: none; }
