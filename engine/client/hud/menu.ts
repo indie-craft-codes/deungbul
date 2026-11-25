@@ -11,6 +11,7 @@ import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { UiKey } from '../i18n/ko';
 import { send } from '../net';
 import { S } from '../state';
+import { gearIcon, itemIcon } from './icons';
 import { addNotices } from './notify';
 
 const ui = { panel: $('menu'), tabs: $('menuTabs'), list: $('menuList'), gold: $('menuGold'), btn: $('menuBtn') };
@@ -254,6 +255,9 @@ function gearRow(g: Gear, worn: boolean): HTMLElement[] {
   }
   // 가방의 줄은 단추가 셋뿐이라 이름 옆에 둔다 (줄이 낮아져 한 화면에 더 많이 보인다)
   const r = row(title, optsEl(label.opts), buttons, 'gear ' + (worn ? '' : 'gside ') + label.cls);
+  // 장비의 그림(무기·갑옷은 바탕 아이템, 반지 같은 것은 칸의 그림): 이름 줄의 맨 앞
+  const pic = gearIcon(g, S.me?.cls ?? '');
+  if (pic) title.prepend(pic);
   r.dataset.uid = String(g.uid);
   if (!worn) { const what = r.querySelector<HTMLElement>('.what'); what?.classList.add('tap'); what?.addEventListener('click', toggle); }
   if (act.enhUid === g.uid && !act.enhWait) {
@@ -345,7 +349,12 @@ function drawMail(): void {
   const loc = L(), mail = S.meta.mail;
   if (!mail.length) { ui.list.append(el('note', t('mailEmpty'))); return; }
   ui.list.append(button(t('claimAll'), () => send({ t: 'mailClaim', id: 0 })));
-  for (const m of [...mail].reverse()) ui.list.append(row(loc.fmt.mailTitle(m.k, m.a), optsEl([rewardText(m.r), goodsText(m.r)]), [button(t('claim'), () => send({ t: 'mailClaim', id: m.id }))]));
+  for (const m of [...mail].reverse()) {
+    const r = row(loc.fmt.mailTitle(m.k, m.a), optsEl([rewardText(m.r), goodsText(m.r)]), [button(t('claim'), () => send({ t: 'mailClaim', id: m.id }))]);
+    const pic = itemIcon('ui:mail');
+    if (pic) r.querySelector('.iname')?.prepend(pic);
+    ui.list.append(r);
+  }
 }
 
 function drawDaily(): void {

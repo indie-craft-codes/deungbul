@@ -7,6 +7,25 @@ import { onFrame, onSlow } from '../bus';
 import { L, LOCALES, onLangChange, setLang, t } from '../i18n';
 import type { UiKey } from '../i18n/ko';
 import { S } from '../state';
+import { itemIcon } from './icons';
+
+/** 재화의 그림('cur:gold', 'cur:second')을 글자 앞에 한 번 붙인다. 게임의 모듈이 시트를 등록한 뒤에야 있으므로 그릴 때마다 보고, 붙였으면 그만 본다 */
+const placed = new Map<string, HTMLElement>();
+function placeCurrencyIcons(): void {
+  for (const [key, at] of [['cur:gold', ui.gold], ['cur:second', ui.coin]] as const) {
+    let pic = placed.get(key);
+    if (!pic) {
+      // 게임이 css로 감춘 표시(등불지기의 #coin)에는 붙이지 않는다
+      if (!at.hidden && getComputedStyle(at).display === 'none') continue;
+      const made = itemIcon(key, '', 'sm');
+      if (!made) continue;
+      pic = made;
+      at.before(pic);
+      placed.set(key, pic);
+    }
+    pic.hidden = at.hidden; // 두 번째 재화를 쓰지 않는 게임에서는 표시와 함께 숨는다
+  }
+}
 
 /** 화면의 요소들. initMe에서 잡는다 (게임이 자기 창을 붙인 뒤여도 되게, 모듈이 읽히는 때에 잡지 않는다) */
 let ui: Record<'hpb' | 'xpb' | 'hpt' | 'lv' | 'status' | 'myName' | 'tgt' | 'tname' | 'thp' | 'tbar' | 'gold' | 'coin', HTMLElement>;
@@ -123,4 +142,5 @@ export function hudSlow(_now: number): void {
   const coin = loc.fmt.coinHave(me.sparks);
   ui.coin.hidden = !coin;
   ui.coin.textContent = coin;
+  placeCurrencyIcons();
 }

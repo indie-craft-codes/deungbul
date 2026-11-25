@@ -2,7 +2,7 @@
 // 새 몬스터나 장비를 더하면 아래 표에 한 줄을 더한다 (몬스터는 빠뜨리면 컴파일이 실패한다).
 import * as THREE from 'three';
 import type { ItemId, MonsterId } from '../../shared/defs';
-import { addItemSheet, type ArmorLook, type BladeLook, limb, makeBlob, makeHumanoid, mat, type Model, type MonsterBuilder, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco } from '@engine/client';
+import { $, addIconSheet, addItemSheet, itemIcon, type ArmorLook, type BladeLook, limb, makeBlob, makeHumanoid, mat, type Model, type MonsterBuilder, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco } from '@engine/client';
 
 const G = {
   wisp: new THREE.IcosahedronGeometry(0.42, 0), halo: new THREE.IcosahedronGeometry(0.7, 0),
@@ -103,8 +103,16 @@ export function initModels(): void {
   for (const [id, look] of Object.entries(BLADES)) registerBlade(id, look);
   for (const [id, look] of Object.entries(ARMORS)) registerArmor(id, look);
   // 아이템 그림: 소모품과 재료를 한 장에 담은 시트(public/items/sheet.jpg, 3열 × 2행, 한 칸 256px). 위 줄 왼쪽부터의 차례
-  addItemSheet('./items/sheet.jpg', 3, 2, ['potion', 'tonic', 'hide', 'iron', 'ashcore', 'dust'] satisfies ItemId[]);
-  // 장비: 검 넷(검을 드는 직업에게만. 활·지팡이의 그림은 따로 등록한다)과 갑옷 둘 (public/items/gear.jpg, 3열 × 2행)
-  addItemSheet('./items/gear.jpg', 3, 2, ['sword1', 'sword2', 'sword3', 'sword4'] satisfies ItemId[], 'sword');
-  addItemSheet('./items/gear.jpg', 3, 2, [null, null, null, null, 'armor1', 'armor2'] satisfies (ItemId | null)[]);
+  // 그림 시트 넷 (public/items/, 투명 배경 webp). 칸의 차례는 위 줄 왼쪽부터
+  addItemSheet('./items/sheet.webp', 3, 2, ['potion', 'tonic', 'hide', 'iron', 'ashcore', 'dust'] satisfies ItemId[]);
+  // 무기는 직업의 손 모양마다 그림이 다르다: 검(전사), 활(궁수), 지팡이(마법사). 갑옷은 모두에게
+  addItemSheet('./items/gear.webp', 3, 2, ['sword1', 'sword2', 'sword3', 'sword4'] satisfies ItemId[], 'sword');
+  addItemSheet('./items/gear.webp', 3, 2, [null, null, null, null, 'armor1', 'armor2'] satisfies (ItemId | null)[]);
+  addItemSheet('./items/hands.webp', 4, 2, ['sword1', 'sword2', 'sword3', 'sword4'] satisfies ItemId[], 'bow');
+  addItemSheet('./items/hands.webp', 4, 2, [null, null, null, null, 'sword1', 'sword2', 'sword3', 'sword4'] satisfies (ItemId | null)[], 'staff');
+  // 장신구(떨어진 장비의 칸), 재화, 우편
+  addIconSheet('./items/trinkets.webp', 3, 2, ['slot:ring', 'slot:amulet', 'slot:charm', 'cur:gold', 'cur:second', 'ui:mail']);
+  // 불씨는 이 게임의 표시(#sparks)로 그린다: 그 앞에 그림
+  const sparks = $('sparks'), pic = itemIcon('cur:second', '', 'sm');
+  if (sparks && pic) sparks.before(pic);
 }
