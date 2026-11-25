@@ -1,6 +1,5 @@
 // 통신 계층: 접속과 세션(이름, 저장 키, 대화, 속도 제한)을 맡고, 게임 명령은 Game에 넘긴다.
 // 위치와 전투 결과는 서버만 정하고, 클라이언트는 "무엇을 하고 싶다"만 보낸다.
-import { createHash } from 'node:crypto';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,8 +11,11 @@ import { PROTOCOL, type ServerMsg } from '../../shared/protocol';
 import { CHAT_MAX, NAME_MAX, SNAP_EVERY, TICK_MS } from '../../shared/world';
 import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
+import { Sanctions, normIp } from '../game/systems/sanctions';
 import { MemoryStore, type Store } from '../store';
 import { isClean, mask, tidy } from '../text';
+import { CLOSE, createAdmin, type Admin, type AdminOptions } from './admin';
+import { Handoff, hashToken } from './handoff';
 import { REPORT_GAP_MS, REPORT_LINES } from './moderation';
 import { buildFrame, snapshotFor } from './snapshot';
 import { serveStatic } from './static';
@@ -97,12 +99,13 @@ export interface Metrics {
 const AWAY_AT_CLOSE = 'awayAtClose';
 /** 목록 없이 되살릴 때: 가장 늦게 저장된 캐릭터와 이만큼 안에 저장된 것만 '끄기 직전에 사냥 중이던 것'으로 본다 */
 const AWAY_RESTORE_MS = 90_000;
-export interface Running { port: number; game: Game; metrics(): Metrics; close(): Promise<void> }
-export interface Options { bots?: number; store?: Store; game?: GameOptions; maxClients?: number; maxPerIp?: number; maxAway?: number; /** 빌드된 화면(dist/)의 자리. 주지 않으면 저장소 뿌리의 dist/ */ staticDir?: string }
+export interface Running { port: number; game: Game; metrics(): Metrics; close(): Promise<void>; /** 관리자 통로 (net/admin.ts) */ admin: Admin }
+export interface Options { bots?: number; store?: Store; game?: GameOptions; maxClients?: number; maxPerIp?: number; maxAway?: number; /** 빌드된 화면(dist/)의 자리. 주지 않으면 저장소 뿌리의 dist/ */ staticDir?: string; /** 관리자 통로의 설정 (net/admin.ts) */ admin?: AdminOptions }
 
 export function startServer(port: number, opts: Options = {}): Promise<Running> {
   const store = opts.store ?? new MemoryStore();
   const game = new Game(opts.game);
+  const handoff = new Handoff(game); // 기기 옮기기: 월드 저장에 자기 칸을 두므로 월드를 읽기 전에 만든다
   const saved = store.loadWorld();
   if (saved) game.importWorld(saved);
   for (let i = 0; i < (opts.bots ?? 0); i++) game.players.spawn('Bot' + (i + 1), true);
@@ -163,7 +166,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const m = { since: performance.now(), tick: [] as number[], flush: [] as number[], lag: [] as number[], bytes: 0, msgs: 0 };
 
   const dist = opts.staticDir ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist');
-  const httpServer = http.createServer(serveStatic(dist));
+  const statics = serveStatic(dist);
+  // 관리자 통로(POST /admin)가 먼저 보고, 아니면 정적 파일. 통로는 아래에서 연결 목록을 다룰 함수들이 다 생긴 뒤에 만든다
+  let admin: Admin | null = null;
+  const httpServer = http.createServer((req, res) => { if (!admin?.route(req, res)) statics(req, res); });
   const wss = new WebSocketServer({ server: httpServer, maxPayload: 1024 });
 
   function send(c: Client, msg: ServerMsg): void {
@@ -225,7 +231,11 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   function join(c: Client, m: Record<string, unknown>): void {
     // 토큰이 있으면 저장된 캐릭터를 이어받는다
     const token = typeof m.token === 'string' && /^[A-Za-z0-9-]{16,64}$/.test(m.token) ? m.token : null;
-    c.key = token && createHash('sha256').update(token).digest('hex');
+    // 다른 기기로 옮겨 간 토큰은 받지 않는다. 옮겨 온 기기의 토큰은 그 캐릭터의 저장 키를 가리킨다 (net/handoff.ts)
+    c.key = token && handoff.keyFor(hashToken(token));
+    if (token && !c.key) { send(c, sys('handedOff')); c.ws.close(CLOSE.handedOff, 'moved'); return; }
+    const ban = game.sanctions.banned(c.key, c.ip);
+    if (ban) { send(c, sys('banned', Sanctions.minutesLeft(ban, game.now()))); c.ws.close(CLOSE.banned, 'banned'); c.key = null; return; }
     if (c.key) {
       const old = byKey.get(c.key);
       // 밀려난 연결은 캐릭터와의 끈을 끊는다: 닫히기 전에 보낸 명령이 옛 캐릭터를 움직이거나 저장을 덮어쓰지 못하게
@@ -297,6 +307,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     const text = clean(raw, CHAT_MAX);
     const now = Date.now(), me = person(c);
     if (!text || now - me.lastChat < CHAT_GAP_MS) return;
+    const mute = game.sanctions.muted(c.key, c.ip);
+    if (mute) { send(c, sys('muted', Sanctions.minutesLeft(mute, game.now()))); return; }
     me.lastChat = now;
     // 한 주소가 보내는 양과 서버 전체의 양에도 끝이 있다. 넘친 말은 전하지 않고, 말한 사람에게만 알린다
     let ip = chatIp.get(c.ip);
@@ -322,6 +334,29 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     send(c, sys('reported', target.ent.name));
   }
 
+  /** 기기 옮기기 (net/handoff.ts): 코드를 만들어 주거나, 받은 코드로 이 연결에 새 토큰을 준다 */
+  function handoffMsg(c: Client, m: Record<string, unknown>): void {
+    if (m.a === 'make') {
+      if (!c.key) { send(c, sys('handoffGuest')); return; }
+      c.hadSave = true; savePlayer(c); // 옮길 캐릭터가 저장되어 있어야 다른 기기가 이어받는다
+      const { code, ms } = handoff.make(c.key);
+      send(c, { t: 'handoff', code, ms });
+      return;
+    }
+    if (m.a !== 'use') return;
+    const r = handoff.use(m.code, ['i:' + c.ip, who(c)], c.key);
+    if ('token' in r) {
+      // 옛 기기의 연결을 끊는다: 그 기기는 옛 토큰을 지운다 (engine/client/main.ts). 자동 사냥 중이었으면 자리 비움 사냥으로 남아 새 기기가 이어받는다
+      const old = byKey.get(r.key);
+      if (old && old !== c) { send(old, sys('handedOff')); old.ws.close(CLOSE.handedOff, 'moved'); dropClient(old); old.ent = null; }
+      saveTogether(); // 별칭이 곧바로 저장되게 (saveDirty가 켜져 있다)
+      console.log(`[server] 기기 옮기기: ${store.loadPlayer(r.key)?.name ?? '?'} (${c.ip})`);
+      send(c, { t: 'handoff', token: r.token });
+    } else if ('left' in r) send(c, sys('handoffBad', r.left));
+    else if ('wait' in r) send(c, sys('handoffWait', Math.ceil(r.wait / 60000)));
+    else send(c, sys('handoffSelf'));
+  }
+
   function handle(c: Client, raw: unknown): void {
     if (!clients.has(c)) return; // 이미 정리된 연결(밀려났거나 끊긴 것)이 보낸 것은 버린다
     if (typeof raw !== 'object' || raw === null) return;
@@ -333,6 +368,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (m.t === 'rename') rename(c, e, m.name);
     else if (m.t === 'chat') chat(c, e, m.text);
     else if (m.t === 'report') report(c, e, m.id);
+    else if (m.t === 'handoff') handoffMsg(c, m);
     else game.command(e, m); // 나머지는 게임 명령
   }
 
@@ -353,6 +389,34 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     }
   }
 
+  /** 관리자의 내보내기·차단: 그 저장 키(또는 주소)의 연결을 안내문과 함께 끊고, 자리 비움 사냥 중인 캐릭터도 내보낸다 (자동 사냥으로 남지 않게) */
+  function dropBy(by: { key?: string; ip?: string }, code: number, k: MsgKey, ...a: MsgArg[]): number {
+    let n = 0;
+    for (const c of [...clients]) {
+      if (!(by.key ? c.key === by.key : normIp(c.ip) === by.ip)) continue;
+      send(c, sys(k, ...a));
+      if (c.ent) c.ent.auto = false;
+      c.ws.close(code, k);
+      dropClient(c); c.ent = null; n++;
+    }
+    for (const [key, e] of [...away]) {
+      if (!(by.key ? key === by.key : normIp(awayIp.get(key) ?? '') === by.ip)) continue;
+      e.auto = false;
+      saveEnt(key, e); away.delete(key); awayIp.delete(key);
+      game.players.leave(e.id);
+      broadcast(sys('left', e.name)); n++;
+    }
+    return n;
+  }
+  admin = createAdmin({
+    game, store,
+    people: () => [
+      ...[...clients].filter((c) => c.ent).map((c) => ({ name: c.ent!.name, key: c.key, ip: c.ip, ent: c.ent!, away: false })),
+      ...[...away].map(([key, e]) => ({ name: e.name, key, ip: awayIp.get(key) ?? '', ent: e, away: true })),
+    ],
+    drop: dropBy, broadcast, save: () => { game.saveDirty = true; saveTogether(); },
+  }, opts.admin);
+
   wss.on('connection', (ws, req) => {
     // 터널(같은 PC의 프록시)을 거쳐 온 연결은 실제 주소가 머리말에 들어 있다. 바깥에서 직접 온 연결의 머리말은 믿지 않는다
     const direct = req.socket.remoteAddress ?? '', local = direct === '127.0.0.1' || direct === '::1' || direct === '::ffff:127.0.0.1';
@@ -362,6 +426,9 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     // 주인 없이 사냥 중인 캐릭터도 자리를 차지한다
     if (clients.size + away.size >= maxClients) { full(); return; }
     if ((perIp.get(ip) ?? 0) >= maxPerIp) { full(); return; }
+    // 주소가 막혀 있으면 접속 절차 전에 끊는다
+    const ipBan = game.sanctions.banned(null, ip);
+    if (ipBan) { ws.send(JSON.stringify(sys('banned', Sanctions.minutesLeft(ipBan, game.now())))); ws.close(CLOSE.banned, 'banned'); return; }
     perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
     const c: Client = {
       ws, ent: null, known: new Set(), mine: new Map(), tokens: MSG_BURST, alive: true, key: null, ip, hadSave: false,
@@ -502,6 +569,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       if (!online.has(k) && now - p.used >= LIMIT_KEEP_MS) people.delete(k);
     }
     for (const [k, b] of chatIp) if ((now - b.at) / 1000 * CHAT_IP_PER_S >= CHAT_IP_BURST) chatIp.delete(k);
+    handoff.sweep();
     for (const c of clients) {
       if (!c.alive) { c.ws.terminate(); continue; }
       c.alive = false;
@@ -517,8 +585,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         port: typeof addr === 'object' && addr ? addr.port : port,
         game,
         metrics,
+        admin: admin!,
         close: () => new Promise<void>((ok) => {
           stopped = true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(autosave);
+          admin?.close();
           // 끄기 전에 전원과 월드를 저장한다
           for (const c of clients) savePlayer(c);
           for (const [key, e] of away) saveEnt(key, e);

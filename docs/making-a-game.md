@@ -755,6 +755,41 @@ export function initBonfire(): void {
 
 - 서버와 화면은 같은 순간에 바뀌지 않는다. 열려 있던 탭은 새로고침 전까지 옛 화면이다(7절의 프로토콜 번호).
 
+### 운영: 관리자 명령
+
+틀에 있으므로 모든 게임이 저절로 갖는다. 서버가 돌고 있는 **같은 PC에서** 보낸다.
+
+```
+npm run admin -- [게임] <명령> [인자 …]
+npm run admin -- who
+npm run admin -- sample ban 아무개 7d 욕설
+PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
+```
+
+| 명령 | 하는 일 |
+|---|---|
+| `who` | 지금 월드에 있는 사람(자리 비움 사냥 포함): 레벨, 주소, 저장 키 앞부분, 말 막힘 |
+| `find 이름` | 한 캐릭터의 저장·차단·말 막기·미뤄 둔 지급 |
+| `ban 이름 기간 [사유]` / `unban 이름` | 저장 키로 접속 차단. 접속 중이면 끊는다(4003), 자동 사냥으로 남지 않는다. 손님(저장되지 않는 캐릭터)은 `banip`으로 |
+| `banip 주소 기간 [사유]` / `unbanip 주소` | 접속 주소 차단 (`::ffff:1.2.3.4`와 `1.2.3.4`는 같다) |
+| `mute 이름 기간 [사유]` / `unmute 이름` | 말 막기: 전체 대화와 길드 대화(`gchat`). 막힌 사람은 안내문을 받는다. 손님은 주소로 막힌다 |
+| `kick 이름 [사유]` | 내보내기(4002). 화면은 '다시 접속' 단추로만 붙는다 |
+| `announce [--chat] 글` | 전체 공지: 가운데 알림(`adminNotice`), `--chat`이면 대화창 한 줄(`adminChat`) |
+| `give 이름 무엇 수` / `take 이름 무엇 수` | 지급·회수. 무엇: `gold`, `sparks`, `exp` 또는 아이템 id. 지갑·가방을 지나 장부에 원인 `admin`으로 적힌다(`WHY.admin`). 접속해 있지 않으면 다음 접속 때 적용한다. 회수는 가진 만큼만 |
+| `reports [수] [--all]` / `resolve 신고id [메모]` | 신고 목록(처리하지 않은 것, `--all`이면 모두)과 처리 표시 |
+| `audit [수]` | 최근 관리자 행동 기록 |
+
+- 기간: 숫자(시간), `30m`·`12h`·`7d`, `perm`(영구).
+- 게임은 첫 인자(게임 폴더 이름) 또는 `GAME`, 포트는 `PORT` 또는 `deploy.json`의 `port`. 토큰은 저장 파일 옆의 `admin.token`(저장 파일은 `DB` 또는 `deploy.json`의 `db`). 다른 곳이면 `ADMIN_TOKEN_FILE`. 기록에 남는 이름은 `ADMIN_BY`, 없으면 PC의 사용자 이름.
+- 서버 쪽: `POST /admin`(`engine/server/net/admin.ts`). 같은 PC의 연결만, 터널·프록시의 머리(`CF-Connecting-IP`, `X-Forwarded-For`, `Forwarded`, `CDN-Loop` …)나 브라우저의 머리(`Origin`, `Referer`, `Sec-Fetch-*`)가 있으면 404, 토큰이 틀리면 401. 토큰 파일은 서버가 켜질 때마다 새로 만들고 끌 때 지운다. 저장하지 않는 서버(`DB=memory`)는 통로를 열지 않는다.
+- 기록: 모든 명령(읽기만 하는 것도)이 저장 파일 옆 `admin-audit.log`에 처리 전·후 두 줄(JSON)로 남는다. 끄는 설정은 없고, 적지 못하면 명령을 하지 않는다. 끝부분 300줄은 월드 저장에도 남는다.
+- 제재와 미뤄 둔 지급, 신고 처리 표시는 월드 저장의 `sanctions` 칸에 있다: 다시 켜도 남는다. 규칙은 `engine/server/game/systems/sanctions.ts`(`g.sanctions`). 귓말이 생기면 그 명령 이름을 거기의 `CHAT_COMMANDS`에 더한다.
+- 경제 지표: `npm run econ`의 원인 목록에 `admin` 줄이 따로 보인다.
+
+### 기기 옮기기
+
+메뉴의 '기기' 탭(어느 게임에서나 맨 뒤, `MenuTab.always`)에서 일회용 코드(8자, 10분, 한 번)를 받고, 다른 기기의 직업 고르기 창(새 캐릭터의 첫 화면)이나 같은 탭에 넣으면 그 기기가 새 토큰을 받아 이어받는다. 옛 토큰은 그 뒤로 4001로 거절된다. 계정이 아니다: [accounts.md](accounts.md)의 '기기 옮기기'. 서버 `engine/server/net/handoff.ts`, 화면 `engine/client/hud/device.ts`.
+
 ## 10. 자주 걸리는 곳
 
 | 증상 | 까닭과 고치는 법 |

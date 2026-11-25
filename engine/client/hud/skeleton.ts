@@ -147,6 +147,12 @@ export const SKELETON = `
       <h2 data-i18n="chooseClass"></h2>
       <div id="classList"></div>
       <p class="note" data-i18n="classHint"></p>
+      <button type="button" class="plain" id="claimOpen" data-i18n="deviceUseLink" hidden></button>
+      <form class="mfield" id="claimForm" autocomplete="off" hidden>
+        <input id="claimInput" type="text" maxlength="12" autocapitalize="characters" spellcheck="false" data-i18n-placeholder="deviceUseHint" data-i18n-aria="deviceUseHead">
+        <button type="submit" data-i18n="deviceUse"></button>
+      </form>
+      <p class="note" id="claimMsg" hidden></p>
       <button type="button" class="plain" id="classClose" data-i18n="close"></button>
     </div>
   </div>

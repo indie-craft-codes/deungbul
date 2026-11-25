@@ -24,6 +24,8 @@ import type { Game } from '../game';
 
 /** 지갑이 다루는 재화: 엔티티의 칸 이름과 같다 */
 export type Cur = 'gold' | 'sparks' | 'exp';
+/** 지갑이 다루는 재화의 목록 (관리자 지급처럼 이름으로 고를 때) */
+export const CURS: readonly Cur[] = ['gold', 'sparks', 'exp'];
 /**
  * 수급 배율: 그 사람이 그 재화를 그 원인으로 n만큼 받을 때 곱할 값 (1이면 그대로, 0이면 주지 않는다).
  * 값을 돌려주기만 해야 한다: 받기 전에 양을 미리 묻는 데도 불리므로(amount), 여기서 하루 몫을 깎거나 하면 두 번 깎인다. 몫을 쓰는 일은 사건(monsterKilled 등)에서 한다
@@ -41,6 +43,8 @@ export const WHY = {
   salvage: 'cmd:salvage', bagUp: 'cmd:bagUp', reforge: 'cmd:reforge',
   /** 주운 장비를 그 자리에서 분해한 것 (명령이 아니라 처치 사건 안에서 일어난다) */
   autoSalvage: 'autoSalvage',
+  /** 관리자가 준 것과 거둔 것 (관리자 통로: systems/sanctions.ts). 장부에 따로 보여 경제 지표에서 '관리자' 몫으로 가려진다 */
+  admin: 'admin',
 } as const;
 /** 원인 이름에 넣어도 되는 낱말: 영문자, 숫자, 밑줄만 (장부의 줄을 가르는 글자가 섞이지 않게) */
 const WORD = /^[A-Za-z0-9_]{1,24}$/;

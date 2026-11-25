@@ -121,6 +121,9 @@ export type ClientMsg =
   | { t: 'autoSalvage'; rar: number }
   /** 골드를 내고 장비 가방을 넓힌다 */
   | { t: 'bagUp' }
+  /** 기기 옮기기 (engine/server/net/handoff.ts): make는 이 캐릭터를 옮길 일회용 코드를 달라는 것, use는 다른 기기에서 받은 코드로 이어받는 것 */
+  | { t: 'handoff'; a: 'make' }
+  | { t: 'handoff'; a: 'use'; code: string }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -192,4 +195,7 @@ export type ServerMsg =
   | { t: 'sys'; k: MsgKey; a?: MsgArg[] }
   | { t: 'pong'; c: number }
   | { t: 'full' }
+  /** 기기 옮기기: 만든 코드와 남은 시간(ms), 또는 이어받은 기기에 주는 새 토큰 (받은 기기는 그것을 간직하고 다시 접속한다) */
+  | { t: 'handoff'; code: string; ms: number }
+  | { t: 'handoff'; token: string }
   | Added<ServerMsgs>;

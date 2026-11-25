@@ -47,6 +47,8 @@
 | 재화 | 저장을 읽을 때도 `CURRENCIES.max`(`g.wallet.limit`), 첫 재화의 이름은 이름표 `currency1` | 이름표 | `fx/wallet` |
 | 그림 | `addIconSheet(src, 열, 행, keys, hand?)`, `itemIcon(열쇠, 직업)`, `gearIcon`: 시트의 한 칸을 가방·상점·대장간·물약 단추·메뉴의 장비와 우편·내 정보 창의 재화에 그린다. 열쇠는 아이템 id, `slot:칸`, `cur:gold`·`cur:second`, `ui:mail`. hand를 주면 그 손 모양의 직업에게만(무기). 칸 뒤의 바탕은 `--icon-bg`. 없는 것은 글자만 | 등불지기: 투명 webp 넷(소모품·재료, 검·갑옷, 활·지팡이, 장신구·재화·우편), 모두 340KB | `fx/icons`(4개), 화면(PC, 전사·궁수·마법사) |
 | 운영 스크립트를 게임마다 | `games/<게임>/deploy.json`(port, db, dist, bots, pages)을 `scripts/deploy.mjs`가 읽고, `restart.sh`·`publish.sh`(`GAME=`)와 `pilot.mjs`(인자)가 그것으로 돈다. `restart.sh`의 `DRY=1` | 자기 `deploy.json` | 예제로 실제 재시작(깃발로 저장하고 끄기 → 다시 띄우기) |
+| 관리자 통로 (2026-11-26) | `engine/server/net/admin.ts`(`POST /admin`, 같은 PC·토큰 파일·터널/브라우저 머리 거절·끌 수 없는 기록 `admin-audit.log`), `engine/server/game/systems/sanctions.ts`(`g.sanctions`: 차단(키·주소, 기간·영구·사유), 말 막기(전체·길드), 지급·회수(`WHY.admin`, 접속하지 않은 캐릭터는 다음 접속 때), 신고 처리 표시. 월드 저장 `sanctions` 칸), CLI `npm run admin -- [게임] <명령>` (`scripts/admin.mjs`). 연결 끊기 코드: 4001 옮겨 감, 4002 내보냄, 4003 차단 | 없음(모든 게임이 갖는다) | `fx/admin` |
+| 기기 옮기기 (2026-11-26) | `engine/server/net/handoff.ts`: 일회용 코드(8자, 10분, 한 번, 틀린 시도는 주소·사람별 10분에 5번), 토큰 해시 → 저장 키의 별칭과 물러난 토큰(월드 저장 `handoff` 칸). 저장 키(Ent.pid)는 바꾸지 않는다. 화면: 메뉴의 '기기' 탭(`MenuTab.always`: `setMenuTabs`를 써도 보인다), 직업 고르기 창의 '코드로 이어받기', `net.ts`의 `adoptToken`·`forgetToken` | 없음 | `fx/handoff`, 화면 |
 | 시험을 게임마다 | `test/all.ts`가 `games/<게임>/test/all.ts`를 저마다의 tsconfig로 돌린다. `node scripts/game.mjs test [게임] [이름…]` | 자기 `test/all.ts`와 `tsconfig.json` | `npm test` |
 
 ## 틀 수리의 진행 (점검 보고의 묶음 A~F: 모두 끝)
@@ -242,7 +244,8 @@
 
 1. `npm run typecheck`, `npm test`(두 번), `npm run test:engine`, `npm run build`가 모두 통과한 뒤에 커밋한다.
 2. 화면이 바뀌었으면 확인용 서버(`PORT=3013 DB=<임시 폴더>/check.db npm start`)를 띄워 PC·폰, 한국어·영어로 본다. 운영 서버(3001)에는 시험 캐릭터를 만들지 않는다(확인은 손님으로만).
-3. 서버 코드가 바뀌었으면 `data/game.db`를 `data/backup/`에 복사하고 `bash scripts/restart.sh <로그>`(저장하고 끈 뒤 다시 띄운다. 터널은 끊지 않는다). 로그에서 저장 파일의 경로와 '자리 비움 사냥을 이어 갑니다'(그때 사냥 중이던 사람이 있으면)를 본다.
-4. 화면은 `bash scripts/publish.sh`. 공개 주소 둘이 200인지 본다.
-5. 서버를 끄는 깃발 `stop.flag`는 **저장 파일의 옆**에 놓인다. 확인용 서버는 DB마다 폴더를 따로 주거나 `DB=memory`로 띄우고 프로세스를 포트로 찾아 직접 끈다(운영의 3001은 건드리지 않는다).
-6. 되돌리기: `git revert` 뒤 `npm run build`와 `bash scripts/restart.sh`. 저장 형식은 가르는 동안 바뀌지 않았으므로 저장 파일에 손댈 것이 없다(백업으로 되돌릴 수도 있다).
+3. 서버를 다시 켜면 관리자 토큰 파일(`admin.token`, 저장 파일 옆)이 새로 생긴다. 관리자 명령은 `npm run admin -- [게임] <명령>`(making-a-game.md 9절). `engine/server/index.ts`의 `runServer`는 `run.ts`를 감싸 저장 폴더를 관리자 통로에 알린다: `run.ts`가 `startServer`에 `admin: { dir }`을 직접 넘기게 되면 그 감싸기를 없앤다.
+4. 서버 코드가 바뀌었으면 `data/game.db`를 `data/backup/`에 복사하고 `bash scripts/restart.sh <로그>`(저장하고 끈 뒤 다시 띄운다. 터널은 끊지 않는다). 로그에서 저장 파일의 경로와 '자리 비움 사냥을 이어 갑니다'(그때 사냥 중이던 사람이 있으면)를 본다.
+5. 화면은 `bash scripts/publish.sh`. 공개 주소 둘이 200인지 본다.
+6. 서버를 끄는 깃발 `stop.flag`는 **저장 파일의 옆**에 놓인다. 확인용 서버는 DB마다 폴더를 따로 주거나 `DB=memory`로 띄우고 프로세스를 포트로 찾아 직접 끈다(운영의 3001은 건드리지 않는다).
+7. 되돌리기: `git revert` 뒤 `npm run build`와 `bash scripts/restart.sh`. 저장 형식은 가르는 동안 바뀌지 않았으므로 저장 파일에 손댈 것이 없다(백업으로 되돌릴 수도 있다).

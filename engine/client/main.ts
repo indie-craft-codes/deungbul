@@ -22,7 +22,7 @@ import { setParty, showInvite } from './hud/party';
 import { speak, updateFloats } from './hud/tags';
 import { applyDom, onLangChange, t } from './i18n';
 import { axis, initInput } from './input';
-import { connect, initNet, send } from './net';
+import { connect, forgetToken, initNet, send } from './net';
 import { isBlocked } from './social';
 import type { Look } from './scene/view';
 import { S } from './state';
@@ -59,10 +59,14 @@ onMsg('full', () => showGate('full', true));
 
 // 끊기면 스스로 다시 접속한다 (폰 화면이 꺼졌다 켜지거나 통신이 잠깐 끊긴 경우). 간격은 2초에서 시작해 15초까지 늘린다.
 // 다른 곳에서 접속해 밀려났거나(4000) 서버가 가득 찼으면(1013) 혼자 다시 붙지 않는다.
+// 운영의 까닭으로 끊긴 것도 그렇다 (engine/server/net/admin.ts의 CLOSE): 다른 기기로 옮겨 갔으면(4001) 이 기기의 토큰을 지우고, 내보내졌으면(4002) 단추로만 다시 붙고, 막혔으면(4003) 단추도 두지 않는다.
 let retryMs = 2000;
 let retryTimer = 0;
 function lost(code: number): void {
   if (code === 4000 || code === 1013) { showGate(code === 1013 ? 'full' : 'disconnected', true); return; }
+  if (code === 4001) { forgetToken(); showGate('gateHandedOff', true); return; }
+  if (code === 4002) { showGate('gateKicked', true); return; }
+  if (code === 4003) { showGate('gateBanned', false); return; }
   showGate('reconnecting', true);
   const again = () => {
     if (document.hidden) { document.addEventListener('visibilitychange', again, { once: true }); return; } // 화면이 꺼져 있으면 켜질 때까지 기다린다

@@ -92,7 +92,7 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
    * sparks, sparkBonus: 두 번째 재화의 칸 이름. 재화를 일반화하지 않기로 했다 (계획 7절, 점검 11번). 저장·지갑·장부·우편의 칸 이름으로 남는다 /
    */
   const KNOWN: Record<string, string[]> = {
-    crypto: ['engine/server/net/server.ts'],
+    crypto: ['engine/server/net/admin.ts', 'engine/server/net/handoff.ts'], // node:crypto (관리자 토큰, 기기 옮기기의 코드와 토큰)
     sparks: ['engine/shared/defaults.ts', 'engine/server/game/systems/ledger.ts', 'engine/server/game/systems/mail.ts', 'engine/server/game/systems/players.ts', 'engine/server/game/systems/wallet.ts'],
     sparkBonus: ['engine/server/game/game.ts', 'engine/server/game/systems/players.ts'],
   };
