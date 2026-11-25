@@ -9,7 +9,7 @@ import type { UiKey } from '../i18n/ko';
 import { S } from '../state';
 
 /** 화면의 요소들. initMe에서 잡는다 (게임이 자기 창을 붙인 뒤여도 되게, 모듈이 읽히는 때에 잡지 않는다) */
-let ui: Record<'hpb' | 'xpb' | 'hpt' | 'lv' | 'status' | 'myName' | 'tgt' | 'tname' | 'thp' | 'tbar' | 'gold', HTMLElement>;
+let ui: Record<'hpb' | 'xpb' | 'hpt' | 'lv' | 'status' | 'myName' | 'tgt' | 'tname' | 'thp' | 'tbar' | 'gold' | 'coin', HTMLElement>;
 let skillUi: { name: HTMLElement; cd: HTMLElement; time: HTMLElement; button: HTMLButtonElement }[] = [];
 
 // ---------- 접속 화면 ----------
@@ -32,7 +32,7 @@ export function setMyName(name: string): void { ui.myName.textContent = name; }
 export function initMe(): void {
   ui = {
     hpb: $('hpb'), xpb: $('xpb'), hpt: $('hpt'), lv: $('lv'), status: $('status'), myName: $('myName'),
-    tgt: $('tgt'), tname: $('tname'), thp: $('thp'), tbar: $('tbar'), gold: $('gold'),
+    tgt: $('tgt'), tname: $('tname'), thp: $('thp'), tbar: $('tbar'), gold: $('gold'), coin: $('coin'),
   };
   // 기술 버튼
   const skillsEl = $('skills');
@@ -119,4 +119,8 @@ export function hudSlow(_now: number): void {
   ui.hpt.textContent = `${me.hp} / ${me.maxHp}`;
   ui.lv.textContent = loc.fmt.level(me.lv, isClassId(me.cls) ? loc.classes[me.cls].name : '');
   ui.gold.textContent = loc.fmt.gold(me.gold);
+  // 두 번째 재화: 이름표에 currency2가 있는 게임만. 자기 표시를 따로 그리는 게임(등불지기)은 css로 #coin을 감춘다
+  const coin = loc.fmt.coinHave(me.sparks);
+  ui.coin.hidden = !coin;
+  ui.coin.textContent = coin;
 }

@@ -74,11 +74,18 @@ export class View {
     return m;
   }
 
+  /**
+   * 땅: 지역마다 한 장씩 깔고 색은 게임의 ground가 칠한다. 들판(0번 지역)은 사방으로 40, 다른 지역(던전 …)은 10 넓게 깔아 가장자리 너머가 비어 보이지 않게 한다.
+   * 게임이 던전의 바닥을 따로 깔면(등불지기의 scenery) 그것이 조금 위에 놓여 이 땅을 덮는다
+   */
   private buildGround(paint: NonNullable<Look['ground']>): void {
     const rnd = rng(7);
-    // 들판(0번 지역)의 범위. 월드보다 사방으로 40씩 넓게 깔아서 가장자리 너머가 비어 보이지 않게 한다
-    const { x0: MIN_X, x1: MAX_X, z0: MIN_Z, z1: MAX_Z } = MAP.areas[0];
-    const w = MAX_X - MIN_X + 80, h = MAX_Z - MIN_Z + 80;
+    MAP.areas.forEach((area, i) => this.groundFor(area, i === 0 ? 40 : 10, paint, rnd));
+  }
+
+  private groundFor(area: { x0: number; x1: number; z0: number; z1: number }, pad: number, paint: NonNullable<Look['ground']>, rnd: () => number): void {
+    const { x0: MIN_X, x1: MAX_X, z0: MIN_Z, z1: MAX_Z } = area;
+    const w = MAX_X - MIN_X + pad * 2, h = MAX_Z - MIN_Z + pad * 2;
     let g: THREE.BufferGeometry = new THREE.PlaneGeometry(w, h, Math.round(w / 1.82), Math.round(h / 1.82));
     g.rotateX(-Math.PI / 2);
     g.translate((MIN_X + MAX_X) / 2, 0, (MIN_Z + MAX_Z) / 2);

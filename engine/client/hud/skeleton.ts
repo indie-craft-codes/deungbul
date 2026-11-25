@@ -19,7 +19,7 @@ export const SKELETON = `
       <div class="bar hp"><i id="hpb"></i></div>
       <div class="bar xp"><i id="xpb"></i></div>
       <div id="buffs" hidden></div>
-      <div class="row"><span class="num" id="hpt"></span></div>
+      <div class="row"><span class="num" id="hpt"></span><span class="coin" id="coin" hidden></span></div>
       <div class="row"><span class="gold" id="gold"></span></div>
       <div class="row">
         <span class="num" id="status"></span>

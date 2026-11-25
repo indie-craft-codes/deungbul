@@ -39,10 +39,20 @@ check(SRC.length >= 90 && CSS.length >= 1, `틀의 소스를 읽었다 (ts ${SRC
     .filter((f) => fs.existsSync(path.join(root, f)));
   const keys = (o: unknown): string[] => (o && typeof o === 'object' ? Object.keys(o) : []);
   const ids = new Set<string>();
+  /**
+   * 본보기 내용: 등불지기, 예제, 시험용 내용. 이 셋의 id가 틀의 문자열에 있으면 실패다.
+   * 그 밖의 게임(새로 만든 게임)의 id는 틀이 이미 자기 뜻으로 쓰는 낱말('hex', 'heal' …)과 우연히 같을 수 있다: 그때는 알리기만 한다.
+   * 틀이 그 새 게임의 id를 적었는지는 가리지 못하지만, 틀이 특정 게임에 기대는 것은 본보기 셋이 지킨다
+   */
+  const REFERENCE = ['games/deungbul/shared/content/index.ts', 'games/sample/shared/content/index.ts', 'engine/test/fx/shared/content/index.ts'];
+  const refIds = new Set<string>();
+  /** id → 그 id를 가진 게임 */
+  const owners = new Map<string, string[]>();
   for (const f of CONTENTS) {
     const c = await import(pathToFileURL(path.join(root, f)).href) as Content;
-    for (const t of ['CLASSES', 'MONSTERS', 'ITEMS', 'SKILL_DEFS', 'DUNGEONS', 'DAILIES', 'STATS', 'BUILD_STATS']) keys(c[t]).forEach((k) => ids.add(k));
-    [...c.MAP.areas.map((a) => a.id), ...c.RARITIES.map((r) => r.id), ...c.GEAR_SLOTS].forEach((k) => ids.add(k));
+    const add = (k: string) => { ids.add(k); if (REFERENCE.includes(f)) refIds.add(k); owners.set(k, [...(owners.get(k) ?? []), f.split('/').slice(0, 2).join('/')]); };
+    for (const t of ['CLASSES', 'MONSTERS', 'ITEMS', 'SKILL_DEFS', 'DUNGEONS', 'DAILIES', 'STATS', 'BUILD_STATS']) keys(c[t]).forEach(add);
+    [...c.MAP.areas.map((a) => a.id), ...c.RARITIES.map((r) => r.id), ...c.GEAR_SLOTS].forEach(add);
   }
   check(CONTENTS.length >= 1 && CONTENTS.includes('engine/test/fx/shared/content/index.ts'), `내용의 id를 모은 곳: ${CONTENTS.join(', ')}`);
   /**
@@ -54,8 +64,11 @@ check(SRC.length >= 90 && CSS.length >= 1, `틀의 소스를 읽었다 (ts ${SRC
   const ENGINE_WORDS: Record<string, string> = { weapon: '아이템 종류·칸', armor: '아이템 종류·칸', potion: '아이템 종류', guard: '효과 이름', crit: '효과 이름', hp: '효과 이름', ring: '미니맵 모양', bolt: '쏘는 것의 모양', dust: '자리 비움의 셈 칸', log: '대화 기록 창의 id' };
   /** 기본값 묶음은 내용 그 자체다 (게임이 받아 쓰는 기본 칸·등급 id): 검사하지 않는다 */
   const CONTENT_FILES = ['engine/shared/defaults.ts'];
-  const hits = SRC.filter((f) => !CONTENT_FILES.includes(f)).flatMap((f) => strings(body(f)).filter((s) => ids.has(s) && !(s in ENGINE_WORDS)).map((s) => `${f}: '${s}'`));
+  const all = SRC.filter((f) => !CONTENT_FILES.includes(f)).flatMap((f) => strings(body(f)).filter((s) => ids.has(s) && !(s in ENGINE_WORDS)).map((s) => ({ f, s })));
+  const hits = all.filter((h) => refIds.has(h.s)).map((h) => `${h.f}: '${h.s}'`);
   for (const h of [...new Set(hits)]) console.log('  ' + h);
+  // 새 게임의 id가 틀의 낱말과 같을 뿐인 것: 실패가 아니다. 헷갈리지 않게 이름을 바꾸기를 권한다
+  for (const n of [...new Set(all.filter((h) => !refIds.has(h.s)).map((h) => `${h.f}: '${h.s}' (${owners.get(h.s)?.join(', ')}의 id와 같은 틀의 낱말. 잡지 않는다)`))]) console.log('  알림 ' + n);
   check(ids.size >= 40 && hits.length === 0, `틀의 소스가 게임의 내용 id(${ids.size}개)를 문자열로 적지 않는다 (틀의 낱말 ${Object.keys(ENGINE_WORDS).length}개는 뺀다)`);
   // 검사가 실제로 잡아내는가: 몬스터 id를 견주는 줄은 잡고, 주석 속의 id와 id가 아닌 문자열은 잡지 않는다
   const probe = (src: string) => strings(stripComments(src)).filter((x) => ids.has(x) && !(x in ENGINE_WORDS));

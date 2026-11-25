@@ -158,6 +158,13 @@
   "1 +undefined→+undefined: 기대 약 NaN골드",
   "2 +undefined→+undefined: 기대 약 NaN골드"
  ],
+ "fmt.coinHave": [
+  "efe882c1c513e571",
+  "불씨 NaN",
+  "불씨 0",
+  "불씨 1",
+  "불씨 2"
+ ],
  "fmt.contrib": [
   "504546cb805bfcdc",
   "기여 undefined",

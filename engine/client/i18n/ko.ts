@@ -307,6 +307,8 @@ export const koBase = (n: ContentNames) => {
       unblocked: (name: string) => `${name} 님의 차단을 풀었습니다.`,
       partyInvite: (name: string) => `${name} 님이 파티에 초대했습니다. 함께 잡으면 보상을 같이 받습니다.`,
       gold: (n: number) => `${G.name} ${num(n)}`,
+      /** 가진 두 번째 재화 (내 정보 창). 그 재화를 쓰지 않는 게임(이름표에 currency2가 없다)은 빈 문자열: 표시가 숨는다 */
+      coinHave: (n: number) => (coin ? `${coin.name} ${num(n)}` : ''),
       price: (n: number) => `${num(n)}${G.unit}`,
       have: (n: number, max: number) => `${n} / ${max}`,
       potions: (n: number) => `물약 ${n}`,

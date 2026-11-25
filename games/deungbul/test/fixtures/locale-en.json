@@ -158,6 +158,13 @@
   "1 +undefined→+undefined: about NaN gold expected",
   "2 +undefined→+undefined: about NaN gold expected"
  ],
+ "fmt.coinHave": [
+  "2df738fa40f6a61f",
+  "Sparks NaN",
+  "Sparks 0",
+  "Sparks 1",
+  "Sparks 2"
+ ],
  "fmt.contrib": [
   "7679cf1a7b600f6a",
   "Contribution undefined",

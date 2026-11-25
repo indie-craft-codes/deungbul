@@ -238,6 +238,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       unblocked: (name) => `You unmuted ${name}.`,
       partyInvite: (name) => `${name} invited you to a party. Party members share rewards for kills.`,
       gold: (n) => `${G.name} ${num(n)}`,
+      coinHave: (n) => (coin ? `${coin.name} ${num(n)}` : ''),
       price: (n) => `${num(n)} ${G.unit}`,
       have: (n, max) => `${n} / ${max}`,
       autoOnEarly: (lv) => `Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level ${lv}.)`,

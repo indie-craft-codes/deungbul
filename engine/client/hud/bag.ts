@@ -52,11 +52,13 @@ export function renderBag(): void {
   // 장비 가방의 든 수와 칸 수. 가득 찼으면 알린다: 새로 떨어지는 장비가 버려진다
   ui.list.append(row(t('tabGear'), loc.fmt.have(gearCount, S.bag.max), ''));
   if (gearFull()) { const warn = document.createElement('div'); warn.className = 'note gwarn'; warn.setAttribute('role', 'status'); warn.textContent = S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull'); ui.list.append(warn); }
-  ui.list.append(head(t('bagPotions')));
-  for (const id of ids) if (itemDef(id).kind === 'potion') ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), ''));
-  ui.list.append(head(t('bagMats')));
+  // 물약과 재료: 그 종류의 아이템이 없는 게임은 머리줄도 두지 않는다
+  const potions = ids.filter((id) => itemDef(id).kind === 'potion'), mats = ids.filter((id) => itemDef(id).kind === 'mat');
+  if (potions.length) ui.list.append(head(t('bagPotions')));
+  for (const id of potions) ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), ''));
+  if (mats.length) ui.list.append(head(t('bagMats')));
   // 재료마다 어떤 몬스터가 떨어뜨리는지 적어 준다 (어디서 구하는지 화면 어디에도 없었다). 분해로 나오는 가루는 그렇게 적는다
-  for (const id of ids) if (itemDef(id).kind === 'mat') ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), id === SALVAGE.item ? t('salvageSource') : sourceText(id)));
+  for (const id of mats) ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), id === SALVAGE.item ? t('salvageSource') : sourceText(id)));
 }
 
 /** 가방이 가득 찼으면 가방 단추를 눈에 띄게 한다 (style.css의 #bagBtn.alert) */

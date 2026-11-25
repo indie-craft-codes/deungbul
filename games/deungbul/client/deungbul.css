@@ -20,6 +20,8 @@
 .bar.glow i { background: var(--gold); }
 .bar.res i { background: #7fd68a; }
 .spark { color: var(--gold); font-weight: 700; font-size: 12px; }
+/* 불씨는 이 게임의 표시(#sparks)로 그린다: 틀의 두 번째 재화 표시는 감춘다 */
+#coin { display: none; }
 #raid { width: 300px; max-width: 100%; display: flex; flex-direction: column; gap: 5px; text-align: center; border-color: var(--gold); }
 #raid.active { border-color: var(--hp); }
 #raid .rtext { font-weight: 700; color: var(--gold); }
