@@ -155,7 +155,7 @@ export const textKo = {
     title: '아이템과 상점',
     itemHead: '아이템',
     itemCols: ['아이템 (검 / 활 / 지팡이)', '종류', '효과', '등급', '상점 값', '얻는 곳'],
-    kinds: { weapon: '무기', armor: '갑옷', potion: '물약', mat: '제작 재료', token: '부적' } satisfies Record<ItemDef['kind'], string>,
+    kinds: { weapon: '무기', armor: '갑옷', potion: '물약', mat: '제작 재료', token: '특별한 물건' } satisfies Record<ItemDef['kind'], string>,
     fxDamage: (n: string) => `공격 피해 +${n}%`,
     fxGuard: (n: string) => `받는 피해 -${n}%`,
     fxHeal: (n: string) => `체력 ${n} 회복`,
@@ -226,11 +226,11 @@ export const textKo = {
     ],
     enhanceRisk: (from: string, prev: string, charm: string, dust: string, bind: string) => [
       `+${prev}까지는 실패해도 단계가 그대로이고, 그 시도에 낸 골드만 잃습니다.`,
-      `+${from}부터는 실패하면 한 단계 내려갑니다 (+${prev} 아래로는 내려가지 않습니다). '${charm}'을 쓰면 그 시도는 실패해도 내려가지 않습니다. 부적은 내려갈 수 있는 시도마다 성공이든 실패든 한 장 들고, 출석 7일째와 강화 일일 임무로 받습니다. 장비 창에서 쓰기를 켜고 끌 수 있습니다.`,
+      `+${from}부터는 실패하면 한 단계 내려갑니다 (+${prev} 아래로는 내려가지 않습니다). '${charm}'을 쓰면 그 시도는 실패해도 내려가지 않습니다. 보호석은 내려갈 수 있는 시도마다 성공이든 실패든 한 개 들고, 출석 7일째와 강화 일일 임무로 받습니다. 장비 창에서 쓰기를 켜고 끌 수 있습니다.`,
       `+${from} 이상의 강화는 한 번에 장비 가루가 더 듭니다: ${dust}.`,
       `+${bind} 이상 강화한 장비는 거래소에 올릴 수 없습니다 (귀속).`,
     ],
-    totalDropNote: (from: string) => `아래 표의 누적 기대값은 +${from}부터 실패해 내려간 단계를 다시 오르는 값까지 넣은 것입니다 (부적을 쓰지 않을 때).`,
+    totalDropNote: (from: string) => `아래 표의 누적 기대값은 +${from}부터 실패해 내려간 단계를 다시 오르는 값까지 넣은 것입니다 (보호석을 쓰지 않을 때).`,
     reforgeHead: '재련',
     reforgeRules: (max: string, gold: string, dust: string) => [
       '장비 창에서 옵션 하나를 골라 다시 뽑습니다. 옵션의 종류와 값이 함께 바뀌고, 다른 옵션과 같은 종류는 나오지 않습니다.',
@@ -368,7 +368,7 @@ export const textKo = {
     },
     glowChange: (delta: string) => `밝기 ${delta}`,
     laterTypes: (names: string) => `(첫 물결. 2번째 물결부터 ${names}도 섞입니다)`,
-    expByLv: (k: string, lv10: string, lv20: string) => `(경험치에 레벨×레벨×${k}을 더함: Lv 10이면 경험치 ${lv10}, Lv 20이면 ${lv20})`,
+    expByLv: (k: string, lv10: string, lv20: string) => `(경험치에 그 사람의 레벨업 필요량의 ${k}를 더함: Lv 10이면 경험치 ${lv10}, Lv 20이면 ${lv20})`,
     floorNote: (floor: string) => `(${floor} 아래로는 내려가지 않음)`,
     rules: [
       '등탑 근처에 사람이 한 명도 없으면 그 시각의 습격은 열리지 않습니다 (밝기도 깎이지 않습니다).',

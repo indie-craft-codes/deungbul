@@ -2,7 +2,7 @@
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
 // 수치는 games/deungbul/shared/content/growth.ts에 있다.
-import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, REFORGE, SALVAGE, STAT_IDS, isGearSlot, isItemId, isStat, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, REFORGE, SALVAGE, STAT_IDS, isGearSlot, isItemId, isStat, optValue, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { WHY } from './wallet';
@@ -234,10 +234,17 @@ export class GearSys {
     if (!g.wallet.take(p, 'gold', gold, WHY.reforge)) { g.notify(p, 'noGold'); return; }
     if (dust > 0 && isItemId(dustId)) g.bag.takeItem(p, dustId, dust, WHY.reforge);
     const pool = STAT_IDS.filter((s) => !it.opts.some((o, j) => j !== i && o[0] === s));
-    const stat = pool[Math.floor(this.random() * pool.length)] ?? it.opts[i][0];
-    it.opts[i] = [stat, rollOpt(stat, it.rar, it.lv, this.random())];
+    const old = it.opts[i];
+    // 전과 똑같은 옵션이 나오면 다시 굴린다 (다섯 번까지): 값을 치르고 아무것도 바뀌지 않는 일을 줄인다 (검토 6)
+    let next: [Stat, number] = old;
+    for (let k = 0; k < 5 && next[0] === old[0] && next[1] === old[1]; k++) {
+      const stat = pool[Math.floor(this.random() * pool.length)] ?? old[0];
+      next = [stat, rollOpt(stat, it.rar, it.lv, this.random())];
+    }
+    it.opts[i] = next;
     it.rf = n + 1;
-    g.notify(p, 'reforged', stat, it.rf, REFORGE.max);
+    // 화면에 보이는 값(강화 단계를 넣은 값)으로 알린다
+    g.notify(p, 'reforged', next[0], it.rf, REFORGE.max, old[0], optValue(it, old[1]), optValue(it, next[1]));
     this.changed(p);
   }
 }

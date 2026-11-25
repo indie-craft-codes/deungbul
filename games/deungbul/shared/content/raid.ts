@@ -35,8 +35,8 @@ export interface RaidConfig {
   winGlow: number; loseGlow: number;
   /** 막아 냈을 때 참여자 각자가 받는 보상 */
   rewardSparks: number; rewardExp: number;
-  /** 경험치 보상에 더하는 레벨² 배수: 보상 경험치 = rewardExp + rewardExpPerLv2 × 레벨² (raidExp) */
-  rewardExpPerLv2: number;
+  /** 경험치 보상에 더하는 몫: 보상 경험치 = rewardExp + 그 사람의 레벨업 필요량 × rewardNeedShare (raidExp) */
+  rewardNeedShare: number;
   /** 첫 물결의 적 */
   types: readonly MonsterId[];
   /** 2번째 물결부터 types에 섞이는 센 적 */
@@ -59,7 +59,7 @@ export const RAID: RaidConfig = {
   towerHpBase: 240, towerHpPerGlow: 3, // 밝기가 바닥이어도 혼자 막아 볼 시간이 있게 넉넉히 잡는다
   drainPerS: 0.6, // 적 6마리가 붙어도 아무도 안 막으면 1분쯤 버틴다
   winGlow: 10, loseGlow: -10, // 한 번 진다고 여러 번 바친 것이 사라지지 않게 한다
-  rewardSparks: RAID_REWARD.sparks, rewardExp: RAID_REWARD.exp, rewardExpPerLv2: RAID_REWARD.expPerLv2, // 값은 economy.ts에 있다
+  rewardSparks: RAID_REWARD.sparks, rewardExp: RAID_REWARD.exp, rewardNeedShare: RAID_REWARD.needShare, // 값은 economy.ts에 있다
   types: ['slime', 'slime', 'wisp', 'wolf'],
   // 약한 적뿐이라 Lv 14가 1분 안에 막던 것(후반부 검토): 뒤 물결에 멧돼지·고블린·길 잃은 병사가 섞인다
   laterTypes: ['boar', 'goblin', 'lost_soldier'],
@@ -73,8 +73,8 @@ export const raidFoes = (players: number, cfg: Pick<RaidConfig, 'base' | 'perPla
 /** 그 밝기에서 시작할 때의 등탑 내구 (싸우는 채널 하나당) */
 export const raidTowerHp = (glow: number, cfg: Pick<RaidConfig, 'towerHpBase' | 'towerHpPerGlow'> = RAID): number => cfg.towerHpBase + glow * cfg.towerHpPerGlow;
 
-/** 막아 낸 사람 하나가 받는 경험치 (그 사람의 레벨로) */
-export const raidExp = (lv: number, cfg: Pick<RaidConfig, 'rewardExp' | 'rewardExpPerLv2'> = RAID): number => cfg.rewardExp + cfg.rewardExpPerLv2 * lv * lv;
+/** 막아 낸 사람 하나가 받는 경험치. need: 그 사람의 지금 레벨의 레벨업 필요량 (서버는 p.need, 도감은 needFor(레벨)) */
+export const raidExp = (need: number, cfg: Pick<RaidConfig, 'rewardExp' | 'rewardNeedShare'> = RAID): number => cfg.rewardExp + Math.round(need * cfg.rewardNeedShare);
 
 /** 다음 습격 시작 시각(ms)을 구한다. now 이후의 가장 가까운 정해진 시각이다. */
 export function nextRaidAt(now: number, cfg: Pick<RaidConfig, 'hours' | 'everyMin'>): number {

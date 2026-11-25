@@ -1,7 +1,7 @@
 // 통합 테스트 (이 게임의 규칙): 등불지기의 서버를 띄우고 클라이언트를 붙여서 등탑, 메인 퀘스트, 습격, 그 저장을 확인한다.
 // 접속·이동·대화·전투·자리 비움 사냥처럼 틀의 것은 engine/test/server.test.ts가 본다. 여기서는 같은 차례로 준비만 하고(이름 바꾸기, 슬라임 한 마리) 이 게임의 것만 검사한다.
 import { createHash } from 'node:crypto';
-import { FORGE, GLOW_START, RAID, nextRaidAt, raidExp } from '../shared/defs';
+import { FORGE, GLOW_START, RAID, needFor, nextRaidAt, raidExp } from '../shared/defs';
 import { TOWER } from '../shared/world';
 import { MemoryStore } from '@engine/server';
 import { check, sleep, until } from '@engine/testing';
@@ -99,7 +99,7 @@ try {
   const at = (h: number, m: number) => new Date(2026, 10, 23, h, m, 0, 0).getTime();
   check(nextRaidAt(at(19, 30), RAID) === at(20, 0) && nextRaidAt(at(20, 0), RAID) === at(21, 0) && nextRaidAt(at(9, 10), RAID) === at(12, 0) && nextRaidAt(at(23, 30), RAID) === at(RAID.hours[0], 0) + 86400000, '습격 시각표: 정해진 시각의 정각에 열리고, 마지막 시각이 지나면 다음 날 첫 시각이다');
   { const h = [...RAID.hours].sort((x, y) => x - y), gaps = h.map((x, i) => (h[(i + 1) % h.length] - x + 24) % 24 || 24); check(Math.max(...gaps) <= 3, `습격 사이가 3시간을 넘지 않는다 (가장 긴 틈 ${Math.max(...gaps)}시간)`); }
-  check(raidExp(20) > raidExp(10) && raidExp(10) > RAID.rewardExp && RAID.laterTypes.length > 0, `습격 경험치는 레벨이 높을수록 많다 (Lv 10 ${raidExp(10)}, Lv 20 ${raidExp(20)}), 뒤 물결에는 센 적이 섞인다`);
+  check(raidExp(needFor(20)) > raidExp(needFor(10)) && [3, 5, 14, 22].every((lv) => raidExp(needFor(lv)) < needFor(lv) * 0.2) && RAID.laterTypes.length > 0, `습격 경험치는 레벨이 높을수록 많지만 어느 레벨에서나 한 번에 레벨의 20% 아래다 (Lv 3 ${raidExp(needFor(3))}, Lv 10 ${raidExp(needFor(10))}, Lv 20 ${raidExp(needFor(20))}), 뒤 물결에는 센 적이 섞인다`);
   check(nextRaidAt(at(19, 32), { hours: [], everyMin: 5 }) === at(19, 35), '습격 간격 설정이 시각표보다 먼저다');
 
   // 습격: 시작하면 적이 나타나고, 다 막으면 밝기가 오르고 보상을 받는다

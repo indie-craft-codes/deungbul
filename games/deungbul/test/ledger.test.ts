@@ -196,12 +196,12 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   tower(a);
   Object.assign(g.raid.cfg, { waveAtS: [0] });
   cmd(a, { t: 'stop' }); // 방금 움직인 사람이어야 인원으로 센다
-  const lvA = a.lv; // 보상으로 레벨이 오를 수 있어 미리 적어 둔다 (경험치는 막아 낼 때의 레벨로)
+  const needA = a.need; // 보상으로 레벨이 오를 수 있어 미리 적어 둔다 (경험치는 막아 낼 때의 레벨로)
   g.raid.start();
   run(0.2);
   for (const m of [...g.ents.values()]) if (m.swarm && !m.dead) { at(a, m.x + 1, m.z); g.combat.damage(a, m, 1e6, false); }
   run(0.2);
-  check(g.raid.phase === 'idle' && sum(g.ledger.rows(), 'sparks', 'raid') === g.raid.cfg.rewardSparks && sum(g.ledger.rows(), 'exp', 'raid') === raidExp(lvA, g.raid.cfg), '습격 보상은 틱 안에서 받아도 raid로 적힌다');
+  check(g.raid.phase === 'idle' && sum(g.ledger.rows(), 'sparks', 'raid') === g.raid.cfg.rewardSparks && sum(g.ledger.rows(), 'exp', 'raid') === raidExp(needA, g.raid.cfg), '습격 보상은 틱 안에서 받아도 raid로 적힌다');
 
   // 쓰러짐과 채널 이동: 재화는 그대로다
   { const m = mob(c, 'wolf'); const had = JSON.stringify(census([c])); g.combat.damage(m, c, 1e6, false); check(JSON.stringify(census([c])) === had, '쓰러져도 잃는 것이 없다'); }

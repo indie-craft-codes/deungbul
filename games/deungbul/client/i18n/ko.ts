@@ -34,7 +34,7 @@ const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?:
   potion: { name: '물약' },
   tonic: { name: '진한 물약' },
   dust: { name: '장비 가루', info: '장비를 분해하면 나오는 재료' },
-  ward: { name: '강화 보호 부적', info: '+7 이상에서 강화에 실패해도 단계가 내려가지 않습니다 (한 번에 한 장)' },
+  ward: { name: '강화 보호석', info: '+7 이상에서 강화에 실패해도 단계가 내려가지 않습니다 (시도마다 한 개). 출석 7일째, 강화 일일 임무, 지하묘 깊은 곳에서 받습니다' },
 };
 const itemName = itemNameOf(items);
 const towers: Record<string, string> = { first: '첫불 마을 등탑', ash: '잿빛 숲 등탑', crypt: '지하묘 입구' };

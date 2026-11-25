@@ -192,7 +192,7 @@ export class Raid {
         const p = g.ents.get(id);
         if (!p) continue;
         fighters.push(p);
-        const exp = raidExp(p.lv, c);
+        const exp = raidExp(p.need, c);
         g.notify(p, 'raidReward', g.wallet.amount(p, 'sparks', c.rewardSparks, ECON_WHY.raid), g.wallet.amount(p, 'exp', exp, ECON_WHY.raid));
         g.players.grant(p, exp, c.rewardSparks, ECON_WHY.raid);
       }

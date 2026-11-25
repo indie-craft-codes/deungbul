@@ -2,7 +2,7 @@
 // 틀의 탭은 일곱(MENU_TABS의 id: gear, build, mail, daily, market, guild, rank)이다. 게임은 보일 탭과 차례를 고르고(setMenuTabs), 자기 탭을 더한다(addMenuTab).
 // 일일 임무와 출석이 모두 없는 게임에서는 일일 탭이 저절로 숨는다.
 // 창의 높이와 탭 줄, 닫기 단추의 자리는 고정이고(style.css의 #menu) 내용만 창 안에서 스크롤한다.
-import { ATTEND, BAG_UP, BUILD, FORGES, RECIPES, SHOPS, SHOP_STOCK, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, REFORGE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
+import { ATTEND, BAG_UP, BUILD, FORGES, RECIPES, SHOPS, SHOP_STOCK, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, REFORGE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, STAT_IDS, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
 import { onMsg, onSlow } from '../bus';
@@ -164,7 +164,10 @@ function enhanceButton(g: Gear): HTMLButtonElement {
   const me = S.me, loc = L(), cost = ENHANCE.gold(g.plus, g.rar), dust = ENHANCE.dust(g.plus, g.rar), maxed = g.plus >= enhanceMax(g), pct = Math.round(ENHANCE.rate(g.plus) * 100);
   // 실패하면 내려가는 단계(ENHANCE.dropFrom 이상)는 ⚠를 붙인다. 부적을 쓰기로 했고 들고 있으면 붙이지 않는다
   const risky = !maxed && g.plus >= ENHANCE.dropFrom && !(act.useCharm && charms() > 0);
-  const label = maxed ? t('enhanceMaxed') : (risky ? '⚠ ' : '') + (dust > 0 ? loc.fmt.enhanceDust(cost, dust, pct) : loc.fmt.enhanceCost(cost, pct));
+  const useWard = !maxed && g.plus >= ENHANCE.dropFrom && act.useCharm && charms() > 0;
+  // 귀속되기 직전(강화하면 거래소에 못 올리게 되는 단계)이면 🔗를 붙인다
+  const binds = !maxed && !isSupply(g) && ENHANCE.bindPlus > 0 && g.plus + 1 === ENHANCE.bindPlus;
+  const label = maxed ? t('enhanceMaxed') : (risky ? '⚠ ' : '') + (binds ? '🔗 ' : '') + (dust > 0 ? loc.fmt.enhanceDust(cost, dust, pct) : loc.fmt.enhanceCost(cost, pct)) + (useWard ? loc.fmt.enhanceWard(1) : '');
   return button(label, () => {
     act.enhUid = g.uid; act.enhWait = true;
     send({ t: 'enhance', uid: g.uid, charm: act.useCharm });
@@ -176,7 +179,7 @@ const charms = (): number => (isItemId(ENHANCE.charm) ? S.me?.items[ENHANCE.char
 function enhanceRiskEl(): HTMLElement | null {
   if (ENHANCE.dropFrom > ENHANCE.max) return null;
   const box = el('note grisk');
-  box.append(L().fmt.enhanceRisk(ENHANCE.dropFrom, charms()));
+  box.append(L().fmt.enhanceRisk(ENHANCE.dropFrom, charms(), ENHANCE.bindPlus));
   if (isItemId(ENHANCE.charm)) {
     const b = button(t(act.useCharm ? 'charmOn' : 'charmOff'), () => { act.useCharm = !act.useCharm; renderMenu(); });
     b.classList.add('gcharm');
@@ -200,6 +203,7 @@ function reforgeEl(g: Gear): HTMLDivElement {
   if (n >= REFORGE.max) { box.append(el('note', loc.fmt.reforgeDone(n, REFORGE.max))); return box; }
   const gold = REFORGE.gold(g.rar, n), dust = REFORGE.dust(g.rar), poor = !me || me.gold < gold || (me.items[SALVAGE.item as ItemId] ?? 0) < dust;
   box.append(el('note', loc.fmt.reforgeNote(n, REFORGE.max, gold, dust)));
+  if (g.opts.length >= STAT_IDS.length) box.append(el('note', loc.fmt.reforgeValueOnly));
   const acts = el('acts');
   g.opts.forEach(([k, v], i) => {
     const text = loc.gear.stats[k](Math.round(optValue(g, v) * 10) / 10), armed = act.refArm === i;
@@ -372,6 +376,9 @@ function drawGear(): void {
   ui.list.append(el('baghead', loc.fmt.power(m.power)));
   // 보급형과 만들거나 주운 장비의 차이는 늘 보이게 둔다 (예전에는 남는 장비가 없을 때만 떴다)
   ui.list.append(el('note', loc.fmt.gearHint(ENHANCE.supplyMax, ENHANCE.max, SELLS_GEAR, RECIPES.length > 0 && FORGES.length > 0)));
+  // 강화의 위험과 부적 쓰기 단추: 낀 장비를 강화할 때 바로 보이게 낀 장비 위에 둔다 (검토 6: 아래에 있어 스크롤해야 보였다)
+  const risk = enhanceRiskEl();
+  if (risk) ui.list.append(risk);
   for (const slot of GEAR_SLOTS) {
     const g = m.gear.find((x) => x.uid === m.worn[slot]);
     if (g) ui.list.append(...gearRow(g, true));
@@ -379,8 +386,6 @@ function drawGear(): void {
   }
   const rest = m.gear.filter((x) => m.worn[x.slot] !== x.uid).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
   ui.list.append(bagHead());
-  const risk = enhanceRiskEl();
-  if (risk) ui.list.append(risk);
   if (act.res) { const ok = GEAR_OK.has(act.res.k), r = el('note gres ' + (ok ? 'ok' : 'fail'), forInput(L().msg[act.res.k](act.res.a))); r.setAttribute('role', 'status'); ui.list.append(r); }
   // 가방이 가득 찼으면 눈에 띄게 알린다: 새로 떨어지는 장비가 조용히 버려진다
   if (m.gear.length >= S.bag.max) { const warn = el('note gwarn', S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull')); warn.setAttribute('role', 'status'); ui.list.append(warn); }
@@ -568,10 +573,14 @@ function drawMarketPost(): void {
   const loc = L(), me = S.me, m = S.meta;
   if (!me || mk.guest) return;
   // 올릴 수 있는 것: 끼고 있지 않고 보급형이 아닌 장비, 그리고 가진 제작 재료
-  const gear = m.gear.filter((x) => m.worn[x.slot] !== x.uid && !isSupply(x) && !x.lock).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
+  // 강화해서 귀속된 장비(ENHANCE.bindPlus 이상)는 고를 수 없게 뺀다 (검토 6: 골라도 서버가 거절하고 그 안내가 창에 가렸다)
+  const bound = (x: Gear): boolean => ENHANCE.bindPlus > 0 && x.plus >= ENHANCE.bindPlus;
+  const gear = m.gear.filter((x) => m.worn[x.slot] !== x.uid && !isSupply(x) && !x.lock && !bound(x)).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
+  const boundN = m.gear.filter((x) => m.worn[x.slot] !== x.uid && bound(x)).length;
   const mats = (Object.keys(ITEMS) as ItemId[]).filter((id) => itemDef(id).kind === 'mat' && (me.items[id] ?? 0) > 0);
   const full = mk.mine.length >= MARKET.maxListings;
   ui.list.append(el('note', loc.fmt.marketFeeInfo(Math.round(MARKET.tax * 100), MARKET.hours)));
+  if (boundN > 0) ui.list.append(el('note', loc.fmt.marketBoundNote(boundN, ENHANCE.bindPlus)));
   if (full) ui.list.append(el('note', loc.msg.marketFull([MARKET.maxListings])));
 
   // 고른 물건이 그사이 사라졌으면(팔았거나 꼈거나 썼으면) 고르기 전으로 돌아간다

@@ -156,7 +156,7 @@ export const textEn: GuideText = {
     title: 'Items and shop',
     itemHead: 'Items',
     itemCols: ['Item (sword / bow / staff)', 'Kind', 'Effect', 'Tier', 'Shop price', 'Where to get it'],
-    kinds: { weapon: 'Weapon', armor: 'Armor', potion: 'Potion', mat: 'Crafting material', token: 'Charm' },
+    kinds: { weapon: 'Weapon', armor: 'Armor', potion: 'Potion', mat: 'Crafting material', token: 'Special item' },
     fxDamage: (n) => `+${n}% attack damage`,
     fxGuard: (n) => `-${n}% damage taken`,
     fxHeal: (n) => `Restores ${n} health`,
@@ -227,11 +227,11 @@ export const textEn: GuideText = {
     ],
     enhanceRisk: (from, prev, charm, dust, bind) => [
       `Up to +${prev}, a failure keeps the step: you only lose the gold for that attempt.`,
-      `From +${from}, a failure drops the gear one step (never below +${prev}). Using a '${charm}' keeps the step even if that attempt fails. A charm is spent on every attempt that could drop, success or failure; you get them on day 7 of attendance and from the daily enhance task. You can turn charm use on or off in the gear tab.`,
+      `From +${from}, a failure drops the gear one step (never below +${prev}). Using a '${charm}' keeps the step even if that attempt fails. A ward stone is spent on every attempt that could drop, success or failure; you get them on day 7 of attendance and from the daily enhance task. You can turn ward stone use on or off in the gear tab.`,
       `Enhancing at +${from} or higher also costs gear dust per attempt: ${dust}.`,
       `Gear enhanced to +${bind} or higher cannot be listed on the market (bound).`,
     ],
-    totalDropNote: (from) => `The expected totals below include climbing back after a failure drops the step from +${from} (without charms).`,
+    totalDropNote: (from) => `The expected totals below include climbing back after a failure drops the step from +${from} (without ward stones).`,
     reforgeHead: 'Reforging',
     reforgeRules: (max, gold, dust) => [
       'In the gear tab, pick one option and reroll it. Both its type and value change, and it never matches another option on the same gear.',
@@ -369,7 +369,7 @@ export const textEn: GuideText = {
     },
     glowChange: (delta) => `Glow ${delta}`,
     laterTypes: (names) => `(first wave; from the 2nd wave ${names} join in)`,
-    expByLv: (k, lv10, lv20) => `(plus level × level × ${k} exp: ${lv10} exp at Lv 10, ${lv20} at Lv 20)`,
+    expByLv: (k, lv10, lv20) => `(plus ${k} of the exp you need for your next level: ${lv10} exp at Lv 10, ${lv20} at Lv 20)`,
     floorNote: (floor) => `(never below ${floor})`,
     rules: [
       'If nobody is near the tower, that raid does not happen (and no glow is lost).',

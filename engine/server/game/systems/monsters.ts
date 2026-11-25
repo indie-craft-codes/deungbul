@@ -2,7 +2,7 @@
 import { CAMPS, LEASH, MONSTERS, MONSTER_AI, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, MONSTER_RANGED, type MonsterId, SLOW_FACTOR } from '../../../shared/defs';
 import { dist, ri, type Ent } from '../entity';
 import type { Game } from '../game';
-import { fieldLayer, notifyLayer } from '../layers';
+import { fieldLayer, isField, notifyLayer } from '../layers';
 
 /** 습격 적이 등탑에 이만큼 다가오면 등탑을 공격한다 */
 /** 몰려온 적이 목표(g.rules.siege)에 이만큼 다가가면 도착한 것이다 (게임의 규칙이 그때 목표에 피해를 센다) */
@@ -135,7 +135,8 @@ export class Monsters {
       const lost = !t || t.layer !== m.layer || dist(m, t) > MONSTER_AI.loseRange || (!m.swarm && Math.hypot(m.x - m.hx, m.z - m.hz) > LEASH);
       if (lost) {
         m.targetId = 0;
-        if (!m.swarm) { m.hp = m.maxHp; m.hitters.clear(); g.movement.goTo(m, m.hx, m.hz); m.homing = Math.hypot(m.x - m.hx, m.z - m.hz) > 2; } // 집으로 돌아가며 회복한다
+        // 들판의 몬스터는 집으로 돌아가며 회복한다. 던전 안의 몬스터는 체력을 그대로 둔다: 쉬어 가는 자동 사냥이 물러설 때마다 우두머리가 다 회복해 끝내 깨지 못하던 것 (검토 6)
+        if (!m.swarm) { if (isField(m.layer)) { m.hp = m.maxHp; m.hitters.clear(); } g.movement.goTo(m, m.hx, m.hz); m.homing = Math.hypot(m.x - m.hx, m.z - m.hz) > 2; }
         return;
       }
       const strike = (): boolean => { if (m.atkCd > 0) return false; m.atkCd = MONSTER_ATTACK_CD; g.combat.damage(m, t, ri(def.dmg[0], def.dmg[1]), false); return true; };

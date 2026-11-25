@@ -417,7 +417,7 @@ function raid(P: Pack): Section {
         drain: num(RAID.drainPerS),
         win: R.glowChange(RAID.winGlow > 0 ? `+${RAID.winGlow}` : String(RAID.winGlow)),
         lose: R.glowChange(String(RAID.loseGlow)) + ' ' + R.floorNote(num(TOWERS[0].floor)),
-        reward: rewardText(P, { exp: RAID.rewardExp, sparks: RAID.rewardSparks }) + ' ' + R.expByLv(num(RAID.rewardExpPerLv2), num(raidExp(10)), num(raidExp(20))),
+        reward: rewardText(P, { exp: RAID.rewardExp, sparks: RAID.rewardSparks }) + ' ' + R.expByLv(pct(RAID.rewardNeedShare), num(raidExp(needFor(10))), num(raidExp(needFor(20)))),
         keep: num(RAID_KEEP_POINTS),
       }),
       ul(R.rules),

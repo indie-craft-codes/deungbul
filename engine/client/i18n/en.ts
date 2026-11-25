@@ -1,9 +1,9 @@
 // English, the engine's share. Must have the same shape as ko.ts (the EngineLocale type enforces it).
 // 이 게임의 문장과 내용의 이름은 games/deungbul/client/i18n/en.ts에 있다. 이 파일은 게임의 파일을 import하지 않고 게임의 낱말을 적지 않는다.
 import { AWAY } from '../../shared/auto';
-import { BUILD, ENHANCE, GUILD, MARKET, PARTY, isItemId } from '../../shared/defs';
+import { BUILD, ENHANCE, GUILD, MARKET, PARTY } from '../../shared/defs';
 import type { BuildStat, ClassId, GearSlot, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, statMod } from '../../shared/defs';
+import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { keyHints, type EngineLocale } from './ko';
 import { SALVAGE } from '../../shared/defs';
@@ -150,9 +150,9 @@ export const enBase = (n: ContentNames): EngineLocale => {
       unequip: 'Remove',
       enhanceMaxed: 'Maxed',
       enhanceFailed: 'Enhance failed · the gear is unchanged',
-      bagCharms: 'Charms',
-      charmOn: 'Use charms: on',
-      charmOff: 'Use charms: off',
+      bagCharms: 'Special items',
+      charmOn: 'Use ward stones: on',
+      charmOff: 'Use ward stones: off',
       reforgeBtn: 'Reforge',
       reforgeClose: 'Hide reforge',
       claim: 'Claim',
@@ -287,10 +287,13 @@ export const enBase = (n: ContentNames): EngineLocale => {
       gearName: (what, rarity, plus, lv) => `${rarity ? rarity + ' ' : ''}${what}${plus > 0 ? ` +${plus}` : ''} (Lv ${lv})`,
       enhanceCost: (gold, pct) => `Enhance · ${num(gold)} ${G.unit} · ${pct}%`,
       enhanceDust: (gold, dust, pct) => `Enhance · ${num(gold)} ${G.unit} · ${itemName(SALVAGE.item)} ${num(dust)} · ${pct}%`,
-      enhanceRisk: (from, charms) => `From +${from}, a failed enhance drops the gear one level (marked ⚠). A ${itemName(ENHANCE.charm)} prevents that · you have ${num(charms)}`,
+      enhanceRisk: (from, charms, bind) => `At +${from} or higher, a failed enhance drops the gear one step (marked ⚠). A ${itemName(ENHANCE.charm)} prevents that and is spent on every such attempt, even a success · you have ${num(charms)} (where to get them: see the bag).${bind > 0 ? ` Gear enhanced to +${bind} or higher cannot be listed on the market (marked 🔗).` : ''}`,
       enhanceDownTo: (plus) => `Enhance failed · dropped to +${plus}`,
-      enhanceKept: (plus) => `Enhance failed · the charm kept it at +${plus}`,
-      reforgeNote: (n, max, gold, dust) => `Reforged ${n} of ${max} · this one costs ${num(gold)} ${G.unit} and ${num(dust)} ${itemName(SALVAGE.item)}. Tap the option to reroll twice (its type and value both change)`,
+      enhanceKept: (plus) => `Enhance failed · the ${itemName(ENHANCE.charm)} kept it at +${plus}`,
+      enhanceWard: (n) => ` · ${n} ${itemName(ENHANCE.charm)}`,
+      marketBoundNote: (n, bind) => `${n} piece${n === 1 ? '' : 's'} of gear enhanced to +${bind} or higher ${n === 1 ? 'is' : 'are'} bound and cannot be listed.`,
+      reforgeValueOnly: 'Every option type is already on this gear, so only the value is rerolled.',
+      reforgeNote: (n, max, gold, dust) => `Reforged ${n} of ${max} · this one costs ${num(gold)} ${G.unit} and ${num(dust)} ${itemName(SALVAGE.item)}. Tap an option twice to reroll it (its type and value both change)`,
       reforgeDone: (n, max) => `Reforged ${n} of ${max} · no more reforges`,
       reforgeConfirm: (opt) => `Confirm · reroll ${opt}`,
       sellFor: (gold) => `Sell · ${num(gold)} ${G.unit}`,
@@ -303,7 +306,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       num: (n) => num(n),
       sellConfirm: (gold) => `Confirm · ${num(gold)} ${G.unit}`,
       enhanceDone: (plus) => `Enhanced · +${plus}`,
-      gearHint: (supplyMax, max, shop = true, craft = true) => `Enhancing: ${shop ? 'standard gear (bought in a shop)' : 'your starting gear (standard)'} goes up to +${supplyMax}; ${craft ? 'crafted or dropped' : 'dropped'} gear up to +${max}. ${ENHANCE.dropFrom <= max ? `Up to +${ENHANCE.dropFrom - 1} a failure keeps the step; from +${ENHANCE.dropFrom} it drops one step${isItemId(ENHANCE.charm) ? ` (a ${itemName(ENHANCE.charm)} prevents that)` : ""}.` : `A failed attempt leaves the gear unchanged and costs only the ${G.unit}.`}`,
+      gearHint: (supplyMax, max, shop = true, craft = true) => `Enhancing: ${shop ? 'standard gear (bought in a shop)' : 'your starting gear (standard)'} goes up to +${supplyMax}; ${craft ? 'crafted or dropped' : 'dropped'} gear up to +${max}. ${ENHANCE.dropFrom <= max ? '' : `A failed attempt leaves the gear unchanged and costs only the ${G.unit}.`}`,
       marketPageShort: (page, pages, total) => `${page}/${pages} (${num(total)})`,
       matFrom: (names) => `Dropped by: ${names.join(', ')}`,
       matSource: (mat, names) => `${mat}: dropped by ${names.join(', ')}`,
@@ -382,7 +385,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       enhanceFail: () => 'Enhancement failed. The gear is unchanged.',
       enhanceDown: (a) => `Enhancement failed and the gear dropped to +${a[0]}.`,
       enhanceSaved: (a) => `Enhancement failed, but your ${itemName(ENHANCE.charm)} kept it at +${a[0]}.`,
-      reforged: (a) => `Reforged (${a[1]} of ${a[2]}).`,
+      reforged: (a) => `Reforged (${a[1]} of ${a[2]}): ${statLine(a[3], a[4])} → ${statLine(a[0], a[5])}`,
       reforgeMax: (a) => `This gear cannot be reforged any more (up to ${a[0]} times).`,
       marketBound: (a) => `Gear enhanced to +${a[0]} or higher cannot be listed on the market.`,
       enhanceMax: () => `This cannot be enhanced further. (Standard gear stops at +${ENHANCE.supplyMax}, crafted or dropped gear at +${ENHANCE.max}.)`,
@@ -454,3 +457,6 @@ export const enBase = (n: ContentNames): EngineLocale => {
     nameB: n.nameB,
   };
 };
+
+/** 재련 안내의 옵션 한 줄 (서버가 보여 줄 값을 보낸다) */
+const statLine = (id: unknown, v: unknown): string => (isStat(id) ? modText[statMod(id)](Number(v)) : String(id ?? ''));

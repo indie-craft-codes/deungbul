@@ -31,7 +31,7 @@ const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?:
   potion: { name: 'Potion' },
   tonic: { name: 'Strong Potion' },
   dust: { name: 'Gear Dust', info: 'Material you get by salvaging gear' },
-  ward: { name: 'Ward Charm', info: 'Keeps gear from dropping a level when an enhance at +7 or higher fails (one per try)' },
+  ward: { name: 'Ward Stone', info: 'Keeps gear from dropping a step when an enhance at +7 or higher fails (one per try). From day 7 of attendance, the daily enhance task and the Crypt Depths' },
 };
 const itemName = itemNameOf(items);
 const towers: Record<string, string> = { first: 'Firstlight Village Tower', ash: 'Ashwood Tower', crypt: 'the crypt entrance' };
