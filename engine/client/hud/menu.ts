@@ -2,7 +2,7 @@
 // 틀의 탭은 일곱(MENU_TABS의 id: gear, build, mail, daily, market, guild, rank)이다. 게임은 보일 탭과 차례를 고르고(setMenuTabs), 자기 탭을 더한다(addMenuTab).
 // 일일 임무와 출석이 모두 없는 게임에서는 일일 탭이 저절로 숨는다.
 // 창의 높이와 탭 줄, 닫기 단추의 자리는 고정이고(style.css의 #menu) 내용만 창 안에서 스크롤한다.
-import { ATTEND, BAG_UP, BUILD, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
+import { ATTEND, BAG_UP, BUILD, FORGES, RECIPES, SHOPS, SHOP_STOCK, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
 import { onMsg, onSlow } from '../bus';
@@ -56,6 +56,8 @@ export function addMenuTab(def: MenuTab, after?: string): void {
   allTabs.splice(at < 0 ? allTabs.length : at + 1, 0, def);
   lastSig = '';
 }
+/** 상점에서 장비(무기, 갑옷)를 파는 게임인가: 장비 탭의 안내가 상점을 말할지 */
+const SELLS_GEAR = SHOPS.length > 0 && SHOP_STOCK.some((id) => isItemId(id) && (itemDef(id).kind === 'weapon' || itemDef(id).kind === 'armor'));
 /** 지금 고른 탭의 id */
 let cur = 'gear';
 const current = (): MenuTab => { const list = tabs(); return list.find((x) => x.id === cur) ?? list[0] ?? ENGINE_TABS[0]; };
@@ -302,7 +304,7 @@ function drawGear(): void {
   const loc = L(), m = S.meta;
   ui.list.append(el('baghead', loc.fmt.power(m.power)));
   // 보급형과 만들거나 주운 장비의 차이는 늘 보이게 둔다 (예전에는 남는 장비가 없을 때만 떴다)
-  ui.list.append(el('note', loc.fmt.gearHint(ENHANCE.supplyMax, ENHANCE.max)));
+  ui.list.append(el('note', loc.fmt.gearHint(ENHANCE.supplyMax, ENHANCE.max, SELLS_GEAR, RECIPES.length > 0 && FORGES.length > 0)));
   for (const slot of GEAR_SLOTS) {
     const g = m.gear.find((x) => x.uid === m.worn[slot]);
     if (g) ui.list.append(...gearRow(g, true));

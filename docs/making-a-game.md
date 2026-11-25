@@ -32,6 +32,22 @@
 
 방향은 게임 → 틀 하나다. 게임은 틀을 `@engine/…`으로 읽고, 틀은 게임에서 내용 하나(`@game/shared/content`)만 읽는다. **`engine/` 아래의 파일은 고치지 않는다.** 고쳐야 한다면 틀에 접점이 모자란 것이다(10절의 "틀을 고쳐야 할 때").
 
+### 틀에서 가져오는 곳 (입구)
+
+**게임은 틀을 아래의 입구로만 import한다.** 11절 일람표의 파일 이름(`game/entity.ts`, `hud/minimap.ts` …)은 그 이름이 **어디에 정의되어 있는지**일 뿐이고, 가져올 때는 그 파일의 층에 맞는 입구를 쓴다. 입구가 아닌 경로(`@engine/server/game/entity` 같은 것)로 가져오면 타입 검사와 그 게임의 시험은 통과해도 `npm test`의 경계 검사(`engine/test/boundary.test.ts`, "게임은 틀을 입구로만 읽는다")가 실패한다.
+
+| 입구 | 무엇이 있나 | 예 |
+|---|---|---|
+| `@engine/server` | 서버의 모든 것: `Game`, `Ent`, `startServer`, `runServer`, 저장소(`MemoryStore` …), `dist`·`readInt`·`clamp`·`ri`, 층 도우미, `addBannedWords`, `WHY`·`mailWhy` | `import { dist, type Ent, type Game, readInt } from '@engine/server';` |
+| `@engine/client` | 화면의 모든 것: `startClient`, `bus`(`onMsg`·`onFrame`·`onSlow`·`onKey`), `rules`, `S`, `send`, 창(`mountPanel`, `addPlace`, `addNotices`), 모델·장면(`registerHand` …), 지도(`addMapPlaces` …), 메뉴(`setMenuTabs` …) | `import { addMapPlaces, onMsg, rules, S } from '@engine/client';` |
+| `@engine/client/i18n` | 문장: `L`, `t`, `setLocales`, `onLangChange`. 언어 묶음은 `@engine/client/i18n/ko`·`en`·`names`·`merge` | `import { L, t } from '@engine/client/i18n';` |
+| `@engine/shared` | 공용: 메시지 타입(`ServerMsg` …), 자동 사냥의 기준(`AUTO`, `AWAY`), 길찾기, `PROTOCOL` | `import type { ServerMsg } from '@engine/shared';` |
+| `@engine/shared/defs`, `@engine/shared/world` | 내용 통로: 내용의 타입·도우미(`maxHpFor`, `itemDef` …)와 맵(`AREAS` …) | `import { maxHpFor } from '@engine/shared/defs';` |
+| `@engine/testing` | 시험 도구: `check`, `failures`, 가짜 클라이언트 | `import { check } from '@engine/testing';` |
+| `@engine/shared/ext`, `@engine/server/game/ext`, `@engine/client/i18n/ext` | 확장 지점(선언 병합만, 6절) | `declare module '@engine/shared/ext' { … }` |
+
+**예외 하나: 내용 파일**(`shared/content/` 아래)만은 `@engine/shared/defs/*`(예: `@engine/shared/defs/combat`)에서 **타입만**(`import type`), `@engine/shared/defaults`에서 기본값을 가져온다. 내용 통로(`@engine/shared/defs`)를 값으로 읽으면 초기화 순서가 꼬이기 때문이다(10절). 문서의 코드 조각은 import 줄을 빼고 적었으니, 머리는 예제의 같은 파일을 본다.
+
 ## 2. 폴더와 설정
 
 ```
@@ -150,12 +166,30 @@ export const GUEST_NAME = 'Camper';
 | `DAILIES` | 임무 id → `{ kind, n, r }`. 틀이 세는 종류는 `kill`, `enhance` | `{}` 가능 |
 | `DUNGEONS` | 던전 id → `DungeonDef` | `{}` 가능 (던전 없음) |
 
-기본값으로 받는 이름: `SKILL_SLOTS`, `HP_PER_LEVEL`, `ATTACK_CD`, `COMBAT`, `SLOW_FACTOR`, `REJOIN_KEEP_S`, `GUEST_NAME`, `MONSTER_ATTACK_RANGE`, `MONSTER_ATTACK_CD`, `LEASH`, `RESPAWN_S`, `MONSTER_AI`, `BOSS`, `SHOP_REACH`, `POTION_MAX`, `POTION_CD`, `MAT_MAX`, `SMITHY_REACH`, `STATS`, `GEAR_SLOTS`, `RARITIES`, `ENHANCE`, `BUILD_STATS`, `BUILD`, `LEVEL`, `POWER`, `MAIL_MAX`, `IDLE`, `ATTEND`, `RANK`, `PORTAL_REACH`, `PARTY`, `CHANNEL`, `GUILD`, `MARKET`, `ECON_*` 열 개.
+기본값으로 받는 이름: `SKILL_SLOTS`, `HP_PER_LEVEL`, `ATTACK_CD`, `COMBAT`, `SLOW_FACTOR`, `REJOIN_KEEP_S`, `GUEST_NAME`, `MONSTER_ATTACK_RANGE`, `MONSTER_ATTACK_CD`, `LEASH`, `RESPAWN_S`, `MONSTER_AI`, `BOSS`, `SHOP_REACH`, `POTION_MAX`, `POTION_CD`, `MAT_MAX`, `SMITHY_REACH`, `STATS`, `GEAR_SLOTS`, `RARITIES`, `ENHANCE`, `SALVAGE`, `BAG_UP`, `BUILD_STATS`, `BUILD`, `LEVEL`, `POWER`, `MAIL_MAX`, `IDLE`, `ATTEND`, `RANK`, `PORTAL_REACH`, `PARTY`, `CHANNEL`, `GUILD`, `MARKET`, `CURRENCIES`, `ECON_*` 열 개. 모양은 `engine/shared/defaults.ts`에서 본다(값마다 주석이 있다).
+
+끄는 법(빈 표로 내보내면 그 기능이 꺼진다):
+
+| 끄려는 것 | 이렇게 | 화면에서 |
+|---|---|---|
+| 상점 | `SHOPS = []`, `SHOP_STOCK = []` | 상점 창이 열리지 않고 지도에 상점이 없다. 장비 탭의 강화 안내가 상점을 말하지 않는다 |
+| 제작 | `FORGES = []`, `RECIPES = []` | 대장간 창이 없다. 강화 안내가 제작을 말하지 않는다 |
+| 물약 | `kind: 'potion'`인 아이템을 두지 않는다 | 물약 단추(Q)가 없다 |
+| 던전 | `DUNGEONS = {}`, `MAP.portals = {}` | 던전 창과 지도의 문이 없다 |
+| 일일 임무 | `DAILIES = {}` | |
+| 출석 | `ATTEND = []`(7일치 보상의 목록이 비면 세지 않는다) | 일일 임무도 출석도 없으면 메뉴의 일일 탭이 숨는다 |
+| 두 번째 재화 | 몬스터에 `sparks`를 적지 않고 이름표에 `currency2`를 적지 않는다 | 틀의 문장에서 그 몫이 빠진다 |
+| 분해·가방 넓히기 | `SALVAGE`의 `item`을 비운다(기본값이 이미 꺼져 있다) | |
+| 거래소·길드 탭 | 화면에서 `setMenuTabs([...])`로 고른다(5절). 서버의 기능은 그대로 돈다 | |
 
 - `STATS`, `GEAR_SLOTS`, `RARITIES`, `BUILD_STATS`의 id는 게임이 짓는다. 이름은 이름표(`ContentNames`)의 `gearSlots`, `rarities`, `buildStats`에 적는다.
   - 장비 옵션(`STATS`)과 능력치(`BUILD_STATS`)는 `mod`로 틀의 효과 넷 가운데 하나에 든다: `damage`(공격 피해 %), `guard`(받는 피해 감소 %, 한도 `GEAR.guardCap`), `crit`(치명타 %p), `hp`(최대 체력). 옵션과 능력치가 주는 것의 문장("공격 피해 +3%")은 이 효과로 틀이 만든다. 효과의 종류를 새로 만들려면 틀을 고쳐야 한다.
   - 예: `STATS = { atk: { base: 4, mod: 'damage' }, life: { base: 10, mod: 'hp' } }`, `BUILD_STATS = { grit: { mod: 'hp', per: 6 } }`(점수 하나에 최대 체력 +6).
   - 칸에는 `'weapon'`이 반드시 있다. 무기와 갑옷의 바탕 아이템은 `ItemDef.kind`와 같은 이름의 칸(`'weapon'`, `'armor'`)에 낀다. 갑옷 칸이 없는 게임도 된다(`games/sample/test/empty.test.ts`의 `otherGear`가 지킨다).
+  - 그 밖의 칸(투구, 장화, 반지 …)에 끼는 것은 **떨어지는 장비뿐**이다: 바탕 아이템 없이 옵션(`STATS`)만 있는 장비다. `ITEMS`에 그 칸의 아이템을 만들지 않는다. 떨어질 때 칸은 `GEAR_SLOTS`에서 고르게 고른다.
+  - 바탕 아이템은 `GEAR.weaponFor(lv)`·`GEAR.armorFor(lv)`가 정한다. 갑옷 칸이 없으면 `armorFor`는 불리지 않으니 아무 id(예: 무기 id)를 돌려도 된다.
+  - 모양의 예: `GEAR_SLOTS = ['weapon', 'helm', 'boots'] as const`, `RARITIES = [{ id: 'plain', weight: 70, opts: 1, mult: 1 }, { id: 'rare', weight: 30, opts: 2, mult: 1.4 }]`(정확한 칸은 `engine/shared/defaults.ts`의 기본값을 베낀다).
+  - 처음 무기 같은 바탕 장비는 등급 이름 `보급형`(`supply`)으로, 만든 장비는 `제작`(`made`)으로 보인다. 다른 이름을 쓰려면 이름표의 `rarities`에 `supply`, `made`를 적는다(틀의 이름을 덮어쓴다).
 - `SKILL_SLOTS`는 기본 3이다(화면의 기술 단추와 단축키 1~3). 직업의 `skills`는 이 수만큼 적는다.
 
 맵은 이렇게 생겼다. 지역 하나, 손으로 놓은 장애물 하나(모닥불), 나무와 바위를 뿌리는 규칙 둘.
@@ -178,6 +212,8 @@ export const MAP: MapDef = {
 };
 ```
 
+- 칸의 뜻: `areas`의 네모(`x0`~`x1`, `z0`~`z1`)가 걸어 다닐 수 있는 땅이다. `edge`는 그 가장자리에서 이만큼 안쪽까지만 갈 수 있다는 뜻. `scatter`는 나무(`tree`)·바위(`rock`)를 `count`개 뿌리는데, `x0`~`x1`은 **x 범위**이고 z 범위는 맵 전체의 z 범위를 `pad`만큼 넓힌(음수면 좁힌) 것이다. 크기는 `s0 + 난수 × s1`. `isFree(x, z)`가 거짓인 자리에는 놓지 않는다. `portals`(던전의 문) 둘레 `portalClear` 안에도 놓지 않는다.
+- **원점에서 떨어진 지역**이면 `scatter`의 `x0`~`x1`과 `spawn`, 무리의 자리를 그 지역에 맞춘다(예제는 원점 둘레라 드러나지 않는다).
 - 좌표는 x(동서)와 z(남북)뿐이다. 높이는 없다.
 - 같은 시드는 서버와 화면에서 같은 나무와 바위를 만든다. 운영 중에 `seed`, `scatter`의 차례, `obstacles`의 차례를 바꾸면 맵 전체가 달라진다.
 - 상인, 처음 자리, 무리의 자리는 `isFree`가 비워 주는 곳에 둔다(나무 속에 서지 않게).
@@ -336,6 +372,8 @@ export const koNames: ContentNames = {
     goingTown: '모닥불로 걸어갑니다.',
 ```
 
+- 이름표의 칸: `monsters`, `items`(손 모양 id 칸 포함), `classes`, `skills`, `dungeons`, `dailies`, `gearSlots`, `rarities`(틀의 `supply`·`made`도 덮어쓸 수 있다), `buildStats`, `places`, `currency1`·`currency2`(선택), `nameA`·`nameB`(처음 접속할 때의 무작위 이름). 모양은 `engine/client/i18n/names.ts`의 `ContentNames`.
+- `places`는 **쓰러진 뒤 다시 일어나는 곳의 이름**이다: 서버의 `g.rules.respawn`이 돌려주는 `id`가 열쇠다(예제: 모닥불 앞 `bonfire`). 일어나는 곳을 정하지 않은 게임은 id가 빈 문자열이고, 틀은 '처음 자리'라고 적는다. 다른 이름을 쓰려면 `places: { '': '동굴 입구' }`.
 - `[[PC용|터치용]]`으로 적으면 입력 장치에 맞는 쪽이 보인다. `'장작 넣기[[ (F)|]]'`는 폰에서 `(F)`가 빠진다.
 - 틀의 문장에서 덮어쓸 만한 것: `ui.shop`(상인의 이름표. 틀의 기본은 '상인'), `msg.shopFar`, `ui.forge`, `ui.bagMats`, `ui.bagPotions`, `fmt.potions`(물약 단추), `msg.loot`(틀의 기본 문장은 "대장간에서 쓸 수 있습니다"로 끝난다), `msg.classFar`, `msg.bossUp`, `msg.died`. 전체는 `engine/client/i18n/ko.ts`에 있다.
 
@@ -387,7 +425,7 @@ export function initScene(): void {
 ```
 
 - 모델을 등록하지 않은 몬스터는 눈 달린 덩어리로 뜬다. 먼저 띄우고 나중에 꾸며도 된다.
-- 모델의 약속: 발이 원점, +Z를 바라본다. `{ root, legs }`를 돌려주면 네발 걸음, `{ root, rig }`면 사람 걸음, `{ root, blob }`이면 통통 튀는 동작을 틀이 입힌다. 크기를 바꾸려면 안쪽 묶음에 준다(틀이 쓰러지는 연출에서 `root`의 크기를 바꾼다).
+- 모델의 약속: 발이 원점, +Z를 바라본다. `{ root, legs }`를 돌려주면 네발 걸음(`legs`는 `limb()`가 돌려준 다리 묶음 넷의 배열: 앞왼, 앞오른, 뒤왼, 뒤오른), `{ root, rig }`면 사람 걸음(`rig`는 팔다리 넷 `{ ll, rl, la, ra }`), `{ root, blob }`이면 통통 튀는 동작을 틀이 입힌다(`blob`은 묶음이 아니라 **메시 하나**: `part(…)`가 돌려준 것). 크기를 바꾸려면 안쪽 묶음에 준다(틀이 쓰러지는 연출에서 `root`의 크기를 바꾼다).
 - 창의 색은 css 변수로 정한다. 게임의 css는 틀의 것 뒤에 읽혀 덮어쓴다(모듈에서 `import './sample.css'`).
 
 ```css games/sample/client/sample.css
@@ -426,7 +464,7 @@ declare module '@engine/shared/ext' {
 }
 ```
 
-- `MsgMap`에 안내문을 더하면 **모든 언어 파일의 `msg`에 그 문장이 있어야** 컴파일된다. 언어 파일을 아직 만들지 않았으면 틀의 `engine/client/hud/notify.ts`에서 오류가 난다. 문장을 채우면 사라진다.
+- `MsgMap`에 안내문을 더하면 **모든 언어 파일의 `msg`에 그 문장이 있어야** 컴파일된다. 언어 파일을 아직 만들지 않았으면 틀의 `engine/client/hud/notify.ts`와 `hud/menu.ts`에서 오류가 난다("Property '…' does not exist on type …": 문장이 없는 안내문의 이름이 '…'에 나온다). 언어 파일의 `msg`에 그 문장을 채우면 사라진다.
 - 서버는 문장을 보내지 않는다. 종류와 값만 보낸다.
 
 ### (2) 서버 쪽 선언과 플러그인
@@ -598,9 +636,9 @@ export function initBonfire(): void {
 | 서버 전체의 값을 저장 | `g.worldSaves.push` + `g.saveDirty` | |
 | 시간이 흐르면 | `g.ticks.push((dt) => …)` | `onFrame`, `onSlow` |
 | 몬스터를 잡으면, 샀으면 … | `g.on('monsterKilled', …)` (사건의 목록: `engine/server/game/game.ts`의 `Hooks`) | |
-| 틀의 수치를 바꾼다 | `g.mods.provide('damage' \| 'guard' \| 'regen' \| 'crit' \| 'hp' \| 'exp', …)` | |
+| 틀의 수치를 바꾼다 | `g.mods.provide('damage' \| 'guard' \| 'regen' \| 'crit' \| 'hp' \| 'exp', (p) => 값)`. `damage`·`guard`·`regen`은 **곱하는 값**(1이 그대로, 1.1이면 10% 더), `crit`·`hp`·`exp`는 **더하는 값**(0이 그대로. `crit`은 확률, `hp`는 최대 체력, `exp`는 처치 경험치에 더하는 비율). 잘못 적어도 오류 없이 엉뚱한 값이 된다 | |
 | 틀의 규칙을 바꾼다 | `g.rules.respawn / speed / canChangeClass / unlocked` | `rules.speed / unlocked / lockNote / home` (속도와 잠금은 서버와 같은 답을 내야 한다) |
-| 보상을 준다 | `g.players.grant(p, exp, 0)`, `p.gold += n`, `g.mail.send(p, 종류, 값, 보상)`, `g.daily.add(p, 종류, n)` | |
+| 보상을 준다 | `g.players.grant(p, exp, 0)`, `g.wallet.add(p, 'gold', n, 원인)`·`g.wallet.take(…)`(재화는 **지갑으로만** 바꾼다: `p.gold`를 직접 고치면 경제 장부에 '그 밖'으로 남고 `npm test`의 지갑 검사가 잡는다. 원인은 `WHY`의 것이나 영문 낱말), `g.bag.putItem(p, 아이템, n, 원인)`, `g.mail.send(p, 종류, 값, 보상)`, `g.daily.add(p, 종류, n)` | |
 
 ## 7. 저장과 호환
 
@@ -641,10 +679,14 @@ export function initBonfire(): void {
   let server = await startServer(0, { store, game: { plugins: [installSample] } });
 ```
 
+- `startServer(port, …)`는 `{ port, game, close() }`를 돌려준다(포트 0이면 `port`가 고른 포트). 시험의 끝에 `await server.close()`.
+- 가짜 클라이언트 `connect(port, 이름, 토큰, onMsg?)`(`@engine/testing`)는 접속한 피어를 돌려준다: `id`, `name`, `lv`, 받은 안내문 `sys`(이름의 목록), `send(메시지)`, 그리고 `ws`(끊을 때 `ws.close()`). 기다릴 때는 `until(() => 조건)`, `sleep(ms)`. 모양은 `engine/test/harness.ts`의 `Peer`.
 - 틀의 가짜 클라이언트는 틀의 메시지만 읽는다. 게임의 메시지(`world`, `me`)는 `connect`의 넷째 인자로 받는다.
+- 서버 없이 규칙만 볼 때는 `new Game({ plugins: [installSample] })`로 만들고 `g.tick(초)`로 시간을 흘린다. 기술의 효과만 내려면 `g.combat.cast(플레이어, 기술 id, 대상)`(쿨다운·사거리는 보지 않는다. 예: `engine/test/fx/skills.test.ts`).
 - 시험도 `tsx --tsconfig`로 돌린다(`npm run test:sample`).
 - `npm test`는 틀의 시험(게임 없이 시험용 내용 `engine/test/fx/` 위에서)과 게임마다의 시험이다. `games/<게임>/test/all.ts`와 `tsconfig.json`을 두면 새 게임의 시험도 저절로 함께 돈다(이름은 `<게임>/이름`).
 - 틀을 고쳤으면 `npm run typecheck`(등불지기, 틀만, 시험용 내용, 예제까지 여섯 설정을 검사한다)와 `npm test`를 돌린다.
+- **새 게임을 저장소에 들이면 뿌리 `package.json`의 `typecheck`에 그 게임의 두 설정(`tsc --noEmit -p games/<게임>/tsconfig.json`, `… tsconfig.engine.json`)을 더한다.** `npm test`는 `games/<게임>/test/all.ts`를 저절로 찾지만 타입 검사의 목록은 적어 둔 것이다: 더하지 않으면 틀을 고친 사람이 새 게임을 깨도 `npm run typecheck`가 알려 주지 않는다.
 
 화면은 브라우저로 본다. `?lang=en`은 언어, `?auto=이름`은 처음 접속할 때의 이름이다.
 
@@ -669,7 +711,7 @@ export function initBonfire(): void {
 | 서버가 다른 게임의 몬스터로 뜬다 | `tsx`에 `--tsconfig games/<게임>/tsconfig.json`을 주지 않았다. 그 게임의 스크립트로 띄운다(`npm run start:sample`) |
 | 실행하자마자 `undefined`를 읽는다 (`Cannot read properties of undefined`), 내용의 표가 비어 보인다 | 내용 파일이 틀의 도우미에서 **값**을 가져왔다. `import type`으로 바꾼다. 값은 `@engine/shared/defaults`에서만 |
 | `contract.ts`의 마지막 줄에서 오류 | 계약의 이름이 빠졌거나 모양이 다르다. 오류 글의 끝에 이름이 있다 |
-| `engine/client/hud/notify.ts`에서 "MsgKey로 인덱스할 수 없다" | `MsgMap`에 안내문을 더했는데 언어 파일의 `msg`에 문장이 없다(또는 `LocaleExt` 선언을 아직 하지 않았다) |
+| `engine/client/hud/notify.ts`나 `hud/menu.ts`에서 "MsgKey로 인덱스할 수 없다", "Property '…' does not exist" | `MsgMap`에 안내문을 더했는데 언어 파일의 `msg`에 문장이 없다(또는 `LocaleExt` 선언을 아직 하지 않았다) |
 | 틀의 타입이 게임의 칸(`g.bonfire`, `p.fed`, `m.s.bonfire`)을 모른다 | 선언 파일이 그 `tsconfig`의 `include` 안에 없다. 선언 병합은 인터페이스가 선언된 바로 그 파일(`@engine/shared/ext`, `@engine/server/game/ext`, `@engine/client/i18n/ext`)을 가리켜야 한다 |
 | 두 게임의 타입이 섞인다, `@game`이 엉뚱한 곳을 가리킨다 | 한 `tsc` 프로그램에 두 게임을 넣었다. 게임마다 자기 `tsconfig.json`으로만 검사한다. 뿌리의 `tsconfig.json`에 새 게임 폴더를 더하지 않는다 |
 | 화면의 글자가 비어 있다 | 그 키가 언어 묶음에 없다. `setLocales`를 `startClient`보다 늦게 불렀거나, 창을 `startClient` 뒤에 붙였다(그때는 `data-i18n`이 이미 채워진 뒤다) |
@@ -682,6 +724,8 @@ export function initBonfire(): void {
 | 재시작하면 값이 처음으로 돌아간다 | `g.saves`나 `g.worldSaves`에 등록하지 않았거나, `p.unsaved` / `g.saveDirty`를 세우지 않았다 |
 | 내가 띄운 서버가 저절로 꺼진다 | 다른 서버와 저장 폴더가 같다(`stop.flag`). 게임마다, 확인용 서버마다 폴더를 따로 준다 |
 | 개발 서버(vite)의 화면이 다른 게임의 서버에 붙는다 | `vite.config.ts`의 `VITE_DEV_PORT`가 그 게임의 서버 포트와 다르다(없으면 3001) |
+| 타입 검사와 그 게임의 시험은 통과하는데 `npm test`의 `boundary`에서 "게임은 틀을 입구로만 읽는다"가 실패한다 | 틀의 내부 파일을 깊게 import했다(`@engine/server/game/entity` 같은 것). 1절의 입구(`@engine/server` 등)에서 가져온다. 실패 글이 파일과 줄을 알려 준다 |
+| 쓰러지면 "…에서 다시 일어났습니다"의 자리에 엉뚱한 말이 나온다 | 이름표의 `places`에 `g.rules.respawn`이 돌려주는 id의 이름이 없다(5절). 정하지 않았으면 '처음 자리'다 |
 | 내 내용은 계약을 지키는데 `engine/` 안의 파일에서 타입 오류가 난다 | 틀은 내용을 계약의 타입이 아니라 **게임이 적은 그대로의 타입**으로 본다. 표를 비웠거나(`{}`의 id는 `never`가 된다) 함수를 계약보다 좁게 적은 자리에서 틀이 걸릴 수 있다. 시험이 지키는 경우: 던전·대장간·보스·두 번째 재화가 없다(예제), 상점·무리·재료·일일 임무가 없다, 아이템이 무기 하나뿐이다(`games/sample/test/empty.test.ts`). 그 밖의 경우(직업이 하나, 몬스터가 한 종류 …)에 걸리면 틀의 수리 대상이다: `npm run typecheck:engine:sample`과 같은 검사를 자기 게임의 설정으로 돌려 자리를 찾는다 |
 
 **틀을 고쳐야 할 때**: 게임에서 할 수 없는 일이면 틀에 접점을 더한다. 틀의 파일이 게임의 폴더를 import하거나 게임의 id를 적으면 안 된다(`games/deungbul/test/split.test.ts`가 검사한다). 고친 뒤에는 8절의 검사를 모두 돌린다. 틀에 남아 있는 등불지기의 흔적과 알려진 한계는 `docs/framework-status.md`에 있다.
@@ -696,7 +740,7 @@ export function initBonfire(): void {
 
 ## 11. 접점 일람표
 
-"예제" 칸은 그 접점을 쓰는 예제의 파일이다(`games/sample/` 아래). 없는 것은 등불지기(`games/deungbul/`)에 쓰임이 있다.
+"접점" 칸의 파일 이름은 그것이 **정의된 곳**이다(모양과 주석을 볼 때 연다). **가져올 때는 1절의 입구를 쓴다**: 서버의 것은 `@engine/server`, 화면의 것은 `@engine/client`, 문장은 `@engine/client/i18n`, 시험 도구는 `@engine/testing`. "예제" 칸은 그 접점을 쓰는 예제의 파일이다(`games/sample/` 아래). 없는 것은 등불지기(`games/deungbul/`)에 쓰임이 있다.
 
 ### 공용 (`engine/shared/`)
 
@@ -752,7 +796,7 @@ export function initBonfire(): void {
 | `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳 | `client/bonfire.ts` |
 | `hud/menu.ts`의 `setMenuTabs`, `addMenuTab`, `openMenu`, `MENU_TABS` | 메뉴에 보일 탭과 차례, 게임의 탭, 탭을 골라 열기 | `client/bonfire.ts` |
 | `hud/near.ts`의 `addPlace` | 가까이 가면 열리는 창 | `client/bonfire.ts` |
-| `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels`. `hud/worldmap.ts`의 `addMapPlaces`, `travelTo`, `stopTravel` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도의 큰 이름(구역)과 장소. 전체 지도(N 키·미니맵·`지도` 단추)는 틀이 그린다: 상점·대장간·던전의 문·사냥터(`CAMPS`)·우두머리는 틀이 내용에서 스스로 장소로 찍고, 게임은 자기 장소(거점, 목적지 …)를 `addMapPlaces`로 더한다(갈래 `PlaceKind`: goal, town, shop, forge, dungeon, hunt, boss, other). 장소를 누르면 정보 카드, 목록에서 '자동 이동'과 '가서 자동 사냥'(`hunt: true`) | `client/bonfire.ts`, `client/scene.ts` |
+| `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels`. `hud/worldmap.ts`의 `addMapPlaces`, `travelTo`, `stopTravel` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도의 큰 이름(구역)과 장소. 전체 지도(N 키·미니맵·`지도` 단추)는 틀이 그린다: 상점·대장간·던전의 문·사냥터(`CAMPS`)·우두머리는 틀이 내용에서 스스로 장소로 찍고, 게임은 자기 장소(거점, 목적지 …)를 `addMapPlaces`로 더한다(갈래 `PlaceKind`: goal, town, shop, forge, dungeon, hunt, boss, other). 장소를 누르면 정보 카드, 목록에서 '자동 이동'과 '가서 자동 사냥'(`hunt: true`). 모양: `addMapLabels(() => [{ x, z, text, big: true }])`, `addMapPlaces(() => [{ x, z, name, kind: 'town', info?, locked?, hunt? }])`. 함수는 그릴 때마다 불리므로 안에서 `t()`·지금 상태를 읽으면 언어와 상태를 따라간다 | `client/bonfire.ts`, `client/scene.ts` |
 | `hud/classes.ts`의 `openClasses` | 직업 고르기 창 열기 | `client/bonfire.ts` |
 | `scene/view.ts`의 `Look` | 땅, 잎, 건물 | `client/scene.ts` |
 | `scene/models.ts`의 `registerMonsterModel`, `registerBlade`, `registerArmor`, `mat`, `part`, `limb` | 모델 | `client/scene.ts` |

@@ -65,7 +65,8 @@ export const koBase = (n: ContentNames) => {
   /** 던전의 이름 (없는 id는 id 그대로) */
   const dungeonName = (id: MsgArg) => dungeonLabel(n, id).name;
   /** 쓰러진 뒤 다시 일어나는 곳의 이름 */
-  const place = (id: MsgArg) => n.places[String(id)] ?? String(id);
+  /** 다시 일어나는 곳의 이름. 게임이 일어나는 곳을 정하지 않았으면(g.rules.respawn의 기본) id가 빈 문자열이다: 이름표의 places['']나 '처음 자리' */
+  const place = (id: MsgArg) => n.places[String(id)] ?? (String(id) || '처음 자리');
   /** 거래소 우편 제목에 넣을 물건의 이름: [아이템 id나 장비 칸, 수량] */
   const tradeWhat = (a: (string | number)[]) => { const name = items[a[0] as ItemId]?.name ?? gearSlots[a[0] as GearSlot] ?? String(a[0]); return Number(a[1]) > 1 ? `${name} ×${a[1]}` : name; };
   return {
@@ -314,7 +315,8 @@ export const koBase = (n: ContentNames) => {
       num: (n: number) => num(n),
       sellConfirm: (gold: number) => `확인 · ${num(gold)}${G.unit}`,
       enhanceDone: (plus: number) => `강화 성공 · +${plus}`,
-      gearHint: (supplyMax: number, max: number) => `강화: 보급형(상점에서 산 것)은 +${supplyMax}까지, 만들거나 주운 장비는 +${max}까지. 실패해도 장비는 그대로이고 ${G.name}만 듭니다.`,
+      // shop: 상점에서 장비를 파는 게임인가, craft: 제작이 있는 게임인가 (없는 것은 문장에서 뺀다)
+      gearHint: (supplyMax: number, max: number, shop = true, craft = true) => `강화: ${shop ? '보급형(상점에서 산 것)' : '처음 받은 장비(보급형)'}은 +${supplyMax}까지, ${craft ? '만들거나 주운' : '주운'} 장비는 +${max}까지. 실패해도 장비는 그대로이고 ${G.name}만 듭니다.`,
       marketPageShort: (page: number, pages: number, total: number) => `${page}/${pages} · ${num(total)}개`,
       matFrom: (names: string[]) => `얻는 곳: ${names.join(', ')}`,
       matSource: (mat: string, names: string[]) => `${mat} 얻는 곳: ${names.join(', ')}`,

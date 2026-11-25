@@ -42,7 +42,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
   const itemName = itemNameOf(items);
   const dungeonName = (id: MsgArg) => dungeonLabel(n, id).name;
   /** The name of the place you rise at after falling */
-  const place = (id: MsgArg) => n.places[String(id)] ?? String(id);
+  const place = (id: MsgArg) => n.places[String(id)] ?? (String(id) || 'the starting point');
   /** Item name for market mail titles: [item id or gear slot, count] */
   const tradeWhat = (a: (string | number)[]) => { const name = items[a[0] as ItemId]?.name ?? gearSlots[a[0] as GearSlot] ?? String(a[0]); return Number(a[1]) > 1 ? `${name} ×${a[1]}` : name; };
   return {
@@ -284,7 +284,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       num: (n) => num(n),
       sellConfirm: (gold) => `Confirm · ${num(gold)} ${G.unit}`,
       enhanceDone: (plus) => `Enhanced · +${plus}`,
-      gearHint: (supplyMax, max) => `Enhancing: standard gear (bought in a shop) goes up to +${supplyMax}; crafted or dropped gear up to +${max}. A failed attempt leaves the gear unchanged and costs only the ${G.unit}.`,
+      gearHint: (supplyMax, max, shop = true, craft = true) => `Enhancing: ${shop ? 'standard gear (bought in a shop)' : 'your starting gear (standard)'} goes up to +${supplyMax}; ${craft ? 'crafted or dropped' : 'dropped'} gear up to +${max}. A failed attempt leaves the gear unchanged and costs only the ${G.unit}.`,
       marketPageShort: (page, pages, total) => `${page}/${pages} (${num(total)})`,
       matFrom: (names) => `Dropped by: ${names.join(', ')}`,
       matSource: (mat, names) => `${mat}: dropped by ${names.join(', ')}`,

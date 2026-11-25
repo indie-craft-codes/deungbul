@@ -14,14 +14,16 @@ let potion: { button: HTMLButtonElement; count: HTMLElement; cd: HTMLElement; ti
 
 export function initShop(): void {
   ui = { panel: $('shop'), gold: $('shopGold'), list: $('shopList') };
-  // 물약 버튼: 기술 버튼 옆에 둔다 (단축키 Q)
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.className = 'skill potion';
-  b.innerHTML = '<span class="k">Q</span><span class="n"></span><span class="cd"></span><span class="t"></span>';
-  b.addEventListener('click', () => { usePotion(); b.blur(); });
-  $('skills').appendChild(b);
-  potion = { button: b, count: b.querySelector<HTMLElement>('.n')!, cd: b.querySelector<HTMLElement>('.cd')!, time: b.querySelector<HTMLElement>('.t')! };
+  // 물약 버튼: 기술 버튼 옆에 둔다 (단축키 Q). 물약 아이템이 하나도 없는 게임에는 두지 않는다
+  if (POTIONS.length > 0) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'skill potion';
+    b.innerHTML = '<span class="k">Q</span><span class="n"></span><span class="cd"></span><span class="t"></span>';
+    b.addEventListener('click', () => { usePotion(); b.blur(); });
+    $('skills').appendChild(b);
+    potion = { button: b, count: b.querySelector<HTMLElement>('.n')!, cd: b.querySelector<HTMLElement>('.cd')!, time: b.querySelector<HTMLElement>('.t')! };
+  }
   renderShop();
   addPlace('shop', SHOPS);
   // 내 소지품(stat)이나 잠금 상태(공유 상태)가 바뀌면 다시 그린다
