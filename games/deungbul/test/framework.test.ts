@@ -257,6 +257,7 @@ function noonOf(day: unknown): number {
     // 견본보다 뒤에 더한 등탑(2026-11-25의 잿불 고원)은 처음 밝기(start)로 붙는다
     const want = structuredClone(expect ?? world) as { tower?: { glows?: number[] } };
     if (Array.isArray(want.tower?.glows)) want.tower.glows = TOWERS.map((t, k) => want.tower!.glows![k] ?? t.start);
+    Object.assign(want, g.saveVersion('world')); // 다시 저장하면 지금의 저장 형식 버전(v)이 붙는다 (engine/server/game/migrate.ts)
     bad.push(...diff(want as WorldSave, out).map((x) => `월드 견본 ${i + 1} ${x}`));
     const again = newGame({ now: () => now });
     again.importWorld(structuredClone(out));

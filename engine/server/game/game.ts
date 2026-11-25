@@ -14,10 +14,11 @@ import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
 import { resolve } from '../../shared/sim';
 import { LEVEL } from '../../shared/defs';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
-import type { WorldSave } from '../store';
+import type { PlayerSave, WorldSave } from '../store';
 import type { Ent } from './entity';
 import type { EntExt, GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
 import { fieldLayer } from './layers';
+import { checkList, latest, PLAYER_UP, upgrade, WORLD_UP, type Migrations } from './migrate';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
 import { Bag } from './systems/bag';
@@ -93,7 +94,7 @@ export interface Rules extends RulesExt {
 
 /**
  * 캐릭터 저장의 한 칸. 시스템이 자기 몫을 직접 쓰고 읽는다 (PlayerSave.ext[name])
- * legacy: 자기 칸이 없는 저장(그 값이 저장의 최상위 칸에 있던 옛 형식: 이름-값 묶음으로 받는다. 그 칸은 PlayerSave의 타입에 없다)에서 자기 몫을 찾아 load가 읽는 모양으로 돌려준다. 없으면 undefined (월드 저장의 legacy와 같다). 옛 저장이 남아 있는 한 지우지 않는다
+ * legacy: 자기 칸이 없는 저장(그 값이 저장의 최상위 칸에 있던 옛 형식: 이름-값 묶음으로 받는다. 그 칸은 PlayerSave의 타입에 없다)에서 자기 몫을 찾아 load가 읽는 모양으로 돌려준다. 없으면 undefined (월드 저장의 legacy와 같다). 버전 칸이 없는 저장(v0)을 v1로 올리는 틀의 이전(./migrate.ts의 PLAYER_UP)이 부른다. 옛 저장이 남아 있는 한 지우지 않는다. 새로 모양을 바꿀 때는 legacy 대신 g.migrations에 이전을 더한다
  */
 export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: Readonly<Record<string, unknown>>) => unknown }
 
@@ -178,12 +179,14 @@ export class Game {
   /** 틱마다 불리는 시스템 처리. 등록한 순서대로 돈다 */
   readonly ticks: ((dt: number) => void)[] = [];
   /** 월드와 함께 저장할 것을 가진 시스템들 (WorldSave[name]) */
-  /** legacy: 자기 칸이 없는 저장(칸 이름이 생기기 전의 옛 형식)에서 자기 몫을 찾아 돌려준다. 없으면 undefined */
+  /** legacy: 자기 칸이 없는 저장(칸 이름이 생기기 전의 옛 형식)에서 자기 몫을 찾아 돌려준다. 없으면 undefined. 버전 칸이 없는 월드(v0)를 올리는 틀의 이전(./migrate.ts의 WORLD_UP)이 부른다 */
   readonly worldSaves: { name: string; save: () => unknown; load: (raw: unknown) => void; legacy?: (whole: WorldSave) => unknown }[] = [];
   /** 모두에게 보내는 공유 상태의 한 칸 (WorldState[name]) */
   readonly shared: { name: keyof WorldState; state: () => unknown }[] = [];
   /** 캐릭터와 함께 저장할 것을 가진 시스템들 */
   readonly saves: Saver[] = [];
+  /** 게임의 저장 이전 목록 (./migrate.ts): 게임의 칸의 모양을 바꿀 때 끝에 한 단계씩 더한다. 저장의 gv 칸이 이것의 버전이다 */
+  readonly migrations: Migrations = { player: [], world: [] };
   /** 모든 시스템이 만들어진 뒤에 한 번 불린다. 자기보다 뒤에 만들어지는 시스템의 접점을 채울 때 쓴다 (예: 습격이 채널의 extraFoes를) */
   readonly ready: (() => void)[] = [];
   /** 엔티티가 만들어질 때마다 불린다. 게임이 더한 칸(EntExt)의 처음 값을 채운다 */
@@ -265,6 +268,9 @@ export class Game {
     this.guild = new Guild(this);
     this.sanctions = new Sanctions(this);
     for (const fn of this.ready) fn();
+    // 저장 이전 목록이 1부터 하나씩인가: 틀린 목록은 저장을 잘못 올리므로 서버를 띄울 때 멈춘다
+    checkList(PLAYER_UP, '틀의 캐릭터 저장'); checkList(WORLD_UP, '틀의 월드 저장');
+    checkList(this.migrations.player, 'g.migrations.player'); checkList(this.migrations.world, 'g.migrations.world');
   }
 
   // ---- 시스템이 쓰는 공용 통로 ----
@@ -330,22 +336,26 @@ export class Game {
   }
 
   // ---- 저장 ----
+  /** 지금 쓰는 저장의 버전: 틀(v)과 게임(gv). 게임의 이전이 없으면 gv는 적지 않는다 */
+  saveVersion(kind: 'player' | 'world'): { v: number; gv?: number } {
+    const gv = latest(this.migrations[kind]);
+    return { v: latest(kind === 'player' ? PLAYER_UP : WORLD_UP), ...(gv ? { gv } : {}) };
+  }
+  /** 저장을 지금의 버전으로 올린다 (./migrate.ts). 올릴 것이 없으면 받은 것 그대로 */
+  upgradePlayer(save: PlayerSave): PlayerSave { return upgrade(save, this, { own: PLAYER_UP, game: this.migrations.player }, '캐릭터'); }
+  upgradeWorld(w: WorldSave): WorldSave { return upgrade(w, this, { own: WORLD_UP, game: this.migrations.world }, '월드'); }
   exportWorld(): WorldSave {
     const out: WorldSave = {};
     for (const s of this.worldSaves) out[s.name] = s.save();
-    return out;
+    return { ...out, ...this.saveVersion('world') };
   }
-  importWorld(w: WorldSave): void {
+  importWorld(saved: WorldSave): void {
+    // 옛 버전의 저장은 먼저 지금의 모양으로 올린다 (버전 칸이 없던 저장의 '자기 칸이 없으면 legacy로 찾기'도 여기서: migrate.ts의 WORLD_UP)
+    const w = this.upgradeWorld(saved);
     for (const s of this.worldSaves) {
       // 한 칸이 깨져 있어도 서버는 떠야 한다: 그 칸만 처음 상태로 둔다
-      try {
-        if (s.name in w) s.load(w[s.name]);
-        else {
-          // 자기 칸이 없다: 칸 이름이 생기기 전의 옛 형식일 수 있으니, 그 시스템이 통째에서 자기 몫을 찾게 한다
-          const old = s.legacy?.(w);
-          if (old !== undefined) s.load(old);
-        }
-      } catch (err) { console.error(`[game] 월드 저장의 '${s.name}' 칸을 읽지 못했습니다:`, err); }
+      try { if (s.name in w) s.load(w[s.name]); } catch (err) { console.error(`[game] 월드 저장의 '${s.name}' 칸을 읽지 못했습니다:`, err); }
     }
   }
+
 }
