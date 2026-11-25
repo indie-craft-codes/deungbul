@@ -5,6 +5,7 @@ import { $ } from '../app';
 import { onMsg } from '../bus';
 import { L, onLangChange, t } from '../i18n';
 import { S } from '../state';
+import { itemIcon } from './icons';
 import { openMenu } from './menu';
 import { sourceText } from './sources';
 
@@ -14,9 +15,12 @@ const ids = Object.keys(ITEMS) as ItemId[];
 let gearCount = 0;
 const gearFull = (): boolean => gearCount >= S.bag.max;
 
-function row(slot: string, name: string, note: string): HTMLElement {
+function row(slot: string, name: string, note: string, icon?: string): HTMLElement {
   const el = document.createElement('div');
   el.className = 'bagrow';
+  // 아이템의 그림(게임이 addItemSheet로 등록했으면): 줄의 맨 앞
+  const pic = icon ? itemIcon(icon) : null;
+  if (pic) el.appendChild(pic);
   const a = document.createElement('span');
   a.className = 'slot';
   a.textContent = slot;
@@ -55,10 +59,10 @@ export function renderBag(): void {
   // 물약과 재료: 그 종류의 아이템이 없는 게임은 머리줄도 두지 않는다
   const potions = ids.filter((id) => itemDef(id).kind === 'potion'), mats = ids.filter((id) => itemDef(id).kind === 'mat');
   if (potions.length) ui.list.append(head(t('bagPotions')));
-  for (const id of potions) ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), ''));
+  for (const id of potions) ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), '', id));
   if (mats.length) ui.list.append(head(t('bagMats')));
   // 재료마다 어떤 몬스터가 떨어뜨리는지 적어 준다 (어디서 구하는지 화면 어디에도 없었다). 분해로 나오는 가루는 그렇게 적는다
-  for (const id of mats) ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), id === SALVAGE.item ? t('salvageSource') : sourceText(id)));
+  for (const id of mats) ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), id === SALVAGE.item ? t('salvageSource') : sourceText(id), id));
 }
 
 /** 가방이 가득 찼으면 가방 단추를 눈에 띄게 한다 (style.css의 #bagBtn.alert) */

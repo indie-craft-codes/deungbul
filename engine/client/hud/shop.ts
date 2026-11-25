@@ -7,6 +7,7 @@ import { onFrame, onMsg, onSlow } from '../bus';
 import { L, itemInfo, itemName, onLangChange, t } from '../i18n';
 import { rules } from '../rules';
 import { S } from '../state';
+import { itemIcon } from './icons';
 import { addPlace } from './near';
 
 let ui: Record<'panel' | 'gold' | 'list', HTMLElement>;
@@ -20,6 +21,9 @@ export function initShop(): void {
     b.type = 'button';
     b.className = 'skill potion';
     b.innerHTML = '<span class="k">Q</span><span class="n"></span><span class="cd"></span><span class="t"></span>';
+    // 가장 순한 물약의 그림이 있으면 단추에 얹는다 (수는 그 아래)
+    const pic = itemIcon(POTIONS[POTIONS.length - 1]);
+    if (pic) { b.classList.add('pic'); b.querySelector('.k')!.after(pic); }
     b.addEventListener('click', () => { usePotion(); b.blur(); });
     $('skills').appendChild(b);
     potion = { button: b, count: b.querySelector<HTMLElement>('.n')!, cd: b.querySelector<HTMLElement>('.cd')!, time: b.querySelector<HTMLElement>('.t')! };
@@ -53,6 +57,8 @@ export function renderShop(): void {
     const note = document.createElement('div');
     note.className = 'note';
     info.append(name, note);
+    const pic = itemIcon(id);
+    if (pic) row.appendChild(pic);
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = loc.fmt.price(def.price);

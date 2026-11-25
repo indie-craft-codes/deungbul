@@ -6,6 +6,7 @@ import { onMsg, onSlow } from '../bus';
 import { L, itemInfo, itemName, onLangChange, t } from '../i18n';
 import { rules } from '../rules';
 import { S } from '../state';
+import { itemIcon } from './icons';
 import { addPlace } from './near';
 import { sourceLine } from './sources';
 
@@ -45,6 +46,8 @@ export function renderForge(): void {
     const note = document.createElement('div');
     note.className = 'note';
     info.append(name, note);
+    const pic = itemIcon(r.id);
+    if (pic) row.appendChild(pic);
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = loc.fmt.price(r.gold);

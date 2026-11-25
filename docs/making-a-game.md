@@ -435,6 +435,7 @@ export function initScene(): void {
   setMapPaint((b) => { for (const a of AREAS) b.quad(a.x0, a.z0, a.x1, a.z1, '#5d7040'); b.disc(BONFIRE.x, BONFIRE.z, 9, '#8a744e'); });
 ```
 
+- **아이템 그림**(선택): 그림 한 장에 아이콘 여러 개를 고른 칸(열 × 행)으로 담은 시트를 게임의 `client/public/`에 두고 `addItemSheet('./items/sheet.jpg', 열, 행, [아이템 id …])`로 등록한다(id는 위 줄 왼쪽부터의 차례, 빈 칸은 `null`). 가방·상점·대장간의 줄과 물약 단추(Q)에 그 칸이 그려진다. 등록하지 않은 아이템은 글자만 보인다. 배경이 투명하지 않아도 되고(둥근 네모로 그린다), 한 칸 256px쯤이면 폰에서도 선명하다. 시트가 여러 장이면 여러 번 부른다. 등불지기: `games/deungbul/client/public/items/sheet.jpg`(소모품과 재료 여섯, 3 × 2).
 - 모델을 등록하지 않은 몬스터는 눈 달린 덩어리로 뜬다. 먼저 띄우고 나중에 꾸며도 된다.
 - 모델의 약속: 발이 원점, +Z를 바라본다. `{ root, legs }`를 돌려주면 네발 걸음(`legs`는 `limb()`가 돌려준 다리 묶음 넷의 배열: 앞왼, 앞오른, 뒤왼, 뒤오른), `{ root, rig }`면 사람 걸음(`rig`는 팔다리 넷 `{ ll, rl, la, ra }`), `{ root, blob }`이면 통통 튀는 동작을 틀이 입힌다(`blob`은 묶음이 아니라 **메시 하나**: `part(…)`가 돌려준 것). 크기를 바꾸려면 안쪽 묶음에 준다(틀이 쓰러지는 연출에서 `root`의 크기를 바꾼다).
 - 창의 색은 css 변수로 정한다. 게임의 css는 틀의 것 뒤에 읽혀 덮어쓴다(모듈에서 `import './sample.css'`).
@@ -809,6 +810,7 @@ export function initBonfire(): void {
 | `state.ts`의 `S` | 틀의 상태: 내 캐릭터(`S.me`), 주변, 파티 | `client/bonfire.ts` |
 | `rules.ts`의 `rules` | 화면 쪽 규칙 | `client/bonfire.ts` (`home`) |
 | `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳 | `client/bonfire.ts` |
+| `hud/icons.ts`의 `addItemSheet`, `itemIcon`, `hasItemIcon` | 아이템 그림의 시트를 등록하고, 아이템 하나의 그림 요소를 만든다(게임의 창에서도 쓸 수 있다) | |
 | `hud/menu.ts`의 `setMenuTabs`, `addMenuTab`, `openMenu`, `MENU_TABS` | 메뉴에 보일 탭과 차례, 게임의 탭, 탭을 골라 열기 | `client/bonfire.ts` |
 | `hud/near.ts`의 `addPlace` | 가까이 가면 열리는 창 | `client/bonfire.ts` |
 | (미니맵에는 틀이 스스로 찍는 표식이 없다: 몬스터·사람·파티원·나만 찍고, 상인·거점·목적지 같은 표식은 게임이 `addMarks`로 찍는다. 색은 `MARK`의 `lit`, `dark`, `shop`, `quest`, `portal`을 쓰거나 아무 색이나 준다) `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels`. `hud/worldmap.ts`의 `addMapPlaces`, `travelTo`, `stopTravel` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도의 큰 이름(구역)과 장소. 전체 지도(N 키·미니맵·`지도` 단추)는 틀이 그린다: 상점·대장간·던전의 문·사냥터(`CAMPS`)·우두머리는 틀이 내용에서 스스로 장소로 찍고, 게임은 자기 장소(거점, 목적지 …)를 `addMapPlaces`로 더한다(갈래 `PlaceKind`: goal, town, shop, forge, dungeon, hunt, boss, other). 장소를 누르면 정보 카드, 목록에서 '자동 이동'과 '가서 자동 사냥'(`hunt: true`). 모양: `addMapLabels(() => [{ x, z, text, big: true }])`, `addMapPlaces(() => [{ x, z, name, kind: 'town', info?, locked?, hunt? }])`. 함수는 그릴 때마다 불리므로 안에서 `t()`·지금 상태를 읽으면 언어와 상태를 따라간다 | `client/bonfire.ts`, `client/scene.ts` |

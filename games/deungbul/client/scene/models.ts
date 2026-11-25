@@ -2,7 +2,7 @@
 // 새 몬스터나 장비를 더하면 아래 표에 한 줄을 더한다 (몬스터는 빠뜨리면 컴파일이 실패한다).
 import * as THREE from 'three';
 import type { ItemId, MonsterId } from '../../shared/defs';
-import { type ArmorLook, type BladeLook, limb, makeBlob, makeHumanoid, mat, type Model, type MonsterBuilder, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco } from '@engine/client';
+import { addItemSheet, type ArmorLook, type BladeLook, limb, makeBlob, makeHumanoid, mat, type Model, type MonsterBuilder, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco } from '@engine/client';
 
 const G = {
   wisp: new THREE.IcosahedronGeometry(0.42, 0), halo: new THREE.IcosahedronGeometry(0.7, 0),
@@ -102,4 +102,6 @@ export function initModels(): void {
   for (const [type, build] of Object.entries(MONSTER_LOOKS)) registerMonsterModel(type, build);
   for (const [id, look] of Object.entries(BLADES)) registerBlade(id, look);
   for (const [id, look] of Object.entries(ARMORS)) registerArmor(id, look);
+  // 아이템 그림: 소모품과 재료를 한 장에 담은 시트(public/items/sheet.jpg, 3열 × 2행, 한 칸 256px). 위 줄 왼쪽부터의 차례
+  addItemSheet('./items/sheet.jpg', 3, 2, ['potion', 'tonic', 'hide', 'iron', 'ashcore', 'dust'] satisfies ItemId[]);
 }
