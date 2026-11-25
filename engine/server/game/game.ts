@@ -37,6 +37,7 @@ import { MailSys } from './systems/mail';
 import { Market } from './systems/market';
 import { Rank } from './systems/rank';
 import { Salvage } from './systems/salvage';
+import { Sanctions } from './systems/sanctions';
 import { Monsters } from './systems/monsters';
 import { Party } from './systems/party';
 import { Movement } from './systems/movement';
@@ -226,6 +227,8 @@ export class Game {
   readonly build: Build;
   readonly market: Market;
   readonly guild: Guild;
+  /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
+  readonly sanctions: Sanctions;
 
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
@@ -260,6 +263,7 @@ export class Game {
     this.build = new Build(this);
     this.market = new Market(this);
     this.guild = new Guild(this);
+    this.sanctions = new Sanctions(this);
     for (const fn of this.ready) fn();
   }
 

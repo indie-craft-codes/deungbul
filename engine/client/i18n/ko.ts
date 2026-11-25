@@ -72,6 +72,10 @@ export const koBase = (n: ContentNames) => {
   const place = (id: MsgArg) => n.places[String(id)] ?? (String(id) || '처음 자리');
   /** 거래소 우편 제목에 넣을 물건의 이름: [아이템 id나 장비 칸, 수량] */
   const tradeWhat = (a: (string | number)[]) => { const name = items[a[0] as ItemId]?.name ?? gearSlots[a[0] as GearSlot] ?? String(a[0]); return Number(a[1]) > 1 ? `${name} ×${a[1]}` : name; };
+  /** 운영자가 주거나 거둔 것의 이름: 재화 셋(gold, sparks, exp)이나 아이템 id */
+  const grantWhat = (id: MsgArg) => (id === 'gold' ? G.name : id === 'exp' ? '경험치' : items[id as ItemId] ? itemName(id) : coin?.name ?? String(id));
+  /** 남은 분을 읽기 좋게: 분, 시간, 일 */
+  const span = (m: MsgArg) => { const v = Number(m); return v < 60 ? `${v}분` : v < 1440 ? `${Math.ceil(v / 60)}시간` : `${Math.ceil(v / 1440)}일`; };
   return {
     code: 'ko',
     label: '한국어',
@@ -87,6 +91,20 @@ export const koBase = (n: ContentNames) => {
       soundOff: '소리 끔',
       full: '서버가 가득 찼습니다. 잠시 뒤에 다시 시도해 주세요.',
       reconnect: '다시 접속',
+      // ---- 운영: 접속 화면에 남는 까닭 (engine/client/main.ts), 기기 옮기기 (hud/device.ts) ----
+      gateBanned: '이 캐릭터나 주소는 접속이 막혀 있습니다.',
+      gateKicked: '운영자가 접속을 끊었습니다.',
+      gateHandedOff: '이 캐릭터는 다른 기기로 옮겨 갔습니다. 다시 접속하면 이 기기에서는 새 캐릭터로 시작합니다.',
+      gateHandoffDone: '캐릭터를 이어받았습니다. 다시 접속하는 중입니다…',
+      tabDevice: '기기',
+      deviceMoveHead: '다른 기기로 옮기기',
+      deviceMoveInfo: '코드를 받아 다른 기기의 게임에 넣으면 이 캐릭터가 그 기기로 옮겨 갑니다. 옮긴 뒤에는 이 기기에서 이 캐릭터로 들어올 수 없습니다. 코드는 10분 동안 한 번만 쓸 수 있습니다. 남에게 알려 주면 그 사람이 캐릭터를 가져가니 조심하세요.',
+      deviceMake: '코드 받기',
+      deviceUseHead: '코드로 이어받기',
+      deviceUseInfo: '다른 기기에서 받은 코드를 넣으면 그 캐릭터를 이 기기에서 이어서 합니다. 이 기기에서 지금 하던 캐릭터는 더 이어지지 않습니다.',
+      deviceUseHint: '코드 8자',
+      deviceUse: '이어받기',
+      deviceUseLink: '다른 기기에서 하던 캐릭터가 있나요? 코드로 이어받기',
       renameTitle: '눌러서 이름 바꾸기',
       renameLabel: '새 이름',
       renameSubmit: '변경',
@@ -372,6 +390,7 @@ export const koBase = (n: ContentNames) => {
       cmpCapped: (who: string, max: number) => `${josa(who, '은', '는')} +${max}까지만 강화됩니다`,
       cmpArrow: (verdict: string) => `지금 바꾸면: ${verdict}`,
       haveBig: (n: number, max: number) => `${num(n)} / ${num(max)}`,
+      deviceCode: (minutes: number) => `${minutes}분 안에 다른 기기에서 이 코드를 넣으세요. 한 번 쓰면 사라집니다.`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -490,6 +509,19 @@ export const koBase = (n: ContentNames) => {
       awayGear: (a) => ['자리를 비운 동안:', Number(a[0]) > 0 ? `가방이 가득 차 장비 ${num(a[0])}점을 줍지 못했습니다.` : '', Number(a[1]) > 0 ? `장비 ${num(a[1])}점을 자동으로 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[2])}` : ''].filter(Boolean).join(' '),
       bagUpDone: (a) => `가방을 넓혔습니다. 장비 ${a[0]}칸`,
       bagUpMax: () => '가방을 더 넓힐 수 없습니다.',
+      // ---- 운영 ----
+      muted: (a) => `대화가 막혀 있어 말을 보낼 수 없습니다.${Number(a[0]) > 0 ? ` ${span(a[0])} 뒤에 풀립니다.` : ''}`,
+      kicked: () => '운영자가 접속을 끊었습니다.',
+      banned: (a) => `접속이 막혀 있습니다.${Number(a[0]) > 0 ? ` ${span(a[0])} 뒤에 풀립니다.` : ''}`,
+      adminNotice: (a) => `[운영] ${a[0]}`,
+      adminChat: (a) => `[운영] ${a[0]}`,
+      adminGive: (a) => `운영자가 지급했습니다: ${grantWhat(a[0])} ${num(a[1])}`,
+      adminTake: (a) => `운영자가 회수했습니다: ${grantWhat(a[0])} ${num(a[1])}`,
+      handoffGuest: () => '이 브라우저에서는 캐릭터가 저장되지 않아 다른 기기로 옮길 수 없습니다.',
+      handoffBad: (a) => `코드가 맞지 않거나 시간이 지났습니다. ${a[0]}번 더 넣어 볼 수 있습니다.`,
+      handoffWait: (a) => `코드를 너무 많이 틀렸습니다. ${a[0]}분 뒤에 다시 해 주세요.`,
+      handoffSelf: () => '이 기기에서 하고 있는 캐릭터의 코드입니다. 다른 기기에서 넣어 주세요.',
+      handedOff: () => '이 캐릭터를 다른 기기로 옮겼습니다. 이 기기에서는 더 이어지지 않습니다.',
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

@@ -51,6 +51,23 @@ function token(): string | undefined {
   } catch { return undefined; } // 저장소를 못 쓰면 손님으로 들어간다 (저장되지 않음)
 }
 
+/**
+ * 기기 옮기기로 받은 새 토큰을 간직하고 곧바로 다시 접속한다 (hud/device.ts). 지금 연결은 버린다: 닫힘을 '끊김'으로 다루지 않게 먼저 놓는다.
+ * 저장소를 못 쓰는 브라우저면 false (이어받을 수 없다)
+ */
+export function adoptToken(t: string): boolean {
+  try { localStorage.setItem('token', t); } catch { return false; }
+  const old = ws;
+  ws = null;
+  old?.close();
+  connect();
+  return true;
+}
+/** 이 브라우저의 토큰을 지운다: 캐릭터가 다른 기기로 옮겨 가 이 토큰으로는 더 들어갈 수 없다. 다음 접속에 새 토큰이 생긴다 */
+export function forgetToken(): void {
+  try { localStorage.removeItem('token'); } catch { /* 저장소를 못 쓰는 환경 */ }
+}
+
 export function send(m: ClientMsg): void {
   if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
 }

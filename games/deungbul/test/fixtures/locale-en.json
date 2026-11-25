@@ -181,6 +181,13 @@
   "Contribution 1",
   "Contribution 2"
  ],
+ "fmt.deviceCode": [
+  "b4790554b1335d69",
+  "Enter this code on your other device within undefined minutes. It works only once.",
+  "Enter this code on your other device within 0 minutes. It works only once.",
+  "Enter this code on your other device within 1 minute. It works only once.",
+  "Enter this code on your other device within 2 minutes. It works only once."
+ ],
  "fmt.distance": [
   "04f513c824224e9f",
   "undefined m",
@@ -1012,6 +1019,34 @@
  "monsters.slime": "Slime",
  "monsters.wisp": "Wisp",
  "monsters.wolf": "Wolf",
+ "msg.adminChat": [
+  "24df00be119ae398",
+  "[Notice] undefined",
+  "[Notice] 0",
+  "[Notice] 1",
+  "[Notice] 2"
+ ],
+ "msg.adminGive": [
+  "abb65193d5506451",
+  "A moderator gave you Sparks ×NaN.",
+  "A moderator gave you Sparks ×0.",
+  "A moderator gave you Sparks ×1.",
+  "A moderator gave you Sparks ×3."
+ ],
+ "msg.adminNotice": [
+  "24df00be119ae398",
+  "[Notice] undefined",
+  "[Notice] 0",
+  "[Notice] 1",
+  "[Notice] 2"
+ ],
+ "msg.adminTake": [
+  "480f088b5e7d5240",
+  "A moderator removed Sparks ×NaN.",
+  "A moderator removed Sparks ×0.",
+  "A moderator removed Sparks ×1.",
+  "A moderator removed Sparks ×3."
+ ],
  "msg.alreadyBest": "You already have equal or better gear.",
  "msg.autoSalvaged": [
   "5b324cb0e8a18622",
@@ -1049,6 +1084,13 @@
   "Bag expanded. 2 gear slots"
  ],
  "msg.bagUpMax": "Your bag cannot be expanded any further.",
+ "msg.banned": [
+  "9544369e69e1d6b8",
+  "You are blocked from connecting.",
+  "You are blocked from connecting. The block lifts in 1 min.",
+  "You are blocked from connecting. The block lifts in 2 min.",
+  "You are blocked from connecting. The block lifts in 858 days."
+ ],
  "msg.bossDown": [
   "b536eca0aa5a659b",
   "undefined has fallen.",
@@ -1261,6 +1303,23 @@
  "msg.guildNone": "You are not in a guild. Create one or get invited under Menu > Guild.",
  "msg.guildNotLeader": "Only the guild leader can do that.",
  "msg.guildYouLeft": "You left the guild.",
+ "msg.handedOff": "This character has moved to another device and will not continue here.",
+ "msg.handoffBad": [
+  "5d784e3b19e708c1",
+  "That code is wrong or has expired. undefined tries left.",
+  "That code is wrong or has expired. 0 tries left.",
+  "That code is wrong or has expired. 1 try left.",
+  "That code is wrong or has expired. 2 tries left."
+ ],
+ "msg.handoffGuest": "This browser does not save your character, so it cannot be moved to another device.",
+ "msg.handoffSelf": "That code is for the character on this device. Enter it on your other device.",
+ "msg.handoffWait": [
+  "e85a1f0c0e46058d",
+  "Too many wrong codes. Try again in undefined min.",
+  "Too many wrong codes. Try again in 0 min.",
+  "Too many wrong codes. Try again in 1 min.",
+  "Too many wrong codes. Try again in 2 min."
+ ],
  "msg.hpFull": "Your health is full.",
  "msg.joined": [
   "9d24bb15d0f91008",
@@ -1269,6 +1328,7 @@
   "1 joined.",
   "2 joined."
  ],
+ "msg.kicked": "A moderator disconnected you.",
  "msg.kill": [
   "bd537c8733a27f8a",
   "undefined defeated. +undefined exp, +NaN gold",
@@ -1360,6 +1420,13 @@
   "The price must be a whole number from 2 to 0 gold.",
   "The price must be a whole number from 2 to 1 gold.",
   "The price must be a whole number from 2 to 2 gold."
+ ],
+ "msg.muted": [
+  "25ae95353081a966",
+  "You are muted and cannot send messages.",
+  "You are muted and cannot send messages. The mute lifts in 1 min.",
+  "You are muted and cannot send messages. The mute lifts in 2 min.",
+  "You are muted and cannot send messages. The mute lifts in 858 days."
  ],
  "msg.nameBad": "That name cannot be used.",
  "msg.nameTaken": "Someone online is already using that name.",
@@ -1714,6 +1781,14 @@
  "ui.currentClass": "Current",
  "ui.dailyDone": "Done",
  "ui.dailyNote": "Finish a task and the reward arrives by mail. Tasks reset at midnight.",
+ "ui.deviceMake": "Get a code",
+ "ui.deviceMoveHead": "Move to another device",
+ "ui.deviceMoveInfo": "Get a code and enter it in the game on your other device to move this character there. Afterwards, this device can no longer open this character. A code works once, for 10 minutes. Anyone you share it with can take your character, so keep it to yourself.",
+ "ui.deviceUse": "Continue",
+ "ui.deviceUseHead": "Continue with a code",
+ "ui.deviceUseHint": "8-character code",
+ "ui.deviceUseInfo": "Enter the code from your other device to continue that character here. The character you are playing on this device will not carry on.",
+ "ui.deviceUseLink": "Playing on another device? Continue with a code",
  "ui.disconnected": "Lost connection to the server.",
  "ui.dungeonEnter": "Enter",
  "ui.dungeonLeave": "Leave dungeon",
@@ -1724,6 +1799,10 @@
  "ui.equip": "Equip",
  "ui.forge": "Bram's Forge",
  "ui.full": "The server is full. Please try again shortly.",
+ "ui.gateBanned": "This character or address is blocked from connecting.",
+ "ui.gateHandedOff": "This character has moved to another device. If you reconnect, you will start a new character on this device.",
+ "ui.gateHandoffDone": "Character transferred. Reconnecting…",
+ "ui.gateKicked": "A moderator disconnected you.",
  "ui.gearEmpty": "No spare gear. Monsters drop some now and then.",
  "ui.gearLess": "Collapse",
  "ui.gearLockOff": "Unlock",
@@ -1835,6 +1914,7 @@
  "ui.stunned": "Stunned",
  "ui.tabBuild": "Growth",
  "ui.tabDaily": "Daily",
+ "ui.tabDevice": "Device",
  "ui.tabGear": "Gear",
  "ui.tabGuild": "Guild",
  "ui.tabMail": "Mail",

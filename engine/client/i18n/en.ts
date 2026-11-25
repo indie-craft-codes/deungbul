@@ -45,6 +45,10 @@ export const enBase = (n: ContentNames): EngineLocale => {
   const place = (id: MsgArg) => n.places[String(id)] ?? (String(id) || 'the starting point');
   /** Item name for market mail titles: [item id or gear slot, count] */
   const tradeWhat = (a: (string | number)[]) => { const name = items[a[0] as ItemId]?.name ?? gearSlots[a[0] as GearSlot] ?? String(a[0]); return Number(a[1]) > 1 ? `${name} ×${a[1]}` : name; };
+  /** What a moderator gave or took: one of the three currencies (gold, sparks, exp) or an item id */
+  const grantWhat = (id: MsgArg) => (id === 'gold' ? G.name : id === 'exp' ? 'EXP' : items[id as ItemId] ? itemName(id) : coin?.name ?? String(id));
+  /** Minutes left, readable: minutes, hours, days */
+  const span = (m: MsgArg) => { const v = Number(m), h = Math.ceil(v / 60), d = Math.ceil(v / 1440); return v < 60 ? `${v} min` : v < 1440 ? `${h} hour${h > 1 ? 's' : ''}` : `${d} day${d > 1 ? 's' : ''}`; };
   return {
     code: 'en',
     label: 'English',
@@ -60,6 +64,19 @@ export const enBase = (n: ContentNames): EngineLocale => {
       soundOff: 'Sound off',
       full: 'The server is full. Please try again shortly.',
       reconnect: 'Reconnect',
+      gateBanned: 'This character or address is blocked from connecting.',
+      gateKicked: 'A moderator disconnected you.',
+      gateHandedOff: 'This character has moved to another device. If you reconnect, you will start a new character on this device.',
+      gateHandoffDone: 'Character transferred. Reconnecting…',
+      tabDevice: 'Device',
+      deviceMoveHead: 'Move to another device',
+      deviceMoveInfo: 'Get a code and enter it in the game on your other device to move this character there. Afterwards, this device can no longer open this character. A code works once, for 10 minutes. Anyone you share it with can take your character, so keep it to yourself.',
+      deviceMake: 'Get a code',
+      deviceUseHead: 'Continue with a code',
+      deviceUseInfo: 'Enter the code from your other device to continue that character here. The character you are playing on this device will not carry on.',
+      deviceUseHint: '8-character code',
+      deviceUse: 'Continue',
+      deviceUseLink: 'Playing on another device? Continue with a code',
       renameTitle: '[[Click|Tap]] to change your name',
       renameLabel: 'New name',
       renameSubmit: 'Change',
@@ -336,6 +353,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       cmpCapped: (who, max) => `${who} only enhances to +${max}`,
       cmpArrow: (verdict) => `If you swap now: ${verdict}`,
       haveBig: (n, max) => `${num(n)} / ${num(max)}`,
+      deviceCode: (minutes) => `Enter this code on your other device within ${minutes} minute${minutes === 1 ? '' : 's'}. It works only once.`,
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -454,6 +472,18 @@ export const enBase = (n: ContentNames): EngineLocale => {
       awayGear: (a) => ['While you were away:', Number(a[0]) > 0 ? `${count(num(a[0]), 'drop')} left behind because your bag was full.` : '', Number(a[1]) > 0 ? `${count(num(a[1]), 'drop')} auto-salvaged. ${itemName(SALVAGE.item)} +${num(a[2])}` : ''].filter(Boolean).join(' '),
       bagUpDone: (a) => `Bag expanded. ${a[0]} gear slots`,
       bagUpMax: () => 'Your bag cannot be expanded any further.',
+      muted: (a) => `You are muted and cannot send messages.${Number(a[0]) > 0 ? ` The mute lifts in ${span(a[0])}.` : ''}`,
+      kicked: () => 'A moderator disconnected you.',
+      banned: (a) => `You are blocked from connecting.${Number(a[0]) > 0 ? ` The block lifts in ${span(a[0])}.` : ''}`,
+      adminNotice: (a) => `[Notice] ${a[0]}`,
+      adminChat: (a) => `[Notice] ${a[0]}`,
+      adminGive: (a) => `A moderator gave you ${grantWhat(a[0])} ×${num(a[1])}.`,
+      adminTake: (a) => `A moderator removed ${grantWhat(a[0])} ×${num(a[1])}.`,
+      handoffGuest: () => 'This browser does not save your character, so it cannot be moved to another device.',
+      handoffBad: (a) => `That code is wrong or has expired. ${a[0]} ${Number(a[0]) === 1 ? 'try' : 'tries'} left.`,
+      handoffWait: (a) => `Too many wrong codes. Try again in ${a[0]} min.`,
+      handoffSelf: () => 'That code is for the character on this device. Enter it on your other device.',
+      handedOff: () => 'This character has moved to another device and will not continue here.',
     },
     nameA: n.nameA,
     nameB: n.nameB,

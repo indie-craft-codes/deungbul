@@ -7,6 +7,7 @@ import { initBag } from './hud/bag';
 import { initBuffs } from './hud/buffs';
 import { initChannel } from './hud/channel';
 import { initClasses } from './hud/classes';
+import { initDevice } from './hud/device';
 import { initDungeon } from './hud/dungeon';
 import { initForge } from './hud/forge';
 import { initMenu } from './hud/menu';
@@ -29,6 +30,7 @@ export function initModules(): void {
   initMinimap();
   initWorldMap();
   initMenu();
+  initDevice(); // 메뉴의 '기기' 탭: 메뉴 뒤에
   initChannel();
   initDungeon();
   initNear();

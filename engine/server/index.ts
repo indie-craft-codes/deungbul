@@ -1,12 +1,28 @@
 // 틀의 서버 입구: 게임의 규칙 플러그인·서버 진입점·시험이 읽는 것. 여기 없는 것은 틀의 내부다 (입구의 목록은 engine/shared/index.ts).
 // 게임이 틀의 시스템에 붙는 접점(g.commands, g.on, g.mods, g.saves, g.wallet …)은 Game의 칸으로 닿는다.
+import path from 'node:path';
+import { setAdminDir } from './net/admin';
+import { runServer as runWith, type RunOptions } from './run';
+
 export { Game, Modifiers, type GameOptions, type ModName, type Plugin, type Saver } from './game/game';
 export { clamp, dist, readInt, type Ent } from './game/entity';
 export type { MonsterAct, MonsterBehavior } from './game/systems/monsters';
 export { channelOf, fieldLayer, isField, notifyLayer } from './game/layers';
 export { startServer, type Options, type Running } from './net/server';
-export { runServer, type RunOptions } from './run';
+export { createAdmin, parseSpan, type Admin, type AdminOptions } from './net/admin';
+export type { RunOptions };
 export { WHY, mailWhy, type Cur } from './game/systems/wallet';
 export type { EconSnapshot } from './game/systems/ledger';
 export { MemoryStore, SqliteStore, type EconRow, type PlayerSave, type Store, type WorldSave } from './store';
 export { addBannedWords, isClean, mask } from './text';
+
+/**
+ * 서버를 실행하는 흔한 절차 (./run.ts의 runServer). 관리자 통로(net/admin.ts)의 토큰 파일과 기록 파일을 저장 파일과 같은 폴더에 두도록
+ * 그 폴더를 먼저 알린다: run.ts와 같은 셈(환경 변수 DB, 없으면 opts.db)이다. 저장하지 않는 서버(DB=memory)는 관리자 통로를 열지 않는다.
+ * (run.ts가 startServer에 opts.admin을 직접 넘기게 되면 이 감싸기는 없앤다)
+ */
+export function runServer(opts: RunOptions): ReturnType<typeof runWith> {
+  const db = process.env.DB ?? opts.db;
+  setAdminDir(db === 'memory' ? undefined : path.dirname(path.resolve(db)));
+  return runWith(opts);
+}

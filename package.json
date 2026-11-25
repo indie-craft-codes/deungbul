@@ -19,6 +19,7 @@
     "build:bastion": "node scripts/game.mjs build bastion",
     "start:bastion": "node scripts/game.mjs start bastion",
     "pilot": "node scripts/pilot.mjs",
+    "admin": "node scripts/admin.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p games/deungbul/tsconfig.json && tsc --noEmit -p tsconfig.engine.json && tsc --noEmit -p engine/test/fx/tsconfig.json && tsc --noEmit -p games/sample/tsconfig.engine.json && tsc --noEmit -p games/sample/tsconfig.json && tsc --noEmit -p games/cave/tsconfig.engine.json && tsc --noEmit -p games/cave/tsconfig.json && tsc --noEmit -p games/starmine/tsconfig.engine.json && tsc --noEmit -p games/starmine/tsconfig.json && tsc --noEmit -p games/bastion/tsconfig.engine.json && tsc --noEmit -p games/bastion/tsconfig.json",
     "typecheck:engine": "tsc --noEmit -p tsconfig.engine.json",
     "typecheck:engine:sample": "tsc --noEmit -p games/sample/tsconfig.engine.json",

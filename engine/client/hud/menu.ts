@@ -29,6 +29,8 @@ export interface MenuTab {
   open?: () => void;
   /** 다시 그릴지 가르는 값: 이 값이 바뀌면 다시 그린다 (게임 탭이 보여 주는 상태) */
   sig?: () => unknown;
+  /** 게임이 고른 탭 목록(setMenuTabs)에 없어도 늘 맨 뒤에 보인다: 어느 게임에나 있어야 하는 틀의 탭 (기기 옮기기: hud/device.ts) */
+  always?: boolean;
 }
 /** 틀의 탭의 id */
 export const MENU_TABS = ['gear', 'build', 'mail', 'daily', 'market', 'guild', 'rank'] as const;
@@ -48,7 +50,10 @@ let order: string[] | null = null;
 /** 일일 임무도 출석도 없는 게임: 일일 탭을 숨긴다 */
 const noDaily = (): boolean => DAILY_IDS.length === 0 && ATTEND.length === 0;
 /** 지금 보이는 탭들 */
-const tabs = (): MenuTab[] => (order ? order.map((id) => allTabs.find((x) => x.id === id)).filter((x): x is MenuTab => !!x) : allTabs).filter((x) => !(x.id === 'daily' && noDaily()));
+const tabs = (): MenuTab[] => {
+  const picked = (order ? order.map((id) => allTabs.find((x) => x.id === id)).filter((x): x is MenuTab => !!x) : allTabs).filter((x) => !(x.id === 'daily' && noDaily()));
+  return [...picked, ...allTabs.filter((x) => x.always && !picked.includes(x))];
+};
 /** 보일 탭과 그 차례를 고른다 (틀의 id와 게임이 더한 탭의 id). 고르지 않은 탭은 숨는다. 서버의 기능(거래소, 길드)은 그대로 돈다: 화면에서 감출 뿐이다 */
 export function setMenuTabs(ids: readonly string[]): void { order = [...ids]; lastSig = ''; }
 /** 게임의 탭을 더한다. after를 주면 그 탭 뒤에, 아니면 맨 뒤에. setMenuTabs를 썼다면 그 목록에도 id를 넣어야 보인다 */

@@ -120,4 +120,17 @@ export type MsgKey =
   | 'awayLimit' // [하루 한도(시간)] 오늘의 자리 비움 사냥 시간을 다 썼다: 창을 닫으면 자동 사냥이 멈춘다 (자정에 다시 채워진다)
   | 'awayGear' // [가방이 가득 차 버려진 장비 수, 자동 분해한 장비 수, 얻은 가루] 자리를 비운 동안의 장비 (awayBack에 이어서 온다)
   | 'bagUpDone' // [새 가방 칸 수]
-  | 'bagUpMax'; // [] 더 넓힐 수 없다
+  | 'bagUpMax' // [] 더 넓힐 수 없다
+  // ---- 운영: 관리자 통로(engine/server/net/admin.ts)와 기기 옮기기(engine/server/net/handoff.ts) ----
+  | 'muted' // [남은 분 (0이면 영구)] 말이 막혀 있어 방금 한 말을 보내지 않았다
+  | 'kicked' // [] 운영자가 내보냈다 (곧 연결이 끊긴다)
+  | 'banned' // [남은 분 (0이면 영구)] 접속이 막혀 있다 (곧 연결이 끊긴다)
+  | 'adminNotice' // [글] 운영자의 공지: 가운데 알림
+  | 'adminChat' // [글] 운영자의 공지: 대화창의 한 줄
+  | 'adminGive' // [재화 id(gold, sparks, exp)나 아이템 id, 수] 운영자가 주었다
+  | 'adminTake' // [같은 것] 운영자가 거두었다
+  | 'handoffGuest' // [] 이 브라우저는 캐릭터가 저장되지 않아 옮길 수 없다
+  | 'handoffBad' // [더 틀릴 수 있는 횟수] 맞지 않거나 시간이 지난 코드
+  | 'handoffWait' // [다시 해 볼 수 있을 때까지의 분] 틀린 코드를 너무 많이 넣었다
+  | 'handoffSelf' // [] 지금 이 기기의 캐릭터의 코드다
+  | 'handedOff'; // [] 이 캐릭터를 다른 기기로 옮겼다: 이 기기에서는 더 이어지지 않는다
