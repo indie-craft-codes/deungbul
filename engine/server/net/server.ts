@@ -260,6 +260,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     byEnt.set(c.ent.id, c);
     send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: c.ent.auto || undefined, v: PROTOCOL });
     send(c, { t: 'world', s: game.state() });
+    // 오늘의 자리 비움 사냥 시간을 다 써서 멈췄던 사람: 왜 멈춰 있는지 알린다
+    if (save && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && game.away.left(c.ent) <= 0) game.notify(c.ent, 'awayLimit', AWAY.maxS / 3600);
     broadcast(sys('joined', name));
     saveTogether(); // 접속하며 받은 것(맡아 둔 우편)이 월드에서 빠진 것과 함께 저장되게
     savePlayer(c);

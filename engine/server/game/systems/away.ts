@@ -24,7 +24,12 @@ export class Away {
 
   constructor(private g: Game) {
     // 클라이언트가 자동 사냥을 켜고 끌 때마다 알려 준다
-    g.commands.set('auto', (p, m) => { p.auto = m.on === true; });
+    g.commands.set('auto', (p, m) => {
+      const on = m.on === true;
+      // 오늘 자리 비움 사냥 시간을 다 썼으면 켤 때 알린다: 창을 닫으면 멈춘다는 것을 모르고 끄고 나갔다가 멈춰 있었다
+      if (on && !p.auto && p.cls !== '' && p.lv >= AWAY.minLv && this.left(p) <= 0) g.notify(p, 'awayLimit', AWAY_MAX_S / 3600);
+      p.auto = on;
+    });
     g.on('playerLeft', (id) => { this.stays.delete(id); this.resting.delete(id); });
     g.saves.push({
       name: 'away',

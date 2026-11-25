@@ -459,6 +459,7 @@ export const koBase = (n: ContentNames) => {
       salvageFull: (a) => `${josa(itemName(SALVAGE.item), '을', '를')} 더 들 수 없어 분해하지 않았습니다. 나올 양 ${num(a[0])}, 남은 자리 ${num(a[1])}`,
       gearLocked: () => '잠근 장비입니다. 잠금을 풀어야 팔거나 분해하거나 거래소에 올릴 수 있습니다.',
       autoSalvaged: (a) => `주운 장비 ${a[0]}점을 자동으로 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[1])}`,
+      awayLimit: (a) => `오늘의 자리 비움 사냥 시간(${a[0]}시간)을 다 썼습니다. 창을 닫으면 자동 사냥이 멈춥니다. 자정에 다시 채워집니다.`,
       awayGear: (a) => ['자리를 비운 동안:', Number(a[0]) > 0 ? `가방이 가득 차 장비 ${num(a[0])}점을 줍지 못했습니다.` : '', Number(a[1]) > 0 ? `장비 ${num(a[1])}점을 자동으로 분해했습니다. ${itemName(SALVAGE.item)} +${num(a[2])}` : ''].filter(Boolean).join(' '),
       bagUpDone: (a) => `가방을 넓혔습니다. 장비 ${a[0]}칸`,
       bagUpMax: () => '가방을 더 넓힐 수 없습니다.',

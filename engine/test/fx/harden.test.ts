@@ -176,6 +176,10 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   p.auto = true;
   g.away.start(p);
   check(!p.auto, '한도를 다 쓴 날은 자동 사냥을 켠 채 끊겨도 캐릭터가 남지 않는다 (자동 사냥이 꺼져 평소처럼 나간다)');
+  g.notices = [];
+  g.command(p, { t: 'auto', on: true });
+  check(p.auto && g.notices.some((n) => n.id === p.id && n.k === 'awayLimit'), '한도를 다 쓴 날 자동 사냥을 켜면 창을 닫으면 멈춘다고 알린다');
+  g.command(p, { t: 'auto', on: false });
   const save = JSON.parse(JSON.stringify(g.players.export(p)));
   const again = g.players.spawn('비움이2', false, save, 'key-비움이2');
   check(g.away.left(again) === 0, '쓴 시간은 캐릭터와 함께 저장된다');

@@ -950,6 +950,13 @@
   "While you were away: 2 drops left behind because your bag was full. 3 drops auto-salvaged. Gear Dust +4",
   "While you were away: 1,234,567 drops left behind because your bag was full. 1,234,567 drops auto-salvaged. Gear Dust +1,234,567"
  ],
+ "msg.awayLimit": [
+  "e9c69d8cde86fb9c",
+  "You have used today's undefined h of away-hunting. Auto-hunt stops when you close the window. It refills at midnight.",
+  "You have used today's 0 h of away-hunting. Auto-hunt stops when you close the window. It refills at midnight.",
+  "You have used today's 1 h of away-hunting. Auto-hunt stops when you close the window. It refills at midnight.",
+  "You have used today's 2 h of away-hunting. Auto-hunt stops when you close the window. It refills at midnight."
+ ],
  "msg.bagUpDone": [
   "bedfa6e890997c83",
   "Bag expanded. undefined gear slots",
