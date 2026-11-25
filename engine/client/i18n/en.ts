@@ -158,7 +158,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       dailyDone: 'Done',
       dailyNote: 'Finish a task and the reward arrives by mail. Tasks reset at midnight.',
       none: 'None',
-      autoOn: `Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting (up to ${AWAY.maxS / 3600} hours).`,
+      autoOn: `Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting${AWAY.maxS < 24 * 3600 ? ` (up to ${AWAY.maxS / 3600} hours a day)` : ""}.`,
       autoOff: 'Auto-hunt off.',
       autoRest: 'Out of potions: resting until health recovers.',
       autoResume: 'Health recovered. Resuming the hunt.',

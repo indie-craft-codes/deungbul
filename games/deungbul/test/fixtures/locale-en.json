@@ -1536,7 +1536,7 @@
  "ui.attackNearest": "Attack nearest",
  "ui.auto": "Auto-hunt",
  "ui.autoOff": "Auto-hunt off.",
- "ui.autoOn": "Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting (up to 8 hours).",
+ "ui.autoOn": "Auto-hunt on. Moving yourself turns it off. If you close the game with it on, your character stays and keeps hunting.",
  "ui.autoRest": "Out of potions: resting until health recovers.",
  "ui.autoResume": "Health recovered. Resuming the hunt.",
  "ui.autoSalvageOff": "off",

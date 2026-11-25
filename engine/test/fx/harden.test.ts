@@ -166,7 +166,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   p.x = 60; p.z = 60;
   // 한 시간 사냥하고 잠깐 다시 접속하기를 되풀이한다
   let hours = 0;
-  for (; hours < 12 && (hours === 0 || p.auto); hours++) {
+  for (; hours < 30 && (hours === 0 || p.auto); hours++) {
     p.auto = true;
     g.away.start(p);
     for (let i = 0; i < 60 && p.auto; i++) { p.hp = p.maxHp = 1e7; g.tick(60); }

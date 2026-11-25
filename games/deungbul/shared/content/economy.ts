@@ -18,7 +18,7 @@
 //   등탑 밝기의 상한 (불씨를 받아 주는 한도)           content/tower.ts의 GLOW_MAX
 //   레벨 업에 필요한 경험치                           content/growth.ts의 LEVEL (firstNeed, growth)
 //   길드와 거래소의 골드가 아닌 규칙 (인원, 올려 두는 수와 기간, 쓸 수 있는 레벨)   content/social.ts의 GUILD, MARKET
-//   자리 비움 사냥의 하루 한도 (8시간)                 틀의 engine/shared/auto.ts의 AWAY.maxS (아직 틀에 있는 수치다)
+//   자리 비움 사냥의 하루 한도 (24시간)               틀의 engine/shared/auto.ts의 AWAY.maxS (아직 틀에 있는 수치다)
 //   저장을 읽을 때의 안전 범위 (레벨 999, 필요 경험치 1e9, 우편 한 통의 보상 1e7, 길드 기부 누계 1e12)   틀의 engine/server/game/systems/의 players.ts, mail.ts, guild.ts. 균형의 손잡이가 아니라 깨진 저장을 막는 값이다
 import type { Recipe } from '@engine/shared/defs/craft';
 import type { CurrencyDef } from '@engine/shared/defs/economy';
