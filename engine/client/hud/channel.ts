@@ -9,6 +9,8 @@ import { send } from '../net';
 const sel = $<HTMLSelectElement>('channel');
 /** 서버가 알려 준 내 채널(1부터), 채널별 인원, 습격 중이면 채널별 남은 적 */
 let me = 0, list: number[] = [], foes: number[] = [];
+/** 좁은 화면(폰): 닫혀 있는 상자는 좁게 잘려 보이므로 고른 채널을 짧게("Ch 1") 적고, 펼칠 때 길게 적는다 (css의 #channel과 같은 기준) */
+const narrow = typeof matchMedia === 'function' ? matchMedia('(max-width: 720px), (max-height: 480px)') : null;
 
 function render(): void {
   const loc = L();
@@ -17,7 +19,8 @@ function render(): void {
   while (sel.options.length > list.length) sel.remove(sel.options.length - 1);
   while (sel.options.length < list.length) sel.add(new Option('', String(sel.options.length + 1)));
   list.forEach((people, i) => {
-    const text = loc.fmt.channelOpt(i + 1, people, foes[i] ?? 0);
+    const short = !!narrow?.matches && document.activeElement !== sel && i + 1 === me;
+    const text = short ? loc.fmt.channelShort(i + 1) : loc.fmt.channelOpt(i + 1, people, foes[i] ?? 0);
     if (sel.options[i].text !== text) sel.options[i].text = text;
   });
   if (document.activeElement !== sel) sel.value = String(me);
@@ -35,4 +38,8 @@ export function initChannel(): void {
   // 이 모듈이 던전 모듈보다 먼저 불리므로 S.dungeon이 아니라 메시지에서 바로 읽는다
   onMsg('dungeon', (m) => { sel.disabled = !!m.id; });
   onLangChange(render);
+  // 펼치면 길게, 닫히면 짧게
+  sel.addEventListener('focus', render);
+  sel.addEventListener('blur', render);
+  narrow?.addEventListener('change', render);
 }

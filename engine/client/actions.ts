@@ -1,7 +1,7 @@
 // 플레이어가 할 수 있는 일. 입력(마우스, 키보드, 터치, 버튼)은 모두 여기를 거친다.
 // 각 행동은 서버에 명령을 보내고, 응답을 기다리지 않고 화면에 먼저 반영할 것을 반영한다.
 import { POTIONS, potionOrder } from '../shared/auto';
-import { SKILL_SLOTS, classOf, skillDef, type ClassId, type ItemId } from '../shared/defs';
+import { SKILL_SLOTS, classOf, isMonsterId, monsterDef, skillDef, type ClassId, type ItemId } from '../shared/defs';
 import { clampPoint } from '../shared/world';
 import { view } from './app';
 import { markMove } from './fx';
@@ -72,7 +72,9 @@ export function monstersNear(range: number): Remote[] {
 export function nextTarget(): void {
   const me = S.me;
   if (!me) return;
-  const list = monstersNear(30);
+  // 가까운 차례로 돌되, 센 몬스터(우두머리, 체력이 내 최대 체력 이상)는 뒤로 미룬다: 처음 온 사람이 Tab으로 퀘스트의 그림자부터 잡던 것(플레이어 재검토)
+  const strong = (r: Remote) => (isMonsterId(r.type) && !!monsterDef(r.type).boss) || r.maxHp >= me.maxHp;
+  const near = monstersNear(30), list = [...near.filter((r) => !strong(r)), ...near.filter(strong)];
   if (!list.length) { feed(t('noTargetNearby')); return; }
   const i = list.findIndex((r) => r.id === me.attackId);
   attack(list[(i + 1) % list.length].id);

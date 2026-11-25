@@ -77,7 +77,7 @@ export const SKILL_DEFS = {
   // 직업에 들지 않은 기술: 틀의 효과 종류를 빠짐없이 시험한다 (skills.test가 g.combat.cast로 낸다)
   rally: { cd: 20, radius: 6, effect: { kind: 'buff', mod: 'damage', value: 0.5, dur: 6, allies: true } },
   ward: { cd: 20, effect: { kind: 'buff', mod: 'guard', value: 0.4, dur: 5 } },
-  focus: { cd: 20, effect: { kind: 'buff', mod: 'crit', value: 1, dur: 5 } },
+  zeal: { cd: 20, effect: { kind: 'buff', mod: 'crit', value: 1, dur: 5 } },
   charge: { cd: 8, range: 10, effect: { kind: 'dash', dist: 8, dmg: [10, 10], stun: 2 } },
   bash: { cd: 6, range: 3, effect: { kind: 'hit', dmg: [5, 5], stun: 1.5, slow: 3 } },
   venom: { cd: 8, range: 10, effect: { kind: 'dot', dps: 5, dur: 4 } },

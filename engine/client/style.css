@@ -80,6 +80,8 @@ body {
 
 #chat { left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: 320px; display: flex; flex-direction: column; gap: 6px; }
 #log { height: 132px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; font-size: 12px; }
+/* 대화가 아직 없으면 기록 칸을 접는다 (빈 상자가 자리를 차지하지 않게) */
+#log:empty { display: none; }
 #log div { overflow-wrap: anywhere; }
 #log .who { color: #8fe0e6; font-weight: 600; }
 #log .sys { color: var(--gold); }
@@ -198,8 +200,8 @@ button.plain:hover { border-color: var(--gold); }
 .skill:hover { border-color: var(--gold); }
 .skill .k { position: absolute; left: 5px; top: 3px; font-family: var(--mono); font-size: 10px; color: var(--gold); font-weight: 400; }
 .skill .n { font-size: 13px; margin-top: 8px; }
-.skill .cd { position: absolute; inset: 0; background: rgba(0, 0, 0, .68); transform-origin: bottom; transform: scaleY(0); }
-.skill .t { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 17px; color: #fff; }
+.skill .cd { position: absolute; inset: 0; background: rgba(0, 0, 0, .55); transform-origin: bottom; transform: scaleY(0); }
+.skill .t { position: absolute; right: 4px; bottom: 2px; font-family: var(--mono); font-size: 13px; color: #fff; text-shadow: 0 0 3px #000; }
 #actRow { display: flex; gap: 6px; justify-content: center; }
 @media (pointer: coarse) { #skills { justify-content: flex-end; } }
 #autoBtn { pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
@@ -319,7 +321,7 @@ html, body { height: var(--app-h, 100%); }
 .baghead { color: var(--gold); font-weight: 700; font-size: 12px; border-top: 1px solid var(--line); padding-top: 6px; }
 #bagBtn { padding: 1px 8px; font-size: 11px; }
 @media (pointer: coarse) { #bagBtn { font-size: 14px; padding: 3px 10px; } }
-#bag { background: rgba(var(--ink-rgb), .96); }
+#bag { background: rgba(var(--ink-rgb), .96); z-index: 6; }
 #bagClose { position: sticky; bottom: 0; }
 #bagBtn { white-space: nowrap; flex: none; }
 
@@ -341,7 +343,7 @@ html, body { height: var(--app-h, 100%); }
 #buffs[hidden] { display: none; }
 #buffs .buff { font-size: 11px; padding: 1px 6px; border-radius: 3px; border: 1px solid var(--gold); color: var(--gold); background: rgba(240, 187, 85, .12); white-space: nowrap; }
 /* 전체 지도: 화면 가운데의 창. 지도와 장소 목록이 나란히(좁은 화면에서는 목록이 지도 위에 겹친다). 캔버스의 크기는 worldmap.ts가 창에 맞춘다 */
-#wmap { left: 50%; top: 50%; transform: translate(-50%, -50%); width: max-content; max-width: 98%; max-height: 98%; display: flex; flex-direction: column; gap: 6px; background: var(--ink); z-index: 5; padding: 8px; }
+#wmap { left: 50%; top: 50%; transform: translate(-50%, -50%); width: max-content; max-width: 98%; max-height: 98%; display: flex; flex-direction: column; gap: 6px; background: var(--ink); z-index: 30; padding: 8px; }
 #wmap[hidden] { display: none; }
 #wmapHead { gap: 8px; }
 #wmapHead #wmapArea { flex: 1; }

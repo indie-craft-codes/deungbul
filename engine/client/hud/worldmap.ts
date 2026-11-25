@@ -142,7 +142,23 @@ function enginePlaces(): MapPlace[] {
   return out;
 }
 /** 지금 지역의 장소 모두 (틀의 것 + 게임의 것) */
-const places = (): MapPlace[] => [...placers.flatMap((fn) => fn()), ...enginePlaces()].filter((p) => p.name && inside(p.x, p.z));
+const places = (): MapPlace[] => named([...placers.flatMap((fn) => fn()), ...enginePlaces()].filter((p) => p.name && inside(p.x, p.z)));
+/**
+ * 이름이 같은 장소(상인 둘 …)는 가장 가까운 큰 이름(구역)을 덧붙여 가른다: '길 상인 · 잿빛 숲'.
+ * 큰 이름으로도 갈리지 않으면 그대로 둔다 (거리로 가를 수 있다). 플레이어 재검토: 목록의 '길 상인' 둘을 가를 수 없었다
+ */
+function named(ps: MapPlace[]): MapPlace[] {
+  const count = new Map<string, number>();
+  for (const p of ps) count.set(p.name, (count.get(p.name) ?? 0) + 1);
+  if (![...count.values()].some((n) => n > 1)) return ps;
+  const zones = allLabels().filter((l) => l.big);
+  if (!zones.length) return ps;
+  return ps.map((p) => {
+    if ((count.get(p.name) ?? 0) < 2) return p;
+    const z = zones.reduce((a, b) => (Math.hypot(b.x - p.x, b.z - p.z) < Math.hypot(a.x - p.x, a.z - p.z) ? b : a));
+    return { ...p, name: `${p.name} · ${z.text}` };
+  });
+}
 
 // ---------- 자동 이동 ----------
 /** 자동으로 가는 중인 곳. 도착하면 알리고(hunt면 자동 사냥을 켠다), 목적지가 바뀌면(직접 움직이면) 그친다 */

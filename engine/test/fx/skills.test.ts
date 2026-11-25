@@ -1,5 +1,5 @@
 // 기술 효과의 종류: 강화(buff), 돌진(dash), 지속 피해(dot), 기절(stun)과 느려짐(slow). (서버 없이 게임 규칙만 돌린다. 시험용 내용 위에서)
-// 시험용 내용의 기술 가운데 직업에 들지 않은 것(rally, ward, focus, charge, bash, venom, quake)을 g.combat.cast로 낸다.
+// 시험용 내용의 기술 가운데 직업에 들지 않은 것(rally, ward, zeal, charge, bash, venom, quake)을 g.combat.cast로 낸다.
 import { Game } from '../../server/game/game';
 import type { Ent } from '../../server/game/entity';
 import { check } from '../harness';
@@ -36,7 +36,7 @@ function bench() {
   p.hp = p.maxHp;
 
   const crit0 = g.mods.sum('crit', p);
-  g.combat.cast(p, 'focus');
+  g.combat.cast(p, 'zeal');
   check(g.mods.sum('crit', p) >= crit0 + 1 - 1e-9, '치명타 확률 강화는 더하는 값이다');
   run(6.2);
   check(p.buffs.length === 0 && g.mods.sum('crit', p) === crit0 && g.mods.product('damage', p) === g.mods.product('damage', near), '시간이 지나면 강화가 모두 풀린다 (보정도 처음으로)');

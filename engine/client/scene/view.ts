@@ -145,6 +145,10 @@ export class View {
     this.width = w; this.height = h;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
+    // 폰 세로(좁고 긴 화면): 오른쪽에 쌓이는 창(등탑·상점·퀘스트)이 화면 가운데의 내 캐릭터를 덮었다(플레이어 재검토).
+    // 그리는 범위를 오른쪽으로 밀어 캐릭터가 화면 너비의 38%쯤에 서게 한다. 누르기(raycast)와 이름표도 같은 카메라를 써서 그대로 맞는다
+    if (h > w * 1.3 && w < 600) this.camera.setViewOffset(w, h, w * 0.12, 0, w, h);
+    else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
   }
 
