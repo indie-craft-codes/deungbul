@@ -1,41 +1,57 @@
 # 틀과 게임 가르기: 지금의 상태
 
-계획은 [framework-plan.md](framework-plan.md)에 있다(계획을 세울 때의 기록이라 파일 경로와 세부는 그때의 것이다). 이 문서는 **지금 무엇이 끝났고, 틀과 게임이 어디서 만나고, 무엇이 남았는지**를 적는다. 11단계(예제 게임과 문서)를 마친 때를 기준으로 쓴다. 새 게임을 만드는 차례는 [making-a-game.md](making-a-game.md)에 있다. 코드를 고치면 이 문서도 함께 고친다.
+이 문서는 **지금 무엇이 끝났고, 틀과 게임이 어디서 만나고, 무엇이 남았는지**를 적는다. 2026-11-25(커밋 `98de4cf` 무렵)을 기준으로 현행화했다. 코드를 고치면 이 문서도 함께 고친다.
 
-요약:
+함께 보는 문서:
 
-- 코드는 틀(`engine/`)과 게임들(`games/deungbul/`, 예제 `games/sample/`)이다. 방향은 게임 → 틀 하나다.
-- 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`)의 이름뿐이고, 별칭 `@game/shared/content`로 읽는다.
-- `npm run typecheck`(전체, 등불지기, 틀만, 틀만을 시험용 내용으로, 틀만을 예제의 내용으로, 예제) 오류 0, `npm test`(틀과 두 게임의 시험 1128개) 모두 통과.
-- 플레이어가 겪는 것, 저장 형식, 프로토콜은 0단계부터 지금까지 바뀌지 않았다(호환 코드는 2026-11-24 배포에서 껐고 `PROTOCOL`은 2다).
-- 장비 칸·옵션·등급·능력치의 id는 이제 게임이 짓는다(2026-11-24, 아래 '틀 수리의 진행'). 갑옷 칸 없이 칸 둘·옵션 둘·능력치 하나인 내용으로도 틀이 컴파일되는 것을 `games/sample/test/empty.test.ts`가 지킨다.
-- 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다(2026-11-24, 12단계 끝).
-- 틀의 시험은 게임 없이 돈다(13단계, 2026-11-25): `games/`를 지운 복사본에서도 틀의 타입 검사와 시험 704개가 통과한다.
-- 틀에 새 기능: 전체 지도(2026-11-25, `engine/client/hud/worldmap.ts`). 확대·끌기·두 손가락, 장소 목록과 정보 카드, 자동 이동과 '가서 자동 사냥'. 상점·대장간·던전의 문·사냥터·우두머리는 틀이 내용에서 스스로 모은다. 게임은 바탕(`setMapPaint`), 큰 이름(`addMapLabels`), 자기 장소(`addMapPlaces`)만 준다.
-- 틀에 새 접점: 손 모양(`registerHand`), 날아가는 것(`registerShot`), 사람형 모델 통째로 바꾸기(`setHumanoidBody`). 직업 정의의 `hand`·`shot`은 문자열이 됐다(점검 22번, 2026-11-25). 예제의 나무꾼이 도끼(`axe`)를 든다.
-- 기술 효과가 여섯 가지로(2026-11-25): `hit`(기절·느려짐을 붙일 수 있다), `area`, `heal`, `buff`(주는 피해·받는 피해·회복·치명타, 아군 포함), `dash`(돌진), `dot`(지속 피해, 범위). `g.combat.cast`로 효과만 낼 수 있고, 시험 `fx/skills`가 지킨다. 화면은 내 정보 창에 강화의 남은 시간, 기절 글자, 돌진 먼지. 자동 사냥은 강화를 싸움이 붙었을 때, 돌진을 대상이 떨어져 있을 때 쓴다.
-- 메뉴의 탭을 게임이 고른다(2026-11-25): `setMenuTabs`(보일 탭과 차례), `addMenuTab`(게임의 탭), 일일 임무·출석이 없으면 일일 탭이 저절로 숨는다. 예제는 거래소·길드를 감추고 모닥불 탭을 더했다.
-- 틀 수리 묶음 A~F가 모두 끝났다(2026-11-25). 다음은 '문서만 보고 새 게임 만들기' 검증. 아래 '이어 갈 것'.
+- [making-a-game.md](making-a-game.md): 새 게임을 만드는 차례와 틀의 접점 전체(새 게임을 만드는 사람은 이것부터).
+- [framework-audit.md](framework-audit.md): 2026-11-24의 점검 보고(기록). 거기 적힌 문제들의 처리는 아래 '틀 수리의 진행'.
+- [framework-plan.md](framework-plan.md): 틀을 가를 때의 계획(기록. 파일 경로와 세부는 그때의 것).
+- [economy.md](economy.md), [modes.md](modes.md), [ideas.md](ideas.md): 등불지기의 경제, 보류한 장르 모드, 보류한 아이디어.
 
-## 0. 이어 갈 것 (2026-11-24 마감)
+## 요약
 
-틀이 최우선이다(사용자 결정). **2026-11-24 추가 결정: 등불지기는 전통 MMORPG로 두고 새 장르 모드는 만들지 않는다. 작업은 틀만 한다.** 아래 3·4번(안개 균열, 경제의 다음 단계)은 그래서 보류다. 다음 세션은 이 차례로 잇는다.
+- 코드는 틀(`engine/`)과 게임들(`games/deungbul/` 등불지기, 예제 `games/sample/`)이다. 방향은 게임 → 틀 하나다.
+- 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`)의 이름뿐이고, 별칭 `@game/shared/content`로 읽는다. 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
+- 확인: `npm run typecheck`(전체, 등불지기, 틀만, 틀만을 시험용 내용으로, 틀만을 예제의 내용으로, 예제) 오류 0, `npm test`(틀의 시험과 두 게임의 시험, 검사 1148개) 모두 통과.
+- 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
+- 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
+- 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
+- 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다. 프로토콜은 2다(호환 코드는 2026-11-24에 지웠다). 그 뒤 더한 사건(`buff`, `stun`)은 옛 화면이 모르는 채 무시한다.
 
-1. **틀 수리(끝)**: [framework-audit.md](framework-audit.md)의 '작업 묶음 제안' A~F. 진행은 아래 '틀 수리의 진행'. A(게임별 tsconfig와 `GAME` 하나로 고르기, 틀을 두 번째 내용으로도 타입 검사) → B(장비 칸·옵션·능력치의 고정 id 풀기)·C(빈 표와 낱개: `ATTEND = []` 버그, `loc.items.potion`, 접속 전 카메라, 개발 포트 등) → E(경계 검사의 구멍과 입구 다섯) ·F(틀의 시험을 fixture로) → D(서버에 남은 색). 예제 게임(`games/sample`)이 이미 있으니 fixture는 그것을 줄여 쓴다.
-2. **문서만 보고 새 게임 만들기 검증**: 다음 차례. 검증자에게 '등불지기와 일부러 다르게'(원점에서 떨어진 지역, 직업 하나, 두 번째 재화 없음, 장비 칸 셋, 상점·던전·출석 없음)를 준다.
-3. **(보류) 멈춘 작업**(사용량 한도로 에이전트가 중간에 멈췄다. 검토·시험 전이라 본선에 넣지 않고 가지로만 저장했다):
-   - `wip/rift`: 안개 균열 시제품(5분 인스턴스 생존전). 서버·화면·시험 파일이 반쯤 있다. `_seed.ts`처럼 정리할 파일이 섞여 있다.
-4. **(보류) 경제의 다음 단계**: [economy.md](economy.md)의 결정대로 강화 규칙(+7부터 하락·보호 부적·재련) → 밝은 등불 → 접속 보상·수수료 → 따라잡기.
-5. **플레이어 재검토**: 에이전트가 플레이 도중 멈춰 보고가 없다. 위가 끝난 뒤 다시 맡긴다.
+## 0. 이어 갈 것
 
-### 틀 수리의 진행
+틀이 최우선이다(사용자 결정). **2026-11-24 결정: 등불지기는 전통 MMORPG로 두고 새 장르 모드는 만들지 않는다. 작업은 틀만 한다.**
+
+1. **문서만 보고 새 게임 만들기 검증** (다음 차례): 틀을 처음 보는 사람이 [making-a-game.md](making-a-game.md)만 보고 작은 게임을 만들 수 있는지. 검증자에게 '등불지기와 일부러 다르게'(원점에서 떨어진 지역, 직업 하나, 두 번째 재화 없음, 장비 칸 셋, 상점·던전·출석 없음, 새 기술 효과와 손 모양 하나씩)를 준다. 독립 에이전트에게 맡길지 직접 할지는 사용자가 정한다.
+2. **플레이어 재검토**: 실제 플레이로 막히는 곳과 큰 불편을 찾는다(전에 맡긴 검토는 도중에 멈춰 보고가 없다).
+3. **아래 '3. 남은 일'**의 작은 것들 (배포 스크립트를 게임 인자로, 등불지기 서버 진입점을 `runServer`로 등).
+4. **(보류)** 사용자가 다시 말할 때까지:
+   - 경제의 다음 단계: [economy.md](economy.md)의 강화 규칙(+7부터 하락·보호 부적·재련) → 밝은 등불 → 접속 보상·수수료 → 따라잡기.
+   - 가지 `wip/rift`: 안개 균열 시제품(반쯤 된 채 멈춤. 지우지 않는다). [modes.md](modes.md).
+   - [ideas.md](ideas.md)의 아이디어(AI 채팅으로 하는 루틴·정보 조회, 사용자가 만드는 코스튬).
+
+## 틀에 더한 기능 (2026-11-25)
+
+| 기능 | 틀 쪽 | 게임이 하는 일 | 지키는 것 |
+|---|---|---|---|
+| 전체 지도 | `engine/client/hud/worldmap.ts`: 지역 전체, 확대·끌기·두 손가락, 장소 목록과 정보 카드, 표식 위의 이름, 축척, 걸어가는 길. 상점·대장간(잠금)·던전의 문·사냥터(`CAMPS`: 몬스터와 수, 경험치·골드)·우두머리는 내용에서 스스로 모은다. 열기: N 키, 미니맵, '지도' 단추(폰 포함) | 바탕(`setMapPaint`), 큰 이름(`addMapLabels`), 자기 장소(`addMapPlaces`, 갈래 `PlaceKind`) | 화면으로 확인(PC·폰 가로세로·두 게임) |
+| 자동 이동 | `travelTo(장소, hunt)`, `stopTravel`: 길을 찾아 걷고 도착을 알린다. hunt면 도착해서 자동 사냥을 켠다. 직접 움직이면 그치고, 닿지 못하면 몇 번 다시 걷다 그친다 | 목록·카드의 단추가 부른다 | 화면으로 확인(가서 자동 사냥 → 처치까지) |
+| 손 모양·날아가는 것·사람형 | `registerHand(id, build)`, `registerShot(id, look)`, `setHumanoidBody(look => Model)`. 직업의 `hand`·`shot`은 문자열(틀에는 sword·bow·staff, arrow·bolt). 아이템 이름표는 손 모양 id의 칸을 읽는다(`ItemNames`) | 예제: 나무꾼의 도끼(`registerHand('axe', …)`) | 타입 검사, 화면 |
+| 기술 효과 여섯 | `SkillEffect`: `hit`(slow·stun), `area`, `heal`, `buff`(damage·guard·regen·crit, allies), `dash`, `dot`(area). 서버 `g.combat.cast`, 시간은 `tickEffects`, 사건 `buff`·`stun`. 화면: 내 정보 창의 강화와 남은 시간(`hud/buffs.ts`), 기절 글자, 돌진 먼지. 자동 사냥과 도감도 종류를 안다 | 기술 표에 한 줄. 예제: 내려찍기에 `stun: 1` | `engine/test/fx/skills.test.ts`(20개) |
+| 메뉴 탭 | 탭 id(`MENU_TABS`), `setMenuTabs(ids)`, `addMenuTab({ id, label, draw, dot, open, sig }, after)`, `openMenu(id)`. 일일 임무·출석이 없으면 일일 탭이 숨는다 | 예제: 거래소·길드를 감추고 모닥불 탭을 더했다 | 화면 |
+| 상인 | `setMerchant((shop, i) => ({ model, name, look }) \| null)` | 등불지기: 곁의 등탑을 바라본다, 이름 '길 상인' | 화면 |
+| 재화 | 저장을 읽을 때도 `CURRENCIES.max`(`g.wallet.limit`), 첫 재화의 이름은 이름표 `currency1` | 이름표 | `fx/wallet` |
+| 시험을 게임마다 | `test/all.ts`가 `games/<게임>/test/all.ts`를 저마다의 tsconfig로 돌린다. `node scripts/game.mjs test [게임] [이름…]` | 자기 `test/all.ts`와 `tsconfig.json` | `npm test` |
+
+## 틀 수리의 진행 (점검 보고의 묶음 A~F: 모두 끝)
 
 | 묶음 | 상태 |
 |---|---|
 | A. 두 번째 내용과 게임 고르기 | **끝(2026-11-25).** 틀을 두 번째 내용(예제)으로 타입 검사하는 것과 빈 표 변형 셋(`bare`, `weaponOnly`, `otherGear`)은 예제 작업 때 들어갔다. 게임 고르기는 `scripts/game.mjs <start\|watch\|client\|build> [게임]`(인자, `GAME`, 기본 `deungbul`) 한곳으로: 뿌리의 `vite.config.ts`를 `games/deungbul/vite.config.ts`로 옮겼고 `package.json`의 서버·화면 스크립트는 전부 이것을 부른다. 시험도 게임마다: `games/<게임>/test/all.ts`가 그 게임의 목록이고(`node scripts/game.mjs test [게임] [이름…]`, `npm run test:game`·`test:sample`), 뿌리의 `test/all.ts`는 틀의 시험 뒤에 `test/all.ts`가 있는 게임을 모두 저마다의 `tsconfig.json`으로 따로 된 프로세스에서 돌린다(`npm test`가 예제의 시험도 함께 돈다). 등불지기도 자기 `games/deungbul/tsconfig.json`을 가졌다. 뿌리의 `tsconfig.json`은 편집기와 `scripts/`·`test/`를 위해 등불지기를 기본으로 두었다(저장소의 본 게임) |
 | B. 장비·능력치·이름의 고정 풀기 | **끝(2026-11-24).** `STATS[id] = { base, mod }`, `BUILD_STATS[id] = { mod, per }`(전에는 id 목록과 `BUILD.pow/vit/luck`). `mod`는 틀의 효과 넷(`StatMod`: `damage`, `guard`, `crit`, `hp`)이고 서버의 보정(`modValue`, `wornMod`)과 화면의 문장은 효과로 만든다. 칸·등급·능력치의 이름은 이름표(`ContentNames`)의 `gearSlots`, `rarities`, `buildStats`로 게임에. 무기·갑옷 바탕의 기본 수치는 그 효과에 드는 첫 옵션(`statFor`)으로 보인다. 저장을 읽을 때의 옵션 수·장비 레벨 상한도 내용에서(`OPTS_MAX`) 또는 넉넉하게(999). 화면의 문장은 견본과 글자까지 같다. 안내문 `rested`는 D에서 게임으로 옮겼다. 첫 번째 재화의 이름은 이름표의 `currency1`(`{ name, unit }`, 없으면 골드)로: 틀의 문장 스물여덟 곳(한국어·영어 각각)이 그것을 쓴다(점검 26번, 2026-11-25) |
 | C. 빈 표와 낱개 | **끝(2026-11-25).** `ATTEND = []`면 출석을 세지 않는다, 처음 필요 경험치는 `needFor(1)`, 접속 전 카메라는 `MAP.spawn` 둘레, 대장간 창은 닿는 곳의 잠금 풀린 대장간이면 어느 것이나(서버와 같은 규칙), 직업의 기술 수는 `SKILL_SLOTS`를 따른다(`readonly SkillId[]`). `loc.items.potion`·`'field'`·개발 포트·`itemDef().kind`는 예제 작업 때 고쳤다. 상인은 게임이 세운다(20번): `setMerchant((shop, i) => ({ model, name, look }) | null)`, 빈 칸은 틀의 기본, `null`이면 그 자리에 아무도 세우지 않는다. 틀의 상인 이름은 '상인'/'Merchant'이고 등불지기는 '길 상인'으로 덮어쓴다(`ui.shop`, `msg.shopFar`). 재화의 상한은 저장을 읽을 때도 `CURRENCIES.max`에서(24번, `g.wallet.limit`): 시험용 내용의 상한을 1e9와 다르게(5e10) 두어 시험이 이를 지킨다. 레벨(999)과 우편 한 통의 보상(1e7)은 깨진 저장을 막는 틀의 상수로 남겼다 |
-| E. 경계 검사와 공개 표면 | **반쯤(2026-11-24).** 새 시험 `engine/test/boundary.test.ts`: (1) 틀의 소스가 게임의 내용 id를 문자열로 적는가(틀의 낱말 9개와 기본값 묶음은 뺀다), (2) 틀의 모든 소스의 문자열과 css에 이 게임의 낱말이 있는가(알고 남긴 것 4가지: `sparks`·`sparkBonus`(두 번째 재화의 칸), `raid`(점검 14번에서 지운다), `crypto`), (3) 타입 검사를 피하는 캐스팅이 지금(6개)보다 늘었는가, (4) 층을 넘는 import(화면 → 서버, 게임 규칙 → 저장소 구현, 공용 → 서버·화면). 지갑 검사는 `p['gold']`와 `Object.assign(p, { gold })`도 잡는다. 검사마다 스스로를 시험하고, 틀의 파일에 위반 넷을 일부러 넣어 넷 다 잡히는 것을 확인했다. 장부의 한 줄 요약은 재화를 `ECON_CURS`의 id로 찍는다(점검 10번의 반). **입구도 끝(같은 날)**: `engine/shared/index.ts`, `engine/server/index.ts`, `engine/client/index.ts`, `engine/testing.ts`가 이름을 하나씩 적어 내놓고(이것이 게임에 약속한 표면이다), 게임의 import 131줄을 입구로 옮겼다(67줄로 합쳐짐). `boundary.test.ts`의 5번이 깊은 import를 막는다: 허용은 입구, 언어 묶음(`i18n`, `i18n/ko·en·names·merge`), 내용 통로(`shared/defs`, `shared/world`), 확장 지점 셋, 그리고 내용 파일만 `shared/defs/*`의 `import type`과 `shared/defaults`. 구조 시험(`framework.test.ts`)의 경로 풀이는 폴더의 `index.ts`를 따라간다. 두 게임을 브라우저에서 띄워 콘솔 오류 없이 도는 것을 봤다(화면 모듈의 읽히는 차례가 바뀌었기 때문). 남은 것: `framework.test.ts`를 셋으로 가르기(F와 함께) |
+| E. 경계 검사와 공개 표면 | **끝(2026-11-24, 마지막 조각은 F와 함께 2026-11-25).** 새 시험 `engine/test/boundary.test.ts`: (1) 틀의 소스가 게임의 내용 id를 문자열로 적는가(틀의 낱말 9개와 기본값 묶음은 뺀다), (2) 틀의 모든 소스의 문자열과 css에 이 게임의 낱말이 있는가(알고 남긴 것 4가지: `sparks`·`sparkBonus`(두 번째 재화의 칸), `raid`(점검 14번에서 지운다), `crypto`), (3) 타입 검사를 피하는 캐스팅이 지금(6개)보다 늘었는가, (4) 층을 넘는 import(화면 → 서버, 게임 규칙 → 저장소 구현, 공용 → 서버·화면). 지갑 검사는 `p['gold']`와 `Object.assign(p, { gold })`도 잡는다. 검사마다 스스로를 시험하고, 틀의 파일에 위반 넷을 일부러 넣어 넷 다 잡히는 것을 확인했다. 장부의 한 줄 요약은 재화를 `ECON_CURS`의 id로 찍는다(점검 10번의 반). **입구도 끝(같은 날)**: `engine/shared/index.ts`, `engine/server/index.ts`, `engine/client/index.ts`, `engine/testing.ts`가 이름을 하나씩 적어 내놓고(이것이 게임에 약속한 표면이다), 게임의 import 131줄을 입구로 옮겼다(67줄로 합쳐짐). `boundary.test.ts`의 5번이 깊은 import를 막는다: 허용은 입구, 언어 묶음(`i18n`, `i18n/ko·en·names·merge`), 내용 통로(`shared/defs`, `shared/world`), 확장 지점 셋, 그리고 내용 파일만 `shared/defs/*`의 `import type`과 `shared/defaults`. 구조 시험의 경로 풀이는 폴더의 `index.ts`를 따라간다. 두 게임을 브라우저에서 띄워 콘솔 오류 없이 도는 것을 봤다(화면 모듈의 읽히는 차례가 바뀌었기 때문). 옛 `framework.test.ts`는 F에서 셋으로 갈랐다 |
 | F. 틀의 시험을 시험용 내용으로 | **끝(2026-11-25).** 틀의 시험용 내용 `engine/test/fx/shared/content`("시험 들판": 어느 게임의 것도 아니다. id와 맵은 등불지기·예제와 모두 다르고 수치는 시험의 기대값대로 등불지기를 따른다. 대장간·잠금·던전·필드 보스·두 번째 재화·분해·가방 넓히기·상인 둘을 모두 켠다)과 자기 tsconfig(`@game` → 그 폴더). 틀의 기능 시험 24개(`bare`와 옮긴 23개)가 그 위에서 따로 된 프로세스로 돈다(`engine/test/fx/all.ts`, 이름은 `fx/…`). 그 프로세스가 끝에 "게임(games/ 아래)의 파일이 하나도 로드되지 않았다"를 확인한다. 옛 `engine/test/framework.test.ts`는 셋으로 갈랐다: 틀만의 게임·서버·프로토콜 → `engine/test/fx/bare.test.ts`, 예전과 같다는 검사(맵 지문, 옮긴 수치, 저장 견본) → `games/deungbul/test/baseline.test.ts`, 이 게임과 틀의 경계(폴더·import·확장 지점·언어·화면) → `games/deungbul/test/split.test.ts`. 어느 게임에나 맞는 규칙(틀은 내용 통로 말고는 게임을 읽지 않는다, 게임의 id는 저장소의 모든 게임과 시험용 내용에서 모은다)은 `engine/test/boundary.test.ts`로. **확인: 저장소를 복사해 `games/`를 통째로 지우고도 틀의 타입 검사(`tsc -p engine/test/fx`)가 0이고 틀의 시험 704개가 모두 통과했다.** 검사 수는 1089(옮기기 전 1085 + 새 경계 검사 셋 + 매번 도는 '틀만' 검사 하나) |
 | D. 서버에 남은 색 | **끝(2026-11-25).** (12) `PlayerSave`에서 이 게임의 옛 칸 넷(`contrib, quest, rested, tier`)을 뺐다: `Saver.legacy`는 옛 저장을 이름-값 묶음으로 받는다. (13) 안내문 `rested`를 이 게임의 `MsgMap`으로. (27) `addBannedWords`(`@engine/server`): 게임이 금칙어를 더한다. (10) 장부의 한 줄 요약은 `ECON_CURS`의 id로(앞서), 사람이 읽는 보고 도구는 이 게임의 것이라 `games/deungbul/scripts/econ.ts`로 옮겼다(`npm run econ` 그대로). 지갑의 세 칸(골드·두 번째 재화·경험치)을 장부가 따라가는 것은 지갑과 같은 약속이라 둔다(계획 7절). (14) 습격 몹을 중립 이름으로: `Ent.raid` → `Ent.swarm`(몰려온 적), `monsters.atTower` → `atSiege`, `TOWER_ATTACK_RANGE` → `SIEGE_REACH`, 문장 키 `fmt.raidFoe` → `fmt.swarmFoe`, 이름표 클래스 `raid` → `swarm`. 줄 위의 칸 이름(`EnterInfo.r`)은 그대로라 열려 있던 화면도 그대로 돈다. 경계 검사에 남겨 두었던 예외 `raidFoe`, `raid`가 없어졌다 |
 
@@ -46,8 +62,8 @@
 | 0 | 안전망: 맵 지문, 저장 왕복 견본, 프로토콜 번호 | 끝 | `792067b` |
 | 1 | 서버의 직접 결합 풀기: 규칙 플러그인(`installDeungbul`), `Channels.extraFoes`, `worldSaves`의 `legacy` | 끝 | `792067b` |
 | 2 | 확장 지점: 두 `ext.ts`와 게임의 선언 병합 | 끝 | `f25e0b4` |
-| 3 | 게임의 저장 칸을 저장 등록(`g.saves`, `PlayerSave.ext`)으로 **[저장]** | 끝. 옛 칸에도 함께 쓰는 호환이 켜져 있다 | `e99dd58` |
-| 4 | 개인 상태 통로(`g.personal`, `me` 메시지) **[프로토콜]** | 끝. 옛 메시지도 함께 보내는 호환이 켜져 있다 | `ad69a00` |
+| 3 | 게임의 저장 칸을 저장 등록(`g.saves`, `PlayerSave.ext`)으로 **[저장]** | 끝. 옛 칸에 함께 쓰던 호환은 2026-11-24에 지웠다(읽는 길 `Saver.legacy`는 남았다) | `e99dd58` |
+| 4 | 개인 상태 통로(`g.personal`, `me` 메시지) **[프로토콜]** | 끝. 옛 메시지를 함께 보내던 호환은 2026-11-24에 지웠다(`PROTOCOL` 2) | `ad69a00` |
 | 5 | 내용 계약(`MapDef`, `FORGES`, `needs: string`, `contract.ts`) | 끝 | `6f468f0` |
 | 6a | 클라이언트의 규칙 객체(`rules`), `addNpc`, `onKey` | 끝 | `d5eae30` |
 | 6b | 화면 창 가르기(`hud/me.ts`와 게임의 창), 게임의 진입점 | 끝 | `751684d` |
@@ -56,28 +72,28 @@
 | 8 | 언어 파일을 틀의 문장과 게임의 문장으로(`mergeLocale`) | 끝 | `a67c46e` |
 | 9 | **폴더 이동**: `engine/`, `games/deungbul/`, 별칭, 내용 파일 가르기, 틀만 타입 검사 0 | 끝 | `feat/fw9` |
 | 10 | 시험 가르기, `new Game()`의 기본값을 틀만으로 | 끝 | `7c96900` |
-| 11 | 예제 게임 `games/sample`과 `docs/making-a-game.md`, 뼈대 올리기, 예제의 내용으로 드러난 틀의 수리 | 끝 (이 문서를 쓴 때) | `feat/fw11` |
+| 11 | 예제 게임 `games/sample`과 `docs/making-a-game.md`, 뼈대 올리기, 예제의 내용으로 드러난 틀의 수리 | 끝 | `feat/fw11` |
 | 12 | 공개 표면(입구 넷 + 언어, 깊은 import 금지) | 끝 (2026-11-24) | |
 | 13 | 틀의 시험을 등불지기의 내용에서 떼기 | 끝 (2026-11-25, 묶음 F) | |
 
-### 9단계에서 한 것
+### 9단계에서 한 것 (기록: 그때의 사실이다. 뒤에 바뀐 것은 괄호에 적었다)
 
 1. `git mv`로 모든 파일을 `engine/`과 `games/deungbul/`로 옮기고 import 경로와 설정을 고쳤다(내용 변화 없음: 빌드된 js·css가 바이트까지 같았다).
 2. 내용 파일을 갈랐다: 모양과 도우미는 `engine/shared/defs/*.ts`, 표와 수치는 `games/deungbul/shared/content/*.ts`. 통로를 둘로 나눴다(아래 2절).
 3. 틀이 계약 밖의 이름을 읽던 세 곳을 고쳤다: 대장간 창(`SMITH`·`SMITHY` → `FORGES`의 첫 대장간), 땅의 범위(`MIN_X` 등 → `MAP.areas[0]`), '마을로'의 안내문(`goingTown`: 틀에 기본 문장을 두고 게임이 덮어쓴다). 화면에 보이는 것은 그대로다.
 4. 틀만 타입 검사하는 방식을 바꿨다: 게임 파일을 뺀 사본을 만드는 스크립트(`scripts/typecheck-engine.mjs`)를 없애고 `tsc -p tsconfig.engine.json`(`engine/`의 소스만 include)으로. 오류 8 → 0. `npm run typecheck`와 `npm test`가 함께 돌린다.
-5. 의존 방향 검사를 폴더 기준으로 바꿨다(`engine/test/framework.test.ts`의 "의존 방향: 폴더").
+5. 의존 방향 검사를 폴더 기준으로 바꿨다(그때의 `engine/test/framework.test.ts`. 지금은 `engine/test/boundary.test.ts`와 `games/deungbul/test/split.test.ts`).
 
 계획서와 다르게 한 것:
 
 - 게임의 내용을 `games/deungbul/content/`가 아니라 `games/deungbul/shared/content/`에 두었다(옮기기 전의 `shared/content/`와 같은 모양이라 이력이 이어진다).
 - `test/all.ts`는 뿌리에 남겼다: 틀의 시험과 게임마다의 시험을 함께 돌리는 저장소의 도구다(`npx tsx test/all.ts fx/growth deungbul/quests`). 게임의 시험 목록은 그 게임의 `test/all.ts`에 있고, 뿌리의 도구는 `games/` 아래를 둘러보아 찾는다.
-- 수치의 기본값 묶음(`engine/shared/defaults.ts`)은 만들지 않았다. 예제 게임이 실제로 필요로 할 때(11단계) 만든다.
-- 게임별 `tsconfig.json`은 두지 않았다. 게임이 하나라 뿌리의 `tsconfig.json` 하나가 별칭을 정한다(4절).
-- 화면의 뼈대는 올리지 않았다(3절의 "남은 일").
-- 틀의 시험은 `tsconfig.engine.json`에 넣지 않았다: 아직 등불지기의 좌표와 id를 쓴다(13단계).
+- 수치의 기본값 묶음(`engine/shared/defaults.ts`)은 만들지 않았다. (11단계에서 만들었다.)
+- 게임별 `tsconfig.json`은 두지 않았다. (예제는 11단계에서, 등불지기는 2026-11-25에 자기 것을 가졌다. 4절.)
+- 화면의 뼈대는 올리지 않았다. (11단계에서 `engine/client/hud/skeleton.ts`로 올렸다.)
+- 틀의 시험은 `tsconfig.engine.json`에 넣지 않았다: 아직 등불지기의 좌표와 id를 쓴다. (13단계에서 시험용 내용으로 옮겼고, 자기 설정 `engine/test/fx/tsconfig.json`으로 검사한다.)
 
-### 11단계에서 한 것
+### 11단계에서 한 것 (기록)
 
 1. **예제 게임** `games/sample`("모닥불 사냥터"): 직업 둘, 몬스터 셋, 아이템 다섯, 지역 하나, 상인 하나, 이 게임만의 규칙 하나(모닥불). 던전·대장간·보스·두 번째 재화가 없다. 한국어와 영어. 자기 `tsconfig.json`(별칭 `@game` → `games/sample`)과 `vite.config.ts`, 시험(`npm run test:sample`)을 갖는다.
 2. **문서** `docs/making-a-game.md`: 새 게임을 만드는 차례. 코드 조각은 예제에서 따왔고 `games/sample/test/docs.test.ts`가 일치를 검사한다.
@@ -93,7 +109,7 @@
    - 사람 모델의 허리춤 등불을 게임의 꾸밈으로 옮겼다(`setHumanoidDeco`, 등불지기는 `games/deungbul/client/scene/models.ts`가 등록한다). 모습은 그대로다.
    - 개발 서버의 화면이 붙는 포트(3001)를 게임의 vite 설정이 정하게 했다(`VITE_DEV_PORT`). 정하지 않으면 3001이다.
 6. 새로 생긴 틀의 파일: `engine/shared/defaults.ts`(수치의 기본값 묶음: 계약의 이름 61개 가운데 게임의 id가 들지 않는 것. 등불지기는 쓰지 않는다), `engine/server/run.ts`(`runServer`: 등불지기의 `server/main.ts`가 하는 절차를 옮겨 적은 것. 등불지기는 아직 자기 것을 쓴다), `engine/client/hud/skeleton.ts`.
-7. `npm run typecheck`가 넷을 차례로 돌린다: 전체, 틀만, 틀만(예제의 내용), 예제. 틀이나 계약을 고치면 예제도 함께 고쳐야 통과한다.
+7. `npm run typecheck`가 넷을 차례로 돌린다: 전체, 틀만, 틀만(예제의 내용), 예제. 틀이나 계약을 고치면 예제도 함께 고쳐야 통과한다. (지금은 여섯: 등불지기의 설정과 시험용 내용이 더해졌다.)
 
 등불지기의 플레이, 저장 형식, 프로토콜은 바뀌지 않았다.
 
@@ -108,12 +124,12 @@
 | 화면 | `engine/client/` (`main.ts`의 `startClient`, `hud/`(뼈대 `skeleton.ts` 포함), `scene/`, `i18n/`, `style.css`) | `games/deungbul/client/` (`index.html`, `main.ts`, `hud/`, `scene/`, `i18n/`, `guide/`, `public/`) |
 | 시험 | `engine/test/` | `games/deungbul/test/` (`fixtures/`, `load.ts` 포함) |
 
-- 별칭: `@engine/*` → `engine/*`, `@game/*` → 그 게임의 폴더. 뿌리의 설정은 등불지기를, `games/sample/`의 설정은 예제를 가리킨다.
+- 별칭: `@engine/*` → `engine/*`, `@game/*` → 그 게임의 폴더. 게임마다 자기 `tsconfig.json`(`games/deungbul/`, `games/sample/`)이 있고, 틀의 시험은 `engine/test/fx/tsconfig.json`(시험용 내용)이다. 뿌리의 `tsconfig.json`은 편집기와 `scripts/`·`test/`를 위해 등불지기를 가리킨다.
   - `tsc`: `tsconfig.json`의 `paths` (예제: `games/sample/tsconfig.json`).
-  - `tsx`(서버 실행, 시험, `games/deungbul/scripts/econ.ts`): 실행한 폴더의 `tsconfig.json`을 읽어 `paths`를 따른다. **저장소 뿌리에서 실행해야 한다**(`npm` 스크립트와 `scripts/restart.sh`는 뿌리에서 돈다). 다른 폴더에서 `tsx games/deungbul/server/main.ts`를 직접 부르면 별칭을 찾지 못한다. 다른 게임은 `tsx --tsconfig games/<게임>/tsconfig.json`으로 실행한다: 주지 않으면 뿌리의 설정을 읽어 **등불지기의 내용으로 오류 없이 뜬다**(예제는 플러그인 파일의 맨 위에서 이것을 잡아 던진다).
+  - `tsx`(서버 실행, 시험, `games/deungbul/scripts/econ.ts`): `scripts/game.mjs`가 그 게임의 `tsconfig.json`을 `--tsconfig`로 준다(`npm start`, `npm run test:game` 등). 저장소 뿌리에서 돈다. 직접 부를 때 `--tsconfig`를 빼면 뿌리의 설정을 읽어 **등불지기의 내용으로 오류 없이 뜬다**(예제는 플러그인 파일의 맨 위에서 이것을 잡아 던지고, 틀의 시험 도구는 첫 줄에서 별칭을 확인한다).
   - `vite`: 게임 폴더의 `vite.config.ts`의 `resolve.alias` (`games/deungbul/vite.config.ts`, `games/sample/vite.config.ts`). 어느 것을 쓸지는 `scripts/game.mjs`가 고른다.
 - 별칭은 폴더를 넘을 때만 쓴다. 같은 폴더 안은 상대 경로다.
-- 뿌리에 남은 것: `test/all.ts`(시험을 돌리는 도구), `scripts/`, `docs/`, `tsconfig*.json`, `package.json`, 그리고 git에 넣지 않는 `data/`(저장)와 `dist/`(빌드).
+- 뿌리에 남은 것: `test/all.ts`(시험을 돌리는 도구), `scripts/`(`game.mjs` 게임 고르기, 배포 스크립트), `docs/`, `tsconfig*.json`, `package.json`, 그리고 git에 넣지 않는 `data/`(저장)와 `dist/`·`dist-sample/`(빌드).
 
 ### 서버
 
@@ -127,7 +143,8 @@
 | 수치 보정 | `g.mods`와 `ModsExt` | 등탑의 회복·속도, `sparkBonus` |
 | 등록 통로 | `g.commands, g.ticks, g.saves, g.worldSaves, g.shared, g.personal, g.out, g.notify, g.announce, g.killBonus, g.ready` | 규칙 시스템의 생성자 |
 | 틀의 시스템이 묻는 선택 접점 | `Channels.extraFoes`·`busy`, `worldSaves[].legacy`, `Saver.legacy`·`legacySave` | `raid.ts`, `tower.ts`, 저장을 맡은 시스템들 |
-| 호환(다음 배포에서 뺀다) | `g.oldMsgs`, `players.ts`의 `WRITE_OLD_CELLS` | `server/deungbul.ts`의 `SEND_OLD_MSGS` |
+| 기술 효과 | `g.combat.cast(p, id, target)`, `tickEffects`, `Ent.buffs`·`dots`·`stunUntil`. 강화는 `g.mods`의 보정으로 들어간다 | 기술 표(`SKILL_DEFS`)만 |
+| 금칙어 | `addBannedWords`(`@engine/server`) | (쓰지 않는다) |
 | 실행 | `startServer(port, { bots, store, game, staticDir })`, 그 절차를 묶은 `runServer({ port, db, dist, plugins })`(`engine/server/run.ts`) | `server/main.ts` (환경 변수, 저장소, 종료 처리, `data/stop.flag`). 예제는 `runServer`를 쓴다 |
 
 ### 공용
@@ -152,7 +169,9 @@
 | 진입 | `engine/client/main.ts`의 `startClient({ look, modules })` | `client/main.ts` (그 전에 `mountMarkup()`) |
 | 화면 규칙 | `engine/client/rules.ts`의 `rules` (`speed, unlocked, lockNote, lockHint, home`) | `client/deungbul.ts`의 `initDeungbul` |
 | 끼어드는 자리 | `bus.onMsg, onFrame, onSlow, onKey`, `onLangChange` | 게임의 모듈들 (init 안에서 등록) |
-| 겉모습 | `Look`의 `ground, leaf, scenery`, `view.setMood`, `setMapPaint`, `addMarks`, `registerMonsterModel`·`registerBlade`·`registerArmor`, `setHumanoidDeco`, `addNpc`, `addPlace` | `client/scene/*`, `client/hud/marks.ts`, `client/hud/tower.ts` |
+| 겉모습 | `Look`의 `ground, leaf, scenery`, `view.setMood`, `registerMonsterModel`·`registerBlade`·`registerArmor`, `registerHand`·`registerShot`, `setHumanoidDeco`·`setHumanoidBody`, `addNpc`, `setMerchant`, `addPlace` | `client/scene/*`, `client/deungbul.ts`, `client/hud/tower.ts` |
+| 지도 | `setMapPaint`, `addMarks`(미니맵과 전체 지도), `addMapLabels`, `addMapPlaces`, `travelTo` | `client/scene/paint.ts`, `client/hud/marks.ts` |
+| 메뉴 | `setMenuTabs`, `addMenuTab`, `openMenu` | (틀의 일곱 탭을 그대로 쓴다) |
 | 창 | `engine/client/hud/shell.ts`의 `mountPanel(자리, html)`과 `SLOTS` | `client/markup.ts`, `client/deungbul.css` |
 | 문장 | `koBase(names)`·`enBase(names)`, `mergeLocale`, `setLocales`, `LocaleExt`, `addNotices`, `addMsgSounds`. 이름표(`ContentNames`)의 `currency1`(없으면 골드)·`currency2`는 선택 칸 | `client/i18n/*`, `client/words.ts` |
 | 상태 | `S` (틀의 칸만) | `client/state.ts`의 `GS`(공유), `G`(개인) |
@@ -167,86 +186,60 @@
 | 자리 | `engine/test/boundary.test.ts`, `engine/test/fx/`(시험용 내용과 `all.ts`), `harness.ts` | `games/deungbul/test/이름.test.ts`, `all.ts`(목록), `game.ts`, `peer.ts`, `locale-snapshot.ts`, `fixtures/`. 예제는 `games/sample/test/`(`sample.test.ts`, `empty.test.ts`, `docs.test.ts`, `all.ts`). 게임의 시험은 그 게임의 `tsconfig.json`으로 따로 된 프로세스에서 돈다 |
 | 게임 만들기 | `new Game()`, `startServer()` | `newGame()`, `startDeungbul()` |
 | 명령 | `npm run test:engine`, 이름 앞에 `fx/` | `npm run test:game [-- 이름]`(`GAME`, 기본 등불지기), `npm run test:sample`, `test/all.ts`에서는 이름 앞에 `<게임>/` |
-| 지키는 것 | 게임의 규칙·선언·화면·시험을 import하지 않는다(따라 들어오는 것까지). 실행 중에도 `games/deungbul/server/`와 `test/`가 로드되지 않는다 | |
-| 아직 기대는 것 | 등불지기의 내용: `@game/shared/defs`·`world`(시험 파일 9개)와 `games/deungbul/test/fixtures/`의 저장 견본 | |
+| 지키는 것 | 시험용 내용(`engine/test/fx/shared/content`) 위에서 돈다. 실행이 끝나면 `games/` 아래의 파일이 하나도 로드되지 않았는지 확인한다(`fx/틀만`) | |
 
-방향을 지키는 검사는 `engine/test/framework.test.ts`에 모여 있다: 폴더 규칙 일곱 가지, 서버와 공용, 확장 지점과 선언 병합, 틀의 시험, 틀의 언어·알림·소리 파일의 낱말, 화면 파일이 가져오는 이름, 뼈대와 스타일(뼈대는 틀이 붙이고 `app.ts`가 `shell.ts`를 맨 먼저 읽는다). 이 검사들은 등불지기의 폴더를 본다. 예제의 폴더는 예제의 시험이 본다.
+방향을 지키는 검사:
+
+- `engine/test/boundary.test.ts`(모든 게임에 맞는 규칙): 틀의 소스에 게임의 내용 id나 게임의 낱말이 문자열로 없는가, 타입 검사를 피하는 캐스팅이 늘지 않았는가, 층을 넘는 import(화면 → 서버 등)가 없는가, 게임이 틀을 입구로만 읽는가, 틀이 내용 통로 말고는 게임을 읽지 않는가.
+- `games/deungbul/test/split.test.ts`(등불지기와 틀의 경계): 폴더·import의 방향, 확장 지점과 선언 병합, 틀의 언어·알림·소리 파일의 낱말, 화면 파일이 가져오는 이름, 뼈대와 스타일.
+- `games/deungbul/test/baseline.test.ts`: 가르기 전과 같은가(맵 지문, 옮긴 수치, 저장 견본).
+- 예제의 폴더는 예제의 시험(`games/sample/test/`)이 본다. `docs.test.ts`는 문서의 코드 조각이 예제의 파일과 같은지 본다.
 
 ## 3. 남은 일
 
-### 호환 코드 (끝)
+틀 쪽에 남은 작은 일들. 급하지 않고, 실제로 걸릴 때 고친다. 새 게임을 만드는 차례와 자주 걸리는 곳은 [making-a-game.md](making-a-game.md)에 있다.
 
-옛 저장 칸에 함께 쓰기(`WRITE_OLD_CELLS`)와 옛 메시지 함께 보내기(`SEND_OLD_MSGS`, `g.oldMsgs`)는 2026-11-24 배포에서 지웠고 `PROTOCOL`을 2로 올렸다. 옛 저장을 읽는 길(`Saver.legacy`)은 남아 있다.
-
-### 새 게임을 만들 때
-
-차례와 걸리는 곳은 [making-a-game.md](making-a-game.md)에 옮겨 적었다(10절 "자주 걸리는 곳"). 이 문서에는 틀 쪽에 남은 일만 둔다.
-
-- **틀이나 계약을 고치면 예제도 함께 고친다.** `npm run typecheck`가 예제까지 검사하므로, 계약에 이름을 더하면 `engine/shared/defaults.ts`에 기본값을 두거나 `games/sample/shared/content/index.ts`에 그 이름을 더해야 통과한다.
-- ~~틀의 시험은 등불지기의 내용을 쓴다.~~ 13단계(묶음 F, 2026-11-25)에서 풀었다: 틀의 시험은 시험용 내용(`engine/test/fx/`) 위에서 게임 없이 돈다.
-- **`ECON_CURS`**: 계약은 문자열 목록으로 받지만 장부(`ledger.ts`)는 `gold, sparks, exp` 세 가지를 코드에 적어 두었다.
-- **`vite`의 뿌리 밖 파일**: 틀의 코드가 뿌리(`games/<게임>/client`) 밖에 있어 `server.fs.allow`에 저장소 뿌리를 넣어야 하고, `index.html`의 `<link>`로는 뿌리 밖의 css를 개발 서버가 내주지 못한다(그래서 틀의 스타일은 틀의 진입 모듈이 import한다).
+- **틀이나 계약을 고치면 예제도 함께 고친다.** `npm run typecheck`가 예제까지 검사하므로, 계약에 이름을 더하면 `engine/shared/defaults.ts`에 기본값을 두거나 `games/sample/shared/content/index.ts`에 그 이름을 더해야 통과한다. 문서의 코드 조각을 바꾸면 예제의 파일도 같게.
 - **배포 스크립트**(`scripts/pilot.mjs`, `publish.sh`, `restart.sh`)는 등불지기의 포트·폴더·저장소를 적어 두었다. 게임을 인자로 받게 하는 일이 남았다.
 - **등불지기의 서버 진입점**은 `runServer`를 쓰지 않고 같은 절차를 자기 파일에 갖고 있다(습격 설정, 장부의 한 줄 요약이 더 있다). 합치려면 `runServer`에 "시작한 뒤에 할 일"을 넘기는 자리가 필요하다.
 - **등불지기의 내용**도 `defaults.ts`를 받게 할 수 있다(같은 값이 두 곳에 있다). 값이 갈리기 전에 정하는 편이 낫다.
-
-### 12단계: 공개 표면
-
-**끝(2026-11-24).** 입구는 `engine/shared/index.ts`(`@engine/shared`), `engine/server/index.ts`(`@engine/server`), `engine/client/index.ts`(`@engine/client`), `engine/testing.ts`(`@engine/testing`), 그리고 언어 `@engine/client/i18n`이다. 입구의 목록과 각각에 무엇이 있는지는 `engine/shared/index.ts`의 머리 주석에 있다. 입구에 없는 것은 틀의 내부다: 게임에 새로 내놓을 것이 생기면 입구에 이름을 더한다. 검사는 `engine/test/boundary.test.ts`의 5번.
-
-### 13단계: 틀의 시험을 등불지기의 내용에서 떼기
-
-- 틀의 시험 파일 9개가 `@game/shared/defs`·`world`에서 이 게임만의 이름을 읽는다: `TOWER, TOWERS, POND, PILLARS, ZONE_SPLIT, MIN_X…MAX_Z`(좌표), `SHOP, SMITHY`(자리), `RAID, raidFoes, raidTowerHp, speedFor, GLOW_BRIGHT_*, FULL_TOWER_OFFER`(`framework.test.ts`가 옮긴 수치와 식을 확인하는 데 쓴다: 이 검사들은 게임의 시험으로 옮기는 편이 맞다).
-- 그 밖의 틀 시험도 틀의 통로를 거쳐 등불지기의 id(`'slime'`, `'sword3'`, `'crypt'`, `'warrior'`)와 맵 좌표를 쓴다.
-- 저장 견본(`games/deungbul/test/fixtures/players.json`, `worlds.json`)을 틀의 `framework.test.ts`가 읽는다.
-- 끝나면 `tsconfig.engine.json`에 `engine/test`를 넣을 수 있다.
+- **`vite`의 뿌리 밖 파일**: 틀의 코드가 뿌리(`games/<게임>/client`) 밖에 있어 `server.fs.allow`에 저장소 뿌리를 넣어야 하고, `index.html`의 `<link>`로는 뿌리 밖의 css를 개발 서버가 내주지 못한다(그래서 틀의 스타일은 틀의 진입 모듈이 import한다).
+- **자동 이동은 지역 안에서만**: 들판에서 던전 안으로 곧장 가지 못하고 던전의 문까지 간다. 지역을 넘는 길(문을 지나 들어가기)은 아직 없다.
+- **지도에 보이는 몬스터와 사람**은 서버가 보내 주는 내 둘레(시야 `AOI`)의 것뿐이다. 먼 곳은 사냥터 표식으로 대신한다.
+- **강화를 쓰는 직업이 아직 없다**: 효과는 시험(`fx/skills`)으로 지키지만, 내 정보 창의 강화 표시는 실제 게임 화면에서 본 적이 없다.
 
 ### 틀에 남은 이 게임의 색
 
-컴파일은 되지만 다른 게임에서는 어색한 것들. 급하지 않고, 예제 게임이 실제로 걸릴 때 고친다.
+컴파일은 되지만 다른 게임에서는 어색할 수 있는 것들.
 
 | 무엇 | 어디 | 메모 |
 |---|---|---|
-| 두 번째 재화 `sparks` | `Ent.sparks`, `PlayerSave`, `stat` 메시지, `MonsterDef.sparks`, `Reward.sparks`, `players.grant(p, exp, sparks)`, `mail.ts`, `away.ts`, `ledger.ts`(`ECON_CURS`와 한 줄 요약의 '불씨'), `hud/menu.ts`의 보상 글, `fx.ts`(불티 입자는 무관) | 계획서 7절: 일반화하지 않는다. 틀의 "두 번째 재화 한 가지"로 두고, 이름은 게임의 이름표가 준다. 쓰지 않는 게임은 이름표에 `currency2`를 적지 않으면 틀의 문장에서 빠진다(11단계). 값은 0으로 계속 오간다(`stat`, 저장, 처치 안내문의 셋째 값). `ledger.ts`의 `line()`에 한글 '불씨'가 박혀 있다(`runServer`는 그 줄을 찍지 않는다) |
+| 두 번째 재화 `sparks` | `Ent.sparks`, `PlayerSave`, `stat` 메시지, `MonsterDef.sparks`, `Reward.sparks`, `players.grant(p, exp, sparks)` | 계획서 7절: 일반화하지 않는다. 틀의 "두 번째 재화 한 가지"로 두고, 이름은 게임의 이름표(`currency2`)가 준다. 쓰지 않는 게임은 이름표에 적지 않으면 틀의 문장에서 빠진다 |
 | 보정 이름 `sparkBonus` | `g.mods` | 이름만 |
-| 습격 몹 개념 | `Ent.raid`, `monsters.spawn(…, raid)`, `Monsters.atTower`, `TOWER_ATTACK_RANGE`, `g.rules.siege`, 스냅샷의 `EnterInfo.r`, 화면의 `Remote.raid`, 꼬리표 `'mon raid'`, `fmt.raidFoe` | 틀의 기능으로 남길지 정해야 한다(계획서 8절). 남기면 이름을 중립으로(`swarm`, `rules.siege` → 목표), 빼려면 `monsters.tick`에 몹별 행동을 덮어쓰는 자리가 하나 필요하다 |
-| 사람 모델 | `engine/client/scene/models.ts`의 `makeHumanoid`(지팡이 직업의 고깔모자, 옷 색의 목록, 손 모양 셋) | 허리춤의 등불은 게임의 꾸밈으로 옮겼다(`setHumanoidDeco`). 사람 모델 자체를 게임이 넘기는 접점은 없다 |
 | 장면의 하늘빛 | `engine/client/scene/view.ts`의 `SKY`(하늘과 안개의 처음 색) | css의 `--sky`는 문서의 바탕색일 뿐이고 장면의 하늘은 `view.setMood`로 바꾼다. 둘이 따로다 |
-| 미니맵의 상인 표식 | `hud/minimap.ts` | 틀은 상인을 찍지 않는다. 게임이 `addMarks`로 찍는다(등불지기의 `marks.ts`, 예제의 `bonfire.ts`). 범례(`ui.mapLegend`)도 게임이 준다 |
-| 뼈대가 쓰는데 틀에 기본 문장이 없는 키 | `ui.intro`, `ui.classHint`, `ui.mapLegend` | 게임이 주지 않으면 빈 채로 뜬다(컴파일은 된다). 틀에 기본 문장을 두거나 계약처럼 강제할 수 있다 |
-| 메뉴의 탭 | `hud/menu.ts`의 `TABS` | 내용과 무관하게 일곱 탭이 모두 보인다(길드·거래소는 내용 없이도 돈다). 게임이 탭을 빼는 접점은 없다 |
+| 뼈대가 쓰는데 틀에 기본 문장이 없는 키 | `ui.intro`, `ui.classHint`, `ui.mapLegend` | 게임이 주지 않으면 빈 채로 뜬다(컴파일은 된다) |
 | 개발 서버의 기본 포트 | `engine/client/net.ts` | `VITE_DEV_PORT`가 없으면 3001(등불지기의 포트)이다 |
-| css에 박힌 색과 모양 | `engine/client/style.css` | 색 변수(`--gold`, `--panel` 등)는 게임이 덮어쓰지만 변수로 빠지지 않은 색이 남아 있다. 메뉴 창의 바탕은 `var(--ink)`로 바꿨다(11단계). 남은 것: `--ink`를 투명도만 달리해 적은 색(`rgba(14, 34, 39, …)`: 알림 줄, 조작 안내, 조이스틱, 가방, 미니맵 범례, 폰의 대화창), 접속 화면의 어둑한 바탕, 던전 창 제목과 장비 등급의 색. 색을 다르게 정한 게임(예제)에서는 이 자리들이 등불지기의 청록빛으로 남는다 |
-| 대장간이 하나 | `engine/client/hud/forge.ts`(`FORGES`의 첫 대장간만), `engine/server/game/systems/craft.ts` | 계약은 목록(`FORGES`)이다 |
-| '마을로' | `actions.ts`의 `goToTown`, `input.ts`의 H 키, 문장 키 `goingTown` | 틀의 이름이 '마을'을 말한다. 기본 목적지는 `MAP.spawn` |
+| css에 박힌 색 | `engine/client/style.css` | 색 변수(`--gold`, `--panel` 등)는 게임이 덮어쓰지만 `--ink`를 투명도만 달리해 적은 색(`rgba(14, 34, 39, …)`: 알림 줄, 조작 안내, 조이스틱, 가방, 미니맵 범례, 폰의 대화창, 전체 지도의 카드·목록)과 던전 창 제목, 장비 등급의 색은 변수가 아니다 |
+| '마을로' | `actions.ts`의 `goToTown`, `input.ts`의 H 키, 문장 키 `goingTown` | 틀의 문장 키 이름이 '마을'을 말한다(문장은 게임이 덮어쓴다). 목적지는 `rules.home`(없으면 `MAP.spawn`) |
 | 일일 임무의 종류 | `DailyKind`는 문자열이지만 주석이 이 게임의 `'offer'`를 든다 | 주석만 |
 | 채널의 '바쁜 때' | `CHANNEL.tellBusyS`, `Channels.busy`, `channels` 메시지의 `foes` 칸 | 습격에서 온 개념이 중립 이름으로 남았다 |
-| 손님 이름, 금칙어 | `GUEST_NAME`(계약), `engine/server/text.ts`의 금칙어 목록 | 금칙어는 언어에 달렸다 |
-| 틀의 문장 속 낱말 | `engine/client/i18n/ko.ts`·`en.ts` | 낱말 검사(`framework.test.ts`의 `WORDS_*`)가 지키지만, 상점('길 상인')·대장간·물약·길드·거래소 같은 낱말은 틀의 것으로 남아 있다. 게임이 같은 키로 덮어쓴다(예제: `ui.bagPotions`, `fmt.potions`, `msg.loot`, `msg.noPotion`) |
-| 아이콘·manifest·제목 | `games/deungbul/client/public/`, `index.html`의 머리 | 게임의 것이 맞다. 틀에는 기본이 없다 |
+| 틀의 문장 속 낱말 | `engine/client/i18n/ko.ts`·`en.ts` | 낱말 검사가 등불지기의 낱말을 막지만, 상점·대장간·물약·길드·거래소 같은 낱말은 틀의 것으로 남아 있다. 게임이 같은 키로 덮어쓴다 |
+| 레벨과 우편 보상의 읽기 상한 | `players.ts`의 `LV_READ_MAX`(999), `mail.ts`의 `REWARD_MAX`(1e7) | 깨진 저장을 막는 틀의 상수. 넘는 게임이 나오면 올린다 |
 
 ## 4. 설정 파일
 
-- `tsconfig.json`: 전체. `include: ["engine", "games/deungbul", "test", "scripts"]`. 게임의 선언 파일(`games/deungbul/shared/deungbul.ts`)은 아무도 import하지 않고 이 `include`로 컴파일에 들어간다: `include`에서 `games/deungbul`을 빼면 선언 병합이 사라져 게임의 코드가 컴파일되지 않는다.
-- `games/sample/tsconfig.json`: 예제. 뿌리의 설정을 물려받아 `paths`의 `@game`만 자기 폴더로 바꾸고 `include`는 틀의 소스와 자기 폴더다. `games/sample/tsconfig.engine.json`은 거기서 `include`를 틀의 소스로 줄인 것이다(틀만을 예제의 내용으로).
-- `tsconfig.engine.json`: 틀만. `include: ["engine/shared", "engine/server", "engine/client"]`. 별칭은 `tsconfig.json`의 것을 물려받아 `@game`이 등불지기의 내용을 가리킨다: 틀의 통로가 import하는 내용 파일은 따라 들어오지만 게임의 선언 파일과 규칙은 들어오지 않는다.
-- `games/deungbul/vite.config.ts`(2026-11-24에 뿌리에서 옮겼다): `root`는 `games/deungbul/client`, `publicDir`은 그 안의 `public/`, `outDir`은 뿌리의 `dist/`, `base: './'`. 도감은 게임 빌드가 끝난 뒤 같은 `dist/`에 따로 빌드한다.
-- `package.json`의 스크립트 이름은 옮기기 전과 같다: `dev, dev:server, dev:client, build, start, pilot, typecheck, typecheck:engine, test, test:engine, test:game, load, econ`. `typecheck`는 전체, 등불지기, 틀만, 틀만(시험용 내용), 틀만(예제의 내용), 예제를 차례로 돌린다. `test:game`·`test:sample`은 `scripts/game.mjs test`를 부른다(2026-11-25). 11단계에서 더한 것: `typecheck:engine:sample, typecheck:sample, test:sample, build:sample, start:sample, dev:sample`. 예제의 기본 포트는 3002, 저장은 `data/sample/game.db`, 빌드 결과는 `dist-sample/`이라 등불지기의 것과 섞이지 않는다.
+- `tsconfig.json`(뿌리): 편집기와 `scripts/`·`test/`를 위한 기본. `@game`은 등불지기, `include: ["engine", "games/deungbul", "test", "scripts"]`, `exclude: ["engine/test/fx"]`. 게임의 선언 파일(`games/deungbul/shared/deungbul.ts`)은 아무도 import하지 않고 `include`로 컴파일에 들어간다.
+- `games/deungbul/tsconfig.json`, `games/sample/tsconfig.json`: 게임마다. 뿌리의 설정을 물려받아 `@game`만 자기 폴더로 바꾸고 `include`는 틀의 소스와 자기 폴더다. 서버·시험·도구는 이것으로 돈다(`scripts/game.mjs`가 고른다). `games/sample/tsconfig.engine.json`은 `include`를 틀의 소스로 줄인 것(틀만을 예제의 내용으로).
+- `engine/test/fx/tsconfig.json`: 틀의 시험. `@game` → 시험용 내용. `include`는 틀의 소스, `harness.ts`, 그 폴더.
+- `tsconfig.engine.json`: 틀만(`engine/shared`, `engine/server`, `engine/client`). `@game`은 등불지기의 내용.
+- `games/<게임>/vite.config.ts`: `root`는 그 게임의 `client`, 결과는 등불지기 `dist/`, 예제 `dist-sample/`. 등불지기의 도감은 게임 빌드가 끝난 뒤 같은 `dist/`에 따로 빌드한다.
+- `package.json`: 서버·화면·시험의 스크립트는 `scripts/game.mjs <start|watch|client|build|test> [게임]`을 부른다(인자, 없으면 `GAME`, 없으면 `deungbul`). `typecheck`는 여섯 설정을 차례로. 예제: `typecheck:sample, typecheck:engine:sample, test:sample, build:sample, start:sample, dev:sample`(포트 3002, 저장 `data/sample/game.db`).
 
-## 5. 운영 서버에 올릴 때 (9단계)
+## 5. 운영 서버에 올릴 때
 
-9단계는 저장 형식과 프로토콜을 건드리지 않았다. 서버만 올려도, 화면만 올려도, 어느 쪽을 먼저 올려도 된다. 그래도 파일의 자리가 모두 바뀌었으므로 이렇게 한다.
-
-1. 원본 폴더에서 **실행 중인 다른 작업이 없는지** 확인하고, `git status`가 깨끗한 상태에서 `feat/fw9`를 합친다. 옛 폴더(`client/`, `server/`, `shared/`)에 git이 모르는 파일이 남아 있으면 빈 폴더가 지워지지 않으니 눈으로 확인한다.
-2. `npm ci`는 필요 없다(의존성은 그대로다). `npm run typecheck`와 `npm test`를 돌린다.
-3. `npm run build`로 `dist/`를 새로 만든다. 서버는 뿌리의 `dist/`를 그대로 내보낸다.
-4. 이 PC에만 있는 실행 파일(`start.ps1`, `resume.ps1`, `.claude/`의 설정)이 **옛 경로를 직접 부르지 않는지** 본다: `server/main.ts`, `test/load.ts`, `scripts/typecheck-engine.mjs`, `client/…`를 직접 가리키는 줄이 있으면 고친다. `npm` 스크립트(`npm start`, `npm run pilot` 등)와 `scripts/*.sh`를 부르는 것은 그대로 돈다.
-5. `bash scripts/restart.sh`로 서버를 저장하고 다시 띄운다. 로그의 첫 줄에서 저장 파일의 경로가 전과 같은지(`…\data\game.db`) 본다.
-6. 화면은 `bash scripts/publish.sh`(터널이 켜져 있을 때) 또는 `npm run pilot`.
-
-알아 둘 것 (옮기기 전부터 그랬던 것):
-
-- 서버를 끄는 깃발 `stop.flag`는 **저장 파일의 옆**에 놓인다(`DB`를 주지 않으면 `data/stop.flag`). 저장 파일을 같은 폴더에 둔 서버가 여럿이면 깃발을 먼저 본 서버 하나만 꺼진다: 확인용 서버 여럿의 DB를 한 임시 폴더에 모아 두고 그 폴더에 깃발을 만들면 남의 서버가 꺼질 수 있다. 확인용 서버는 DB마다 폴더를 따로 주거나 `DB=memory`로 띄우고 프로세스를 직접 끈다.
-- `scripts/restart.sh`는 `data/` 폴더가 있어야 로그를 쓴다(운영 폴더에는 있다). 새로 받은 복사본에서는 `mkdir data`가 먼저다.
-
-되돌리는 법: `git revert`로 세 커밋을 되돌리거나 합치기 전의 커밋으로 돌아간 뒤 `npm run build`와 `bash scripts/restart.sh`. 저장 파일은 양쪽 코드가 같은 형식으로 읽고 쓰므로 손댈 것이 없다.
+1. `npm run typecheck`, `npm test`(두 번), `npm run test:engine`, `npm run build`가 모두 통과한 뒤에 커밋한다.
+2. 화면이 바뀌었으면 확인용 서버(`PORT=3013 DB=<임시 폴더>/check.db npm start`)를 띄워 PC·폰, 한국어·영어로 본다. 운영 서버(3001)에는 시험 캐릭터를 만들지 않는다(확인은 손님으로만).
+3. 서버 코드가 바뀌었으면 `data/game.db`를 `data/backup/`에 복사하고 `bash scripts/restart.sh <로그>`(저장하고 끈 뒤 다시 띄운다. 터널은 끊지 않는다). 로그에서 저장 파일의 경로와 '자리 비움 사냥을 이어 갑니다'(그때 사냥 중이던 사람이 있으면)를 본다.
+4. 화면은 `bash scripts/publish.sh`. 공개 주소 둘이 200인지 본다.
+5. 서버를 끄는 깃발 `stop.flag`는 **저장 파일의 옆**에 놓인다. 확인용 서버는 DB마다 폴더를 따로 주거나 `DB=memory`로 띄우고 프로세스를 포트로 찾아 직접 끈다(운영의 3001은 건드리지 않는다).
+6. 되돌리기: `git revert` 뒤 `npm run build`와 `bash scripts/restart.sh`. 저장 형식은 가르는 동안 바뀌지 않았으므로 저장 파일에 손댈 것이 없다(백업으로 되돌릴 수도 있다).
