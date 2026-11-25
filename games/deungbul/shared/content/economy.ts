@@ -235,6 +235,9 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'armor2', gold: 60, mats: { iron: 5, hide: 6 } },
   // 잿불검은 제작으로만 얻는다. 잿빛 핵은 필드 보스가 준다
   { id: 'sword4', gold: 100, mats: { iron: 8, hide: 5, ashcore: 1 } },
+  // 잿불 고원의 장비: 잿불 조각은 고원의 파수꾼(반 확률)과 거상이 준다. 거상의 검은 만들 수 없다 (거상만 떨어뜨린다)
+  { id: 'armor3', gold: 150, mats: { iron: 8, hide: 8, ember: 3 } },
+  { id: 'sword5', gold: 200, mats: { iron: 10, hide: 4, ember: 5 } },
 ];
 
 /** 이미 가장 밝은 등탑이 한 번에 받는 불씨: 밝기는 오르지 않지만 기여와 퀘스트에는 세어진다. '전부'로 불씨를 몽땅 태우지 않게 적게 받는다 */

@@ -101,12 +101,15 @@ const BLADES: Partial<Record<ItemId, BladeLook>> = {
   sword2: { color: 0x9fc0dc, scale: 1.15, glow: false },
   sword3: { color: 0xffc766, scale: 1.3, glow: true },
   sword4: { color: 0xff7a3a, scale: 1.45, glow: false }, // 잿불검: 달군 쇠 빛
+  sword5: { color: 0xff4a2a, scale: 1.55, glow: true }, // 불꽃검: 붉게 빛난다
+  sword6: { color: 0x7fd8ff, scale: 1.7, glow: true }, // 거상의 검: 푸른 불꽃
 };
 
 // 갑옷 등급별 모습: 가죽은 가슴받이와 허리띠, 쇠는 여기에 어깨받이가 붙는다
 const ARMORS: Partial<Record<ItemId, ArmorLook>> = {
   armor1: { color: 0x7a5230, pads: false },
   armor2: { color: 0xaab4bc, pads: true },
+  armor3: { color: 0x9a3a24, pads: true }, // 잿불 갑옷: 달군 쇠의 붉은빛
 };
 
 export function initModels(): void {
@@ -122,6 +125,17 @@ export function initModels(): void {
   addItemSheet('./items/hands.webp', 4, 2, ['sword1', 'sword2', 'sword3', 'sword4'] satisfies ItemId[], 'bow');
   addItemSheet('./items/hands.webp', 4, 2, [null, null, null, null, 'sword1', 'sword2', 'sword3', 'sword4'] satisfies (ItemId | null)[], 'staff');
   // 장신구(떨어진 장비의 칸), 재화, 우편
+  // 잿불 고원의 장비와 재료: 그림을 새로 그리지 않고 가까운 칸을 색만 바꿔 쓴다 (불꽃검·잿불 갑옷은 붉게, 거상의 검은 푸르게, 잿불 조각은 붉은 핵)
+  const RED = 'hue-rotate(-25deg) saturate(1.6)', BLUE = 'hue-rotate(170deg) saturate(1.3)';
+  for (const [id, f] of [['sword5', RED], ['sword6', BLUE]] as const) {
+    addItemSheet('./items/gear.webp', 3, 2, [null, null, null, id], 'sword', f);
+    addItemSheet('./items/hands.webp', 4, 2, [null, null, null, id], 'bow', f);
+    addItemSheet('./items/hands.webp', 4, 2, [null, null, null, null, null, null, null, id], 'staff', f);
+  }
+  addItemSheet('./items/gear.webp', 3, 2, [null, null, null, null, null, 'armor3'], undefined, 'sepia(1) saturate(4) hue-rotate(-30deg)');
+  addItemSheet('./items/sheet.webp', 3, 2, [null, null, null, null, 'ember'], undefined, 'sepia(1) saturate(5) hue-rotate(-25deg) brightness(1.1)');
+  // 강화 보호석: 부적 칸의 그림을 푸르게
+  addItemSheet('./items/trinkets.webp', 3, 2, [null, null, 'ward'], undefined, 'hue-rotate(160deg) saturate(1.4)');
   addIconSheet('./items/trinkets.webp', 3, 2, ['slot:ring', 'slot:amulet', 'slot:charm', 'cur:gold', 'cur:second', 'ui:mail']);
   // 불씨는 이 게임의 표시(#sparks)로 그린다: 그 앞에 그림
   const sparks = $('sparks'), pic = itemIcon('cur:second', '', 'sm');

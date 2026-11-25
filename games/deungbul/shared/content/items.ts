@@ -13,15 +13,23 @@ export const ITEMS = {
   sword3: { kind: 'weapon', price: PRICES.sword3, damage: 1.45, tier: 3, needs: 'bram' satisfies ResidentId },
   // 제작으로만 얻는다 (price 0은 상점에서 팔지 않는다는 뜻)
   sword4: { kind: 'weapon', price: 0, damage: 1.75, tier: 4 },
+  // 잿불 고원(장비 레벨 7·8)의 무기. 예전에는 레벨 6 이상이 모두 잿불검이라 새 장비가 새롭지 않았다 (검토 7)
+  // 불꽃검: 고원 몬스터가 떨어뜨리고 대장간에서도 만든다. 거상의 검: 잿불 거상만 떨어뜨린다
+  sword5: { kind: 'weapon', price: 0, damage: 2.1, tier: 5 },
+  sword6: { kind: 'weapon', price: 0, damage: 2.5, tier: 6 },
   // 갑옷: 한 벌만 입는다. 쇠 갑옷은 상점에서 사거나 대장간에서 만든다
   armor1: { kind: 'armor', price: PRICES.armor1, guard: 0.88, tier: 1 },
   armor2: { kind: 'armor', price: PRICES.armor2, guard: 0.76, tier: 2, needs: 'bram' satisfies ResidentId },
+  // 잿불 갑옷: 고원 몬스터가 떨어뜨리고 대장간에서도 만든다
+  armor3: { kind: 'armor', price: 0, guard: 0.66, tier: 3 },
   potion: { kind: 'potion', price: PRICES.potion, heal: 80 },
   tonic: { kind: 'potion', price: PRICES.tonic, heal: 160, needs: 'mira' satisfies ResidentId },
   // 제작 재료: 잿빛 숲의 몬스터가 떨어뜨린다
   hide: { kind: 'mat', price: 0 },
   iron: { kind: 'mat', price: 0 },
   ashcore: { kind: 'mat', price: 0 },
+  // 잿불 조각: 잿불 고원의 파수꾼과 거상이 떨어뜨린다. 고원의 장비를 만드는 데 든다
+  ember: { kind: 'mat', price: 0 },
   // 장비 가루: 장비를 분해하면 나온다 (economy.ts의 SALVAGE). 다른 재료처럼 거래소에 올릴 수 있고, 한도만 따로 크다
   dust: { kind: 'mat', price: 0, max: DUST_MAX },
   // 강화 보호 부적: +7 이상에서 강화에 실패해도 단계가 내려가지 않는다 (economy.ts의 ENHANCE.charm). 출석 7일째와 일일 임무로 받고, 거래소에 올릴 수 없다

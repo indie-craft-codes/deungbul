@@ -128,6 +128,8 @@ export const koBase = (n: ContentNames) => {
       dungeonLeave: '던전 나가기',
       dungeonLeaveConfirm: '한 번 더 누르면 나갑니다 (오늘 횟수는 돌아오지 않습니다)',
       bagToGear: '장비 보기 (메뉴의 장비)',
+      bagItems: '아이템',
+      bagPick: '칸을 누르면 이름과 설명이 보입니다.',
       dungeonNoRuns: '오늘은 더 들어갈 수 없습니다. 자정에 다시 열립니다.',
       menu: '메뉴',
       tabGear: '장비',

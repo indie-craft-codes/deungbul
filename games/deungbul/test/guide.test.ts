@@ -329,8 +329,8 @@ for (const P of PACKS) {
 // ---------- 게임 언어 파일의 문장: 정의의 값으로 만든 문장이 예전에 손으로 적어 둔 문장과 같은가 ----------
 {
   const was: Record<string, Partial<Record<keyof typeof ITEMS, string>>> = {
-    ko: { sword1: '기본 무기', sword2: '공격 피해 +20%', sword3: '공격 피해 +45%', sword4: '공격 피해 +75%', armor1: '받는 피해 -12%', armor2: '받는 피해 -24%', potion: '체력 80 회복', tonic: '체력 160 회복', hide: '멧돼지가 떨어뜨리는 재료' },
-    en: { sword1: 'Starting weapon', sword2: 'Damage +20%', sword3: 'Damage +45%', sword4: 'Damage +75%', armor1: 'Damage taken -12%', armor2: 'Damage taken -24%', potion: 'Restores 80 health', tonic: 'Restores 160 health', hide: 'Material dropped by boars' },
+    ko: { sword1: '기본 무기', sword2: '공격 피해 +20%', sword3: '공격 피해 +45%', sword4: '공격 피해 +75%', sword5: '공격 피해 +110%', sword6: '공격 피해 +150%', armor1: '받는 피해 -12%', armor2: '받는 피해 -24%', armor3: '받는 피해 -34%', potion: '체력 80 회복', tonic: '체력 160 회복', hide: '멧돼지와 잿불 여우가 떨어뜨리는 재료' },
+    en: { sword1: 'Starting weapon', sword2: 'Damage +20%', sword3: 'Damage +45%', sword4: 'Damage +75%', sword5: 'Damage +110%', sword6: 'Damage +150%', armor1: 'Damage taken -12%', armor2: 'Damage taken -24%', armor3: 'Damage taken -34%', potion: 'Restores 80 health', tonic: 'Restores 160 health', hide: 'Material dropped by boars and cinder foxes' },
   };
   const stage: Record<string, string[]> = {
     ko: ['빛이 약합니다. 혜택이 없습니다.', '70 이상이면 환해집니다: 이동 속도 +10%, 회복 2배', '환합니다: 이동 속도 +10%, 회복 2배'],

@@ -24,4 +24,9 @@ export const DROPS: Partial<Record<MonsterId, { id: ItemId; chance: number }>> =
   goblin: { id: 'iron', chance: 0.4 },
   lost_soldier: { id: 'iron', chance: 0.7 },
   ash_troll: { id: 'ashcore', chance: 1 },
+  // 잿불 고원: 여우는 가죽, 약탈자는 쇳조각, 파수꾼과 거상은 잿불 조각 (검토 7: 고원 몬스터는 재료를 떨어뜨리지 않았다)
+  cinder_fox: { id: 'hide', chance: 0.4 },
+  highland_raider: { id: 'iron', chance: 0.5 },
+  ember_warden: { id: 'ember', chance: 0.5 },
+  ember_colossus: { id: 'ember', chance: 1 },
 };

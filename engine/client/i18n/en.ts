@@ -101,6 +101,8 @@ export const enBase = (n: ContentNames): EngineLocale => {
       dungeonLeave: 'Leave dungeon',
       dungeonLeaveConfirm: '[[Click|Tap]] again to leave (today\'s run is not refunded)',
       bagToGear: 'View gear (Menu > Gear)',
+      bagItems: 'Items',
+      bagPick: '[[Click|Tap]] a slot to see what it is.',
       dungeonNoRuns: 'No more runs today. It opens again at midnight.',
       menu: 'Menu',
       tabGear: 'Gear',

@@ -11,7 +11,7 @@
 import { handOf, type Gear } from '../../shared/defs';
 
 /** 아이콘 하나: 어느 시트의 몇째 칸인가 */
-interface Icon { src: string; cols: number; rows: number; col: number; row: number }
+interface Icon { src: string; cols: number; rows: number; col: number; row: number; filter?: string }
 /** 열쇠: 위의 표의 것, 또는 손 모양이 정해진 그림이면 '열쇠@손 모양' */
 const ICONS = new Map<string, Icon>();
 /** 손 모양을 정해 등록한 그림이 있는 열쇠 (다른 손의 직업에게는 그 그림을 보이지 않는다) */
@@ -20,12 +20,13 @@ const HANDED = new Set<string>();
 /**
  * 그림 시트를 등록한다. 같은 열쇠를 다시 등록하면 뒤의 것이 이긴다(시트를 여러 장 써도 된다).
  * hand를 주면 그 손 모양(ClassDef.hand)의 직업에게만 보이는 그림이다: 무기의 검 그림은 'sword', 활 그림은 'bow'.
- * 칸은 정사각형이 보기 좋다(아이콘은 정사각형 칸에 그려진다)
+ * 칸은 정사각형이 보기 좋다(아이콘은 정사각형 칸에 그려진다).
+ * filter를 주면 그 css filter를 씌워 그린다: 그림을 새로 그리지 않고 같은 칸을 색만 바꿔 다른 아이템에 쓴다 (예: 'hue-rotate(-30deg)')
  */
-export function addIconSheet(src: string, cols: number, rows: number, keys: readonly (string | null)[], hand?: string): void {
+export function addIconSheet(src: string, cols: number, rows: number, keys: readonly (string | null)[], hand?: string, filter?: string): void {
   keys.forEach((key, i) => {
     if (!key) return;
-    ICONS.set(hand ? `${key}@${hand}` : key, { src, cols, rows, col: i % cols, row: Math.floor(i / cols) });
+    ICONS.set(hand ? `${key}@${hand}` : key, { src, cols, rows, col: i % cols, row: Math.floor(i / cols), filter });
     if (hand) HANDED.add(key);
   });
 }
@@ -54,6 +55,7 @@ export function itemIcon(key: string, cls = '', css = ''): HTMLElement | null {
   el.style.backgroundImage = `url("${ic.src}")`;
   el.style.backgroundSize = `${ic.cols * 100}% ${ic.rows * 100}%`;
   el.style.backgroundPosition = `${ic.cols > 1 ? (ic.col / (ic.cols - 1)) * 100 : 0}% ${ic.rows > 1 ? (ic.row / (ic.rows - 1)) * 100 : 0}%`;
+  if (ic.filter) el.style.filter = ic.filter;
   return el;
 }
 

@@ -1,5 +1,5 @@
 // Lv 15 이후의 할 거리 2: 세 번째 구역 '잿불 고원' (Lv 15~25), 세 번째 등탑, 새 몬스터 넷, 레벨 7·8 장비, 메인 퀘스트 5장
-import { CAMPS, FULL_TOWER_OFFER, GEAR, MONSTERS, QUESTS, gearLvOf, type MonsterDef } from '../shared/defs';
+import { CAMPS, DROPS, FULL_TOWER_OFFER, GEAR, ITEMS, MONSTERS, QUESTS, RECIPES, gearLvOf, type MonsterDef } from '../shared/defs';
 import { MAP, MAX_X, TOWERS, ZONE_COUNT, ZONE_SPLIT, ZONE_SPLIT2, areaAt, buildWorld, isFree, onPath, zoneOf } from '../shared/world';
 import type { Ent, Game } from '@engine/server';
 import { check } from '@engine/testing';
@@ -156,3 +156,9 @@ const mons = (g: Game, type: string) => [...g.ents.values()].filter((e) => e.kin
   const back = g.players.spawn('다시', false, g.players.export(p));
   check(back.qc === 5 && g.quests.step(back) === null, '5장까지 마친 저장은 다 마친 채로 읽힌다');
 }
+
+// 고원의 장비 바탕과 재료 (검토 7: 레벨 7·8 장비가 레벨 6과 같은 바탕이었고, 고원 몬스터는 재료를 떨어뜨리지 않았다)
+check(GEAR.weaponFor(6) === 'sword4' && GEAR.weaponFor(7) === 'sword5' && GEAR.weaponFor(8) === 'sword6' && GEAR.armorFor(6) === 'armor2' && GEAR.armorFor(7) === 'armor3', '장비 레벨 7은 불꽃검·잿불 갑옷, 8은 거상의 검이 바탕이다');
+check(ITEMS.sword4.damage < ITEMS.sword5.damage && ITEMS.sword5.damage < ITEMS.sword6.damage && ITEMS.armor3.guard < ITEMS.armor2.guard, '새 바탕은 앞의 것보다 좋다');
+check(NEW.every((m) => !!DROPS[m]) && DROPS.ember_warden?.id === 'ember' && DROPS.ember_colossus?.id === 'ember', '고원 몬스터는 모두 재료를 떨어뜨리고, 잿불 조각은 파수꾼과 거상이 준다');
+check(RECIPES.some((r) => r.id === 'sword5' && (r.mats as Record<string, number>).ember > 0) && RECIPES.some((r) => r.id === 'armor3') && !RECIPES.some((r) => r.id === 'sword6'), '불꽃검과 잿불 갑옷은 잿불 조각으로 만들고, 거상의 검은 만들 수 없다');

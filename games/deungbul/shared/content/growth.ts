@@ -49,8 +49,8 @@ export const GEAR = {
   sellBase: GEAR_ECON.sellBase,
   sellPerTier: GEAR_ECON.sellPerTier,
   /** 장비 레벨에 따라 떨어지는 무기와 갑옷의 바탕 (가장 높은 것은 보스만 떨어뜨린다) */
-  weaponFor: (lv: number): ItemId => (lv >= 6 ? 'sword4' : lv >= 4 ? 'sword3' : lv >= 2 ? 'sword2' : 'sword1'),
-  armorFor: (lv: number): ItemId => (lv >= 3 ? 'armor2' : 'armor1'),
+  weaponFor: (lv: number): ItemId => (lv >= 8 ? 'sword6' : lv >= 7 ? 'sword5' : lv >= 6 ? 'sword4' : lv >= 4 ? 'sword3' : lv >= 2 ? 'sword2' : 'sword1'),
+  armorFor: (lv: number): ItemId => (lv >= 7 ? 'armor3' : lv >= 3 ? 'armor2' : 'armor1'),
   /** 떨어뜨린 몬스터의 경험치로 장비 레벨을 정한다 */
   // 약한 몬스터(슬라임, 위습)는 1, 잿빛 숲의 몬스터는 2~4, 그림자와 보스는 5~6이 된다.
   // 예전에는 25로 나눠 잿빛 숲에서도 거의 다 1레벨(낡은 검)이 나와, 주운 장비가 상점의 보급형보다 못했다

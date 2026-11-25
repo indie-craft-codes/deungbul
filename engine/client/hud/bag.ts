@@ -1,9 +1,11 @@
 // 가방 창: 물약과 제작 재료를 어디서나 볼 수 있다. 장비는 메뉴의 장비 탭에서 다룬다. (단축키 B)
+// 아이템은 그림 칸의 격자로 보이고(칸 귀퉁이에 든 수), 칸을 누르면 아래에 이름·든 수·설명(어디서 구하는지)이 뜬다.
+// 예전에는 줄마다 이름과 설명을 적은 목록이라 길고 어수선했다 (사용자: '아이템칸은 그냥 아이콘만 나오지 않아?')
 // 장비 가방의 칸 수와 분해 설정(서버의 개인 상태 bag, salvage)도 여기서 받아 넣고, 가방이 가득 찼으면 가방 단추에 표시한다.
 import { GEAR, ITEMS, SALVAGE, itemCap, itemDef, type ItemId } from '../../shared/defs';
 import { $ } from '../app';
 import { onMsg } from '../bus';
-import { L, onLangChange, t } from '../i18n';
+import { L, itemInfo, onLangChange, t } from '../i18n';
 import { S } from '../state';
 import { itemIcon } from './icons';
 import { openMenu } from './menu';
@@ -13,14 +15,13 @@ const ui = { panel: $('bag'), gold: $('bagGold'), list: $('bagList') };
 const ids = Object.keys(ITEMS) as ItemId[];
 /** 가방에 든 장비의 수 (마지막으로 받은 meta) */
 let gearCount = 0;
+/** 설명을 보고 있는 칸의 아이템 (다시 그려도 고른 칸이 남는다) */
+let picked: ItemId | null = null;
 const gearFull = (): boolean => gearCount >= S.bag.max;
 
-function row(slot: string, name: string, note: string, icon?: string): HTMLElement {
+function row(slot: string, name: string, note: string): HTMLElement {
   const el = document.createElement('div');
   el.className = 'bagrow';
-  // 아이템의 그림(게임이 addItemSheet로 등록했으면): 줄의 맨 앞
-  const pic = icon ? itemIcon(icon) : null;
-  if (pic) el.appendChild(pic);
   const a = document.createElement('span');
   a.className = 'slot';
   a.textContent = slot;
@@ -56,16 +57,46 @@ export function renderBag(): void {
   // 장비 가방의 든 수와 칸 수. 가득 찼으면 알린다: 새로 떨어지는 장비가 버려진다
   ui.list.append(row(t('tabGear'), loc.fmt.have(gearCount, S.bag.max), ''));
   if (gearFull()) { const warn = document.createElement('div'); warn.className = 'note gwarn'; warn.setAttribute('role', 'status'); warn.textContent = S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull'); ui.list.append(warn); }
-  // 물약과 재료: 그 종류의 아이템이 없는 게임은 머리줄도 두지 않는다
-  const potions = ids.filter((id) => itemDef(id).kind === 'potion'), mats = ids.filter((id) => itemDef(id).kind === 'mat'), charms = ids.filter((id) => itemDef(id).kind === 'token');
-  if (potions.length) ui.list.append(head(t('bagPotions')));
-  for (const id of potions) ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), '', id));
-  if (mats.length) ui.list.append(head(t('bagMats')));
-  // 재료마다 어떤 몬스터가 떨어뜨리는지 적어 준다 (어디서 구하는지 화면 어디에도 없었다). 분해로 나오는 가루는 그렇게 적는다
-  for (const id of mats) ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), id === SALVAGE.item ? t('salvageSource') : sourceText(id), id));
-  // 부적: 지니고만 있는 것 (강화 보호 부적 등). 쓰임새는 아이템 설명에 있다
-  if (charms.length) ui.list.append(head(t('bagCharms')));
-  for (const id of charms) ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), loc.items[id].info ?? '', id));
+  // 물약, 재료, 특별한 물건(보호석 등)의 칸: 이 차례로 늘어선다. 없는 것도 흐리게 보여, 무엇을 모을 수 있는지 알 수 있다
+  const kinds = [['potion', 'bagPotions'], ['mat', 'bagMats'], ['token', 'bagCharms']] as const;
+  const items = kinds.flatMap(([k]) => ids.filter((id) => itemDef(id).kind === k));
+  if (!items.length) return;
+  ui.list.append(head(t('bagItems')));
+  const grid = document.createElement('div');
+  grid.className = 'baggrid';
+  const info = document.createElement('div');
+  info.className = 'baginfo';
+  info.setAttribute('aria-live', 'polite');
+  const show = (id: ItemId | null): void => {
+    picked = id;
+    for (const c of grid.children) c.classList.toggle('on', (c as HTMLElement).dataset.id === id);
+    info.textContent = '';
+    if (!id) { info.append(Object.assign(document.createElement('div'), { className: 'note', textContent: t('bagPick') })); return; }
+    const n = me.items[id] ?? 0, kind = kinds.find(([k]) => k === itemDef(id).kind)?.[1] ?? 'bagMats';
+    const top = document.createElement('div');
+    top.className = 'row';
+    top.append(Object.assign(document.createElement('span'), { className: 'iname', textContent: loc.items[id].name }), Object.assign(document.createElement('span'), { className: 'num', textContent: (itemDef(id).kind === 'mat' ? loc.fmt.haveBig : loc.fmt.have)(n, itemCap(id)) }));
+    // 설명: 재료는 어디서 구하는지(어떤 몬스터가 떨어뜨리는지, 가루는 분해), 물약은 효과, 특별한 물건은 쓰임새
+    const note = itemDef(id).kind === 'mat' ? (id === SALVAGE.item ? t('salvageSource') : sourceText(id)) : itemInfo(id);
+    info.append(top, Object.assign(document.createElement('div'), { className: 'note', textContent: [t(kind), note].filter(Boolean).join(' · ') }));
+  };
+  for (const id of items) {
+    const n = me.items[id] ?? 0;
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = n > 0 ? 'bagcell' : 'bagcell none';
+    cell.dataset.id = id;
+    cell.title = loc.items[id].name;
+    cell.setAttribute('aria-label', `${loc.items[id].name} ${n}`);
+    // 그림이 없는 아이템(그림 시트를 등록하지 않은 게임)은 이름의 앞 글자를 보인다
+    const pic = itemIcon(id);
+    cell.append(pic ?? Object.assign(document.createElement('span'), { className: 'bagabbr', textContent: loc.items[id].name.slice(0, 2) }));
+    if (n > 0) cell.append(Object.assign(document.createElement('span'), { className: 'bagn', textContent: n >= 10000 ? `${Math.floor(n / 1000)}k` : String(n) }));
+    cell.addEventListener('click', () => show(picked === id ? null : id));
+    grid.append(cell);
+  }
+  ui.list.append(grid, info);
+  show(picked && items.includes(picked) ? picked : null);
 }
 
 /** 가방이 가득 찼으면 가방 단추를 눈에 띄게 한다 (style.css의 #bagBtn.alert) */
