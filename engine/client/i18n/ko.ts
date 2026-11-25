@@ -108,6 +108,7 @@ export const koBase = (n: ContentNames) => {
       mapStop: '자동 이동 멈추기',
       mapNone: '이 지역에는 표시할 장소가 없습니다.',
       mapLocked: '아직 열리지 않았습니다.',
+      mapBossWarn: '우두머리: 혼자서는 버겁습니다. 여럿이 함께 오세요.',
       mapTraveling: '자동 이동 중',
       kindGoal: '목적지',
       kindTown: '거점',

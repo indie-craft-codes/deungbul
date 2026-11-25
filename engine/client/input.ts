@@ -1,12 +1,12 @@
 // 입력 장치: 마우스, 터치(탭, 핀치), 가상 조이스틱, 키보드. 장치의 신호를 actions의 행동으로 바꾼다.
 import { toggleAuto } from './auto';
-import { runKey } from './bus';
+import { onFrame, runKey } from './bus';
 import { toggleBag } from './hud/bag';
 import { toggleMenu } from './hud/menu';
 import { closeWorldMap, toggleWorldMap, worldMapOpen } from './hud/worldmap';
 import { goToTown } from './actions';
 import { SKILL_SLOTS } from '../shared/defs';
-import { nextTarget, stop, tapAt, usePotion, useSkill } from './actions';
+import { nextTarget, skillQueueTick, stop, tapAt, usePotion, useSkill } from './actions';
 import { $, clamp, view } from './app';
 import { blurChat, focusChat } from './hud/chat';
 import { S } from './state';
@@ -102,6 +102,7 @@ function initKeyboard(): void {
 }
 
 export function initInput(): void {
+  onFrame(skillQueueTick); // 사거리 밖이라 다가가며 기다리는 기술
   initPointer(view.renderer.domElement);
   initJoystick();
   initKeyboard();

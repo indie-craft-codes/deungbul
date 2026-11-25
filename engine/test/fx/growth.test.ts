@@ -1,6 +1,6 @@
 // 성장의 틀: 드롭 장비와 강화, 우편, 방치 보상, 일일 임무와 출석, 순위 (서버 없이 게임 규칙만 돌린다. 시험용 내용 위에서)
 import { Game } from '../../server/game/game';
-import { needFor } from '../../shared/defs';
+import { needFor, plusScore, powerOf, type Gear } from '../../shared/defs';
 import { check } from '../harness';
 
 {
@@ -130,4 +130,11 @@ import { check } from '../harness';
   const cut = read({ lv: 60, need: 1e9, exp: 2e9 }), junk = read({ lv: 12, need: 'x', exp: 5 }), none = read({ lv: 3, need: undefined, exp: 1e12 }), low = read({ lv: 20, need: 1, exp: 100 });
   check(cut.need === needFor(60) && cut.exp === 2e9 && junk.need === needFor(12) && junk.exp === 5 && none.need === needFor(3) && none.exp === needFor(3) && low.need === needFor(20) && low.exp === 100,
     `저장의 필요 경험치가 어긋나 있어도 레벨에서 다시 구한다 (Lv 60: ${cut.need}, 잘렸던 값 1e9를 따르지 않는다)`);
+}
+
+// 전투력은 바탕 아이템의 강화도 센다: 옵션이 없는 만든 장비를 강화해도 전투력이 그대로이던 것 (플레이어 재검토, 2026-11-25)
+{
+  const made = (plus: number): Gear => ({ uid: 1, slot: 'weapon', base: 'blade3', made: true, rar: 0, lv: 1, plus, opts: [] });
+  const p0 = powerOf(10, 3, [1, 1, 1], [made(0)]), p4 = powerOf(10, 3, [1, 1, 1], [made(4)]);
+  check(plusScore(made(0)) === 0 && plusScore(made(4)) > 0 && p4 > p0, `옵션 없는 만든 무기도 강화하면 전투력이 오른다 (+0 ${p0} → +4 ${p4})`);
 }

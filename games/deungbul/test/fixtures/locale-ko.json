@@ -1586,6 +1586,7 @@
  "ui.kindTown": "거점",
  "ui.language": "언어",
  "ui.mailEmpty": "받을 우편이 없습니다.",
+ "ui.mapBossWarn": "우두머리: 혼자서는 버겁습니다. 여럿이 함께 오세요.",
  "ui.mapGo": "여기로 자동 이동",
  "ui.mapHunt": "가서 자동 사냥",
  "ui.mapLegend": "■ 등탑 · ○ 퀘스트 · 초록 상인",

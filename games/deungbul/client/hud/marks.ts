@@ -34,7 +34,8 @@ export function initMarks(): void {
     const loc = L(), out: MapPlace[] = [];
     TOWERS.forEach((tw, i) => {
       const glow = GS.world.tower.glows[i] ?? 0;
-      out.push({ x: tw.spawn.x, z: tw.spawn.z, name: loc.towers[tw.id] ?? tw.id, kind: 'town', info: glow > 0 ? loc.fmt.glow(stageOf(glow), glow, GLOW_MAX) : loc.ui.towerOff });
+      // 자리는 등탑 바로 앞(바치는 거리 TOWER_REACH 안): 일어나는 자리(spawn)는 그보다 조금 멀어, 자동 이동으로 와도 등탑 창이 열리지 않았다
+      out.push({ x: tw.x, z: tw.z + tw.r + 1.8, name: loc.towers[tw.id] ?? tw.id, kind: 'town', info: glow > 0 ? loc.fmt.glow(stageOf(glow), glow, GLOW_MAX) : loc.ui.towerOff });
     });
     const chapter = QUESTS[G.quest.c], step = chapter?.steps[G.quest.s];
     if (chapter && step) out.push({ x: step.at.x, z: step.at.z, name: loc.quests[chapter.id].title, kind: 'goal', info: loc.quests[chapter.id].steps[G.quest.s] ?? '' });

@@ -80,6 +80,14 @@ export const optValue = (g: Gear, v: number): number => Math.round(v * (1 + g.pl
 export const gearStat = (g: Gear, stat: Stat): number => g.opts.reduce((s, [k, v]) => (k === stat ? s + optValue(g, v) : s), 0);
 /** 장비의 값어치: 순위의 전투력과 파는 값에 쓴다 */
 export const gearScore = (g: Gear): number => Math.round(g.opts.reduce((s, [k, v]) => s + optValue(g, v) / STATS[k].base, 0) * 10);
+/**
+ * 바탕 아이템(무기·갑옷)의 수치가 강화로 늘어난 만큼의 값어치. 전투력에만 더한다(바탕 자체는 powerOf의 tiers가 센다).
+ * 옵션이 없는 만든 장비는 강화가 바탕의 수치만 올리므로, 이것이 없으면 강화해도 전투력이 그대로였다
+ */
+export const plusScore = (g: Gear): number => {
+  const b = baseOpt(g);
+  return b && g.plus > 0 ? Math.round(((optValue(g, b[1]) - b[1]) / STATS[b[0]].base) * 10) : 0;
+};
 export const sellPrice = (g: Gear): number => GEAR.sellBase + gearScore(g) + baseTier(g) * GEAR.sellPerTier;
 
 // ---------- 낀 장비의 효과와 장비 비교 ----------
@@ -260,6 +268,6 @@ export interface RankRow { name: string; lv: number; cls: string; power: number 
  */
 export function powerOf(lv: number, tiers: number, skillLvs: readonly number[], worn: readonly Gear[]): number {
   let score = skillLvs.reduce((s, n) => s + (n - 1) * POWER.perSkillLevel, 0) + lv * POWER.perLevel + tiers * POWER.perTier;
-  for (const it of worn) score += gearScore(it);
+  for (const it of worn) score += gearScore(it) + plusScore(it);
   return score;
 }

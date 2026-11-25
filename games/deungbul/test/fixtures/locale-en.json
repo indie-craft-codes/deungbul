@@ -411,11 +411,11 @@
   "Arrived at 2."
  ],
  "fmt.mapDist": [
-  "a94cd55cbf3265ae",
-  "NaN m · about NaN s on foot",
-  "0 m · about NaN s on foot",
-  "1 m · about NaN s on foot",
-  "2 m · about NaN s on foot"
+  "ea9c5930abbb3951",
+  "NaN m · ~NaN s walk",
+  "0 m · ~NaN s walk",
+  "1 m · ~NaN s walk",
+  "2 m · ~NaN s walk"
  ],
  "fmt.mapHuntInfo": [
   "2e23b518ddd78845",
@@ -1586,6 +1586,7 @@
  "ui.kindTown": "Hubs",
  "ui.language": "Language",
  "ui.mailEmpty": "No mail to claim.",
+ "ui.mapBossWarn": "Boss: too strong to face alone. Bring others.",
  "ui.mapGo": "Auto-travel here",
  "ui.mapHunt": "Go and auto-hunt",
  "ui.mapLegend": "■ tower · ○ quest · green merchant",

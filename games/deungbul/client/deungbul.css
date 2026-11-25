@@ -95,11 +95,9 @@
 #quest.away { cursor: default; }
 #quest.away:hover { border-color: var(--line); }
 #quest.away #questGo { display: none; }
-/* 좁은 화면: 등탑·상점·대장간 창은 가장 가까운 것 하나만 보인다 (hud/near.ts가 data-near를 적는다). 상점과 대장간끼리의 짝은 틀의 스타일에 있다 */
-@media (max-width: 720px) {
-  #rightcol[data-near="tower"] #shop, #rightcol[data-near="tower"] #forge,
-  #rightcol[data-near="shop"] #tower, #rightcol[data-near="forge"] #tower { display: none; }
-}
+/* 등탑·상점·대장간 창은 가장 가까운 것 하나만 보인다 (hud/near.ts가 data-near를 적는다. 화면의 넓이와 상관없이). 상점과 대장간끼리의 짝은 틀의 스타일에 있다 */
+#rightcol[data-near="tower"] #shop, #rightcol[data-near="tower"] #forge,
+#rightcol[data-near="shop"] #tower, #rightcol[data-near="forge"] #tower { display: none; }
 /* 폰 세로: 위쪽 창이 싸움터를 덮지 않게 줄인다. 등탑 밝기와 다음 습격은 등탑 창과 알림으로 알 수 있으니 내 정보에서는 뺀다 */
 @media (pointer: coarse) and (max-width: 720px) {
   #me .row:has(#towerMini), #raidMini { display: none; }

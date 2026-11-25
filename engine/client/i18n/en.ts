@@ -84,6 +84,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       mapStop: 'Stop auto-travel',
       mapNone: 'Nothing to show in this area.',
       mapLocked: 'Not open yet.',
+      mapBossWarn: 'Boss: too strong to face alone. Bring others.',
       mapTraveling: 'Auto-traveling',
       kindGoal: 'Goals',
       kindTown: 'Hubs',
@@ -215,7 +216,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
     classes,
     fmt: {
       level: (lv, cls) => `Lv ${lv} ${cls}`.trim(),
-      mapDist: (m, sec) => `${num(Math.round(m))} m · about ${sec >= 90 ? `${Math.round(sec / 60)} min` : `${Math.max(1, Math.round(sec))} s`} on foot`,
+      mapDist: (m, sec) => `${num(Math.round(m))} m · ~${sec >= 90 ? `${Math.round(sec / 60)} min` : `${Math.max(1, Math.round(sec))} s`} walk`,
       mapHuntInfo: (mobs, exp, gold) => `${mobs} · ${num(exp)} exp and about ${num(gold)} ${G.unit} each`,
       mapTravel: (name) => `Auto-traveling to ${name}.`,
       mapArrived: (name, hunt) => `Arrived at ${name}.${hunt ? ' Starting auto-hunt.' : ''}`,

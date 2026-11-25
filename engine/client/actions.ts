@@ -84,7 +84,28 @@ export function useSkill(n: number): void {
   // 대상이 필요한 기술인데 대상이 없으면 가장 가까운 몬스터를 잡는다
   const def = skillDef(classOf(me.cls).skills[n]);
   if (def.range !== undefined && !me.attackId) { const near = monstersNear(Math.max(12, def.range))[0]; if (near) attack(near.id); }
+  // 대상이 사거리 밖이면 다가가서 쓴다: 공격 명령으로 다가가게 하고(서버가 쫓아간다), 사거리 안에 들어오면 skillQueueTick이 쓴다.
+  // 전에는 "대상이 너무 멉니다"만 뜨고 아무것도 하지 않았다(플레이어 재검토)
+  const t = def.range !== undefined ? S.others.get(me.attackId) : undefined;
+  if (t && Math.hypot(t.x - me.x, t.z - me.z) > def.range!) {
+    if (!me.moving) attack(t.id);
+    queued = { n, target: t.id, until: performance.now() + 6000 };
+    return;
+  }
+  queued = null;
   send({ t: 'skill', n });
+}
+
+/** 사거리 밖이라 다가가는 동안 기다리는 기술 (칸 번호, 대상, 그만 기다리는 때) */
+let queued: { n: number; target: number; until: number } | null = null;
+/** 매 프레임: 기다리는 기술의 대상이 사거리 안에 들어오면 쓴다. 대상이 바뀌거나 사라지거나 6초가 지나면 그만둔다 */
+export function skillQueueTick(now: number): void {
+  const me = S.me, q = queued;
+  if (!q || !me) return;
+  const t = S.others.get(q.target);
+  if (!t || t.dying || t.gone || me.attackId !== q.target || now > q.until) { queued = null; return; }
+  const def = skillDef(classOf(me.cls).skills[q.n]);
+  if (Math.hypot(t.x - me.x, t.z - me.z) <= (def.range ?? 0) - 0.3) { queued = null; send({ t: 'skill', n: q.n }); }
 }
 
 /** 화면의 점을 눌렀다: 몬스터면 공격, 아니면 그 자리로 이동. */

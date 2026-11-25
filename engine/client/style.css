@@ -455,10 +455,9 @@ html:lang(en) body { overflow-wrap: break-word; }
 
 .mrow.supply .iname { color: var(--dim); }
 
-/* 좁은 화면: 오른쪽에 쌓이는 창은 가장 가까운 것 하나만 보인다 (hud/near.ts가 data-near를 적는다). 이 게임의 창이 끼는 짝은 게임의 스타일에 있다 */
-@media (max-width: 720px) {
-  #rightcol[data-near="shop"] #forge, #rightcol[data-near="forge"] #shop { display: none; }
-}
+/* 가까이 가면 열리는 창(상점, 대장간 …)은 가장 가까운 것 하나만 보인다 (hud/near.ts가 data-near를 적는다). 이 게임의 창이 끼는 짝은 게임의 스타일에 있다.
+   전에는 좁은 화면에서만 그랬다: 넓은 화면에서도 여럿이 한꺼번에 열려 서로 눌리고 단추를 가렸다(플레이어 재검토) */
+#rightcol[data-near="shop"] #forge, #rightcol[data-near="forge"] #shop { display: none; }
 @media (pointer: coarse) { #menuHead button { font-size: 14px; padding: 5px 12px; } }
 .mrow.made { border-left-color: var(--gold); } .mrow.made .iname { color: var(--gold); }
 

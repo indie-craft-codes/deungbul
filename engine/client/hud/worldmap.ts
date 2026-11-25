@@ -135,7 +135,8 @@ function enginePlaces(): MapPlace[] {
     out.push({
       x: c.x, z: c.z, kind: boss ? 'boss' : 'hunt', hunt: true,
       name: types.map(name).join(' · '),
-      info: loc.fmt.mapHuntInfo(types.map((ty) => loc.fmt.mapMobs(name(ty), counts.get(ty)!)).join(', '), exp, gold),
+      // 우두머리는 혼자서는 버겁다고 먼저 알린다 ('가서 자동 사냥'으로 혼자 갔다가 금방 쓰러지던 것: 플레이어 재검토)
+      info: (boss ? t('mapBossWarn') + ' ' : '') + loc.fmt.mapHuntInfo(types.map((ty) => loc.fmt.mapMobs(name(ty), counts.get(ty)!)).join(', '), exp, gold),
     });
   }
   return out;
@@ -270,9 +271,12 @@ function draw(): void {
   c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
   const small = view.w >= 520 ? 12 : Math.max(10, Math.round(view.w / 42)), big = small + 4;
   const taken: { x0: number; y0: number; x1: number; y1: number }[] = [];
-  const put = (text: string, x: number, y: number, size: number, weight: number, fill: string): void => {
+  const put = (text: string, x0: number, y: number, size: number, weight: number, fill: string): void => {
     c.font = `${weight} ${size}px ${font}`;
-    const w = c.measureText(text).width + 6, box = { x0: x - w / 2, y0: y - size / 2 - 2, x1: x + w / 2, y1: y + size / 2 + 2 };
+    const tw = c.measureText(text).width + 6;
+    // 지도의 가장자리에서 잘리지 않게 안쪽으로 당긴다
+    const x = Math.min(view.w - tw / 2 - 2, Math.max(tw / 2 + 2, x0));
+    const w = tw, box = { x0: x - w / 2, y0: y - size / 2 - 2, x1: x + w / 2, y1: y + size / 2 + 2 };
     if (taken.some((b) => b.x0 < box.x1 && box.x0 < b.x1 && b.y0 < box.y1 && box.y0 < b.y1)) return;
     taken.push(box);
     c.strokeStyle = `rgba(${inkRgb}, .88)`; c.lineWidth = 3.5; c.strokeText(text, x, y);
