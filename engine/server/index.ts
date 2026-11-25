@@ -9,4 +9,7 @@ export { runServer, type RunOptions } from './run';
 export { WHY, mailWhy, type Cur } from './game/systems/wallet';
 export type { EconSnapshot } from './game/systems/ledger';
 export { MemoryStore, SqliteStore, type EconRow, type PlayerSave, type Store, type WorldSave } from './store';
+export type { Migration, Migrations } from './game/migrate';
+export type { BackupOptions } from './store/backup';
+export { log } from './log';
 export { addBannedWords, isClean, mask } from './text';

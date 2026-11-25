@@ -2,6 +2,7 @@
 // 위치와 전투 결과는 서버만 정하고, 클라이언트는 "무엇을 하고 싶다"만 보낸다.
 import { createHash } from 'node:crypto';
 import http from 'node:http';
+import type { Socket } from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
@@ -12,9 +13,12 @@ import { PROTOCOL, type ServerMsg } from '../../shared/protocol';
 import { CHAT_MAX, NAME_MAX, SNAP_EVERY, TICK_MS } from '../../shared/world';
 import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
-import { MemoryStore, type Store } from '../store';
+import { log } from '../log';
+import { MemoryStore, type PlayerSave, type Store, type WorldSave } from '../store';
+import { startBackups, type BackupOptions } from '../store/backup';
 import { isClean, mask, tidy } from '../text';
 import { REPORT_GAP_MS, REPORT_LINES } from './moderation';
+import { OpsCounters, opsHandler } from './ops';
 import { buildFrame, snapshotFor } from './snapshot';
 import { serveStatic } from './static';
 
@@ -24,6 +28,7 @@ const MSG_PER_TICK = 2; // 틱마다 회복되는 양 (초당 40개)
 const CHAT_GAP_MS = 700;
 const RENAME_GAP_MS = 5000;
 const SAVE_EVERY_MS = 60000;
+const SAVE_RETRY_MS = 1000; // 월드와 캐릭터를 함께 저장하다 실패하면 이만큼 뒤에 다시 (전송마다 다시 하면 고장 난 디스크에 초당 열 번 쓴다)
 const JOIN_WITHIN_MS = 10000; // 연결하고 이 안에 접속 절차를 밟지 않으면 끊는다 (빈 연결로 자리를 채우지 못하게)
 const MAX_PER_IP = 12; // 한 주소에서 동시에 열 수 있는 연결 (같은 집의 여러 사람은 되고, 수백 개는 안 된다)
 const MAX_AWAY = AWAY.max; // 주인 없이 사냥 중인 캐릭터의 상한
@@ -98,10 +103,20 @@ const AWAY_AT_CLOSE = 'awayAtClose';
 /** 목록 없이 되살릴 때: 가장 늦게 저장된 캐릭터와 이만큼 안에 저장된 것만 '끄기 직전에 사냥 중이던 것'으로 본다 */
 const AWAY_RESTORE_MS = 90_000;
 export interface Running { port: number; game: Game; metrics(): Metrics; close(): Promise<void> }
-export interface Options { bots?: number; store?: Store; game?: GameOptions; maxClients?: number; maxPerIp?: number; maxAway?: number; /** 빌드된 화면(dist/)의 자리. 주지 않으면 저장소 뿌리의 dist/ */ staticDir?: string }
+export interface Options {
+  bots?: number; store?: Store; game?: GameOptions; maxClients?: number; maxPerIp?: number; maxAway?: number; /** 빌드된 화면(dist/)의 자리. 주지 않으면 저장소 뿌리의 dist/ */ staticDir?: string;
+  /** 자동 백업 (../store/backup.ts). false면 하지 않는다. 주지 않으면 기본값(켜질 때와 360분마다, 20개 보관). 파일로 저장하지 않는 저장소(메모리)는 늘 하지 않는다 */
+  backup?: BackupOptions | false;
+  /** WebSocket 압축(perMessageDeflate). 기본 켬: 근거는 docs/infra.md '압축' (봇 30·접속 50에서 회선 -73%, CPU +8%p, 접속 200에서는 CPU가 두 배) */
+  compress?: boolean;
+}
 
 export function startServer(port: number, opts: Options = {}): Promise<Running> {
   const store = opts.store ?? new MemoryStore();
+  // 켜질 때의 백업을 무엇보다 먼저: 이 서버가 저장을 읽고 고쳐 쓰기 전의 모습이 남는다
+  const backups = opts.backup === false ? null : startBackups(store, opts.backup);
+  /** 운영 지표의 누적 수 (/healthz, /metrics: ./ops.ts) */
+  const ops = new OpsCounters();
   const game = new Game(opts.game);
   const saved = store.loadWorld();
   if (saved) game.importWorld(saved);
@@ -137,8 +152,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       if (!e.auto || e.cls === '' || e.lv < AWAY_MIN_LV) { game.players.leave(e.id); continue; }
       away.set(key, e); awayIp.set(key, ip); game.away.start(e);
     }
-    if (away.size) console.log(`[server] 자리 비움 사냥을 이어 갑니다: ${away.size}명`);
-  } catch (err) { console.error('[server] 자리 비움 사냥을 되살리지 못했습니다:', err); }
+    if (away.size) log.info(`[server] 자리 비움 사냥을 이어 갑니다: ${away.size}명`);
+  } catch (err) { log.error('[server] 자리 비움 사냥을 되살리지 못했습니다:', err); }
   const perIp = new Map<string, number>();
   const people = new Map<string, Person>();
   /** 그 연결의 사람을 가리키는 열쇠: 저장 키가 있으면 그것, 손님은 접속 주소 (손님은 같은 주소의 손님끼리 한 사람으로 묶인다) */
@@ -163,64 +178,109 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const m = { since: performance.now(), tick: [] as number[], flush: [] as number[], lag: [] as number[], bytes: 0, msgs: 0 };
 
   const dist = opts.staticDir ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist');
-  const httpServer = http.createServer(serveStatic(dist));
-  const wss = new WebSocketServer({ server: httpServer, maxPayload: 1024 });
+  /** 열린 연결의 소켓 (실제로 보낸 바이트를 세는 데 쓴다) */
+  const sockets = new Set<Socket>();
+  const compress = opts.compress ?? true;
+  const httpServer = http.createServer(opsHandler(ops, () => {
+    let openWire = 0, online = 0;
+    for (const so of sockets) openWire += so.bytesWritten;
+    for (const c of clients) if (c.ent) online++;
+    return { clients: online, away: away.size, entities: game.ents.size, openWire, backup: backups, compress };
+  }, serveStatic(dist)));
+  // 압축은 작은 메시지(이동 한 번)에는 걸지 않는다: 줄어드는 것보다 드는 CPU가 크다. 압축은 libuv의 일꾼 스레드에서 돌아 틱의 스레드는 오히려 덜 쓴다
+  const wss = new WebSocketServer({ server: httpServer, maxPayload: 1024, perMessageDeflate: compress ? { threshold: 256 } : false });
 
+  /** 보낸 메시지를 센다: 지표 로그(m)와 운영 지표(ops) */
+  const count = (n: number) => { m.bytes += n; m.msgs++; ops.sent(n); };
   function send(c: Client, msg: ServerMsg): void {
     if (c.ws.readyState !== c.ws.OPEN) return;
     const s = JSON.stringify(msg);
-    m.bytes += s.length; m.msgs++;
+    count(s.length);
     c.ws.send(s);
   }
   function broadcast(msg: ServerMsg): void {
     const s = JSON.stringify(msg);
-    for (const c of clients) if (c.ent && c.ws.readyState === c.ws.OPEN) { m.bytes += s.length; m.msgs++; c.ws.send(s); }
+    for (const c of clients) if (c.ent && c.ws.readyState === c.ws.OPEN) { count(s.length); c.ws.send(s); }
   }
   const sys = (k: MsgKey, ...a: MsgArg[]): ServerMsg => ({ t: 'sys', k, a });
 
-  function saveEnt(key: string, e: Ent): void {
-    try { store.savePlayer(key, game.players.export(e)); e.unsaved = false; }
-    catch (err) { console.error('[server] 캐릭터 저장 실패:', err); }
+  // ---- 저장 ----
+  // 쓰기는 모두 writeAll을 거친다: 모은 것을 저장소의 묶음(transaction) 하나로 적는다. 실패하면 하나도 적히지 않고, 표시(unsaved, saveDirty)도 그대로 남아 다음에 다시 적는다.
+  // 저장 값을 만드는 일(시스템의 save)은 묶음 밖에서 먼저 한다: 한 캐릭터의 저장 값을 만들다 예외가 나면 그 캐릭터만 빼고 나머지를 적는다(예전과 같다)
+  /** 적을 캐릭터 하나: 저장 키, 저장 값, 적힌 뒤에 할 일(표시 지우기) */
+  interface Pending { key: string; save: PlayerSave; done: () => void }
+  function exportEnt(key: string, e: Ent, after?: () => void): Pending | null {
+    try { const save = game.players.export(e); return { key, save, done: () => { e.unsaved = false; after?.(); } }; }
+    catch (err) { log.error(`[server] 캐릭터 저장 값을 만들지 못했습니다 (${e.name}):`, err); return null; }
   }
   // 막 들어와 아무것도 하지 않은 새 캐릭터는 저장하지 않는다 (토큰만 바꿔 접속해 저장 파일을 불리지 못하게)
-  function savePlayer(c: Client): void {
+  function pendingOf(c: Client): Pending | null {
     const e = c.ent;
-    if (!c.key || !e) return;
+    if (!c.key || !e) return null;
     const touched = e.cls !== '' || e.lv > 1 || e.exp > 0 || e.gold > 0 || e.sparks > 0 || !!game.rules.touched?.(e);
-    if (c.hadSave || touched) { saveEnt(c.key, e); c.hadSave = true; }
+    return c.hadSave || touched ? exportEnt(c.key, e, () => { c.hadSave = true; }) : null;
   }
-  function saveWorld(extra: Record<string, unknown> = {}): boolean {
-    try { store.saveWorld({ ...game.exportWorld(), ...extra }); return true; }
-    catch (err) { console.error('[server] 월드 저장 실패:', err); return false; }
+  /** 바뀐 캐릭터 모두: 접속 중인 사람과 자리 비움 사냥 중인 캐릭터 */
+  const changed = (): (Pending | null)[] => [...[...clients].filter((c) => c.ent?.unsaved).map(pendingOf), ...[...away].filter(([, e]) => e.unsaved).map(([key, e]) => exportEnt(key, e))];
+  let failLogAt = 0, failQuiet = 0;
+  /** 저장 실패를 알린다. 같은 고장이 이어지면 10초에 한 번만 (그사이 넘긴 수를 함께) */
+  function saveFailed(what: string, err: unknown): void {
+    ops.saveFails++;
+    const now = Date.now();
+    if (now - failLogAt < 10_000) { failQuiet++; return; }
+    log.error(`[server] ${what} 실패${failQuiet ? ` (앞서 알리지 않은 실패 ${failQuiet}번)` : ''}:`, err);
+    failLogAt = now; failQuiet = 0;
+  }
+  /** 모은 것(월드, 캐릭터, 재화 흐름 지표의 줄)을 한 묶음으로 적는다. 적혔으면 true. 실패하면 하나도 적히지 않고, 지표의 줄은 되돌려 다음에 다시 얹는다 */
+  function writeAll(list: (Pending | null)[], world?: WorldSave): boolean {
+    const rows = game.ledger.drain();
+    try {
+      store.transaction(() => {
+        if (world) store.saveWorld(world);
+        for (const p of list) if (p) store.savePlayer(p.key, p.save);
+        if (rows.length) store.addEcon(rows);
+      });
+    } catch (err) { game.ledger.giveBack(rows); saveFailed(world ? '월드와 캐릭터 저장' : '캐릭터 저장', err); return false; }
+    for (const p of list) p?.done();
+    ops.lastSaveAt = Date.now();
+    econSnapshot();
+    return true;
+  }
+  function saveEnt(key: string, e: Ent): void { writeAll([exportEnt(key, e)]); }
+  /** 캐릭터 하나를 저장한다. 월드에 저장할 것이 있으면 월드와 함께 (한쪽만 적힌 채 남지 않게) */
+  function savePlayer(c: Client): void {
+    if (game.saveDirty) { saveTogether([c]); return; }
+    const p = pendingOf(c);
+    if (p) writeAll([p]);
   }
   /**
-   * 월드에 저장할 것이 있으면 월드와 바뀐 캐릭터를 함께 저장한다.
+   * 월드에 저장할 것이 있으면 월드와 바뀐 캐릭터(와 also의 사람)를 저장소의 묶음 하나로 저장한다.
    * 거래소의 물건·판 돈 우편·길드 기부처럼 캐릭터와 월드에 나뉘어 적히는 것은, 한쪽만 저장된 채 서버가 죽으면 복사되거나 사라진다.
-   * 그래서 캐릭터를 저장하는 곳(접속, 접속 끊김)에서도 이것을 불러 둘의 저장 시점을 맞춘다. 월드 저장이 실패하면 다음에 다시 시도한다.
+   * 그래서 캐릭터를 저장하는 곳(접속, 접속 끊김, 주기 저장)도 월드에 저장할 것이 있으면 이것을 거친다. 실패하면 saveDirty를 그대로 두어 다시 시도한다(전송에서는 SAVE_RETRY_MS 뒤에).
+   * 월드의 저장 값을 만들다 예외가 나면(시스템의 버그: 다시 해도 같다) 캐릭터만이라도 적는다 (예전과 같다)
    */
-  function saveTogether(): void {
-    if (!game.saveDirty) return;
-    if (!saveWorld()) return; // saveDirty를 그대로 두어 다음 틱에 다시 시도한다. 캐릭터도 그때 함께 저장한다
-    game.saveDirty = false;
-    for (const c of clients) if (c.ent?.unsaved) savePlayer(c);
-    for (const [key, e] of away) if (e.unsaved) saveEnt(key, e);
-    saveEcon();
+  let retryAt = 0;
+  function saveTogether(also: Client[] = [], wait = false): void {
+    if (!game.saveDirty || (wait && Date.now() < retryAt)) return;
+    const list = changed();
+    for (const c of also) if (!c.ent?.unsaved) list.push(pendingOf(c));
+    let world: WorldSave;
+    try { world = game.exportWorld(); }
+    catch (err) { saveFailed('월드 저장 값 만들기', err); retryAt = Date.now() + SAVE_RETRY_MS; writeAll(list); return; }
+    if (writeAll(list, world)) { game.saveDirty = false; retryAt = 0; } else retryAt = Date.now() + SAVE_RETRY_MS;
   }
   /**
-   * 재화 흐름 지표(engine/server/game/systems/ledger.ts)가 모아 둔 줄을 저장소에 얹는다. 실패하면 되돌려 주어 다음에 다시 얹는다.
-   * 그날의 분포 스냅샷이 아직 없으면(날이 바뀐 뒤 첫 저장, 서버를 켠 직후) 저장된 캐릭터를 훑어 하나 남긴다.
+   * 재화 흐름 지표(engine/server/game/systems/ledger.ts)의 그날의 분포 스냅샷이 아직 없으면(날이 바뀐 뒤 첫 저장, 서버를 켠 직후) 저장된 캐릭터를 훑어 하나 남긴다.
+   * 지표의 줄은 writeAll이 저장과 같은 묶음에 얹는다
    */
   let snapDay = '';
-  function saveEcon(): void {
-    const rows = game.ledger.drain();
-    try { store.addEcon(rows); }
-    catch (err) { game.ledger.giveBack(rows); console.error('[server] 지표 저장 실패:', err); }
+  function econSnapshot(): void {
     const day = game.ledger.today();
     if (day === snapDay) return;
     try { if (!store.econSnapshot(day)) store.saveEconSnapshot(day, game.ledger.snapshot((fn) => store.eachPlayer(fn))); snapDay = day; }
-    catch (err) { console.error('[server] 지표 스냅샷 실패:', err); }
+    catch (err) { log.error('[server] 지표 스냅샷 실패:', err); }
   }
-  saveEcon(); // 켜질 때: 오늘의 스냅샷이 없으면 남긴다
+  econSnapshot(); // 켜질 때: 오늘의 스냅샷이 없으면 남긴다
 
   function join(c: Client, m: Record<string, unknown>): void {
     // 토큰이 있으면 저장된 캐릭터를 이어받는다
@@ -317,7 +377,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (now - (me.reported.get(tk) ?? -Infinity) < REPORT_GAP_MS) { send(c, sys('reportWait')); return; }
     me.reported.set(tk, now);
     try { store.saveReport({ at: now, by: e.name, byKey: c.key, target: target.ent.name, targetKey: target.key, lines: [...(people.get(tk)?.said ?? [])] }); }
-    catch (err) { console.error('[server] 신고 저장 실패:', err); }
+    catch (err) { log.error('[server] 신고 저장 실패:', err); }
     console.log(`[server] 신고: ${e.name} → ${target.ent.name}`);
     send(c, sys('reported', target.ent.name));
   }
@@ -363,6 +423,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (clients.size + away.size >= maxClients) { full(); return; }
     if ((perIp.get(ip) ?? 0) >= maxPerIp) { full(); return; }
     perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
+    // 실제로 보낸 바이트(압축 뒤)를 센다: 닫히면 누적에 더한다
+    const so = req.socket;
+    sockets.add(so);
+    ws.on('close', () => { if (sockets.delete(so)) ops.closedWire += so.bytesWritten; });
     const c: Client = {
       ws, ent: null, known: new Set(), mine: new Map(), tokens: MSG_BURST, alive: true, key: null, ip, hadSave: false,
       // 이름 바꾸기 간격도 사람의 기록에 둔다 (다시 접속해서 간격을 지우지 못하게)
@@ -400,7 +464,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       if (!me) continue;
       const { json, seen } = snapshotFor(me, c.known, frame, events, online);
       c.known = seen;
-      if (c.ws.readyState === c.ws.OPEN) { m.bytes += json.length; m.msgs++; c.ws.send(json); }
+      if (c.ws.readyState === c.ws.OPEN) { count(json.length); c.ws.send(json); }
       if (me.dirty) {
         me.dirty = false;
         const stat: Extract<ServerMsg, { t: 'stat' }> = { t: 'stat', maxHp: me.maxHp, lv: me.lv, exp: me.exp, need: me.need, sparks: me.sparks, gold: me.gold, weapon: me.weapon, armor: me.armor, cls: me.cls, items: me.items };
@@ -431,7 +495,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (const a of game.announces) broadcast({ t: 'sys', k: a.k, a: a.a });
     game.notices = []; game.cdAcks = []; game.announces = []; game.itemCds = []; game.gears = []; game.partyOut = []; game.out = []; game.casts = [];
     if (game.stateDirty) { game.stateDirty = false; broadcast({ t: 'world', s: game.state() }); }
-    saveTogether();
+    saveTogether([], true);
     // 자리 비움 사냥이 끝난 캐릭터(시간이 다 됨)는 저장하고 내보낸다
     for (const [key, e] of away) {
       if (e.auto) continue;
@@ -458,6 +522,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     try { game.tick(dt); } catch (err) { console.error('[server] 틱 처리 중 예외:', err); }
     const afterTick = performance.now();
     m.tick.push(afterTick - now);
+    ops.tick(afterTick - now);
     for (const c of clients) c.tokens = Math.min(MSG_BURST, c.tokens + MSG_PER_TICK);
     if (tick % SNAP_EVERY === 0) { try { flush(); } catch (err) { console.error('[server] 전송 중 예외:', err); } m.flush.push(performance.now() - afterTick); }
     nextAt += TICK_MS;
@@ -485,11 +550,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     return out;
   }
 
-  // 주기 저장: 바뀐 캐릭터만 적는다
+  // 주기 저장: 바뀐 캐릭터만, 한 묶음으로 적는다. 월드에 저장할 것이 있으면 월드와 함께
   const autosave = setInterval(() => {
-    for (const c of clients) if (c.ent?.unsaved) savePlayer(c);
-    for (const [key, e] of away) if (e.unsaved) saveEnt(key, e);
-    saveEcon();
+    if (game.saveDirty) saveTogether();
+    else writeAll(changed());
   }, SAVE_EVERY_MS);
 
   // 응답 없는 연결 정리
@@ -518,15 +582,15 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         game,
         metrics,
         close: () => new Promise<void>((ok) => {
-          stopped = true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(autosave);
-          // 끄기 전에 전원과 월드를 저장한다
-          for (const c of clients) savePlayer(c);
-          for (const [key, e] of away) saveEnt(key, e);
+          stopped = true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(autosave); backups?.stop();
+          // 끄기 전에 전원과 월드를 한 묶음으로 저장한다.
           // 다시 켰을 때 이어서 사냥할 캐릭터를 적어 둔다: 자리 비움 사냥 중이던 것과, 자동 사냥을 켠 채 접속해 있던 것(재시작으로 끊긴다)
           const hunting: [string, string][] = [...away.keys()].map((key) => [key, awayIp.get(key) ?? '']);
           for (const c of clients) if (c.key && c.ent && c.ent.auto && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && !away.has(c.key)) hunting.push([c.key, c.ip]);
-          saveWorld({ [AWAY_AT_CLOSE]: hunting });
-          saveEcon();
+          const list = [...[...clients].map(pendingOf), ...[...away].map(([key, e]) => exportEnt(key, e))];
+          let world: WorldSave | undefined;
+          try { world = { ...game.exportWorld(), [AWAY_AT_CLOSE]: hunting }; } catch (err) { saveFailed('월드 저장 값 만들기', err); }
+          if (writeAll(list, world)) log.info(`[server] 저장했습니다: 캐릭터 ${list.filter(Boolean).length}명${world ? ', 월드' : ''}`);
           for (const c of clients) c.ws.terminate();
           wss.close(() => httpServer.close(() => ok()));
         }),

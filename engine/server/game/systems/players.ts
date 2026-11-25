@@ -57,6 +57,8 @@ export class Players {
     const at = (!bot && this.devSpawn) || SPAWN;
     const p = this.g.create('p', '', name, at.x + Math.cos(a) * r, at.z + Math.sin(a) * r, maxHpFor('', 1));
     p.bot = bot; p.pid = bot ? '' : pid; p.wait = Math.random() * 3; p.cds = Array.from({ length: SKILL_SLOTS }, () => 0); p.dirty = true; p.metaDirty = true; p.weapon = START_WEAPON; p.armor = '';
+    // 옛 버전의 저장은 먼저 지금의 모양으로 올린다 (../migrate.ts). 버전 칸이 없던 저장의 옛 최상위 칸도 여기서 ext로 옮겨진다(Saver.legacy)
+    if (save) save = this.g.upgradePlayer(save);
     if (save) {
       // 저장된 값은 믿되, 깨진 값이 섞여 있어도 서버가 죽지 않게 범위를 잡는다
       const n = (v: unknown, min: number, max: number, def: number) => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), min, max) : def);
@@ -67,8 +69,8 @@ export class Players {
       const ext = typeof save.ext === 'object' && save.ext !== null ? save.ext : {};
       this.vitals = null;
       p.offMs = typeof save.seen === 'number' ? Math.max(0, this.g.now() - save.seen) : 0; // 칸을 읽는 시스템(휴식 보너스)이 쓰므로 먼저 구한다
-      // 자기 칸이 없으면 옛 형식(최상위 칸)에서 자기 몫을 찾는다. 둘 다 있으면 새 칸이 이긴다
-      for (const s of this.g.saves) { try { const raw = ext[s.name] !== undefined ? ext[s.name] : s.legacy?.(save); if (raw !== undefined) s.load(p, raw); } catch { /* 읽지 못한 칸은 처음 상태로 둔다 */ } }
+      // 시스템마다 자기 칸을 읽는다 (옛 형식의 최상위 칸은 위의 이전이 이미 ext로 옮겼다)
+      for (const s of this.g.saves) { try { const raw = ext[s.name]; if (raw !== undefined) s.load(p, raw); } catch { /* 읽지 못한 칸은 처음 상태로 둔다 */ } }
       // 체력은 저장된 값이 아니라 직업과 레벨로 다시 구한다
       this.g.classes.apply(p, isClassId(save.cls) ? save.cls : '');
       p.hp = p.maxHp;
@@ -124,8 +126,9 @@ export class Players {
   export(p: Ent): PlayerSave {
     const ext: Record<string, unknown> = {};
     for (const s of this.g.saves) ext[s.name] = s.save(p);
-    // 시스템의 몫은 ext에만 적는다. 옛 최상위 칸은 읽기만 한다 (spawn의 Saver.legacy): 칸을 옮긴 배포 한 번 동안 함께 적던 것은 껐다
-    return { ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, seen: this.g.now(), gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, cls: p.cls, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
+    // 시스템의 몫은 ext에만 적는다. 옛 최상위 칸은 읽기만 한다 (spawn의 이전이 Saver.legacy를 부른다): 칸을 옮긴 배포 한 번 동안 함께 적던 것은 껐다
+    // 버전 칸(v, gv)을 적는다: 다음에 읽을 때 이 버전부터 올린다 (../migrate.ts)
+    return { ...this.g.saveVersion('player'), ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, seen: this.g.now(), gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, cls: p.cls, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
   }
 
   rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; this.g.rank.renamed(p); this.g.fire('playerRenamed', p); }

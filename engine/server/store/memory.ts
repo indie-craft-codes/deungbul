@@ -27,5 +27,10 @@ export class MemoryStore implements Store {
     const d = day ?? [...this.snapshots.keys()].sort().pop();
     return d !== undefined && this.snapshots.has(d) ? { day: d, data: structuredClone(this.snapshots.get(d)) } : null;
   }
+  transaction<T>(fn: () => T): T {
+    // 들어갈 때의 모든 것을 떠 두고, 예외가 나면 그것으로 되돌린다 (시험용이라 통째로 떠도 된다). 안에서 다시 불러도 같다
+    const before = { world: this.world, players: new Map(this.players), reportList: [...this.reportList], econRows: new Map([...this.econRows].map(([k, r]) => [k, { ...r }])), snapshots: new Map(this.snapshots) };
+    try { return fn(); } catch (err) { Object.assign(this, before); throw err; }
+  }
   close(): void { /* 할 일 없음 */ }
 }

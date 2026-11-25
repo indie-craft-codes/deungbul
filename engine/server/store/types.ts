@@ -7,6 +7,8 @@
  * (interface가 아니라 type인 까닭: 이름-값 묶음(Record<string, unknown>)으로 넘길 수 있게)
  */
 export type PlayerSave = {
+  /** 저장 형식의 버전: v는 틀의 것, gv는 게임의 것 (engine/server/game/migrate.ts). 없으면 0(버전 칸이 생기기 전의 저장) */
+  v?: number; gv?: number;
   name: string; lv: number; exp: number; need: number; maxHp: number; sparks: number;
   /** 마지막으로 저장된 시각(ms). 접속하지 않은 시간을 계산할 때 쓴다 */
   seen?: number;
@@ -33,7 +35,7 @@ export interface ReportSave { at: number; by: string; byKey: string | null; targ
  */
 export interface EconRow { day: string; cur: string; why: string; dir: '+' | '-'; amount: number; n: number }
 
-/** 시스템마다 자기 이름의 칸에 저장할 것을 넣는다 (예: { tower: {...} }) */
+/** 시스템마다 자기 이름의 칸에 저장할 것을 넣는다 (예: { tower: {...} }). 칸 v·gv는 저장 형식의 버전이다 (engine/server/game/migrate.ts): 시스템의 이름으로 쓰지 않는다 */
 export type WorldSave = Record<string, unknown>;
 
 export interface Store {
@@ -58,5 +60,14 @@ export interface Store {
   saveEconSnapshot(day: string, data: unknown): void;
   /** 그날의 분포 스냅샷. 날짜를 주지 않으면 가장 최근 것. 없으면 null */
   econSnapshot(day?: string): { day: string; data: unknown } | null;
+  /**
+   * fn 안의 쓰기를 한 묶음으로: fn이 끝까지 돌면 모두 적히고, 예외를 던지면 하나도 적히지 않은 채 그 예외를 다시 던진다.
+   * 안에서 다시 불러도 된다(안쪽 묶음은 바깥 묶음의 일부가 된다). fn은 동기 함수여야 한다(await 사이에 다른 쓰기가 끼면 묶음이 깨진다)
+   */
+  transaction<T>(fn: () => T): T;
+  /** 저장 파일 하나를 통째로 복사한다 (자동 백업: ./backup.ts). 파일로 저장하지 않는 저장소에는 없다 */
+  backup?(file: string): void;
+  /** 저장 파일의 경로. 파일로 저장하지 않는 저장소에는 없다 */
+  readonly file?: string;
   close(): void;
 }

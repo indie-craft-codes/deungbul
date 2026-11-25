@@ -3,20 +3,61 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { EconRow, PlayerSave, ReportSave, Store, WorldSave } from './types';
 
+/**
+ * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
+ * 새 단계는 끝에 더한다. 적용한 단계는 고치지 않는다(이미 적용된 DB에는 다시 돌지 않는다).
+ *   1: 처음의 표들. 번호가 생기기 전의 DB(user_version 0)에도 그대로 돈다: 모두 IF NOT EXISTS라 이미 있는 표는 건드리지 않는다
+ */
+export const SCHEMA: readonly string[] = [
+  `CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
+   CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, target TEXT NOT NULL, data TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS econ_daily (day TEXT NOT NULL, cur TEXT NOT NULL, why TEXT NOT NULL, dir TEXT NOT NULL, amount REAL NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, cur, why, dir));
+   CREATE TABLE IF NOT EXISTS econ_snapshot (day TEXT PRIMARY KEY, data TEXT NOT NULL);`,
+];
+
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
 export class SqliteStore implements Store {
   private db: DatabaseSync;
-  constructor(file: string) {
+  readonly file: string;
+  /** 지금 열린 묶음의 깊이 (transaction의 SAVEPOINT 이름에 쓴다) */
+  private depth = 0;
+  constructor(file: string, schema: readonly string[] = SCHEMA) {
+    this.file = file;
     fs.mkdirSync(path.dirname(file), { recursive: true });
     this.db = new DatabaseSync(file);
-    this.db.exec(`
-      PRAGMA journal_mode = WAL;
-      CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
-      CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, target TEXT NOT NULL, data TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS econ_daily (day TEXT NOT NULL, cur TEXT NOT NULL, why TEXT NOT NULL, dir TEXT NOT NULL, amount REAL NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, cur, why, dir));
-      CREATE TABLE IF NOT EXISTS econ_snapshot (day TEXT PRIMARY KEY, data TEXT NOT NULL);
-    `);
+    this.db.exec('PRAGMA journal_mode = WAL;');
+    this.migrate(schema);
+  }
+  /** 이 DB의 스키마 번호 (PRAGMA user_version) */
+  schemaVersion(): number { return Number(this.db.prepare('PRAGMA user_version').get()?.user_version ?? 0); }
+  /** 스키마를 차례로 올린다. 한 단계와 그 번호는 한 묶음이다: 중간에 실패하면 그 단계는 적용되지 않은 채 예외가 난다(서버가 뜨지 않는다) */
+  private migrate(schema: readonly string[]): void {
+    const have = this.schemaVersion();
+    if (have > schema.length) { console.warn(`[store] DB의 스키마 번호가 ${have}입니다. 이 서버는 ${schema.length}까지 압니다 (새 서버가 쓴 DB): 그대로 씁니다`); return; }
+    for (let i = have; i < schema.length; i++) {
+      this.db.exec('BEGIN IMMEDIATE');
+      try { this.db.exec(schema[i]); this.db.exec(`PRAGMA user_version = ${i + 1}`); this.db.exec('COMMIT'); }
+      catch (err) { this.db.exec('ROLLBACK'); throw new Error(`DB 스키마를 ${i + 1}로 올리지 못했습니다: ${String(err)}`); }
+    }
+  }
+  transaction<T>(fn: () => T): T {
+    // 바깥 묶음은 BEGIN과 같고, 안쪽 묶음은 바깥의 일부가 된다 (SAVEPOINT는 겹쳐 열 수 있다)
+    const name = `t${this.depth++}`;
+    this.db.exec(`SAVEPOINT ${name}`);
+    try {
+      const out = fn();
+      this.db.exec(`RELEASE ${name}`);
+      return out;
+    } catch (err) {
+      try { this.db.exec(`ROLLBACK TO ${name}`); this.db.exec(`RELEASE ${name}`); } catch { /* 되돌리지도 못하면 원래의 예외를 알린다 */ }
+      throw err;
+    } finally { this.depth--; }
+  }
+  backup(file: string): void {
+    // VACUUM INTO: 읽는 묶음 하나로 지금의 DB를 새 파일에 통째로 쓴다(WAL에만 있는 것도 들어간다). 이미 있는 파일에는 쓰지 못한다
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    this.db.prepare('VACUUM INTO ?').run(file);
   }
   private parse<T>(text: unknown): T | null {
     if (typeof text !== 'string') return null;
@@ -58,9 +99,7 @@ export class SqliteStore implements Store {
     if (!rows.length) return;
     const put = this.db.prepare('INSERT INTO econ_daily (day, cur, why, dir, amount, n) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(day, cur, why, dir) DO UPDATE SET amount = amount + excluded.amount, n = n + excluded.n');
     // 한 묶음으로 적는다: 중간에 실패하면 하나도 적히지 않아야, 되돌려 받은 줄을 다음에 다시 얹어도 두 번 더해지지 않는다
-    this.db.exec('BEGIN');
-    try { for (const r of rows) put.run(r.day, r.cur, r.why, r.dir, r.amount, r.n); this.db.exec('COMMIT'); }
-    catch (err) { this.db.exec('ROLLBACK'); throw err; }
+    this.transaction(() => { for (const r of rows) put.run(r.day, r.cur, r.why, r.dir, r.amount, r.n); });
   }
   econ(fromDay: string): EconRow[] {
     return this.db.prepare('SELECT day, cur, why, dir, amount, n FROM econ_daily WHERE day >= ? ORDER BY day, cur, why, dir').all(fromDay).map((r) => ({ day: String(r.day), cur: String(r.cur), why: String(r.why), dir: r.dir === '-' ? '-' : '+', amount: Number(r.amount), n: Number(r.n) }));
