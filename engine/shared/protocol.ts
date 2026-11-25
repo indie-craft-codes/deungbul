@@ -82,7 +82,7 @@ export type ClientMsg =
   /** n번 채널로 옮긴다 (1부터) */
   | { t: 'channel'; n: number }
   /** 능력치 점수 하나를 찍는다 / 모두 돌려받는다 / 기술을 한 단계 강화한다 */
-  | { t: 'stat'; k: string }
+  | { t: 'stat'; k: string; n?: number }
   | { t: 'statReset' }
   | { t: 'skillUp'; id: string }
   /** 길드: a는 create(name), invite(id: 상대 엔티티), accept, decline, leave, kick(pid), give(n: 골드), notice(text) */

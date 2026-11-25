@@ -36,6 +36,14 @@ import { check } from '../harness';
   p.gold = 1000;
   cmd({ t: 'statReset' });
   check(g.build.left(p) === 6 && p.maxHp === hp0 && p.gold === 1000 - BUILD.resetGold(p.lv), '돌려받으면 점수가 돌아오고 수치도 원래대로다');
+  // 한 번에 여러 점: 남은 점수만큼까지만
+  cmd({ t: 'stat', k: 'vit', n: 5 });
+  check(p.stats.vit === 5 && g.build.left(p) === 1, '한 번에 5점을 찍는다');
+  cmd({ t: 'stat', k: 'vit', n: 5 });
+  check(p.stats.vit === 6 && g.build.left(p) === 0, '남은 점수보다 많이 고르면 남은 만큼만 찍힌다');
+  cmd({ t: 'stat', k: 'pow', n: -3 });
+  check(g.build.spent(p) === 6, '점수가 없으면 수를 어떻게 주어도 찍히지 않는다');
+  p.gold = 1000; cmd({ t: 'statReset' });
 
   // 기술 강화: 레벨과 골드가 필요하고, 피해가 커진다
   cmd({ t: 'skillUp', id: 'strike' });

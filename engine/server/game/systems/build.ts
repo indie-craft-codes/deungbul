@@ -7,7 +7,7 @@ import { WHY } from './wallet';
 
 export class Build {
   constructor(private g: Game) {
-    g.commands.set('stat', (p, m) => { if (isBuildStat(m.k)) this.spend(p, m.k); });
+    g.commands.set('stat', (p, m) => { if (isBuildStat(m.k)) this.spend(p, m.k, typeof m.n === 'number' && Number.isFinite(m.n) ? m.n : 1); });
     g.commands.set('statReset', (p) => this.reset(p));
     g.commands.set('skillUp', (p, m) => { if (isSkillId(m.id)) this.skillUp(p, m.id); });
 
@@ -45,9 +45,11 @@ export class Build {
 
   private changed(p: Ent): void { p.metaDirty = true; p.unsaved = true; this.g.players.refresh(p); }
 
-  spend(p: Ent, k: BuildStat): void {
-    if (this.left(p) < 1) { this.g.notify(p, 'statNone'); return; }
-    p.stats[k] = (p.stats[k] ?? 0) + 1;
+  /** n점을 찍는다 (남은 점수만큼까지). 한 번에 여러 점: 9점을 찍으려고 아홉 번 누르던 것(플레이어 재검토) */
+  spend(p: Ent, k: BuildStat, n = 1): void {
+    const left = this.left(p);
+    if (left < 1) { this.g.notify(p, 'statNone'); return; }
+    p.stats[k] = (p.stats[k] ?? 0) + Math.max(1, Math.min(left, Math.floor(n)));
     this.changed(p);
   }
 

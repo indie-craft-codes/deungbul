@@ -272,7 +272,9 @@ function gearRow(g: Gear, worn: boolean): HTMLElement[] {
 /** 가방의 머리줄: 든 수와 칸 수, 넓히기 단추 (다음 값을 보여 주고 한 번 더 눌러 확인한다) */
 function bagHead(): HTMLDivElement {
   const loc = L(), me = S.me, m = S.meta, head = el('baghead gbag');
-  head.append(span('', `${t('tabGear')} ${loc.fmt.have(m.gear.length, S.bag.max)}`));
+  const worn = wornNow().length;
+  // 낀 장비도 칸을 차지한다: 목록에는 안 낀 것만 있어 수가 헷갈렸다(플레이어 재검토)
+  head.append(span('', `${t('tabGear')} ${loc.fmt.have(m.gear.length, S.bag.max)}${worn ? ' ' + loc.fmt.bagWorn(worn) : ''}`));
   const price = S.bag.known ? bagUpPrice(S.bag.up) : null;
   if (price !== null) head.append(armButton(loc.fmt.bagUpFor(BAG_UP.step, price), loc.fmt.sellConfirm(price), act.upArmed, (on) => { act.upArmed = on; }, 'upTimer', () => send({ t: 'bagUp' }), !me || me.gold < price));
   return head;
@@ -332,7 +334,7 @@ function drawBuild(): void {
   ui.list.append(el('baghead', loc.fmt.statLeft(b.left, BUILD.pointsPerLevel)));
   for (const k of BUILD_STAT_IDS) {
     const n = b.stats[k] ?? 0;
-    ui.list.append(row(`${loc.build.stats[k].name} ${n}`, loc.build.stats[k].info(Math.round(n * buildStatDef(k).per * 10) / 10), [button('+1', () => send({ t: 'stat', k }), b.left < 1)]));
+    ui.list.append(row(`${loc.build.stats[k].name} ${n}`, loc.build.stats[k].info(Math.round(n * buildStatDef(k).per * 10) / 10), [button('+1', () => send({ t: 'stat', k }), b.left < 1), ...(b.left > 1 ? [button(b.left > 5 ? '+5' : `+${b.left}`, () => send({ t: 'stat', k, n: 5 }), false)] : [])]));
   }
   const spent = BUILD_STAT_IDS.reduce((s, k) => s + (b.stats[k] ?? 0), 0), cost = BUILD.resetGold(me.lv);
   ui.list.append(button(loc.fmt.statResetFor(cost), () => send({ t: 'statReset' }), spent === 0 || me.gold < cost));

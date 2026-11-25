@@ -67,6 +67,13 @@
   "Expand +1 · NaN gold",
   "Expand +2 · NaN gold"
  ],
+ "fmt.bagWorn": [
+  "55045f94a7ef0474",
+  "(incl. undefined worn)",
+  "(incl. 0 worn)",
+  "(incl. 1 worn)",
+  "(incl. 2 worn)"
+ ],
  "fmt.blocked": [
   "d21ef6566af7c94f",
   "You muted undefined. Their chat is now hidden for you only.",
@@ -1573,7 +1580,7 @@
  "ui.gearLockOff": "Unlock",
  "ui.gearLockOn": "Lock: blocks selling, salvaging and listing",
  "ui.gearMore": "Show enhance, sell, salvage and comparison",
- "ui.gearTapHint": "Tap gear to enhance, sell or salvage it and compare it with what you wear. ▲ means better than your current piece.",
+ "ui.gearTapHint": "Tap gear to enhance, sell or salvage it and compare it with what you wear. Against your current piece: ▲ better · ▼ worse · ◆ mixed · = about the same.",
  "ui.goingTown": "Walking back to Firstlight Village.",
  "ui.guildChatHint": "Type '/g message' in chat to talk to your guild only. The leader invites people by [[clicking|tapping]] them.",
  "ui.guildChatTag": "[Guild]",
