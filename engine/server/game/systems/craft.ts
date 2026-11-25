@@ -29,6 +29,8 @@ export class Craft {
     if (forge.needs && !g.rules.unlocked(forge.needs)) { g.notify(p, 'forgeClosed'); return; }
     const def = itemDef(id);
     if ((def.kind === 'weapon' || def.kind === 'armor') && (def.tier ?? 0) <= Shop.wornTier(p, def.kind)) { g.notify(p, 'alreadyBest'); return; }
+    // 만들면 바로 끼고 벗은 것이 가방에 남는다: 가방이 가득 찼으면 재료와 골드를 쓰기 전에 막는다 (31 / 30이 되던 것: 후반부 검토)
+    if ((def.kind === 'weapon' || def.kind === 'armor') && g.bag.full(p)) { g.notify(p, 'gearBagFull'); return; }
     const mats = Object.entries(recipe.mats) as [ItemId, number][];
     if (mats.some(([mat, n]) => g.bag.count(p, mat) < n)) { g.notify(p, 'noMats'); return; }
     if (!g.wallet.take(p, 'gold', recipe.gold, WHY.craft)) { g.notify(p, 'noGold'); return; }

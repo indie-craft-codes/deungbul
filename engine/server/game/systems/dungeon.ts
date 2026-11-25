@@ -21,9 +21,14 @@ interface Run {
   told: number;
 }
 
+/** 던전 안에서 접속이 끊긴 사람의 회차를 남겨 두는 시간(초) */
+export const DUNGEON_HOLD_S = 120;
+
 export class Dungeon {
   private runs = new Map<number, Run>();
   private of = new Map<number, Run>();
+  /** 접속이 끊긴 사람(pid)이 돌아갈 회차. DUNGEON_HOLD_S 안에 다시 접속하면 같은 회차로 */
+  private held = new Map<string, { run: Run; home: number; until: number }>();
   /** 안에 있는 사람이 들어오기 전에 있던 들판의 층(채널). 나갈 때 그곳으로 돌려보낸다 */
   private back = new Map<number, number>();
   private nextLayer = DUNGEON_LAYER;
@@ -42,10 +47,21 @@ export class Dungeon {
       else this.tell(run);
     });
     // 접속이 끊기거나 나가면 던전에서도 나온다 (저장되는 자리는 문 앞이다)
-    g.on('playerDropped', (p) => this.leave(p, false));
+    // 접속이 끊기면 문 앞으로 내보내되, 끝나지 않은 회차는 잠시 그 사람의 자리로 남겨 둔다: 곧 다시 접속하면 같은 회차로 돌아간다
+    // (끊길 때마다 하루 횟수와 우두머리에게 깎아 둔 진행이 날아갔다: 후반부 검토). 보상은 우두머리를 잡을 때 안에 있는 사람만 받는다
+    g.on('playerDropped', (p) => {
+      const run = this.of.get(p.id);
+      if (run && !run.cleared && p.pid) this.held.set(p.pid, { run, home: this.back.get(p.id) ?? fieldLayer(1), until: g.clock + DUNGEON_HOLD_S });
+      this.leave(p, false);
+    });
     g.on('playerLeft', (id) => { this.back.delete(id); const run = this.of.get(id); if (run) { run.members.delete(id); this.of.delete(id); } });
     // 서버가 꺼졌다 켜진 경우처럼 인스턴스 없이 던전 안에 있으면 문 앞으로 내보낸다
-    g.on('playerJoined', (p) => { if (!this.of.has(p.id)) this.outside(p); });
+    g.on('playerJoined', (p) => {
+      const h = p.pid ? this.held.get(p.pid) : undefined;
+      if (h) this.held.delete(p.pid);
+      if (h && g.clock <= h.until && this.runs.get(h.run.layer) === h.run && !h.run.cleared) { this.rejoin(p, h.run, h.home); return; }
+      if (!this.of.has(p.id)) this.outside(p);
+    });
 
     // 던전 안에서 쓰러지면 던전 입구에서 다시 일어난다
     const respawn = g.rules.respawn;
@@ -143,6 +159,16 @@ export class Dungeon {
     this.tell(run);
   }
 
+  /** 끊겼다 곧 돌아온 사람을 남겨 둔 회차로 들여보낸다 (하루 횟수는 이미 셌다) */
+  private rejoin(p: Ent, run: Run, home: number): void {
+    run.members.add(p.id);
+    this.of.set(p.id, run);
+    this.back.set(p.id, home);
+    this.move(p, run.def.entry.x + (Math.random() - 0.5) * 2, run.def.entry.z + (Math.random() - 0.5) * 2, run.layer);
+    this.g.notify(p, 'dungeonBack', run.id);
+    this.tell(run);
+  }
+
   /** 던전에서 나온다. 스스로 나오면(notify) 알려 준다 */
   leave(p: Ent, notify: boolean): void {
     const run = this.of.get(p.id);
@@ -170,7 +196,7 @@ export class Dungeon {
 
   tick(dt: number): void {
     for (const run of [...this.runs.values()]) {
-      if (run.members.size === 0) { this.destroy(run); continue; }
+      if (run.members.size === 0 && !this.waiting(run)) { this.destroy(run); continue; }
       if (run.cleared) {
         run.exit -= dt;
         if (run.exit <= 0) { this.destroy(run); continue; }
@@ -185,6 +211,16 @@ export class Dungeon {
       run.told += dt;
       if (run.told >= 5) this.tell(run); // 시계가 어긋나지 않게 가끔 다시 알린다
     }
+  }
+
+  /** 끊긴 사람이 돌아오기를 기다리는 회차인가 (기다림이 지난 것은 지운다) */
+  private waiting(run: Run): boolean {
+    let any = false;
+    for (const [pid, h] of this.held) {
+      if (h.until < this.g.clock || this.runs.get(h.run.layer) !== h.run) this.held.delete(pid);
+      else if (h.run === run) any = true;
+    }
+    return any;
   }
 
   /** 열려 있는 인스턴스의 수 (시험과 지표용) */

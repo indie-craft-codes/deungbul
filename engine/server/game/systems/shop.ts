@@ -27,6 +27,8 @@ export class Shop {
     if (def.price <= 0 || !this.stocked(id)) { g.notify(p, 'notStocked'); return; }
     if (def.kind === 'weapon' || def.kind === 'armor') {
       if ((def.tier ?? 0) <= Shop.wornTier(p, def.kind)) { g.notify(p, 'alreadyBest'); return; }
+      // 사면 바로 끼고 벗은 것이 가방에 남는다: 가방이 가득 찼으면 값을 치르기 전에 막는다 (31 / 30이 되던 것: 후반부 검토)
+      if (g.bag.full(p)) { g.notify(p, 'gearBagFull'); return; }
     } else if (g.bag.count(p, id) >= POTION_MAX) { g.notify(p, 'potionFull'); return; }
     if (!g.wallet.take(p, 'gold', def.price, WHY.buy)) { g.notify(p, 'noGold'); return; }
 

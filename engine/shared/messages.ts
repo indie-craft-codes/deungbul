@@ -26,6 +26,8 @@ export type MsgKey =
   | 'shopFar' // []
   | 'notStocked' // []
   | 'alreadyBest' // []
+  | 'dungeonBack' // [던전 id] 접속이 끊겼다 곧 돌아와 하던 회차로 다시 들어왔다
+  | 'gearBagFull' // [] 장비 가방이 가득 차 무기·갑옷을 사거나 만들 수 없다 (값을 치르기 전에 막는다)
   | 'potionFull' // []
   | 'noGold' // []
   | 'noPotion' // []

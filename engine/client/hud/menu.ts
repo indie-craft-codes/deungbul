@@ -294,7 +294,8 @@ function salvageTools(rest: Gear[]): HTMLElement[] {
   out.push(el('note gdust', loc.fmt.dustHave(have, cap)), tools);
   if (act.bulk >= 0) {
     // 일괄 분해의 대상: 가방의 장비 가운데 고른 등급 이하이고, 보급형도 잠근 것도 아닌 것 (낀 장비는 rest에 없다)
-    const targets = rest.filter((x) => x.rar <= act.bulk && canSalvage(x)), dust = targets.reduce((s, x) => s + dustFor(x), 0), over = dust > cap - have;
+    // 강화한 장비(+1 이상)는 일괄 분해에서 뺀다: 공들인 +7 반지가 섞여 경고 없이 사라졌다(후반부 검토). 하나씩은 분해할 수 있다
+    const targets = rest.filter((x) => x.rar <= act.bulk && canSalvage(x) && x.plus === 0), dust = targets.reduce((s, x) => s + dustFor(x), 0), over = dust > cap - have;
     const upTo = rarName(String(act.bulk));
     const go = button(loc.fmt.salvageAllGo(targets.length), () => { send({ t: 'salvage', uids: targets.map((x) => x.uid) }); act.bulk = -1; renderMenu(); }, !targets.length || over || targets.length > SALVAGE.maxBatch);
     go.classList.add('armed');

@@ -222,11 +222,11 @@
   "Opens at level 2."
  ],
  "fmt.dungeonRuns": [
-  "53bef4fb1595f125",
-  "undefined / undefined runs today",
-  "0 / undefined runs today",
-  "1 / undefined runs today",
-  "2 / undefined runs today"
+  "3a7ec0d91b08ce2c",
+  "undefined of undefined runs left today",
+  "0 of undefined runs left today",
+  "1 of undefined runs left today",
+  "2 of undefined runs left today"
  ],
  "fmt.dustHave": [
   "91856c17c2f28197",
@@ -683,18 +683,18 @@
   "Salvage 2"
  ],
  "fmt.salvageAllNone": [
-  "bba9afa692b6b09a",
-  "undefined: nothing to salvage (equipped, Standard and locked gear is skipped)",
-  "0: nothing to salvage (equipped, Standard and locked gear is skipped)",
-  "1: nothing to salvage (equipped, Standard and locked gear is skipped)",
-  "2: nothing to salvage (equipped, Standard and locked gear is skipped)"
+  "2330be9a06bb7598",
+  "undefined: nothing to salvage (equipped, Standard, locked and enhanced gear is skipped)",
+  "0: nothing to salvage (equipped, Standard, locked and enhanced gear is skipped)",
+  "1: nothing to salvage (equipped, Standard, locked and enhanced gear is skipped)",
+  "2: nothing to salvage (equipped, Standard, locked and enhanced gear is skipped)"
  ],
  "fmt.salvageAllPreview": [
-  "03343ceff3933414",
-  "undefined: undefined pieces → Gear Dust +NaN (equipped, Standard and locked gear is skipped)",
-  "0: undefined pieces → Gear Dust +NaN (equipped, Standard and locked gear is skipped)",
-  "1: undefined pieces → Gear Dust +NaN (equipped, Standard and locked gear is skipped)",
-  "2: undefined pieces → Gear Dust +NaN (equipped, Standard and locked gear is skipped)"
+  "4408c251cbb6bd5f",
+  "undefined: undefined pieces → Gear Dust +NaN (equipped, Standard, locked and enhanced gear is skipped)",
+  "0: undefined pieces → Gear Dust +NaN (equipped, Standard, locked and enhanced gear is skipped)",
+  "1: undefined pieces → Gear Dust +NaN (equipped, Standard, locked and enhanced gear is skipped)",
+  "2: undefined pieces → Gear Dust +NaN (equipped, Standard, locked and enhanced gear is skipped)"
  ],
  "fmt.salvageConfirm": [
   "22fab60665555107",
@@ -1032,6 +1032,13 @@
   "You fell. You rose again at 1. Nothing was lost.",
   "You fell. You rose again at 2. Nothing was lost."
  ],
+ "msg.dungeonBack": [
+  "a87c2928404c46ce",
+  "You are back in your run of undefined.",
+  "You are back in your run of 0.",
+  "You are back in your run of 1.",
+  "You are back in your run of 2."
+ ],
  "msg.dungeonClear": [
   "d38b59a5517619e4",
   "undefined cleared. Your reward is in the mail.",
@@ -1075,6 +1082,7 @@
  ],
  "msg.forgeClosed": "Bram the Smith has not returned yet.",
  "msg.forgeFar": "Move closer to Bram the Smith to forge.",
+ "msg.gearBagFull": "Your gear bag is full. Make room for the piece you take off (salvage, sell or expand the bag), then try again.",
  "msg.gearDrop": [
   "510ea14824e07d86",
   "You picked up a undefined undefined. Equip it under Menu[[ (M)|]] > Gear.",

@@ -131,3 +131,32 @@ import { check } from '../harness';
   g.command(b, { t: 'dungeon', id: 'vault' });
   check(b.layer === a.layer && told(c).length === 1 && told(a).length === 0, '뒤따라 들어가면 아직 밖에 있는 파티원에게만 알린다 (이미 같은 곳에 있는 사람은 빼고)');
 }
+
+// ---------- 끊겼다 곧 돌아오면 같은 회차로 (후반부 검토: 끊길 때마다 하루 횟수와 우두머리 진행이 날아갔다) ----------
+{
+  const { DUNGEON_HOLD_S } = await import('../../server/game/systems/dungeon');
+  const g = new Game();
+  const def = DUNGEONS.vault;
+  const run = (seconds: number) => { for (let i = 0; i < seconds * 20; i++) g.tick(0.05); };
+  const hero = (name: string, pid: string, save: Parameters<typeof g.players.spawn>[2] = null) => { const p = g.players.spawn(name, false, save, pid); if (!save) { g.classes.apply(p, 'knight'); p.lv = 12; g.players.refresh(p); p.hp = p.maxHp; } return p; };
+  const drop = (p: ReturnType<typeof hero>) => { g.fire('playerDropped', p); const save = JSON.parse(JSON.stringify(g.players.export(p))); g.players.leave(p.id); return save; };
+
+  const p = hero('끊긴이', 'pid-drop');
+  p.x = def.portal.x + 1; p.z = def.portal.z;
+  g.command(p, { t: 'dungeon', id: 'vault' });
+  const r0 = g.dungeon.runOf(p)!;
+  const boss = [...g.ents.values()].find((e) => e.type === def.boss.type && e.layer === p.layer)!;
+  boss.hp = Math.round(boss.maxHp * 0.4);
+  const used = p.daily.prog[runKey('vault')];
+  const save = drop(p);
+  run(30);
+  const back = hero('끊긴이', 'pid-drop', save);
+  const r1 = g.dungeon.runOf(back);
+  check(!!r1 && r1.id === 'vault' && !isField(back.layer) && back.layer === boss.layer && boss.hp === Math.round(boss.maxHp * 0.4) && back.daily.prog[runKey('vault')] === used && !!r0,
+    `30초 안에 다시 접속하면 같은 회차로 돌아간다 (우두머리 체력 그대로, 하루 횟수를 더 쓰지 않는다)`);
+
+  const save2 = drop(back);
+  run(DUNGEON_HOLD_S + 5);
+  const late = hero('끊긴이', 'pid-drop', save2);
+  check(!g.dungeon.runOf(late) && isField(late.layer) && g.dungeon.count === 0, `${DUNGEON_HOLD_S}초가 지나 접속하면 밖(들판)에서 시작하고 회차는 닫힌다`);
+}

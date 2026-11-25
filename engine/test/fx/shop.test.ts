@@ -50,3 +50,18 @@ import { check } from '../harness';
   const back = g.players.spawn('buyer', false, save);
   check(back.weapon === 'blade3' && back.gold === p.gold && back.items.draught === 1 && back.items.brew === 1, '무기, 골드, 물약이 저장되고 다시 들어오면 그대로다');
 }
+
+// ---------- 장비 가방이 가득 차면 무기·갑옷을 사지 못한다 (값을 치르기 전에 막는다. 31 / 30이 되던 것) ----------
+{
+  const g = new Game();
+  const SHOP = SHOPS[0];
+  const p = g.players.spawn('가득', false);
+  p.x = SHOP.x + 1; p.z = SHOP.z; p.gold = 10000;
+  while (!g.bag.full(p)) g.bag.giveGear(p, g.gear.plain('blade1'), '');
+  const n = p.gear.length, gold = p.gold;
+  g.notices = [];
+  g.command(p, { t: 'buy', id: 'blade2' });
+  check(p.gear.length === n && p.gold === gold && g.notices.some((x) => x.id === p.id && x.k === 'gearBagFull'), `가방이 가득 차면(${n}칸) 무기를 사지 못하고 골드도 그대로다`);
+  g.command(p, { t: 'buy', id: 'draught' });
+  check(p.items.draught === 1, '물약은 장비 가방과 상관없이 산다');
+}
