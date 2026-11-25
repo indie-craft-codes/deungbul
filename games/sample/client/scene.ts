@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MonsterId } from '@engine/shared/defs';
 import { AREAS } from '@engine/shared/world';
-import { limb, type Look, mat, type Model, onFrame, part, registerArmor, registerBlade, registerMonsterModel, setMapPaint, view } from '@engine/client';
+import { limb, type Look, mat, type Model, onFrame, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setMapPaint, view } from '@engine/client';
 import { G } from './bonfire';
 
 const dirt = new THREE.Color(0xa98d62), grass = [new THREE.Color(0x8aa35a), new THREE.Color(0x76904e)];
@@ -47,6 +47,15 @@ function beast(type: string): Model {
 
 export function initScene(): void {
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
+  // 나무꾼의 손 모양(직업 정의의 hand: 'axe'): 오른손에 든 자루와 도끼날. 돌려준 도끼날이 무기의 겉모습(registerBlade)을 따른다
+  registerHand('axe', ({ rig }) => {
+    const handle = part(new THREE.BoxGeometry(0.09, 1.1, 0.09), mat(0x7a5a3a), 0, -0.7, 0.45);
+    handle.rotation.x = Math.PI / 2;
+    const head = part(new THREE.BoxGeometry(0.1, 0.34, 0.42), mat(0xd8dde0), 0, 0.42, 0.16);
+    handle.add(head);
+    rig.ra.add(handle);
+    return head;
+  });
   registerBlade('axe2', { color: 0xffd9a0, scale: 1.25, glow: false });
   registerArmor('coat', { color: 0x8a6a48, pads: false });
   // 분위기: 저녁 빛 (하늘과 안개의 색, 두 빛의 세기, 안개의 거리)

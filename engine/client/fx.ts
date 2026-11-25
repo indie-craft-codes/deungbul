@@ -18,17 +18,24 @@ export function burst(x: number, z: number, radius: number, color: number, life 
 
 interface Arrow { mesh: THREE.Mesh; t: number; x1: number; z1: number; x2: number; z2: number }
 const arrows: Arrow[] = [];
-const arrowGeo = new THREE.BoxGeometry(0.07, 0.07, 1.0);
-const arrowMat = new THREE.MeshBasicMaterial({ color: 0xf6ecd2 });
-const boltGeo = new THREE.IcosahedronGeometry(0.22, 0);
-const boltMat = new THREE.MeshBasicMaterial({ color: 0xffa24a });
+/** 날아가는 것의 겉모습: 막대(화살, 창)나 공(불꽃, 돌), 색, 크기(배율). 빛나는 재질이라 어두운 곳에서도 보인다 */
+export interface ShotLook { shape: 'stick' | 'ball'; color: number; size?: number }
+const SHOTS = new Map<string, { geo: THREE.BufferGeometry; mat: THREE.Material }>();
+/** 날아가는 것의 모양을 등록한다 (틀에는 arrow, bolt가 있다. 같은 id로 등록하면 바꾼다). 직업 정의의 shot이 이 id를 고른다 */
+export function registerShot(id: string, look: ShotLook): void {
+  const s = look.size ?? 1;
+  SHOTS.set(id, { geo: look.shape === 'stick' ? new THREE.BoxGeometry(0.07 * s, 0.07 * s, 1.0 * s) : new THREE.IcosahedronGeometry(0.22 * s, 0), mat: new THREE.MeshBasicMaterial({ color: look.color }) });
+}
+registerShot('arrow', { shape: 'stick', color: 0xf6ecd2 });
+registerShot('bolt', { shape: 'ball', color: 0xffa24a });
 /** 화살이 날아가는 시간(초). 멀리서 쏜 공격의 타격 연출은 이만큼 늦춘다 */
 export const ARROW_S = 0.16;
 
-/** 날아가는 화살, magic이면 불꽃 */
-export function arrow(x1: number, z1: number, x2: number, z2: number, magic = false): void {
+/** 날아가는 것 하나 (shot: 직업 정의의 shot. 등록되지 않은 id는 화살로) */
+export function arrow(x1: number, z1: number, x2: number, z2: number, shot = 'arrow'): void {
   if (arrows.length > 60) return;
-  const mesh = magic ? new THREE.Mesh(boltGeo, boltMat) : new THREE.Mesh(arrowGeo, arrowMat);
+  const s = SHOTS.get(shot) ?? SHOTS.get('arrow')!;
+  const mesh = new THREE.Mesh(s.geo, s.mat);
   mesh.rotation.y = Math.atan2(x2 - x1, z2 - z1);
   mesh.position.set(x1, 1.4, z1);
   view.scene.add(mesh);

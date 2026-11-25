@@ -58,30 +58,62 @@ export function limb(geo: THREE.BufferGeometry, m: THREE.Material, x: number, y:
 let humanoidDeco: ((root: THREE.Group) => void) | null = null;
 export function setHumanoidDeco(fn: (root: THREE.Group) => void): void { humanoidDeco = fn; }
 
-/** 사람형 캐릭터. armed: true면 검, 'bow'면 활과 화살통, 'staff'면 지팡이와 고깔모자, false면 빈손(마을 주민). */
-export function makeHumanoid(cloth: number, armed: boolean | 'bow' | 'staff' = true, skin = 0xf0c9a0): Model {
+/**
+ * 손 모양 하나를 만드는 법: 사람형의 뼈대(rig)와 몸(root), 옷의 재질을 받아 손에 든 것을 붙이고, 무기의 겉모습(registerBlade)이 바뀌는
+ * 부분(칼날, 활대, 지팡이)을 돌려준다. 돌려준 것이 없으면 무기의 겉모습은 바뀌지 않는다. 손 모양의 id는 직업 정의의 hand다.
+ */
+export type HandBuilder = (m: { root: THREE.Group; rig: Rig; cloth: THREE.Material }) => THREE.Mesh | undefined;
+const HANDS = new Map<string, HandBuilder>();
+/** 손 모양을 등록한다 (틀에는 sword, bow, staff가 있다. 같은 id로 등록하면 틀의 것을 바꾼다). 직업 정의의 hand가 이 id를 고른다 */
+export function registerHand(id: string, build: HandBuilder): void { HANDS.set(id, build); }
+// 틀의 손 모양 셋
+registerHand('sword', ({ rig }) => {
+  const blade = part(G.sword, mat(0xd8dde0), 0, -0.7, 0.5);
+  blade.rotation.x = Math.PI / 2;
+  rig.ra.add(blade);
+  return blade;
+});
+registerHand('bow', ({ root, rig }) => {
+  const blade = part(G.bow, mat(0xd8dde0), 0, -0.6, 0.32); // 왼손에 세워 든 활
+  rig.la.add(blade);
+  root.add(part(G.quiver, mat(0x6b4a2e), 0.18, 1.25, -0.33));
+  return blade;
+});
+registerHand('staff', ({ root, rig, cloth }) => {
+  const blade = part(G.staff, mat(0x8a6a44), 0, -0.45, 0.3); // 오른손에 세워 든 지팡이. 끝의 구슬이 빛난다
+  blade.add(new THREE.Mesh(G.orb, wispMat));
+  blade.children[0].position.set(0, 1.05, 0);
+  rig.ra.add(blade);
+  root.add(part(G.hat, cloth, 0, 2.4, 0));
+  return blade;
+});
+
+/** 사람형의 겉모습을 정하는 값: 옷 색, 손 모양(''이면 빈손), 살갗 색 */
+export interface HumanoidLook { cloth: number; hand: string; skin: number }
+/**
+ * 사람형 모델을 통째로 바꾼다 (플레이어, 상인, 게임이 세운 NPC, 사람형 몬스터 모두). 등록하지 않으면 틀의 네모난 사람이다.
+ * 걷는 동작은 돌려준 모델의 rig(다리 둘, 팔 둘)로, 무기의 겉모습은 blade로, 갑옷은 rig가 있을 때 틀의 자리에 덧댄다
+ */
+let humanoidBody: ((look: HumanoidLook) => Model) | null = null;
+export function setHumanoidBody(fn: (look: HumanoidLook) => Model): void { humanoidBody = fn; }
+
+/** 틀의 사람형: 네모난 몸, 팔다리 넷, 손 모양 */
+function blockHumanoid({ cloth, hand, skin }: HumanoidLook): Model {
   const root = new THREE.Group();
   const pants = mat(0x3b3a4a), cm = mat(cloth);
   const rig: Rig = { ll: limb(G.leg, pants, -0.2, 0.7, 0, 0.35), rl: limb(G.leg, pants, 0.2, 0.7, 0, 0.35), la: limb(G.arm, cm, -0.54, 1.48, 0, 0.35), ra: limb(G.arm, cm, 0.54, 1.48, 0, 0.35) };
   root.add(rig.ll, rig.rl, rig.la, rig.ra, part(G.body, cm, 0, 1.1, 0), part(G.head, mat(skin), 0, 1.8, 0));
-  let blade: THREE.Mesh | undefined;
-  if (armed === 'bow') {
-    blade = part(G.bow, mat(0xd8dde0), 0, -0.6, 0.32); // 왼손에 세워 든 활
-    rig.la.add(blade);
-    root.add(part(G.quiver, mat(0x6b4a2e), 0.18, 1.25, -0.33));
-  } else if (armed === 'staff') {
-    blade = part(G.staff, mat(0x8a6a44), 0, -0.45, 0.3); // 오른손에 세워 든 지팡이. 끝의 구슬이 빛난다
-    blade.add(new THREE.Mesh(G.orb, wispMat));
-    blade.children[0].position.set(0, 1.05, 0);
-    rig.ra.add(blade);
-    root.add(part(G.hat, cm, 0, 2.4, 0));
-  } else if (armed) {
-    blade = part(G.sword, mat(0xd8dde0), 0, -0.7, 0.5);
-    blade.rotation.x = Math.PI / 2;
-    rig.ra.add(blade);
-  }
-  humanoidDeco?.(root); // 게임의 꾸밈 (등불지기는 허리춤의 등불)
+  // 모르는 손 모양은 검으로 그린다 (게임이 registerHand를 빠뜨려도 빈손이 되지 않게)
+  const blade = hand ? (HANDS.get(hand) ?? HANDS.get('sword'))?.({ root, rig, cloth: cm }) : undefined;
   return { root, rig, blade };
+}
+
+/** 사람형 캐릭터. armed: true면 검, 손 모양의 id('bow', 'staff', 게임이 등록한 것)면 그것, false면 빈손(마을 주민). */
+export function makeHumanoid(cloth: number, armed: boolean | string = true, skin = 0xf0c9a0): Model {
+  const look: HumanoidLook = { cloth, hand: armed === true ? 'sword' : armed === false ? '' : armed, skin };
+  const m = (humanoidBody ?? blockHumanoid)(look);
+  humanoidDeco?.(m.root); // 게임의 꾸밈 (등불지기는 허리춤의 등불)
+  return m;
 }
 
 /** 무기의 겉모습: 칼날의 색과 크기, 빛나는가(등불처럼 빛나는 재질로 바꾼다) */

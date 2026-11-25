@@ -193,7 +193,7 @@ export const SKILL_DEFS = {
   rest: { cd: 15, effect: { kind: 'heal', amount: 60 }, color: 0x7fd68a },
 } as const satisfies Record<string, SkillDef>;
 export const CLASSES = {
-  woodcutter: { hp: 200, range: 2.3, basic: [10, 15], skills: ['chop', 'sweep', 'rest'], hand: 'sword' },
+  woodcutter: { hp: 200, range: 2.3, basic: [10, 15], skills: ['chop', 'sweep', 'rest'], hand: 'axe' },
   hunter: { hp: 170, range: 9, basic: [9, 13], skills: ['aim', 'snare', 'rest'], hand: 'bow', shot: 'arrow' },
 } as const satisfies Record<string, ClassDef>;
 export const DEFAULT_CLASS: ClassId = 'woodcutter';
@@ -227,7 +227,8 @@ export const RECIPES: readonly Recipe[] = [];
 export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 ? 'axe2' : 'axe1'), armorFor: (): ItemId => 'coat' };
 ```
 
-- 무기는 한 줄기다. 직업마다 손에 든 모양(`hand`: `sword` / `bow` / `staff`)만 다르고, 이름은 언어 파일이 손 모양마다 따로 준다.
+- 무기는 한 줄기다. 직업마다 손에 든 모양(`hand`)만 다르고, 이름은 언어 파일이 손 모양마다 따로 준다(아이템 이름표에 손 모양의 id 칸: `bow`, `staff` …. 칸이 없으면 `name`). 틀에는 `sword` / `bow` / `staff`가 있고, 다른 모양은 화면에서 `registerHand`로 등록한다. 예제의 나무꾼은 도끼(`axe`)를 든다(`client/scene.ts`).
+- 쏘는 직업의 날아가는 것(`shot`)도 같다: 틀에는 `arrow`, `bolt`가 있고, 다른 것은 `registerShot(id, { shape: 'stick' | 'ball', color, size })`.
 - `price: 0`은 상점에서 팔지 않는다는 뜻이다.
 - 두 번째 재화(`sparks`)를 쓰지 않으면 몬스터에 `sparks`를 적지 않고, 이름표에 `currency2`를 적지 않는다. 틀의 문장에서 그 몫이 빠진다.
 - 첫 번째 재화(`gold` 칸)의 이름은 이름표의 `currency1`(`{ name, unit }`: 값 앞의 이름 '골드 100', 수 뒤의 낱말 '100골드')로 준다. 적지 않으면 골드다.
@@ -351,11 +352,20 @@ export const look: Look = {
   leaf: (_x, _z, k) => LEAVES[Math.floor(k * LEAVES.length) % LEAVES.length],
 ```
 
-모듈의 init에서 등록하는 것: 몬스터 모델, 무기와 갑옷의 모습, 분위기, 미니맵의 바탕.
+모듈의 init에서 등록하는 것: 몬스터 모델, 손 모양, 무기와 갑옷의 모습, 분위기, 미니맵의 바탕.
 
 ```ts games/sample/client/scene.ts
 export function initScene(): void {
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
+  // 나무꾼의 손 모양(직업 정의의 hand: 'axe'): 오른손에 든 자루와 도끼날. 돌려준 도끼날이 무기의 겉모습(registerBlade)을 따른다
+  registerHand('axe', ({ rig }) => {
+    const handle = part(new THREE.BoxGeometry(0.09, 1.1, 0.09), mat(0x7a5a3a), 0, -0.7, 0.45);
+    handle.rotation.x = Math.PI / 2;
+    const head = part(new THREE.BoxGeometry(0.1, 0.34, 0.42), mat(0xd8dde0), 0, 0.42, 0.16);
+    handle.add(head);
+    rig.ra.add(handle);
+    return head;
+  });
   registerBlade('axe2', { color: 0xffd9a0, scale: 1.25, glow: false });
   registerArmor('coat', { color: 0x8a6a48, pads: false });
   // 분위기: 저녁 빛 (하늘과 안개의 색, 두 빛의 세기, 안개의 거리)
@@ -668,7 +678,7 @@ export function initBonfire(): void {
 
 - 재화는 세 칸(`gold`, `sparks`, 경험치)으로 정해져 있다. 두 번째 재화는 한 가지(`sparks`)뿐이다. 이름은 이름표의 `currency1`·`currency2`로 준다.
 - 기술의 효과는 세 가지(`hit`, `area`, `heal`)다. 새 효과는 틀의 `engine/server/game/systems/combat.ts`를 고쳐야 한다.
-- 사람 모델은 틀의 것 하나다. 꾸밈만 더할 수 있다(`setHumanoidDeco`). 손 모양은 `sword` / `bow` / `staff` 셋이다.
+- 사람 모델은 틀의 네모난 사람이 기본이다. 꾸밈을 더하거나(`setHumanoidDeco`) 통째로 바꿀 수 있다(`setHumanoidBody`: 옷 색·손 모양·살갗 색을 받아 모델을 돌려준다. 걷는 동작은 `rig`의 팔다리 넷으로, 무기의 겉모습은 `blade`로 따라간다). 손 모양과 날아가는 것은 등록으로 늘린다(`registerHand`, `registerShot`).
 - 메뉴의 탭(장비, 성장, 우편, 일일, 거래소, 길드, 순위)은 내용과 무관하게 모두 보인다. 길드와 거래소는 내용 없이도 돈다.
 - 장부를 보는 도구(`npm run econ`)는 등불지기의 것이다(`games/deungbul/scripts/econ.ts`). 장부 자체(`g.ledger`)와 서버 지표의 한 줄 요약은 틀의 것이라 어느 게임에서나 돈다.
 
@@ -733,7 +743,7 @@ export function initBonfire(): void {
 | `hud/classes.ts`의 `openClasses` | 직업 고르기 창 열기 | `client/bonfire.ts` |
 | `scene/view.ts`의 `Look` | 땅, 잎, 건물 | `client/scene.ts` |
 | `scene/models.ts`의 `registerMonsterModel`, `registerBlade`, `registerArmor`, `mat`, `part`, `limb` | 모델 | `client/scene.ts` |
-| `scene/models.ts`의 `setHumanoidDeco`, `makeHumanoid` | 사람 모델의 꾸밈, 사람형 NPC | |
+| `scene/models.ts`의 `setHumanoidDeco`, `setHumanoidBody`, `makeHumanoid`, `registerHand`. `fx.ts`의 `registerShot` | 사람 모델의 꾸밈과 통째로 바꾸기, 사람형 NPC, 손 모양, 날아가는 것 | `client/scene.ts`(`registerHand('axe', …)`) |
 | `entities.ts`의 `addNpc`, `setMerchant` | 화면에만 서 있는 사람, 상점 자리마다 세울 상인(모델·이름·바라볼 곳, `null`이면 세우지 않는다) | |
 | `sound.ts`의 `addMsgSounds`, `sfx` | 안내문의 소리 | |
 | `actions.ts`의 `goToTown`, `autoWalk` | 걸어가게 하기 | |

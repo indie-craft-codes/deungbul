@@ -17,7 +17,8 @@ const DIE_S = 0.3;
 const CLOTH = [0x3f7fbf, 0x8a5ac0, 0x4c9a6a, 0xd08a2e, 0x4a6a8a, 0xc05a8a, 0x6a6ad0, 0x9a7a3a, 0x3fa0a0, 0xa04a4a];
 const MY_CLOTH = 0xc9463d;
 /** 직업에 맞는 손 장비: 궁수는 활, 마법사는 지팡이, 나머지는 검 */
-const gearOf = (cls: string): true | 'bow' | 'staff' => { const hand = classOf(cls).hand; return hand === 'sword' ? true : hand; };
+/** 직업의 손 모양 (ClassDef.hand: 'sword', 'bow', 'staff' 또는 게임이 registerHand로 등록한 것) */
+const gearOf = (cls: string): string => classOf(cls).hand;
 
 type At = { x: number; z: number };
 /** 화면에만 서 있는 사람들 (서버 엔티티가 아니다): 상인과, 게임이 세운 NPC */
@@ -175,7 +176,7 @@ function onEvent(e: Ev, me: Me): void {
       const srcR = src === me.id ? null : S.others.get(src);
       const look = src === me.id || srcR?.kind === 'p' ? classOf(src === me.id ? me.cls : srcR!.cls) : null;
       const ranged = !!look?.shot && !!from && !!p;
-      if (ranged) arrow(from!.x, from!.z, p!.x, p!.z, look!.shot === 'bolt');
+      if (ranged) arrow(from!.x, from!.z, p!.x, p!.z, look!.shot);
       // 타격감: 내가 때리거나 맞을 때는 크게(화면도 흔들린다), 남의 싸움은 작게
       if (p) {
         const mine = src === me.id, hurt = dst === me.id;

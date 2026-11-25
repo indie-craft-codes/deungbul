@@ -43,7 +43,7 @@ export const L = (): Locale => current;
 export function itemName(id: ItemId, cls: string): string {
   const it = current.items[id];
   const hand = handOf(cls);
-  return (hand !== 'sword' && it[hand]) || it.name;
+  return (hand !== 'sword' && hand !== 'name' && hand !== 'info' && it[hand]) || it.name;
 }
 /** 터치 화면인가. 키보드가 없으니 단축키 안내를 빼고 보여 준다 */
 /** 아이템의 한 줄 설명: 수치로 된 효과는 아이템 정의에서 읽어 만든다 (ko.ts의 itemInfo) */

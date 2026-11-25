@@ -18,4 +18,5 @@ export { addNotices, banner } from './hud/notify';
 export { openClasses } from './hud/classes';
 export { hudSlow } from './hud/me';
 export type { Look, Mood } from './scene/view';
-export { limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco, type ArmorLook, type BladeLook, type Model, type MonsterBuilder } from './scene/models';
+export { limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setHumanoidBody, setHumanoidDeco, type ArmorLook, type BladeLook, type HandBuilder, type HumanoidLook, type Model, type MonsterBuilder, type Rig } from './scene/models';
+export { registerShot, type ShotLook } from './fx';

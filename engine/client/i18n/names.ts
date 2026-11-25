@@ -4,10 +4,16 @@ import { BUILD_STAT_IDS, CLASS_IDS, DAILY_IDS, DUNGEON_IDS, GEAR_SLOTS, ITEMS, M
 import type { BuildStat, ClassId, DailyId, DungeonId, GearSlot, ItemId, MonsterId, SkillId } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 
+/** 아이템 하나의 이름. 손 모양의 id를 칸 이름으로 쓴다 (sword는 name이다) */
+export interface ItemNames { name: string; info?: string; bow?: string; staff?: string; [hand: string]: string | undefined }
+
 export interface ContentNames {
   monsters: Record<MonsterId, string>;
-  /** bow, staff: 그 손의 직업에게 보이는 이름 (같은 등급의 활, 지팡이). info: 수치가 아닌 설명 (수치로 된 효과는 정의의 값으로 만든다: ko.ts의 itemInfo) */
-  items: Record<ItemId, { name: string; info?: string; bow?: string; staff?: string }>;
+  /**
+   * bow, staff (그리고 게임이 등록한 손 모양의 id): 그 손의 직업에게 보이는 이름 (같은 등급의 활, 지팡이 …). 칸이 없으면 name.
+   * info: 수치가 아닌 설명 (수치로 된 효과는 정의의 값으로 만든다: ko.ts의 itemInfo)
+   */
+  items: Record<ItemId, ItemNames>;
   classes: Record<ClassId, { name: string; info: string }>;
   skills: Record<SkillId, { name: string; info: string }>;
   dungeons: Record<DungeonId, { name: string; info: string }>;
@@ -34,7 +40,7 @@ export const itemNameOf = (items: ContentNames['items']) => (id: MsgArg, cls?: M
   const it = items[id as ItemId];
   if (!it) return String(id);
   const hand = handOf(cls);
-  return (hand !== 'sword' && it[hand]) || it.name;
+  return (hand !== 'sword' && hand !== 'name' && hand !== 'info' && it[hand]) || it.name;
 };
 
 /**

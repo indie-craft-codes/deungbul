@@ -47,7 +47,7 @@ export const SKILL_DEFS = {
   rest: { cd: 15, effect: { kind: 'heal', amount: 60 }, color: 0x7fd68a },
 } as const satisfies Record<string, SkillDef>;
 export const CLASSES = {
-  woodcutter: { hp: 200, range: 2.3, basic: [10, 15], skills: ['chop', 'sweep', 'rest'], hand: 'sword' },
+  woodcutter: { hp: 200, range: 2.3, basic: [10, 15], skills: ['chop', 'sweep', 'rest'], hand: 'axe' },
   hunter: { hp: 170, range: 9, basic: [9, 13], skills: ['aim', 'snare', 'rest'], hand: 'bow', shot: 'arrow' },
 } as const satisfies Record<string, ClassDef>;
 export const DEFAULT_CLASS: ClassId = 'woodcutter';

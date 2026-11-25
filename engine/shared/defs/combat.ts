@@ -36,10 +36,13 @@ export interface ClassDef {
   basic: readonly [number, number];
   /** 기술 칸의 기술 (SKILL_SLOTS개. 칸의 수는 게임이 정한다) */
   skills: readonly SkillId[];
-  /** 손에 드는 것의 모양. 캐릭터 모델과 무기 이름(검/활/지팡이)이 이것을 따른다 */
-  hand: 'sword' | 'bow' | 'staff';
-  /** 멀리서 쏘는 직업이면 날아가는 것의 모양. 없으면 붙어서 친다 */
-  shot?: 'arrow' | 'bolt';
+/**
+   * 손에 드는 것의 모양. 캐릭터 모델과 무기 이름이 이것을 따른다: 이름표의 아이템에 이 id의 칸(bow, staff …)이 있으면 그 직업에게는 그 이름이 보인다.
+   * 틀에 있는 것은 'sword', 'bow', 'staff'이고, 다른 모양은 게임이 화면에서 registerHand(id, …)로 등록한다 (등록하지 않으면 검으로 그린다)
+   */
+  hand: string;
+  /** 멀리서 쏘는 직업이면 날아가는 것의 모양. 틀에 있는 것은 'arrow', 'bolt'이고, 다른 것은 registerShot으로 등록한다. 없으면 붙어서 친다 */
+  shot?: string;
   /** 때릴 때 튀는 불티의 색 (없으면 기본색) */
   hitColor?: number;
 }
