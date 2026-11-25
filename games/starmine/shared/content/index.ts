@@ -10,7 +10,10 @@ import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import { GEAR_BASE } from '@engine/shared/defaults';
 import { DRILL } from './drill';
 
-export * from '@engine/shared/defaults';
+
+// ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
+import { RPG_MODULES } from '@engine/shared/modules';
+export const MODULES = RPG_MODULES;
 export const GUEST_NAME = 'Digger';
 
 // ---------- 맵: 광산 앞 골짜기 하나 ----------

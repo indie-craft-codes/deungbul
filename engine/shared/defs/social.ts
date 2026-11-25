@@ -1,5 +1,5 @@
 // 사람들 사이의 것: 길드와 거래소의 화면에 보이는 모양과 도우미. 수치(CHANNEL, GUILD, MARKET)는 게임의 내용에 있다 (@game/shared/content).
-import { GEAR_SLOTS, GUILD, MARKET } from '@game/shared/content';
+import { GEAR_SLOTS, GUILD, MARKET } from '../content';
 import type { Gear } from './growth';
 
 // ---------- 길드 ----------

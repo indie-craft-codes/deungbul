@@ -11,4 +11,8 @@ export * from './items';
 export * from './monsters';
 export * from './party';
 export * from './social';
+
+// ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
+import { RPG_MODULES } from '@engine/shared/modules';
+export const MODULES = RPG_MODULES;
 export { MAP } from './map';

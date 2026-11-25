@@ -21,7 +21,7 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
 // ---------- 의존 방향: 폴더 (docs/framework-plan.md의 단계 9) ----------
 // 틀은 engine/ 아래에, 이 게임은 games/deungbul/ 아래에 있다. 방향은 폴더로 본다 (아래의 블록들은 같은 것을 더 잘게, 가져오는 이름까지 본다):
 //   1. engine/ 아래의 어떤 파일도 games/를 상대 경로로 import하지 않는다
-//   2. 틀의 소스(시험을 뺀 것)가 별칭 @game으로 읽는 것은 내용 통로(@game/shared/content) 하나뿐이고, 읽는 자리도 틀의 내용 통로(engine/shared/defs.ts, defs/, contract.ts, world.ts)뿐이다
+//   2. 틀의 소스(시험을 뺀 것)가 별칭 @game으로 읽는 것은 내용 통로(@game/shared/content) 하나뿐이고, 읽는 자리도 engine/shared/content.ts(내용을 꺼내 기본값을 채운다)와 contract.ts뿐이다
 //   3. 틀의 통로가 @game에서 다시 내보내는 이름은 내용 계약(engine/shared/contract.ts)의 이름과 같다: 계약 밖의 것은 틀로 나오지 않는다
 //   4. 틀의 시험이 @game으로 읽는 것은 게임의 내용 통로(@game/shared/defs, @game/shared/world)뿐이다 (아직 등불지기의 좌표와 id 위에서 돈다: 13단계에서 뗀다)
 //   5. games/deungbul/은 engine/을 별칭 @engine으로만 읽는다 (상대 경로로 폴더를 넘지 않는다). 방향은 게임 → 틀이다
@@ -40,7 +40,7 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
   // 검사가 실제로 읽어 내는지: 경로를 풀어내는 법과, 양쪽 폴더에서 별칭을 실제로 쓰는 곳
   check(resolveSpec(root, 'engine/client/hud/x.ts', '../../../games/deungbul/shared/defs') === 'games/deungbul/shared/defs' && resolveSpec(root, 'games/deungbul/server/x.ts', '@engine/server/game/game') === 'engine/server/game/game'
     && resolveSpec(root, 'engine/shared/defs.ts', 'node:fs') === null && engineFiles.length >= 110 && gameFiles.length >= 70
-    && specsOf('engine/shared/defs.ts').some((s) => s.spec === '@game/shared/content') && specsOf('games/deungbul/server/systems/tower.ts').some((s) => s.spec === '@engine/server')
+    && specsOf('engine/shared/content.ts').some((s) => s.spec === '@game/shared/content') && specsOf('games/deungbul/server/systems/tower.ts').some((s) => s.spec === '@engine/server')
     && specsOf('games/deungbul/shared/content/items.ts').some((s) => s.spec === '@engine/shared/defs/items' && s.typeOnly) && specsOf('games/deungbul/shared/deungbul.ts').some((s) => s.spec === '@engine/shared/ext'),
     `폴더를 넘는 import를 읽어 낸다 (engine/ 아래 ${engineFiles.length}개, games/deungbul/ 아래 ${gameFiles.length}개)`);
 
@@ -50,20 +50,22 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
   check(relOut.length === 0, 'engine/ 아래의 어떤 파일도 상대 경로로 폴더 밖(games/)을 import하지 않는다');
 
   // 2
-  /** 틀에서 게임의 내용을 읽어도 되는 자리: 틀의 내용 통로와 그 조각들 */
-  const isChannel = (f: string): boolean => /^engine\/shared\/(defs|contract|world)\.ts$/.test(f) || f.startsWith('engine/shared/defs/');
+  /** 틀에서 게임의 내용을 읽어도 되는 자리: 내용을 꺼내는 engine/shared/content.ts와 계약의 검사 contract.ts */
+  const isChannel = (f: string): boolean => /^engine\/shared\/(content|contract)\.ts$/.test(f);
   const CONTENT = '@game/shared/content';
   const srcGame = engineFiles.filter((f) => !isTest(f)).flatMap((f) => specsOf(f).filter((s) => s.spec.startsWith('@game')).map((s) => ({ f, spec: s.spec })));
   const srcBad = srcGame.filter((x) => x.spec !== CONTENT || !isChannel(x.f));
   for (const x of srcBad) console.log(`  ${x.f} -> ${x.spec}`);
-  check(srcGame.length >= 8 && srcBad.length === 0, `틀의 소스가 @game으로 읽는 것은 내용 통로(${CONTENT})뿐이고, 읽는 자리는 틀의 내용 통로(engine/shared/defs.ts, defs/, contract.ts, world.ts)뿐이다 (${srcGame.length}곳)`);
+  check(srcGame.length === 2 && srcBad.length === 0, `틀의 소스가 @game으로 읽는 것은 내용 통로(${CONTENT})뿐이고, 읽는 자리는 engine/shared/content.ts와 contract.ts뿐이다 (${srcGame.length}곳)`);
 
   // 3
-  const contract = /export interface ContentContract \{([\s\S]*?)\n\}/.exec(read('engine/shared/contract.ts'))?.[1] ?? '';
+  // 계약의 이름: 핵심 계약과 모듈마다의 계약(export interface …Content, CoreTuning)의 칸. 틀의 통로(defs.ts)가 content.ts에서 다시 내보내는 이름, content.ts가 꺼내는 이름과 같아야 한다
+  const contract = [...read('engine/shared/contract.ts').matchAll(/export interface (?:\w+Content|CoreTuning) \{([\s\S]*?)\n\}/g)].map((m) => m[1]).join('\n');
   const wanted = [...contract.matchAll(/^ {2}([A-Z][A-Z_0-9]*):/gm)].map((m) => m[1]);
-  const passed = (/export \{([^}]*)\} from '@game\/shared\/content';/.exec(read('engine/shared/defs.ts'))?.[1] ?? '').replace(/\/\/.*$/gm, '').split(',').map((s) => s.trim()).filter(Boolean);
-  const onlyContract = wanted.filter((n) => !passed.includes(n)), onlyChannel = passed.filter((n) => !wanted.includes(n));
-  check(wanted.length >= 55 && wanted.includes('MAP') && wanted.includes('ECON_HUNT') && new Set(passed).size === passed.length && onlyContract.length === 0 && onlyChannel.length === 0,
+  const passed = (/export \{([^}]*)\} from '\.\/content';/.exec(read('engine/shared/defs.ts'))?.[1] ?? '').replace(/\/\/.*$/gm, '').split(',').map((s) => s.trim()).filter(Boolean);
+  const pulled = [...read('engine/shared/content.ts').matchAll(/^export const ([A-Z][A-Z_0-9]*) =/gm)].map((m) => m[1]);
+  const onlyContract = wanted.filter((n) => !passed.includes(n) || !pulled.includes(n)), onlyChannel = [...new Set([...passed, ...pulled])].filter((n) => !wanted.includes(n));
+  check(wanted.length >= 60 && wanted.includes('MAP') && wanted.includes('MODULES') && wanted.includes('ECON_HUNT') && new Set(passed).size === passed.length && onlyContract.length === 0 && onlyChannel.length === 0,
     `틀의 통로가 게임에서 다시 내보내는 이름은 내용 계약의 이름과 같다 (${wanted.length}개)${onlyContract.length + onlyChannel.length ? `: 계약에만 ${onlyContract.join(', ') || '없음'}, 통로에만 ${onlyChannel.join(', ') || '없음'}` : ''}`);
   // 계약 밖의 것은 @game의 그 파일이 내보내더라도 틀의 통로로는 나오지 않는다 (실제로 불러 본다)
   const engineDefs = await import('@engine/shared/defs') as Record<string, unknown>, engineWorld = await import('@engine/shared/world') as Record<string, unknown>;
@@ -86,7 +88,7 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
   check(viaAlias >= 80 && gameOut.length === 0, `games/deungbul/은 engine/을 별칭 @engine으로만 읽는다: 상대 경로로 폴더를 넘지 않고, 자기 폴더는 상대 경로로 읽는다 (@engine ${viaAlias}곳)`);
 
   // 6
-  const contentFiles = specsOf('games/deungbul/shared/content/index.ts').map((s) => `games/deungbul/shared/content/${s.spec.slice(2)}.ts`);
+  const contentFiles = specsOf('games/deungbul/shared/content/index.ts').filter((s) => s.spec.startsWith('./')).map((s) => `games/deungbul/shared/content/${s.spec.slice(2)}.ts`);
   const valueReads = contentFiles.flatMap((f) => specsOf(f).filter((s) => !s.typeOnly && (s.spec.startsWith('@engine') || /(^|\/)(defs|world)$/.test(s.spec))).map((s) => `${f} -> ${s.spec}`));
   for (const x of valueReads) console.log('  ' + x);
   check(contentFiles.length >= 10 && contentFiles.every((f) => fs.existsSync(new URL(f, root))) && valueReads.length === 0, `틀이 읽는 게임의 내용 파일 ${contentFiles.length}개는 틀에서 타입만 가져온다 (값을 읽지 않는다)`);

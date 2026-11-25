@@ -1,6 +1,6 @@
 // 성장의 틀: 장비·우편·보상·일일 임무·순위의 모양과, 게임의 수치에서 값을 구하는 도우미.
 // 수치(STATS, GEAR, ENHANCE, LEVEL 등)는 게임의 내용에 있다 (@game/shared/content). 규칙은 engine/server/game/systems/의 gear, mail, idle, daily, rank가 맡는다.
-import { BAG_UP, BUILD_STATS, DAILIES, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, LEVEL, POWER, RARITIES, SALVAGE, STATS } from '@game/shared/content';
+import { BAG_UP, BUILD_STATS, DAILIES, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, LEVEL, POWER, RARITIES, SALVAGE, STATS } from '../content';
 import { isItemId } from './items';
 
 // ---------- 장비 ----------

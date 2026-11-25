@@ -2,7 +2,7 @@
 // 같은 시드로 같은 장애물을 만들어서, 서버의 충돌 판정과 클라이언트의 그림이 항상 일치한다.
 // 맵 자체(범위, 구역, 등탑, 빈터, 길, 나무 뿌리는 규칙)는 게임의 내용(@game/shared/content의 MAP)이고, 여기서는 그 모양과 거기서 꺼낸 것(defs/map.ts)만 다시 내보낸다.
 // 이 파일은 그 가운데 맵 정의(MAP)만 읽는다: 연못이나 등탑 같은 이 게임의 낱말은 모른다.
-import { MAP } from '@game/shared/content';
+import { MAP, NET } from './content';
 import { AREAS, EDGE, areaAt } from './defs/map';
 
 export * from './defs/map';
@@ -29,11 +29,15 @@ export function clampInto(p: { x: number; z: number }): void {
 /** clampInto의 결과를 새 점으로 돌려준다 */
 export const clampPoint = (x: number, z: number): { x: number; z: number } => { const p = { x, z }; clampInto(p); return p; };
 
-export const AOI = 32; // 시야 반경: 이 안의 엔티티만 클라이언트로 보낸다
-export const AOI_LEAVE = 36; // 시야에서 빠지는 반경 (경계에서 깜빡이지 않도록 조금 넓게)
+/** 시야 반경: 이 안의 엔티티만 클라이언트로 보낸다. 서버의 주기와 시야는 게임이 내용의 NET으로 바꾼다 (기본값 engine/shared/defaults.ts) */
+export const AOI = NET.aoi;
+/** 시야에서 빠지는 반경 (경계에서 깜빡이지 않도록 조금 넓게) */
+export const AOI_LEAVE = Math.max(NET.aoiLeave, NET.aoi);
 export const CELL = 16; // 서버 공간 격자 한 칸의 크기
-export const TICK_MS = 50; // 서버 시뮬레이션 주기 (20Hz)
-export const SNAP_EVERY = 2; // 몇 틱마다 스냅샷을 보내는가 (10Hz)
+/** 서버 시뮬레이션 주기(ms) */
+export const TICK_MS = NET.tickMs;
+/** 몇 틱마다 스냅샷을 보내는가 */
+export const SNAP_EVERY = Math.max(1, Math.round(NET.snapEvery));
 export const PLAYER_SPEED = 6.2;
 export const BODY_R = 0.45;
 export const NAME_MAX = 12;

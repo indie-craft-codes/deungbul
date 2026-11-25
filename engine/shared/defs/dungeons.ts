@@ -1,5 +1,5 @@
 // 던전의 모양과 도우미. 던전의 표는 게임의 내용에 있다 (@game/shared/content). 규칙은 engine/server/game/systems/dungeon.ts가 맡는다.
-import { DUNGEONS } from '@game/shared/content';
+import { DUNGEONS } from '../content';
 import type { Reward } from './growth';
 import type { MonsterId } from './monsters';
 

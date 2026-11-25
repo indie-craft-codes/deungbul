@@ -10,7 +10,10 @@ import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import { CHANNEL as CHANNEL_BASE, GEAR_BASE } from '@engine/shared/defaults';
 import { WALL, WELL } from './waves';
 
-export * from '@engine/shared/defaults';
+
+// ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
+import { RPG_MODULES } from '@engine/shared/modules';
+export const MODULES = RPG_MODULES;
 export const GUEST_NAME = 'Villager';
 /** 채널은 하나: 마을과 우물은 하나뿐이고 모두가 같은 물결을 함께 막는다 */
 export const CHANNEL = { ...CHANNEL_BASE, count: 1 };

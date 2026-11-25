@@ -8,7 +8,10 @@ import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import { GEAR_BASE } from '@engine/shared/defaults';
 
-export * from '@engine/shared/defaults';
+
+// ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
+import { RPG_MODULES } from '@engine/shared/modules';
+export const MODULES = RPG_MODULES;
 export const GUEST_NAME = 'Caver';
 
 // ---------- 맵: 들판(버섯 굴) 하나와 던전(깊은 굴) 하나 ----------

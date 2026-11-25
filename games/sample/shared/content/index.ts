@@ -10,8 +10,10 @@ import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import { GEAR_BASE } from '@engine/shared/defaults';
 import { BONFIRE } from './bonfire';
 
-// 수치의 기본값(전투, 장비, 강화, 길드, 거래소 …)은 틀의 것을 그대로 받는다. 바꿀 이름만 아래에 직접 적는다
-export * from '@engine/shared/defaults';
+
+// ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
+import { RPG_MODULES } from '@engine/shared/modules';
+export const MODULES = RPG_MODULES;
 export const GUEST_NAME = 'Camper';
 
 // ---------- 맵: 지역 하나 ----------

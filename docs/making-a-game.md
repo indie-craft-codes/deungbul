@@ -143,8 +143,8 @@ if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키�
 이름은 61개지만 대부분은 수치라서 틀의 기본값(`engine/shared/defaults.ts`)을 한 줄로 받는다. 같은 이름을 직접 내보내면 그것이 기본값을 가린다.
 
 ```ts games/sample/shared/content/index.ts
-// 수치의 기본값(전투, 장비, 강화, 길드, 거래소 …)은 틀의 것을 그대로 받는다. 바꿀 이름만 아래에 직접 적는다
-export * from '@engine/shared/defaults';
+import { RPG_MODULES } from '@engine/shared/modules';
+export const MODULES = RPG_MODULES;
 export const GUEST_NAME = 'Camper';
 ```
 

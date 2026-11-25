@@ -1,5 +1,5 @@
 // 몬스터의 모양과 도우미. 몬스터의 표와 수치는 게임의 내용에 있다 (@game/shared/content).
-import { BOSS, GEAR, MONSTERS } from '@game/shared/content';
+import { BOSS, GEAR, MONSTERS } from '../content';
 
 export interface MonsterDef {
   hp: number;

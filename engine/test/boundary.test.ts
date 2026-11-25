@@ -48,8 +48,11 @@ check(SRC.length >= 90 && CSS.length >= 1, `틀의 소스를 읽었다 (ts ${SRC
   const refIds = new Set<string>();
   /** id → 그 id를 가진 게임 */
   const owners = new Map<string, string[]>();
+  // 게임이 적지 않은 이름은 틀의 기본값이다 (engine/shared/content.ts와 같게)
+  const dflt = await import(pathToFileURL(path.join(root, 'engine/shared/defaults.ts')).href) as Record<string, unknown>;
   for (const f of CONTENTS) {
-    const c = await import(pathToFileURL(path.join(root, f)).href) as Content;
+    const raw = await import(pathToFileURL(path.join(root, f)).href) as Record<string, unknown>;
+    const c = { ...dflt, ...Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== undefined)) } as Content;
     const add = (k: string) => { ids.add(k); if (REFERENCE.includes(f)) refIds.add(k); owners.set(k, [...(owners.get(k) ?? []), f.split('/').slice(0, 2).join('/')]); };
     for (const t of ['CLASSES', 'MONSTERS', 'ITEMS', 'SKILL_DEFS', 'DUNGEONS', 'DAILIES', 'STATS', 'BUILD_STATS']) keys(c[t]).forEach(add);
     [...c.MAP.areas.map((a) => a.id), ...c.RARITIES.map((r) => r.id), ...c.GEAR_SLOTS].forEach(add);
@@ -151,8 +154,8 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
    */
   const ENTRIES = ['@engine/shared', '@engine/server', '@engine/client', '@engine/testing', '@engine/client/i18n', '@engine/client/i18n/ko', '@engine/client/i18n/en', '@engine/client/i18n/names', '@engine/client/i18n/merge',
     '@engine/shared/defs', '@engine/shared/world', '@engine/shared/ext', '@engine/server/game/ext', '@engine/client/i18n/ext'];
-  /** 게임의 내용 파일(shared/content/)만: 계약의 타입은 defs/*.ts에서 import type으로, 기본값은 defaults에서 (통로를 값으로 읽으면 초기화 순서가 꼬인다) */
-  const contentOk = (f: string, spec: string, typeOnly: boolean): boolean => /^games\/[^/]+\/shared\/content\//.test(f) && ((/^@engine\/shared\/defs\/\w+$/.test(spec) && typeOnly) || spec === '@engine/shared/defaults');
+  /** 게임의 내용 파일(shared/content/)만: 계약의 타입은 defs/*.ts에서 import type으로, 기본값은 defaults에서, 모듈의 목록은 modules에서 (통로를 값으로 읽으면 초기화 순서가 꼬인다. defaults와 modules는 값을 아무 데서도 읽지 않는다) */
+  const contentOk = (f: string, spec: string, typeOnly: boolean): boolean => /^games\/[^/]+\/shared\/content\//.test(f) && ((/^@engine\/shared\/defs\/\w+$/.test(spec) && typeOnly) || spec === '@engine/shared/defaults' || spec === '@engine/shared/modules');
   const specsIn = (src: string): { spec: string; typeOnly: boolean }[] => [...stripComments(src).matchAll(/^\s*(import|export)\s+(type\s+)?[^'"]*?from\s+['"](@engine\/[^'"]+)['"]|^\s*import\s+['"](@engine\/[^'"]+)['"]/gm)].map((m) => ({ spec: m[3] ?? m[4], typeOnly: !!m[2] }));
   const deep = (f: string, src: string): string[] => specsIn(src).filter((s) => !ENTRIES.includes(s.spec) && !contentOk(f, s.spec, s.typeOnly)).map((s) => `${f} → ${s.spec}`);
   const GAMES = walk(path.join(root, 'games'), /\.ts$/).map(rel);
@@ -170,9 +173,9 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
 
 // ---------- 6. 틀은 게임을 읽지 않는다 ----------
 {
-  /** 틀이 게임에서 읽는 유일한 것: 내용 통로. 읽어도 되는 자리도 틀의 내용 통로뿐이다 (그 밖의 틀 파일은 통로 engine/shared/defs.ts·world.ts를 거친다) */
+  /** 틀이 게임에서 읽는 유일한 것: 내용 통로. 읽어도 되는 자리는 내용을 꺼내 기본값을 채우는 engine/shared/content.ts와 계약의 검사 contract.ts뿐이다 (그 밖의 틀 파일은 통로 engine/shared/defs.ts·world.ts를 거친다) */
   const CONTENT = '@game/shared/content';
-  const PASSAGE = (f: string) => f === 'engine/shared/defs.ts' || f === 'engine/shared/contract.ts' || f === 'engine/shared/world.ts' || f.startsWith('engine/shared/defs/');
+  const PASSAGE = (f: string) => f === 'engine/shared/content.ts' || f === 'engine/shared/contract.ts';
   const specs = (src: string): string[] => [...stripComments(src).matchAll(/^\s*(?:import|export)\s+(?:type\s+)?[^'"]*?from\s+['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gm)].map((m) => m[1] ?? m[2] ?? m[3]);
   /** 그 import가 engine/ 밖을 가리키는가: 상대 경로로 폴더를 넘거나, @game 별칭이거나 */
   const outside = (f: string, spec: string): boolean => spec.startsWith('@game/') || (spec.startsWith('.') && !rel(path.resolve(path.join(root, path.dirname(f)), spec)).startsWith('engine/'));
@@ -180,15 +183,16 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
   const found = SRC.flatMap((f) => bad(f, read(f)));
   for (const x of found) console.log('  ' + x);
   const reads = SRC.filter((f) => specs(read(f)).includes(CONTENT));
-  check(reads.length >= 8 && found.length === 0, `틀의 소스는 engine/ 밖에서 내용 통로(${CONTENT})만 읽고, 그것도 틀의 내용 통로(engine/shared/defs.ts, defs/, contract.ts, world.ts)에서만 읽는다 (${reads.length}곳)`);
+  check(reads.length === 2 && found.length === 0, `틀의 소스는 engine/ 밖에서 내용 통로(${CONTENT})만 읽고, 그것도 engine/shared/content.ts와 contract.ts에서만 읽는다 (${reads.length}곳)`);
   // 검사가 실제로 잡아내는가
   const probe = [
     ...bad('engine/client/hud/x.ts', "import { TOWER } from '../../../games/deungbul/shared/world';"),
     ...bad('engine/server/game/systems/x.ts', "import { RAID } from '@game/shared/content';"),
     ...bad('engine/shared/defs/x.ts', "import { RESIDENTS } from '@game/shared/content/residents';"),
     ...bad('engine/shared/defs/y.ts', "import { MAP } from '@game/shared/content';\nimport { x } from '../world';"),
+    ...bad('engine/shared/content.ts', "import * as game from '@game/shared/content';"),
   ];
-  check(probe.length === 3, '검사의 모양: 폴더를 넘는 상대 경로, 통로가 아닌 곳의 @game, 내용 통로가 아닌 @game 경로는 잡고, 통로의 내용 통로 읽기는 지나간다');
+  check(probe.length === 4, '검사의 모양: 폴더를 넘는 상대 경로, 통로가 아닌 곳(defs/ 포함)의 @game, 내용 통로가 아닌 @game 경로는 잡고, content.ts의 내용 통로 읽기는 지나간다');
 }
 
 // ---------- 7. 게임의 운영 설정(deploy.json)과 서버 진입점의 기본값이 같다 ----------

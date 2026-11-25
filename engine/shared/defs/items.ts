@@ -1,5 +1,5 @@
 // 아이템의 모양과 도우미. 아이템과 상점의 표는 게임의 내용에 있다 (@game/shared/content).
-import { ITEMS, MAT_MAX, POTION_MAX, SHOPS, SHOP_REACH } from '@game/shared/content';
+import { ITEMS, MAT_MAX, POTION_MAX, SHOPS, SHOP_REACH } from '../content';
 
 export interface ItemDef {
   /** mat: 제작 재료 (제작법의 모양은 engine/shared/defs/craft.ts의 Recipe, 표는 게임의 내용에 있다) */
