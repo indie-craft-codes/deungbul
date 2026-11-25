@@ -46,7 +46,7 @@ export function renderForge(): void {
     const note = document.createElement('div');
     note.className = 'note';
     info.append(name, note);
-    const pic = itemIcon(r.id);
+    const pic = itemIcon(r.id, me?.cls ?? '');
     if (pic) row.appendChild(pic);
     const btn = document.createElement('button');
     btn.type = 'button';

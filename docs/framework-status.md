@@ -42,7 +42,7 @@
 | 메뉴 탭 | 탭 id(`MENU_TABS`), `setMenuTabs(ids)`, `addMenuTab({ id, label, draw, dot, open, sig }, after)`, `openMenu(id)`. 일일 임무·출석이 없으면 일일 탭이 숨는다 | 예제: 거래소·길드를 감추고 모닥불 탭을 더했다 | 화면 |
 | 상인 | `setMerchant((shop, i) => ({ model, name, look }) \| null)` | 등불지기: 곁의 등탑을 바라본다, 이름 '길 상인' | 화면 |
 | 재화 | 저장을 읽을 때도 `CURRENCIES.max`(`g.wallet.limit`), 첫 재화의 이름은 이름표 `currency1` | 이름표 | `fx/wallet` |
-| 아이템 그림 | `addItemSheet(src, 열, 행, ids)`, `itemIcon(id)`: 시트의 한 칸을 가방·상점·대장간·물약 단추에 그린다. 없는 아이템은 글자만 | 등불지기: 소모품·재료 여섯의 시트(`public/items/sheet.jpg`, 768 × 512, 50KB) | 화면(PC·폰) |
+| 아이템 그림 | `addItemSheet(src, 열, 행, ids, hand?)`, `itemIcon(id, 직업)`: 시트의 한 칸을 가방·상점·대장간·물약 단추에 그린다. hand를 주면 그 손 모양의 직업에게만(무기). 없는 아이템은 글자만 | 등불지기: 소모품·재료 여섯(`sheet.jpg`), 검 넷·갑옷 둘(`gear.jpg`), 각 768 × 512, 50KB | `fx/icons`(4개), 화면(PC·폰, 전사와 궁수) |
 | 시험을 게임마다 | `test/all.ts`가 `games/<게임>/test/all.ts`를 저마다의 tsconfig로 돌린다. `node scripts/game.mjs test [게임] [이름…]` | 자기 `test/all.ts`와 `tsconfig.json` | `npm test` |
 
 ## 틀 수리의 진행 (점검 보고의 묶음 A~F: 모두 끝)

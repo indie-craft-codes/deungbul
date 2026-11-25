@@ -104,4 +104,7 @@ export function initModels(): void {
   for (const [id, look] of Object.entries(ARMORS)) registerArmor(id, look);
   // 아이템 그림: 소모품과 재료를 한 장에 담은 시트(public/items/sheet.jpg, 3열 × 2행, 한 칸 256px). 위 줄 왼쪽부터의 차례
   addItemSheet('./items/sheet.jpg', 3, 2, ['potion', 'tonic', 'hide', 'iron', 'ashcore', 'dust'] satisfies ItemId[]);
+  // 장비: 검 넷(검을 드는 직업에게만. 활·지팡이의 그림은 따로 등록한다)과 갑옷 둘 (public/items/gear.jpg, 3열 × 2행)
+  addItemSheet('./items/gear.jpg', 3, 2, ['sword1', 'sword2', 'sword3', 'sword4'] satisfies ItemId[], 'sword');
+  addItemSheet('./items/gear.jpg', 3, 2, [null, null, null, null, 'armor1', 'armor2'] satisfies (ItemId | null)[]);
 }

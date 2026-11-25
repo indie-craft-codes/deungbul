@@ -57,7 +57,7 @@ export function renderShop(): void {
     const note = document.createElement('div');
     note.className = 'note';
     info.append(name, note);
-    const pic = itemIcon(id);
+    const pic = itemIcon(id, me?.cls ?? '');
     if (pic) row.appendChild(pic);
     const btn = document.createElement('button');
     btn.type = 'button';
