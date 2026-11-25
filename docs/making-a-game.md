@@ -177,7 +177,7 @@ export const GUEST_NAME = 'Camper';
 | 물약 | `kind: 'potion'`인 아이템을 두지 않는다 | 물약 단추(Q)가 없다 |
 | 던전 | `DUNGEONS = {}`, `MAP.portals = {}` | 던전 창과 지도의 문이 없다 |
 | 일일 임무 | `DAILIES = {}` | |
-| 출석 | `ATTEND = []`(7일치 보상의 목록이 비면 세지 않는다) | 일일 임무도 출석도 없으면 메뉴의 일일 탭이 숨는다 |
+| 출석 | `export const ATTEND: readonly Reward[] = []`(7일치 보상의 목록이 비면 세지 않는다. `Reward`는 `@engine/shared/defs/growth`의 타입) | 일일 임무도 출석도 없으면 메뉴의 일일 탭이 숨는다 |
 | 두 번째 재화 | 몬스터에 `sparks`를 적지 않고 이름표에 `currency2`를 적지 않는다 | 틀의 문장에서 그 몫이 빠진다 |
 | 분해·가방 넓히기 | `SALVAGE`의 `item`을 비운다(기본값이 이미 꺼져 있다) | |
 | 거래소·길드 탭 | 화면에서 `setMenuTabs([...])`로 고른다(5절). 서버의 기능은 그대로 돈다 | |
@@ -277,7 +277,7 @@ export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 
 | `dash` | 대상 앞까지(없으면 바라보는 쪽으로) `dist`만큼 단숨에 | `dmg`, `stun` |
 | `dot` | 1초마다 `dps`씩 `dur`초 동안(독, 화상). 맞은 몬스터는 건 사람을 쫓는다 | `area`(대상 둘레 `radius`의 적 모두) |
 
-  예제의 내려찍기는 `hit`에 `stun: 1`을 붙였다. 시험용 내용(`engine/test/fx/shared/content`)에 여섯 가지가 모두 있다(`rally`, `ward`, `charge`, `venom` …).
+  강화의 예(아군까지): `rally: { cd: 20, radius: 6, effect: { kind: 'buff', mod: 'damage', value: 0.5, dur: 6, allies: true } }`. `allies`·`area`를 쓰는 효과는 범위 `radius`를 함께 적는다. 예제의 내려찍기는 `hit`에 `stun: 1`을 붙였다. 시험용 내용(`engine/test/fx/shared/content`)에 여섯 가지가 모두 있다(`rally`, `ward`, `charge`, `venom` …).
 - 두 번째 재화(`sparks` 칸)를 쓰려면 몬스터에 `sparks: [최소, 최대]`를 적고 이름표에 `currency2: { name: '물방울', one: 'droplet' }`(`name`: 값 앞의 이름, `one`: 영어에서 수를 셀 때의 단수형)을 적는다. 처치·우편·자리 비움의 문장에 그 이름이 들어가고, 내 정보 창의 체력 줄 오른쪽에 가진 양이 보인다(`#coin`. 자기 표시를 따로 그리는 게임은 css로 `#coin { display: none; }`). 쓰지 않으면 둘 다 적지 않는다: 틀의 문장과 화면에서 그 몫이 빠진다.
 - 첫 번째 재화(`gold` 칸)의 이름은 이름표의 `currency1`(`{ name, unit }`: 값 앞의 이름 '골드 100', 수 뒤의 낱말 '100골드')로 준다. 적지 않으면 골드다.
 - 재화의 상한은 `CURRENCIES`의 `max`다. 틀은 더할 때와 저장을 읽을 때 모두 이 값으로 자른다.
@@ -413,11 +413,17 @@ export const look: Look = {
   leaf: (_x, _z, k) => LEAVES[Math.floor(k * LEAVES.length) % LEAVES.length],
 ```
 
-모듈의 init에서 등록하는 것: 몬스터 모델, 손 모양, 무기와 갑옷의 모습, 분위기, 미니맵의 바탕.
+모듈의 init에서 등록하는 것: 몬스터 모델, 사람 모델, 손 모양, 무기와 갑옷의 모습, 분위기, 미니맵의 바탕.
 
 ```ts games/sample/client/scene.ts
 export function initScene(): void {
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
+  // 사람 모델: 틀의 사람형(defaultHumanoid)에 털모자를 얹는다. 머리째 바꾸려면 m.head를 지우고 새로 붙인다. 손 모양은 틀이 이미 붙였다
+  setHumanoidBody((look) => {
+    const m = defaultHumanoid(look);
+    m.head?.add(part(new THREE.CylinderGeometry(0.3, 0.32, 0.22, 6), mat(0x8a3a2a), 0, 0.36, 0));
+    return m;
+  });
   // 나무꾼의 손 모양(직업 정의의 hand: 'axe'): 오른손에 든 자루와 도끼날. 돌려준 도끼날이 무기의 겉모습(registerBlade)을 따른다
   registerHand('axe', ({ rig }) => {
     const handle = part(new THREE.BoxGeometry(0.09, 1.1, 0.09), mat(0x7a5a3a), 0, -0.7, 0.45);
@@ -435,7 +441,8 @@ export function initScene(): void {
   setMapPaint((b) => { for (const a of AREAS) b.quad(a.x0, a.z0, a.x1, a.z1, '#5d7040'); b.disc(BONFIRE.x, BONFIRE.z, 9, '#8a744e'); });
 ```
 
-- **그림**(선택): 그림 한 장에 아이콘 여러 개를 고른 칸(열 × 행)으로 담은 시트를 게임의 `client/public/`에 두고 `addIconSheet('./items/a.webp', 열, 행, [열쇠 …], 손 모양?)`으로 등록한다(열쇠는 위 줄 왼쪽부터의 차례, 빈 칸은 `null`. `addItemSheet`는 같은 함수). 열쇠: 아이템 id(가방·상점·대장간·물약 단추·메뉴의 장비), `slot:<장비 칸>`(바탕 아이템이 없는 떨어진 장비, 예 `slot:ring`), `cur:gold`·`cur:second`(내 정보 창의 재화), `ui:mail`(우편 줄). 무기는 직업의 손 모양마다 이름이 다르므로 손 모양을 주고 등록한다(`'sword'`로 등록한 그림은 검을 드는 직업에게만, `'bow'`는 활). 등록하지 않은 것은 글자만 보인다. **배경은 투명하게**(PNG를 WebP로 줄여 쓴다): 칸 뒤의 바탕색은 css의 `--icon-bg`로 게임이 정하므로, 투명한 그림은 어느 게임의 창 색에서도 자연스럽다(배경을 칠한 그림은 그 색의 창에서만 맞는다). 한 칸 256px쯤이면 폰에서도 선명하다. 등불지기: `games/deungbul/client/public/items/`의 넷(`sheet.webp` 소모품·재료, `gear.webp` 검·갑옷, `hands.webp` 활·지팡이, `trinkets.webp` 장신구·재화·우편), 등록은 `client/scene/models.ts`.
+- **그림**(선택): 그림 한 장에 아이콘 여러 개를 고른 칸(열 × 행)으로 담은 시트를 게임의 `client/public/`에 두고(`vite.config.ts`의 `publicDir: false` 줄을 지워야 그 폴더가 빌드에 들어간다: 2절) `addIconSheet('./items/a.webp', 열, 행, [열쇠 …], 손 모양?)`으로 등록한다(열쇠는 위 줄 왼쪽부터의 차례, 빈 칸은 `null`. `addItemSheet`는 같은 함수). 열쇠: 아이템 id(가방·상점·대장간·물약 단추·메뉴의 장비), `slot:<장비 칸>`(바탕 아이템이 없는 떨어진 장비, 예 `slot:ring`), `cur:gold`·`cur:second`(내 정보 창의 재화), `ui:mail`(우편 줄). 무기는 직업의 손 모양마다 이름이 다르므로 손 모양을 주고 등록한다(`'sword'`로 등록한 그림은 검을 드는 직업에게만, `'bow'`는 활). 등록하지 않은 것은 글자만 보인다. **배경은 투명하게**(PNG도 되고, 줄이려면 WebP: 저장소에 변환 도구는 없다. 그림 도구나 브라우저의 캔버스 `toDataURL('image/webp')`로 바꾼다): 칸 뒤의 바탕색은 css의 `--icon-bg`로 게임이 정하므로, 투명한 그림은 어느 게임의 창 색에서도 자연스럽다(배경을 칠한 그림은 그 색의 창에서만 맞는다). 한 칸 256px쯤이면 폰에서도 선명하다. 등불지기: `games/deungbul/client/public/items/`의 넷(`sheet.webp` 소모품·재료, `gear.webp` 검·갑옷, `hands.webp` 활·지팡이, `trinkets.webp` 장신구·재화·우편), 등록은 `client/scene/models.ts`.
+- 사람 모델(플레이어, 상인, NPC, 사람형 몬스터 모두)을 바꾸려면 `setHumanoidBody((look) => Model)`. `look`은 옷 색(`cloth`), 손 모양(`hand`), 살갗(`skin`)이다. 조금만 바꾸려면 위처럼 `defaultHumanoid(look)`을 불러 고치고(`m.head` 머리, `m.rig` 팔다리), 몸을 처음부터 짜려면 팔다리 넷 `rig`(`{ ll, rl, la, ra }`, `limb`으로 만든다)을 두고 손은 `attachHand(look.hand, { root, rig, cloth: 재질 })`로 붙인다(틀의 검·활·지팡이와 게임이 등록한 손 모양이 그대로 붙는다). 무기의 겉모습은 돌려준 `blade`로 따라간다.
 - 모델을 등록하지 않은 몬스터는 눈 달린 덩어리로 뜬다. 먼저 띄우고 나중에 꾸며도 된다.
 - 모델의 약속: 발이 원점, +Z를 바라본다. `{ root, legs }`를 돌려주면 네발 걸음(`legs`는 `limb()`가 돌려준 다리 묶음 넷의 배열: 앞왼, 앞오른, 뒤왼, 뒤오른), `{ root, rig }`면 사람 걸음(`rig`는 팔다리 넷 `{ ll, rl, la, ra }`), `{ root, blob }`이면 통통 튀는 동작을 틀이 입힌다(`blob`은 묶음이 아니라 **메시 하나**: `part(…)`가 돌려준 것). 크기를 바꾸려면 안쪽 묶음에 준다(틀이 쓰러지는 연출에서 `root`의 크기를 바꾼다).
 - 창의 색은 css 변수로 정한다. 게임의 css는 틀의 것 뒤에 읽혀 덮어쓴다(모듈에서 `import './sample.css'`).
@@ -621,12 +628,10 @@ export function initBonfire(): void {
 
 - 개인 상태의 값(`m.s`)은 타입이 `unknown`이다. 모양은 게임이 정하므로(`shared/sample.ts`의 `MeState`) 게임이 좁혀 읽는다.
 - 틀이 이미 쓰는 키(숫자, Q, R, H, B, M, Tab, Enter, Esc)는 `onKey`로 등록해도 불리지 않는다.
-- 좁은 화면에서 가까운 창 하나만 남기는 것은 css의 몫이다(`addPlace`는 어느 창이 가까운지만 적어 준다).
+- 가까운 창 하나만 남기는 것은 css의 몫이다(`addPlace`는 어느 창이 가까운지만 적어 준다). 짝을 지어 숨기는 규칙을 게임의 css에 적는다(예: `#rightcol[data-near="shop"] #bonfire { display: none; }`).
 
 ```css games/sample/client/sample.css
-@media (max-width: 720px) {
-  #rightcol[data-near="bonfire"] #shop, #rightcol[data-near="shop"] #bonfire { display: none; }
-}
+#rightcol[data-near="bonfire"] #shop, #rightcol[data-near="shop"] #bonfire { display: none; }
 ```
 
 ### (5) 문장
@@ -701,7 +706,8 @@ export function initBonfire(): void {
 - 가짜 클라이언트 `connect(port, 이름, 토큰, onMsg?)`(`@engine/testing`)는 접속한 피어를 돌려준다: `id`, `name`, `lv`, 받은 안내문 `sys`(이름의 목록), `send(메시지)`, 그리고 `ws`(끊을 때 `ws.close()`). 기다릴 때는 `until(() => 조건)`, `sleep(ms)`. 모양은 `engine/test/harness.ts`의 `Peer`.
 - 틀의 가짜 클라이언트는 틀의 메시지만 읽는다. 게임의 메시지(`world`, `me`)는 `connect`의 넷째 인자로 받는다.
 - 시험에서 플레이어의 행동은 명령으로 낸다: `g.command(p, { t: '명령', … })`. 틀의 명령은 `engine/shared/protocol.ts`의 `ClientMsg`에 모두 있다(예: `{ t: 'attack', id }`, `{ t: 'skill', n }`, `{ t: 'class', id }`, `{ t: 'dungeon', id }`, `{ t: 'craft', id }`, `{ t: 'buy', id }`).
-- 서버 없이 규칙만 볼 때는 `new Game({ plugins: [installSample] })`로 만들고 `g.tick(초)`로 시간을 흘린다. 기술의 효과만 내려면 `g.combat.cast(플레이어, 기술 id, 대상)`(쿨다운·사거리는 보지 않는다. 예: `engine/test/fx/skills.test.ts`).
+- 서버 없이 규칙만 볼 때는 `new Game({ plugins: [installSample] })`로 만들고 `g.tick(초)`로 시간을 흘린다. 기술의 효과만 내려면 `g.combat.cast(플레이어, 기술 id, 대상)`(대상이 없으면 `undefined`. 쿨다운·사거리는 보지 않는다. 예: `engine/test/fx/skills.test.ts`).
+- 가짜 클라이언트는 실제 화면처럼 **시야**(내 둘레 32) 안의 몬스터와 사람만 받는다. 처음 자리 둘레에 무리가 없으면 보이는 몬스터가 없다: 시험에서는 플레이어를 무리 곁으로 옮긴 뒤 본다.
 - 시험도 `tsx --tsconfig`로 돌린다(`npm run test:sample`).
 - `npm test`는 틀의 시험(게임 없이 시험용 내용 `engine/test/fx/` 위에서)과 게임마다의 시험이다. `games/<게임>/test/all.ts`와 `tsconfig.json`을 두면 새 게임의 시험도 저절로 함께 돈다(이름은 `<게임>/이름`).
 - 틀을 고쳤으면 `npm run typecheck`(등불지기, 틀만, 시험용 내용, 예제까지 여섯 설정을 검사한다)와 `npm test`를 돌린다.
@@ -723,7 +729,8 @@ export function initBonfire(): void {
 
 | 스크립트 | 하는 일 | 게임 고르기 |
 |---|---|---|
-| `bash scripts/restart.sh [로그]` | 저장하고 끈 뒤(`stop.flag`) 다시 띄운다. 10초 안에 안 꺼지면 강제로. `DRY=1`이면 할 일만 찍는다 | `GAME=sample bash scripts/restart.sh` |
+| `bash scripts/restart.sh [로그]` | 저장하고 끈 뒤(`stop.flag`) 다시 띄운다. 떠 있지 않으면 그냥 띄운다(처음 띄우는 게임은 저장 폴더를 만든다). 10초 안에 안 꺼지면 강제로. 로그는 저장 파일 옆 `server.log`, 앞 서버의 로그는 `server.log.prev`(저장하고 꺼졌는지 본다). `DRY=1`이면 할 일만 찍는다 | `GAME=sample bash scripts/restart.sh` |
+| `bash scripts/stop.sh` | 저장하고 끄기만 한다(강제로 끄지 않는다) | `GAME=sample bash scripts/stop.sh` |
 | `node scripts/pilot.mjs [게임]` | 그 게임을 빌드하고 임시 외부 주소(cloudflared)를 붙여 화면과 `server.json`을 Pages에 올린다 | 인자나 `GAME` |
 | `bash scripts/publish.sh` | 터널을 그대로 두고 화면만 다시 올린다(먼저 그 게임을 빌드) | `GAME=sample bash scripts/publish.sh` |
 | `node scripts/deploy.mjs <칸> [게임]` | 설정의 값 하나를 찍는다(`port`, `db`, `stop`, `dist`, `pagesDir` …) | 인자나 `GAME` |
@@ -823,7 +830,7 @@ export function initBonfire(): void {
 | `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳 | `client/bonfire.ts` |
 | `hud/icons.ts`의 `addIconSheet`(`addItemSheet`), `itemIcon`, `gearIcon`, `hasItemIcon` | 그림 시트를 등록하고(열쇠: 아이템 id, `slot:칸`, `cur:gold`, `cur:second`, `ui:mail`), 그림 하나의 요소를 만든다(게임의 창에서도 쓸 수 있다) | |
 | `hud/menu.ts`의 `setMenuTabs`, `addMenuTab`, `openMenu`, `MENU_TABS` | 메뉴에 보일 탭과 차례, 게임의 탭, 탭을 골라 열기 | `client/bonfire.ts` |
-| `hud/near.ts`의 `addPlace` | 가까이 가면 열리는 창 | `client/bonfire.ts` |
+| `hud/near.ts`의 `addPlace` | 가까이 가면 열리는 창: id는 **화면에 있는 그 창의 요소 id**(mountPanel로 붙인 것). 창이 없는 곳(지도의 거점)은 부르지 않는다(지도는 `addMapPlaces`) | `client/bonfire.ts` |
 | (미니맵에는 틀이 스스로 찍는 표식이 없다: 몬스터·사람·파티원·나만 찍고, 상인·거점·목적지 같은 표식은 게임이 `addMarks`로 찍는다. 색은 `MARK`의 `lit`, `dark`, `shop`, `quest`, `portal`을 쓰거나 아무 색이나 준다) `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels`. `hud/worldmap.ts`의 `addMapPlaces`, `travelTo`, `stopTravel` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도의 큰 이름(구역)과 장소. 전체 지도(N 키·미니맵·`지도` 단추)는 틀이 그린다: 상점·대장간·던전의 문·사냥터(`CAMPS`)·우두머리는 틀이 내용에서 스스로 장소로 찍고, 게임은 자기 장소(거점, 목적지 …)를 `addMapPlaces`로 더한다(갈래 `PlaceKind`: goal, town, shop, forge, dungeon, hunt, boss, other). 장소를 누르면 정보 카드, 목록에서 '자동 이동'과 '가서 자동 사냥'(`hunt: true`). 모양: `addMapLabels(() => [{ x, z, text, big: true }])`, `addMapPlaces(() => [{ x, z, name, kind: 'town', info?, locked?, hunt? }])`. 함수는 그릴 때마다 불리므로 안에서 `t()`·지금 상태를 읽으면 언어와 상태를 따라간다 | `client/bonfire.ts`, `client/scene.ts` |
 | `hud/classes.ts`의 `openClasses` | 직업 고르기 창 열기 | `client/bonfire.ts` |
 | `scene/view.ts`의 `Look` | 땅, 잎, 건물 | `client/scene.ts` |

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MonsterId } from '@engine/shared/defs';
 import { AREAS } from '@engine/shared/world';
-import { limb, type Look, mat, type Model, onFrame, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setMapPaint, view } from '@engine/client';
+import { defaultHumanoid, limb, type Look, mat, type Model, onFrame, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setHumanoidBody, setMapPaint, view } from '@engine/client';
 import { G } from './bonfire';
 
 const dirt = new THREE.Color(0xa98d62), grass = [new THREE.Color(0x8aa35a), new THREE.Color(0x76904e)];
@@ -47,6 +47,12 @@ function beast(type: string): Model {
 
 export function initScene(): void {
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
+  // 사람 모델: 틀의 사람형(defaultHumanoid)에 털모자를 얹는다. 머리째 바꾸려면 m.head를 지우고 새로 붙인다. 손 모양은 틀이 이미 붙였다
+  setHumanoidBody((look) => {
+    const m = defaultHumanoid(look);
+    m.head?.add(part(new THREE.CylinderGeometry(0.3, 0.32, 0.22, 6), mat(0x8a3a2a), 0, 0.36, 0));
+    return m;
+  });
   // 나무꾼의 손 모양(직업 정의의 hand: 'axe'): 오른손에 든 자루와 도끼날. 돌려준 도끼날이 무기의 겉모습(registerBlade)을 따른다
   registerHand('axe', ({ rig }) => {
     const handle = part(new THREE.BoxGeometry(0.09, 1.1, 0.09), mat(0x7a5a3a), 0, -0.7, 0.45);

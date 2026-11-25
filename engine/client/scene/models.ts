@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 export interface Rig { ll: THREE.Group; rl: THREE.Group; la: THREE.Group; ra: THREE.Group }
 /** 사람형은 rig, 슬라임과 위습은 blob, 늑대는 legs를 움직인다. */
-export interface Model { root: THREE.Group; rig?: Rig; blob?: THREE.Mesh; legs?: THREE.Group[]; float?: number; blade?: THREE.Mesh; armor?: THREE.Group; flashing?: boolean }
+export interface Model { root: THREE.Group; rig?: Rig; blob?: THREE.Mesh; legs?: THREE.Group[]; float?: number; blade?: THREE.Mesh; armor?: THREE.Group; flashing?: boolean; head?: THREE.Mesh }
 
 const mats = new Map<number, THREE.MeshStandardMaterial>();
 const WHITE = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -97,21 +97,33 @@ export interface HumanoidLook { cloth: number; hand: string; skin: number }
 let humanoidBody: ((look: HumanoidLook) => Model) | null = null;
 export function setHumanoidBody(fn: (look: HumanoidLook) => Model): void { humanoidBody = fn; }
 
-/** 틀의 사람형: 네모난 몸, 팔다리 넷, 손 모양 */
-function blockHumanoid({ cloth, hand, skin }: HumanoidLook): Model {
+/**
+ * 손 모양 하나를 몸에 붙이고 무기의 겉모습이 바뀌는 부분을 돌려준다. 사람형을 통째로 바꾼 게임(setHumanoidBody)이 자기 몸에 손을 붙일 때 부른다.
+ * hand가 빈 문자열이면 빈손. 모르는 손 모양은 검으로
+ */
+export function attachHand(hand: string, m: { root: THREE.Group; rig: Rig; cloth: THREE.Material }): THREE.Mesh | undefined {
+  return hand ? (HANDS.get(hand) ?? HANDS.get('sword'))?.(m) : undefined;
+}
+
+/**
+ * 틀의 사람형: 네모난 몸, 팔다리 넷, 손 모양. 머리(head)도 돌려준다.
+ * 조금만 바꾸려는 게임은 setHumanoidBody 안에서 이것을 부른 뒤 고친다(예: 머리를 둥근 것으로 바꾸기, 모자 얹기)
+ */
+export function defaultHumanoid({ cloth, hand, skin }: HumanoidLook): Model {
   const root = new THREE.Group();
   const pants = mat(0x3b3a4a), cm = mat(cloth);
   const rig: Rig = { ll: limb(G.leg, pants, -0.2, 0.7, 0, 0.35), rl: limb(G.leg, pants, 0.2, 0.7, 0, 0.35), la: limb(G.arm, cm, -0.54, 1.48, 0, 0.35), ra: limb(G.arm, cm, 0.54, 1.48, 0, 0.35) };
-  root.add(rig.ll, rig.rl, rig.la, rig.ra, part(G.body, cm, 0, 1.1, 0), part(G.head, mat(skin), 0, 1.8, 0));
+  const head = part(G.head, mat(skin), 0, 1.8, 0);
+  root.add(rig.ll, rig.rl, rig.la, rig.ra, part(G.body, cm, 0, 1.1, 0), head);
   // 모르는 손 모양은 검으로 그린다 (게임이 registerHand를 빠뜨려도 빈손이 되지 않게)
-  const blade = hand ? (HANDS.get(hand) ?? HANDS.get('sword'))?.({ root, rig, cloth: cm }) : undefined;
-  return { root, rig, blade };
+  const blade = attachHand(hand, { root, rig, cloth: cm });
+  return { root, rig, blade, head };
 }
 
 /** 사람형 캐릭터. armed: true면 검, 손 모양의 id('bow', 'staff', 게임이 등록한 것)면 그것, false면 빈손(마을 주민). */
 export function makeHumanoid(cloth: number, armed: boolean | string = true, skin = 0xf0c9a0): Model {
   const look: HumanoidLook = { cloth, hand: armed === true ? 'sword' : armed === false ? '' : armed, skin };
-  const m = (humanoidBody ?? blockHumanoid)(look);
+  const m = (humanoidBody ?? defaultHumanoid)(look);
   humanoidDeco?.(m.root); // 게임의 꾸밈 (등불지기는 허리춤의 등불)
   return m;
 }
