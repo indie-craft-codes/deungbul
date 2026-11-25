@@ -37,9 +37,8 @@ export function initDrill(): void {
     note: $('engraveNote'), engrave: $<HTMLButtonElement>('engraveBtn'),
   };
   onMsg('me', (m) => { if (m.k === 'drill') G.drill = m.s as MeState['drill']; });
-  // 방치형: 처음 접속했을 때 자동 사냥을 켠다 (틀의 자동 사냥은 S.auto를 보고 돈다. 직업을 고르면 바로 사냥을 시작한다)
-  let first = true;
-  onMsg('welcome', () => { if (first) { first = false; S.auto = true; } });
+  // 방치형: 접속하면 자동 사냥을 켜고 시작한다 (직업을 고르면 바로 사냥한다)
+  rules.autoAtStart = () => true;
   addNotices({ banner: { drillAway: 'good' }, feed: ['drillUp', 'drillPoor', 'drillMax', 'drillTook', 'drillEmpty', 'engraveUp', 'engravePoor', 'engraveMax'] });
   rules.home = () => ({ x: DRILL.x, z: DRILL.z + 4 });
   // 미니맵과 전체 지도: 광산 입구(채굴기)와 상인, 깊은 광맥의 이름. 사냥터와 상점은 틀이 스스로 찍는다

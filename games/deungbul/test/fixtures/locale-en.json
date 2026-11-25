@@ -1172,9 +1172,9 @@
   "2 joined."
  ],
  "msg.kill": [
-  "72148cdd8d856eb7",
-  "undefined defeated. +undefined exp, +undefined sparks, +NaN gold",
-  "0 defeated. +0 exp, +0 sparks, +0 gold",
+  "bd537c8733a27f8a",
+  "undefined defeated. +undefined exp, +NaN gold",
+  "0 defeated. +0 exp, +0 gold",
   "1 defeated. +1 exp, +1 spark, +1 gold",
   "2 defeated. +3 exp, +4 sparks, +5 gold"
  ],

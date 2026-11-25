@@ -362,7 +362,7 @@ export const koBase = (n: ContentNames) => {
       replaced: () => '다른 곳에서 접속해 연결을 끊습니다.',
       noTarget: () => '대상이 없습니다.',
       tooFar: () => '대상이 너무 멉니다.',
-      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} 처치. 경험치 +${a[1]}${coin ? `, ${coin.name} +${a[2]}` : ''}, ${G.name} +${num(a[3])}`,
+      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} 처치. 경험치 +${a[1]}${coin && Number(a[2]) > 0 ? `, ${coin.name} +${a[2]}` : ''}, ${G.name} +${num(a[3])}`,
       levelUp: (a) => `레벨이 올랐습니다. Lv ${a[0]} · 능력치 ${BUILD.pointsPerLevel}점 (메뉴의 성장)`,
       died: (a) => `쓰러졌습니다. ${place(a[0])}에서 다시 일어났습니다. 잃은 것은 없습니다.`,
       bought: (a) => `${josa(itemName(a[0], a[1]), '을', '를')} 샀습니다.`,

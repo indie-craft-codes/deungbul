@@ -8,6 +8,7 @@ import { onMsg } from './bus';
 import { feed } from './hud/notify';
 import { L, t } from './i18n';
 import { send } from './net';
+import { rules } from './rules';
 import { S } from './state';
 
 const btn = $('autoBtn');
@@ -66,7 +67,7 @@ function tick(): void {
 
 /** 접속했을 때: 자리를 비운 동안 서버가 사냥하던 캐릭터를 이어받았으면 자동 사냥을 켠 채로 시작한다. */
 export function syncAuto(kept: boolean): void {
-  if (kept) S.auto = true;
+  if (kept || rules.autoAtStart()) S.auto = true; // 게임이 '켜고 시작'을 고르면 처음부터 사냥한다 (직업을 고르면 바로 돈다)
   shown = S.auto; btn.classList.toggle('on', shown); btn.setAttribute('aria-pressed', String(shown));
   send({ t: 'auto', on: shown });
 }

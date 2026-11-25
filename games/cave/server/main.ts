@@ -4,5 +4,5 @@ import { runServer } from '@engine/server';
 import { installCave } from './cave';
 
 const root = path.resolve(import.meta.dirname, '..', '..', '..');
-runServer({ port: 3017, db: path.join(root, 'data', 'cave', 'game.db'), dist: path.join(root, 'dist-cave'), plugins: [installCave] })
+runServer({ port: 3003, db: path.join(root, 'data', 'cave', 'game.db'), dist: path.join(root, 'dist-cave'), plugins: [installCave] })
   .catch((err) => { console.error('[server] 시작 실패:', err); process.exit(1); });

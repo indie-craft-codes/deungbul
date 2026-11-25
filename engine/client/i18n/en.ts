@@ -328,7 +328,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       replaced: () => 'Signed in elsewhere. This connection is closing.',
       noTarget: () => 'No target.',
       tooFar: () => 'Target is too far away.',
-      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} defeated. +${a[1]} exp${coin ? `, +${count(a[2], coin.one)}` : ''}, +${num(a[3])} ${G.unit}`,
+      kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} defeated. +${a[1]} exp${coin && Number(a[2]) > 0 ? `, +${count(a[2], coin.one)}` : ''}, +${num(a[3])} ${G.unit}`,
       levelUp: (a) => `Level up! Lv ${a[0]} · +${BUILD.pointsPerLevel} attribute points (Menu > Growth)`,
       died: (a) => `You fell. You rose again at ${place(a[0])}. Nothing was lost.`,
       bought: (a) => `Bought ${itemName(a[0], a[1])}.`,

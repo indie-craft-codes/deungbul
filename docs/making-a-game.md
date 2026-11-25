@@ -471,6 +471,8 @@ export function initScene(): void {
 
 - 틀의 색 변수: `--sky`(문서 바탕), `--ink`와 `--ink-rgb`(창의 바탕색. 둘을 같은 색으로: 반투명한 바탕들이 `--ink-rgb`를 쓴다), `--panel`, `--cover-rgb`(화면을 덮는 막), `--line`, `--fg`, `--dim`, `--gold`, `--on-gold`(금빛 단추 위의 글자), `--good`·`--bad`·`--ally`(좋음·나쁨·파티원), `--hp`, `--xp`, `--icon-bg`(그림 칸의 바탕), `--font`, `--mono`. 기본값과 뜻은 `engine/client/style.css`의 맨 위.
 
+**방치형**: 접속할 때 자동 사냥을 켜고 시작하려면 게임의 화면 모듈에서 `rules.autoAtStart = () => true`(`@engine/client`의 `rules`). 예: `games/starmine/client/drill.ts`. 금빛 단추를 만들 때 class `gold`는 **글자색**이다(배경이 금빛인 단추는 틀의 `button.on`이나 게임의 css로).
+
 ## 6. 이 게임만의 규칙 하나 더하기
 
 예제의 규칙: 멧돼지와 곰이 장작을 떨어뜨린다. 모닥불 곁에서 장작을 넣으면 서버 전체의 온기가 오른다. 온기가 있는 동안 곁에 선 사람은 회복이 빨라진다. 온기는 식는다.

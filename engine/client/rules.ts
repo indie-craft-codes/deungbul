@@ -14,6 +14,8 @@ export interface Rules {
   lockHint: (key: string) => string;
   /** '마을로'(H 키)가 데려가는 곳. 채우지 않으면 맵의 처음 자리(MAP.spawn) */
   home: () => { x: number; z: number };
+  /** 접속할 때 자동 사냥을 켜고 시작하는가 (방치형 게임). 기본은 끈 채로: 자리를 비운 동안 사냥하던 캐릭터를 이어받을 때만 켠다 */
+  autoAtStart: () => boolean;
 }
 
 export const rules: Rules = {
@@ -22,4 +24,5 @@ export const rules: Rules = {
   lockNote: () => '',
   lockHint: () => '',
   home: () => MAP.spawn,
+  autoAtStart: () => false,
 };
