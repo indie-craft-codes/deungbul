@@ -1,6 +1,7 @@
 // 게임마다의 운영 설정(games/<게임>/deploy.json)을 읽는 도구. 운영 스크립트(restart.mjs, serve.mjs, restart.sh, publish.sh, pilot.mjs)가 이것을 거친다.
 //   node scripts/deploy.mjs <칸> [게임]     칸의 값을 한 줄로 찍는다 (게임: 인자, 없으면 GAME, 없으면 deungbul)
 //   node scripts/deploy.mjs flag on|off [게임]   서버를 끄는 깃발(저장 파일 옆의 stop.flag)을 세우거나 치운다
+//   node scripts/deploy.mjs list               저장소의 게임들 (listGames)
 // 칸: port, db(저장 파일의 절대 경로), dir(저장 폴더), stop(깃발의 경로), dist(빌드 결과의 절대 경로), bots, pagesRepo, pagesDir, log(기본 로그)
 // deploy.json: { port, db, dist, bots?, pages?: { repo, dir } }. 경로는 저장소 뿌리에서. pages가 없으면 GitHub Pages에 올리지 않는 게임이다.
 // 서버의 진입점(games/<게임>/server/main.ts)의 기본값과 같아야 한다: 스크립트는 이 값을 PORT·DB로 넘겨 서버를 띄운다.
@@ -8,6 +9,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
+
+/**
+ * 저장소에 있는 게임들: games/ 아래에서 deploy.json이나 server/main.ts가 있는 폴더 (이름 차례).
+ * 새 게임은 폴더를 만들기만 하면 여기에 잡힌다: 타입 검사(scripts/typecheck.mjs), 시험(test/all.ts), 게임 고르기(scripts/game.mjs)가 이것을 읽는다.
+ */
+export function listGames() {
+  const dir = path.join(root, 'games');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && /^[a-z0-9_-]+$/i.test(d.name) && ['deploy.json', path.join('server', 'main.ts')].some((f) => fs.existsSync(path.join(dir, d.name, f))))
+    .map((d) => d.name).sort();
+}
 
 /** 그 게임의 운영 설정. 없으면 오류로 끝낸다 */
 export function deployOf(game = process.env.GAME ?? 'deungbul') {
@@ -27,7 +40,8 @@ export function deployOf(game = process.env.GAME ?? 'deungbul') {
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
   const [what, a, b] = process.argv.slice(2);
   try {
-    if (what === 'flag') {
+    if (what === 'list') console.log(listGames().join('\n'));
+    else if (what === 'flag') {
       const c = deployOf(b);
       if (a === 'on') { fs.mkdirSync(c.dir, { recursive: true }); fs.writeFileSync(c.stop, ''); } else fs.rmSync(c.stop, { force: true });
     } else {

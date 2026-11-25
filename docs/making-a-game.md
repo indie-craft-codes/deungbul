@@ -119,12 +119,11 @@ export default defineConfig({
 - `client/public/`의 파일(아이콘, manifest, 그림 시트, 모델과 소리 파일)은 빌드 결과에 그대로 들어간다. 예제는 모델과 소리 파일을 두므로 `publicDir: false` 줄이 없다. 그런 파일이 없는 게임은 `publicDir: false`를 둬도 된다(두면 `client/public/`을 읽지 않는다).
 - 빌드 결과 폴더(`dist-sample/`)는 `.gitignore`에 넣는다.
 
-`package.json`의 스크립트(게임 이름만 바꿔 같은 모양으로 더한다. 서버와 화면은 `scripts/game.mjs`를 거친다: 게임 폴더의 `tsconfig.json`이 있으면 `tsx --tsconfig`로 그것을 읽게 한다):
+명령(`package.json`은 고치지 않는다: 게임 폴더에 `deploy.json`이나 `server/main.ts`가 있으면 `scripts/game.mjs`·`scripts/typecheck.mjs`·`test/all.ts`가 스스로 찾는다. `npm run games`가 찾은 목록을 찍는다. 서버와 화면은 `scripts/game.mjs`를 거친다: 게임 폴더의 `tsconfig.json`이 있으면 `tsx --tsconfig`로 그것을 읽게 한다. 아래의 `:sample` 이름은 예제를 위해 남긴 줄임이고, 새 게임은 `node scripts/game.mjs <일> <게임>`으로 부른다):
 
 | 스크립트 | 하는 일 |
 |---|---|
-| `npm run typecheck:sample` | `tsc --noEmit -p games/sample/tsconfig.json`: 틀 + 이 게임 |
-| `npm run typecheck:engine:sample` | `tsc --noEmit -p games/sample/tsconfig.engine.json`: 틀만, 이 게임의 내용으로 |
+| `npm run typecheck:game -- sample` | `games/sample/tsconfig.json`(틀 + 이 게임)과 `games/sample/tsconfig.engine.json`(틀만, 이 게임의 내용으로). `npm run typecheck`는 모든 게임과 틀의 설정을 함께 |
 | `npm run build:sample` | `node scripts/game.mjs build sample`: `vite build -c games/sample/vite.config.ts` → `dist-sample/` |
 | `npm run start:sample` | `node scripts/game.mjs start sample`: `tsx --tsconfig games/sample/tsconfig.json games/sample/server/main.ts` (기본 포트 3002) |
 | `npm run dev:sample` | `watch`와 `client`를 함께: 서버(3002)와 vite 개발 서버(5174). 파일을 고치면 바로 반영 |
@@ -307,7 +306,7 @@ export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 
 - 땅은 지역마다 틀이 깔고 게임의 `look.ground`가 칠한다(5절). 던전의 바닥을 다르게 하려면 `ground`에서 그 지역의 좌표일 때 다른 색을 주거나, `scenery`에서 바닥 판을 조금 위(y 0.02쯤)에 깐다.
 - 들어가기는 문 곁에서 던전 창의 '들어가기'(명령 `{ t: 'dungeon', id }`)다.
 
-여기까지 하면 `npm run typecheck:engine:sample`이 통과해야 한다.
+여기까지 하면 `npm run typecheck:game -- sample`이 통과해야 한다.
 
 ## 4. 서버 띄우기
 
@@ -903,7 +902,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `npm test`의 `boundary`가 "알림 …: 'hex' (games/…의 id와 같은 틀의 낱말. 잡지 않는다)"라고 적는다 | 실패가 아니다. 그 게임의 id가 틀이 자기 뜻으로 쓰는 낱말(`hex`, `heal` 같은 것)과 같을 뿐이다. 헷갈리지 않게 다른 id로 짓기를 권한다 |
 | 타입 검사와 그 게임의 시험은 통과하는데 `npm test`의 `boundary`에서 "게임은 틀을 입구로만 읽는다"가 실패한다 | 틀의 내부 파일을 깊게 import했다(`@engine/server/game/entity` 같은 것). 1절의 입구(`@engine/server` 등)에서 가져온다. 실패 글이 파일과 줄을 알려 준다 |
 | 쓰러지면 "…에서 다시 일어났습니다"의 자리에 엉뚱한 말이 나온다 | 이름표의 `places`에 `g.rules.respawn`이 돌려주는 id의 이름이 없다(5절). 정하지 않았으면 '처음 자리'다 |
-| 내 내용은 계약을 지키는데 `engine/` 안의 파일에서 타입 오류가 난다 | 틀은 내용을 계약의 타입이 아니라 **게임이 적은 그대로의 타입**으로 본다. 표를 비웠거나(`{}`의 id는 `never`가 된다) 함수를 계약보다 좁게 적은 자리에서 틀이 걸릴 수 있다. 시험이 지키는 경우: 던전·대장간·보스·두 번째 재화가 없다(예제), 상점·무리·재료·일일 임무가 없다, 아이템이 무기 하나뿐이다(`games/sample/test/empty.test.ts`). 그 밖의 경우(직업이 하나, 몬스터가 한 종류 …)에 걸리면 틀의 수리 대상이다: `npm run typecheck:engine:sample`과 같은 검사를 자기 게임의 설정으로 돌려 자리를 찾는다 |
+| 내 내용은 계약을 지키는데 `engine/` 안의 파일에서 타입 오류가 난다 | 틀은 내용을 계약의 타입이 아니라 **게임이 적은 그대로의 타입**으로 본다. 표를 비웠거나(`{}`의 id는 `never`가 된다) 함수를 계약보다 좁게 적은 자리에서 틀이 걸릴 수 있다. 시험이 지키는 경우: 던전·대장간·보스·두 번째 재화가 없다(예제), 상점·무리·재료·일일 임무가 없다, 아이템이 무기 하나뿐이다(`games/sample/test/empty.test.ts`). 그 밖의 경우(직업이 하나, 몬스터가 한 종류 …)에 걸리면 틀의 수리 대상이다: `npm run typecheck:game -- sample`과 같은 검사를 자기 게임의 설정으로 돌려 자리를 찾는다 |
 
 **틀을 고쳐야 할 때**: 게임에서 할 수 없는 일이면 틀에 접점을 더한다. 틀의 파일이 게임의 폴더를 import하거나 게임의 id를 적으면 안 된다(`games/deungbul/test/split.test.ts`가 검사한다). 고친 뒤에는 8절의 검사를 모두 돌린다. 틀에 남아 있는 등불지기의 흔적과 알려진 한계는 `docs/framework-status.md`에 있다.
 
