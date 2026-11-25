@@ -47,7 +47,7 @@ export function renderBag(): void {
   // 장비(무기, 갑옷, 장신구)는 메뉴의 장비 탭 한 곳에서만 다룬다
   const gear = document.createElement('button');
   gear.type = 'button'; gear.className = 'plain'; gear.textContent = t('bagToGear');
-  gear.addEventListener('click', () => { ui.panel.hidden = true; openMenu('tabGear'); });
+  gear.addEventListener('click', () => { ui.panel.hidden = true; openMenu('gear'); });
   ui.list.append(gear);
   // 장비 가방의 든 수와 칸 수. 가득 찼으면 알린다: 새로 떨어지는 장비가 버려진다
   ui.list.append(row(t('tabGear'), loc.fmt.have(gearCount, S.bag.max), ''));

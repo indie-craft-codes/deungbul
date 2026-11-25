@@ -1,7 +1,8 @@
 // 메뉴 창: 드롭 장비(끼기·강화·팔기·분해·잠금·비교, 가방 넓히기), 우편, 일일 임무와 출석, 거래소, 길드, 순위를 탭으로 나눠 보여 준다. (단축키 M)
-// 새 탭을 더하려면 TABS에 이름과 그리는 함수를 더한다.
+// 틀의 탭은 일곱(MENU_TABS의 id: gear, build, mail, daily, market, guild, rank)이다. 게임은 보일 탭과 차례를 고르고(setMenuTabs), 자기 탭을 더한다(addMenuTab).
+// 일일 임무와 출석이 모두 없는 게임에서는 일일 탭이 저절로 숨는다.
 // 창의 높이와 탭 줄, 닫기 단추의 자리는 고정이고(style.css의 #menu) 내용만 창 안에서 스크롤한다.
-import { BAG_UP, BUILD, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
+import { ATTEND, BAG_UP, BUILD, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
 import { onMsg, onSlow } from '../bus';
@@ -13,16 +14,51 @@ import { S } from '../state';
 import { addNotices } from './notify';
 
 const ui = { panel: $('menu'), tabs: $('menuTabs'), list: $('menuList'), gold: $('menuGold'), btn: $('menuBtn') };
-const TABS: readonly { key: UiKey; draw: () => void }[] = [
-  { key: 'tabGear', draw: drawGear },
-  { key: 'tabBuild', draw: drawBuild },
-  { key: 'tabMail', draw: drawMail },
-  { key: 'tabDaily', draw: drawDaily },
-  { key: 'tabMarket', draw: drawMarket },
-  { key: 'tabGuild', draw: drawGuild },
-  { key: 'tabRank', draw: drawRank },
+/** 메뉴의 탭 하나: 틀의 탭 일곱과 게임이 더한 탭(addMenuTab) */
+export interface MenuTab {
+  /** 탭의 이름표. 틀의 탭은 MENU_TABS의 id다 */
+  id: string;
+  /** 탭 단추에 적는 글 (언어가 바뀌면 다시 읽는다) */
+  label: () => string;
+  /** 탭의 내용을 list에 붙인다. 창이 열려 있는 동안 상태가 바뀔 때마다 비운 뒤 다시 불린다 */
+  draw: (list: HTMLElement) => void;
+  /** 탭 이름에 점(•)을 찍는가: 볼 것이 있다 (받을 우편, 찍을 점수 …) */
+  dot?: () => boolean;
+  /** 탭을 열 때 한 번 (서버에 목록을 달라고 하는 따위) */
+  open?: () => void;
+  /** 다시 그릴지 가르는 값: 이 값이 바뀌면 다시 그린다 (게임 탭이 보여 주는 상태) */
+  sig?: () => unknown;
+}
+/** 틀의 탭의 id */
+export const MENU_TABS = ['gear', 'build', 'mail', 'daily', 'market', 'guild', 'rank'] as const;
+export type EngineMenuTab = (typeof MENU_TABS)[number];
+const ENGINE_TABS: MenuTab[] = [
+  { id: 'gear', label: () => t('tabGear'), draw: drawGear },
+  { id: 'build', label: () => t('tabBuild'), draw: drawBuild, dot: () => S.meta.build.left > 0 },
+  { id: 'mail', label: () => t('tabMail'), draw: drawMail, dot: () => S.meta.mail.length > 0 },
+  { id: 'daily', label: () => t('tabDaily'), draw: drawDaily },
+  { id: 'market', label: () => t('tabMarket'), draw: drawMarket, open: () => marketOpen() },
+  { id: 'guild', label: () => t('tabGuild'), draw: drawGuild },
+  { id: 'rank', label: () => t('tabRank'), draw: drawRank, open: () => askRank() },
 ];
-let tab = 0;
+/** 탭 모두 (틀의 것 + 게임이 더한 것), 그리고 게임이 고른 보일 탭의 차례 (null이면 모두, 더한 차례대로) */
+const allTabs: MenuTab[] = [...ENGINE_TABS];
+let order: string[] | null = null;
+/** 일일 임무도 출석도 없는 게임: 일일 탭을 숨긴다 */
+const noDaily = (): boolean => DAILY_IDS.length === 0 && ATTEND.length === 0;
+/** 지금 보이는 탭들 */
+const tabs = (): MenuTab[] => (order ? order.map((id) => allTabs.find((x) => x.id === id)).filter((x): x is MenuTab => !!x) : allTabs).filter((x) => !(x.id === 'daily' && noDaily()));
+/** 보일 탭과 그 차례를 고른다 (틀의 id와 게임이 더한 탭의 id). 고르지 않은 탭은 숨는다. 서버의 기능(거래소, 길드)은 그대로 돈다: 화면에서 감출 뿐이다 */
+export function setMenuTabs(ids: readonly string[]): void { order = [...ids]; lastSig = ''; }
+/** 게임의 탭을 더한다. after를 주면 그 탭 뒤에, 아니면 맨 뒤에. setMenuTabs를 썼다면 그 목록에도 id를 넣어야 보인다 */
+export function addMenuTab(def: MenuTab, after?: string): void {
+  const at = after ? allTabs.findIndex((x) => x.id === after) : -1;
+  allTabs.splice(at < 0 ? allTabs.length : at + 1, 0, def);
+  lastSig = '';
+}
+/** 지금 고른 탭의 id */
+let cur = 'gear';
+const current = (): MenuTab => { const list = tabs(); return list.find((x) => x.id === cur) ?? list[0] ?? ENGINE_TABS[0]; };
 /** 마지막으로 그린 내용의 지문 (같으면 다시 그리지 않는다) */
 let lastSig = '';
 
@@ -544,23 +580,24 @@ export function renderMenu(soft = false): void {
   if ((focus instanceof HTMLInputElement || focus instanceof HTMLSelectElement) && ui.list.contains(focus)) { ui.gold.textContent = L().fmt.gold(S.me.gold); return; }
   // 전투 중에는 상태 메시지가 초당 여러 번 온다. 그때마다 단추를 새로 만들면 누르는 사이에 단추가 사라져 클릭이 먹지 않으므로,
   // 화면에 영향을 주는 값이 그대로면 다시 그리지 않는다
-  const sig = JSON.stringify([tab, L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid, act.openUid, act.salvUid, act.upArmed, act.bulk, act.res, S.bag, S.salvage, S.me.items]);
+  const sig = JSON.stringify([cur, current().sig?.(), L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid, act.openUid, act.salvUid, act.upArmed, act.bulk, act.res, S.bag, S.salvage, S.me.items]);
   if (soft === true && sig === lastSig) return;
   lastSig = sig;
   ui.gold.textContent = L().fmt.gold(S.me.gold);
   const left = ui.tabs.scrollLeft;
   ui.tabs.textContent = '';
-  TABS.forEach((x, i) => {
-    const b = button(t(x.key), () => { const moved = tab !== i; tab = i; if (TABS[i].draw === drawRank) askRank(); if (TABS[i].draw === drawMarket) marketOpen(); renderMenu(); if (moved) ui.list.scrollTop = 0; });
-    b.classList.toggle('on', i === tab);
+  const on = current();
+  tabs().forEach((x) => {
+    const b = button(x.label(), () => { const moved = cur !== x.id; cur = x.id; x.open?.(); renderMenu(); if (moved) ui.list.scrollTop = 0; });
+    b.classList.toggle('on', x === on);
     // 찍을 점수나 받을 우편이 있으면 점(•)을 찍는다. 점은 단추 모서리에 얹어서(style.css) 생겨도 탭의 너비가 바뀌지 않는다
-    b.classList.toggle('dot', (x.draw === drawBuild && S.meta.build.left > 0) || (x.draw === drawMail && S.meta.mail.length > 0));
+    b.classList.toggle('dot', !!x.dot?.());
     ui.tabs.append(b);
   });
   ui.tabs.scrollLeft = left;
   const top = ui.list.scrollTop;
   ui.list.textContent = '';
-  TABS[tab].draw();
+  on.draw(ui.list);
   ui.list.scrollTop = top;
 }
 
@@ -569,14 +606,13 @@ let rankAt = -1e9, rankSig = '';
 const mySig = (): string => `${S.me?.lv}:${S.meta.power}`;
 function askRank(): void { rankAt = performance.now(); rankSig = mySig(); send({ t: 'rank' }); }
 
-/** 메뉴를 열고 그 탭을 보여 준다 (다른 창의 단추에서 부른다) */
-export function openMenu(key: UiKey): void {
+/** 메뉴를 열고 그 탭을 보여 준다 (다른 창의 단추에서 부른다). id는 탭의 id(gear, mail …, 게임의 탭) */
+export function openMenu(id: string): void {
   if (!S.me) return;
-  tab = Math.max(0, TABS.findIndex((x) => x.key === key));
+  cur = id;
   ui.panel.hidden = false;
   lastSig = '';
-  if (TABS[tab].draw === drawRank) askRank();
-  if (TABS[tab].draw === drawMarket) marketOpen();
+  current().open?.();
   renderMenu();
 }
 
@@ -584,8 +620,7 @@ export function toggleMenu(): void {
   if (!S.me) return;
   ui.panel.hidden = !ui.panel.hidden;
   lastSig = '';
-  if (!ui.panel.hidden && TABS[tab].draw === drawRank) askRank();
-  if (!ui.panel.hidden && TABS[tab].draw === drawMarket) marketOpen();
+  if (!ui.panel.hidden) current().open?.();
   renderMenu();
 }
 
@@ -627,7 +662,7 @@ export function initMenu(): void {
   });
   // 순위 탭을 열어 둔 동안 내 레벨이나 전투력이 바뀌면 순위를 다시 받는다. 5초에 한 번을 넘지 않는다
   onSlow((now) => {
-    if (ui.panel.hidden || !S.me || TABS[tab].draw !== drawRank) return;
+    if (ui.panel.hidden || !S.me || current().id !== 'rank') return;
     if (mySig() !== rankSig && now - rankAt >= 5000) askRank();
   });
   onLangChange(() => renderMenu());

@@ -15,6 +15,7 @@ export { addPlace } from './hud/near';
 export { addMapLabels, addMarks, setMapPaint, MARK, type MapLabel, type Mark, type MapBrush } from './hud/minimap';
 export { addMapPlaces, closeWorldMap, stopTravel, toggleWorldMap, travelTo, worldMapOpen, type MapPlace, type PlaceKind } from './hud/worldmap';
 export { addNotices, banner } from './hud/notify';
+export { addMenuTab, MENU_TABS, openMenu, setMenuTabs, type EngineMenuTab, type MenuTab } from './hud/menu';
 export { openClasses } from './hud/classes';
 export { hudSlow } from './hud/me';
 export type { Look, Mood } from './scene/view';

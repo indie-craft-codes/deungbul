@@ -3,7 +3,7 @@
 import { SHOPS } from '../shared/content';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MeState } from '../shared/sample';
-import { $, addMapPlaces, addMarks, addNotices, addPlace, type Mark, MARK, mountPanel, onKey, onMsg, onSlow, openClasses, rules, S, send } from '@engine/client';
+import { $, addMapPlaces, addMarks, addMenuTab, setMenuTabs, addNotices, addPlace, type Mark, MARK, mountPanel, onKey, onMsg, onSlow, openClasses, rules, S, send } from '@engine/client';
 import { L, t } from '@engine/client/i18n';
 import './sample.css';
 
@@ -53,6 +53,21 @@ export function initBonfire(): void {
   addMapPlaces(() => [{ x: BONFIRE.x, z: BONFIRE.z, name: t('bonfire'), kind: 'town', info: G.heat > 0 ? t('bonfireWarm') : t('bonfireCold') }]);
 
   ui.one.addEventListener('click', () => { feed(1); ui.one.blur(); });
+  // 메뉴: 모닥불 탭을 장비 탭 뒤에 더하고, 이 작은 게임에 맞지 않는 거래소와 길드 탭은 감춘다 (서버의 기능은 그대로다)
+  addMenuTab({
+    id: 'camp', label: () => t('bonfire'), sig: () => [G.heat, G.fed, logs()],
+    draw: (list) => {
+      const loc = L();
+      for (const text of [loc.fmt.heat(G.heat, BONFIRE.heatMax), t(G.heat > 0 ? 'bonfireWarm' : 'bonfireCold'), loc.fmt.logs(logs(), G.fed)]) {
+        const row = document.createElement('div');
+        row.className = 'note';
+        row.textContent = text;
+        list.append(row);
+      }
+    },
+  }, 'gear');
+  setMenuTabs(['gear', 'camp', 'build', 'mail', 'daily', 'rank']);
+
   ui.all.addEventListener('click', () => { feed(logs()); ui.all.blur(); });
   $('classBtn').addEventListener('click', openClasses);
   onKey('f', () => feed(1));
