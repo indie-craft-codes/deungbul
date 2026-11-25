@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { enhanceExpected, enhanceTries, expUpTo, gearChance, gearLevels, rarityShares, raritySharesFrom, sellRange } from '../client/guide/calc';
+import { enhanceExpected, enhanceTries, expUpTo, gearChance, gearLevels, monstersOfGearLv, rarityShares, raritySharesFrom, sellRange } from '../client/guide/calc';
 import { LEVEL_ROWS, PACKS, buildGuide, tablesOf, type Section, type Table } from '../client/guide/data';
 import { num } from '../client/guide/fmt';
 import { LINK_TEXT } from '../client/guide/link.text';
@@ -25,7 +25,7 @@ import {
   RESIDENTS, SHOP_STOCK, SKILL_DEFS, STAT_IDS, sellPrice, type MonsterId,
 } from '../shared/defs';
 import { TOWERS, rng } from '../shared/world';
-import { BAG_UP, SALVAGE, bagSlots, dustFor, isItemId, itemCap } from '../shared/defs';
+import { BAG_UP, SALVAGE, bagSlots, dustFor, gearLvOf, isItemId, itemCap } from '../shared/defs';
 import { check } from '@engine/testing';
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
@@ -206,12 +206,12 @@ for (const P of PACKS) {
     check(Math.abs(gear / KILLS - gearChance(def)) < 0.005, `${type}: 잡아서 나온 장비의 비율이 도감의 확률과 맞는다 (도감 ${(gearChance(def) * 100).toFixed(1)}%, 실제 ${(gear / KILLS * 100).toFixed(2)}%)`);
     check(near(gold / KILLS, (def.gold[0] + def.gold[1]) / 2, 0.02), `${type}: 잡아서 얻은 골드의 평균이 도감의 기대값과 맞는다 (실제 ${(gold / KILLS).toFixed(2)})`);
   }
-  const boss = (Object.keys(MONSTERS) as MonsterId[]).find((id) => (MONSTERS[id] as { boss?: boolean }).boss);
-  if (boss) {
+  // 필드 보스마다 (잿불 거상은 정의의 gearLv로 레벨 8: 도감도 같은 gearLvOf를 읽는다)
+  for (const boss of (Object.keys(MONSTERS) as MonsterId[]).filter((id) => (MONSTERS[id] as { boss?: boolean }).boss)) {
     p.gear = [];
     const m = g.monsters.spawn(boss, 0, 20);
     g.fire('monsterKilled', m, [p]);
-    check(p.gear.length === 1 && p.gear[0].lv === GEAR.levelOf(MONSTERS[boss].exp) && gearChance(MONSTERS[boss]) === 1, '필드 보스는 장비를 반드시 떨어뜨리고, 장비 레벨은 도감에 적힌 것과 같다');
+    check(p.gear.length === 1 && p.gear[0].lv === gearLvOf(MONSTERS[boss]) && monstersOfGearLv(p.gear[0].lv).includes(boss) && gearChance(MONSTERS[boss]) === 1, `${boss}: 필드 보스는 장비를 반드시 떨어뜨리고, 장비 레벨(${p.gear[0]?.lv})은 도감에 적힌 것과 같다`);
   }
 }
 

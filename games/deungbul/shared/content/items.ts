@@ -36,6 +36,7 @@ export const SHOP_STOCK: readonly ItemId[] = ['potion', 'tonic', 'sword2', 'swor
 export const SHOPS: readonly { x: number; z: number; tower: number }[] = [
   { x: -5.5, z: 7, tower: 0 }, // 첫불 마을의 길 상인
   { x: 114.5, z: 7, tower: 1 }, // 잿빛 숲 등탑 곁의 상인: 숲 끝에서 물약이 떨어져도 마을까지 돌아가지 않게
+  { x: 214.5, z: 7, tower: 2 }, // 잿불 고원 등탑 곁의 상인 (같은 까닭)
 ];
 /** 첫불 마을의 상인 (퀘스트가 가리키는 곳) */
 export const SHOP = SHOPS[0];

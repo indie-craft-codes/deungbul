@@ -1,6 +1,6 @@
 // 두 번째 구역 '잿빛 숲'과 두 번째 등탑 (서버 없이 게임 규칙만 돌린다)
 import { RAID } from '../shared/defs';
-import { TOWER, TOWERS, ZONE_SPLIT } from '../shared/world';
+import { TOWER, TOWERS, zoneOf } from '../shared/world';
 import { newGame } from './game';
 import { check } from '@engine/testing';
 
@@ -11,9 +11,9 @@ import { check } from '@engine/testing';
   const said = () => g.notices.filter((n) => n.id === p.id).map((n) => n.k);
   const told = () => g.announces.map((a) => `${a.k}:${a.a.join(',')}`);
   const mons = [...g.ents.values()].filter((e) => e.kind === 'm');
-  const types = (zone: number) => [...new Set(mons.filter((m) => (m.x < ZONE_SPLIT ? 0 : 1) === zone).map((m) => m.type))].sort().join(',');
+  const types = (zone: number) => [...new Set(mons.filter((m) => zoneOf(m.x) === zone).map((m) => m.type))].sort().join(',');
   check(types(1) === 'ash_troll,boar,goblin,lost_soldier' && !types(0).includes('boar'), `잿빛 숲에는 멧돼지, 고블린, 잊힌 병사와 잿빛 트롤이 산다 (등불 들판: ${types(0)})`);
-  check(JSON.stringify(g.state().tower.glows) === '[40,0]', '두 번째 등탑은 꺼진 채로 시작한다');
+  check(JSON.stringify(g.state().tower.glows) === '[40,0,0]', '두 번째 등탑은 꺼진 채로 시작한다');
 
   // 마을에서 잿빛 숲 등탑까지 걸어간다
   g.command(p, { t: 'move', x: ash.spawn.x, z: ash.spawn.z });
@@ -32,7 +32,7 @@ import { check } from '@engine/testing';
   g.command(p, { t: 'offer', to: 'resident', n: 1 });
   check(said().includes('noResident') && p.sparks === 100, '주민 되돌리기는 첫불 마을 등탑에서만 된다');
   g.command(p, { t: 'offer', to: 'tower', n: 10 });
-  check(JSON.stringify(g.state().tower.glows) === '[40,10]' && told().includes('towerLit:ash'), '두 번째 등탑에 불씨를 바치면 그 등탑만 밝아지고, 켜졌다고 알린다');
+  check(JSON.stringify(g.state().tower.glows) === '[40,10,0]' && told().includes('towerLit:ash'), '두 번째 등탑에 불씨를 바치면 그 등탑만 밝아지고, 켜졌다고 알린다');
   g.announces = [];
   g.command(p, { t: 'offer', to: 'tower', n: 25 });
   check(g.tower.glows[1] === 35 && told().includes('stageChanged:1,ash') && g.tower.stageAt(ash.x) === 1 && g.tower.stageAt(0) === 1, '밝기 단계는 등탑마다 따로 오른다');
@@ -51,10 +51,10 @@ import { check } from '@engine/testing';
   // 저장: 등탑별 밝기가 남고, 등탑이 하나뿐이던 때의 저장도 읽힌다
   const again = newGame();
   again.importWorld(g.exportWorld());
-  check(JSON.stringify(again.state().tower.glows) === '[40,35]', '등탑별 밝기가 저장되고 다시 읽힌다');
+  check(JSON.stringify(again.state().tower.glows) === '[40,35,0]', '등탑별 밝기가 저장되고 다시 읽힌다');
   const old = newGame();
   old.importWorld({ tower: { glow: 77, residents: [30, 4, 0] } });
-  check(JSON.stringify(old.state().tower.glows) === '[77,0]' && old.state().tower.glow === 77, '등탑이 하나뿐이던 때의 저장도 읽힌다');
+  check(JSON.stringify(old.state().tower.glows) === '[77,0,0]' && old.state().tower.glow === 77, '등탑이 하나뿐이던 때의 저장도 읽힌다');
   // 습격은 첫불 마을 등탑의 일이다. 마을에 사람이 없으면 열리지 않는다
   g.raid.start();
   check(g.raid.phase === 'idle', '등탑 근처에 사람이 없으면 습격이 열리지 않는다');

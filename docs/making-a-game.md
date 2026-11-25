@@ -158,7 +158,7 @@ export const GUEST_NAME = 'Camper';
 | `MAP` | `MapDef`: 지역(`areas`), 가장자리, 시드, 처음 자리, 장애물, 나무·바위 뿌리는 규칙, `isFree`, 던전의 문 | `areas`는 하나 이상. 0번이 들판이다. `obstacles`, `scatter`, `portals`는 비워도 된다 |
 | `CLASSES`, `DEFAULT_CLASS` | 직업 id → `ClassDef`. 직업마다 기술 id를 `SKILL_SLOTS`개(기본 3) | 하나 이상 |
 | `SKILL_DEFS` | 기술 id → `SkillDef` (효과: `hit` / `area` / `heal` / `buff` / `dash` / `dot`, 3절의 표) | 직업이 쓰는 것은 있어야 한다 |
-| `MONSTERS` | 몬스터 id → `MonsterDef`. `sparks`(두 번째 재화)는 선택, `boss: true`면 필드 보스 | 하나 이상 (비우면 틀이 컴파일되지 않는다) |
+| `MONSTERS` | 몬스터 id → `MonsterDef`. `sparks`(두 번째 재화)는 선택, `boss: true`면 필드 보스, `gearLv`면 떨어뜨리는 장비의 레벨을 따로 정한다 | 하나 이상 (비우면 틀이 컴파일되지 않는다) |
 | `CAMPS` | 무리의 자리와 사는 몬스터 | `[]` 가능 |
 | `ITEMS`, `START_WEAPON` | 아이템 id → `ItemDef` (`weapon` / `armor` / `potion` / `mat`). 처음 무기 하나는 있어야 한다 | 물약, 재료는 없어도 된다. 갑옷은 하나 두는 편이 낫다(떨어지는 갑옷 칸 장비의 바탕이 된다) |
 | `SHOPS`, `SHOP_STOCK` | 상인의 자리들, 상점에 놓는 아이템 id의 차례 | `[]` 가능 (상점 없음) |
@@ -219,6 +219,7 @@ export const MAP: MapDef = {
 - **원점에서 떨어진 지역**이면 `scatter`의 `x0`~`x1`과 `spawn`, 무리의 자리를 그 지역에 맞춘다(예제는 원점 둘레라 드러나지 않는다).
 - 좌표는 x(동서)와 z(남북)뿐이다. 높이는 없다.
 - 같은 시드는 서버와 화면에서 같은 나무와 바위를 만든다. 운영 중에 `seed`, `scatter`의 차례, `obstacles`의 차례를 바꾸면 맵 전체가 달라진다.
+- **운영 중에 맵을 넓힐 때**(새 구역): 있는 `scatter` 줄의 범위는 숫자 그대로 두고(맵의 끝 같은 이름을 쓰던 곳은 그때의 숫자로 바꿔 적는다), 새 줄은 맨 뒤에 더한다. `isFree`가 예전에 놓였던 나무 자리를 새로 막으면(늘인 길, 새 터) 난수를 쓰는 차례가 바뀌어 그 뒤가 모두 달라진다: 그 자리는 `isFree`에서 막지 말고 `clearAfter(x, z)`(선택)에 적는다. 다 뿌린 뒤에 그 자리의 나무와 바위만 뺀다(문 둘레를 치우는 것과 같은 때). 예: 등불지기의 잿불 고원(`games/deungbul/shared/content/map.ts`).
 - 상인, 처음 자리, 무리의 자리는 `isFree`가 비워 주는 곳에 둔다(나무 속에 서지 않게).
 
 직업, 기술, 몬스터, 아이템은 표다. `as const satisfies …`로 적으면 id가 타입이 되어, 다른 표나 언어 파일에서 id를 잘못 적으면 컴파일되지 않는다.
@@ -245,6 +246,8 @@ export const MONSTERS = {
   bear: { hp: 320, dmg: [10, 15], speed: 3.8, exp: 70, gold: [15, 24], aggro: 7, h: 2.8 },
 } as const satisfies Record<string, MonsterDef>;
 ```
+
+**떨어뜨리는 장비의 레벨**(선택): 보통은 경험치로 정한다(`GEAR.levelOf(exp)`, 등불지기는 6에서 멈춘다). 새 사냥터의 몬스터만 더 높은 장비를 떨어뜨리게 하려면 식의 상한을 올리지 말고(그러면 경험치가 많은 예전 몬스터도 함께 오른다) 정의에 `gearLv: 7`처럼 적는다. 서버의 장비 떨어뜨리기와 도감은 `gearLvOf(def)`(= `def.gearLv ?? GEAR.levelOf(def.exp)`, `@engine/shared/defs`)로 읽으므로, 게임이 장비 레벨을 셈하는 곳(도감의 표 같은 것)도 그것을 쓴다. 무기·갑옷의 바탕은 `GEAR.weaponFor/armorFor(lv)`가 그 레벨로 정한다.
 
 **싸우는 법**(선택): 몬스터 정의의 `behavior`. 없으면 쫓아가 붙어서 때린다. 틀의 것은 둘이다.
 

@@ -32,7 +32,9 @@ function render(): void {
   shownZone = zone;
   shownInside = inDungeon();
   GS.world.tower.glows.forEach((g, i) => scenery?.setTowerGlow(i, g));
-  view.setMood(moodOf(stage(), zone === 0 && GS.world.raid.phase === 'active', glow === 0 || shownInside)); // 던전 안은 늘 어둡다
+  const mood = moodOf(stage(), zone === 0 && GS.world.raid.phase === 'active', glow === 0 || shownInside); // 던전 안은 늘 어둡다
+  view.setMood(mood);
+  scenery?.setInside(shownInside, mood.sky);
 }
 
 export function initScene(): void {

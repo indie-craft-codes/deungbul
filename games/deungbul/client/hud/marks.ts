@@ -1,7 +1,7 @@
 // 이 게임의 미니맵 표식: 등탑(켜졌으면 금빛, 꺼졌으면 회색), 상인, 던전의 문, 퀘스트 목적지.
 // 미니맵 자체(hud/minimap.ts)는 무엇을 찍는지 모른다. 다른 게임은 이 파일만 바꾸면 된다.
 import { DUNGEONS, GLOW_MAX, QUESTS, SHOPS, isDungeonId, stageOf } from '../../shared/defs';
-import { AREAS, MAX_X, MIN_X, MIN_Z, TOWERS, ZONE_SPLIT } from '../../shared/world';
+import { AREAS, MAX_X, MIN_X, MIN_Z, TOWERS, ZONE_SPLIT, ZONE_SPLIT2 } from '../../shared/world';
 import { $, addMapLabels, addMapPlaces, addMarks, inDungeon, type MapLabel, type MapPlace, type Mark, MARK, onSlow, S } from '@engine/client';
 import { L, t } from '@engine/client/i18n';
 import type { UiKey } from '@engine/client/i18n/ko';
@@ -21,7 +21,7 @@ export function initMarks(): void {
   // 전체 지도의 큰 이름: 구역(들판의 북쪽 가장자리 가까이)과 던전 안. 상점·대장간·던전의 문·사냥터는 틀이 내용에서 스스로 찍는다
   addMapLabels(() => {
     const loc = L(), out: MapLabel[] = [];
-    const zoneX = [(MIN_X + ZONE_SPLIT) / 2, (ZONE_SPLIT + MAX_X) / 2];
+    const zoneX = [(MIN_X + ZONE_SPLIT) / 2, (ZONE_SPLIT + ZONE_SPLIT2) / 2, (ZONE_SPLIT2 + MAX_X) / 2];
     zoneX.forEach((x, i) => { if (loc.zones[i]) out.push({ x, z: MIN_Z + 14, text: loc.zones[i], big: true }); });
     for (const id of Object.keys(DUNGEONS)) {
       const area = AREAS.find((a) => a.id === id);

@@ -1,7 +1,7 @@
 // 도감의 계산: 내용 정의(games/deungbul/shared/content)의 수치로 확률, 기대값, 범위를 구한다. 화면(DOM)도 문장도 모른다.
 import {
   CAMPS, DROPS, DUNGEONS, GEAR, GEAR_SLOTS, LEVEL, MONSTERS, RAID, RARITIES, RECIPES, RESPAWN_S, SHOP_STOCK, STATS, STAT_IDS, START_WEAPON,
-  ITEMS, clearRar, gearScore, needFor, sellPrice, type Gear, type GearSlot, type ItemId, type MonsterDef, type MonsterId, type Stat,
+  ITEMS, clearRar, gearLvOf, gearScore, needFor, sellPrice, type Gear, type GearSlot, type ItemId, type MonsterDef, type MonsterId, type Stat,
 } from '../../shared/defs';
 import { zoneOf } from '../../shared/world';
 import { optRange } from './rules';
@@ -26,9 +26,9 @@ export function raritySharesFrom(minRar: number): number[] {
   return out;
 }
 
-/** 장비 레벨의 범위 (가장 약한 몬스터와 가장 센 몬스터가 떨어뜨리는 것) */
+/** 장비 레벨의 범위: 경험치로 정하는 식의 아래·위 끝과, 정의에 장비 레벨(gearLv)을 따로 적은 몬스터의 것 */
 export const GEAR_LV_MIN = GEAR.levelOf(0);
-export const GEAR_LV_MAX = GEAR.levelOf(Number.MAX_SAFE_INTEGER);
+export const GEAR_LV_MAX = Math.max(GEAR.levelOf(Number.MAX_SAFE_INTEGER), ...(Object.values(MONSTERS) as MonsterDef[]).map(gearLvOf));
 export const gearLevels = (): number[] => Array.from({ length: GEAR_LV_MAX - GEAR_LV_MIN + 1 }, (_, i) => GEAR_LV_MIN + i);
 
 /** 그 몬스터 한 마리가 (한 사람에게) 장비를 떨어뜨릴 확률 */
@@ -114,4 +114,4 @@ export function sourcesOf(id: ItemId): Sources {
   };
 }
 /** 그 장비 레벨의 장비를 떨어뜨리는 몬스터 */
-export const monstersOfGearLv = (lv: number): MonsterId[] => MONSTER_IDS.filter((m) => GEAR.levelOf(MONSTERS[m].exp) === lv);
+export const monstersOfGearLv = (lv: number): MonsterId[] => MONSTER_IDS.filter((m) => gearLvOf(MONSTERS[m]) === lv);

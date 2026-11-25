@@ -25,6 +25,13 @@ export const MONSTERS = {
   grave_hound: { hp: 900, dmg: [23, 31], speed: 5.4, exp: 120, sparks: [4, 6], gold: [18, 28], aggro: 9, h: 2.0 },
   crypt_knight: { hp: 1600, dmg: [30, 42], speed: 3.8, exp: 200, sparks: [6, 8], gold: [30, 45], aggro: 8, h: 3.0 },
   crypt_lord_deep: { hp: 24000, dmg: [42, 56], speed: 3.8, exp: 2000, sparks: [25, 30], gold: [300, 400], aggro: 12, h: 4.6 },
+  // 잿불 고원 (Lv 15~25). 모두 잠정값이다: 다음 플레이어 검토에서 잰다.
+  // 경험치로 셈하면 장비 레벨이 6에서 멈추므로(GEAR.levelOf), 고원의 몬스터는 gearLv로 레벨 7 장비를, 거상은 레벨 8 장비를 떨어뜨린다
+  cinder_fox: { hp: 420, dmg: [16, 22], speed: 5.2, exp: 70, sparks: [4, 5], gold: [14, 22], aggro: 8, h: 2.0, gearLv: 7 }, // 빠르고 약하다
+  highland_raider: { hp: 560, dmg: [18, 25], speed: 4.2, exp: 90, sparks: [5, 6], gold: [20, 30], aggro: 8, h: 2.7, gearLv: 7 },
+  ember_warden: { hp: 900, dmg: [22, 30], speed: 3.2, exp: 125, sparks: [6, 8], gold: [28, 42], aggro: 7, h: 3.6, gearLv: 7 }, // 느리고 단단하다
+  // 잿불 고원의 필드 보스. 잿빛 트롤처럼 hp는 한 명이 맞설 때의 체력이다. Lv 20 안팎의 여럿이 잡는 것을 기준으로 잡은 값이다
+  ember_colossus: { hp: 6000, dmg: [26, 36], speed: 3.4, exp: 1200, sparks: [25, 30], gold: [250, 350], aggro: 10, h: 6.0, boss: true, respawn: 600, gearLv: 8 },
 } as const satisfies Record<string, MonsterDef>;
 
 /** 필드 보스의 규칙 (수치는 잠정값) */
@@ -58,6 +65,13 @@ export const CAMPS: readonly { x: number; z: number; types: readonly MonsterId[]
   { ...CLEARINGS[9], types: ['goblin', 'goblin', 'goblin', 'lost_soldier', 'lost_soldier'] },
   { ...CLEARINGS[10], types: ['boar', 'boar', 'boar', 'goblin', 'goblin'] },
   { ...CLEARINGS[11], types: ['ash_troll'] },
+  // 잿불 고원
+  { ...CLEARINGS[12], types: ['cinder_fox', 'cinder_fox', 'cinder_fox', 'cinder_fox', 'cinder_fox'] },
+  { ...CLEARINGS[13], types: ['highland_raider', 'highland_raider', 'highland_raider', 'highland_raider'] },
+  { ...CLEARINGS[14], types: ['cinder_fox', 'cinder_fox', 'cinder_fox', 'highland_raider', 'highland_raider'] },
+  { ...CLEARINGS[15], types: ['ember_warden', 'ember_warden', 'ember_warden'] },
+  { ...CLEARINGS[16], types: ['highland_raider', 'highland_raider', 'ember_warden', 'ember_warden'] },
+  { ...CLEARINGS[17], types: ['ember_colossus'] },
 ];
 
 /** 몬스터의 움직임 (서버의 engine/server/game/systems/monsters.ts가 읽는다) */

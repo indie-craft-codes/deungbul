@@ -73,7 +73,7 @@ import { check } from '@engine/testing';
   check(at(3, 2), '내가 맞서 싸우지 않은 습격은 세지 않는다');
   g.notices = [];
   g.fire('raidWon', [p, other]);
-  check(at(QUESTS.length, 0) && g.notices.some((n) => n.k === 'questDone' && n.a[0] === 'halmeom'), '습격을 막아 내면 4장이 끝난다');
+  check(at(4, 0) && QUESTS[4].id === 'ember' && g.notices.some((n) => n.k === 'questDone' && n.a[0] === 'halmeom'), '습격을 막아 내면 4장이 끝나고 5장(잿불 고원, 시험은 zone3.test.ts)이 시작된다');
   const oldLost = { name: '옛저장', lv: 1, exp: 0, need: 60, maxHp: 200, sparks: 0, contrib: 0, quest: [9, 9, 9] as [number, number, number] }; // 옛 형식
   const lost = g.players.spawn('옛저장', false, oldLost);
   check(lost.qc === QUESTS.length && lost.qs === 0 && lost.qn === 0, '없는 장을 가리키는 저장은 끝난 상태로 읽는다');

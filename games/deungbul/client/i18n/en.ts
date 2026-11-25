@@ -7,7 +7,7 @@ import { keyHints } from '@engine/client/i18n/ko';
 import { itemNameOf, type ContentNames } from '@engine/client/i18n/names';
 import type { GameLocale } from './ko';
 
-const monsters: Record<MonsterId, string> = { slime: 'Slime', wisp: 'Wisp', wolf: 'Wolf', shade_bram: "Bram's Shade", shade_mira: "Mira's Shade", boar: 'Boar', goblin: 'Goblin', lost_soldier: 'Lost Soldier', ash_troll: 'Ash Troll', crypt_lord: 'Lord of the Crypt', grave_hound: 'Grave Hound', crypt_knight: 'Crypt Knight', crypt_lord_deep: 'The Lord Awakened' };
+const monsters: Record<MonsterId, string> = { slime: 'Slime', wisp: 'Wisp', wolf: 'Wolf', shade_bram: "Bram's Shade", shade_mira: "Mira's Shade", boar: 'Boar', goblin: 'Goblin', lost_soldier: 'Lost Soldier', ash_troll: 'Ash Troll', crypt_lord: 'Lord of the Crypt', grave_hound: 'Grave Hound', crypt_knight: 'Crypt Knight', crypt_lord_deep: 'The Lord Awakened', cinder_fox: 'Cinder Fox', highland_raider: 'Highland Raider', ember_warden: 'Ember Warden', ember_colossus: 'Ember Colossus' };
 const residents: Record<ResidentId, { name: string; bonus: string }> = {
   bram: { name: 'Bram the Smith', bonus: 'The shop stocks the Lamp Sword, and the forge opens' },
   mira: { name: 'Mira the Herbalist', bonus: 'The shop stocks Strong Potions' },
@@ -34,14 +34,14 @@ const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?:
   ward: { name: 'Ward Stone', info: 'Keeps gear from dropping a step when an enhance at +7 or higher fails (one per try). From day 7 of attendance, the daily enhance task and the Crypt Depths' },
 };
 const itemName = itemNameOf(items);
-const towers: Record<string, string> = { first: 'Firstlight Village Tower', ash: 'Ashwood Tower', crypt: 'the crypt entrance' };
+const towers: Record<string, string> = { first: 'Firstlight Village Tower', ash: 'Ashwood Tower', ember: 'Emberfall Tower', crypt: 'the crypt entrance' };
 const dungeons = {
   crypt: { name: 'The Ash Crypt', info: 'Fight through goblins and lost soldiers and bring down the Lord of the Crypt. Better with a party.' },
   crypt_deep: { name: 'The Crypt Depths', info: 'Fight through grave hounds and crypt knights and bring down the awakened Lord. Drops level 7 gear. Go with a party.' },
 };
 const towerName = (id: MsgArg) => towers[String(id)] ?? String(id);
-const questTitles: Record<QuestId, string> = { bram: 'Chapter 1 · The Sound of a Hammer', mira: 'Chapter 2 · The Withered Herb Field', ashwood: 'Chapter 3 · A Lamp for the Ashwood', halmeom: "Chapter 4 · The Keeper's Night" };
-const zones: readonly string[] = ['Lampfield', 'The Ashwood'];
+const questTitles: Record<QuestId, string> = { bram: 'Chapter 1 · The Sound of a Hammer', mira: 'Chapter 2 · The Withered Herb Field', ashwood: 'Chapter 3 · A Lamp for the Ashwood', halmeom: "Chapter 4 · The Keeper's Night", ember: 'Chapter 5 · The Emberfall Tower' };
+const zones: readonly string[] = ['Lampfield', 'The Ashwood', 'Emberfall Heights'];
 const stages: readonly [string, string, string] = ['Dim', 'Steady', 'Bright'];
 const dailies = { kill30: 'Defeat 30 monsters', offer10: 'Offer 10 sparks', enhance1: 'Enhance gear once' };
 
@@ -91,7 +91,7 @@ export const enGame: GameLocale = {
     residents: 'Residents',
     allReturned: 'Everyone has returned',
     forge: "Bram's Forge",
-    towerDark: 'The lamp is out. Once everyone offers sparks to light it, you will rise here when you fall in these woods.',
+    towerDark: 'The lamp is out. Once everyone offers sparks to light it, you will rise here when you fall in this area.',
     keepersToday: "Today's keepers",
     keepersEmpty: 'No one yet. Offer sparks or hold off a raid to be listed.',
     quest: 'Quest',
@@ -99,7 +99,7 @@ export const enGame: GameLocale = {
     intro: 'In a land lost to mist, you keep the lamp towers lit. Hunt monsters for sparks and offer them at the tower to light the village.',
     classHint: 'You can change class later at a lamp tower.',
     towerOff: 'Unlit',
-    zoneDark: 'The lamp tower here is unlit. Monsters are strong and attack on sight. If you fall, you rise in Firstlight Village.',
+    zoneDark: 'The lamp tower here is unlit. Monsters are strong and attack on sight. If you fall, you rise at the nearest lit tower.',
     offerNote: 'Lights the tower. A brighter tower holds out longer in a raid.',
     questAllDone: 'You have finished the story so far.',
   },
@@ -144,6 +144,18 @@ export const enGame: GameLocale = {
         'Offer sparks at the Firstlight Village tower. Granny has kept this flame all her life',
         'Defeat lost soldiers in the east of the Ashwood. They were keepers once, before the mist took them',
         'Help hold off a mist raid at the village tower. Raids come on the hour at noon, 3, 6 and 8 to 11 pm',
+      ],
+    },
+    ember: {
+      title: questTitles.ember,
+      steps: [
+        'From the Ashwood Tower, follow the main road east to the unlit tower of Emberfall Heights (level 15+ recommended)',
+        'Hunt cinder foxes in the northwest of the heights',
+        'Offer sparks at the Emberfall Tower to light it. Time to spend the sparks you have saved',
+        'Drive off the highland raiders in the southwest of the heights',
+        'Offer more sparks at the Emberfall Tower to brighten the heights',
+        'Defeat the ember wardens in the southeast of the heights',
+        'Defeat the Ember Colossus at the north end of the heights. Better to go with others',
       ],
     },
   },

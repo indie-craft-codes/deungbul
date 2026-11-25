@@ -1,12 +1,19 @@
 // 이 게임의 맵을 칠하는 법: 땅의 색(등탑 앞마당, 길, 물가, 구역별 풀빛), 구역별 잎 색, 미니맵의 바탕.
 // 틀(scene/view.ts, hud/minimap.ts)은 여기 함수를 넘겨받아 칠하기만 한다. 맵 정의(games/deungbul/shared/content/map.ts)가 바뀌면 함께 고친다.
 import * as THREE from 'three';
-import { AREAS, HOUSES, MAX_X, MAX_Z, MIN_X, MIN_Z, POND, TOWERS, ZONE_SPLIT, onPath, zoneOf } from '../../shared/world';
+import { AREAS, HOUSES, MAX_X, MAX_Z, MIN_X, MIN_Z, POND, TOWERS, ZONE_SPLIT, ZONE_SPLIT2, onPath, zoneOf } from '../../shared/world';
 import type { MapBrush } from '@engine/client';
 
 const dirt = new THREE.Color(0xb99c6c), sand = new THREE.Color(0xd0bd88), stone = new THREE.Color(0xb9aa8c);
-// 구역마다 풀빛이 다르다: 등불 들판은 푸르고, 잿빛 숲은 바랜 빛이다
-const grass = [[new THREE.Color(0x74ad5e), new THREE.Color(0x5f9a52)], [new THREE.Color(0x7b8f72), new THREE.Color(0x667a62)]];
+// 구역마다 풀빛이 다르다: 등불 들판은 푸르고, 잿빛 숲은 바랜 빛이고, 잿불 고원은 마른 황톳빛이다
+const grass = [
+  [new THREE.Color(0x74ad5e), new THREE.Color(0x5f9a52)],
+  [new THREE.Color(0x7b8f72), new THREE.Color(0x667a62)],
+  [new THREE.Color(0x9c8a64), new THREE.Color(0x8a7656)],
+];
+/** 구역 경계에서 다음 구역의 빛깔로 넘어가는 정도 (경계 앞뒤 8m에서 섞는다) */
+const blend = (x: number, split: number): number => Math.min(1, Math.max(0, (x - (split - 8)) / 16));
+const mix = new THREE.Color(), mix2 = new THREE.Color();
 
 /** 땅의 삼각형 하나의 색 (scene/view.ts의 Look.ground) */
 export function ground(x: number, z: number, j: number, c: THREE.Color): void {
@@ -15,33 +22,33 @@ export function ground(x: number, z: number, j: number, c: THREE.Color): void {
   else if (Math.hypot(x - POND.x, z - POND.z) < POND.r + 1.8) c.copy(sand);
   else {
     // 구역의 경계에서는 두 빛깔을 섞어 띠가 지지 않게 한다
-    const k = Math.min(1, Math.max(0, (x - (ZONE_SPLIT - 8)) / 16));
-    const [a0, b0] = grass[0], [a1, b1] = grass[1];
-    c.copy(a0).lerp(b0, j).lerp(new THREE.Color().copy(a1).lerp(b1, j), k);
+    const [a0, b0] = grass[0], [a1, b1] = grass[1], [a2, b2] = grass[2];
+    c.copy(a0).lerp(b0, j).lerp(mix.copy(a1).lerp(b1, j), blend(x, ZONE_SPLIT)).lerp(mix2.copy(a2).lerp(b2, j), blend(x, ZONE_SPLIT2));
   }
 }
 
 // 구역마다 잎의 빛깔이 다르다
-const leafColors = [[0x3f8a4f, 0x4c9a52, 0x357a4a, 0x5aa45a, 0x6aa04a], [0x4f6b58, 0x5d7862, 0x47604f, 0x6a8068, 0x748a6c]];
+const leafColors = [[0x3f8a4f, 0x4c9a52, 0x357a4a, 0x5aa45a, 0x6aa04a], [0x4f6b58, 0x5d7862, 0x47604f, 0x6a8068, 0x748a6c], [0x8a5a34, 0x9a6a3a, 0x7a4a2e, 0xa8783e, 0x6f6a3c]];
 /** 나무 한 그루의 잎 색 (scene/view.ts의 Look.leaf) */
 export function leaf(x: number, _z: number, k: number): number {
   const colors = leafColors[zoneOf(x)];
   return colors[Math.floor(k * colors.length) % colors.length];
 }
 
-const MAP_COLOR = { ground: '#3d6b45', forest: '#4a5a52', pond: '#4f9fc0', road: '#8f8058' };
+const MAP_COLOR = { ground: '#3d6b45', forest: '#4a5a52', heights: '#6b5a44', pond: '#4f9fc0', road: '#8f8058' };
 /** 미니맵의 바탕 (hud/minimap.ts의 setMapPaint) */
 export function mapPaint(b: MapBrush): void {
   // 땅: 구역마다 색이 다르다
   b.quad(MIN_X, MIN_Z, ZONE_SPLIT, MAX_Z, MAP_COLOR.ground);
-  b.quad(ZONE_SPLIT, MIN_Z, MAX_X, MAX_Z, MAP_COLOR.forest);
+  b.quad(ZONE_SPLIT, MIN_Z, ZONE_SPLIT2, MAX_Z, MAP_COLOR.forest);
+  b.quad(ZONE_SPLIT2, MIN_Z, MAX_X, MAX_Z, MAP_COLOR.heights);
   for (const a of AREAS.slice(1)) b.quad(a.x0, a.z0, a.x1, a.z1, '#3a3648'); // 던전 같은 따로 떨어진 지역
   b.disc(POND.x, POND.z, POND.r, MAP_COLOR.pond);
   // 길: shared/content/map.ts의 onPath와 같은 자리 (동서 큰길, 등탑마다 지나는 남북 길)
   const w = 1.6;
   b.quad(-44, -w, MAX_X - 4, w, MAP_COLOR.road);
   b.quad(-w, -40, w, 30, MAP_COLOR.road);
-  b.quad(TOWERS[1].x - w, -30, TOWERS[1].x + w, 30, MAP_COLOR.road);
+  for (const t of TOWERS.slice(1)) b.quad(t.x - w, -30, t.x + w, 30, MAP_COLOR.road);
   // 마을의 집: 지붕 색의 네모 (전체 지도에서 확대하면 보인다)
   for (const [x, z, roof] of HOUSES) b.quad(x - 2.4, z - 2.4, x + 2.4, z + 2.4, `#${roof.toString(16).padStart(6, '0')}`);
 }

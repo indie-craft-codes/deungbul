@@ -39,6 +39,11 @@ export interface MapDef {
   portals: Readonly<Record<string, { x: number; z: number }>>;
   /** 문 둘레에서 나무와 바위를 치우는 반경 */
   portalClear: number;
+  /**
+   * (선택) 다 뿌린 뒤에 나무와 바위를 치울 자리인가. 문 둘레를 치우는 것과 같은 때에 거른다.
+   * 맵을 넓히며 새 길이나 터가 예전 나무 자리에 걸릴 때 쓴다: isFree로 거르면 난수를 쓰는 차례가 바뀌어 맵 전체의 배치가 달라지지만, 여기서 거르면 그 자리의 것만 빠진다
+   */
+  clearAfter?: (x: number, z: number) => boolean;
 }
 
 // ---------- 맵 정의에서 꺼내 쓰는 것 ----------

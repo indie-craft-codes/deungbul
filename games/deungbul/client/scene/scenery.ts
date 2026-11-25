@@ -10,6 +10,8 @@ interface TowerLamp { lamp: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMateria
 
 export class Scenery {
   private readonly towers: TowerLamp[] = [];
+  /** 던전 서쪽 벽 너머를 가리는 막: 던전 안에 있을 때만 보인다 (setInside) */
+  private readonly curtains: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>[] = [];
 
   constructor(private scene: THREE.Scene) {
     this.buildPond();
@@ -77,9 +79,11 @@ export class Scenery {
     }
     for (const a of AREAS.slice(1)) {
       const w = a.x1 - a.x0, h = a.z1 - a.z0, cx = (a.x0 + a.x1) / 2, cz = (a.z0 + a.z1) / 2;
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(w + 60, h + 60), new THREE.MeshStandardMaterial({ color: 0x2b2836, roughness: 1 }));
+      // 바깥 바닥: 벽 너머가 비어 보이지 않게 30m 넓게 깐다. 서쪽(들판 쪽)만은 4m: 들판의 동쪽 끝(잿불 고원, x 252까지)을 덮지 않게.
+      // 그 대신 던전 안에서는 서쪽 벽 너머에 막을 세워, 가까워진 들판(고원의 나무와 땅)이 벽 너머로 보이지 않게 한다
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(w + 34, h + 60), new THREE.MeshStandardMaterial({ color: 0x2b2836, roughness: 1 }));
       floor.rotation.x = -Math.PI / 2;
-      floor.position.set(cx, 0.02, cz);
+      floor.position.set(cx + 13, 0.02, cz);
       floor.receiveShadow = true;
       const inner = new THREE.Mesh(new THREE.PlaneGeometry(w - 4, h - 4), new THREE.MeshStandardMaterial({ color: 0x4a4658, roughness: 1 }));
       inner.rotation.x = -Math.PI / 2;
@@ -91,6 +95,11 @@ export class Scenery {
       for (const [x, z, sx, sz] of [[cx, a.z0 + 1, w, 1.2], [cx, a.z1 - 1, w, 1.2], [a.x0 + 1, cz, 1.2, h], [a.x1 - 1, cz, 1.2, h]] as const) {
         this.scene.add(part(new THREE.BoxGeometry(sx, wallH, sz), dark, x, wallH / 2, z));
       }
+      const curtain = new THREE.Mesh(new THREE.BoxGeometry(80, 80, h + 200), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+      curtain.position.set(a.x0 - 1 - 40, 39, cz);
+      curtain.visible = false;
+      this.curtains.push(curtain);
+      this.scene.add(curtain);
     }
     const pillar = new THREE.CylinderGeometry(1, 1.15, 5, 8);
     for (const c of PILLARS) {
@@ -98,6 +107,11 @@ export class Scenery {
       m.scale.set(c.r, 1, c.r);
       this.scene.add(m);
     }
+  }
+
+  /** 던전 안에 있는가: 안이면 서쪽 벽 너머의 막을 하늘빛(sky)으로 세운다 */
+  setInside(inside: boolean, sky: number): void {
+    for (const c of this.curtains) { c.visible = inside; c.material.color.setHex(sky); }
   }
 
   /** i번 등탑의 등불을 밝기에 맞춘다. 밝기가 0이면 꺼진 등탑이다. */

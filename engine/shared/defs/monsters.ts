@@ -1,5 +1,5 @@
 // 몬스터의 모양과 도우미. 몬스터의 표와 수치는 게임의 내용에 있다 (@game/shared/content).
-import { BOSS, MONSTERS } from '@game/shared/content';
+import { BOSS, GEAR, MONSTERS } from '@game/shared/content';
 
 export interface MonsterDef {
   hp: number;
@@ -30,6 +30,11 @@ export interface MonsterDef {
   fleeAt?: number;
   /** 떨어져서 때리면 화면에 날아가는 것: registerShot으로 등록한 id (틀의 'arrow', 'bolt'). 없으면 날아가는 것 없이 맞기만 한다 */
   shot?: string;
+  /**
+   * 떨어뜨리는 장비의 레벨. 없으면 경험치로 정한다(GEAR.levelOf). 경험치로 정하는 식의 상한을 올리지 않고
+   * 새 사냥터의 몬스터만 더 높은 장비를 떨어뜨리게 할 때 쓴다. 장비를 떨어뜨리는 곳(서버)과 도감은 gearLvOf로 읽는다
+   */
+  gearLv?: number;
 }
 
 /** 'ranged' 몬스터의 기본 사거리(m) */
@@ -38,6 +43,8 @@ export const MONSTER_RANGED = 8;
 export type MonsterId = keyof typeof MONSTERS;
 export const isMonsterId = (v: string): v is MonsterId => Object.hasOwn(MONSTERS, v);
 export const monsterDef = (id: MonsterId): MonsterDef => MONSTERS[id];
+/** 그 몬스터가 떨어뜨리는 장비의 레벨: 정의의 gearLv, 없으면 경험치로 (GEAR.levelOf) */
+export const gearLvOf = (def: MonsterDef): number => def.gearLv ?? GEAR.levelOf(def.exp);
 
 /** 필드 보스의 최대 체력: fighters명이 맞설 때 (한 명이면 기본 체력). 서버의 engine/server/game/systems/boss.ts와 도감이 함께 쓴다 */
 export const bossHp = (base: number, fighters: number): number => Math.round(base * (1 + BOSS.hpPerPlayer * Math.max(0, Math.min(BOSS.maxScale, fighters) - 1)));

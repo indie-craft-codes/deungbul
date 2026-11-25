@@ -204,7 +204,7 @@ export const textEn: GuideText = {
       `Each kill has a ${chance} chance to drop one piece of gear. Field bosses always drop one. The roll is separate for every player who damaged the monster (and party members nearby).`,
       `The slot is one of ${slots}, all equally likely (${slotPct} each).`,
       'Rarity follows the weights below. Higher rarity means more options with larger values. A piece never has the same kind of option twice.',
-      'Gear level comes from the exp of the monster that dropped it. Higher gear level means larger option values and, for weapons and armor, a better base.',
+      'Gear level comes from the exp of the monster that dropped it (see the table below). Some monsters drop gear of a set level instead. Higher gear level means larger option values and, for weapons and armor, a better base.',
       'If your bag is full, dropped gear is lost.',
     ],
     rarityHead: 'Rarity and drop odds',

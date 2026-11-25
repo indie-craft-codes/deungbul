@@ -29,10 +29,14 @@ function shade(type: string): Model {
 function boss(type: string): Model {
   // 보스: 사람형 뼈대를 크게 키워 쓴다. 손에 든 것은 몽둥이. 지하묘의 주인은 조금 작고 보랏빛이다
   // 깨어난 주인(깊은 곳)은 더 크고 검붉다
+  // 잿불 고원: 잿불 파수꾼은 보스 뼈대를 작게 줄인 돌빛 거인(보스가 아니다), 잿불 거상은 가장 크고 달군 쇠처럼 붉다
   const deep = type === 'crypt_lord_deep', lord = type === 'crypt_lord' || deep;
-  const m = makeHumanoid(deep ? 0x5a2f3a : lord ? 0x4a3f6b : 0x56665a, true, deep ? 0xc8a0a8 : lord ? 0xb7b0c8 : 0x7f9280);
-  m.root.scale.setScalar(deep ? 2.1 : lord ? 1.9 : 2.3);
-  if (m.blade) { m.blade.material = mat(0x6b4a2e); m.blade.scale.set(2.6, 1.3, 2.2); }
+  const warden = type === 'ember_warden', colossus = type === 'ember_colossus';
+  const cloth = colossus ? 0x5a2a1e : warden ? 0x6a5a4a : deep ? 0x5a2f3a : lord ? 0x4a3f6b : 0x56665a;
+  const skin = colossus ? 0xd0704a : warden ? 0xa89a88 : deep ? 0xc8a0a8 : lord ? 0xb7b0c8 : 0x7f9280;
+  const m = makeHumanoid(cloth, true, skin);
+  m.root.scale.setScalar(colossus ? 2.6 : warden ? 1.55 : deep ? 2.1 : lord ? 1.9 : 2.3);
+  if (m.blade) { m.blade.material = mat(colossus ? 0xff7a3a : 0x6b4a2e); m.blade.scale.set(2.6, 1.3, 2.2); }
   const inner = new THREE.Group();
   inner.add(m.root);
   return { root: inner, rig: m.rig };
@@ -40,11 +44,11 @@ function boss(type: string): Model {
 
 function soldier(type: string): Model {
   // 사람형 뼈대를 크기와 색만 바꿔 쓴다: 고블린은 작고 푸르고, 잊힌 병사는 크고 잿빛이다
-  // 지하묘 기사는 잊힌 병사보다 크고 검푸른 갑옷이다
-  const goblin = type === 'goblin', knight = type === 'crypt_knight';
-  const m = makeHumanoid(goblin ? 0x6b5a3a : knight ? 0x2f3a4a : 0x5d6670, true, goblin ? 0x7fae5a : 0x9aa3a8);
-  m.root.scale.setScalar(goblin ? 0.78 : knight ? 1.3 : 1.12);
-  if (!goblin) m.root.add(part(new THREE.BoxGeometry(0.66, 0.3, 0.66), mat(0x4a5258), 0, 2.16, 0)); // 투구
+  // 지하묘 기사는 잊힌 병사보다 크고 검푸른 갑옷이다. 고원 약탈자는 붉은 옷에 구릿빛 투구다
+  const goblin = type === 'goblin', knight = type === 'crypt_knight', raider = type === 'highland_raider';
+  const m = makeHumanoid(goblin ? 0x6b5a3a : knight ? 0x2f3a4a : raider ? 0x8a3a2a : 0x5d6670, true, goblin ? 0x7fae5a : raider ? 0xc9a07a : 0x9aa3a8);
+  m.root.scale.setScalar(goblin ? 0.78 : knight ? 1.3 : raider ? 1.18 : 1.12);
+  if (!goblin) m.root.add(part(new THREE.BoxGeometry(0.66, 0.3, 0.66), mat(raider ? 0x9a6a3a : 0x4a5258), 0, 2.16, 0)); // 투구
   const inner = new THREE.Group();
   inner.add(m.root);
   return { root: inner, rig: m.rig };
@@ -62,9 +66,10 @@ function wisp(): Model {
 function beast(type: string): Model {
   const root = new THREE.Group();
   // 네발 뼈대: 늑대와 멧돼지가 함께 쓴다
-  // 무덤 사냥개는 늑대 뼈대를 조금 크게, 잿빛 검은 털로
-  const boar = type === 'boar', hound = type === 'grave_hound';
-  const fur = mat(boar ? 0x7b5a44 : hound ? 0x3a3a40 : 0x7d8288), dark = mat(boar ? 0x4f3a2e : hound ? 0x1f1f24 : 0x4b4f55), legs: THREE.Group[] = [];
+  // 무덤 사냥개는 늑대 뼈대를 조금 크게, 잿빛 검은 털로. 잿불 여우는 늑대 뼈대를 조금 작게, 불빛 주황 털로
+  const boar = type === 'boar', hound = type === 'grave_hound', fox = type === 'cinder_fox';
+  const fur = mat(boar ? 0x7b5a44 : hound ? 0x3a3a40 : fox ? 0xd0692e : 0x7d8288), dark = mat(boar ? 0x4f3a2e : hound ? 0x1f1f24 : fox ? 0x3a2418 : 0x4b4f55), legs: THREE.Group[] = [];
+  if (fox) root.scale.setScalar(0.92);
   if (hound) root.scale.setScalar(1.15);
   if (boar) { root.scale.set(1.15, 1, 1.05); root.add(part(G.tusk, mat(0xf2ead8), -0.2, 0.98, 1.5), part(G.tusk, mat(0xf2ead8), 0.2, 0.98, 1.5)); }
   root.add(part(G.wBody, fur, 0, 0.95, 0), part(G.wHead, fur, 0, 1.2, 0.95), part(G.wSnout, dark, 0, 1.1, 1.38));
@@ -87,6 +92,7 @@ const MONSTER_LOOKS: Record<MonsterId, MonsterBuilder> = {
   shade_bram: shade, shade_mira: shade,
   ash_troll: boss, crypt_lord: boss, crypt_lord_deep: boss,
   grave_hound: beast, crypt_knight: soldier,
+  cinder_fox: beast, highland_raider: soldier, ember_warden: boss, ember_colossus: boss,
 };
 
 // 무기 등급별 칼날 모양. 가장 좋은 검은 등불처럼 빛난다

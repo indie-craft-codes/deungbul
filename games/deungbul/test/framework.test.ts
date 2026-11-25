@@ -7,7 +7,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, needFor, restGain } from '../shared/defs';
-import { TOWER } from '../shared/world';
+import { TOWER, TOWERS } from '../shared/world';
 import { type Ent, Game, MemoryStore, type PlayerSave, startServer, type WorldSave } from '@engine/server';
 import { check, connect, sleep, until } from '@engine/testing';
 import { newGame, startDeungbul } from './game';
@@ -253,8 +253,11 @@ function noonOf(day: unknown): number {
     const g = newGame({ now: () => now });
     g.importWorld(structuredClone(world));
     const out = structuredClone(g.exportWorld());
-    // 옛 형식은 읽으면 지금 형식으로 바뀐다: 견본에 적어 둔 '읽은 뒤의 모습'과 비교한다
-    bad.push(...diff(expect ?? world, out).map((x) => `월드 견본 ${i + 1} ${x}`));
+    // 옛 형식은 읽으면 지금 형식으로 바뀐다: 견본에 적어 둔 '읽은 뒤의 모습'과 비교한다.
+    // 견본보다 뒤에 더한 등탑(2026-11-25의 잿불 고원)은 처음 밝기(start)로 붙는다
+    const want = structuredClone(expect ?? world) as { tower?: { glows?: number[] } };
+    if (Array.isArray(want.tower?.glows)) want.tower.glows = TOWERS.map((t, k) => want.tower!.glows![k] ?? t.start);
+    bad.push(...diff(want as WorldSave, out).map((x) => `월드 견본 ${i + 1} ${x}`));
     const again = newGame({ now: () => now });
     again.importWorld(structuredClone(out));
     const out2 = structuredClone(again.exportWorld());

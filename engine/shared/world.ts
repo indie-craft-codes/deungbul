@@ -74,7 +74,8 @@ export function buildWorld(seed = MAP.seed): World {
   }
 
   // 던전의 문 둘레는 비운다. 뿌릴 때 거르면 난수열이 달라져 맵 전체의 배치가 바뀌므로, 다 뿌린 뒤에 가까운 것만 뺀다
-  const clearOf = (d: Deco) => Object.values(MAP.portals).every((p) => Math.hypot(d.x - p.x, d.z - p.z) > MAP.portalClear);
+  // 게임이 정한 '뿌린 뒤에 치울 자리'(MAP.clearAfter)도 여기서 같은 까닭으로 거른다
+  const clearOf = (d: Deco) => Object.values(MAP.portals).every((p) => Math.hypot(d.x - p.x, d.z - p.z) > MAP.portalClear) && !MAP.clearAfter?.(d.x, d.z);
   for (const list of [trees, rocks]) for (let i = list.length - 1; i >= 0; i--) if (!clearOf(list[i])) list.splice(i, 1);
 
   const inside = (d: Deco) => d.x > MIN_X - 2 && d.x < MAX_X + 2 && d.z > MIN_Z - 2 && d.z < MAX_Z + 2;

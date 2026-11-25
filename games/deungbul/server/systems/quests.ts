@@ -59,6 +59,16 @@ export class Quests {
     return QUESTS[p.qc]?.steps[p.qs] ?? null;
   }
 
+  /**
+   * 지금 단계가 그 등탑에 불씨를 바치라는 것이면 아직 바쳐야 할 수, 아니면 0.
+   * 가득 찬 등탑은 한 번에 조금(FULL_TOWER_OFFER)만 받는데, 퀘스트가 바치라는 만큼은 한 번에 받게 한다 (systems/tower.ts)
+   */
+  offerLeft(p: Ent, tower: number): number {
+    const step = this.step(p);
+    if (step?.goal.kind !== 'offer' || step.goal.to === 'resident' || (step.goal.tower !== undefined && step.goal.tower !== tower)) return 0;
+    return Math.max(0, step.goal.n - p.qn);
+  }
+
   private advance(p: Ent, step: QuestStep, by: number): void {
     const g = this.g;
     p.qn += by; p.questDirty = true; p.unsaved = true;

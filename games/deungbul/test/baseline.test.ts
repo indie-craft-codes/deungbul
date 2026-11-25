@@ -33,11 +33,17 @@ function noonOf(day: unknown): number {
   ].join('|');
   const counts = `${w.obstacles.length}/${w.trees.length}/${w.rocks.length}`;
   // 2026-11-25: 지하묘 깊은 곳의 문(MAP.portals.crypt_deep) 둘레의 나무 둘이 비켜났다 (411/448 → 409/446)
-  check(counts === '409/446/80', `맵의 장애물/나무/바위 수가 그대로다 (${counts})`);
-  check(hash(text) === 'cef080387c0283bf', `맵 지문이 그대로다: 장애물·나무·바위의 좌표와 크기 (${hash(text)})`);
+  // 2026-11-25: 세 번째 구역 잿불 고원을 더했다 (409/446/80 → 538/532/127). 들판이 x 180에서 252로 넓어져 예전에 들판 밖이던 나무(x 180~196)가 장애물이 되고,
+  //   고원의 나무 90·바위 48을 맨 뒤에 뿌렸고, 늘인 큰길에 걸린 예전 나무 넷(x 182~195, z −2.4~1.9)을 뿌린 뒤에 치웠다(MAP.clearAfter). 길찾기 격자는 들판과 던전 사이의 빈 곳(막힌 칸)이 줄었다.
+  //   x 176 서쪽의 나무와 바위는 하나도 바뀌지 않았다: 아래의 '서쪽 지문'이 그것을 지킨다
+  check(counts === '538/532/127', `맵의 장애물/나무/바위 수가 그대로다 (${counts})`);
+  check(hash(text) === 'de1d09951c4d6998', `맵 지문이 그대로다: 장애물·나무·바위의 좌표와 크기 (${hash(text)})`);
+  const west = (d: { x: number }) => d.x < 176;
+  const westText = [w.trees.filter(west), w.rocks.filter(west)].map((l) => l.map((d) => `${f(d.x)},${f(d.z)},${f(d.s)},${f(d.rot)}`).join(';')).join('|');
+  check(hash(westText) === '7fd2e3f224bd2949', `x 176 서쪽의 나무와 바위가 잿불 고원을 더하기 전과 같다 (${hash(westText)})`);
   const blocked = (new NavGrid(w.obstacles) as unknown as { blocked: Uint8Array }).blocked;
   const n = blocked.reduce((sum, v) => sum + v, 0);
-  check(n === 17450 && hash(blocked) === 'cdd7e85661192c59', `길찾기 격자의 막힌 칸이 그대로다 (${n}칸, ${hash(blocked)})`);
+  check(n === 9891 && hash(blocked) === '3dbce2aa6423ca85', `길찾기 격자의 막힌 칸이 그대로다 (${n}칸, ${hash(blocked)})`);
 }
 
 // ---------- 내용 계약 (docs/framework-plan.md의 단계 5) ----------

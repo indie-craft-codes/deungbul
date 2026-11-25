@@ -8,7 +8,7 @@ import type { MsgArg, MsgKey } from '@engine/shared';
 import { josa, keyHints, num, signed } from '@engine/client/i18n/ko';
 import { itemNameOf, type ContentNames } from '@engine/client/i18n/names';
 
-const monsters: Record<MonsterId, string> = { slime: '슬라임', wisp: '위습', wolf: '늑대', shade_bram: '브람의 그림자', shade_mira: '미라의 그림자', boar: '멧돼지', goblin: '고블린', lost_soldier: '잊힌 병사', ash_troll: '잿빛 트롤', crypt_lord: '지하묘의 주인', grave_hound: '무덤 사냥개', crypt_knight: '지하묘 기사', crypt_lord_deep: '깨어난 지하묘의 주인' };
+const monsters: Record<MonsterId, string> = { slime: '슬라임', wisp: '위습', wolf: '늑대', shade_bram: '브람의 그림자', shade_mira: '미라의 그림자', boar: '멧돼지', goblin: '고블린', lost_soldier: '잊힌 병사', ash_troll: '잿빛 트롤', crypt_lord: '지하묘의 주인', grave_hound: '무덤 사냥개', crypt_knight: '지하묘 기사', crypt_lord_deep: '깨어난 지하묘의 주인', cinder_fox: '잿불 여우', highland_raider: '고원 약탈자', ember_warden: '잿불 파수꾼', ember_colossus: '잿불 거상' };
 const residents: Record<ResidentId, { name: string; bonus: string }> = {
   bram: { name: '대장장이 브람', bonus: '상점에 등불검이 들어오고, 대장간이 열립니다' },
   mira: { name: '약초꾼 미라', bonus: '상점에 진한 물약이 들어옵니다' },
@@ -37,14 +37,14 @@ const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?:
   ward: { name: '강화 보호석', info: '+7 이상에서 강화에 실패해도 단계가 내려가지 않습니다 (시도마다 한 개). 출석 7일째, 강화 일일 임무, 지하묘 깊은 곳에서 받습니다' },
 };
 const itemName = itemNameOf(items);
-const towers: Record<string, string> = { first: '첫불 마을 등탑', ash: '잿빛 숲 등탑', crypt: '지하묘 입구' };
+const towers: Record<string, string> = { first: '첫불 마을 등탑', ash: '잿빛 숲 등탑', ember: '잿불 고원 등탑', crypt: '지하묘 입구' };
 const dungeons: Record<DungeonId, { name: string; info: string }> = {
   crypt: { name: '잿빛 지하묘', info: '고블린과 잊힌 병사를 뚫고 지하묘의 주인을 쓰러뜨리세요. 여럿이 가는 편이 좋습니다.' },
   crypt_deep: { name: '지하묘 깊은 곳', info: '무덤 사냥개와 지하묘 기사를 뚫고 깨어난 주인을 쓰러뜨리세요. 레벨 7 장비가 나옵니다. 파티로 가세요.' },
 };
 const towerName = (id: MsgArg) => towers[String(id)] ?? String(id);
-const questTitles: Record<QuestId, string> = { bram: '1장 · 망치 소리', mira: '2장 · 마른 약초밭', ashwood: '3장 · 잿빛 숲의 등불', halmeom: '4장 · 등탑지기의 밤' };
-const zones: readonly string[] = ['등불 들판', '잿빛 숲'];
+const questTitles: Record<QuestId, string> = { bram: '1장 · 망치 소리', mira: '2장 · 마른 약초밭', ashwood: '3장 · 잿빛 숲의 등불', halmeom: '4장 · 등탑지기의 밤', ember: '5장 · 잿불 고원의 등탑' };
+const zones: readonly string[] = ['등불 들판', '잿빛 숲', '잿불 고원'];
 const stages: readonly [string, string, string] = ['어스름', '보통', '환함'];
 const dailies: Record<DailyId, string> = { kill30: '몬스터 30마리 잡기', offer10: '불씨 10개 바치기', enhance1: '장비 강화 1번 하기' };
 
@@ -95,7 +95,7 @@ export const koGame = {
     residents: '주민',
     allReturned: '모두 돌아왔습니다',
     forge: '브람의 대장간',
-    towerDark: '불이 꺼져 있습니다. 모두가 불씨를 바쳐 밝히면, 이 숲에서 쓰러져도 여기서 다시 일어납니다.',
+    towerDark: '불이 꺼져 있습니다. 모두가 불씨를 바쳐 밝히면, 이 구역에서 쓰러져도 여기서 다시 일어납니다.',
     keepersToday: '오늘의 등탑지기',
     keepersEmpty: '아직 아무도 없습니다. 불씨를 바치거나 습격을 막으면 이름이 오릅니다.',
     quest: '퀘스트',
@@ -103,7 +103,7 @@ export const koGame = {
     intro: '안개에 잠긴 땅에서 등탑의 빛을 지키는 등불지기가 됩니다. 몬스터를 잡아 불씨를 모으고, 등탑에 바쳐 마을을 밝히세요.',
     classHint: '직업은 나중에 등탑에서 바꿀 수 있습니다.',
     towerOff: '꺼짐',
-    zoneDark: '등탑이 꺼진 곳입니다. 몬스터가 강하고 먼저 덤벼듭니다. 쓰러지면 첫불 마을에서 일어납니다.',
+    zoneDark: '등탑이 꺼진 곳입니다. 몬스터가 강하고 먼저 덤벼듭니다. 쓰러지면 불이 켜진 가장 가까운 등탑에서 일어납니다.',
     offerNote: '등탑을 밝힙니다. 밝을수록 습격을 오래 버팁니다.',
     questAllDone: '지금까지의 이야기를 모두 마쳤습니다.',
   },
@@ -150,6 +150,18 @@ export const koGame = {
         '첫불 마을 등탑에 불씨를 바치세요. 할멈은 평생 이 불을 지켰습니다',
         '잿빛 숲 동쪽에서 잊힌 병사를 쓰러뜨리세요. 안개에 삼켜진 옛 등탑지기들입니다',
         '낮 12시·3시·6시와 저녁 8~11시 정각에 오는 안개 습격을 마을 등탑에서 함께 막아 내세요',
+      ],
+    },
+    ember: {
+      title: questTitles.ember,
+      steps: [
+        '잿빛 숲 등탑에서 동쪽 큰길을 따라 잿불 고원의 꺼진 등탑을 찾아가세요 (레벨 15 이상 권장)',
+        '고원 북서쪽에서 잿불 여우를 잡으세요',
+        '잿불 고원 등탑에 불씨를 바쳐 불을 켜세요. 모아 둔 불씨를 쓸 때입니다',
+        '고원 남서쪽에서 고원 약탈자를 물리치세요',
+        '잿불 고원 등탑에 불씨를 더 바쳐 고원을 밝히세요',
+        '고원 남동쪽에서 잿불 파수꾼을 쓰러뜨리세요',
+        '고원 북쪽 끝의 잿불 거상을 쓰러뜨리세요. 여럿이 함께 가는 편이 좋습니다',
       ],
     },
   } satisfies Record<QuestId, { title: string; steps: string[] }>,

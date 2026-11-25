@@ -84,10 +84,11 @@ export class Tower {
     if (to === 'tower') {
       // 등탑이 이미 가장 밝아도 바칠 수 있다: 밝기는 더 오르지 않지만 기여와 퀘스트에는 세어진다
       // (가득 찬 서버에 새로 온 사람이 '등탑에 바치기' 단계에서 막히지 않게)
-      // 다만 '전부'로 불씨를 몽땅 태우지 않게, 가득 찬 등탑은 한 번에 조금(FULL_TOWER_OFFER)만 받는다
+      // 다만 '전부'로 불씨를 몽땅 태우지 않게, 가득 찬 등탑은 한 번에 조금(FULL_TOWER_OFFER)만 받는다.
+      // 퀘스트가 이 등탑에 바치라고 하면 그 남은 수만큼은 한 번에 받는다 (잿불 고원의 100개를 다섯 개씩 스무 번 누르지 않게). 밝기는 남은 만큼만 오른다
       const room = GLOW_MAX - this.glows[ti];
-      used = Math.min(want, p.sparks, room > 0 ? room : FULL_TOWER_OFFER);
-      if (room > 0) this.changeGlow(used, ti);
+      used = Math.min(want, p.sparks, Math.max(room > 0 ? room : FULL_TOWER_OFFER, this.g.quests?.offerLeft(p, ti) ?? 0));
+      if (room > 0) this.changeGlow(Math.min(used, room), ti);
     } else {
       // 주민은 첫불 마을의 등탑에서만 되돌린다
       const i = ti === 0 ? RESIDENTS.findIndex((r, k) => this.got[k] < r.need) : -1;

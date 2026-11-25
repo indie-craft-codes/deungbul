@@ -6,7 +6,7 @@ import {
   BAG_UP, ENHANCE, REFORGE, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, LEVEL, MAIL_MAX, MARKET, MAT_MAX,
   MONSTERS, MONSTER_AI, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, PARTY, PORTAL_REACH, POTION_CD, POTION_MAX, POWER, QUESTS, RAID, RAID_KEEP_POINTS, RANK, RARITIES,
   RECIPES, RESIDENTS, RESPAWN_S, REST, SALVAGE, SHOPS, SHOP_REACH, SHOP_STOCK, SKILL_DEFS, SLOW_FACTOR, SMITH, SMITHY_REACH, STAT_IDS, TOWER_REACH,
-  bagSlots, baseOpt, bossHp, dustFor, isItemId, itemCap, salvageOn, guildNeed, marketFee, maxHpFor, needFor, raidExp, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
+  bagSlots, baseOpt, bossHp, dustFor, gearLvOf, isItemId, itemCap, salvageOn, guildNeed, marketFee, maxHpFor, needFor, raidExp, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
   type ItemDef, type ItemId, type MonsterDef, type MonsterId, type QuestGoal, type Reward, type SkillDef, type SkillId, type Stage,
 } from '../../shared/defs';
 import { AUTO, AWAY } from '@engine/shared';
@@ -165,7 +165,7 @@ function monsters(P: Pack): Section {
         return row(id, monsterName(P, id), whereText(P, id), num(d.hp), span(d.dmg), c.perSec(d.speed), d.aggro > 0 ? c.m(d.aggro) : M.passive, back === null ? M.noRespawn : c.sec(back));
       })),
       table('monsterRewards', M.rewardHead, M.rewardCols, MONSTER_IDS.map((id) => {
-        const d: MonsterDef = MONSTERS[id], drop = DROPS[id], lv = GEAR.levelOf(d.exp), sparks = d.sparks ?? [0, 0];
+        const d: MonsterDef = MONSTERS[id], drop = DROPS[id], lv = gearLvOf(d), sparks = d.sparks ?? [0, 0];
         return row(id, monsterName(P, id), num(d.exp), `${span(d.gold)} (${num(avg(d.gold))})`, `${span(sparks)} (${num(avg(sparks))})`,
           pct(gearChance(d)), c.level(lv), drop ? `${itemLabel(P, drop.id)} ${pct(drop.chance)}` : c.none);
       })),
