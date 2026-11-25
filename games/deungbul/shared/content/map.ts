@@ -117,6 +117,8 @@ export const MAP: MapDef = {
   isFree,
   portals: {
     crypt: { x: 128.5, z: 2 },
+    // 깊은 곳의 문: 지하묘 문에서 남쪽으로 조금 (두 문의 거리가 문에 닿는 거리보다 넉넉히 멀다)
+    crypt_deep: { x: 128.5, z: -16 },
   },
   portalClear: 9,
 };

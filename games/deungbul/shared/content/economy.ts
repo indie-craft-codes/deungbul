@@ -105,6 +105,8 @@ export const REST = {
 /** 던전: 끝냈을 때 각자 우편으로 받는 보상과 하루에 들어갈 수 있는 횟수. content/dungeons.ts의 DUNGEONS가 이 값을 읽는다 */
 export const DUNGEON_ECON = {
   crypt: { reward: { gold: 300, exp: 600, sparks: 15 }, perDay: 3 },
+  // 깊은 곳 (Lv 18부터): 보상에 강화 보호 부적 한 장이 붙는다
+  crypt_deep: { reward: { gold: 700, exp: 3500, sparks: 30, items: { ward: 1 } }, perDay: 2 },
 } as const;
 
 /** 습격을 막아 냈을 때 맞서 싸운 사람 각자가 받는 보상. content/raid.ts의 RAID가 이 값을 읽는다 (하루에 열리는 횟수는 RAID.hours) */

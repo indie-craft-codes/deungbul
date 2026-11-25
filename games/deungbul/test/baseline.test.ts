@@ -32,11 +32,12 @@ function noonOf(day: unknown): number {
     w.rocks.map((d) => `${f(d.x)},${f(d.z)},${f(d.s)},${f(d.rot)}`).join(';'),
   ].join('|');
   const counts = `${w.obstacles.length}/${w.trees.length}/${w.rocks.length}`;
-  check(counts === '411/448/80', `맵의 장애물/나무/바위 수가 그대로다 (${counts})`);
-  check(hash(text) === '30280907b7a7711f', `맵 지문이 그대로다: 장애물·나무·바위의 좌표와 크기 (${hash(text)})`);
+  // 2026-11-25: 지하묘 깊은 곳의 문(MAP.portals.crypt_deep) 둘레의 나무 둘이 비켜났다 (411/448 → 409/446)
+  check(counts === '409/446/80', `맵의 장애물/나무/바위 수가 그대로다 (${counts})`);
+  check(hash(text) === 'cef080387c0283bf', `맵 지문이 그대로다: 장애물·나무·바위의 좌표와 크기 (${hash(text)})`);
   const blocked = (new NavGrid(w.obstacles) as unknown as { blocked: Uint8Array }).blocked;
   const n = blocked.reduce((sum, v) => sum + v, 0);
-  check(n === 17461 && hash(blocked) === '03e74551f70ac7e0', `길찾기 격자의 막힌 칸이 그대로다 (${n}칸, ${hash(blocked)})`);
+  check(n === 17450 && hash(blocked) === 'cdd7e85661192c59', `길찾기 격자의 막힌 칸이 그대로다 (${n}칸, ${hash(blocked)})`);
 }
 
 // ---------- 내용 계약 (docs/framework-plan.md의 단계 5) ----------

@@ -20,6 +20,10 @@ export const MONSTERS = {
   ash_troll: { hp: 1600, dmg: [14, 20], speed: 3.4, exp: 300, sparks: [10, 14], gold: [80, 120], aggro: 9, h: 5.0, boss: true, respawn: 300 },
   // 잿빛 지하묘(던전)의 우두머리. 인스턴스 안에만 나온다. 파티로 잡는 것을 기준으로 잡은 값이다
   crypt_lord: { hp: 2600, dmg: [16, 24], speed: 3.6, exp: 500, sparks: [12, 16], gold: [120, 160], aggro: 10, h: 4.2 },
+  // 잿빛 지하묘 깊은 곳(Lv 18부터의 어려운 던전). 인스턴스 안에만 나온다. Lv 20 안팎의 파티를 기준으로 잡은 잠정값이다
+  grave_hound: { hp: 340, dmg: [15, 21], speed: 5.4, exp: 85, sparks: [4, 6], gold: [18, 28], aggro: 9, h: 2.0 },
+  crypt_knight: { hp: 620, dmg: [20, 28], speed: 3.8, exp: 140, sparks: [6, 8], gold: [30, 45], aggro: 8, h: 3.0 },
+  crypt_lord_deep: { hp: 9000, dmg: [28, 38], speed: 3.8, exp: 1600, sparks: [25, 30], gold: [300, 400], aggro: 12, h: 4.6 },
 } as const satisfies Record<string, MonsterDef>;
 
 /** 필드 보스의 규칙 (수치는 잠정값) */

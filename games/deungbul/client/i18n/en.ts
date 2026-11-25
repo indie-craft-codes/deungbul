@@ -7,7 +7,7 @@ import { keyHints } from '@engine/client/i18n/ko';
 import { itemNameOf, type ContentNames } from '@engine/client/i18n/names';
 import type { GameLocale } from './ko';
 
-const monsters: Record<MonsterId, string> = { slime: 'Slime', wisp: 'Wisp', wolf: 'Wolf', shade_bram: "Bram's Shade", shade_mira: "Mira's Shade", boar: 'Boar', goblin: 'Goblin', lost_soldier: 'Lost Soldier', ash_troll: 'Ash Troll', crypt_lord: 'Lord of the Crypt' };
+const monsters: Record<MonsterId, string> = { slime: 'Slime', wisp: 'Wisp', wolf: 'Wolf', shade_bram: "Bram's Shade", shade_mira: "Mira's Shade", boar: 'Boar', goblin: 'Goblin', lost_soldier: 'Lost Soldier', ash_troll: 'Ash Troll', crypt_lord: 'Lord of the Crypt', grave_hound: 'Grave Hound', crypt_knight: 'Crypt Knight', crypt_lord_deep: 'The Lord Awakened' };
 const residents: Record<ResidentId, { name: string; bonus: string }> = {
   bram: { name: 'Bram the Smith', bonus: 'The shop stocks the Lamp Sword, and the forge opens' },
   mira: { name: 'Mira the Herbalist', bonus: 'The shop stocks Strong Potions' },
@@ -37,6 +37,7 @@ const itemName = itemNameOf(items);
 const towers: Record<string, string> = { first: 'Firstlight Village Tower', ash: 'Ashwood Tower', crypt: 'the crypt entrance' };
 const dungeons = {
   crypt: { name: 'The Ash Crypt', info: 'Fight through goblins and lost soldiers and bring down the Lord of the Crypt. Better with a party.' },
+  crypt_deep: { name: 'The Crypt Depths', info: 'Fight through grave hounds and crypt knights and bring down the awakened Lord. Drops level 7 gear. Go with a party.' },
 };
 const towerName = (id: MsgArg) => towers[String(id)] ?? String(id);
 const questTitles: Record<QuestId, string> = { bram: 'Chapter 1 · The Sound of a Hammer', mira: 'Chapter 2 · The Withered Herb Field', ashwood: 'Chapter 3 · A Lamp for the Ashwood', halmeom: "Chapter 4 · The Keeper's Night" };

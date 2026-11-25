@@ -8,7 +8,7 @@ import type { MsgArg, MsgKey } from '@engine/shared';
 import { josa, keyHints, num, signed } from '@engine/client/i18n/ko';
 import { itemNameOf, type ContentNames } from '@engine/client/i18n/names';
 
-const monsters: Record<MonsterId, string> = { slime: '슬라임', wisp: '위습', wolf: '늑대', shade_bram: '브람의 그림자', shade_mira: '미라의 그림자', boar: '멧돼지', goblin: '고블린', lost_soldier: '잊힌 병사', ash_troll: '잿빛 트롤', crypt_lord: '지하묘의 주인' };
+const monsters: Record<MonsterId, string> = { slime: '슬라임', wisp: '위습', wolf: '늑대', shade_bram: '브람의 그림자', shade_mira: '미라의 그림자', boar: '멧돼지', goblin: '고블린', lost_soldier: '잊힌 병사', ash_troll: '잿빛 트롤', crypt_lord: '지하묘의 주인', grave_hound: '무덤 사냥개', crypt_knight: '지하묘 기사', crypt_lord_deep: '깨어난 지하묘의 주인' };
 const residents: Record<ResidentId, { name: string; bonus: string }> = {
   bram: { name: '대장장이 브람', bonus: '상점에 등불검이 들어오고, 대장간이 열립니다' },
   mira: { name: '약초꾼 미라', bonus: '상점에 진한 물약이 들어옵니다' },
@@ -40,6 +40,7 @@ const itemName = itemNameOf(items);
 const towers: Record<string, string> = { first: '첫불 마을 등탑', ash: '잿빛 숲 등탑', crypt: '지하묘 입구' };
 const dungeons: Record<DungeonId, { name: string; info: string }> = {
   crypt: { name: '잿빛 지하묘', info: '고블린과 잊힌 병사를 뚫고 지하묘의 주인을 쓰러뜨리세요. 여럿이 가는 편이 좋습니다.' },
+  crypt_deep: { name: '지하묘 깊은 곳', info: '무덤 사냥개와 지하묘 기사를 뚫고 깨어난 주인을 쓰러뜨리세요. 레벨 7 장비가 나옵니다. 파티로 가세요.' },
 };
 const towerName = (id: MsgArg) => towers[String(id)] ?? String(id);
 const questTitles: Record<QuestId, string> = { bram: '1장 · 망치 소리', mira: '2장 · 마른 약초밭', ashwood: '3장 · 잿빛 숲의 등불', halmeom: '4장 · 등탑지기의 밤' };

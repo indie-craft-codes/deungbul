@@ -24,6 +24,25 @@ export const DUNGEONS = {
     reward: DUNGEON_ECON.crypt.reward,
     dropRar: 2, dropLv: 5,
   },
+  // 어려운 던전: 같은 지하묘의 깊은 곳 (Lv 15를 넘으면 할 것이 없다던 후반부 검토). 끝내면 레벨 7의 희귀 이상 장비가 나온다: 들판에서는 6까지만 나온다
+  crypt_deep: {
+    portal: MAP.portals.crypt_deep,
+    entry: { x: 266, z: 0 },
+    minLv: 18,
+    perDay: DUNGEON_ECON.crypt_deep.perDay,
+    timeS: 720,
+    exitS: 30,
+    packs: [
+      { type: 'grave_hound', x: 283, z: 0, n: 4 },
+      { type: 'crypt_knight', x: 296, z: -16, n: 3 },
+      { type: 'crypt_knight', x: 296, z: 16, n: 3 },
+      { type: 'grave_hound', x: 310, z: 0, n: 3 },
+      { type: 'crypt_knight', x: 312, z: 0, n: 2 },
+    ],
+    boss: { type: 'crypt_lord_deep', x: 328, z: 0 },
+    reward: DUNGEON_ECON.crypt_deep.reward,
+    dropRar: 2, dropLv: 7,
+  },
 } as const satisfies Record<string, DungeonDef>;
 /** 문에 이만큼 다가가야 들어갈 수 있다 */
 export const PORTAL_REACH = 4;
