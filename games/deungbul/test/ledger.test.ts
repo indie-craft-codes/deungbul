@@ -88,8 +88,8 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   at(a, FORGE.x, FORGE.z); run(1);
   check(a.qs === 3 && sum(g.ledger.rows(), 'exp', 'quest') === 20 + 20 + 30, '틱 안에서 받은 퀘스트 단계 보상도 quest로 적힌다');
   kill(a, 'shade_bram');
-  tower(a); cmd(a, { t: 'offer', to: 'tower', n: 20 }); // 1장 끝, 기여 22: 단계 보상
-  check(a.qc === 1 && a.tier === 1, '갑이 1장을 마치고 기여 1단계가 됐다');
+  tower(a); cmd(a, { t: 'offer', to: 'tower', n: 30 }); // 1장 끝(주민이 모두 돌아와 등탑에 바친 것도 센다), 기여 32: 단계 보상 둘
+  check(a.qc === 1 && a.tier === 2, '갑이 1장을 마치고 기여 2단계가 됐다');
 
   // 상점: 물약과 무기를 사고(2장 1단계: 물약 사기), 물약을 마신다
   at(a, SHOPS[0].x, SHOPS[0].z + 1);
@@ -165,7 +165,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   at(a, CAMPS[0].x, CAMPS[0].z);
   g.gear.random = () => 0.999;
   for (let i = 0; i < 30; i++) kill(a, 'slime');
-  tower(a); cmd(a, { t: 'offer', to: 'tower', n: 10 });
+  tower(a); for (let i = 0; i < 6; i++) cmd(a, { t: 'offer', to: 'tower', n: 10 }); // 등탑이 가득하면 한 번에 조금만 받는다: 열 개가 찰 때까지
   g.gear.random = () => 0; cmd(a, { t: 'enhance', uid: drop.uid });
   check(a.mail.filter((m) => m.k === 'daily').length === 3, '일일 임무 셋을 채워 우편이 왔다');
   cmd(a, { t: 'mailClaim', id: a.mail[0].id }); // 하나만 받아 본다

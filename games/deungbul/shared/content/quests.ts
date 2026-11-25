@@ -43,7 +43,7 @@ export const QUESTS = [
       { goal: { kind: 'offer', n: 1 }, at: TOWER, reward: { exp: 20, sparks: 2 } },
       { goal: { kind: 'visit', r: 7 }, at: FORGE, reward: { exp: 30, sparks: 0 } },
       { goal: { kind: 'kill', monster: 'shade_bram', n: 1 }, at: FORGE, reward: { exp: 60, sparks: 2 } },
-      { goal: { kind: 'offer', n: 5, to: 'resident' }, at: TOWER, reward: { exp: 100, sparks: 5 } },
+      { goal: { kind: 'offer', n: 30, to: 'resident' }, at: TOWER, reward: { exp: 100, sparks: 5 } }, // 30: 대장장이 브람이 돌아오는 데 드는 만큼 (혼자서도 되돌린다)
     ],
   },
   {
@@ -53,7 +53,7 @@ export const QUESTS = [
       { goal: { kind: 'kill', monster: 'wisp', n: 4 }, at: CLEARINGS[1], reward: { exp: 50, sparks: 2 } },
       { goal: { kind: 'visit', r: 7 }, at: HERB_FIELD, reward: { exp: 40, sparks: 0 } },
       { goal: { kind: 'kill', monster: 'shade_mira', n: 1 }, at: HERB_FIELD, reward: { exp: 90, sparks: 3 } },
-      { goal: { kind: 'offer', n: 8, to: 'resident' }, at: TOWER, reward: { exp: 150, sparks: 5 } },
+      { goal: { kind: 'offer', n: 60, to: 'resident' }, at: TOWER, reward: { exp: 150, sparks: 5 } }, // 60: 약초꾼 미라가 돌아오는 데 드는 만큼
     ],
   },
   {

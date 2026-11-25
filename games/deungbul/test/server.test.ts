@@ -76,15 +76,18 @@ try {
   check(await until(isAt(0, 3), 2000), '옛 대장간 터에 가면 다음 단계로 넘어간다');
   check(slay('shade_bram', 1) === 1 && (await until(isAt(0, 4))), '브람의 그림자를 쓰러뜨리면 다음 단계로 넘어간다');
   place(TOWER.x, TOWER.z + 3);
-  qEnt.sparks = 9;
+  qEnt.sparks = 40;
   await sleep(200);
   q.send({ t: 'offer', to: 'tower', n: 3 });
   await new Promise((r) => setTimeout(r, 150));
   check(isAt(0, 4, 0)(), '주민에게 보태는 단계에서 등탑에 바친 불씨는 세지 않는다');
   q.send({ t: 'offer', to: 'resident', n: 3 });
   check(await until(isAt(0, 4, 3)), '불씨를 일부만 바치면 그만큼만 진행된다');
+  // 브람에게 남은 만큼(위에서 a가 보탠 2 + 3을 뺀 25)만 들어가고, 나머지는 다음 보태기로 미라에게 간다 (보태기 한 번은 한 주민에게만)
+  q.send({ t: 'offer', to: 'resident', n: 27 });
+  check(await until(isAt(0, 4, 28)), '보태기 한 번은 지금 주민이 돌아오는 데 드는 만큼까지만 들어간다');
   q.send({ t: 'offer', to: 'resident', n: 2 });
-  check(await until(isAt(1, 0)) && q.sys.some((x) => x === 'questDone:bram'), '마지막 단계를 마치면 장이 끝나고 다음 장이 시작된다');
+  check(await until(isAt(1, 0)) && q.sys.some((x) => x === 'questDone:bram'), '마지막 단계(30)를 마치면 장이 끝나고 다음 장이 시작된다');
   q.ws.close();
   await sleep(300);
   const q2 = await connect(server.port, undefined, TOKEN_Q);
@@ -131,8 +134,8 @@ try {
   await server.close();
   server = await startDeungbul(0, { store, game: { raid: raidCfg } });
   const a3 = await connect(server.port, undefined, TOKEN_A);
-  // 주민 진행: 퀘스트 시험의 '보태기' 5 + 위에서 보탠 2
-  check(await until(() => a3.glow === glowEnd && a3.residents[0] === resEnd && resEnd === 7), '서버를 다시 켜도 등탑 밝기와 주민 진행이 남는다');
+  // 주민 진행: 브람은 위의 보태기로 다 찼다(30)
+  check(await until(() => a3.glow === glowEnd && a3.residents[0] === resEnd && resEnd === 30), '서버를 다시 켜도 등탑 밝기와 주민 진행이 남는다');
   check(a3.name === '새이름' && (await until(() => a3.sparks === sparksEnd && a3.contrib === contribEnd && a3.lv >= 3)), '서버를 다시 켜도 캐릭터가 남는다');
   a3.ws.close();
 } finally {

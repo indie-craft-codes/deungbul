@@ -469,9 +469,11 @@ html:lang(en) body { overflow-wrap: break-word; }
 .mfield button { flex: none; white-space: nowrap; padding: 4px 10px; }
 #log .gchat { color: #9fe0a8; }
 
-/* 폰 세로: 위쪽 창이 싸움터를 덮지 않게 줄인다 */
+/* 폰 세로: 위쪽 창이 싸움터를 덮지 않게 줄인다. 조이스틱은 조금 작게, 왼쪽 끝으로 (오른쪽에 붙는 행동 단추 줄과 겹쳤다) */
 @media (pointer: coarse) and (max-width: 720px) {
   #log { height: 40px; }
+  #stick { width: 90px; height: 90px; left: max(8px, env(safe-area-inset-left, 0px)); }
+  #knob { width: 42px; height: 42px; margin: -21px 0 0 -21px; }
 }
 
 /* 거래소의 위쪽 줄: 화면을 고르는 단추 셋과 둘러보기 도구(종류, 정렬, 새로 고침, 쪽 넘기기).
