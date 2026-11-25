@@ -25,7 +25,7 @@ import {
   RESIDENTS, SHOP_STOCK, SKILL_DEFS, STAT_IDS, sellPrice, type MonsterId,
 } from '../shared/defs';
 import { TOWERS, rng } from '../shared/world';
-import { BAG_UP, SALVAGE, bagSlots, dustFor, itemCap } from '../shared/defs';
+import { BAG_UP, SALVAGE, bagSlots, dustFor, isItemId, itemCap } from '../shared/defs';
 import { check } from '@engine/testing';
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
@@ -136,14 +136,15 @@ for (const P of PACKS) {
   g.classes.apply(p, 'warrior');
   g.gear.random = rng(20261124);
 
-  // 강화 +10까지의 기대 골드: 서버의 강화 명령을 10만 번(장비 10만 점) 굴려 본다
+  // 강화 +10까지의 기대 골드: 서버의 강화 명령으로 장비 여러 점을 +10까지 올려 본다 (+7부터는 실패하면 내려가서 한 점에 200번 넘게 굴린다. 가루는 넉넉히 준다)
   for (const rar of [0, RARITIES.length - 1]) {
-    const RUNS = rar === 0 ? 100000 : 20000;
+    const RUNS = 8000;
     let spent = 0, tries = 0;
     for (let i = 0; i < RUNS; i++) {
       const it = g.gear.roll(1, rar, 'ring');
       p.gear = [it]; it.uid = 1; p.worn = {};
       p.gold = 1e9;
+      if (isItemId(SALVAGE.item)) p.items[SALVAGE.item] = 1e6;
       while (it.plus < ENHANCE.max) { g.gear.enhance(p, 1); tries++; }
       spent += 1e9 - p.gold;
       g.notices.length = 0; p.mail.length = 0; // 쌓이는 안내문과 우편은 버린다

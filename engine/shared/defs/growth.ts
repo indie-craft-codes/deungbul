@@ -48,6 +48,8 @@ export interface Gear {
   opts: [Stat, number][];
   /** 잠갔다: 팔기, 분해, 거래소 올리기가 막힌다 (일괄 분해의 사고를 막는 장치). 잠그지 않은 장비에는 이 칸이 없다 */
   lock?: boolean;
+  /** 재련한 횟수 (REFORGE.max까지). 재련하지 않은 장비에는 이 칸이 없다 */
+  rf?: number;
 }
 
 /**
@@ -91,18 +93,26 @@ export const plusScore = (g: Gear): number => {
 export const sellPrice = (g: Gear): number => GEAR.sellBase + gearScore(g) + baseTier(g) * GEAR.sellPerTier;
 
 // ---------- 낀 장비의 효과와 장비 비교 ----------
-/** +from에서 +to까지 올리는 데 드는 골드의 기대값: 단계마다 (한 번의 값 ÷ 성공 확률)을 더한다. 도감의 표와 화면의 장비 비교가 이 함수 하나를 쓴다 (강화 규칙이 바뀌면 여기만 고친다) */
-export function enhanceExpected(to: number, rar: number, from = 0): number {
-  let sum = 0;
-  for (let plus = from; plus < to; plus++) sum += ENHANCE.gold(plus, rar) / ENHANCE.rate(plus);
+/**
+ * +from에서 +to까지의 기대값: 단계마다 한 번에 드는 값(cost)을 넣어 셈한다. 보호 부적은 쓰지 않는다고 본다.
+ * 내려가지 않는 단계는 cost ÷ 성공 확률, 실패하면 한 단계 내려가는 단계(ENHANCE.dropFrom 이상)는 내려간 단계를 다시 오르는 값까지 더한다:
+ * E(k) = (cost(k) + (1 − r(k)) × E(k−1)) ÷ r(k)
+ */
+function expectedBy(to: number, from: number, cost: (plus: number) => number): number {
+  let sum = 0, prev = 0;
+  for (let plus = 0; plus < to; plus++) {
+    const r = ENHANCE.rate(plus), e = plus >= ENHANCE.dropFrom && plus > 0 ? (cost(plus) + (1 - r) * prev) / r : cost(plus) / r;
+    if (plus >= from) sum += e;
+    prev = e;
+  }
   return sum;
 }
+/** +from에서 +to까지 올리는 데 드는 골드의 기대값. 도감의 표와 화면의 장비 비교가 이 함수 하나를 쓴다 (강화 규칙이 바뀌면 여기만 고친다) */
+export const enhanceExpected = (to: number, rar: number, from = 0): number => expectedBy(to, from, (plus) => ENHANCE.gold(plus, rar));
 /** +from에서 +to까지 올리는 데 필요한 시도 횟수의 기대값 */
-export function enhanceTries(to: number, from = 0): number {
-  let sum = 0;
-  for (let plus = from; plus < to; plus++) sum += 1 / ENHANCE.rate(plus);
-  return sum;
-}
+export const enhanceTries = (to: number, from = 0): number => expectedBy(to, from, () => 1);
+/** +from에서 +to까지 드는 장비 가루의 기대값 */
+export const enhanceDustExpected = (to: number, rar: number, from = 0): number => expectedBy(to, from, (plus) => ENHANCE.dust(plus, rar));
 
 /**
  * 낀 장비들이 주는 어떤 수치의 합 (worn: 낀 장비들, 칸의 순서대로). 서버의 수치 보정(systems/gear.ts)과 화면의 장비 비교가 이 함수 하나를 쓴다.

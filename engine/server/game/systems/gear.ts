@@ -2,7 +2,7 @@
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
 // 수치는 games/deungbul/shared/content/growth.ts에 있다.
-import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, STAT_IDS, isGearSlot, isItemId, isStat, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+import { ENHANCE, enhanceMax, GEAR, GEAR_SLOTS, ITEMS, RARITIES, REFORGE, SALVAGE, STAT_IDS, isGearSlot, isItemId, isStat, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { WHY } from './wallet';
@@ -25,7 +25,8 @@ export class GearSys {
     g.commands.set('equip', (p, m) => { if (num(m.uid)) this.equip(p, m.uid); });
     g.commands.set('unequip', (p, m) => { if (isGearSlot(m.slot)) this.unequip(p, m.slot); });
     g.commands.set('sell', (p, m) => { if (num(m.uid)) this.sell(p, m.uid); });
-    g.commands.set('enhance', (p, m) => { if (num(m.uid)) this.enhance(p, m.uid); });
+    g.commands.set('enhance', (p, m) => { if (num(m.uid)) this.enhance(p, m.uid, m.charm === true); });
+    g.commands.set('reforge', (p, m) => { if (num(m.uid) && num(m.i)) this.reforge(p, m.uid, m.i); });
 
     g.on('monsterKilled', (m, hitters) => {
       const def = m.def;
@@ -67,7 +68,7 @@ export class GearSys {
     const it = x as Gear;
     return typeof x === 'object' && x !== null && num(it.uid) && isGearSlot(it.slot) && num(it.rar) && it.rar >= 0 && it.rar < RARITIES.length
       && (it.base === undefined || (isItemId(it.base) && ITEMS[it.base].kind === it.slot)) && (it.base !== undefined) === isBaseSlot(it.slot)
-      && (it.made === undefined || typeof it.made === 'boolean') && (it.lock === undefined || typeof it.lock === 'boolean') && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= OPTS_MAX && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
+      && (it.made === undefined || typeof it.made === 'boolean') && (it.lock === undefined || typeof it.lock === 'boolean') && (it.rf === undefined || (Number.isInteger(it.rf) && it.rf >= 0 && it.rf <= 999)) && num(it.lv) && num(it.plus) && it.plus >= 0 && it.plus <= ENHANCE.max && Array.isArray(it.opts) && it.opts.length <= OPTS_MAX && it.opts.every((o) => Array.isArray(o) && isStat(o[0]) && num(o[1]) && o[1] > 0 && o[1] <= OPT_MAX)
       && Number.isInteger(it.lv) && it.lv >= 1 && it.lv <= GEAR_LV_MAX && Number.isInteger(it.plus) && Number.isInteger(it.uid);
   }
 
@@ -198,15 +199,45 @@ export class GearSys {
     this.changed(p);
   }
 
-  enhance(p: Ent, uid: number): void {
+  /**
+   * 강화를 한 번 시도한다. 값은 골드(ENHANCE.gold)와, 게임이 정했으면 장비 가루(ENHANCE.dust).
+   * ENHANCE.dropFrom 이상에서 실패하면 한 단계 내려간다. useCharm이고 보호 부적(ENHANCE.charm)이 있으면 그런 시도에 한 장을 쓰고 내려가지 않는다
+   */
+  enhance(p: Ent, uid: number, useCharm = false): void {
     const g = this.g, it = this.find(p, uid);
     if (!it) return;
     if (it.plus >= enhanceMax(it)) { g.notify(p, 'enhanceMax'); return; }
-    const cost = ENHANCE.gold(it.plus, it.rar);
+    const cost = ENHANCE.gold(it.plus, it.rar), dust = ENHANCE.dust(it.plus, it.rar), dustId = SALVAGE.item;
+    const risky = it.plus >= ENHANCE.dropFrom;
+    const charm = useCharm && risky && isItemId(ENHANCE.charm) && (p.items[ENHANCE.charm] ?? 0) > 0 ? ENHANCE.charm : undefined;
+    // 가루가 모자라면 골드를 받기 전에 막는다
+    if (dust > 0 && (!isItemId(dustId) || (p.items[dustId] ?? 0) < dust)) { g.notify(p, 'noMats'); return; }
     if (!g.wallet.take(p, 'gold', cost, WHY.enhance)) { g.notify(p, 'noGold'); return; }
+    if (dust > 0 && isItemId(dustId)) g.bag.takeItem(p, dustId, dust, WHY.enhance);
+    if (charm) g.bag.takeItem(p, charm, 1, WHY.enhance);
     if (this.random() < ENHANCE.rate(it.plus)) { it.plus++; g.notify(p, 'enhanceOk', it.plus); }
+    else if (risky && !charm) { it.plus--; g.notify(p, 'enhanceDown', it.plus); }
+    else if (charm) g.notify(p, 'enhanceSaved', it.plus);
     else g.notify(p, 'enhanceFail');
     this.changed(p);
     g.fire('enhanced', p);
+  }
+
+  /** 재련: 옵션 하나(i번째)를 다시 뽑는다. 다른 옵션과 겹치지 않는 종류에서 종류와 값을 함께 굴린다. 장비마다 REFORGE.max번까지 */
+  reforge(p: Ent, uid: number, i: number): void {
+    const g = this.g, it = this.find(p, uid);
+    if (!it || REFORGE.max <= 0 || !Number.isInteger(i) || i < 0 || i >= it.opts.length) return;
+    const n = it.rf ?? 0;
+    if (n >= REFORGE.max) { g.notify(p, 'reforgeMax', REFORGE.max); return; }
+    const gold = REFORGE.gold(it.rar, n), dust = REFORGE.dust(it.rar), dustId = SALVAGE.item;
+    if (dust > 0 && (!isItemId(dustId) || (p.items[dustId] ?? 0) < dust)) { g.notify(p, 'noMats'); return; }
+    if (!g.wallet.take(p, 'gold', gold, WHY.reforge)) { g.notify(p, 'noGold'); return; }
+    if (dust > 0 && isItemId(dustId)) g.bag.takeItem(p, dustId, dust, WHY.reforge);
+    const pool = STAT_IDS.filter((s) => !it.opts.some((o, j) => j !== i && o[0] === s));
+    const stat = pool[Math.floor(this.random() * pool.length)] ?? it.opts[i][0];
+    it.opts[i] = [stat, rollOpt(stat, it.rar, it.lv, this.random())];
+    it.rf = n + 1;
+    g.notify(p, 'reforged', stat, it.rf, REFORGE.max);
+    this.changed(p);
   }
 }

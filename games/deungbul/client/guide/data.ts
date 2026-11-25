@@ -3,7 +3,7 @@
 // 이름은 게임의 언어 묶음(../i18n: 틀의 문장과 이 게임의 문장을 합친 것)에서, 도감에만 있는 문장은 도감의 언어 파일(text.*.ts)에서 온다.
 import {
   ATTACK_CD, ATTEND, BOSS, BUILD, BUILD_STAT_IDS, buildStatDef, CAMPS, CHANNEL, CLASSES, CLASS_IDS, COMBAT, CONTRIB_TIERS, DAILIES, DAILY_IDS, DROPS, DUNGEONS, DUNGEON_IDS,
-  BAG_UP, ENHANCE, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, LEVEL, MAIL_MAX, MARKET, MAT_MAX,
+  BAG_UP, ENHANCE, REFORGE, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, LEVEL, MAIL_MAX, MARKET, MAT_MAX,
   MONSTERS, MONSTER_AI, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, PARTY, PORTAL_REACH, POTION_CD, POTION_MAX, POWER, QUESTS, RAID, RAID_KEEP_POINTS, RANK, RARITIES,
   RECIPES, RESIDENTS, RESPAWN_S, REST, SALVAGE, SHOPS, SHOP_REACH, SHOP_STOCK, SKILL_DEFS, SLOW_FACTOR, SMITH, SMITHY_REACH, STAT_IDS, TOWER_REACH,
   bagSlots, baseOpt, bossHp, dustFor, isItemId, itemCap, salvageOn, guildNeed, marketFee, maxHpFor, needFor, raidExp, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
@@ -268,11 +268,14 @@ function gear(P: Pack): Section {
       h(G.enhanceHead),
       ul(G.enhanceRules(pct(ENHANCE.perPlus), num(ENHANCE.max), num(ENHANCE.supplyMax), L.gear.rarities.supply,
         sampleBase ? G.enhanceExample(L.gear.stats[sampleBase[0]](sampleBase[1]), num(ENHANCE.supplyMax), L.gear.stats[sampleBase[0]](Math.round(sampleBase[1] * ENHANCE.supplyMax * ENHANCE.perPlus * 10) / 10)) : '')),
+      ...(ENHANCE.dropFrom <= ENHANCE.max ? [ul(G.enhanceRisk(num(ENHANCE.dropFrom), num(ENHANCE.dropFrom - 1), isItemId(ENHANCE.charm) ? P.L.items[ENHANCE.charm].name : '', list(rars.map((r) => `${rarityName(P, r)} ${num(ENHANCE.dust(ENHANCE.dropFrom, r))}`)), num(ENHANCE.bindPlus)))] : []),
       table('enhance', G.enhanceTableHead, [G.stepCol, G.rateCol, G.triesCol, ...rars.map((r) => G.costCol(rarityName(P, r)))],
         steps.map((s) => row(s, `+${s} → +${s + 1}`, pct(ENHANCE.rate(s)), num(1 / ENHANCE.rate(s)), ...rars.map((r) => c.gold(num(ENHANCE.gold(s, r))))))),
       p(G.enhanceCostNote(L.gear.rarities.supply, L.gear.rarities.made, rarityName(P, 0))),
+      ...(ENHANCE.dropFrom <= ENHANCE.max ? [p(G.totalDropNote(num(ENHANCE.dropFrom)))] : []),
       table('enhanceTotal', G.totalHead, [G.targetCol, G.totalTriesCol, ...rars.map((r) => G.totalCol(rarityName(P, r)))],
         steps.map((s) => row(s + 1, `+${s + 1}`, num(enhanceTries(s + 1)), ...rars.map((r) => c.gold(num(Math.round(enhanceExpected(s + 1, r)))))))),
+      ...(REFORGE.max > 0 ? [h(G.reforgeHead), ul(G.reforgeRules(num(REFORGE.max), list(rars.map((r) => `${rarityName(P, r)} ${c.gold(num(REFORGE.gold(r, 0)))}`)), list(rars.map((r) => `${rarityName(P, r)} ${num(REFORGE.dust(r))}`))))] : []),
       h(G.sellHead),
       p(G.sellNote(num(GEAR.sellBase), num(GEAR.sellPerTier))),
       table('sellPlain', G.sellPlainHead, G.sellPlainCols, bases.map((id) => row(id, itemLabel(P, id), c.gold(num(plainSell(id)))))),

@@ -249,6 +249,34 @@
   "Enhanced · +1",
   "Enhanced · +2"
  ],
+ "fmt.enhanceDownTo": [
+  "2d313d1cc9e2943c",
+  "Enhance failed · dropped to +undefined",
+  "Enhance failed · dropped to +0",
+  "Enhance failed · dropped to +1",
+  "Enhance failed · dropped to +2"
+ ],
+ "fmt.enhanceDust": [
+  "0ccc5eefc2bd8d9f",
+  "Enhance · NaN gold · Gear Dust NaN · undefined%",
+  "Enhance · 0 gold · Gear Dust NaN · undefined%",
+  "Enhance · 1 gold · Gear Dust NaN · undefined%",
+  "Enhance · 2 gold · Gear Dust NaN · undefined%"
+ ],
+ "fmt.enhanceKept": [
+  "6ef13c94c280318d",
+  "Enhance failed · the charm kept it at +undefined",
+  "Enhance failed · the charm kept it at +0",
+  "Enhance failed · the charm kept it at +1",
+  "Enhance failed · the charm kept it at +2"
+ ],
+ "fmt.enhanceRisk": [
+  "08213b638f35b6a8",
+  "From +undefined, a failed enhance drops the gear one level (marked ⚠). A Ward Charm prevents that · you have NaN",
+  "From +0, a failed enhance drops the gear one level (marked ⚠). A Ward Charm prevents that · you have NaN",
+  "From +1, a failed enhance drops the gear one level (marked ⚠). A Ward Charm prevents that · you have NaN",
+  "From +2, a failed enhance drops the gear one level (marked ⚠). A Ward Charm prevents that · you have NaN"
+ ],
  "fmt.fxBuff": [
   "fad98f1a74809cb6",
   "undefined +undefined% for undefined s",
@@ -278,7 +306,7 @@
   "stuns for 2 s"
  ],
  "fmt.gearHint": [
-  "cf1b7836275e2f2d",
+  "00c0238e51319b1b",
   "Enhancing: standard gear (bought in a shop) goes up to +undefined; crafted or dropped gear up to +undefined. A failed attempt leaves the gear unchanged and costs only the gold.",
   "Enhancing: standard gear (bought in a shop) goes up to +0; crafted or dropped gear up to +undefined. A failed attempt leaves the gear unchanged and costs only the gold.",
   "Enhancing: standard gear (bought in a shop) goes up to +1; crafted or dropped gear up to +undefined. A failed attempt leaves the gear unchanged and costs only the gold.",
@@ -654,6 +682,27 @@
   "1 and below",
   "2 and below"
  ],
+ "fmt.reforgeConfirm": [
+  "c99864a13465ddd7",
+  "Confirm · reroll undefined",
+  "Confirm · reroll 0",
+  "Confirm · reroll 1",
+  "Confirm · reroll 2"
+ ],
+ "fmt.reforgeDone": [
+  "17f26395bb38d933",
+  "Reforged undefined of undefined · no more reforges",
+  "Reforged 0 of undefined · no more reforges",
+  "Reforged 1 of undefined · no more reforges",
+  "Reforged 2 of undefined · no more reforges"
+ ],
+ "fmt.reforgeNote": [
+  "f4a9cc7c8323c1fe",
+  "Reforged undefined of undefined · this one costs NaN gold and NaN Gear Dust. Tap the option to reroll twice (its type and value both change)",
+  "Reforged 0 of undefined · this one costs NaN gold and NaN Gear Dust. Tap the option to reroll twice (its type and value both change)",
+  "Reforged 1 of undefined · this one costs NaN gold and NaN Gear Dust. Tap the option to reroll twice (its type and value both change)",
+  "Reforged 2 of undefined · this one costs NaN gold and NaN Gear Dust. Tap the option to reroll twice (its type and value both change)"
+ ],
  "fmt.residentHint": [
   "e4a837e818890cd5",
   "undefined has not returned yet. Add sparks at the lamp tower to bring them back (undefined to go).",
@@ -917,6 +966,8 @@
  "items.sword4.name": "Ember Sword",
  "items.sword4.staff": "Ember Staff",
  "items.tonic.name": "Strong Potion",
+ "items.ward.info": "Keeps gear from dropping a level when an enhance at +7 or higher fails (one per try)",
+ "items.ward.name": "Ward Charm",
  "label": "English",
  "monsters.ash_troll": "Ash Troll",
  "monsters.boar": "Boar",
@@ -1071,6 +1122,13 @@
   "2 entered 3. Enter at the gate to join the same run."
  ],
  "msg.dungeonNoRuns": "No more runs today. It opens again at midnight.",
+ "msg.enhanceDown": [
+  "a6adc491f511cd9b",
+  "Enhancement failed and the gear dropped to +undefined.",
+  "Enhancement failed and the gear dropped to +0.",
+  "Enhancement failed and the gear dropped to +1.",
+  "Enhancement failed and the gear dropped to +2."
+ ],
  "msg.enhanceFail": "Enhancement failed. The gear is unchanged.",
  "msg.enhanceMax": "This cannot be enhanced further. (Standard gear stops at +5, crafted or dropped gear at +10.)",
  "msg.enhanceOk": [
@@ -1079,6 +1137,13 @@
   "Enhancement succeeded. +0",
   "Enhancement succeeded. +1",
   "Enhancement succeeded. +2"
+ ],
+ "msg.enhanceSaved": [
+  "ab8c5e12439211f5",
+  "Enhancement failed, but your Ward Charm kept it at +undefined.",
+  "Enhancement failed, but your Ward Charm kept it at +0.",
+  "Enhancement failed, but your Ward Charm kept it at +1.",
+  "Enhancement failed, but your Ward Charm kept it at +2."
  ],
  "msg.forgeClosed": "Bram the Smith has not returned yet.",
  "msg.forgeFar": "Move closer to Bram the Smith to forge.",
@@ -1214,6 +1279,13 @@
   "Bought on the market. -0 gold",
   "Bought on the market. -1 gold",
   "Bought on the market. -2 gold"
+ ],
+ "msg.marketBound": [
+  "bc07b15f894cd539",
+  "Gear enhanced to +undefined or higher cannot be listed on the market.",
+  "Gear enhanced to +0 or higher cannot be listed on the market.",
+  "Gear enhanced to +1 or higher cannot be listed on the market.",
+  "Gear enhanced to +2 or higher cannot be listed on the market."
  ],
  "msg.marketCanceled": "You took the listing down.",
  "msg.marketCant": "That cannot be listed. Equipped gear and standard gear cannot be sold on the market.",
@@ -1375,6 +1447,20 @@
   "The raid was held off. Village tower light 0",
   "The raid was held off. Village tower light +1",
   "The raid was held off. Village tower light +2"
+ ],
+ "msg.reforgeMax": [
+  "5814136c79d21f86",
+  "This gear cannot be reforged any more (up to undefined times).",
+  "This gear cannot be reforged any more (up to 0 times).",
+  "This gear cannot be reforged any more (up to 1 times).",
+  "This gear cannot be reforged any more (up to 2 times)."
+ ],
+ "msg.reforged": [
+  "a0aebb628f2067aa",
+  "Reforged (undefined of undefined).",
+  "Reforged (0 of 0).",
+  "Reforged (1 of 1).",
+  "Reforged (3 of 4)."
  ],
  "msg.renameWait": "You can change your name again in a moment.",
  "msg.renamed": [
@@ -1549,6 +1635,7 @@
  "ui.autoResume": "Health recovered. Resuming the hunt.",
  "ui.autoSalvageOff": "off",
  "ui.bag": "Bag",
+ "ui.bagCharms": "Charms",
  "ui.bagFull": "Your gear bag is full. New drops are left behind. Salvage or sell gear, or expand the bag.",
  "ui.bagMats": "Crafting materials",
  "ui.bagPotions": "Potions",
@@ -1557,6 +1644,8 @@
  "ui.buffs": "Active buffs",
  "ui.changeClass": "Change class",
  "ui.channel": "Channel",
+ "ui.charmOff": "Use charms: off",
+ "ui.charmOn": "Use charms: on",
  "ui.chatLabel": "Chat message",
  "ui.chatOpen": "Chat",
  "ui.chatPlaceholder": "[[Press Enter to chat|Message]]",
@@ -1679,6 +1768,8 @@
  "ui.rankEmpty": "No ranking yet.",
  "ui.reconnect": "Reconnect",
  "ui.reconnecting": "Connection lost. Reconnecting…",
+ "ui.reforgeBtn": "Reforge",
+ "ui.reforgeClose": "Hide reforge",
  "ui.reload": "Refresh",
  "ui.renameLabel": "New name",
  "ui.renameSubmit": "Change",

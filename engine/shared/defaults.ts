@@ -60,7 +60,17 @@ export const ENHANCE = {
   max: 10, supplyMax: 5, perPlus: 0.1,
   rate: (plus: number): number => Math.max(0.2, 1 - plus * 0.1),
   gold: (plus: number, rar: number): number => 30 * (plus + 1) * (rar + 1),
+  /** 이 단계 이상에서 실패하면 한 단계 내려간다 (max보다 크면 내려가지 않는다) */
+  dropFrom: 99,
+  /** 실패해도 내려가지 않게 하는 보호 부적의 아이템 id (ItemDef.kind 'token'). 빈 문자열이면 부적이 없다 */
+  charm: '' as string,
+  /** 강화 한 번에 드는 장비 가루(SALVAGE.item)의 수. 분해가 없는 게임에서는 0이어야 한다 */
+  dust: (_plus: number, _rar: number): number => 0,
+  /** 이 단계 이상으로 강화한 장비는 거래소에 올릴 수 없다(귀속). 0이면 묶지 않는다 */
+  bindPlus: 0,
 };
+/** 재련: 장비의 옵션 하나를 다시 뽑는다. max가 0이면 재련이 없는 게임이다. n은 그 장비를 이미 재련한 횟수 */
+export const REFORGE = { max: 0, gold: (_rar: number, _n: number): number => 0, dust: (_rar: number): number => 0 };
 /**
  * 장비 분해와 가방 넓히기는 기본으로 꺼 둔다: 가루 아이템은 게임의 id라 여기서 정할 수 없고, 넓히기 값은 게임의 경제에 달렸다.
  * 켜려면 게임이 같은 이름으로 SALVAGE(item에 자기 아이템 id, dust에 등급별 양)와 BAG_UP(prices)을 내보낸다 (등불지기의 economy.ts가 예)

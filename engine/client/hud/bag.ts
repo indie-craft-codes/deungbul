@@ -57,12 +57,15 @@ export function renderBag(): void {
   ui.list.append(row(t('tabGear'), loc.fmt.have(gearCount, S.bag.max), ''));
   if (gearFull()) { const warn = document.createElement('div'); warn.className = 'note gwarn'; warn.setAttribute('role', 'status'); warn.textContent = S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull'); ui.list.append(warn); }
   // 물약과 재료: 그 종류의 아이템이 없는 게임은 머리줄도 두지 않는다
-  const potions = ids.filter((id) => itemDef(id).kind === 'potion'), mats = ids.filter((id) => itemDef(id).kind === 'mat');
+  const potions = ids.filter((id) => itemDef(id).kind === 'potion'), mats = ids.filter((id) => itemDef(id).kind === 'mat'), charms = ids.filter((id) => itemDef(id).kind === 'token');
   if (potions.length) ui.list.append(head(t('bagPotions')));
   for (const id of potions) ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), '', id));
   if (mats.length) ui.list.append(head(t('bagMats')));
   // 재료마다 어떤 몬스터가 떨어뜨리는지 적어 준다 (어디서 구하는지 화면 어디에도 없었다). 분해로 나오는 가루는 그렇게 적는다
   for (const id of mats) ui.list.append(row(loc.items[id].name, loc.fmt.haveBig(me.items[id] ?? 0, itemCap(id)), id === SALVAGE.item ? t('salvageSource') : sourceText(id), id));
+  // 부적: 지니고만 있는 것 (강화 보호 부적 등). 쓰임새는 아이템 설명에 있다
+  if (charms.length) ui.list.append(head(t('bagCharms')));
+  for (const id of charms) ui.list.append(row(loc.items[id].name, loc.fmt.have(me.items[id] ?? 0, itemCap(id)), loc.items[id].info ?? '', id));
 }
 
 /** 가방이 가득 찼으면 가방 단추를 눈에 띄게 한다 (style.css의 #bagBtn.alert) */

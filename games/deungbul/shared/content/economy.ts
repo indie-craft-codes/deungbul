@@ -81,12 +81,12 @@ export const IDLE = {
 export const DAILIES = {
   kill30: { kind: 'kill', n: 30, r: { gold: 60, exp: 150 } },
   offer10: { kind: 'offer', n: 10, r: { gold: 40, exp: 100 } },
-  enhance1: { kind: 'enhance', n: 1, r: { gold: 50 } },
+  enhance1: { kind: 'enhance', n: 1, r: { gold: 50, items: { ward: 1 } } },
 } as const satisfies Record<string, DailyDef>;
 
 /** 출석 보상: 이어서 접속한 날 수(1~7)마다. 7일을 채우면 다시 1일째부터 */
 export const ATTEND: readonly Reward[] = [
-  { gold: 30 }, { gold: 40 }, { gold: 50, sparks: 5 }, { gold: 60 }, { gold: 80 }, { gold: 100, sparks: 10 }, { gold: 200, sparks: 20 },
+  { gold: 30 }, { gold: 40 }, { gold: 50, sparks: 5 }, { gold: 60 }, { gold: 80 }, { gold: 100, sparks: 10 }, { gold: 200, sparks: 20, items: { ward: 2 } },
 ];
 
 /**
@@ -134,9 +134,24 @@ export const ENHANCE = {
   supplyMax: 5,
   /** 강화 단계마다 옵션 값이 이만큼 커진다 */
   perPlus: 0.1,
-  /** 지금 단계에서 다음으로 갈 때의 성공 확률. 실패해도 잃는 것은 골드뿐이다 */
+  /** 지금 단계에서 다음으로 갈 때의 성공 확률 */
   rate: (plus: number): number => Math.max(0.2, 1 - plus * 0.1),
   gold: (plus: number, rar: number): number => 30 * (plus + 1) * (rar + 1),
+  // 경제 3단계(사용자 승인 2026-11-24 '권고대로'): +6까지는 지금처럼 안전하고, +7부터 실패하면 한 단계 내려간다(파괴 없음, +6 아래로는 안 내려감)
+  dropFrom: 7,
+  /** 보호 부적: 쓰면 그 시도는 실패해도 내려가지 않는다 (내려갈 수 있는 시도에만 한 장 쓴다) */
+  charm: 'ward',
+  /** +7 이상의 강화는 한 번에 장비 가루 2 × (등급+1) */
+  dust: (plus: number, rar: number): number => (plus >= 7 ? 2 * (rar + 1) : 0),
+  /** 강화한 장비(+1 이상)는 거래소에 올릴 수 없다 */
+  bindPlus: 1,
+};
+
+/** 재련: 옵션 하나를 다시 뽑는다. 골드 500 × (등급+1) × 1.25^횟수와 가루, 장비마다 12번까지 (docs/economy.md 4-4) */
+export const REFORGE = {
+  max: 12,
+  gold: (rar: number, n: number): number => Math.round(500 * (rar + 1) * 1.25 ** n),
+  dust: (rar: number): number => 3 * (rar + 1),
 };
 
 /**

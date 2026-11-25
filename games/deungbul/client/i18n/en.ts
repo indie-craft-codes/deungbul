@@ -31,6 +31,7 @@ const items: Record<ItemId, { name: string; info?: string; bow?: string; staff?:
   potion: { name: 'Potion' },
   tonic: { name: 'Strong Potion' },
   dust: { name: 'Gear Dust', info: 'Material you get by salvaging gear' },
+  ward: { name: 'Ward Charm', info: 'Keeps gear from dropping a level when an enhance at +7 or higher fails (one per try)' },
 };
 const itemName = itemNameOf(items);
 const towers: Record<string, string> = { first: 'Firstlight Village Tower', ash: 'Ashwood Tower', crypt: 'the crypt entrance' };

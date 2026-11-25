@@ -4,7 +4,7 @@
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, buildStatDef, statMod } from '../../shared/defs';
+import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, buildStatDef, isItemId, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
@@ -174,6 +174,11 @@ export const koBase = (n: ContentNames) => {
       unequip: '빼기',
       enhanceMaxed: '강화 끝',
       enhanceFailed: '강화 실패 · 장비는 그대로입니다',
+      bagCharms: '부적',
+      charmOn: '부적 쓰기: 켬',
+      charmOff: '부적 쓰기: 끔',
+      reforgeBtn: '재련',
+      reforgeClose: '재련 접기',
       claim: '받기',
       claimAll: '모두 받기',
       gearEmpty: '남는 장비가 없습니다. 몬스터를 잡으면 가끔 떨어집니다.',
@@ -296,6 +301,13 @@ export const koBase = (n: ContentNames) => {
       dungeonExit: (s: number) => `끝냈습니다. ${s}초 뒤에 밖으로 나갑니다.`,
       gearName: (what: string, rarity: string, plus: number, lv: number) => `${rarity ? rarity + ' ' : ''}${what}${plus > 0 ? ` +${plus}` : ''} (Lv ${lv})`,
       enhanceCost: (gold: number, pct: number) => `강화 ${num(gold)}${G.unit} · ${pct}%`,
+      enhanceDust: (gold: number, dust: number, pct: number) => `강화 ${num(gold)}${G.unit} · ${itemName(SALVAGE.item)} ${num(dust)} · ${pct}%`,
+      enhanceRisk: (from: number, charms: number) => `+${from}부터는 강화에 실패하면 한 단계 내려갑니다 (⚠ 표시). ${itemName(ENHANCE.charm)}을 쓰면 내려가지 않습니다 · ${num(charms)}장 있음`,
+      enhanceDownTo: (plus: number) => `강화 실패 · +${plus}로 내려감`,
+      enhanceKept: (plus: number) => `강화 실패 · 부적으로 +${plus} 그대로`,
+      reforgeNote: (n: number, max: number, gold: number, dust: number) => `재련 ${n} / ${max}번 · 이번 값 ${num(gold)}${G.unit}, ${itemName(SALVAGE.item)} ${num(dust)}. 다시 뽑을 옵션을 두 번 누르세요 (종류와 값이 함께 바뀝니다)`,
+      reforgeDone: (n: number, max: number) => `재련 ${n} / ${max}번 · 더 할 수 없습니다`,
+      reforgeConfirm: (opt: string) => `확인 · ${opt} 다시 뽑기`,
       sellFor: (gold: number) => `팔기 ${num(gold)}${G.unit}`,
       power: (n: number) => `전투력 ${num(n)}`,
       streak: (n: number) => `출석 ${n}일째`,
@@ -324,7 +336,7 @@ export const koBase = (n: ContentNames) => {
       sellConfirm: (gold: number) => `확인 · ${num(gold)}${G.unit}`,
       enhanceDone: (plus: number) => `강화 성공 · +${plus}`,
       // shop: 상점에서 장비를 파는 게임인가, craft: 제작이 있는 게임인가 (없는 것은 문장에서 뺀다)
-      gearHint: (supplyMax: number, max: number, shop = true, craft = true) => `강화: ${shop ? '보급형(상점에서 산 것)' : '처음 받은 장비(보급형)'}은 +${supplyMax}까지, ${craft ? '만들거나 주운' : '주운'} 장비는 +${max}까지. 실패해도 장비는 그대로이고 ${G.name}만 듭니다.`,
+      gearHint: (supplyMax: number, max: number, shop = true, craft = true) => `강화: ${shop ? '보급형(상점에서 산 것)' : '처음 받은 장비(보급형)'}은 +${supplyMax}까지, ${craft ? '만들거나 주운' : '주운'} 장비는 +${max}까지. ${ENHANCE.dropFrom <= max ? `+${ENHANCE.dropFrom - 1}까지는 실패해도 그대로이고, +${ENHANCE.dropFrom}부터는 실패하면 한 단계 내려갑니다${isItemId(ENHANCE.charm) ? ` (${itemName(ENHANCE.charm)}으로 막을 수 있습니다)` : ""}.` : `실패해도 장비는 그대로이고 ${G.name}만 듭니다.`}`,
       marketPageShort: (page: number, pages: number, total: number) => `${page}/${pages} · ${num(total)}개`,
       matFrom: (names: string[]) => `얻는 곳: ${names.join(', ')}`,
       matSource: (mat: string, names: string[]) => `${mat} 얻는 곳: ${names.join(', ')}`,
@@ -402,6 +414,11 @@ export const koBase = (n: ContentNames) => {
       gearSold: (a) => `장비를 팔았습니다. ${G.name} +${num(a[0])}`,
       enhanceOk: (a) => `강화에 성공했습니다. +${a[0]}`,
       enhanceFail: () => '강화에 실패했습니다. 장비는 그대로입니다.',
+      enhanceDown: (a) => `강화에 실패해 +${a[0]}로 내려갔습니다.`,
+      enhanceSaved: (a) => `강화에 실패했지만 ${itemName(ENHANCE.charm)} 덕분에 +${a[0]} 그대로입니다.`,
+      reforged: (a) => `재련했습니다 (${a[1]} / ${a[2]}번).`,
+      reforgeMax: (a) => `이 장비는 더 재련할 수 없습니다 (${a[0]}번까지).`,
+      marketBound: (a) => `+${a[0]} 이상 강화한 장비는 거래소에 올릴 수 없습니다.`,
       enhanceMax: () => `더 강화할 수 없습니다. (보급형은 +${ENHANCE.supplyMax}, 만들거나 주운 장비는 +${ENHANCE.max}까지)`,
       mailNew: () => '우편이 왔습니다. 메뉴[[(M)|]]의 우편에서 받으세요.',
       mailGot: (a) => ['우편을 받았습니다.', [Number(a[0]) ? `${G.name} +${num(a[0])}` : '', Number(a[1]) ? `경험치 +${num(a[1])}` : '', Number(a[2]) && coin ? `${coin.name} +${a[2]}` : '', Number(a[3]) ? `장비 +${a[3]}` : '', Number(a[4]) ? `재료 +${a[4]}` : ''].filter(Boolean).join(', ')].filter(Boolean).join(' '),

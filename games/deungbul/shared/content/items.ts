@@ -24,6 +24,8 @@ export const ITEMS = {
   ashcore: { kind: 'mat', price: 0 },
   // 장비 가루: 장비를 분해하면 나온다 (economy.ts의 SALVAGE). 다른 재료처럼 거래소에 올릴 수 있고, 한도만 따로 크다
   dust: { kind: 'mat', price: 0, max: DUST_MAX },
+  // 강화 보호 부적: +7 이상에서 강화에 실패해도 단계가 내려가지 않는다 (economy.ts의 ENHANCE.charm). 출석 7일째와 일일 임무로 받고, 거래소에 올릴 수 없다
+  ward: { kind: 'token', price: 0, max: 99 },
 } as const satisfies Record<string, ItemDef>;
 
 /** 처음 들고 있는 무기 */

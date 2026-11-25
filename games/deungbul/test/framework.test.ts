@@ -484,19 +484,19 @@ function noonOf(day: unknown): number {
     questDone: 'good', levelUp: 'good', residentBack: 'good', towerLit: 'good', stageChanged: '', bossUp: 'bad', bossDown: 'good', dungeonEnter: '', dungeonClear: 'good', dungeonFail: 'bad', awayBack: 'good',
   };
   const FEED = [
-    'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceMax', 'mailNew', 'mailGot', 'mailLeft', 'marketMailFull', 'marketCrowded', 'chatWait', 'marketNeedLv', 'marketGuest', 'marketFull', 'marketPriceBad', 'marketCant', 'marketPosted', 'marketBought', 'marketGone', 'marketOwn', 'marketCanceled', 'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildCreated', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildInvited', 'guildJoined', 'guildLeft', 'guildYouLeft', 'guildKicked', 'guildGave', 'guildLevelUp', 'guildNone', 'channelMoved', 'channelDungeon', 'channelFight', 'channelWait', 'channelFull', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
+    'kill', 'offered', 'bought', 'questStep', 'raidReward', 'tierUp', 'rested', 'classChanged', 'gearDrop', 'gearFull', 'gearSold', 'enhanceOk', 'enhanceFail', 'enhanceDown', 'enhanceSaved', 'enhanceMax', 'reforged', 'reforgeMax', 'marketBound', 'mailNew', 'mailGot', 'mailLeft', 'marketMailFull', 'marketCrowded', 'chatWait', 'marketNeedLv', 'marketGuest', 'marketFull', 'marketPriceBad', 'marketCant', 'marketPosted', 'marketBought', 'marketGone', 'marketOwn', 'marketCanceled', 'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildCreated', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildInvited', 'guildJoined', 'guildLeft', 'guildYouLeft', 'guildKicked', 'guildGave', 'guildLevelUp', 'guildNone', 'channelMoved', 'channelDungeon', 'channelFight', 'channelWait', 'channelFull', 'statNone', 'statReset', 'skillUp', 'skillMax', 'skillNeedLv', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'dungeonLeft',
     'noTarget', 'tooFar', 'offerFar', 'noSparks', 'towerFull', 'noResident', 'shopFar', 'notStocked', 'alreadyBest',
     'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'nameTaken', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
   ];
   const SOUND: Record<string, string> = {
     levelUp: 'fanfare', questDone: 'fanfare', dungeonClear: 'fanfare', raidWon: 'fanfare', residentBack: 'fanfare', bossDown: 'fanfare', enhanceOk: 'fanfare',
     gearDrop: 'pickup', mailNew: 'pickup', loot: 'pickup', bought: 'pickup', crafted: 'pickup', mailGot: 'pickup',
-    died: 'bad', dungeonFail: 'bad', raidStart: 'bad', raidLost: 'bad', enhanceFail: 'bad',
+    died: 'bad', dungeonFail: 'bad', raidStart: 'bad', raidLost: 'bad', enhanceFail: 'bad', enhanceDown: 'bad', enhanceSaved: 'bad',
   };
   const same = (got: [string, string][], want: Record<string, string>): boolean => got.length === Object.keys(want).length && new Set(got.map(([k]) => k)).size === got.length && got.every(([k, v]) => want[k] === v);
   const gameKeys = [...(/interface MsgMap \{([\s\S]*?)\n  \}/.exec(read('games/deungbul/shared/deungbul.ts'))?.[1] ?? '').matchAll(/^\s{4}(\w+):/gm)].map((m) => m[1]);
   const isGame = (k: string): boolean => gameKeys.includes(k);
-  check(engine.banner.length === 8 && engine.feed.length > 70 && engine.sound.length === 13 && game.banner.length === 9 && game.feed.length === 9 && game.sound.length === 5, `알림 분류표와 소리 대응표를 읽어 낸다 (틀: 가운데 ${engine.banner.length}, 흘러가는 ${engine.feed.length}, 소리 ${engine.sound.length} / 게임: ${game.banner.length}, ${game.feed.length}, ${game.sound.length})`);
+  check(engine.banner.length === 8 && engine.feed.length > 70 && engine.sound.length === 15 && game.banner.length === 9 && game.feed.length === 9 && game.sound.length === 5, `알림 분류표와 소리 대응표를 읽어 낸다 (틀: 가운데 ${engine.banner.length}, 흘러가는 ${engine.feed.length}, 소리 ${engine.sound.length} / 게임: ${game.banner.length}, ${game.feed.length}, ${game.sound.length})`);
   check(same([...engine.banner, ...game.banner], BANNER), '가운데 알림으로 뜨는 안내문과 그 색조가 가르기 전과 같다 (틀의 표 + 게임이 등록한 것)');
   check([...engine.feed, ...game.feed].sort().join() === [...FEED].sort().join() && new Set([...engine.feed, ...game.feed]).size === FEED.length, `흘러가는 알림으로 뜨는 안내문 ${FEED.length}개가 가르기 전과 같다`);
   check(same([...engine.sound, ...game.sound], SOUND), '안내문마다 나는 소리가 가르기 전과 같다');

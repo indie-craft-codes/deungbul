@@ -73,7 +73,8 @@ export type ClientMsg =
   | { t: 'equip'; uid: number }
   | { t: 'unequip'; slot: string }
   | { t: 'sell'; uid: number }
-  | { t: 'enhance'; uid: number }
+  | { t: 'enhance'; uid: number; charm?: boolean } // charm: 내려갈 수 있는 강화에 보호 부적을 쓴다
+  | { t: 'reforge'; uid: number; i: number } // 장비의 i번째 옵션을 다시 뽑는다
   /** 우편의 보상을 받는다. id가 0이면 모두 */
   | { t: 'mailClaim'; id: number }
   /** 던전에 들어간다 (문 가까이에서) / 던전에서 나온다 */

@@ -168,7 +168,7 @@ export const GUEST_NAME = 'Camper';
 | `DAILIES` | 임무 id → `{ kind, n, r }`. 틀이 세는 종류는 `kill`, `enhance` | `{}` 가능 |
 | `DUNGEONS` | 던전 id → `DungeonDef`(문의 자리, 들어서는 자리, 무리, 우두머리, 하루 횟수, 제한 시간, 보상). 던전 하나는 지역 하나다: 아래 '던전 만들기' | `{}` 가능 (던전 없음) |
 
-기본값으로 받는 이름: `SKILL_SLOTS`, `HP_PER_LEVEL`, `ATTACK_CD`, `COMBAT`, `SLOW_FACTOR`, `REJOIN_KEEP_S`, `GUEST_NAME`, `MONSTER_ATTACK_RANGE`, `MONSTER_ATTACK_CD`, `LEASH`, `RESPAWN_S`, `MONSTER_AI`, `BOSS`, `SHOP_REACH`, `POTION_MAX`, `POTION_CD`, `MAT_MAX`, `SMITHY_REACH`, `STATS`, `GEAR_SLOTS`, `RARITIES`, `ENHANCE`, `SALVAGE`, `BAG_UP`, `BUILD_STATS`, `BUILD`, `LEVEL`, `POWER`, `MAIL_MAX`, `IDLE`, `ATTEND`, `RANK`, `PORTAL_REACH`, `PARTY`, `CHANNEL`, `GUILD`, `MARKET`, `CURRENCIES`, `ECON_*` 열 개. 모양은 `engine/shared/defaults.ts`에서 본다(값마다 주석이 있다).
+기본값으로 받는 이름: `SKILL_SLOTS`, `HP_PER_LEVEL`, `ATTACK_CD`, `COMBAT`, `SLOW_FACTOR`, `REJOIN_KEEP_S`, `GUEST_NAME`, `MONSTER_ATTACK_RANGE`, `MONSTER_ATTACK_CD`, `LEASH`, `RESPAWN_S`, `MONSTER_AI`, `BOSS`, `SHOP_REACH`, `POTION_MAX`, `POTION_CD`, `MAT_MAX`, `SMITHY_REACH`, `STATS`, `GEAR_SLOTS`, `RARITIES`, `ENHANCE`, `REFORGE`, `SALVAGE`, `BAG_UP`, `BUILD_STATS`, `BUILD`, `LEVEL`, `POWER`, `MAIL_MAX`, `IDLE`, `ATTEND`, `RANK`, `PORTAL_REACH`, `PARTY`, `CHANNEL`, `GUILD`, `MARKET`, `CURRENCIES`, `ECON_*` 열 개. 모양은 `engine/shared/defaults.ts`에서 본다(값마다 주석이 있다).
 
 끄는 법(빈 표로 내보내면 그 기능이 꺼진다):
 
@@ -182,6 +182,7 @@ export const GUEST_NAME = 'Camper';
 | 출석 | `export const ATTEND: readonly Reward[] = []`(7일치 보상의 목록이 비면 세지 않는다. `Reward`는 `@engine/shared/defs/growth`의 타입) | 일일 임무도 출석도 없으면 메뉴의 일일 탭이 숨는다 |
 | 두 번째 재화 | 몬스터에 `sparks`를 적지 않고 이름표에 `currency2`를 적지 않는다 | 틀의 문장에서 그 몫이 빠진다 |
 | 분해·가방 넓히기 | `SALVAGE`의 `item`을 비운다(기본값이 이미 꺼져 있다) | |
+| 강화의 위험·재련·귀속 (켜는 쪽) | 기본값은 모두 꺼져 있다. 켜려면 `ENHANCE`에 `dropFrom`(이 단계부터 실패하면 한 단계 내려감), `charm`(보호 부적: `kind: 'token'`인 아이템의 id. 거래소에 못 올림), `dust`(단계·등급마다 드는 `SALVAGE.item`의 수), `bindPlus`(이 단계 이상은 거래소에 못 올림)를 적고, `REFORGE = { max, gold(rar, n), dust(rar) }`를 내보낸다 | 장비 창에 경고와 부적 쓰기 단추, 재련 단추가 생긴다. 예: `games/deungbul/shared/content/economy.ts` |
 | 거래소·길드 탭 | 화면에서 `setMenuTabs([...])`로 고른다(5절). 서버의 기능은 그대로 돈다 | |
 
 - `STATS`, `GEAR_SLOTS`, `RARITIES`, `BUILD_STATS`의 id는 게임이 짓는다. 이름은 이름표(`ContentNames`)의 `gearSlots`, `rarities`, `buildStats`에 적는다.

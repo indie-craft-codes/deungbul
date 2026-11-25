@@ -2,7 +2,7 @@
 // 틀의 탭은 일곱(MENU_TABS의 id: gear, build, mail, daily, market, guild, rank)이다. 게임은 보일 탭과 차례를 고르고(setMenuTabs), 자기 탭을 더한다(addMenuTab).
 // 일일 임무와 출석이 모두 없는 게임에서는 일일 탭이 저절로 숨는다.
 // 창의 높이와 탭 줄, 닫기 단추의 자리는 고정이고(style.css의 #menu) 내용만 창 안에서 스크롤한다.
-import { ATTEND, BAG_UP, BUILD, FORGES, RECIPES, SHOPS, SHOP_STOCK, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
+import { ATTEND, BAG_UP, BUILD, FORGES, RECIPES, SHOPS, SHOP_STOCK, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, REFORGE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
 import { onMsg, onSlow } from '../bus';
@@ -136,6 +136,12 @@ function goodsText(r: Reward): string {
  */
 const act = {
   enhUid: 0, enhWait: false, enhOk: false, enhPlus: 0, sellUid: 0, enhTimer: 0, sellTimer: 0,
+  /** 강화 결과의 종류 (실패만 했는가, 내려갔는가, 부적이 막았는가) */
+  enhRes: '' as '' | 'fail' | 'down' | 'kept',
+  /** 보호 부적을 쓸 것인가 (내려갈 수 있는 강화에만 쓴다). 기본은 쓴다 */
+  useCharm: true,
+  /** 재련 줄을 펼친 장비, 한 번 누른 옵션의 차례 (-1이면 없음) */
+  refUid: 0, refArm: -1, refTimer: 0,
   /** 펼쳐 둔 가방 장비 (강화·팔기·분해 단추와 비교가 그 줄 아래에 보인다) */
   openUid: 0,
   /** 분해를 한 번 누른 장비, 넓히기를 한 번 눌렀는가 (한 번 더 눌러야 된다), 일괄 분해로 고른 등급 (-1이면 고르지 않음) */
@@ -145,8 +151,8 @@ const act = {
 };
 
 /** 장비 탭 안에 보여 줄 서버의 답: 된 것과 거절된 것 (자동 분해는 사냥 중에 자주 오므로 흘러가는 알림에만 둔다) */
-const GEAR_OK: ReadonlySet<MsgKey> = new Set<MsgKey>(['salvaged', 'bagUpDone']);
-const GEAR_FAIL: ReadonlySet<MsgKey> = new Set<MsgKey>(['salvageCant', 'salvageFull', 'gearLocked', 'bagUpMax']);
+const GEAR_OK: ReadonlySet<MsgKey> = new Set<MsgKey>(['salvaged', 'bagUpDone', 'reforged']);
+const GEAR_FAIL: ReadonlySet<MsgKey> = new Set<MsgKey>(['salvageCant', 'salvageFull', 'gearLocked', 'bagUpMax', 'reforgeMax']);
 /** 지금 낀 장비들 (칸의 순서대로): 장비 비교의 기준 */
 const wornNow = (): Gear[] => { const m = S.meta, out: Gear[] = []; for (const slot of GEAR_SLOTS) { const it = m.gear.find((x) => x.uid === m.worn[slot]); if (it) out.push(it); } return out; };
 /** 비교의 결론을 나타내는 표시: 색만으로 가르지 않게 모양도 다르다 (▲ 더 좋음, ▼ 더 나쁨, ◆ 엇갈림, = 비슷) */
@@ -155,11 +161,60 @@ function span(cls: string, text: string): HTMLSpanElement { const s = document.c
 
 /** 강화 단추: 서버의 답(성공/실패)을 그 장비의 줄에 보여 준다 */
 function enhanceButton(g: Gear): HTMLButtonElement {
-  const me = S.me, cost = ENHANCE.gold(g.plus, g.rar), maxed = g.plus >= enhanceMax(g);
-  return button(maxed ? t('enhanceMaxed') : L().fmt.enhanceCost(cost, Math.round(ENHANCE.rate(g.plus) * 100)), () => {
+  const me = S.me, loc = L(), cost = ENHANCE.gold(g.plus, g.rar), dust = ENHANCE.dust(g.plus, g.rar), maxed = g.plus >= enhanceMax(g), pct = Math.round(ENHANCE.rate(g.plus) * 100);
+  // 실패하면 내려가는 단계(ENHANCE.dropFrom 이상)는 ⚠를 붙인다. 부적을 쓰기로 했고 들고 있으면 붙이지 않는다
+  const risky = !maxed && g.plus >= ENHANCE.dropFrom && !(act.useCharm && charms() > 0);
+  const label = maxed ? t('enhanceMaxed') : (risky ? '⚠ ' : '') + (dust > 0 ? loc.fmt.enhanceDust(cost, dust, pct) : loc.fmt.enhanceCost(cost, pct));
+  return button(label, () => {
     act.enhUid = g.uid; act.enhWait = true;
-    send({ t: 'enhance', uid: g.uid });
-  }, maxed || !me || me.gold < cost);
+    send({ t: 'enhance', uid: g.uid, charm: act.useCharm });
+  }, maxed || !me || me.gold < cost || (dust > 0 && (me.items[SALVAGE.item as ItemId] ?? 0) < dust));
+}
+/** 들고 있는 보호 부적의 수 (부적이 없는 게임은 0) */
+const charms = (): number => (isItemId(ENHANCE.charm) ? S.me?.items[ENHANCE.charm] ?? 0 : 0);
+/** 강화가 내려갈 수 있는 게임이면: 경고 한 줄과 부적 쓰기 단추 (장비 탭의 머리) */
+function enhanceRiskEl(): HTMLElement | null {
+  if (ENHANCE.dropFrom > ENHANCE.max) return null;
+  const box = el('note grisk');
+  box.append(L().fmt.enhanceRisk(ENHANCE.dropFrom, charms()));
+  if (isItemId(ENHANCE.charm)) {
+    const b = button(t(act.useCharm ? 'charmOn' : 'charmOff'), () => { act.useCharm = !act.useCharm; renderMenu(); });
+    b.classList.add('gcharm');
+    b.classList.toggle('on', act.useCharm);
+    b.setAttribute('aria-pressed', String(act.useCharm));
+    box.append(' ', b);
+  }
+  return box;
+}
+/** 재련 단추: 누르면 그 장비 아래에 재련 줄이 펼쳐진다 (옵션이 있는 장비만) */
+function reforgeButton(g: Gear): HTMLButtonElement | null {
+  if (REFORGE.max <= 0 || !g.opts.length) return null;
+  const open = act.refUid === g.uid;
+  const b = button(t(open ? 'reforgeClose' : 'reforgeBtn'), () => { act.refUid = open ? 0 : g.uid; act.refArm = -1; renderMenu(); });
+  b.setAttribute('aria-expanded', String(open));
+  return b;
+}
+/** 재련 줄: 이번 값과 남은 횟수, 옵션마다의 단추 (두 번 눌러야 된다) */
+function reforgeEl(g: Gear): HTMLDivElement {
+  const loc = L(), me = S.me, box = el('mrow gear gref'), n = g.rf ?? 0;
+  if (n >= REFORGE.max) { box.append(el('note', loc.fmt.reforgeDone(n, REFORGE.max))); return box; }
+  const gold = REFORGE.gold(g.rar, n), dust = REFORGE.dust(g.rar), poor = !me || me.gold < gold || (me.items[SALVAGE.item as ItemId] ?? 0) < dust;
+  box.append(el('note', loc.fmt.reforgeNote(n, REFORGE.max, gold, dust)));
+  const acts = el('acts');
+  g.opts.forEach(([k, v], i) => {
+    const text = loc.gear.stats[k](Math.round(optValue(g, v) * 10) / 10), armed = act.refArm === i;
+    const b = button(armed ? loc.fmt.reforgeConfirm(text) : '↻ ' + text, () => {
+      clearTimeout(act.refTimer);
+      if (armed) { act.refArm = -1; send({ t: 'reforge', uid: g.uid, i }); renderMenu(); return; }
+      act.refArm = i;
+      act.refTimer = window.setTimeout(() => { act.refArm = -1; renderMenu(); }, 4000);
+      renderMenu();
+    }, poor);
+    b.classList.toggle('armed', armed);
+    acts.append(b);
+  });
+  box.append(acts);
+  return box;
 }
 /** 한 번 더 눌러야 되는 단추 (팔기, 분해): 처음 누르면 확인으로 바뀌고, 몇 초 안에 다시 누르지 않으면 원래대로 돌아간다 (거래소의 사기 단추와 같은 방식) */
 function armButton(text: string, confirm: string, armed: boolean, arm: (on: boolean) => void, timer: 'sellTimer' | 'salvTimer' | 'upTimer', go: () => void, disabled = false): HTMLButtonElement {
@@ -220,6 +275,8 @@ function compareEl(g: Gear): HTMLDivElement {
 function gearMore(g: Gear, cls: string): HTMLDivElement {
   const loc = L(), price = sellPrice(g), box = el('mrow gear gmore ' + cls), acts = el('acts');
   acts.append(enhanceButton(g));
+  const rf = reforgeButton(g);
+  if (rf) acts.append(rf);
   acts.append(armButton(loc.fmt.sellFor(price), loc.fmt.sellConfirm(price), act.sellUid === g.uid, (on) => { act.sellUid = on ? g.uid : 0; }, 'sellTimer', () => send({ t: 'sell', uid: g.uid }), !!g.lock));
   if (S.salvage.on && !isSupply(g)) {
     const dust = dustFor(g);
@@ -236,7 +293,7 @@ function gearRow(g: Gear, worn: boolean): HTMLElement[] {
   const buttons: HTMLElement[] = [];
   if (!worn) buttons.push(button(t('equip'), () => send({ t: 'equip', uid: g.uid })));
   else if (g.slot !== 'weapon') buttons.push(button(t('unequip'), () => send({ t: 'unequip', slot: g.slot }))); // 무기는 빼지 못한다: 다른 무기를 끼면 바뀐다
-  if (worn) buttons.push(enhanceButton(g));
+  if (worn) { buttons.push(enhanceButton(g)); const rf = reforgeButton(g); if (rf) buttons.push(rf); }
   buttons.push(lockButton(g));
   const title = gearTitle(label.slot, label.name);
   if (!worn) {
@@ -262,11 +319,14 @@ function gearRow(g: Gear, worn: boolean): HTMLElement[] {
   if (!worn) { const what = r.querySelector<HTMLElement>('.what'); what?.classList.add('tap'); what?.addEventListener('click', toggle); }
   if (act.enhUid === g.uid && !act.enhWait) {
     r.classList.add(act.enhOk ? 'ok' : 'fail');
-    const res = el('mresult', act.enhOk ? loc.fmt.enhanceDone(act.enhPlus) : t('enhanceFailed'));
+    const res = el('mresult', act.enhOk ? loc.fmt.enhanceDone(act.enhPlus) : act.enhRes === 'down' ? loc.fmt.enhanceDownTo(act.enhPlus) : act.enhRes === 'kept' ? loc.fmt.enhanceKept(act.enhPlus) : t('enhanceFailed'));
     res.setAttribute('role', 'status');
     r.querySelector('.what')?.append(res);
   }
-  return open ? [r, gearMore(g, label.cls)] : [r];
+  const out: HTMLElement[] = [r];
+  if (open) out.push(gearMore(g, label.cls));
+  if (act.refUid === g.uid && REFORGE.max > 0 && g.opts.length) out.push(reforgeEl(g));
+  return out;
 }
 
 /** 가방의 머리줄: 든 수와 칸 수, 넓히기 단추 (다음 값을 보여 주고 한 번 더 눌러 확인한다) */
@@ -319,6 +379,8 @@ function drawGear(): void {
   }
   const rest = m.gear.filter((x) => m.worn[x.slot] !== x.uid).sort((a, b) => b.rar - a.rar || b.lv - a.lv);
   ui.list.append(bagHead());
+  const risk = enhanceRiskEl();
+  if (risk) ui.list.append(risk);
   if (act.res) { const ok = GEAR_OK.has(act.res.k), r = el('note gres ' + (ok ? 'ok' : 'fail'), forInput(L().msg[act.res.k](act.res.a))); r.setAttribute('role', 'status'); ui.list.append(r); }
   // 가방이 가득 찼으면 눈에 띄게 알린다: 새로 떨어지는 장비가 조용히 버려진다
   if (m.gear.length >= S.bag.max) { const warn = el('note gwarn', S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull')); warn.setAttribute('role', 'status'); ui.list.append(warn); }
@@ -667,12 +729,13 @@ export function initMenu(): void {
   });
   onMsg('sys', (m) => {
     if (!act.enhWait) return;
-    if (m.k === 'enhanceOk' || m.k === 'enhanceFail') {
+    if (m.k === 'enhanceOk' || m.k === 'enhanceFail' || m.k === 'enhanceDown' || m.k === 'enhanceSaved') {
       act.enhWait = false; act.enhOk = m.k === 'enhanceOk'; act.enhPlus = Number(m.a?.[0] ?? 0);
+      act.enhRes = m.k === 'enhanceDown' ? 'down' : m.k === 'enhanceSaved' ? 'kept' : m.k === 'enhanceFail' ? 'fail' : '';
       clearTimeout(act.enhTimer);
       act.enhTimer = window.setTimeout(() => { act.enhUid = 0; renderMenu(); }, 3000);
       renderMenu();
-    } else if (m.k === 'enhanceMax' || m.k === 'noGold') { act.enhWait = false; act.enhUid = 0; }
+    } else if (m.k === 'enhanceMax' || m.k === 'noGold' || m.k === 'noMats') { act.enhWait = false; act.enhUid = 0; }
   });
   // 순위 탭을 열어 둔 동안 내 레벨이나 전투력이 바뀌면 순위를 다시 받는다. 5초에 한 번을 넘지 않는다
   onSlow((now) => {

@@ -37,6 +37,11 @@ export type MsgKey =
   | 'gearSold' // [받은 골드]
   | 'enhanceOk' // [강화 단계]
   | 'enhanceFail' // []
+  | 'enhanceDown' // [내려간 강화 단계] 실패해서 한 단계 내려갔다 (ENHANCE.dropFrom 이상)
+  | 'enhanceSaved' // [강화 단계] 실패했지만 보호 부적으로 내려가지 않았다
+  | 'reforged' // [새 옵션 id, 재련한 횟수, 한도] 옵션 하나를 다시 뽑았다
+  | 'reforgeMax' // [한도] 이 장비는 더 재련할 수 없다
+  | 'marketBound' // [귀속 단계] 강화한 장비라 거래소에 올릴 수 없다
   | 'enhanceMax' // []
   | 'mailNew' // [] 우편이 왔다
   | 'mailGot' // [골드, 경험치, 불씨, 장비 수, 아이템 수] 우편의 보상을 받았다

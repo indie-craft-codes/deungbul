@@ -38,7 +38,7 @@ export const WHY = {
   buy: 'cmd:buy', craft: 'cmd:craft', sell: 'cmd:sell', enhance: 'cmd:enhance', statReset: 'cmd:statReset', skillUp: 'cmd:skillUp',
   guildCreate: 'cmd:guild:create', guildGive: 'cmd:guild:give', marketBuy: 'cmd:market:buy',
   use: 'cmd:use', marketPost: 'cmd:market:post', marketCancel: 'cmd:market:cancel',
-  salvage: 'cmd:salvage', bagUp: 'cmd:bagUp',
+  salvage: 'cmd:salvage', bagUp: 'cmd:bagUp', reforge: 'cmd:reforge',
   /** 주운 장비를 그 자리에서 분해한 것 (명령이 아니라 처치 사건 안에서 일어난다) */
   autoSalvage: 'autoSalvage',
 } as const;

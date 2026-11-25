@@ -108,7 +108,7 @@ export const sfx = {
 const BY_MSG: Partial<Record<MsgKey, () => void>> = {
   levelUp: sfx.fanfare, dungeonClear: sfx.fanfare, bossDown: sfx.fanfare, enhanceOk: sfx.fanfare,
   gearDrop: sfx.pickup, mailNew: sfx.pickup, loot: sfx.pickup, bought: sfx.pickup, crafted: sfx.pickup, mailGot: sfx.pickup,
-  died: sfx.bad, dungeonFail: sfx.bad, enhanceFail: sfx.bad,
+  died: sfx.bad, dungeonFail: sfx.bad, enhanceFail: sfx.bad, enhanceDown: sfx.bad, enhanceSaved: sfx.bad,
 };
 /** 안내문에 소리를 붙인다 (게임이 자기 안내문의 소리를 등록한다) */
 export function addMsgSounds(more: Partial<Record<MsgKey, () => void>>): void { Object.assign(BY_MSG, more); }

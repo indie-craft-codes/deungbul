@@ -1,7 +1,7 @@
 // 거래소: 플레이어끼리 장비와 제작 재료를 골드로 사고판다. 올린 물건은 판매자에게서 빠져 거래소가 맡는다(복사가 생기지 않게).
 // 판 값과 돌아오는 물건은 우편으로 간다: 판매자가 접속해 있지 않아도 받아야 하므로 사람을 저장 키(Ent.pid)로 가리킨다.
 // 손님(저장 키가 없는 접속)은 쓸 수 없다. 거래소는 월드와 함께 저장되고, 규칙의 수치는 games/deungbul/shared/content/social.ts의 MARKET에 있다.
-import { MAIL_MAX, MARKET, hasGoods, isItemId, itemCap, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward, itemDef } from '../../../shared/defs';
+import { ENHANCE, MAIL_MAX, MARKET, hasGoods, isItemId, itemCap, isMarketFilter, isMarketSort, isSupply, marketFee, type Gear, type ItemId, type MailKind, type MarketFilter, type MarketItem, type MarketSort, type Reward, itemDef } from '../../../shared/defs';
 import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
@@ -129,6 +129,7 @@ export class Market {
       // 낀 장비와 보급형(상점에서 산 것)은 올릴 수 없다
       if (!it || p.worn[it.slot] === it.uid || isSupply(it)) { g.notify(p, 'marketCant'); return; }
       if (it.lock) { g.notify(p, 'gearLocked'); return; }
+      if (ENHANCE.bindPlus > 0 && it.plus >= ENHANCE.bindPlus) { g.notify(p, 'marketBound', ENHANCE.bindPlus); return; } // 강화한 장비는 귀속
       g.bag.removeGear(p, it.uid, WHY.marketPost);
       it.uid = 0; // 장비 번호는 캐릭터 안에서만 뜻이 있다. 받는 사람의 가방에 들어갈 때 새로 붙는다
       l.gear = it;
