@@ -79,6 +79,9 @@ try {
   qEnt.sparks = 9;
   await sleep(200);
   q.send({ t: 'offer', to: 'tower', n: 3 });
+  await new Promise((r) => setTimeout(r, 150));
+  check(isAt(0, 4, 0)(), '주민에게 보태는 단계에서 등탑에 바친 불씨는 세지 않는다');
+  q.send({ t: 'offer', to: 'resident', n: 3 });
   check(await until(isAt(0, 4, 3)), '불씨를 일부만 바치면 그만큼만 진행된다');
   q.send({ t: 'offer', to: 'resident', n: 2 });
   check(await until(isAt(1, 0)) && q.sys.some((x) => x === 'questDone:bram'), '마지막 단계를 마치면 장이 끝나고 다음 장이 시작된다');
@@ -128,7 +131,8 @@ try {
   await server.close();
   server = await startDeungbul(0, { store, game: { raid: raidCfg } });
   const a3 = await connect(server.port, undefined, TOKEN_A);
-  check(await until(() => a3.glow === glowEnd && a3.residents[0] === resEnd && resEnd === 4), '서버를 다시 켜도 등탑 밝기와 주민 진행이 남는다');
+  // 주민 진행: 퀘스트 시험의 '보태기' 5 + 위에서 보탠 2
+  check(await until(() => a3.glow === glowEnd && a3.residents[0] === resEnd && resEnd === 7), '서버를 다시 켜도 등탑 밝기와 주민 진행이 남는다');
   check(a3.name === '새이름' && (await until(() => a3.sparks === sparksEnd && a3.contrib === contribEnd && a3.lv >= 3)), '서버를 다시 켜도 캐릭터가 남는다');
   a3.ws.close();
 } finally {

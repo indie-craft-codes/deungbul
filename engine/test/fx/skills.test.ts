@@ -99,3 +99,31 @@ function bench() {
   run(1.1);
   check(m.dead && m.dots.length === 0 && m.stunUntil === 0 && m.slowUntil === 0, '죽으면 지속 피해·기절·느려짐이 지워진다');
 }
+
+// ---------- 자동 사냥: 물약이 없으면 쉬어 간다 (화면의 자동 사냥과 자리 비움 사냥이 같은 규칙) ----------
+{
+  const { POTIONS, shouldRest, AUTO } = await import('../../shared/auto');
+  const pot = POTIONS[0];
+  check(!shouldRest(0.2, pot ? { [pot]: 1 } : {}, false) === !!pot, '마실 물약이 있으면 쉬지 않는다 (물약이 있는 내용이면)');
+  check(shouldRest(AUTO.restAt - 0.01, {}, false) && !shouldRest(AUTO.restAt + 0.01, {}, false), `물약이 없고 체력이 ${AUTO.restAt * 100}% 아래면 쉬기 시작한다`);
+  check(shouldRest(AUTO.restUntil - 0.01, {}, true) && !shouldRest(AUTO.restUntil, {}, true), `쉬는 중이면 ${AUTO.restUntil * 100}%까지 찰 때 그친다`);
+
+  // 자리 비움 사냥: 쉬는 동안 멀리 있는 몬스터는 잡지 않고, 붙은 것과는 싸운다
+  const { g, hero, dummy } = bench();
+  const p = hero('쉬는이', 40, 40);
+  for (const id of POTIONS) p.items[id] = 0;
+  p.lv = 5; p.auto = true; g.away.start(p);
+  const far = dummy(46, 40);
+  p.hp = p.maxHp * 0.2;
+  for (let i = 0; i < 20; i++) g.tick(0.05);
+  check(p.targetId !== far.id, '쉬는 동안 떨어진 몬스터(6m)에게 새로 덤비지 않는다');
+  const near = dummy(41.5, 40);
+  for (let i = 0; i < 20; i++) g.tick(0.05);
+  check(p.targetId === near.id, `쉬는 중에도 내게 붙은 몬스터(${AUTO.restGuard}m 안)와는 싸운다`);
+  g.combat.damage(p, near, 1e9, false); // 쓰러뜨린다 (곧 같은 자리에 다시 나지 않게 멀리 옮긴다)
+  near.x = near.hx = 400; near.z = near.hz = 400;
+  p.hp = p.maxHp;
+  for (let i = 0; i < 20; i++) g.tick(0.05);
+  check(p.targetId === far.id, '체력이 차면 다시 떨어진 몬스터에게 간다');
+  g.away.stop(p);
+}

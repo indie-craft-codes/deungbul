@@ -9,8 +9,12 @@ import { CLEARINGS, TOWER, TOWERS } from './map';
 export type QuestGoal =
   /** 몬스터를 n마리 잡는다 */
   | { kind: 'kill'; monster: MonsterId; n: number }
-  /** 불씨를 n개 바친다 (등탑이든 주민이든). tower를 적으면 그 번호의 등탑에 바친 것만 센다 */
-  | { kind: 'offer'; n: number; tower?: number }
+  /**
+   * 불씨를 n개 바친다 (등탑이든 주민이든). tower를 적으면 그 번호의 등탑에 바친 것만 센다.
+   * to: 'resident'면 주민에게 보탠 것(등탑 창의 '보태기')만 센다: 대장장이·약초꾼을 되돌리는 길로 이끈다.
+   * 서버에서 주민이 모두 돌아와 보탤 곳이 없으면 등탑에 바친 것도 센다(늦게 온 사람이 막히지 않게)
+   */
+  | { kind: 'offer'; n: number; tower?: number; to?: 'resident' }
   /** 그 자리에 간다 */
   | { kind: 'visit'; r: number }
   /** 상점에서 그 물건을 n개 산다 */
@@ -39,7 +43,7 @@ export const QUESTS = [
       { goal: { kind: 'offer', n: 1 }, at: TOWER, reward: { exp: 20, sparks: 2 } },
       { goal: { kind: 'visit', r: 7 }, at: FORGE, reward: { exp: 30, sparks: 0 } },
       { goal: { kind: 'kill', monster: 'shade_bram', n: 1 }, at: FORGE, reward: { exp: 60, sparks: 2 } },
-      { goal: { kind: 'offer', n: 5 }, at: TOWER, reward: { exp: 100, sparks: 5 } },
+      { goal: { kind: 'offer', n: 5, to: 'resident' }, at: TOWER, reward: { exp: 100, sparks: 5 } },
     ],
   },
   {
@@ -49,7 +53,7 @@ export const QUESTS = [
       { goal: { kind: 'kill', monster: 'wisp', n: 4 }, at: CLEARINGS[1], reward: { exp: 50, sparks: 2 } },
       { goal: { kind: 'visit', r: 7 }, at: HERB_FIELD, reward: { exp: 40, sparks: 0 } },
       { goal: { kind: 'kill', monster: 'shade_mira', n: 1 }, at: HERB_FIELD, reward: { exp: 90, sparks: 3 } },
-      { goal: { kind: 'offer', n: 8 }, at: TOWER, reward: { exp: 150, sparks: 5 } },
+      { goal: { kind: 'offer', n: 8, to: 'resident' }, at: TOWER, reward: { exp: 150, sparks: 5 } },
     ],
   },
   {

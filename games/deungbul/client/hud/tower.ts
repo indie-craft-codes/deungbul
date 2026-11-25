@@ -1,6 +1,6 @@
 // 등탑 창(내가 있는 구역의 등탑: 밝기, 바치기, 주민의 귀환, 오늘의 등탑지기)과 내 정보 창에 덧붙는 이 게임의 줄(불씨, 휴식 보너스, 등탑 밝기, 기여).
 // 틀의 내 정보 창(hud/me.ts)은 이 줄들을 모른다: 여기서 bus에 스스로 등록해 그린다 (느린 주기, 공유 상태를 받았을 때, 언어가 바뀔 때).
-import { CONTRIB_TIERS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, RESIDENTS, TOWER_REACH } from '../../shared/defs';
+import { QUESTS, CONTRIB_TIERS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, RESIDENTS, TOWER_REACH } from '../../shared/defs';
 import { TOWERS } from '../../shared/world';
 import { $, addPlace, onMsg, onSlow, openClasses, S, send } from '@engine/client';
 import { L, onLangChange } from '@engine/client/i18n';
@@ -76,6 +76,9 @@ export function renderWorld(): void {
 export function towerSlow(): void {
   const loc = L(), me = S.me;
   if (!me) return;
+  // 퀘스트가 주민에게 보태라고 하면 '보태기' 단추들을 빛낸다 (대장장이·약초꾼을 되돌리는 길로 이끈다)
+  const step = QUESTS[G.quest.c]?.steps[G.quest.s];
+  $('resBtns').classList.toggle('hint', step?.goal.kind === 'offer' && 'to' in step.goal && step.goal.to === 'resident');
   ui.sparks.textContent = loc.fmt.sparks(me.sparks);
   ui.contrib.textContent = loc.fmt.contrib(G.contrib);
   $('rested').textContent = G.rested > 0 ? loc.fmt.rested(G.rested) : '';

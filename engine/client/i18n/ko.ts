@@ -184,6 +184,8 @@ export const koBase = (n: ContentNames) => {
       none: '없음',
       autoOn: `자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. 켠 채로 창을 닫으면 캐릭터가 남아 계속 사냥합니다(최대 ${AWAY.maxS / 3600}시간).`,
       autoOff: '자동 사냥을 껐습니다.',
+      autoRest: '물약이 없어 체력이 찰 때까지 쉬어 갑니다.',
+      autoResume: '체력이 찼습니다. 사냥을 이어 갑니다.',
       noTargetNearby: '주변에 대상이 없습니다.',
       // H 키(actions.ts의 goToTown)로 rules.home까지 걸어갈 때. 게임이 그곳의 이름으로 덮어쓴다
       goingTown: '처음 자리로 걸어갑니다.',

@@ -11,6 +11,12 @@ export const AUTO = {
   buffAt: 8,
   /** 이 비율 아래면 물약을 마신다 */
   potionAt: 0.35,
+  /** 마실 물약이 없는데 체력이 이 비율 아래면 쉬어 간다: 잡던 몬스터만 마저 잡고 새 대상은 잡지 않는다 */
+  restAt: 0.35,
+  /** 쉬다가 체력이 이 비율까지 차면 다시 사냥한다 (싸우지 않으면 체력이 저절로 찬다) */
+  restUntil: 0.9,
+  /** 쉬는 중에도 이 거리 안에 붙은 몬스터와는 싸운다 (맞고만 있지 않게) */
+  restGuard: 3,
 };
 
 /** 자리 비움 사냥(켠 채 접속이 끊기면 서버가 이어서 사냥)의 조건. 서버와 화면의 안내가 같은 수를 쓴다 */
@@ -59,6 +65,15 @@ export const POTIONS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filte
 export function pickPotion(ratio: number, items: Record<string, number>): ItemId | null {
   if (ratio >= AUTO.potionAt) return null;
   return POTIONS.find((id) => (items[id] ?? 0) > 0) ?? null;
+}
+
+/**
+ * 쉬어 갈까: 마실 물약이 없고 체력이 restAt 아래면 쉬기 시작하고, restUntil까지 차면 그친다 (resting: 지금 쉬는 중인가).
+ * 물약이 떨어진 채 자동 사냥이 계속 싸우다 쓰러지던 것(플레이어 재검토). 물약이 없는 게임도 같은 규칙으로 쉰다
+ */
+export function shouldRest(ratio: number, items: Record<string, number>, resting: boolean): boolean {
+  if (resting) return ratio < AUTO.restUntil;
+  return ratio < AUTO.restAt && !POTIONS.some((id) => (items[id] ?? 0) > 0);
 }
 
 /** 손으로 마실 때 살펴보는 순서: 가장 진한 물약의 회복량만큼 다쳤으면 진한 것부터, 아니면 약한 것부터 (조금 다쳤을 때 진한 물약을 버리지 않게) */

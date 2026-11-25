@@ -112,7 +112,7 @@ export const enGame: GameLocale = {
         'Offer a spark at the lamp tower in the village',
         'Find the old forge beyond the western woods',
         "Defeat Bram's Shade, lost to the mist",
-        'Offer sparks at the lamp tower to grow the village light',
+        'Use "Give" in the lamp tower panel to bring Bram the blacksmith back to the village',
       ],
     },
     mira: {
@@ -122,7 +122,7 @@ export const enGame: GameLocale = {
         'Hunt wisps in the southern woods',
         'Find the old herb field east of the pond',
         "Defeat Mira's Shade, lost to the mist",
-        'Offer sparks at the lamp tower to grow the village light',
+        'Use "Give" in the lamp tower panel to bring Mira the herbalist back to the village',
       ],
     },
     ashwood: {

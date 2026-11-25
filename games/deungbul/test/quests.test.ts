@@ -26,9 +26,22 @@ import { check } from '@engine/testing';
   check(at(1, 3), '옛 약초밭에 가면 다음 단계로 넘어간다');
   check(slay('shade_mira', 1) === 1 && at(1, 4), '미라의 그림자를 쓰러뜨리면 다음 단계로 넘어간다');
   p.x = TOWER.x + 2; p.z = TOWER.z + 2;
+  g.command(p, { t: 'offer', to: 'tower', n: 3 });
+  check(at(1, 4), '주민에게 보태는 단계에서 등탑에 바친 불씨는 세지 않는다 (보탤 주민이 남아 있으면)');
   g.notices = [];
-  g.command(p, { t: 'offer', to: 'tower', n: 8 });
-  check(at(2, 0) && g.notices.some((n) => n.k === 'questDone' && n.a[0] === 'mira'), '2장을 마치면 3장이 시작된다');
+  p.sparks = 20;
+  g.command(p, { t: 'offer', to: 'resident', n: 8 });
+  check(at(2, 0) && g.notices.some((n) => n.k === 'questDone' && n.a[0] === 'mira'), '주민에게 보태면 2장을 마치고 3장이 시작된다');
+  {
+    // 서버의 주민이 모두 돌아왔으면 등탑에 바친 것도 센다 (늦게 온 사람이 막히지 않게)
+    const g2 = newGame();
+    const late = g2.players.spawn('늦게옴', false, { ...old, sparks: 300 } as typeof old);
+    late.x = TOWER.x + 2; late.z = TOWER.z + 2;
+    for (let i = 0; i < 20 && late.sparks > 0; i++) g2.command(late, { t: 'offer', to: 'resident', n: 99 });
+    late.qc = 0; late.qs = 4; late.qn = 0; late.sparks = 10;
+    g2.command(late, { t: 'offer', to: 'tower', n: 5 });
+    check(late.qc === 1 && late.qs === 0, '주민이 모두 돌아온 서버에서는 등탑에 바쳐도 그 단계를 마친다');
+  }
 
   // 3장: 잿빛 숲으로 이끈다
   const ashTower = TOWERS[1];

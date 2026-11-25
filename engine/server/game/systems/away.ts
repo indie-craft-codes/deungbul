@@ -1,7 +1,7 @@
 // 자리 비움 자동 사냥: 자동 사냥을 켠 채 접속이 끊기면(창을 닫음, 폰 화면이 꺼짐) 캐릭터가 월드에 남아 계속 사냥한다.
 // 다시 접속하면 그 캐릭터를 그대로 이어받는다. 판단은 클라이언트의 자동 사냥(engine/client/auto.ts)과 같고,
 // 사람이 누른 것과 같은 명령(g.command)만 내므로 전투 규칙은 그대로다.
-import { AUTO, AWAY, pickPotion, pickSkill } from '../../../shared/auto';
+import { AUTO, AWAY, pickPotion, pickSkill, shouldRest } from '../../../shared/auto';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -19,11 +19,13 @@ interface Stay { x: number; z: number; at: number; sparks: number; gold: number;
 
 export class Away {
   private stays = new Map<number, Stay>();
+  /** 물약이 없어 쉬는 중인 플레이어 (AUTO.restAt ~ restUntil) */
+  private resting = new Set<number>();
 
   constructor(private g: Game) {
     // 클라이언트가 자동 사냥을 켜고 끌 때마다 알려 준다
     g.commands.set('auto', (p, m) => { p.auto = m.on === true; });
-    g.on('playerLeft', (id) => { this.stays.delete(id); });
+    g.on('playerLeft', (id) => { this.stays.delete(id); this.resting.delete(id); });
     g.saves.push({
       name: 'away',
       save: (p) => ({ day: p.away.day, used: Math.round(p.away.used) }),
@@ -64,7 +66,7 @@ export class Away {
   stop(p: Ent): void {
     const s = this.stays.get(p.id);
     if (!s) return;
-    this.stays.delete(p.id);
+    this.stays.delete(p.id); this.resting.delete(p.id);
     const minutes = Math.max(1, Math.round((this.g.now() - s.at) / 60000));
     this.g.notify(p, 'awayBack', minutes, Math.max(0, p.sparks - s.sparks), Math.max(0, p.gold - s.gold), p.lv - s.lv);
     // 버려지거나 자동으로 분해된 장비가 있었으면 이어서 알린다 (조용히 사라지면 몰라서 손해 본다)
@@ -86,12 +88,15 @@ export class Away {
 
     const potion = p.itemCd <= 0 ? pickPotion(ratio, p.items) : null;
     if (potion) g.command(p, { t: 'use', id: potion });
+    // 물약이 없으면 체력이 찰 때까지 쉬어 간다 (화면의 자동 사냥과 같은 규칙)
+    if (shouldRest(ratio, p.items, this.resting.has(p.id))) this.resting.add(p.id); else this.resting.delete(p.id);
+    const resting = this.resting.has(p.id);
 
     // 대상이 없거나 죽었으면 가장 가까운 몬스터로 바꾼다
     let target = g.ents.get(p.targetId);
     if (!target || target.dead) {
       target = undefined;
-      let nd = AUTO.seek;
+      let nd = resting ? AUTO.restGuard : AUTO.seek; // 쉬는 중이면 내게 붙은 것만 상대한다
       for (const m of g.ents.values()) {
         if (m.kind !== 'm' || m.dead || m.homing || m.layer !== p.layer || dist(s, m) > ROAM) continue;
         const d = dist(p, m);

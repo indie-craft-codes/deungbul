@@ -1,5 +1,5 @@
 // 메인 퀘스트: 플레이어마다 장과 단계를 따라간다. 다른 시스템의 사건을 듣고 진행을 올린다.
-import { ECON_WHY, QUESTS, goalCount, type QuestStep } from '../../shared/defs';
+import { ECON_WHY, QUESTS, RESIDENTS, goalCount, type QuestStep } from '../../shared/defs';
 import type { MeState } from '../../shared/deungbul';
 import { dist, type Ent, type Game, readInt } from '@engine/server';
 
@@ -45,9 +45,12 @@ export class Quests {
         if (step?.goal.kind === 'raid') this.advance(p, step, 1);
       }
     });
-    g.on('offered', (p, _to, n, tower) => {
+    g.on('offered', (p, to, n, tower) => {
       const step = this.step(p);
-      if (step?.goal.kind === 'offer' && (step.goal.tower === undefined || step.goal.tower === tower)) this.advance(p, step, n);
+      if (step?.goal.kind !== 'offer' || (step.goal.tower !== undefined && step.goal.tower !== tower)) return;
+      // 주민에게 보태는 단계: 보탤 주민이 남아 있으면 '보태기'만 센다 (등탑에 바친 것은 세지 않는다)
+      if (step.goal.to === 'resident' && to !== 'resident' && RESIDENTS.some((r) => !g.tower.returned(r.id))) return;
+      this.advance(p, step, n);
     });
   }
 
