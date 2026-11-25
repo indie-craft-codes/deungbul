@@ -1,0 +1,6 @@
+{
+  "port": 3017,
+  "db": "data/cave/game.db",
+  "dist": "dist-cave",
+  "bots": 0
+}

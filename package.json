@@ -13,7 +13,7 @@
     "build:sample": "node scripts/game.mjs build sample",
     "start:sample": "node scripts/game.mjs start sample",
     "pilot": "node scripts/pilot.mjs",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p games/deungbul/tsconfig.json && tsc --noEmit -p tsconfig.engine.json && tsc --noEmit -p engine/test/fx/tsconfig.json && tsc --noEmit -p games/sample/tsconfig.engine.json && tsc --noEmit -p games/sample/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p games/deungbul/tsconfig.json && tsc --noEmit -p tsconfig.engine.json && tsc --noEmit -p engine/test/fx/tsconfig.json && tsc --noEmit -p games/sample/tsconfig.engine.json && tsc --noEmit -p games/sample/tsconfig.json && tsc --noEmit -p games/cave/tsconfig.engine.json && tsc --noEmit -p games/cave/tsconfig.json",
     "typecheck:engine": "tsc --noEmit -p tsconfig.engine.json",
     "typecheck:engine:sample": "tsc --noEmit -p games/sample/tsconfig.engine.json",
     "typecheck:sample": "tsc --noEmit -p games/sample/tsconfig.json",
@@ -22,7 +22,12 @@
     "test:game": "node scripts/game.mjs test",
     "test:sample": "node scripts/game.mjs test sample",
     "load": "tsx games/deungbul/test/load.ts",
-    "econ": "tsx games/deungbul/scripts/econ.ts"
+    "econ": "tsx games/deungbul/scripts/econ.ts",
+    "build:cave": "node scripts/game.mjs build cave",
+    "start:cave": "node scripts/game.mjs start cave",
+    "test:cave": "node scripts/game.mjs test cave",
+    "typecheck:cave": "tsc --noEmit -p games/cave/tsconfig.json",
+    "typecheck:engine:cave": "tsc --noEmit -p games/cave/tsconfig.engine.json"
   },
   "dependencies": {
     "three": "^0.187.0",
