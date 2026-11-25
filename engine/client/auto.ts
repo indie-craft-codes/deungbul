@@ -1,7 +1,7 @@
 // 자동 사냥: 가까운 몬스터를 골라 공격하고, 기술과 물약을 알아서 쓴다.
 // 직접 이동하거나 멈추면 꺼진다. 서버에는 사람이 누른 것과 같은 명령만 보낸다.
 import { AUTO, AWAY, pickPotion, pickSkill, restSpot, shouldRest } from '../shared/auto';
-import { dungeonDef, isDungeonId } from '../shared/defs';
+import { dungeonDef, isDungeonId, isMonsterId, monsterDef } from '../shared/defs';
 import { attack, autoWalk, monstersNear, usePotion, useSkill } from './actions';
 import { $ } from './app';
 import { onMsg } from './bus';
@@ -15,11 +15,23 @@ const btn = $('autoBtn');
 let shown = false;
 /** 물약이 없어 쉬는 중 (체력이 찰 때까지 새 대상을 잡지 않는다) */
 let resting = false;
+/**
+ * 자동 사냥을 켠 자리(닻): 여기서 AWAY.roam보다 먼 몬스터는 쫓지 않고, 둘레에 몬스터가 없으면 이리로 돌아온다 (자리 비움 사냥과 같은 규칙).
+ * 없으면 몬스터를 따라 다른 구역까지 떠내려갔다 (검토 7: 고원에서 30분 뒤 첫 구역의 슬라임을 잡고 있었다)
+ */
+let anchor: { x: number; z: number } | null = null;
+const setAnchor = (): void => { anchor = S.me ? { x: S.me.x, z: S.me.z } : null; };
+/** 자동 사냥이 스스로 고를 수 있는 몬스터인가: 필드 보스는 사람이 직접 고른 때만 (자동 사냥이 보스를 혼자 되풀이해 잡던 것, 검토 7) */
+const pickable = (r: { x: number; z: number; type: string }): boolean => {
+  if (isMonsterId(r.type) && monsterDef(r.type).boss) return false;
+  return !anchor || isDungeonId(S.dungeon.id) || Math.hypot(r.x - anchor.x, r.z - anchor.z) <= AWAY.roam;
+};
 
 export function toggleAuto(): void {
   if (!S.me) return;
   S.auto = !S.auto;
   resting = false;
+  setAnchor();
   // 창을 닫아도 이어지는 것은 직업을 고르고 조금 키운 캐릭터만이다 (서버의 조건과 같은 수: AWAY.minLv)
   const stays = S.me.cls !== '' && S.me.lv >= AWAY.minLv;
   feed(S.auto ? (stays ? t('autoOn') : L().fmt.autoOnEarly(AWAY.minLv)) : t('autoOff'));
@@ -51,8 +63,10 @@ function tick(): void {
   let target = S.others.get(me.attackId);
   if (resting && target && Math.hypot(target.x - me.x, target.z - me.z) > AUTO.restGuard) target = undefined;
   if (!target || target.kind !== 'm' || target.dying || target.gone) {
-    target = monstersNear(resting ? AUTO.restGuard : AUTO.seek)[0];
+    target = monstersNear(resting ? AUTO.restGuard : AUTO.seek).filter((r) => resting || pickable(r))[0];
     if (target) attack(target.id);
+    // 둘레에 몬스터가 없고 켠 자리에서 멀어졌으면 그리로 돌아간다 (쓰러져 등탑에서 일어났을 때 등)
+    else if (!resting && anchor && !isDungeonId(S.dungeon.id) && !me.moving && Math.hypot(anchor.x - me.x, anchor.z - me.z) > 4) autoWalk(anchor.x, anchor.z);
     // 던전 안에서 보이는 적이 없으면 우두머리가 있는 곳으로 걸어간다 (졸개를 다 잡고 멈춰 서 있지 않게)
     else if (!resting && isDungeonId(S.dungeon.id) && !S.dungeon.cleared && !me.moving) {
       const boss = dungeonDef(S.dungeon.id).boss;
@@ -68,6 +82,7 @@ function tick(): void {
 /** 접속했을 때: 자리를 비운 동안 서버가 사냥하던 캐릭터를 이어받았으면 자동 사냥을 켠 채로 시작한다. */
 export function syncAuto(kept: boolean): void {
   if (kept || rules.autoAtStart()) S.auto = true; // 게임이 '켜고 시작'을 고르면 처음부터 사냥한다 (직업을 고르면 바로 돈다)
+  setAnchor();
   shown = S.auto; btn.classList.toggle('on', shown); btn.setAttribute('aria-pressed', String(shown));
   send({ t: 'auto', on: shown });
 }

@@ -23,15 +23,18 @@ export const MONSTERS = {
   // 잿빛 지하묘 깊은 곳(Lv 18부터의 어려운 던전). 인스턴스 안에만 나온다. Lv 20 안팎의 파티를 기준으로 잡은 잠정값이다
   // 처음 값(사냥개 340, 기사 620, 주인 9000)은 Lv 18 혼자 희귀 +5로 2~3분, 죽음 0번이라 쉬웠다(검토 6): 체력 약 2.7배, 피해 약 1.5배
   grave_hound: { hp: 900, dmg: [23, 31], speed: 5.4, exp: 120, sparks: [4, 6], gold: [18, 28], aggro: 9, h: 2.0 },
-  crypt_knight: { hp: 1600, dmg: [30, 42], speed: 3.8, exp: 200, sparks: [6, 8], gold: [30, 45], aggro: 8, h: 3.0 },
-  crypt_lord_deep: { hp: 24000, dmg: [42, 56], speed: 3.8, exp: 2000, sparks: [25, 30], gold: [300, 400], aggro: 12, h: 4.6 },
+  crypt_knight: { hp: 1600, dmg: [35, 48], speed: 3.8, exp: 200, sparks: [6, 8], gold: [30, 45], aggro: 8, h: 3.0 },
+  // 검토 7: Lv 20 둘이 3~4분, 셋이 2분이라 우두머리 24000 → 32000, 기사 피해 30~42 → 35~48
+  crypt_lord_deep: { hp: 32000, dmg: [42, 56], speed: 3.8, exp: 2000, sparks: [25, 30], gold: [300, 400], aggro: 12, h: 4.6 },
   // 잿불 고원 (Lv 15~25). 모두 잠정값이다: 다음 플레이어 검토에서 잰다.
   // 경험치로 셈하면 장비 레벨이 6에서 멈추므로(GEAR.levelOf), 고원의 몬스터는 gearLv로 레벨 7 장비를, 거상은 레벨 8 장비를 떨어뜨린다
-  cinder_fox: { hp: 420, dmg: [16, 22], speed: 5.2, exp: 70, sparks: [4, 5], gold: [14, 22], aggro: 8, h: 2.0, gearLv: 7 }, // 빠르고 약하다
-  highland_raider: { hp: 560, dmg: [18, 25], speed: 4.2, exp: 90, sparks: [5, 6], gold: [20, 30], aggro: 8, h: 2.7, gearLv: 7 },
-  ember_warden: { hp: 900, dmg: [22, 30], speed: 3.2, exp: 125, sparks: [6, 8], gold: [28, 42], aggro: 7, h: 3.6, gearLv: 7 }, // 느리고 단단하다
+  // 검토 7: 체력당 경험치가 잿빛 숲보다 낮아 Lv 15~20이 갈 이유가 없었다 → 경험치 ×1.6, 피해 ×1.3
+  cinder_fox: { hp: 420, dmg: [21, 29], speed: 5.2, exp: 110, sparks: [4, 5], gold: [14, 22], aggro: 8, h: 2.0, gearLv: 7 }, // 빠르고 약하다
+  highland_raider: { hp: 560, dmg: [23, 33], speed: 4.2, exp: 145, sparks: [5, 6], gold: [20, 30], aggro: 8, h: 2.7, gearLv: 7 },
+  ember_warden: { hp: 900, dmg: [29, 39], speed: 3.2, exp: 200, sparks: [6, 8], gold: [28, 42], aggro: 7, h: 3.6, gearLv: 7 }, // 느리고 단단하다
   // 잿불 고원의 필드 보스. 잿빛 트롤처럼 hp는 한 명이 맞설 때의 체력이다. Lv 20 안팎의 여럿이 잡는 것을 기준으로 잡은 값이다
-  ember_colossus: { hp: 6000, dmg: [26, 36], speed: 3.4, exp: 1200, sparks: [25, 30], gold: [250, 350], aggro: 10, h: 6.0, boss: true, respawn: 600, gearLv: 8 },
+  // 검토 7: Lv 20 혼자 40초, 죽음 0번이라 체력 6000 → 12000, 피해 26~36 → 32~44 (자동 사냥은 이제 필드 보스를 스스로 고르지 않는다)
+  ember_colossus: { hp: 12000, dmg: [32, 44], speed: 3.4, exp: 1200, sparks: [25, 30], gold: [250, 350], aggro: 10, h: 6.0, boss: true, respawn: 600, gearLv: 8 },
 } as const satisfies Record<string, MonsterDef>;
 
 /** 필드 보스의 규칙 (수치는 잠정값) */

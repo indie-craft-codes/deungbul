@@ -15,7 +15,11 @@ export const shown = (): number => shownZone;
 /** 등탑에 불씨를 바친다. 가진 것보다 많이 고르면 가진 만큼만 바친다. */
 export function offer(to: 'tower' | 'resident', n: number): void {
   const me = S.me;
-  if (me && me.sparks > 0) send({ t: 'offer', to, n: Math.min(n, me.sparks) });
+  if (!me || me.sparks <= 0) return;
+  // '전부'는 퀘스트가 이 등탑에 바치라는 남은 수만큼만 낸다: 넘친 몫은 진행에 세지 않는데 불씨만 나갔다 (검토 7)
+  const step = QUESTS[G.quest.c]?.steps[G.quest.s];
+  if (to === 'tower' && n === Infinity && step?.goal.kind === 'offer' && !('to' in step.goal && step.goal.to === 'resident') && (!('tower' in step.goal) || step.goal.tower === myZone())) n = Math.max(1, step.goal.n - G.quest.n);
+  send({ t: 'offer', to, n: Math.min(n, me.sparks) });
 }
 
 export function initTower(): void {

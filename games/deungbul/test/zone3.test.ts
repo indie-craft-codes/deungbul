@@ -130,22 +130,22 @@ const mons = (g: Game, type: string) => [...g.ents.values()].filter((e) => e.kin
   for (let i = 0; i < 12; i++) g.tick(0.05);
   check(step(1), '고원 등탑에 닿으면 다음 단계로 넘어간다');
   check(slay('cinder_fox', 6) === 6 && step(2), '잿불 여우 여섯 마리를 잡으면 불씨를 바치는 단계다');
-  p.sparks = 500;
+  p.sparks = 2000;
   at(p, TOWERS[1].x + 2, TOWERS[1].z + 2);
   g.command(p, { t: 'offer', to: 'tower', n: 10 });
   check(step(2), '잿빛 숲 등탑에 바친 불씨는 세지 않는다');
   at(p, ember.x + 2, ember.z + 2);
   g.command(p, { t: 'offer', to: 'tower', n: 30 });
   check(step(2, 30) && g.tower.glows[2] === 30, '고원 등탑에 바친 만큼 진행이 오르고 등탑이 밝아진다');
-  g.command(p, { t: 'offer', to: 'tower', n: 20 });
-  check(step(3) && g.tower.glows[2] === 50, '50개를 채우면 다음 단계로 넘어간다');
+  g.command(p, { t: 'offer', to: 'tower', n: 120 });
+  check(step(3) && g.tower.glows[2] === 100, '150개를 채우면 다음 단계로 넘어간다 (등탑은 가득 찬다)');
   check(slay('highland_raider', 6) === 6 && step(4), '고원 약탈자 여섯을 물리치면 더 바치는 단계다');
   // 가득 찬 등탑: 평소에는 한 번에 FULL_TOWER_OFFER만 받지만, 퀘스트가 바치라는 만큼은 한 번에 받는다
   g.tower.changeGlow(100, 2);
   at(p, ember.x + 2, ember.z + 2);
   const s0 = p.sparks;
   g.command(p, { t: 'offer', to: 'tower', n: 999 });
-  check(step(5) && s0 - p.sparks === 100 && g.tower.glows[2] === 100, `가득 찬 고원 등탑에도 퀘스트가 바치라는 100개를 한 번에 바친다 (${s0 - p.sparks})`);
+  check(step(5) && s0 - p.sparks === 400 && g.tower.glows[2] === 100, `가득 찬 고원 등탑에도 퀘스트가 바치라는 400개를 한 번에 바친다 (${s0 - p.sparks})`);
   const s1 = p.sparks;
   g.command(p, { t: 'offer', to: 'tower', n: 999 });
   check(s1 - p.sparks === FULL_TOWER_OFFER, '퀘스트가 바치라고 하지 않으면 가득 찬 등탑은 예전처럼 조금만 받는다');

@@ -116,6 +116,7 @@ export class Away {
       let nd = resting ? AUTO.restGuard : AUTO.seek; // 쉬는 중이면 내게 붙은 것만 상대한다
       for (const m of g.ents.values()) {
         if (m.kind !== 'm' || m.dead || m.homing || m.layer !== p.layer || dist(s, m) > ROAM) continue;
+        if (m.def?.boss && m.targetId !== p.id) continue; // 필드 보스는 스스로 고르지 않는다 (자리 비움으로 보스를 되풀이해 잡던 것, 검토 7)
         const d = dist(p, m);
         if (d < nd) { nd = d; target = m; }
       }

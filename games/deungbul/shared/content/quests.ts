@@ -79,17 +79,18 @@ export const QUESTS = [
     ],
   },
   {
-    // 잿불 고원 (Lv 15~25): 꺼진 세 번째 등탑을 밝힌다. 쌓여 가던 불씨를 쓸 곳이다 (두 단계에 걸쳐 150개를 바친다).
+    // 잿불 고원 (Lv 15~25): 꺼진 세 번째 등탑을 밝힌다. 쌓여 가던 불씨를 쓸 곳이다 (두 단계에 걸쳐 550개를 바친다).
+    // 검토 7: 경험치 22,500은 Lv 15가 6~13분에 Lv 19가 되었고 불씨 150은 사냥 2~4분어치였다 → 경험치 약 9천, 불씨 150 + 400 (고원 사냥 10~15분어치)
     // 보상은 잠정값이다: 단계마다 그 레벨의 필요 경험치(needFor 15 약 4천, 20 약 1.8만)의 몇 분의 일쯤
     id: 'ember',
     steps: [
-      { goal: { kind: 'visit', r: 9 }, at: TOWERS[2].spawn, reward: { exp: 1000, sparks: 0 } },
-      { goal: { kind: 'kill', monster: 'cinder_fox', n: 6 }, at: CLEARINGS[12], reward: { exp: 1500, sparks: 10 } },
-      { goal: { kind: 'offer', n: 50, tower: 2 }, at: front(TOWERS[2]), reward: { exp: 2000, sparks: 0 } },
-      { goal: { kind: 'kill', monster: 'highland_raider', n: 6 }, at: CLEARINGS[13], reward: { exp: 2500, sparks: 10 } },
-      { goal: { kind: 'offer', n: 100, tower: 2 }, at: front(TOWERS[2]), reward: { exp: 3500, sparks: 0 } },
-      { goal: { kind: 'kill', monster: 'ember_warden', n: 4 }, at: CLEARINGS[15], reward: { exp: 4000, sparks: 15 } },
-      { goal: { kind: 'kill', monster: 'ember_colossus', n: 1 }, at: CLEARINGS[17], reward: { exp: 8000, sparks: 30 } },
+      { goal: { kind: 'visit', r: 9 }, at: TOWERS[2].spawn, reward: { exp: 400, sparks: 0 } },
+      { goal: { kind: 'kill', monster: 'cinder_fox', n: 6 }, at: CLEARINGS[12], reward: { exp: 800, sparks: 10 } },
+      { goal: { kind: 'offer', n: 150, tower: 2 }, at: front(TOWERS[2]), reward: { exp: 1000, sparks: 0 } },
+      { goal: { kind: 'kill', monster: 'highland_raider', n: 6 }, at: CLEARINGS[13], reward: { exp: 1200, sparks: 10 } },
+      { goal: { kind: 'offer', n: 400, tower: 2 }, at: front(TOWERS[2]), reward: { exp: 1400, sparks: 0 } },
+      { goal: { kind: 'kill', monster: 'ember_warden', n: 4 }, at: CLEARINGS[15], reward: { exp: 1700, sparks: 15 } },
+      { goal: { kind: 'kill', monster: 'ember_colossus', n: 1 }, at: CLEARINGS[17], reward: { exp: 2500, sparks: 30 } },
     ],
   },
 ] as const satisfies readonly QuestChapter[];
