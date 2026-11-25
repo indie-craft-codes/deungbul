@@ -17,6 +17,7 @@
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
+- 운영 안전 묶음(2026-11-26, 가지 `feat/ops`, 아래 '운영 안전 묶음'): 저장 형식 버전과 이전, 한 묶음 저장, 자동 백업, 감시자와 Node 재시작 스크립트, `/healthz`·`/metrics`, 압축 기본 켬, 시각이 붙는 로그. `npm test` 검사 1380개.
 - 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다. 프로토콜은 2다(호환 코드는 2026-11-24에 지웠다). 그 뒤 더한 사건(`buff`, `stun`)은 옛 화면이 모르는 채 무시한다.
 
 ## 0. 이어 갈 것
@@ -46,8 +47,24 @@
 | 상인 | `setMerchant((shop, i) => ({ model, name, look }) \| null)` | 등불지기: 곁의 등탑을 바라본다, 이름 '길 상인' | 화면 |
 | 재화 | 저장을 읽을 때도 `CURRENCIES.max`(`g.wallet.limit`), 첫 재화의 이름은 이름표 `currency1` | 이름표 | `fx/wallet` |
 | 그림 | `addIconSheet(src, 열, 행, keys, hand?)`, `itemIcon(열쇠, 직업)`, `gearIcon`: 시트의 한 칸을 가방·상점·대장간·물약 단추·메뉴의 장비와 우편·내 정보 창의 재화에 그린다. 열쇠는 아이템 id, `slot:칸`, `cur:gold`·`cur:second`, `ui:mail`. hand를 주면 그 손 모양의 직업에게만(무기). 칸 뒤의 바탕은 `--icon-bg`. 없는 것은 글자만 | 등불지기: 투명 webp 넷(소모품·재료, 검·갑옷, 활·지팡이, 장신구·재화·우편), 모두 340KB | `fx/icons`(4개), 화면(PC, 전사·궁수·마법사) |
-| 운영 스크립트를 게임마다 | `games/<게임>/deploy.json`(port, db, dist, bots, pages)을 `scripts/deploy.mjs`가 읽고, `restart.sh`·`publish.sh`(`GAME=`)와 `pilot.mjs`(인자)가 그것으로 돈다. `restart.sh`의 `DRY=1` | 자기 `deploy.json` | 예제로 실제 재시작(깃발로 저장하고 끄기 → 다시 띄우기) |
+| 운영 스크립트를 게임마다 | `games/<게임>/deploy.json`(port, db, dist, bots, pages)을 `scripts/deploy.mjs`가 읽고, `restart.sh`·`publish.sh`(`GAME=`)와 `pilot.mjs`(인자)가 그것으로 돈다. `restart.sh`의 `DRY=1`. (2026-11-26: Node로 된 `restart.mjs`·`serve.mjs`가 더해졌다: 위 '운영 안전 묶음') | 자기 `deploy.json` | 예제로 실제 재시작(깃발로 저장하고 끄기 → 다시 띄우기) |
 | 시험을 게임마다 | `test/all.ts`가 `games/<게임>/test/all.ts`를 저마다의 tsconfig로 돌린다. `node scripts/game.mjs test [게임] [이름…]` | 자기 `test/all.ts`와 `tsconfig.json` | `npm test` |
+
+## 운영 안전 묶음 (2026-11-26)
+
+| 무엇 | 틀 쪽 | 게임이 하는 일 | 지키는 것 |
+|---|---|---|---|
+| 저장 형식의 버전과 이전 | `PlayerSave.v/gv`, 월드의 `v/gv`. `engine/server/game/migrate.ts`의 틀의 목록(`PLAYER_UP`, `WORLD_UP`)과 게임의 목록(`g.migrations`)을 읽을 때 차례로, 쓸 때 지금 버전을 적는다. v0(버전 칸 없음) → v1이 예전의 `Saver.legacy` 읽기를 그대로 한다. 앞날의 버전은 건드리지 않는다 | 모양을 바꿀 때 `g.migrations.player/world`에 한 단계 ([making-a-game.md](making-a-game.md) 7절) | `fx/ops`, `deungbul/saves`: 옛 견본 15개를 읽은 결과가 버전을 들이기 전의 코드와 **글자까지 같다**(기대값은 그 코드가 만든 것). 운영 DB 복사본(2026-11-26 06:44 백업, 캐릭터 59·월드 1)도 전후 같음을 따로 확인 |
+| DB 스키마 번호 | `PRAGMA user_version`과 `SCHEMA` 목록(`store/sqlite.ts`). 1단계는 처음의 표들(IF NOT EXISTS라 번호 없는 옛 DB에 그대로 돈다) | 없음 | `fx/ops`(옛 DB, 실패한 단계는 되돌림) |
+| 한 묶음 저장 | `Store.transaction(fn)`(SQLite는 SAVEPOINT, 메모리는 통째로 떠 두고 되돌림). `saveTogether`·주기 저장·끌 때 저장이 월드·접속 중·자리 비움 캐릭터·지표를 한 묶음으로. 실패하면 모두 되돌리고 `saveDirty`·`unsaved`를 남겨 1초 뒤 다시. 저장 값을 만드는 시스템의 버그는 그 캐릭터(또는 월드)만 빼고 적는다(예전과 같다). 월드에 저장할 것이 있으면 캐릭터 하나를 저장할 때도 월드와 함께 | `p.unsaved`, `g.saveDirty`만 세운다(그대로) | `fx/ops`(도중 실패 → 아무것도 안 적힘 → 다시 시도로 함께 적힘) |
+| 자동 백업 | `store/backup.ts`: 켜질 때와 `BACKUP_EVERY_MIN`(360)마다 `backup/auto-YYYYMMDD-HHMMSS.db`, `BACKUP_KEEP`(20) 넘는 자동 백업만 지움. `startServer`의 `backup` 옵션, `BACKUP=0` | 없음 | `fx/ops`(사람이 만든 이름 꼴 일곱을 두고 지우지 않음) |
+| 치명적 오류 | `run.ts`: `uncaughtException` → 적고 저장하고 코드 1. `unhandledRejection` → 적고 계속. `server.pid` | 없음 | `fx/ops`(따로 된 프로세스 `fx/crash.ts`: 거부 뒤에도 돌고, 예외 뒤 저장하고 코드 1) |
+| 감시자와 재시작 | `scripts/serve.mjs`(다시 띄우기 1→60초, 코드 0이면 멈춤, 로그 이어 쓰기), `scripts/restart.mjs`(깃발 → 강제는 감시자 먼저, cloudflared는 이름을 보고 안 끔, 로그 돌리기, 포트 기다림, `--stop`, `--dry`). `restart.sh`·`stop.sh`는 그대로 남겼다 | 없음 | 포트 3015에서 실제로: 띄우기 → 다시 켜기 → 서버를 강제로 죽이기(1초·2초·4초 뒤 다시 뜸) → 깃발로 끄기(감시자도 멈춤) → 깃발을 무시하는 프로세스를 10초 뒤 강제로 끔 |
+| 상태 확인 | `net/ops.ts`: `GET /healthz`(JSON), `GET /metrics`(텍스트). localhost에서 프록시 머리말 없이 온 요청에만 | 없음 | `fx/ops`, 3015에서 curl |
+| 압축 | `startServer`의 `compress`(기본 켬, `COMPRESS=0`으로 끔), 256바이트 미만은 압축하지 않음 | 없음 | 측정: [infra.md](infra.md) '압축' |
+| 로그 | `engine/server/log.ts`의 `log.info/warn/error`(시각·수준). 서버의 핵심 경로(켜기·끄기·저장·백업·치명적 오류)만 바꿨다. 나머지 `console.*`는 그대로 | `@engine/server`의 `log` | `fx/ops` |
+
+남은 위험(이 묶음의 것): 감시자를 띄우는 중(서버가 아직 포트를 열기 전)에 `restart.mjs`를 부르면 감시자만 끄고 막 뜨던 서버가 남을 수 있다. 자동 백업은 동기로 돌아 DB가 커지면 틱을 멈춘다(지금은 수 ms). 터널을 지나온 `/healthz` 요청이 실제로 막히는지는 머리말을 흉내 내어 시험했을 뿐 실제 터널로는 보지 않았다.
 
 ## 틀 수리의 진행 (점검 보고의 묶음 A~F: 모두 끝)
 
@@ -242,7 +259,7 @@
 
 1. `npm run typecheck`, `npm test`(두 번), `npm run test:engine`, `npm run build`가 모두 통과한 뒤에 커밋한다.
 2. 화면이 바뀌었으면 확인용 서버(`PORT=3013 DB=<임시 폴더>/check.db npm start`)를 띄워 PC·폰, 한국어·영어로 본다. 운영 서버(3001)에는 시험 캐릭터를 만들지 않는다(확인은 손님으로만).
-3. 서버 코드가 바뀌었으면 `data/game.db`를 `data/backup/`에 복사하고 `bash scripts/restart.sh <로그>`(저장하고 끈 뒤 다시 띄운다. 터널은 끊지 않는다). 로그에서 저장 파일의 경로와 '자리 비움 사냥을 이어 갑니다'(그때 사냥 중이던 사람이 있으면)를 본다.
+3. 서버 코드가 바뀌었으면 `data/game.db`를 `data/backup/`에 복사하고(사람이 만든 백업은 `game.db.<시각>`처럼 `auto-`로 시작하지 않는 이름으로: 자동 백업의 정리가 건드리지 않는다) `node scripts/restart.mjs`(저장하고 끈 뒤 감시자 아래에서 다시 띄운다. 터널은 끊지 않는다. 예전 방식은 `bash scripts/restart.sh <로그>`). 로그에서 저장 파일의 경로, `[backup]` 줄, '자리 비움 사냥을 이어 갑니다'(그때 사냥 중이던 사람이 있으면)를 보고, `curl localhost:3001/healthz`가 `"ok":true`인지 본다.
 4. 화면은 `bash scripts/publish.sh`. 공개 주소 둘이 200인지 본다.
 5. 서버를 끄는 깃발 `stop.flag`는 **저장 파일의 옆**에 놓인다. 확인용 서버는 DB마다 폴더를 따로 주거나 `DB=memory`로 띄우고 프로세스를 포트로 찾아 직접 끈다(운영의 3001은 건드리지 않는다).
-6. 되돌리기: `git revert` 뒤 `npm run build`와 `bash scripts/restart.sh`. 저장 형식은 가르는 동안 바뀌지 않았으므로 저장 파일에 손댈 것이 없다(백업으로 되돌릴 수도 있다).
+6. 되돌리기: `git revert` 뒤 `npm run build`와 `node scripts/restart.mjs`(또는 `bash scripts/restart.sh`). 저장 형식 버전(2026-11-26)을 들인 뒤의 저장에는 `v` 칸이 붙지만 모양은 그대로라 옛 서버도 그대로 읽는다(모르는 칸은 무시). 저장 파일로 되돌리려면 서버를 끄고 `data/backup/`의 백업(자동 백업은 `auto-<시각>.db`)을 `data/game.db`로 복사하고 `game.db-wal`·`game.db-shm`을 지운다.

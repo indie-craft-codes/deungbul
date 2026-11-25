@@ -327,6 +327,10 @@ runServer({ port: 3002, db: path.join(root, 'data', 'sample', 'game.db'), dist: 
 | `BOTS` | 돌아다니며 싸우는 봇 수 |
 | `DEV_SPAWN=x,z` | 처음 자리 대신 그 좌표에서 접속 |
 | `METRICS=10` | 10초마다 서버 지표 한 줄 |
+| `BACKUP_EVERY_MIN=360` | 자동 백업 간격(분). 0이면 켜질 때만 (9절 '운영') |
+| `BACKUP_KEEP=20` | 남겨 둘 자동 백업 수 |
+| `BACKUP=0` | 자동 백업을 끈다 |
+| `COMPRESS=0` | WebSocket 압축을 끈다 (기본 켬) |
 
 - **게임마다 포트와 저장 폴더를 따로 준다.** 서버는 저장 파일 옆의 `stop.flag` 파일을 보면 저장하고 꺼진다. 두 서버가 한 폴더를 쓰면 서로를 끈다.
 - 서버는 `dist` 폴더의 화면을 같은 포트로 내보낸다. 화면을 빌드하지 않았으면 접속만 되지 않을 뿐 서버는 돈다.
@@ -692,6 +696,33 @@ export function initBonfire(): void {
 - **프로토콜 번호**(`engine/shared/protocol.ts`의 `PROTOCOL`): 서버와 화면이 따로 올라갈 때, 화면이 옛 빌드면 새로고침을 권한다. 틀의 메시지의 모양이나 뜻을 바꾸면 올린다. 게임이 자기 메시지(`ClientMsgs`, `ServerMsgs`, `WorldState`, 개인 상태)의 모양을 바꿀 때도 같은 문제가 생긴다: 칸을 더하기만 하면 괜찮고, 뜻을 바꾸거나 빼면 화면과 서버를 함께 올리고 번호를 올린다.
 - 진행을 지우려면 서버를 끄고 그 게임의 저장 폴더(`data/sample/`)를 지운다.
 
+### 저장 형식을 바꿀 때 (버전과 이전)
+
+저장에는 버전 칸이 둘 있다(`engine/server/game/migrate.ts`). **`v`는 틀의 것, `gv`는 게임의 것**이다. 서버는 저장을 읽을 때(`players.spawn`, `importWorld`) 낮은 버전부터 이전 함수를 차례로 돌려 지금의 모양으로 올리고(틀의 목록을 끝까지, 그다음 게임의 목록), 쓸 때 지금의 버전을 적는다. 버전 칸이 없는 저장은 v0이다: 틀의 첫 이전(0 → 1)이 예전의 읽는 길(`Saver.legacy`, `worldSaves`의 `legacy`)을 그대로 거친다.
+
+칸을 **더하기만** 할 때는 이전이 필요 없다: `load`가 칸이 없으면 처음 값을 쓰게 한다. 이미 있는 칸의 **모양이나 뜻을 바꿀 때**는 이렇게 한다.
+
+1. 플러그인에서 `g.migrations.player`(캐릭터) 또는 `g.migrations.world`(월드)의 **끝에** 한 단계를 더한다. `to`는 1부터 하나씩이다(틀리면 게임을 만들 때 멈춘다). 지난 단계는 고치지도 지우지도 않는다(옛 저장이 남아 있는 한).
+
+```ts
+// 예: 장작 칸을 수에서 { n, dry } 모양으로 (게임의 플러그인 안)
+g.migrations.player.push({
+  to: 1, note: 'logs: 수 → { n, dry }',
+  up: (save) => {
+    const ext = (save.ext ??= {}) as Record<string, unknown>;
+    if (typeof ext.logs === 'number') ext.logs = { n: ext.logs, dry: 0 };
+  },
+});
+```
+
+2. 이전 함수는 **저장(복사본)만 고친다.** 시스템의 상태를 건드리지 않는다. 받은 것을 고치고 아무것도 돌려주지 않거나, 새 저장을 돌려준다. 깨진 저장에서 예외를 던지면 그 단계만 건너뛰므로, 모양을 확인하고 고친다.
+3. `load`는 **지금의 모양만** 읽으면 된다(옛 모양은 이전이 이미 바꿨다). 그래도 깨진 값은 걸러 낸다(`readInt`).
+4. 시험: 옛 모양의 견본 저장을 읽어 다시 저장한 값이 기대와 같은지, 그리고 다시 쓴 저장의 `gv`가 올라갔는지 본다(등불지기: `games/deungbul/test/saves.test.ts`는 옛 견본을 읽은 결과가 이전을 들이기 전과 글자까지 같은지 본다).
+5. 운영 서버에 올리기 전에 백업이 있는지 본다(켜질 때 자동 백업이 하나 생긴다: 9절 '운영'). 이전은 읽을 때 메모리에서만 돌고, 저장은 그 캐릭터를 다음에 저장할 때 새 모양으로 적힌다. 그래서 되돌린 배포(옛 서버)가 새 모양을 읽게 될 수 있다: **옛 코드가 새 모양을 읽어도 죽지 않게**(모르는 칸은 무시) 바꾼다. 앞날의 버전(이 서버보다 새 서버가 쓴 저장)은 올리지 않고 그대로 읽으며 로그에 한 번 알린다.
+
+- **DB 스키마**(표와 열)는 따로 센다: `PRAGMA user_version`이 적용한 단계의 수이고, `engine/server/store/sqlite.ts`의 `SCHEMA` 목록의 끝에 단계를 더하면 서버가 켜질 때 차례로 적용한다(한 단계와 번호가 한 묶음). 스키마는 틀의 것이라 게임은 보통 건드리지 않는다.
+- 저장소의 쓰기를 한 묶음으로 하려면 `store.transaction(() => { … })`(SQLite는 SAVEPOINT라 겹쳐 열 수 있다). 틀의 저장(`saveTogether`)은 월드·접속 중 캐릭터·자리 비움 캐릭터·재화 흐름 지표를 한 묶음으로 적고, 실패하면 하나도 적히지 않은 채 다시 시도한다.
+
 ## 8. 시험
 
 틀의 시험 도구(`engine/test/harness.ts`): `check(조건, 설명)`, `until(조건)`, `sleep`, `connect(포트, 이름, 토큰, onMsg)`(가짜 클라이언트).
@@ -747,13 +778,27 @@ export function initBonfire(): void {
 
 | 스크립트 | 하는 일 | 게임 고르기 |
 |---|---|---|
-| `bash scripts/restart.sh [로그]` | 저장하고 끈 뒤(`stop.flag`) 다시 띄운다. 떠 있지 않으면 그냥 띄운다(처음 띄우는 게임은 저장 폴더를 만든다). 10초 안에 안 꺼지면 강제로. 로그는 저장 파일 옆 `server.log`, 앞 서버의 로그는 `server.log.prev`(저장하고 꺼졌는지 본다). `DRY=1`이면 할 일만 찍는다 | `GAME=sample bash scripts/restart.sh` |
+| `node scripts/restart.mjs [게임]` | 저장하고 끈 뒤(`stop.flag`) **감시자 아래에서** 다시 띄운다. 운영체제와 무관하다(Node만). 10초 안에 안 꺼지면 감시자 → 서버 차례로 강제로(cloudflared는 이름을 보고 끄지 않는다). 앞 로그는 `server.log.prev`. 포트가 열리면 `/healthz`를 찍는다. `--stop`은 끄기만, `--dry`는 할 일만 | 인자나 `GAME` |
+| `node scripts/serve.mjs [게임]` | 감시자: 서버를 자식으로 띄우고, 비정상으로 끝나면 1·2·4…60초 간격으로 다시 띄운다. 코드 0(깃발로 끈 것)이면 멈춘다. 로그를 이어 쓴다. 보통은 `restart.mjs`가 뒤에서 띄운다 | 인자나 `GAME` |
+| `bash scripts/restart.sh [로그]` | (예전 것, Windows+Git Bash) 저장하고 끈 뒤(`stop.flag`) 다시 띄운다. 감시자 없이 띄운다. 떠 있지 않으면 그냥 띄운다(처음 띄우는 게임은 저장 폴더를 만든다). 10초 안에 안 꺼지면 강제로. 로그는 저장 파일 옆 `server.log`, 앞 서버의 로그는 `server.log.prev`(저장하고 꺼졌는지 본다). `DRY=1`이면 할 일만 찍는다 | `GAME=sample bash scripts/restart.sh` |
 | `bash scripts/stop.sh` | 저장하고 끄기만 한다(강제로 끄지 않는다) | `GAME=sample bash scripts/stop.sh` |
 | `node scripts/pilot.mjs [게임]` | 그 게임을 빌드하고 임시 외부 주소(cloudflared)를 붙여 화면과 `server.json`을 Pages에 올린다 | 인자나 `GAME` |
 | `bash scripts/publish.sh` | 터널을 그대로 두고 화면만 다시 올린다(먼저 그 게임을 빌드) | `GAME=sample bash scripts/publish.sh` |
 | `node scripts/deploy.mjs <칸> [게임]` | 설정의 값 하나를 찍는다(`port`, `db`, `stop`, `dist`, `pagesDir` …) | 인자나 `GAME` |
 
 - 서버와 화면은 같은 순간에 바뀌지 않는다. 열려 있던 탭은 새로고침 전까지 옛 화면이다(7절의 프로토콜 번호).
+- 세 스크립트(`restart.mjs`, `serve.mjs`, `restart.sh`)는 환경 변수 `PORT`, `DB`, `BOTS`(그리고 `restart.mjs`·`serve.mjs`는 `LOG`)가 있으면 `deploy.json`보다 그것을 쓴다. `restart.mjs`·`serve.mjs`는 깃발·`serve.pid`·`server.pid`·로그를 **실제 저장 파일(`DB`)의 옆**에 둔다.
+
+### 운영
+
+틀이 서버를 지키는 것. 게임이 따로 할 일은 없다.
+
+- **감시자**: `node scripts/restart.mjs [게임]`으로 띄우면 감시자(`serve.mjs`)가 서버를 지켜본다. 서버가 0이 아닌 코드로 끝나면(처리되지 않은 예외, 강제 종료) 다시 띄우고, 깃발로 저장하고 끈 것(코드 0)이면 함께 멈춘다. 감시자와 서버는 저장 파일 옆에 `serve.pid`, `server.pid`를 적는다.
+- **치명적 오류**: 메시지 처리·틱·전송의 예외는 그 자리에서 잡고 계속 돈다. 그 밖의 처리되지 않은 예외(`uncaughtException`)는 로그에 남기고, 저장하고, 코드 1로 끝난다(감시자가 다시 띄운다). 처리되지 않은 거부(`unhandledRejection`)는 로그에 남기고 계속 돈다(틀의 서버는 동기 코드라 거부는 게임이 따로 띄운 비동기 일 하나가 끝났다는 뜻이다).
+- **자동 백업**: 켜질 때와 `BACKUP_EVERY_MIN`(기본 360)분마다 저장 파일 옆 `backup/auto-YYYYMMDD-HHMMSS.db`(VACUUM INTO: 그 자체로 열리는 DB). `BACKUP_KEEP`(기본 20)개를 넘으면 가장 오래된 **자동 백업만** 지운다. 이름이 `auto-`로 시작하는 그 꼴이 아닌 파일(사람이 만든 `game.db.<시각>` 같은 것)은 건드리지 않는다. 되돌릴 때는 서버를 끄고 백업 파일을 `game.db`로 복사한다(옆의 `game.db-wal`, `game.db-shm`은 지운다).
+- **상태 확인**: `GET /healthz`(JSON: `ok`, 틱이 도는지 `ticking`, 접속 수 `clients`, 마지막 저장 `lastSaveAt`, 저장 실패 수, 마지막 백업)와 `GET /metrics`(텍스트: 틱 시간, 보낸 바이트(압축 전과 뒤), 접속 수, 저장 실패 수, CPU, 메모리). **같은 PC에서 직접 온 요청에만** 답한다: 터널(cloudflared)은 같은 PC에서 들어오므로 프록시 머리말(`cf-connecting-ip`, `cf-ray`, `x-forwarded-for` 등)이 있으면 바깥 요청으로 보고 404를 준다. 틱이 2초 넘게 돌지 않았으면 `/healthz`는 503이다.
+- **로그**: 서버의 핵심 줄(켜기, 끄기, 저장, 백업, 오류)에는 시각과 수준이 붙는다(`2026-11-26 07:34:01.777 INFO  [server] …`). 게임도 `log.info/warn/error`(`@engine/server`)를 쓸 수 있다.
+- **압축**: WebSocket 압축(perMessageDeflate)이 기본으로 켜져 있다. 회선이 약 1/4로 줄고 CPU를 조금 더 쓴다(수치는 `docs/infra.md` '압축'). 끄려면 `COMPRESS=0`.
 
 ## 10. 자주 걸리는 곳
 
@@ -830,6 +875,9 @@ export function initBonfire(): void {
 | `g.killBonus` | 처치 경험치에 덧붙는 값 | |
 | `g.daily.add`, `g.mail.send`, `g.players.grant` | 틀의 시스템을 부른다 | `server/sample.ts` (`g.daily.add`) |
 | `Channels.extraFoes` / `busy`, `Saver.legacy` | 틀의 시스템이 묻는 선택 접점, 옛 저장 읽기 | |
+| `g.migrations.player` / `world` (`Migration`) | 게임의 저장 형식 이전 (7절 '저장 형식을 바꿀 때') | |
+| `Store.transaction` | 저장소의 쓰기를 한 묶음으로 | |
+| `log.info` / `warn` / `error` | 시각과 수준이 붙는 로그 | |
 | `game/entity.ts`의 `dist`, `readInt`, `clamp`, `ri` | 작은 도우미 | `server/bonfire.ts` |
 
 ### 화면 (`engine/client/`)
