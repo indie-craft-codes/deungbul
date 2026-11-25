@@ -74,6 +74,13 @@
   "1 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다.",
   "2 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다."
  ],
+ "fmt.buffLeft": [
+  "3cdf128c3dd26000",
+  "undefined undefined초",
+  "0 undefined초",
+  "1 undefined초",
+  "2 undefined초"
+ ],
  "fmt.channelOpt": [
   "6cd4d502c289b51c",
   "undefined채널 · undefined명",
@@ -227,6 +234,34 @@
   "강화 성공 · +0",
   "강화 성공 · +1",
   "강화 성공 · +2"
+ ],
+ "fmt.fxBuff": [
+  "9f64d9425b0201a8",
+  "undefined초 동안 undefined +undefined%",
+  "undefined초 동안 0 +undefined%",
+  "undefined초 동안 1 +undefined%",
+  "undefined초 동안 2 +undefined%"
+ ],
+ "fmt.fxDash": [
+  "c36c78bf2890471c",
+  "대상에게 최대 undefinedm 단숨에 돌진",
+  "대상에게 최대 0m 단숨에 돌진",
+  "대상에게 최대 1m 단숨에 돌진",
+  "대상에게 최대 2m 단숨에 돌진"
+ ],
+ "fmt.fxDot": [
+  "9aca616a336c6e3d",
+  "undefined초 동안 1초마다 피해 NaN",
+  "undefined초 동안 1초마다 피해 0",
+  "undefined초 동안 1초마다 피해 1",
+  "undefined초 동안 1초마다 피해 2"
+ ],
+ "fmt.fxStun": [
+  "3173ae90609716f4",
+  "undefined초 기절",
+  "0초 기절",
+  "1초 기절",
+  "2초 기절"
  ],
  "fmt.gearHint": [
   "0083d62ed89ee2f3",
@@ -1474,6 +1509,7 @@
  "ui.bagPotions": "물약",
  "ui.bagToGear": "장비 보기 (메뉴의 장비)",
  "ui.block": "대화 차단",
+ "ui.buffs": "걸려 있는 강화",
  "ui.changeClass": "직업 바꾸기",
  "ui.channel": "채널",
  "ui.chatLabel": "대화 입력",
@@ -1613,6 +1649,7 @@
  "ui.soundOn": "소리 켬",
  "ui.stale": "새 버전이 나왔습니다. 새로고침해 주세요.",
  "ui.stickLabel": "이동 조이스틱",
+ "ui.stunned": "기절",
  "ui.tabBuild": "성장",
  "ui.tabDaily": "일일",
  "ui.tabGear": "장비",

@@ -275,7 +275,7 @@ export class Game {
       hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
       bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: LEVEL.firstNeed, sparks: 0, cds: [], dirty: false, unsaved: false, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0,
       gear: [], worn: {}, gearSeq: 0, bagUp: 0, lostFull: 0, autoSalvage: -1, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
-      def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), swarm: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, homing: false,
+      def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), swarm: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, stunUntil: 0, buffs: [], dots: [], homing: false,
     };
     const e = base as Ent;
     for (const init of this.entInit) init(e);
@@ -308,6 +308,7 @@ export class Game {
     for (const e of this.ents.values()) {
       if (e.kind === 'p') { if (e.bot) this.bots.think(e, dt); else this.away.think(e, dt); this.combat.tickPlayer(e, dt); }
       else this.monsters.tick(e, dt);
+      this.combat.tickEffects(e, dt); // 강화와 지속 피해의 시간
     }
     for (const fn of this.ticks) fn(dt);
   }

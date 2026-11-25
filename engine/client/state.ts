@@ -75,6 +75,8 @@ export const S = {
   bag: { max: GEAR.bagMax, up: 0, lost: 0, known: false },
   /** 분해: 이 게임에 분해가 있는가와 자동 분해의 설정 (서버의 개인 상태 salvage. -1이면 끔) */
   salvage: { on: false, auto: -1 },
+  /** 나에게 걸린 강화: 기술 id → 끝나는 시각(performance.now 기준 ms). 서버의 'buff' 사건으로 받는다 */
+  buffs: new Map<string, number>(),
 };
 
 /** 내가 들판이 아닌 지역(던전)에 있는가. 들판은 0번 지역이다 (MapDef.areas의 약속): 지역의 id는 게임이 붙이는 이름이라 틀은 읽지 않는다 */

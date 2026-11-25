@@ -186,7 +186,7 @@ export const MAP: MapDef = {
 
 ```ts games/sample/shared/content/index.ts
 export const SKILL_DEFS = {
-  chop: { cd: 4, range: 2.9, effect: { kind: 'hit', dmg: [26, 34] } },
+  chop: { cd: 4, range: 2.9, effect: { kind: 'hit', dmg: [26, 34], stun: 1 } },
   sweep: { cd: 8, radius: 4, effect: { kind: 'area', at: 'self', dmg: [13, 19] } },
   aim: { cd: 5, range: 11, effect: { kind: 'hit', dmg: [28, 38] } },
   snare: { cd: 9, range: 11, radius: 3.5, effect: { kind: 'area', at: 'target', dmg: [10, 15], slow: 3 } },
@@ -230,6 +230,18 @@ export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 
 - 무기는 한 줄기다. 직업마다 손에 든 모양(`hand`)만 다르고, 이름은 언어 파일이 손 모양마다 따로 준다(아이템 이름표에 손 모양의 id 칸: `bow`, `staff` …. 칸이 없으면 `name`). 틀에는 `sword` / `bow` / `staff`가 있고, 다른 모양은 화면에서 `registerHand`로 등록한다. 예제의 나무꾼은 도끼(`axe`)를 든다(`client/scene.ts`).
 - 쏘는 직업의 날아가는 것(`shot`)도 같다: 틀에는 `arrow`, `bolt`가 있고, 다른 것은 `registerShot(id, { shape: 'stick' | 'ball', color, size })`.
 - `price: 0`은 상점에서 팔지 않는다는 뜻이다.
+- 기술의 효과(`SKILL_DEFS`의 `effect`)는 여섯 가지다. 서버·화면·자동 사냥·도감이 종류만 보고 처리하므로 기술은 표에 한 줄 더하면 된다.
+
+| 종류 | 하는 일 | 덧붙일 수 있는 것 |
+|---|---|---|
+| `hit` | 대상 하나에게 피해 | `slow`(느려짐 초), `stun`(기절 초: 움직이지도 때리지도 못한다) |
+| `area` | 나나 대상 둘레(`radius`)의 적 모두에게 피해 | `slow` |
+| `heal` | 체력 회복 | `allies`(둘레의 아군도) |
+| `buff` | `dur`초 동안 강화: `mod`가 `damage`(주는 피해 ×(1+value)), `guard`(받는 피해 ×(1−value)), `regen`(회복 ×(1+value)), `crit`(치명타 +value) | `allies`. 같은 기술은 겹치지 않고 시간이 새로 흐른다. 화면의 내 정보 창에 남은 시간이 뜬다 |
+| `dash` | 대상 앞까지(없으면 바라보는 쪽으로) `dist`만큼 단숨에 | `dmg`, `stun` |
+| `dot` | 1초마다 `dps`씩 `dur`초 동안(독, 화상). 맞은 몬스터는 건 사람을 쫓는다 | `area`(대상 둘레 `radius`의 적 모두) |
+
+  예제의 내려찍기는 `hit`에 `stun: 1`을 붙였다. 시험용 내용(`engine/test/fx/shared/content`)에 여섯 가지가 모두 있다(`rally`, `ward`, `charge`, `venom` …).
 - 두 번째 재화(`sparks`)를 쓰지 않으면 몬스터에 `sparks`를 적지 않고, 이름표에 `currency2`를 적지 않는다. 틀의 문장에서 그 몫이 빠진다.
 - 첫 번째 재화(`gold` 칸)의 이름은 이름표의 `currency1`(`{ name, unit }`: 값 앞의 이름 '골드 100', 수 뒤의 낱말 '100골드')로 준다. 적지 않으면 골드다.
 - 재화의 상한은 `CURRENCIES`의 `max`다. 틀은 더할 때와 저장을 읽을 때 모두 이 값으로 자른다.
@@ -677,7 +689,7 @@ export function initBonfire(): void {
 알아 둘 한계:
 
 - 재화는 세 칸(`gold`, `sparks`, 경험치)으로 정해져 있다. 두 번째 재화는 한 가지(`sparks`)뿐이다. 이름은 이름표의 `currency1`·`currency2`로 준다.
-- 기술의 효과는 세 가지(`hit`, `area`, `heal`)다. 새 효과는 틀의 `engine/server/game/systems/combat.ts`를 고쳐야 한다.
+- 기술의 효과는 여섯 가지다(`engine/shared/defs/combat.ts`의 `SkillEffect`). 이보다 새로운 효과는 틀의 `engine/server/game/systems/combat.ts`의 `cast`를 고쳐야 한다.
 - 사람 모델은 틀의 네모난 사람이 기본이다. 꾸밈을 더하거나(`setHumanoidDeco`) 통째로 바꿀 수 있다(`setHumanoidBody`: 옷 색·손 모양·살갗 색을 받아 모델을 돌려준다. 걷는 동작은 `rig`의 팔다리 넷으로, 무기의 겉모습은 `blade`로 따라간다). 손 모양과 날아가는 것은 등록으로 늘린다(`registerHand`, `registerShot`).
 - 메뉴의 탭(장비, 성장, 우편, 일일, 거래소, 길드, 순위)은 내용과 무관하게 모두 보인다. 길드와 거래소는 내용 없이도 돈다.
 - 장부를 보는 도구(`npm run econ`)는 등불지기의 것이다(`games/deungbul/scripts/econ.ts`). 장부 자체(`g.ledger`)와 서버 지표의 한 줄 요약은 틀의 것이라 어느 게임에서나 돈다.

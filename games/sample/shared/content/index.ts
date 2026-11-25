@@ -40,7 +40,7 @@ export const MAP: MapDef = {
 
 // ---------- 직업과 기술 ----------
 export const SKILL_DEFS = {
-  chop: { cd: 4, range: 2.9, effect: { kind: 'hit', dmg: [26, 34] } },
+  chop: { cd: 4, range: 2.9, effect: { kind: 'hit', dmg: [26, 34], stun: 1 } },
   sweep: { cd: 8, radius: 4, effect: { kind: 'area', at: 'self', dmg: [13, 19] } },
   aim: { cd: 5, range: 11, effect: { kind: 'hit', dmg: [28, 38] } },
   snare: { cd: 9, range: 11, radius: 3.5, effect: { kind: 'area', at: 'target', dmg: [10, 15], slow: 3 } },

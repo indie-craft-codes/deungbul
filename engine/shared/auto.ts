@@ -7,6 +7,8 @@ export const AUTO = {
   seek: 40,
   /** 체력이 이 비율 아래면 회복 기술을 쓴다 */
   healAt: 0.55,
+  /** 강화 기술은 대상이 이 거리(m) 안에 있을 때 쓴다 (싸움이 붙었을 때) */
+  buffAt: 8,
   /** 이 비율 아래면 물약을 마신다 */
   potionAt: 0.35,
 };
@@ -36,7 +38,12 @@ export function pickSkill(cls: string, ratio: number, dist: number, ready: (n: n
   for (let n = 0; n < SKILL_SLOTS; n++) {
     if (!ready(n)) continue;
     const def = skillDef(skills[n]);
-    const ok = def.effect.kind === 'heal' ? ratio < AUTO.healAt
+    const fx = def.effect;
+    const ok = fx.kind === 'heal' ? ratio < AUTO.healAt
+      // 강화는 싸움이 붙었을 때 (대상이 가까이 있다)
+      : fx.kind === 'buff' ? dist <= AUTO.buffAt
+      // 돌진은 대상이 조금 떨어져 있을 때 (붙어 있으면 아껴 둔다)
+      : fx.kind === 'dash' ? dist > 3 && dist <= (def.range ?? fx.dist + 1.2)
       : def.range !== undefined ? dist <= def.range
       : dist <= (def.radius ?? 0) * 0.8; // 내 주변을 치는 기술은 적이 붙었을 때
     if (ok) return n;

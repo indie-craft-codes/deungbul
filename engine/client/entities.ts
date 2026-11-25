@@ -5,7 +5,7 @@ import { walk } from '../shared/nav';
 import { nav, view, world } from './app';
 import { ARROW_S, arrow, burst, hit, puff, recoilOf, shake } from './fx';
 import { floatText, makeTag, placeTag, setTagHp, setTagName, settleTags, type Tag } from './hud/tags';
-import { L } from './i18n';
+import { L, t } from './i18n';
 import { rules } from './rules';
 import { sfx } from './sound';
 import { animate, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
@@ -213,6 +213,22 @@ function onEvent(e: Ev, me: Me): void {
       const self = def?.effect.kind === 'heal' || (def?.effect.kind === 'area' && def.effect.at === 'self');
       const at2 = self ? posOf(e[1]) : at; // 치유와 내 주변 기술은 쓴 사람을 중심으로 퍼진다
       if (radius && at2) { burst(at2.x, at2.z, radius, def?.color ?? 0xf0bb55); if (e[1] === me.id && def?.effect.kind === 'area') shake(0.16); }
+      // 돌진: 떠난 자리에 흙먼지, 강화: 쓴 사람 둘레에 작은 고리
+      const caster = posOf(e[1]);
+      if (caster && def?.effect.kind === 'dash') { puff(caster.x, 0.3, caster.z, 10, 0xd8c9a8, 5); if (e[1] === me.id) shake(0.1); }
+      if (caster && def?.effect.kind === 'buff' && !radius) burst(caster.x, caster.z, 1.6, def.color ?? 0xffd24a);
+      break;
+    }
+    case 'buff': {
+      // 강화가 걸렸다: 나라면 내 정보 창에 남은 시간을 띄운다 (hud/buffs.ts)
+      if (e[1] === me.id) S.buffs.set(e[2], performance.now() + e[3] * 1000);
+      const p = posOf(e[1]);
+      if (p) puff(p.x, p.h * 0.6, p.z, 6, 0xffe08a, 2.5);
+      break;
+    }
+    case 'stun': {
+      const p = posOf(e[1]);
+      if (p) floatText(t('stunned'), p.x, p.h, p.z, 'small');
       break;
     }
     case 'mh': {

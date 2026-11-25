@@ -309,6 +309,10 @@ html, body { height: var(--app-h, 100%); }
 /* 미니맵: PC에서만 오른쪽 아래에 둔다 */
 #mapBox { position: absolute; right: 16px; bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; pointer-events: none; }
 #minimap { pointer-events: auto; cursor: pointer; }
+/* 나에게 걸린 강화 (hud/buffs.ts): 내 정보 창의 막대 아래 */
+#buffs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+#buffs[hidden] { display: none; }
+#buffs .buff { font-size: 11px; padding: 1px 6px; border-radius: 3px; border: 1px solid var(--gold); color: var(--gold); background: rgba(240, 187, 85, .12); white-space: nowrap; }
 /* 전체 지도: 화면 가운데의 창. 지도와 장소 목록이 나란히(좁은 화면에서는 목록이 지도 위에 겹친다). 캔버스의 크기는 worldmap.ts가 창에 맞춘다 */
 #wmap { left: 50%; top: 50%; transform: translate(-50%, -50%); width: max-content; max-width: 98%; max-height: 98%; display: flex; flex-direction: column; gap: 6px; background: var(--ink); z-index: 5; padding: 8px; }
 #wmap[hidden] { display: none; }

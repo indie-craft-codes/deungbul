@@ -4,6 +4,7 @@
 import { initAuto } from './auto';
 import { initAutoName } from './hud/autoname';
 import { initBag } from './hud/bag';
+import { initBuffs } from './hud/buffs';
 import { initChannel } from './hud/channel';
 import { initClasses } from './hud/classes';
 import { initDungeon } from './hud/dungeon';
@@ -24,6 +25,7 @@ export function initModules(): void {
   initParty();
   initAuto();
   initBag();
+  initBuffs();
   initMinimap();
   initWorldMap();
   initMenu();

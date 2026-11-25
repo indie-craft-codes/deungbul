@@ -74,6 +74,13 @@
   "You muted 1. Their chat is now hidden for you only.",
   "You muted 2. Their chat is now hidden for you only."
  ],
+ "fmt.buffLeft": [
+  "be76f9ac7e188e64",
+  "undefined undefineds",
+  "0 undefineds",
+  "1 undefineds",
+  "2 undefineds"
+ ],
  "fmt.channelOpt": [
   "ed49aac5f4935f19",
   "Ch undefined · undefined",
@@ -227,6 +234,34 @@
   "Enhanced · +0",
   "Enhanced · +1",
   "Enhanced · +2"
+ ],
+ "fmt.fxBuff": [
+  "fad98f1a74809cb6",
+  "undefined +undefined% for undefined s",
+  "0 +undefined% for undefined s",
+  "1 +undefined% for undefined s",
+  "2 +undefined% for undefined s"
+ ],
+ "fmt.fxDash": [
+  "3e3332f9a34688ef",
+  "Dash up to undefined m to the target",
+  "Dash up to 0 m to the target",
+  "Dash up to 1 m to the target",
+  "Dash up to 2 m to the target"
+ ],
+ "fmt.fxDot": [
+  "7edbba6247cc49a0",
+  "NaN damage every second for undefined s",
+  "0 damage every second for undefined s",
+  "1 damage every second for undefined s",
+  "2 damage every second for undefined s"
+ ],
+ "fmt.fxStun": [
+  "08a9092132800c9a",
+  "stuns for undefined s",
+  "stuns for 0 s",
+  "stuns for 1 s",
+  "stuns for 2 s"
  ],
  "fmt.gearHint": [
   "9b0f19cd632b7c72",
@@ -1474,6 +1509,7 @@
  "ui.bagPotions": "Potions",
  "ui.bagToGear": "View gear (Menu > Gear)",
  "ui.block": "Mute chat",
+ "ui.buffs": "Active buffs",
  "ui.changeClass": "Change class",
  "ui.channel": "Channel",
  "ui.chatLabel": "Chat message",
@@ -1613,6 +1649,7 @@
  "ui.soundOn": "Sound on",
  "ui.stale": "A new version is available. Please refresh the page.",
  "ui.stickLabel": "Movement joystick",
+ "ui.stunned": "Stunned",
  "ui.tabBuild": "Growth",
  "ui.tabDaily": "Daily",
  "ui.tabGear": "Gear",

@@ -17,7 +17,7 @@ export const enNames: ContentNames = {
     hunter: { name: 'Hunter', info: 'Shoots from afar. Less health.' },
   },
   skills: {
-    chop: { name: 'Chop', info: 'Heavy damage to the target' },
+    chop: { name: 'Chop', info: 'Heavy damage to the target and a 1 s stun' },
     sweep: { name: 'Sweep', info: 'Damage to everything around you' },
     aim: { name: 'Aimed Shot', info: 'Heavy damage to a distant target' },
     snare: { name: 'Snare Arrow', info: 'Damages and slows everything around the target' },

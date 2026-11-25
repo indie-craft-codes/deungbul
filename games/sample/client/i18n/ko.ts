@@ -21,7 +21,7 @@ export const koNames: ContentNames = {
     hunter: { name: '사냥꾼', info: '멀리서 활을 쏩니다. 체력이 적습니다.' },
   },
   skills: {
-    chop: { name: '내려찍기', info: '대상에게 큰 피해' },
+    chop: { name: '내려찍기', info: '대상에게 큰 피해를 주고 1초 기절시킨다' },
     sweep: { name: '휘두르기', info: '주변 모두에게 피해' },
     aim: { name: '조준 사격', info: '멀리 있는 대상에게 큰 피해' },
     snare: { name: '덫 화살', info: '대상 주변 모두에게 피해를 주고 느리게 함' },

@@ -6,12 +6,28 @@ import { CLASSES, DEFAULT_CLASS, HP_PER_LEVEL, MAP, SKILL_DEFS } from '@game/sha
  * 새 기술은 여기에 한 줄 더하면 된다. 새 종류의 효과가 필요할 때만 서버 코드를 고친다.
  */
 export type SkillEffect =
-  /** 대상 하나에게 피해 (치명타로 표시) */
-  | { kind: 'hit'; dmg: readonly [number, number] }
+  /** 대상 하나에게 피해 (치명타로 표시). slow: 이 시간(초) 동안 느려진다, stun: 이 시간(초) 동안 움직이지도 때리지도 못한다 */
+  | { kind: 'hit'; dmg: readonly [number, number]; slow?: number; stun?: number }
   /** 범위(SkillDef.radius) 안 모든 적에게 피해. at: 범위의 중심이 나인가 대상인가. slow: 맞으면 이 시간(초) 동안 느려진다 */
   | { kind: 'area'; at: 'self' | 'target'; dmg: readonly [number, number]; slow?: number }
   /** 체력 회복. allies가 켜져 있으면 범위(SkillDef.radius) 안의 사람 모두 */
-  | { kind: 'heal'; amount: number; allies?: boolean };
+  | { kind: 'heal'; amount: number; allies?: boolean }
+  /**
+   * 잠깐 동안의 강화 (BuffMod의 비율 value를 dur초 동안). allies가 켜져 있으면 범위(SkillDef.radius) 안의 사람 모두.
+   * 같은 기술을 다시 쓰면 시간이 처음부터 다시 흐른다(겹치지 않는다). 다른 기술의 강화끼리는 겹친다
+   */
+  | { kind: 'buff'; mod: BuffMod; value: number; dur: number; allies?: boolean }
+  /** 돌진: 대상 쪽으로(대상이 없으면 바라보는 쪽으로) dist만큼 단숨에 움직인다. dmg가 있으면 닿은 대상에게 피해, stun이 있으면 기절 */
+  | { kind: 'dash'; dist: number; dmg?: readonly [number, number]; stun?: number }
+  /** 지속 피해(독, 화상): 대상에게(area면 대상 둘레 SkillDef.radius 안의 적 모두) 1초마다 dps씩 dur초 동안. 같은 사람이 다시 걸면 시간이 처음부터 */
+  | { kind: 'dot'; dps: number; dur: number; area?: boolean };
+
+/**
+ * 강화(buff)가 바꾸는 것. value는 비율이다:
+ * damage 주는 피해 ×(1+value), guard 받는 피해 ×(1−value), regen 체력 회복 ×(1+value), crit 치명타 확률 +value
+ */
+export type BuffMod = 'damage' | 'guard' | 'regen' | 'crit';
+export const BUFF_MODS: readonly BuffMod[] = ['damage', 'guard', 'regen', 'crit'];
 
 export interface SkillDef {
   cd: number;

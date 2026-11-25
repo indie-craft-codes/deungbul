@@ -43,7 +43,9 @@ export type Ev =
   | ['r', id: number] // 부활해서 자리를 옮김
   | ['s', src: number, skill: string, dst: number] // 기술 사용 (이펙트용): 기술 id와 대상(없으면 0). 보스의 내려치기 예고는 'slam'
   | ['mh', id: number, maxHp: number] // 최대 체력이 바뀌었다 (필드 보스)
-  | ['heal', id: number, amount: number];
+  | ['heal', id: number, amount: number]
+  | ['buff', id: number, skill: string, dur: number] // 강화가 걸렸다 (그 기술로 dur초 동안)
+  | ['stun', id: number, dur: number]; // 기절했다
 
 /** 서버 전체가 공유하는 상태. 칸은 게임이 더한다 (engine/shared/ext.ts) */
 export type { WorldState };

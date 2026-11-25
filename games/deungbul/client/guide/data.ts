@@ -98,7 +98,11 @@ function start(P: Pack): Section {
 function effectText(P: Pack, def: SkillDef): string {
   const T = P.T.classes, fx = def.effect;
   switch (fx.kind) {
-    case 'hit': return T.fxHit(span(fx.dmg));
+    case 'hit': return T.fxHit(span(fx.dmg)) + (fx.slow ? ', ' + T.fxSlow(num(fx.slow), pct(1 - SLOW_FACTOR)) : '') + (fx.stun ? ', ' + P.L.fmt.fxStun(fx.stun) : '');
+    // 틀이 더한 효과(강화, 돌진, 지속 피해)는 틀의 문장으로 적는다
+    case 'buff': return P.L.fmt.fxBuff(fx.mod, Math.round(fx.value * 100), fx.dur, !!fx.allies, def.radius ?? 0);
+    case 'dash': return P.L.fmt.fxDash(fx.dist, !!fx.dmg) + (fx.dmg ? ` ${span(fx.dmg)}` : '') + (fx.stun ? ', ' + P.L.fmt.fxStun(fx.stun) : '');
+    case 'dot': return P.L.fmt.fxDot(fx.dps, fx.dur, !!fx.area, def.radius ?? 0);
     case 'area': return T.fxArea(span(fx.dmg), fx.at === 'self', num(def.radius ?? 0)) + (fx.slow ? ', ' + T.fxSlow(num(fx.slow), pct(1 - SLOW_FACTOR)) : '');
     case 'heal': return fx.allies ? T.fxHealAll(num(fx.amount), num(def.radius ?? 0)) : T.fxHeal(num(fx.amount));
   }

@@ -1,4 +1,4 @@
-import type { DailyState, Gear, Mail, MonsterDef } from '../../shared/defs';
+import type { BuffMod, DailyState, Gear, Mail, MonsterDef } from '../../shared/defs';
 import type { Point } from '../../shared/nav';
 import type { Kind } from '../../shared/protocol';
 import type { EntExt } from './ext';
@@ -75,6 +75,12 @@ export interface Ent extends EntExt {
   scale: number; cast: number; windup: number;
   /** 이 시각(게임 시계)까지 느려져 있다 */
   slowUntil: number;
+  /** 이 시각(게임 시계)까지 기절해 있다: 움직이지도 때리지도 못한다 (몬스터) */
+  stunUntil: number;
+  /** 걸려 있는 강화들 (기술의 buff). 끝난 것은 전투의 틱이 지운다 */
+  buffs: { skill: string; mod: BuffMod; value: number; until: number }[];
+  /** 걸려 있는 지속 피해들 (기술의 dot): 건 사람, 1초마다의 피해, 끝나는 시각, 다음 피해까지 남은 시간 */
+  dots: { src: number; skill: string; dps: number; until: number; next: number }[];
   /** 너무 멀리 끌려 나와 집으로 돌아가는 중 (몬스터). 그동안은 싸우지 않고 회복한다 */
   homing: boolean;
 }

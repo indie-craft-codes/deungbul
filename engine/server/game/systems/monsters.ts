@@ -65,6 +65,7 @@ export class Monsters {
     if (this.asleep(m.layer)) { this.rest(m); return; }
     if (m.atkCd > 0) m.atkCd -= dt;
     if (m.windup > 0) return; // 보스가 내려치려고 힘을 모으는 중: 그 자리에 선다
+    if (g.clock < m.stunUntil) { m.moving = false; return; } // 기절: 움직이지도 때리지도 못한다
 
     const speed = g.clock < m.slowUntil ? def.speed * SLOW_FACTOR : def.speed; // 느려지는 기술에 맞았다
 

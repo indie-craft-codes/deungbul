@@ -1,7 +1,7 @@
 // 전투: 피해와 죽음, 플레이어의 공격·기술 명령, 플레이어의 틱(쿨다운, 회복, 추격과 자동 공격).
-import { ATTACK_CD, COMBAT, RESPAWN_S, SKILL_SLOTS, classOf, skillDef } from '../../../shared/defs';
+import { ATTACK_CD, COMBAT, RESPAWN_S, SKILL_SLOTS, classOf, skillDef, type BuffMod, type SkillId } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
-import { AOI_LEAVE } from '../../../shared/world';
+import { AOI_LEAVE, clampInto } from '../../../shared/world';
 import { dist, ri, type Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -16,6 +16,12 @@ export class Combat {
       p.targetId = t.id; p.stuck = 0;
     });
     g.commands.set('skill', (p, m) => { if (num(m.n)) this.useSkill(p, m.n); });
+    // 기술의 강화(buff)가 보정 목록에 들어간다: 지금 걸려 있는 것만 (시간이 지난 것은 tickEffects가 지우지만, 지우기 전이라도 셈에 넣지 않는다)
+    const live = (p: Ent | undefined, mod: BuffMod) => (p ? p.buffs.filter((b) => b.mod === mod && b.until > g.clock) : []);
+    g.mods.provide('damage', (p) => live(p, 'damage').reduce((v, b) => v * (1 + b.value), 1));
+    g.mods.provide('guard', (p) => live(p, 'guard').reduce((v, b) => v * Math.max(0.1, 1 - b.value), 1));
+    g.mods.provide('regen', (p) => live(p, 'regen').reduce((v, b) => v * (1 + b.value), 1));
+    g.mods.provide('crit', (p) => live(p, 'crit').reduce((v, b) => v + b.value, 0));
   }
 
   /** n번 칸의 기술을 쓴다. 칸에 든 기술은 직업마다 다르다. */
@@ -32,10 +38,27 @@ export class Combat {
       p.face = Math.atan2(target.x - p.x, target.z - p.z);
     }
     g.emit(['s', p.id, id, target?.id ?? 0]);
-    // 기술 이름이 아니라 효과의 종류로 처리한다 (engine/shared/defs/combat.ts의 SkillEffect)
-    const fx = def.effect, up = g.build.skillScale(p, id); // 강화한 기술은 피해와 회복이 커진다
+    this.cast(p, id, target);
+    p.cds[n] = def.cd;
+    g.cdAcks.push({ id: p.id, n, ms: def.cd * 1000 });
+  }
+
+  /**
+   * 기술의 효과를 낸다. 기술 이름이 아니라 효과의 종류로 처리한다 (engine/shared/defs/combat.ts의 SkillEffect).
+   * 쿨다운과 사거리는 부른 쪽(useSkill)이 본다. 시험과 게임의 규칙도 이것으로 효과만 낼 수 있다
+   */
+  cast(p: Ent, id: SkillId, target?: Ent): void {
+    const g = this.g, def = skillDef(id), fx = def.effect, up = g.build.skillScale(p, id); // 강화한 기술은 피해와 회복이 커진다
+    const stun = (m: Ent, s: number | undefined) => { if (s && !m.dead && m.kind === 'm') { m.stunUntil = g.clock + s; m.moving = false; g.emit(['stun', m.id, s]); } };
+    /** 나와(allies면 범위 안의 사람들도) 같은 층의 사람들 */
+    const friends = (allies: boolean | undefined): Ent[] => (allies ? [...g.ents.values()] : [p]).filter((e) => e.kind === 'p' && !e.dead && e.layer === p.layer && (e === p || dist(p, e) <= (def.radius ?? 0)));
     switch (fx.kind) {
-      case 'hit': if (target) this.damage(p, target, Math.round(ri(fx.dmg[0], fx.dmg[1]) * up), true); break;
+      case 'hit':
+        if (!target) break;
+        if (fx.slow && target.kind === 'm') target.slowUntil = g.clock + fx.slow;
+        stun(target, fx.stun);
+        this.damage(p, target, Math.round(ri(fx.dmg[0], fx.dmg[1]) * up), true);
+        break;
       case 'area': {
         const slow = fx.slow;
         this.area(p, fx.at === 'target' && target ? target : p, def.radius ?? 0, Math.round(fx.dmg[0] * up), Math.round(fx.dmg[1] * up), slow ? (m) => { m.slowUntil = g.clock + slow; } : undefined);
@@ -43,8 +66,7 @@ export class Combat {
       }
       case 'heal': {
         // allies면 나와 주변의 사람들을 함께 살린다
-        for (const e of fx.allies ? [...g.ents.values()] : [p]) {
-          if (e.kind !== 'p' || e.layer !== p.layer || (e !== p && dist(p, e) > (def.radius ?? 0))) continue;
+        for (const e of friends(fx.allies)) {
           const amount = Math.round(Math.min(fx.amount * up, e.maxHp - e.hp));
           if (amount < 1 && e !== p) continue;
           e.hp += amount;
@@ -52,9 +74,61 @@ export class Combat {
         }
         break;
       }
+      case 'buff': {
+        // 같은 기술의 강화는 새로 건다(시간이 처음부터). 강화한 기술은 비율이 커진다
+        for (const e of friends(fx.allies)) {
+          e.buffs = e.buffs.filter((b) => b.skill !== id);
+          e.buffs.push({ skill: id, mod: fx.mod, value: fx.value * up, until: g.clock + fx.dur });
+          e.dirty = true;
+          g.emit(['buff', e.id, id, fx.dur]);
+        }
+        break;
+      }
+      case 'dash': {
+        // 대상이 있으면 대상 앞까지(붙어 서는 거리를 남기고), 없으면 바라보는 쪽으로
+        const dx = target ? target.x - p.x : Math.sin(p.face), dz = target ? target.z - p.z : Math.cos(p.face);
+        const len = Math.hypot(dx, dz) || 1, go = target ? Math.max(0, Math.min(fx.dist, len - 1.2)) : fx.dist;
+        p.x += (dx / len) * go; p.z += (dz / len) * go;
+        clampInto(p); resolve(p, g.world.obstacles);
+        p.tx = p.x; p.tz = p.z; p.moving = false; p.path = null;
+        if (target && !target.dead && dist(p, target) <= 2.6) {
+          stun(target, fx.stun);
+          if (fx.dmg) this.damage(p, target, Math.round(ri(fx.dmg[0], fx.dmg[1]) * up), true);
+        }
+        break;
+      }
+      case 'dot': {
+        const hit = fx.area && target
+          ? [...g.ents.values()].filter((m) => m.kind === 'm' && !m.dead && m.layer === p.layer && dist(target, m) <= (def.radius ?? 0))
+          : target && target.kind === 'm' && !target.dead ? [target] : [];
+        for (const m of hit) {
+          m.dots = m.dots.filter((d) => !(d.src === p.id && d.skill === id));
+          m.dots.push({ src: p.id, skill: id, dps: Math.max(1, Math.round(fx.dps * up)), until: g.clock + fx.dur, next: 1 });
+          m.hitters.add(p.id);
+          if (!m.targetId) m.targetId = p.id;
+        }
+        break;
+      }
     }
-    p.cds[n] = def.cd;
-    g.cdAcks.push({ id: p.id, n, ms: def.cd * 1000 });
+  }
+
+  /** 걸려 있는 강화와 지속 피해의 시간을 흘린다 (모든 엔티티, 매 틱) */
+  tickEffects(e: Ent, dt: number): void {
+    const g = this.g;
+    if (e.buffs.length && e.buffs.some((b) => b.until <= g.clock)) { e.buffs = e.buffs.filter((b) => b.until > g.clock); e.dirty = true; }
+    if (!e.dots.length) return;
+    if (e.dead) { e.dots = []; return; }
+    for (const d of [...e.dots]) {
+      d.next -= dt;
+      if (d.next > 0) continue;
+      d.next += 1;
+      const src = g.ents.get(d.src);
+      // 건 사람이 떠났거나 다른 층으로 갔으면 그친다
+      if (!src || src.layer !== e.layer) { e.dots = e.dots.filter((x) => x !== d); continue; }
+      this.damage(src, e, d.dps, false);
+      if (e.dead) return;
+    }
+    e.dots = e.dots.filter((d) => d.until > g.clock);
   }
 
   /** center 주변 radius 안의 몬스터 모두에게 피해를 준다. also가 있으면 맞은 몬스터마다 부른다. */
@@ -82,7 +156,7 @@ export class Combat {
 
   private killMonster(m: Ent): void {
     const g = this.g;
-    m.hp = 0; m.dead = true; m.respawn = m.def?.respawn ?? RESPAWN_S; m.moving = false; m.targetId = 0;
+    m.hp = 0; m.dead = true; m.respawn = m.def?.respawn ?? RESPAWN_S; m.moving = false; m.targetId = 0; m.dots = []; m.stunUntil = 0; m.slowUntil = 0;
     g.emit(['d', m.id]);
     const hitters: Ent[] = [];
     for (const id of m.hitters) {
@@ -99,7 +173,7 @@ export class Combat {
     const g = this.g;
     // 벌은 없다: 켜져 있는 가장 가까운 등탑 앞에서 온전한 체력으로 다시 일어난다
     const at = g.rules.respawn(p);
-    p.hp = p.maxHp; p.x = at.x; p.z = at.z; p.moving = false; p.path = null; p.targetId = 0; p.lastHurt = -99;
+    p.hp = p.maxHp; p.x = at.x; p.z = at.z; p.moving = false; p.path = null; p.targetId = 0; p.lastHurt = -99; p.dots = [];
     resolve(p, g.world.obstacles);
     g.emit(['r', p.id]);
     g.notify(p, 'died', at.id);

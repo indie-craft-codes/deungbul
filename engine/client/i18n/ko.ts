@@ -97,6 +97,8 @@ export const koBase = (n: ContentNames) => {
       worldMap: '지도',
       worldMapHint: '빈 땅을 누르면 그곳으로 걸어가고, 표식을 누르면 자세히 봅니다. [[휠이나 +·−로|두 손가락이나 +·−로]] 확대하고 끌어서 옮깁니다.[[ (N 키, Esc로 닫기)|]]',
       mapList: '장소 목록',
+      stunned: '기절',
+      buffs: '걸려 있는 강화',
       mapMe: '내 위치',
       mapZoomIn: '확대',
       mapZoomOut: '축소',
@@ -245,6 +247,13 @@ export const koBase = (n: ContentNames) => {
       mapTravel: (name: string) => `${ro(name)} 자동 이동합니다.`,
       mapArrived: (name: string, hunt: boolean) => `${name}에 도착했습니다.${hunt ? ' 자동 사냥을 시작합니다.' : ''}`,
       mapMobs: (name: string, n: number) => (n > 1 ? `${name} ${n}마리` : name),
+      // 기술 효과의 설명 (도감·기술 창이 쓴다). mod는 강화가 바꾸는 것(BuffMod)
+      fxBuff: (mod: string, pct: number, sec: number, allies: boolean, radius: number) =>
+        `${allies ? `둘레 ${radius}m의 아군과 함께 ` : ''}${sec}초 동안 ${({ damage: '주는 피해', guard: '받는 피해', regen: '체력 회복', crit: '치명타 확률' } as Record<string, string>)[mod] ?? mod} ${mod === 'guard' ? '−' : '+'}${pct}%${mod === 'crit' ? 'p' : ''}`,
+      fxDash: (m: number, hit: boolean) => `대상에게 최대 ${m}m 단숨에 돌진${hit ? '해 피해' : ''}`,
+      fxDot: (dps: number, sec: number, area: boolean, radius: number) => `${area ? `둘레 ${radius}m의 적 모두에게 ` : ''}${sec}초 동안 1초마다 피해 ${num(dps)}`,
+      fxStun: (sec: number) => `${sec}초 기절`,
+      buffLeft: (name: string, sec: number) => `${name} ${sec}초`,
       autoOnEarly: (lv: number) => `자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. (창을 닫아도 이어지는 것은 직업을 고르고 레벨 ${lv}부터입니다.)`,
       marketBuy: (gold: number) => `사기 ${num(gold)}${G.unit}`,
       marketConfirm: (gold: number) => `확인 · ${num(gold)}${G.unit}`,
