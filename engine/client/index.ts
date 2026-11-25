@@ -9,7 +9,9 @@ export { send } from './net';
 export { goToTown, moveTo } from './actions';
 export { addNpc, setMerchant } from './entities';
 export type { MerchantLook } from './entities';
-export { addMsgSounds, sfx } from './sound';
+export { addMsgSounds, enableVolume, playSound, setMusicPicker, sfx } from './sound';
+export { registerHumanoidAsset, registerMonsterAsset, registerWeaponAsset } from './scene/gltf';
+export { registerMusic, registerSound, setClipNames, DEFAULT_CLIPS, type AnimState, type ClipMap, type HumanoidAsset, type ModelAsset, type ModelFit, type WeaponAsset } from './assets';
 export { mountPanel } from './hud/shell';
 export { addPlace } from './hud/near';
 export { addMapLabels, addMarks, setMapPaint, MARK, type MapLabel, type Mark, type MapBrush } from './hud/minimap';
@@ -20,5 +22,5 @@ export { addMenuTab, MENU_TABS, openMenu, setMenuTabs, type EngineMenuTab, type 
 export { openClasses } from './hud/classes';
 export { hudSlow } from './hud/me';
 export type { Look, Mood } from './scene/view';
-export { attachHand, defaultHumanoid, limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setHumanoidBody, setHumanoidDeco, type ArmorLook, type BladeLook, type HandBuilder, type HumanoidLook, type Model, type MonsterBuilder, type Rig } from './scene/models';
+export { attachHand, cueAnim, defaultHumanoid, limb, makeBlob, makeHumanoid, mat, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setHumanoidBody, setHumanoidDeco, type ArmorLook, type BladeLook, type HandBuilder, type HumanoidLook, type Model, type MonsterBuilder, type Rig } from './scene/models';
 export { registerShot, type ShotLook } from './fx';

@@ -89,6 +89,10 @@ export const koBase = (n: ContentNames) => {
       channel: '채널',
       soundOn: '소리 켬',
       soundOff: '소리 끔',
+      volume: '음량',
+      volSfx: '효과음',
+      volMusic: '배경음',
+      loadingAssets: '모델과 소리를 불러오는 중',
       full: '서버가 가득 찼습니다. 잠시 뒤에 다시 시도해 주세요.',
       reconnect: '다시 접속',
       // ---- 운영: 접속 화면에 남는 까닭 (engine/client/main.ts), 기기 옮기기 (hud/device.ts) ----

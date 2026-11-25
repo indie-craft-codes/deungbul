@@ -23,12 +23,14 @@ import { speak, updateFloats } from './hud/tags';
 import { applyDom, onLangChange, t } from './i18n';
 import { axis, initInput } from './input';
 import { connect, forgetToken, initNet, send } from './net';
+import { afterPreload, startPreload } from './preload';
 import { isBlocked } from './social';
 import type { Look } from './scene/view';
 import { S } from './state';
 
 // ---------- 서버 메시지: 바탕이 되는 처리. 덧붙는 기능은 각 모듈이 bus.onMsg로 스스로 등록한다 ----------
-onMsg('welcome', (m) => { spawnMe(m.id, m.name, m.x, m.z); setMyName(m.name); hideGate(); });
+// 접속 화면은 등록한 에셋을 다 읽은 뒤에 걷는다 (에셋이 없는 게임은 바로: preload.ts). 그새 끊겼으면 걷지 않는다
+onMsg('welcome', (m) => { spawnMe(m.id, m.name, m.x, m.z); setMyName(m.name); afterPreload(() => { if (S.me) hideGate(); }); });
 onMsg('snap', (m, now) => applySnapshot(m, now));
 onMsg('stat', (m) => {
   const me = S.me;
@@ -148,6 +150,7 @@ export function startClient(opts: ClientOptions = {}): void {
   initChat();
   for (const init of opts.modules ?? []) init();
   initModules();
+  startPreload(); // 게임의 모듈이 에셋을 등록한 뒤에
   // iOS 사파리는 확대 금지 설정을 무시한다: 두 손가락 확대와 두 번 눌러 확대를 직접 막는다
   for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
   document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });

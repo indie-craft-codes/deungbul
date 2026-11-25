@@ -10,7 +10,7 @@ export default defineConfig({
   resolve: { alias: { '@engine': resolve(repo, 'engine'), '@game': game } },
   // 상대 경로로 빌드한다: 게임 서버가 직접 내보낼 때도, 하위 경로에 올릴 때도 그대로 동작한다
   base: './',
-  publicDir: false,
+  // client/public/(모델과 소리 파일)이 빌드에 그대로 들어간다. 그런 파일이 없는 게임은 publicDir: false를 둔다
   // 개발 서버의 화면이 붙을 게임 서버의 포트: server/main.ts의 기본 포트와 같아야 한다 (PORT를 주면 서버와 함께 따라간다)
   define: { 'import.meta.env.VITE_DEV_PORT': JSON.stringify(process.env.PORT ?? '3002') },
   build: { outDir: resolve(repo, 'dist-sample'), emptyOutDir: true },
