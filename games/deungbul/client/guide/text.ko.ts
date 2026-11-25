@@ -354,6 +354,8 @@ export const textKo = {
       keep: "'오늘의 등탑지기' 점수 (막아 낸 사람)",
     },
     glowChange: (delta: string) => `밝기 ${delta}`,
+    laterTypes: (names: string) => `(첫 물결. 2번째 물결부터 ${names}도 섞입니다)`,
+    expByLv: (k: string, lv10: string, lv20: string) => `(경험치에 레벨×레벨×${k}을 더함: Lv 10이면 경험치 ${lv10}, Lv 20이면 ${lv20})`,
     floorNote: (floor: string) => `(${floor} 아래로는 내려가지 않음)`,
     rules: [
       '등탑 근처에 사람이 한 명도 없으면 그 시각의 습격은 열리지 않습니다 (밝기도 깎이지 않습니다).',

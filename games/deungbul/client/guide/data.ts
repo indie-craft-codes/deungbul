@@ -6,7 +6,7 @@ import {
   BAG_UP, ENHANCE, FULL_TOWER_OFFER, GEAR, GEAR_SLOTS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_DIM, GLOW_MAX, GUILD, HP_PER_LEVEL, IDLE, ITEMS, KEEPERS_SHOWN, LEASH, LEVEL, MAIL_MAX, MARKET, MAT_MAX,
   MONSTERS, MONSTER_AI, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, PARTY, PORTAL_REACH, POTION_CD, POTION_MAX, POWER, QUESTS, RAID, RAID_KEEP_POINTS, RANK, RARITIES,
   RECIPES, RESIDENTS, RESPAWN_S, REST, SALVAGE, SHOPS, SHOP_REACH, SHOP_STOCK, SKILL_DEFS, SLOW_FACTOR, SMITH, SMITHY_REACH, STAT_IDS, TOWER_REACH,
-  bagSlots, baseOpt, bossHp, dustFor, isItemId, itemCap, salvageOn, guildNeed, marketFee, maxHpFor, needFor, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
+  bagSlots, baseOpt, bossHp, dustFor, isItemId, itemCap, salvageOn, guildNeed, marketFee, maxHpFor, needFor, raidExp, raidFoes, raidTowerHp, restGain, speedFor, stageOf,
   type ItemDef, type ItemId, type MonsterDef, type MonsterId, type QuestGoal, type Reward, type SkillDef, type SkillId, type Stage,
 } from '../../shared/defs';
 import { AUTO, AWAY } from '@engine/shared';
@@ -410,11 +410,11 @@ function raid(P: Pack): Section {
         waves: list(RAID.waveAtS.map((s) => c.sec(s))),
         join: c.m(RAID.joinRadius),
         spawn: `${num(RAID.spawnRadius[0])}–${c.m(RAID.spawnRadius[1])}`,
-        types: list(typeShare.map(([type, n]) => `${monsterName(P, type)} ${pct(n / RAID.types.length)}`)),
+        types: list(typeShare.map(([type, n]) => `${monsterName(P, type)} ${pct(n / RAID.types.length)}`)) + ' ' + R.laterTypes(list(RAID.laterTypes.map((type) => monsterName(P, type)))),
         drain: num(RAID.drainPerS),
         win: R.glowChange(RAID.winGlow > 0 ? `+${RAID.winGlow}` : String(RAID.winGlow)),
         lose: R.glowChange(String(RAID.loseGlow)) + ' ' + R.floorNote(num(TOWERS[0].floor)),
-        reward: rewardText(P, { exp: RAID.rewardExp, sparks: RAID.rewardSparks }),
+        reward: rewardText(P, { exp: RAID.rewardExp, sparks: RAID.rewardSparks }) + ' ' + R.expByLv(num(RAID.rewardExpPerLv2), num(raidExp(10)), num(raidExp(20))),
         keep: num(RAID_KEEP_POINTS),
       }),
       ul(R.rules),

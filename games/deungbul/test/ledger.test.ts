@@ -1,7 +1,7 @@
 // 재화 흐름 지표(경제 장부): 서버 없이 게임 규칙만 돌려, 장부에 적힌 것이 실제로 바뀐 것과 맞는지 센다.
 // 가장 중요한 것은 대조 검사다: 긴 시나리오를 돌린 뒤 재화마다 "장부의 생김 − 사라짐 = 모든 캐릭터가 가진 것의 실제 변화"가 정확히 맞아야 한다.
 // 이 파일은 장부 시험에서 가른 이 게임의 몫이다: 대조 검사의 긴 시나리오가 등탑·퀘스트·기여 단계·습격을 거친다. 장부 자체의 나머지 검사는 틀의 시험 engine/test/ledger.test.ts에 있다.
-import { CAMPS, CONTRIB_TIERS, DUNGEONS, FORGE, RARITIES, SHOPS, SMITHY, marketFee, type MarketItem } from '../shared/defs';
+import { CAMPS, CONTRIB_TIERS, DUNGEONS, FORGE, RARITIES, SHOPS, SMITHY, marketFee, raidExp, type MarketItem } from '../shared/defs';
 import { TOWER } from '../shared/world';
 import { type EconRow, type Ent, type Game, isField, MemoryStore, type PlayerSave } from '@engine/server';
 import { check } from '@engine/testing';
@@ -196,11 +196,12 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   tower(a);
   Object.assign(g.raid.cfg, { waveAtS: [0] });
   cmd(a, { t: 'stop' }); // 방금 움직인 사람이어야 인원으로 센다
+  const lvA = a.lv; // 보상으로 레벨이 오를 수 있어 미리 적어 둔다 (경험치는 막아 낼 때의 레벨로)
   g.raid.start();
   run(0.2);
   for (const m of [...g.ents.values()]) if (m.swarm && !m.dead) { at(a, m.x + 1, m.z); g.combat.damage(a, m, 1e6, false); }
   run(0.2);
-  check(g.raid.phase === 'idle' && sum(g.ledger.rows(), 'sparks', 'raid') === g.raid.cfg.rewardSparks && sum(g.ledger.rows(), 'exp', 'raid') === g.raid.cfg.rewardExp, '습격 보상은 틱 안에서 받아도 raid로 적힌다');
+  check(g.raid.phase === 'idle' && sum(g.ledger.rows(), 'sparks', 'raid') === g.raid.cfg.rewardSparks && sum(g.ledger.rows(), 'exp', 'raid') === raidExp(lvA, g.raid.cfg), '습격 보상은 틱 안에서 받아도 raid로 적힌다');
 
   // 쓰러짐과 채널 이동: 재화는 그대로다
   { const m = mob(c, 'wolf'); const had = JSON.stringify(census([c])); g.combat.damage(m, c, 1e6, false); check(JSON.stringify(census([c])) === had, '쓰러져도 잃는 것이 없다'); }

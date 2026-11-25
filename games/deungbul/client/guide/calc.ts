@@ -75,7 +75,7 @@ export interface Habitat { zones: number[]; dungeons: string[]; raid: boolean }
 export function habitat(id: MonsterId): Habitat {
   const zones = [...new Set(CAMPS.filter((c) => c.types.includes(id)).map((c) => zoneOf(c.x)))].sort();
   const dungeons = Object.entries(DUNGEONS).filter(([, d]) => d.boss.type === id || d.packs.some((p) => p.type === id)).map(([k]) => k);
-  return { zones, dungeons, raid: RAID.types.includes(id) };
+  return { zones, dungeons, raid: RAID.types.includes(id) || RAID.laterTypes.includes(id) };
 }
 /** 들판에서 쓰러진 뒤 다시 나타나기까지(초). 들판에 살지 않으면 null (던전과 습격의 몬스터는 다시 나오지 않는다) */
 export const respawnOf = (id: MonsterId): number | null => (habitat(id).zones.length ? (MONSTERS[id] as MonsterDef).respawn ?? RESPAWN_S : null);

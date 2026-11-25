@@ -355,6 +355,8 @@ export const textEn: GuideText = {
       keep: "Points on today's keepers list (each defender)",
     },
     glowChange: (delta) => `Glow ${delta}`,
+    laterTypes: (names) => `(first wave; from the 2nd wave ${names} join in)`,
+    expByLv: (k, lv10, lv20) => `(plus level × level × ${k} exp: ${lv10} exp at Lv 10, ${lv20} at Lv 20)`,
     floorNote: (floor) => `(never below ${floor})`,
     rules: [
       'If nobody is near the tower, that raid does not happen (and no glow is lost).',

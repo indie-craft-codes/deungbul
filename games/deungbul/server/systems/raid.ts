@@ -10,7 +10,7 @@
 //   - 버려진 채널: 막아야 할 적이 있는데 RAID.abandonS 동안 아무도 움직이지 않은 채널은 싸움을 끝낸다. 남은 적은 등탑을 한 번 치고 사라진다.
 //     그 피해는 그 채널이 보탠 내구(전체 내구 ÷ 채널 수)를 넘지 않는다: 남이 방치한 채널 때문에, 자기 채널을 다 막은 사람들이 지지 않는다.
 //     거저 사라지지도 않는다: 채널을 비워 적을 줄이면 그만큼 내구를 잃는다. 모든 채널이 버려졌으면 막아 낸 것이 아니다.
-import { CHANNEL, ECON_WHY, RAID, nextRaidAt, raidFoes, raidTowerHp, type RaidConfig, type RaidPhase } from '../../shared/defs';
+import { CHANNEL, ECON_WHY, RAID, nextRaidAt, raidExp, raidFoes, raidTowerHp, type RaidConfig, type RaidPhase } from '../../shared/defs';
 import type { WorldState } from '@engine/shared';
 import { TOWER } from '../../shared/world';
 import { channelOf, dist, type Ent, type Game, isField, notifyLayer } from '@engine/server';
@@ -165,7 +165,8 @@ export class Raid {
       if (f.spawned >= f.due || g.monsters.asleep(layer)) continue;
       for (; f.spawned < f.due; f.spawned++, this.spawned++) {
         const a = Math.random() * Math.PI * 2, r = c.spawnRadius[0] + Math.random() * (c.spawnRadius[1] - c.spawnRadius[0]);
-        const type = c.types[Math.floor(Math.random() * c.types.length)];
+        const pool = this.wave >= 2 ? [...c.types, ...c.laterTypes] : c.types;
+        const type = pool[Math.floor(Math.random() * pool.length)];
         g.monsters.spawn(type, TOWER.x + Math.cos(a) * r, TOWER.z + Math.sin(a) * r, true).layer = layer;
       }
     }
@@ -191,8 +192,9 @@ export class Raid {
         const p = g.ents.get(id);
         if (!p) continue;
         fighters.push(p);
-        g.notify(p, 'raidReward', g.wallet.amount(p, 'sparks', c.rewardSparks, ECON_WHY.raid), g.wallet.amount(p, 'exp', c.rewardExp, ECON_WHY.raid));
-        g.players.grant(p, c.rewardExp, c.rewardSparks, ECON_WHY.raid);
+        const exp = raidExp(p.lv, c);
+        g.notify(p, 'raidReward', g.wallet.amount(p, 'sparks', c.rewardSparks, ECON_WHY.raid), g.wallet.amount(p, 'exp', exp, ECON_WHY.raid));
+        g.players.grant(p, exp, c.rewardSparks, ECON_WHY.raid);
       }
       g.fire('raidWon', fighters);
     }

@@ -35,12 +35,18 @@ export interface RaidConfig {
   winGlow: number; loseGlow: number;
   /** 막아 냈을 때 참여자 각자가 받는 보상 */
   rewardSparks: number; rewardExp: number;
+  /** 경험치 보상에 더하는 레벨² 배수: 보상 경험치 = rewardExp + rewardExpPerLv2 × 레벨² (raidExp) */
+  rewardExpPerLv2: number;
+  /** 첫 물결의 적 */
   types: readonly MonsterId[];
+  /** 2번째 물결부터 types에 섞이는 센 적 */
+  laterTypes: readonly MonsterId[];
 }
 
 export const RAID: RaidConfig = {
   // 낮에 접속하는 사람도 만날 수 있게 하루 여러 번 연다 (정해진 시각에 여는 행사의 통례)
-  hours: [12, 15, 18, 20, 21, 22, 23],
+  // 밤늦게 놓치면 다음 날 낮까지 13시간을 기다리던 것(후반부 검토)을 3시간 아래로: 새벽과 아침에도 3시간마다
+  hours: [0, 3, 6, 9, 12, 15, 18, 20, 21, 22, 23],
   everyMin: 0,
   warnS: 60,
   durationS: 150,
@@ -53,8 +59,10 @@ export const RAID: RaidConfig = {
   towerHpBase: 240, towerHpPerGlow: 3, // 밝기가 바닥이어도 혼자 막아 볼 시간이 있게 넉넉히 잡는다
   drainPerS: 0.6, // 적 6마리가 붙어도 아무도 안 막으면 1분쯤 버틴다
   winGlow: 10, loseGlow: -10, // 한 번 진다고 여러 번 바친 것이 사라지지 않게 한다
-  rewardSparks: RAID_REWARD.sparks, rewardExp: RAID_REWARD.exp, // 값은 economy.ts에 있다
+  rewardSparks: RAID_REWARD.sparks, rewardExp: RAID_REWARD.exp, rewardExpPerLv2: RAID_REWARD.expPerLv2, // 값은 economy.ts에 있다
   types: ['slime', 'slime', 'wisp', 'wolf'],
+  // 약한 적뿐이라 Lv 14가 1분 안에 막던 것(후반부 검토): 뒤 물결에 멧돼지·고블린·길 잃은 병사가 섞인다
+  laterTypes: ['boar', 'goblin', 'lost_soldier'],
 };
 
 export type RaidPhase = 'idle' | 'soon' | 'active';
@@ -64,6 +72,9 @@ export type RaidPhase = 'idle' | 'soon' | 'active';
 export const raidFoes = (players: number, cfg: Pick<RaidConfig, 'base' | 'perPlayer' | 'max'> = RAID): number => Math.min(cfg.max, cfg.base + cfg.perPlayer * players);
 /** 그 밝기에서 시작할 때의 등탑 내구 (싸우는 채널 하나당) */
 export const raidTowerHp = (glow: number, cfg: Pick<RaidConfig, 'towerHpBase' | 'towerHpPerGlow'> = RAID): number => cfg.towerHpBase + glow * cfg.towerHpPerGlow;
+
+/** 막아 낸 사람 하나가 받는 경험치 (그 사람의 레벨로) */
+export const raidExp = (lv: number, cfg: Pick<RaidConfig, 'rewardExp' | 'rewardExpPerLv2'> = RAID): number => cfg.rewardExp + cfg.rewardExpPerLv2 * lv * lv;
 
 /** 다음 습격 시작 시각(ms)을 구한다. now 이후의 가장 가까운 정해진 시각이다. */
 export function nextRaidAt(now: number, cfg: Pick<RaidConfig, 'hours' | 'everyMin'>): number {

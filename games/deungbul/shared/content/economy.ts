@@ -108,7 +108,9 @@ export const DUNGEON_ECON = {
 } as const;
 
 /** 습격을 막아 냈을 때 맞서 싸운 사람 각자가 받는 보상. content/raid.ts의 RAID가 이 값을 읽는다 (하루에 열리는 횟수는 RAID.hours) */
-export const RAID_REWARD = { sparks: 5, exp: 40 };
+// 경험치는 exp + expPerLv2 × 레벨²: 고정 40이던 때는 Lv 14에게 사냥 몇 초어치였다(후반부 검토). Lv 14에 약 2천, Lv 22에 약 4.9천(자리 비움 사냥 4~5분어치)
+// 골드는 이미 남는 쪽(쓴 골드 ÷ 번 골드 0.56)이라 더하지 않는다
+export const RAID_REWARD = { sparks: 5, exp: 40, expPerLv2: 10 };
 
 /**
  * 기여 단계: 지금까지 바친 불씨가 need에 닿으면 한 번씩 보상을 받는다.
