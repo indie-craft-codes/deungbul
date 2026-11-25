@@ -31,6 +31,7 @@ function tick(): void {
     send({ t: 'auto', on: shown }); // 켠 채 접속이 끊기면 서버가 이어서 사냥한다
   }
   const me = S.me;
+  if (me && me.hp <= 0) resting = false; // 쓰러졌다: 일어나면 체력이 차 있으니 조용히 그친다 ('체력이 찼습니다'가 '쓰러졌습니다'보다 먼저 보였다)
   if (!S.auto || !me || !me.cls || me.hp <= 0) return;
   const now = performance.now();
   const ratio = me.hp / me.maxHp;
@@ -39,8 +40,15 @@ function tick(): void {
   const rest = shouldRest(ratio, me.items, resting);
   if (rest !== resting) { resting = rest; feed(t(rest ? 'autoRest' : 'autoResume')); }
 
-  // 대상이 없거나 죽었으면 가장 가까운 몬스터로 바꾼다. 쉬는 중에는 잡던 것과 내게 붙은 것만 상대한다
+  // 쉬는 중: 둘레(10m)에 몬스터가 있으면 싸우지 않고 물러난다. 쫓아오면 계속 물러나고(몬스터는 집에서 멀어지면 돌아간다), 막혔을 때만 싸운다
+  const spot = resting ? restSpot(me, monstersNear(AUTO.restClear)) : null;
+  if (spot && spot !== 'cornered') {
+    if (!me.moving || Math.hypot(me.tx - spot.x, me.tz - spot.z) > 6) autoWalk(spot.x, spot.z);
+    return;
+  }
+  // 대상이 없거나 죽었으면 가장 가까운 몬스터로 바꾼다. 쉬는 중(막혔을 때)에는 붙은 것만 상대한다
   let target = S.others.get(me.attackId);
+  if (resting && target && Math.hypot(target.x - me.x, target.z - me.z) > AUTO.restGuard) target = undefined;
   if (!target || target.kind !== 'm' || target.dying || target.gone) {
     target = monstersNear(resting ? AUTO.restGuard : AUTO.seek)[0];
     if (target) attack(target.id);
@@ -50,8 +58,6 @@ function tick(): void {
       if (Math.hypot(boss.x - me.x, boss.z - me.z) > 6) autoWalk(boss.x, boss.z);
     }
   }
-  // 쉬는 중이고 싸울 것이 없으면 둘레의 몬스터에게서 물러난다
-  if (resting && !target && !me.moving) { const to = restSpot(me, monstersNear(AUTO.restClear)); if (to) autoWalk(to.x, to.z); }
   const dist = target ? Math.hypot(target.x - me.x, target.z - me.z) : Infinity;
 
   const n = pickSkill(me.cls, ratio, dist, (i) => now >= S.cdEnd[i]);

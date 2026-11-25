@@ -473,6 +473,12 @@ html:lang(en) body { overflow-wrap: break-word; }
 @media (pointer: coarse) and (max-width: 720px) {
   #log { height: 40px; }
   #stick { width: 90px; height: 90px; left: max(8px, env(safe-area-inset-left, 0px)); }
+  /* 상점·대장간 창: 좁은 오른쪽 열에서 설명이 한 낱말씩 줄바꿈되고 퀘스트 창이 밀려 안 보였다(재검토 5).
+     값 단추는 다음 줄 오른쪽으로 보내 글자 칸을 넓히고, 창의 높이를 줄여 아래의 퀘스트 창이 보이게 한다 */
+  .shoprow { flex-wrap: wrap; row-gap: 2px; }
+  .shoprow > .icon + div { flex: 1 1 calc(100% - 46px); min-width: 0; }
+  .shoprow button { margin-left: auto; }
+  #rightcol > #shop, #rightcol > #forge { max-height: 42vh; overflow-y: auto; flex: none; }
   #knob { width: 42px; height: 42px; margin: -21px 0 0 -21px; }
 }
 

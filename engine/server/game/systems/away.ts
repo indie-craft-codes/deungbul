@@ -90,15 +90,27 @@ export class Away {
     if (p.wait > 0) return;
     p.wait = THINK_S;
     const ratio = p.hp / p.maxHp;
+    if (p.hp <= 0) { this.resting.delete(p.id); return; } // 쓰러졌다: 일어나면 체력이 차 있다
 
     const potion = p.itemCd <= 0 ? pickPotion(ratio, p.items) : null;
     if (potion) g.command(p, { t: 'use', id: potion });
     // 물약이 없으면 체력이 찰 때까지 쉬어 간다 (화면의 자동 사냥과 같은 규칙)
     if (shouldRest(ratio, p.items, this.resting.has(p.id))) this.resting.add(p.id); else this.resting.delete(p.id);
     const resting = this.resting.has(p.id);
+    // 쉬는 중: 둘레(10m)에 몬스터가 있으면 싸우지 않고 물러난다(쫓아오면 계속). 막혔을 때만 붙은 것과 싸운다 (화면의 자동 사냥과 같은 규칙)
+    if (resting) {
+      const foes = [...g.ents.values()].filter((m) => m.kind === 'm' && !m.dead && !m.homing && m.layer === p.layer && dist(p, m) < AUTO.restClear);
+      const spot = restSpot(p, foes);
+      if (spot && spot !== 'cornered') {
+        p.targetId = 0;
+        if (!p.moving || Math.hypot(p.tx - spot.x, p.tz - spot.z) > 6) g.command(p, { t: 'move', x: spot.x, z: spot.z });
+        return;
+      }
+    }
 
     // 대상이 없거나 죽었으면 가장 가까운 몬스터로 바꾼다
     let target = g.ents.get(p.targetId);
+    if (resting && target && dist(p, target) > AUTO.restGuard) target = undefined;
     if (!target || target.dead) {
       target = undefined;
       let nd = resting ? AUTO.restGuard : AUTO.seek; // 쉬는 중이면 내게 붙은 것만 상대한다
@@ -108,12 +120,7 @@ export class Away {
         if (d < nd) { nd = d; target = m; }
       }
       if (target) g.command(p, { t: 'attack', id: target.id });
-      // 쉬는 중: 둘레의 몬스터에게서 물러난다 (화면의 자동 사냥과 같은 규칙)
-      else if (resting && !p.moving) {
-        const foes = [...g.ents.values()].filter((m) => m.kind === 'm' && !m.dead && m.layer === p.layer && dist(p, m) < AUTO.restClear);
-        const to = restSpot(p, foes);
-        if (to) g.movement.goTo(p, to.x, to.z);
-      }
+      else if (resting) { /* 쉬는 중이고 둘레에 몬스터가 없다: 그 자리에서 쉰다 */ }
       // 쓰러져 등탑에서 일어났거나 멀리 끌려갔으면 자리를 비운 곳으로 돌아간다
       else if (!p.moving && dist(p, s) > 4) g.movement.goTo(p, s.x, s.z);
     }

@@ -1,6 +1,7 @@
 // 자동 사냥의 판단. 클라이언트(engine/client/auto.ts)와 서버의 자리 비움 사냥(engine/server/game/systems/away.ts)이
 // 같은 기준으로 움직이도록 여기에 한 번만 적는다. 무엇을 누를지만 정하고, 실제 명령은 부른 쪽이 낸다.
 import { ITEMS, SKILL_SLOTS, classOf, skillDef, type ItemDef, type ItemId, itemDef } from './defs';
+import { clampPoint } from './world';
 
 export const AUTO = {
   /** 이 거리 안의 몬스터를 찾는다 */
@@ -15,7 +16,7 @@ export const AUTO = {
   restAt: 0.35,
   /** 쉬다가 체력이 이 비율까지 차면 다시 사냥한다 (싸우지 않으면 체력이 저절로 찬다) */
   restUntil: 0.9,
-  /** 쉬는 중에도 이 거리 안에 붙은 몬스터와는 싸운다 (맞고만 있지 않게) */
+  /** 쉬는 중에도 이 거리 안에 붙은 몬스터와는 싸운다. 다만 물러날 수 있으면 물러나기가 먼저다(쫓아오는 몬스터와 싸우다 쓰러지던 것): 막혀서 물러날 수 없을 때만 */
   restGuard: 3,
   /** 쉬는 동안 이 거리 안에 몬스터가 있으면 그 반대쪽으로 restStep만큼 물러난다 (적 사이에서 맞으며 쉬지 않게) */
   restClear: 10,
@@ -80,8 +81,11 @@ export function shouldRest(ratio: number, items: Record<string, number>, resting
   return ratio < AUTO.restAt && !POTIONS.some((id) => (items[id] ?? 0) > 0);
 }
 
-/** 쉴 자리: 둘레(restClear 안)의 몬스터들에게서 멀어지는 쪽으로 restStep만큼. 둘레에 없으면 null */
-export function restSpot(me: { x: number; z: number }, foes: readonly { x: number; z: number }[]): { x: number; z: number } | null {
+/**
+ * 쉴 자리: 둘레(restClear 안)의 몬스터들에게서 멀어지는 쪽으로 restStep만큼(땅의 범위 안으로 맞춘다). 둘레에 없으면 null.
+ * 땅의 가장자리에 막혀 3m도 물러날 수 없으면 'cornered': 그때는 붙은 몬스터와 싸운다
+ */
+export function restSpot(me: { x: number; z: number }, foes: readonly { x: number; z: number }[]): { x: number; z: number } | 'cornered' | null {
   let dx = 0, dz = 0;
   for (const f of foes) {
     const d = Math.hypot(f.x - me.x, f.z - me.z);
@@ -89,7 +93,8 @@ export function restSpot(me: { x: number; z: number }, foes: readonly { x: numbe
   }
   const len = Math.hypot(dx, dz);
   if (len < 0.01) return null;
-  return { x: me.x + (dx / len) * AUTO.restStep, z: me.z + (dz / len) * AUTO.restStep };
+  const to = clampPoint(me.x + (dx / len) * AUTO.restStep, me.z + (dz / len) * AUTO.restStep);
+  return Math.hypot(to.x - me.x, to.z - me.z) < 3 ? 'cornered' : to;
 }
 
 /** 손으로 마실 때 살펴보는 순서: 가장 진한 물약의 회복량만큼 다쳤으면 진한 것부터, 아니면 약한 것부터 (조금 다쳤을 때 진한 물약을 버리지 않게) */

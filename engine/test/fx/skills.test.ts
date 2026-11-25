@@ -108,34 +108,44 @@ function bench() {
   check(shouldRest(AUTO.restAt - 0.01, {}, false) && !shouldRest(AUTO.restAt + 0.01, {}, false), `물약이 없고 체력이 ${AUTO.restAt * 100}% 아래면 쉬기 시작한다`);
   check(shouldRest(AUTO.restUntil - 0.01, {}, true) && !shouldRest(AUTO.restUntil, {}, true), `쉬는 중이면 ${AUTO.restUntil * 100}%까지 찰 때 그친다`);
 
-  // 자리 비움 사냥: 쉬는 동안 멀리 있는 몬스터는 잡지 않고, 붙은 것과는 싸운다
-  const { g, hero, dummy } = bench();
-  const p = hero('쉬는이', 40, 40);
-  for (const id of POTIONS) p.items[id] = 0;
-  p.lv = 5; p.auto = true; g.away.start(p);
-  const far = dummy(46, 40);
-  p.hp = p.maxHp * 0.2;
-  for (let i = 0; i < 20; i++) g.tick(0.05);
-  check(p.targetId !== far.id, '쉬는 동안 떨어진 몬스터(6m)에게 새로 덤비지 않는다');
-  const near = dummy(p.x + 1.5, p.z); // 물러난 자리 곁에 붙는다
-  for (let i = 0; i < 20; i++) g.tick(0.05);
-  check(p.targetId === near.id, `쉬는 중에도 내게 붙은 몬스터(${AUTO.restGuard}m 안)와는 싸운다`);
-  g.combat.damage(p, near, 1e9, false); // 쓰러뜨린다 (곧 같은 자리에 다시 나지 않게 멀리 옮긴다)
-  near.x = near.hx = 400; near.z = near.hz = 400;
-  p.hp = p.maxHp;
-  for (let i = 0; i < 20; i++) g.tick(0.05);
-  check(p.targetId === far.id, '체력이 차면 다시 떨어진 몬스터에게 간다');
-  // 쉴 자리: 둘레 몬스터의 반대쪽으로 물러난다
+  // 쉴 자리: 둘레 몬스터의 반대쪽으로 물러난다. 땅의 끝에 막히면 'cornered'
   const { restSpot } = await import('../../shared/auto');
+  const { clampPoint } = await import('../../shared/world');
   const spot = restSpot({ x: 0, z: 0 }, [{ x: 3, z: 0 }, { x: 4, z: 1 }]);
-  check(!!spot && spot.x < -AUTO.restStep * 0.9 && restSpot({ x: 0, z: 0 }, [{ x: 30, z: 0 }]) === null, '쉬는 동안 둘레의 몬스터 반대쪽으로 물러나고, 둘레에 없으면 그 자리에서 쉰다');
-  const p2 = hero('물러나는이', 0, 0);
-  for (const id of POTIONS) p2.items[id] = 0;
-  p2.auto = true; g.away.start(p2);
-  dummy(5, 0);
-  p2.hp = p2.maxHp * 0.2;
-  for (let i = 0; i < 40; i++) g.tick(0.05);
-  check(p2.x < -3, `자리 비움 사냥도 쉴 때 몬스터에게서 물러난다 (x ${p2.x.toFixed(1)})`);
-  g.away.stop(p2);
+  check(typeof spot === 'object' && !!spot && spot.x < -AUTO.restStep * 0.9 && restSpot({ x: 0, z: 0 }, [{ x: 30, z: 0 }]) === null, '쉬는 동안 둘레의 몬스터 반대쪽으로 물러나고, 둘레에 없으면 그 자리에서 쉰다');
+  const edge = clampPoint(1000, 0);
+  check(restSpot(edge, [{ x: edge.x - 2, z: 0 }]) === 'cornered', '땅의 끝에 몰려 물러날 수 없으면 cornered');
+
+  const { g, hero, dummy } = bench();
+  const run = (sec: number) => { for (let i = 0, n = Math.round(sec * 20); i < n; i++) g.tick(0.05); };
+  const rester = (name: string, x: number, z: number) => { const q = hero(name, x, z); for (const id of POTIONS) q.items[id] = 0; q.lv = 5; q.maxHp = 100000; q.hp = 20000; q.auto = true; g.away.start(q); return q; };
+
+  // 쫓아오는 몬스터: 싸우지 않고 계속 물러나고, 몬스터는 집에서 멀어지면 돌아간다 (재검토 5: 잊힌 병사와 싸우다 쓰러졌다)
+  const p = rester('쉬는이', 0, 0);
+  const chaser = g.monsters.spawn('hound', 3, 0);
+  chaser.targetId = p.id;
+  let fought = false;
+  for (let k = 0; k < 300; k++) { g.tick(0.05); if (p.targetId === chaser.id) fought = true; }
+  check(!fought && (chaser.homing || chaser.targetId !== p.id || Math.hypot(chaser.x - p.x, chaser.z - p.z) > AUTO.restClear), `쉬는 동안 쫓아오는 몬스터와 싸우지 않고 물러나 떼어 낸다 (거리 ${Math.hypot(chaser.x - p.x, chaser.z - p.z).toFixed(1)}m)`);
+  g.remove(chaser.id);
   g.away.stop(p);
+
+  // 땅의 끝에 몰렸으면 붙은 몬스터와 싸운다
+  const q = rester('몰린이', edge.x, 0);
+  const stuck = dummy(edge.x - 1.5, 0);
+  run(1);
+  check(q.targetId === stuck.id, `땅의 끝에 몰려 물러날 수 없으면 붙은 몬스터(${AUTO.restGuard}m 안)와 싸운다`);
+  g.remove(stuck.id);
+  g.away.stop(q);
+
+  // 체력이 차면 다시 사냥한다
+  const r = rester('다시', -30, 30);
+  const far = dummy(-30, 48);
+  run(1);
+  check(r.targetId !== far.id, '쉬는 동안 떨어진 몬스터(18m)에게 덤비지 않는다');
+  r.hp = r.maxHp;
+  run(1);
+  check(r.targetId !== 0 && g.ents.get(r.targetId)?.kind === 'm', '체력이 차면 다시 사냥한다 (떨어진 몬스터를 잡는다. 근처를 떠도는 무리일 수도 있다)');
+  r.hp = 0; run(0.5);
+  g.away.stop(r);
 }
