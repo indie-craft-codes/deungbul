@@ -38,7 +38,9 @@ export function initMarks(): void {
       out.push({ x: tw.x, z: tw.z + tw.r + 1.8, name: loc.towers[tw.id] ?? tw.id, kind: 'town', info: glow > 0 ? loc.fmt.glow(stageOf(glow), glow, GLOW_MAX) : loc.ui.towerOff });
     });
     const chapter = QUESTS[G.quest.c], step = chapter?.steps[G.quest.s];
-    if (chapter && step) out.push({ x: step.at.x, z: step.at.z, name: loc.ui.questGoal, kind: 'goal', info: `${loc.quests[chapter.id].title}: ${loc.quests[chapter.id].steps[G.quest.s] ?? ''}` });
+    // 처치할 몬스터가 있으면 그 이름을 쓴다: 이름표가 겹치면 뒤의 것이 빠지므로, 같은 자리의 보스 이름이 '퀘스트 목적지'에 가려졌다 (검토 7)
+    const goalName = step?.goal.kind === 'kill' ? loc.monsters[step.goal.monster] ?? loc.ui.questGoal : loc.ui.questGoal;
+    if (chapter && step) out.push({ x: step.at.x, z: step.at.z, name: goalName, kind: 'goal', info: `${loc.quests[chapter.id].title}: ${loc.quests[chapter.id].steps[G.quest.s] ?? ''}` });
     if (isDungeonId(S.dungeon.id) && !S.dungeon.cleared) {
       const boss = DUNGEONS[S.dungeon.id].boss;
       out.push({ x: boss.x, z: boss.z, name: loc.monsters[boss.type] ?? boss.type, kind: 'boss', hunt: true });

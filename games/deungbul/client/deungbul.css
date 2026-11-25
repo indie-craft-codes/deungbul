@@ -31,6 +31,8 @@
 @keyframes hintPulse { 50% { box-shadow: 0 0 0 1px var(--gold), 0 0 2px rgba(255, 200, 90, .2); } }
 .bar.res i { background: #7fd68a; }
 .spark { color: var(--gold); font-weight: 700; font-size: 12px; }
+/* 'Sparks 120'이 두 줄로 꺾이지 않게 (검토 7, 영어 폰) */
+#sparks { white-space: nowrap; }
 /* 불씨는 이 게임의 표시(#sparks)로 그린다: 틀의 두 번째 재화 표시는 감춘다 */
 #coin { display: none; }
 #raid { width: 300px; max-width: 100%; display: flex; flex-direction: column; gap: 5px; text-align: center; border-color: var(--gold); }

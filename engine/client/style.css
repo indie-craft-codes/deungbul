@@ -268,6 +268,12 @@ body:not(:has(#gate))::before { content: ''; position: fixed; inset: 0; backgrou
   .skill { width: 58px; height: 56px; }
   /* 단추 줄이 기술 줄보다 넓어져 조이스틱을 덮지 않게 한다 */
   #actRow button { font-size: 12px; padding: 7px 5px; }
+  /* 가운데 알림이 세 줄로 화면 가운데를 가렸다 (검토 7): 글을 줄인다 */
+  .banner { padding: 8px 12px; }
+  .banner #bannerText { font-size: 15px; }
+  .banner #bannerSub { font-size: 12px; }
+  /* 체력 숫자와 재화가 두 줄로 꺾이지 않게 (검토 7, 영어 폰) */
+  #hpt { white-space: nowrap; }
 }
 
 /* 이름이 길어도 레벨과 직업이 줄바꿈되지 않게 한다 */
@@ -322,7 +328,8 @@ html, body { height: var(--app-h, 100%); }
 #bagBtn { padding: 1px 8px; font-size: 11px; }
 @media (pointer: coarse) { #bagBtn { font-size: 14px; padding: 3px 10px; } }
 #bag { background: var(--ink); z-index: 6; }
-#bagClose { position: sticky; bottom: 0; }
+/* 붙어 있는 닫기 단추 뒤와 아래로 목록 글이 비치지 않게 창의 바탕을 두른다 (검토 7) */
+#bagClose { position: sticky; bottom: 0; background: var(--ink); box-shadow: 0 10px 0 var(--ink), 0 -6px 8px var(--ink); }
 #bagBtn { white-space: nowrap; flex: none; }
 
 .classopt.current { border-color: var(--gold); }

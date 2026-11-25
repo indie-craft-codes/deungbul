@@ -50,7 +50,9 @@ function next(): void {
   ui.banner.className = 'banner ' + b.tone;
   ui.banner.hidden = false;
   // 글이 길수록 조금 더 오래 둔다
-  setTimeout(next, 2600 + Math.min(2400, (b.text.length + b.sub.length) * 40));
+  // 좁은 화면에서는 알림이 화면을 더 많이 가리니 짧게 둔다 (검토 7: 폰에서 4초 넘게 가운데를 가렸다)
+  const narrow = window.innerWidth <= 720;
+  setTimeout(next, (narrow ? 2000 : 2600) + Math.min(narrow ? 1400 : 2400, (b.text.length + b.sub.length) * 40));
 }
 
 /** 화면 가운데 위에 크게 뜨는 알림. 여러 개가 겹치면 차례로 보여 준다. stale이 참을 돌려주면 차례가 와도 띄우지 않는다. */
