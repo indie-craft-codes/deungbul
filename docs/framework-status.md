@@ -17,6 +17,7 @@
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
+- 에셋 불러오기(2026-11-26, 아래 '에셋 불러오기'): 모델 파일(glTF/GLB)과 애니메이션 클립, 효과음 파일·배경음·음량, 접속 화면의 미리 불러오기. 등록하지 않으면 예전과 같다(등불지기는 등록하지 않는다). `npm test` 검사 1369개.
 - 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다. 프로토콜은 2다(호환 코드는 2026-11-24에 지웠다). 그 뒤 더한 사건(`buff`, `stun`)은 옛 화면이 모르는 채 무시한다.
 
 ## 0. 이어 갈 것
@@ -48,6 +49,22 @@
 | 그림 | `addIconSheet(src, 열, 행, keys, hand?)`, `itemIcon(열쇠, 직업)`, `gearIcon`: 시트의 한 칸을 가방·상점·대장간·물약 단추·메뉴의 장비와 우편·내 정보 창의 재화에 그린다. 열쇠는 아이템 id, `slot:칸`, `cur:gold`·`cur:second`, `ui:mail`. hand를 주면 그 손 모양의 직업에게만(무기). 칸 뒤의 바탕은 `--icon-bg`. 없는 것은 글자만 | 등불지기: 투명 webp 넷(소모품·재료, 검·갑옷, 활·지팡이, 장신구·재화·우편), 모두 340KB | `fx/icons`(4개), 화면(PC, 전사·궁수·마법사) |
 | 운영 스크립트를 게임마다 | `games/<게임>/deploy.json`(port, db, dist, bots, pages)을 `scripts/deploy.mjs`가 읽고, `restart.sh`·`publish.sh`(`GAME=`)와 `pilot.mjs`(인자)가 그것으로 돈다. `restart.sh`의 `DRY=1` | 자기 `deploy.json` | 예제로 실제 재시작(깃발로 저장하고 끄기 → 다시 띄우기) |
 | 시험을 게임마다 | `test/all.ts`가 `games/<게임>/test/all.ts`를 저마다의 tsconfig로 돌린다. `node scripts/game.mjs test [게임] [이름…]` | 자기 `test/all.ts`와 `tsconfig.json` | `npm test` |
+
+## 에셋 불러오기 (2026-11-26)
+
+게임이 파일을 등록하면 코드 모델·합성음 대신 그것을 쓴다. 등록표와 고르는 규칙은 `engine/client/assets.ts`(three.js도 화면 요소도 읽지 않는다), 읽고 복제하고 움직이는 것은 `engine/client/scene/gltf.ts`, 바꿔 끼우기는 `scene/models.ts`, 소리는 `sound.ts`, 미리 불러오기는 `preload.ts`. 쓰는 법은 [making-a-game.md](making-a-game.md) 5절 '모델 파일과 애니메이션', '소리 파일과 배경음'.
+
+| 기능 | 틀 쪽 | 게임이 하는 일 | 지키는 것 |
+|---|---|---|---|
+| 모델 파일 | `registerMonsterAsset(종류, 파일)`, `registerHumanoidAsset(파일, 직업?)`, `registerWeaponAsset(무기 id 또는 손 모양 id, 파일)`. 맞추는 값 `height`/`scale`, `lift`, `ground`, `turn`, `shadow`, 재질 색 `tint`, 사람의 `arms`(손 모양을 붙일 팔 뼈)·`paint`(옷·살갗 재질). 코드 모델을 먼저 세우고 파일이 읽히면 안을 바꿔 끼운다(같은 Model 객체). 같은 파일은 한 번 읽고 복제(뼈대는 `SkeletonUtils.clone`). 읽지 못하면 경고 한 줄, 코드 모델 그대로. 무기는 손 모양이 돌려준 칼날 자리에 놓고 칼날을 숨긴다 | 예제: 곰·멧돼지(같은 `beast.glb`를 크기·털빛만 다르게), 모든 사람(`camper.glb`, 옷·살갗을 사람마다 칠함, 도끼·활이 팔 뼈에), 도끼(`axe.glb`). 토끼는 코드 모델 그대로 | `fx/assets`(고르는 차례, 크기·발 높이), 화면(예제 PC·폰, 등불지기 전후 비교) |
+| 애니메이션 | `AnimationMixer`로 상태 idle/walk/attack/hit/die → 클립(`DEFAULT_CLIPS`, `setClipNames`, 모델의 `clips`. 대소문자와 내보낸 도구가 붙인 앞머리(Armature 세로줄 이름)를 맞춘다). 서 있기·걷기 반복, 공격·맞음·쓰러짐 한 번(우선순위 쓰러짐 > 공격 > 맞음), `fade`(기본 0.2초)로 섞기, `speed`. 공격은 서버의 공격 사건(코드 모델의 `swing`과 같은 신호)에, 맞음은 `h` 사건의 대상에, 쓰러짐은 `d` 사건에(클립 길이 + 0.5초 누웠다가 사라진다, 2.5초까지). 클립이 없는 상태는 틀의 흔들기(통통·살짝 뜀·줄어듦). 믹서는 거리와 화면 안팎으로 1·2·4·8프레임마다(`mixerEvery`) | 클립 이름을 맞춘 파일 | `fx/assets`(클립 고르기, 우선순위, three의 믹서로 Animator의 넘어가기·돌아오기·쓰러짐), 화면(곰의 내리찍기, 멧돼지의 쓰러짐, 야영꾼의 걷기·도끼 휘두르기) |
+| 소리 파일 | `registerSound(키, 주소, 음량?)`: 틀의 키 여덟(hit, crit, hurt, kill, skill, fanfare, pickup, bad)과 게임의 키(`playSound`). 다 읽힌 파일이 있으면 파일, 아니면 합성음(`soundSource`). 효과음과 합성음은 효과음 음량을, 배경음은 배경음 음량을 지난다 | 예제: hit, pickup을 WAV로(나머지는 합성음) | `fx/assets`(고르기), 화면에서 튼 소리의 길이로 확인(0.18초 = 파일, 0.3초 잡음 = 합성음) |
+| 배경음 | `registerMusic(id, 주소, 음량?)`, `setMusicPicker(() => id)`: 0.25초마다 묻고 바뀌면 1.5초 페이드, 반복. audio 요소로 흘려 받는다. 소리를 끄면 줄어들어 멈춘다 | 예제: 모닥불 20m 안에서 `camp` | 화면(재생·끄면 멈춤·켜면 다시) |
+| 음량과 자동 재생 | 메뉴 머리에 '음량' 단추와 효과음·배경음 막대(소리 파일을 등록한 게임이나 `enableVolume()`만). localStorage `soundMix`(try/catch). 첫 입력 전에는 소리 장치를 만들지 않는다 | | `fx/assets`(저장 글 읽기), 화면 |
+| 미리 불러오기 | 접속 화면에 진행 막대와 '모델과 소리를 불러오는 중 n/m'(i18n `loadingAssets`). 접속이 먼저 끝나도 다 읽을 때까지(12초까지) 접속 화면을 둔다. 등록한 것이 없으면 아무것도 보이지 않는다. 배경음은 미리 받지 않는다 | | 화면(느린 회선 흉내로 0/5 → 3/5 → 들어감) |
+| 번들 | 모델 파일 쪽(`scene/gltf.ts`)은 게임이 처음 등록할 때 끼워진다(`setFileTools`): 등록하지 않는 게임의 번들에는 그것과 three.js의 읽기·애니메이션 코드가 들어가지 않는다. GLTFLoader(46KB)와 SkeletonUtils(4KB)는 처음 읽을 때 따로 받는다 | | 빌드 크기: 등불지기 763KB → 769KB, 예제 784KB + 따로 50KB |
+
+예제의 파일은 `scripts/make-sample-assets.mjs`가 만든다(인터넷에서 받지 않는다): 상자로 된 뼈대 모델 둘(36KB, 41KB, 클립 다섯), 도끼 머리(5KB), 효과음 둘(WAV 8KB, 14KB), 배경음(12초 WAV 375KB). 예제의 `vite.config.ts`에서 `publicDir: false`를 지웠다(`client/public/`).
 
 ## 틀 수리의 진행 (점검 보고의 묶음 A~F: 모두 끝)
 
@@ -174,7 +191,7 @@
 | 진입 | `engine/client/main.ts`의 `startClient({ look, modules })` | `client/main.ts` (그 전에 `mountMarkup()`) |
 | 화면 규칙 | `engine/client/rules.ts`의 `rules` (`speed, unlocked, lockNote, lockHint, home`) | `client/deungbul.ts`의 `initDeungbul` |
 | 끼어드는 자리 | `bus.onMsg, onFrame, onSlow, onKey`, `onLangChange` | 게임의 모듈들 (init 안에서 등록) |
-| 겉모습 | `Look`의 `ground, leaf, scenery`, `view.setMood`, `registerMonsterModel`·`registerBlade`·`registerArmor`, `registerHand`·`registerShot`, `setHumanoidDeco`·`setHumanoidBody`, `addNpc`, `setMerchant`, `addPlace` | `client/scene/*`, `client/deungbul.ts`, `client/hud/tower.ts` |
+| 겉모습 | `Look`의 `ground, leaf, scenery`, `view.setMood`, `registerMonsterModel`·`registerBlade`·`registerArmor`, `registerHand`·`registerShot`, `setHumanoidDeco`·`setHumanoidBody`, `addNpc`, `setMerchant`, `addPlace`. 모델·소리 파일(`registerMonsterAsset`·`registerHumanoidAsset`·`registerWeaponAsset`, `registerSound`·`registerMusic`·`setMusicPicker`): 이 게임은 쓰지 않는다 | `client/scene/*`, `client/deungbul.ts`, `client/hud/tower.ts` |
 | 지도 | `setMapPaint`, `addMarks`(미니맵과 전체 지도), `addMapLabels`, `addMapPlaces`, `travelTo` | `client/scene/paint.ts`, `client/hud/marks.ts` |
 | 메뉴 | `setMenuTabs`, `addMenuTab`, `openMenu` | (틀의 일곱 탭을 그대로 쓴다) |
 | 창 | `engine/client/hud/shell.ts`의 `mountPanel(자리, html)`과 `SLOTS` | `client/markup.ts`, `client/deungbul.css` |
@@ -210,6 +227,7 @@
 - **자동 이동은 지역 안에서만**: 들판에서 던전 안으로 곧장 가지 못하고 던전의 문까지 간다. 지역을 넘는 길(문을 지나 들어가기)은 아직 없다.
 - **지도에 보이는 몬스터와 사람**은 서버가 보내 주는 내 둘레(시야 `AOI`)의 것뿐이다. 먼 곳은 사냥터 표식으로 대신한다.
 - **강화를 쓰는 직업이 아직 없다**: 효과는 시험(`fx/skills`)으로 지키지만, 내 정보 창의 강화 표시는 실제 게임 화면에서 본 적이 없다.
+- **에셋 불러오기의 한계(2026-11-26)**: 파일의 사람에는 틀의 갑옷 덧대기가 붙지 않는다(갑옷을 모델 파일로 바꾸는 접점이 없다). 내 캐릭터가 쓰러질 때는 쓰러짐 클립을 틀지 않는다(틀이 내 캐릭터의 쓰러짐 사건을 따로 그리지 않는다). 무기 모델은 손 모양이 돌려준 부분 하나만 바꾼다(도끼 자루, 화살통은 코드 모양). Draco·KTX2 압축 파일, 소리 형식 고르기(브라우저마다 ogg/mp3)는 없다. 틀의 서버는 소리 파일에 형식을 붙이지 않는다(`application/octet-stream`. 받아서 풀므로 들린다). 효과음 파일은 풀어서 메모리에 둔다(짧은 것을 권한다). 모델이 바뀌는 순간(파일이 접속 뒤에 읽히면)은 코드 모델에서 툭 바뀐다.
 
 ### 틀에 남은 이 게임의 색
 

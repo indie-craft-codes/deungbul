@@ -107,7 +107,7 @@ export default defineConfig({
   resolve: { alias: { '@engine': resolve(repo, 'engine'), '@game': game } },
   // 상대 경로로 빌드한다: 게임 서버가 직접 내보낼 때도, 하위 경로에 올릴 때도 그대로 동작한다
   base: './',
-  publicDir: false,
+  // client/public/(모델과 소리 파일)이 빌드에 그대로 들어간다. 그런 파일이 없는 게임은 publicDir: false를 둔다
   // 개발 서버의 화면이 붙을 게임 서버의 포트: server/main.ts의 기본 포트와 같아야 한다 (PORT를 주면 서버와 함께 따라간다)
   define: { 'import.meta.env.VITE_DEV_PORT': JSON.stringify(process.env.PORT ?? '3002') },
   build: { outDir: resolve(repo, 'dist-sample'), emptyOutDir: true },
@@ -116,7 +116,7 @@ export default defineConfig({
 });
 ```
 
-- 아이콘과 manifest를 두려면 `client/public/`을 만들고 `publicDir: false` 줄을 지운다.
+- `client/public/`의 파일(아이콘, manifest, 그림 시트, 모델과 소리 파일)은 빌드 결과에 그대로 들어간다. 예제는 모델과 소리 파일을 두므로 `publicDir: false` 줄이 없다. 그런 파일이 없는 게임은 `publicDir: false`를 둬도 된다(두면 `client/public/`을 읽지 않는다).
 - 빌드 결과 폴더(`dist-sample/`)는 `.gitignore`에 넣는다.
 
 `package.json`의 스크립트(게임 이름만 바꿔 같은 모양으로 더한다. 서버와 화면은 `scripts/game.mjs`를 거친다: 게임 폴더의 `tsconfig.json`이 있으면 `tsx --tsconfig`로 그것을 읽게 한다):
@@ -427,7 +427,7 @@ export const look: Look = {
   leaf: (_x, _z, k) => LEAVES[Math.floor(k * LEAVES.length) % LEAVES.length],
 ```
 
-모듈의 init에서 등록하는 것: 몬스터 모델, 사람 모델, 손 모양, 무기와 갑옷의 모습, 분위기, 미니맵의 바탕.
+모듈의 init에서 등록하는 것: 몬스터 모델, 사람 모델, 손 모양, 무기와 갑옷의 모습, 분위기, 미니맵의 바탕, 모델과 소리 파일(아래 '모델 파일과 애니메이션', '소리 파일과 배경음').
 
 ```ts games/sample/client/scene.ts
 export function initScene(): void {
@@ -449,6 +449,7 @@ export function initScene(): void {
   });
   registerBlade('axe2', { color: 0xffd9a0, scale: 1.25, glow: false });
   registerArmor('coat', { color: 0x8a6a48, pads: false });
+  // …
   // 분위기: 저녁 빛 (하늘과 안개의 색, 두 빛의 세기, 안개의 거리)
   view.setMood({ sky: 0xd9b48a, hemi: 1.9, sun: 2.1, fogNear: 52, fogFar: 115 });
   // 미니맵의 바탕: 지역은 풀빛, 야영지는 흙빛
@@ -474,6 +475,50 @@ export function initScene(): void {
 ```
 
 - 틀의 색 변수: `--sky`(문서 바탕), `--ink`와 `--ink-rgb`(창의 바탕색. 둘을 같은 색으로: 반투명한 바탕들이 `--ink-rgb`를 쓴다), `--panel`, `--cover-rgb`(화면을 덮는 막), `--line`, `--fg`, `--dim`, `--gold`, `--on-gold`(금빛 단추 위의 글자), `--good`·`--bad`·`--ally`(좋음·나쁨·파티원), `--hp`, `--xp`, `--icon-bg`(그림 칸의 바탕), `--font`, `--mono`. 기본값과 뜻은 `engine/client/style.css`의 맨 위.
+
+### 모델 파일과 애니메이션 (선택)
+
+코드 모델 대신 glTF/GLB 파일을 쓸 수 있다. 몬스터 종류, 사람(직업별 또는 모두), 무기마다 등록하고, **등록하지 않은 것은 지금처럼 코드 모델**이다. 파일은 `client/public/models/`에 둔다(`vite.config.ts`에 `publicDir: false`가 없어야 빌드에 들어간다).
+
+```ts games/sample/client/scene.ts
+  // 모델 파일: 곰과 멧돼지는 뼈대 애니메이션 모델 하나를 크기와 털빛만 바꿔 쓴다 (클립 idle/walk/attack/hit/die). 토끼는 위의 코드 모델 그대로
+  registerMonsterAsset('bear', { url: './models/beast.glb', height: 2.3, tint: { fur: 0x5a4030 } });
+  registerMonsterAsset('boar', { url: './models/beast.glb', height: 1.4, tint: { fur: 0x7b5a44, belly: 0x9a7a5a } });
+  // 사람(모든 직업, 상인): 틀의 사람과 같은 크기의 야영꾼. 팔 뼈에 틀의 손 모양(도끼, 활)이 붙고, 옷과 살갗은 사람마다 칠한다
+  registerHumanoidAsset({ url: './models/camper.glb', arms: { left: 'arm_l', right: 'arm_r' }, paint: { cloth: 'cloth', skin: 'skin' } });
+  // 도끼(손 모양 axe의 무기 전부): 도끼날 자리에 양날 도끼 머리
+  registerWeaponAsset('axe', { url: './models/axe.glb', height: 0.5 });
+```
+
+- **바꿔 끼우기**: 코드 모델(`registerMonsterModel`의 것, 없으면 눈 달린 덩어리. 사람은 `setHumanoidBody`의 것)을 먼저 세우고, 파일을 다 읽으면 그 모델의 안을 파일의 것으로 바꾼다. 접속 화면은 등록한 파일을 다 읽을 때까지(길어도 12초) 진행 막대를 보이며 기다리므로, 보통은 처음부터 파일의 모델이 보인다. **읽지 못하면 콘솔에 경고 한 줄**을 남기고 코드 모델이 그대로 남는다(게임은 그대로 돈다).
+- 같은 파일은 한 번만 읽고 엔티티마다 복제한다(뼈대가 있으면 `SkeletonUtils.clone`). 같은 파일을 크기와 색만 바꿔 여러 종류에 쓸 수 있다: `tint`는 재질 이름 → 색.
+- **맞추는 값**(`ModelFit`): `height`(경계 상자의 높이를 이 값으로) 또는 `scale`(배율, 기본 1), `lift`(바닥을 땅에 붙인 뒤 더 올리는 높이), `ground`(기본 true: 경계 상자의 바닥을 땅에. false면 파일의 원점이 발), `turn`(돌리는 각, 도. 파일의 앞이 -Z면 180), `shadow`(그림자, 기본 true). 틀의 약속은 코드 모델과 같다: 발이 원점, +Z를 바라본다.
+- **사람**: `registerHumanoidAsset(파일, 직업?)`. 직업을 주면 그 직업만, 주지 않으면 모두(직업 것이 없는 직업, 상인, NPC). `arms`는 틀의 손 모양(검·활·지팡이와 `registerHand`의 것)을 붙일 팔 뼈 이름 둘: 뼈는 쉬는 자세에서 회전 없이 어깨에 있어야 한다. 틀의 사람과 같은 크기(키 약 2.1, 어깨 높이 약 1.48, 팔 길이 약 0.7)로 만들면 손 모양의 자리가 그대로 맞는다. `paint`는 사람마다 칠할 재질 이름(`cloth` 옷 색, `skin` 살갗). 파일의 사람에는 틀의 갑옷 덧대기(`registerArmor`)가 붙지 않는다. `setHumanoidDeco`의 꾸밈은 맨 위 뼈에 붙는다.
+- **무기**: `registerWeaponAsset(id, 파일)`. id는 무기 아이템의 id(그 무기만) 또는 손 모양의 id(그 손의 무기 전부). 손 모양이 돌려준 부분(칼날·도끼날·활대·지팡이)의 자리에 놓고 그 부분을 숨긴다. 모델은 위가 +Y, 가운데가 그 자리에 온다. 길이는 `height`(기본: 숨긴 부분의 길이), 크기는 `registerBlade`의 `scale`을 따른다. 코드 사람과 파일 사람 모두에 붙는다.
+- **애니메이션**: 클립 이름은 `idle`(서 있기), `walk`(걷기), `attack`(공격), `hit`(맞음), `die`(쓰러짐). 다르면 모델마다 `clips: { walk: 'Run' }`, 모든 모델에 `setClipNames({ … })`. 대소문자와 `Armature|Walk`처럼 앞에 붙은 이름은 알아서 맞춘다. 서 있기·걷기는 반복하고, 공격·맞음·쓰러짐은 한 번 튼다. 공격은 서버의 공격 사건(코드 모델이 팔을 휘두르는 바로 그 신호)마다 처음부터 튼다. 맞음은 공격 중이면 끊지 않는다. 상태 사이는 `fade`초(기본 0.2) 섞고, `speed`로 상태마다 빠르기를 바꾼다(`speed: { walk: 1.2 }`).
+- **클립이 없는 상태는 틀의 코드 흔들기**: 걸을 때 통통 튀고, 공격할 때 살짝 뛰고, 쓰러질 때 줄어든다. 쓰러짐 클립이 있으면 그것을 다 틀고 0.5초 누워 있다가(모두 2.5초까지) 사라진다. 틀의 걸음은 한 주기 약 0.63초다: 걷기 클립이 이동 속도와 맞지 않아 미끄러져 보이면 `speed.walk`로 맞춘다.
+- **성능**: 믹서는 내 캐릭터에서 22m 안이면 매 프레임, 40m 안이면 2프레임, 그 밖은 4프레임, 화면 밖은 8프레임마다 돈다(건너뛴 시간은 모아서 넘긴다). 모델 파일을 하나도 등록하지 않은 게임의 번들에는 읽는 코드와 three.js의 애니메이션 코드가 들어가지 않는다. 읽는 도구(GLTFLoader, 약 46KB)는 처음 읽을 때 따로 받는다.
+- **파일의 크기와 형식(권장)**: GLB(파일 하나에 다 든다). 몬스터·사람 하나에 삼각형 수백~2천 개, 뼈 30개 아래, 파일 100KB 아래(텍스처를 쓰면 한 장 256~512px, 여러 엔티티가 나눠 쓴다). 같은 화면에 몇십 마리가 서므로 작을수록 폰에서 부드럽다. Draco·KTX2 압축 파일은 읽지 못한다(그 해독기를 붙이지 않았다).
+- 예제의 파일은 스크립트가 만든다: `node scripts/make-sample-assets.mjs`(상자들로 된 모델과 클립을 GLB로, 소리를 WAV로 쓴다. 인터넷에서 받지 않는다). 실제 게임은 그림 도구(Blender 등)에서 glTF 2.0 바이너리로 내보낸다.
+
+### 소리 파일과 배경음 (선택)
+
+효과음은 파일 없이도 틀이 합성음으로 낸다. 키마다 파일을 등록하면 그 키만 파일로 바뀐다.
+
+```ts games/sample/client/scene.ts
+  // 소리 파일: 때림과 얻음은 파일로, 나머지 효과음은 틀의 합성음. 배경음은 모닥불 곁(20m 안)에서만
+  registerSound('hit', './sounds/hit.wav');
+  registerSound('pickup', './sounds/pickup.wav', 0.8);
+  registerMusic('camp', './sounds/camp.wav', 0.7);
+  setMusicPicker(() => (S.me && Math.hypot(S.me.x - BONFIRE.x, S.me.z - BONFIRE.z) < 20 ? 'camp' : ''));
+```
+
+- **효과음 키**: `hit`(내가 때림), `crit`(치명타), `hurt`(내가 맞음), `kill`(노리던 적이 쓰러짐), `skill`(기술), `fanfare`(좋은 소식), `pickup`(얻음), `bad`(나쁜 소식). `registerSound(키, 주소, 음량?)`. 등록하지 않은 키, 아직 읽는 중이거나 읽지 못한 파일은 합성음이다(읽지 못하면 콘솔에 경고 한 줄). 게임의 키(예: `'chop'`)도 등록하고 `playSound('chop')`으로 낼 수 있다(합성음이 없으니 파일이 있어야 들린다). 안내문에 붙이려면 `addMsgSounds({ 안내문: () => playSound('chop') })`.
+- **배경음**: `registerMusic(id, 주소, 음량?)`과 `setMusicPicker(() => id)`. 고르는 함수는 0.25초마다 불리고, 돌려준 id가 바뀌면 1.5초에 걸쳐 앞의 것을 줄이고 새것을 키운다(반복해서 튼다). `''`이면 조용히. 구역별이면 `S.me`의 자리로, 상황별이면 `inDungeon()` 같은 것으로 고른다.
+- **자동 재생**: 브라우저는 첫 입력 전에는 소리를 막는다. 틀은 첫 입력(누르기, 키) 전에는 소리 장치를 만들지도 틀지도 않는다. 효과음 파일은 접속 화면에서 받아 두고 첫 입력에서 푼다. 배경음은 미리 받지 않고 틀 때 흘려 받는다.
+- **음량**: 소리 파일이나 배경음을 하나라도 등록한 게임은 메뉴 머리의 소리 단추 앞에 '음량' 단추가 생긴다(효과음·배경음 막대. 배경음이 없으면 효과음만). 합성음만 쓰는 게임도 `enableVolume()`으로 보일 수 있다. 소리 켜고 끄기와 음량은 이 기기에 저장된다(localStorage `sound`, `soundMix`. 저장소를 못 쓰는 브라우저에서는 기본값으로 돈다). 소리를 끄면 배경음도 줄어들어 멈춘다.
+- **형식과 크기(권장)**: 효과음은 MP3 또는 OGG, 0.1~1초, 모노, 한 파일 30KB 아래(풀어 둔 소리는 메모리에 남는다). 배경음은 MP3 또는 OGG 64~128kbps, 1~3분, 끝과 처음이 이어지게(1~3MB). WAV는 크다: 예제의 12초 배경음이 375KB다(시험용으로 스크립트가 만든 것이라 WAV). 모든 브라우저에서 돌리려면 MP3가 가장 넓다.
+- 틀의 서버(`engine/server/net/static.ts`)는 `.glb`에 형식을 붙여 내보내고, 소리 파일은 형식 없이(`application/octet-stream`) 내보낸다. 틀은 소리를 받아서 풀므로(배경음은 audio 요소가 내용으로 가린다) 그대로 들린다.
 
 **방치형**: 접속할 때 자동 사냥을 켜고 시작하려면 게임의 화면 모듈에서 `rules.autoAtStart = () => true`(`@engine/client`의 `rules`). 예: `games/starmine/client/drill.ts`. 금빛 단추를 만들 때 class `gold`는 **글자색**이다(배경이 금빛인 단추는 틀의 `button.on`이나 게임의 css로).
 
@@ -855,7 +900,8 @@ export function initBonfire(): void {
 | `scene/models.ts`의 `registerMonsterModel`, `registerBlade`, `registerArmor`, `mat`, `part`, `limb` | 모델 | `client/scene.ts` |
 | `scene/models.ts`의 `setHumanoidDeco`, `setHumanoidBody`, `makeHumanoid`, `registerHand`. `fx.ts`의 `registerShot` | 사람 모델의 꾸밈과 통째로 바꾸기, 사람형 NPC, 손 모양, 날아가는 것 | `client/scene.ts`(`registerHand('axe', …)`) |
 | `entities.ts`의 `addNpc`, `setMerchant` | 화면에만 서 있는 사람, 상점 자리마다 세울 상인(모델·이름·바라볼 곳, `null`이면 세우지 않는다) | |
-| `sound.ts`의 `addMsgSounds`, `sfx` | 안내문의 소리 | |
+| `scene/gltf.ts`의 `registerMonsterAsset`, `registerHumanoidAsset`, `registerWeaponAsset`. `assets.ts`의 `setClipNames`, `DEFAULT_CLIPS`, 타입 `ModelAsset`·`HumanoidAsset`·`WeaponAsset`·`ModelFit`·`AnimState`. `scene/models.ts`의 `cueAnim` | 모델 파일(glTF/GLB)과 클립 이름, 한 번 도는 동작을 틀기 | `client/scene.ts` |
+| `sound.ts`의 `addMsgSounds`, `sfx`, `playSound`, `setMusicPicker`, `enableVolume`. `assets.ts`의 `registerSound`, `registerMusic` | 안내문의 소리, 효과음 파일(키마다, 없으면 합성음), 배경음과 고르기, 음량 단추 | `client/scene.ts` |
 | `actions.ts`의 `goToTown`, `autoWalk` | 걸어가게 하기 | |
 | `style.css`의 색 변수와 class | 창의 모양 | `client/sample.css` |
 

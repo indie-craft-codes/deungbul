@@ -24,6 +24,8 @@ export interface Remote {
   swarm: boolean;
   /** 죽는 연출의 남은 시간 */
   dying: number;
+  /** 죽는 연출의 처음 길이 (쓰러지는 클립이 있으면 DIE_S보다 길다) */
+  dieS?: number;
   /** 서버가 시야에서 뺐다: 연출이 끝나면 지운다 */
   gone: boolean;
 }

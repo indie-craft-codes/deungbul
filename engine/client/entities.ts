@@ -3,17 +3,20 @@ import { BOSS, MONSTERS, SHOPS, classOf, isMonsterId, isSkillId, monsterDef, ski
 import type { EnterInfo, Ev, ServerMsg } from '../shared/protocol';
 import { walk } from '../shared/nav';
 import { nav, view, world } from './app';
+import { mixerEvery } from './assets';
 import { ARROW_S, arrow, burst, hit, puff, recoilOf, shake } from './fx';
 import { floatText, makeTag, placeTag, setTagHp, setTagName, settleTags, type Tag } from './hud/tags';
 import { L, t } from './i18n';
 import { rules } from './rules';
 import { sfx } from './sound';
-import { animate, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
+import { animate, cueAnim, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
 import { S, newMe, type Me, type Remote } from './state';
 
 const INTERP_MS = 150; // 다른 엔티티는 이만큼 과거 시점을 그려서 스냅샷 사이를 부드럽게 잇는다
 const SWING_S = 0.3;
 const DIE_S = 0.3;
+/** 쓰러지는 클립이 있는 모델은 클립을 다 틀고 이만큼 누워 있다가 사라진다 (길어도 DIE_MAX_S까지) */
+const DIE_REST_S = 0.5, DIE_MAX_S = 2.5;
 const CLOTH = [0x3f7fbf, 0x8a5ac0, 0x4c9a6a, 0xd08a2e, 0x4a6a8a, 0xc05a8a, 0x6a6ad0, 0x9a7a3a, 0x3fa0a0, 0xa04a4a];
 const MY_CLOTH = 0xc9463d;
 /** 직업에 맞는 손 장비: 궁수는 활, 마법사는 지팡이, 나머지는 검 */
@@ -79,7 +82,7 @@ function addRemote(e: EnterInfo): void {
   const old = S.others.get(e.id);
   if (old) { if (!old.gone) return; dropRemote(old); }
   const monster = e.kind === 'm';
-  const model = monster ? makeMonster(e.type) : makeHumanoid(CLOTH[e.id % CLOTH.length], gearOf(e.c));
+  const model = monster ? makeMonster(e.type) : makeHumanoid(CLOTH[e.id % CLOTH.length], gearOf(e.c), undefined, e.c);
   model.root.position.set(e.x, 0, e.z);
   model.root.rotation.y = e.face;
   view.scene.add(model.root);
@@ -118,7 +121,7 @@ export function relabel(): void {
 /** 직업이 바뀌면 모델을 새로 만든다 (검을 든 모습과 활을 든 모습이 다르다). */
 function rebuild(holder: { model: Model }, cloth: number, cls: string): void {
   const old = holder.model.root;
-  const model = makeHumanoid(cloth, gearOf(cls));
+  const model = makeHumanoid(cloth, gearOf(cls), undefined, cls);
   model.root.position.copy(old.position);
   model.root.rotation.y = old.rotation.y;
   view.scene.remove(old);
@@ -163,13 +166,21 @@ function posOf(id: number): { x: number; z: number; h: number } | null {
 
 // ---------- 서버가 보낸 것 반영 ----------
 function onEvent(e: Ev, me: Me): void {
-  const swing = (id: number) => { if (id === me.id) me.swing = 1; else { const r = S.others.get(id); if (r) r.swing = 1; } };
+  // 공격 동작: 코드 모델은 swing(1에서 0으로)으로 팔을 휘두르고, 모델 파일은 공격 클립을 처음부터 튼다 (같은 신호)
+  const swing = (id: number) => {
+    if (id === me.id) { me.swing = 1; cueAnim(me.model, 'attack'); return; }
+    const r = S.others.get(id);
+    if (r) { r.swing = 1; cueAnim(r.model, 'attack'); }
+  };
   switch (e[0]) {
     case 'h': {
       const [, src, dst, dmg, crit] = e;
       const p = posOf(dst);
       if (p) floatText(dst === me.id ? `-${dmg}` : String(dmg), p.x, p.h, p.z, dst === me.id ? 'hurt' : src === me.id ? (crit ? 'crit' : '') : 'small');
       swing(src);
+      // 맞은 쪽: 모델 파일의 맞음 클립 (공격 중이면 끊지 않는다). 코드 모델은 하얗게 번쩍이는 것(fx의 recoil)뿐이다
+      const dstModel = dst === me.id ? me.model : S.others.get(dst)?.model;
+      if (dstModel) cueAnim(dstModel, 'hit');
       // 궁수가 쏜 것이면 화살이, 마법사가 쏜 것이면 불꽃이 날아간다
       const from = posOf(src);
       // 쏘는 직업이면(ClassDef.shot) 화살이나 불꽃이 날아간다. 몬스터는 직업이 없다
@@ -196,7 +207,13 @@ function onEvent(e: Ev, me: Me): void {
     }
     case 'd': {
       const r = S.others.get(e[1]);
-      if (r) { r.dying = DIE_S; puff(r.x, r.h * 0.4, r.z, 12, 0xe8e2d0); burst(r.x, r.z, 2.4, 0xe8e2d0, 0.35); }
+      if (r) {
+        // 쓰러지는 클립이 있으면 그것을 다 틀고 잠깐 누워 있다가 사라진다. 없으면 틀의 연출(줄어들기)
+        const clip = cueAnim(r.model, 'die') ? r.model.anim?.length('die') ?? 0 : 0;
+        r.dying = clip > 0 ? Math.min(DIE_MAX_S, clip + DIE_REST_S) : DIE_S;
+        r.dieS = r.dying;
+        puff(r.x, r.h * 0.4, r.z, 12, 0xe8e2d0); burst(r.x, r.z, 2.4, 0xe8e2d0, 0.35);
+      }
       if (me.attackId === e[1]) { me.attackId = 0; shake(0.12); sfx.kill(); }
       break;
     }
@@ -324,7 +341,11 @@ function updateRemote(r: Remote, dt: number, now: number): void {
   if (r.swing > 0) r.swing = Math.max(0, r.swing - dt / SWING_S);
   const rc = recoilOf(r.id);
   setFlash(r.model, rc.flash);
-  animate(r.model, r.x + rc.ox, r.z + rc.oz, r.face, r.walking, r.phase, dt, r.swing, (r.dying > 0 ? Math.max(0.01, r.dying / DIE_S) : 1) * rc.scale);
+  // 쓰러짐: 틀의 연출은 DIE_S 동안 줄어들기, 쓰러지는 클립이 있으면 누운 채 있다가 마지막 0.25초에 줄어든다
+  const shrink = r.dying <= 0 ? 1 : (r.dieS ?? DIE_S) > DIE_S ? Math.min(1, r.dying / 0.25) : Math.max(0.01, r.dying / DIE_S);
+  // 모델 파일의 믹서는 멀거나 화면 밖이면 드물게 돌린다 (내 캐릭터 둘레가 기준)
+  const every = r.model.anim ? mixerEvery(S.me ? Math.hypot(r.x - S.me.x, r.z - S.me.z) : 0, view.project(r.x, r.h * 0.5, r.z) !== null) : 1;
+  animate(r.model, r.x + rc.ox, r.z + rc.oz, r.face, r.walking, r.phase, dt, r.swing, Math.max(0.01, shrink) * rc.scale, every);
 }
 
 export function updateEntities(dt: number, now: number): void {
