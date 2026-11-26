@@ -6,7 +6,7 @@ export interface MonsterDef {
   dmg: readonly [number, number];
   speed: number;
   exp: number;
-  /** 처치 시 주는 불씨(두 번째 재화) 범위. 피해를 준 사람 각자가 받는다. 없으면 주지 않는다: 불씨가 없는 게임도 몬스터를 정의할 수 있다 */
+  /** 처치 시 주는 두 번째 재화(sparks 칸) 범위. 피해를 준 사람 각자가 받는다. 없으면 주지 않는다: 두 번째 재화가 없는 게임도 몬스터를 정의할 수 있다 */
   sparks?: readonly [number, number];
   /** 처치 시 주는 골드 범위 */
   gold: readonly [number, number];

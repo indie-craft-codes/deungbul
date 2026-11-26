@@ -7,7 +7,7 @@ import { L, onLangChange } from '../i18n';
 import { send } from '../net';
 
 const sel = $<HTMLSelectElement>('channel');
-/** 서버가 알려 준 내 채널(1부터), 채널별 인원, 습격 중이면 채널별 남은 적 */
+/** 서버가 알려 준 내 채널(1부터), 채널별 인원, 게임이 '바쁜 때'를 알리면 채널별 남은 적 */
 let me = 0, list: number[] = [], foes: number[] = [];
 /** 좁은 화면(폰): 닫혀 있는 상자는 좁게 잘려 보이므로 고른 채널을 짧게("Ch 1") 적고, 펼칠 때 길게 적는다 (css의 #channel과 같은 기준) */
 const narrow = typeof matchMedia === 'function' ? matchMedia('(max-width: 720px), (max-height: 480px)') : null;

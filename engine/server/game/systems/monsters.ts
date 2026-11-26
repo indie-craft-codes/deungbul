@@ -1,10 +1,10 @@
-// 몬스터: 빈터에 사는 것들의 생성과 AI. 습격으로 온 적도 여기서 움직인다.
+// 몬스터: 무리(CAMPS)에 사는 것들의 생성과 AI. 게임의 규칙이 부른 몰려온 적(swarm)도 여기서 움직인다.
 import { CAMPS, LEASH, MONSTERS, MONSTER_AI, MONSTER_ATTACK_CD, MONSTER_ATTACK_RANGE, MONSTER_RANGED, type MonsterId, SLOW_FACTOR } from '../../../shared/defs';
 import { dist, ri, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, isField, notifyLayer } from '../layers';
 
-/** 습격 적이 등탑에 이만큼 다가오면 등탑을 공격한다 */
+/** 몰려온 적이 목표(g.rules.siege)에 이만큼 다가오면 목표를 친다 */
 /** 몰려온 적이 목표(g.rules.siege)에 이만큼 다가가면 도착한 것이다 (게임의 규칙이 그때 목표에 피해를 센다) */
 export const SIEGE_REACH = 3.2;
 
@@ -65,7 +65,7 @@ export class Monsters {
 
   constructor(private g: Game) {
     this.populate(fieldLayer(1)); // 나머지 채널은 채널 시스템이 놓는다
-    // 습격 적은 죽으면 다시 나오지 않는다
+    // 몰려온 적은 죽으면 다시 나오지 않는다
     g.on('monsterKilled', (m) => { if (m.swarm) g.remove(m.id); });
   }
 
@@ -86,7 +86,7 @@ export class Monsters {
     return m;
   }
 
-  /** 습격 적이 등탑에 붙어 있는가 */
+  /** 몰려온 적이 목표(g.rules.siege)에 붙어 있는가 */
   atSiege(m: Ent): boolean {
     const at = this.g.rules.siege;
     return !!at && m.swarm && !m.dead && !m.targetId && dist(m, at) <= SIEGE_REACH;
@@ -155,7 +155,7 @@ export class Monsters {
 
     const siege = g.rules.siege;
     if (m.swarm && siege) {
-      // 습격 적: 맞서는 사람이 없으면 지켜야 할 곳(등탑)으로 간다. 그곳을 치는 것은 습격 시스템이 센다
+      // 몰려온 적: 맞서는 사람이 없으면 지켜야 할 곳(g.rules.siege)으로 간다. 그곳을 치는 것은 게임의 규칙이 센다
       if (dist(m, siege) > SIEGE_REACH) { g.movement.goTo(m, siege.x, siege.z); g.movement.walk(m, speed, dt); }
       else { m.moving = false; m.face = Math.atan2(siege.x - m.x, siege.z - m.z); }
       return;

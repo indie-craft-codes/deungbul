@@ -38,7 +38,7 @@ export interface EnterInfo {
   /** 플레이어의 직업 (CLASSES의 키). 아직 고르지 않았거나 몬스터면 빈 문자열 */
   c: string;
   x: number; z: number; face: number; hp: number; maxHp: number;
-  /** 습격으로 온 적이면 1 */
+  /** 몰려온 적(게임의 규칙이 부른 적: Ent.swarm)이면 1 */
   r?: 1;
 }
 
@@ -174,7 +174,7 @@ export type ServerMsg =
   | { t: 'meta'; gear?: Gear[]; worn?: Record<string, number>; mail?: Mail[]; daily?: { prog: Record<string, number>; got: string[]; streak: number }; power?: number; build?: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
   /** 내가 들어가 있는 던전의 상태. id가 빈 문자열이면 밖이다. left는 남은 시간(초, 끝낸 뒤에는 나가기까지), foes는 남은 적 */
   | { t: 'dungeon'; id: string; left: number; foes: number; cleared: boolean }
-  /** 채널: me는 내 채널 번호(1부터), list는 채널별 인원. foes는 습격 중일 때만 오는 채널별 남은 적의 수 */
+  /** 채널: me는 내 채널 번호(1부터), list는 채널별 인원. foes는 게임의 규칙이 '바쁜 때'(Channels.extraFoes)를 알릴 때만 오는 채널별 남은 적의 수 */
   | { t: 'channels'; me: number; list: number[]; foes?: number[] }
   /** 순위표. me는 내 순위(0부터, 없으면 -1) */
   | { t: 'rank'; list: RankRow[]; me: number }

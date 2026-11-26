@@ -1,5 +1,5 @@
 // 상점과 소지품: 길 상인에게서 무기와 물약을 사고, 물약을 마신다. 무기는 공격 피해를 올린다.
-// 돌아온 주민에 따라 상점에 들어오는 물건이 늘어난다.
+// 잠금 열쇠(ItemDef.needs)가 있는 물건은 게임의 규칙(g.rules.unlocked)이 풀어야 상점에 들어온다.
 import { ITEMS, POTION_CD, POTION_MAX, nearShop, isItemId, itemCap, itemDef, type ItemId } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
@@ -15,7 +15,7 @@ export class Shop {
     g.mods.provide('guard', (p) => (p && isItemId(p.armor) ? itemDef(p.armor).guard ?? 1 : 1));
   }
 
-  /** 지금 상점에 있는 물건인가 (필요한 주민이 돌아왔는가) */
+  /** 지금 상점에 있는 물건인가 (잠금이 풀렸는가) */
   stocked(id: ItemId): boolean {
     const needs = itemDef(id).needs;
     return !needs || this.g.rules.unlocked(needs);

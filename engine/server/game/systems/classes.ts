@@ -1,4 +1,4 @@
-// 직업: 고르고 바꾼다. 처음에는 어디서든 고를 수 있고, 그 뒤에는 등탑 가까이에서만 바꿀 수 있다.
+// 직업: 고르고 바꾼다. 처음에는 어디서든 고를 수 있고, 그 뒤에는 게임의 규칙(g.rules.canChangeClass)이 허락하는 곳에서 바꾼다.
 import { SKILL_SLOTS, isClassId, type ClassId } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';

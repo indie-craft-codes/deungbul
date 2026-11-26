@@ -1,6 +1,6 @@
 # 틀과 게임 가르기: 지금의 상태
 
-이 문서는 **지금 무엇이 끝났고, 틀과 게임이 어디서 만나고, 무엇이 남았는지**를 적는다. 2026-11-25(커밋 `98de4cf` 무렵)을 기준으로 현행화했다. 코드를 고치면 이 문서도 함께 고친다.
+이 문서는 **지금 무엇이 끝났고, 틀과 게임이 어디서 만나고, 무엇이 남았는지**를 적는다. 2026-11-26(가지 `feat/neutral`, 장르 중립 틀)을 기준으로 현행화했다. 코드를 고치면 이 문서도 함께 고친다.
 
 함께 보는 문서:
 
@@ -11,17 +11,46 @@
 
 ## 요약
 
-- 코드는 틀(`engine/`)과 게임들(`games/deungbul/` 등불지기, 예제 `games/sample/`)이다. 방향은 게임 → 틀 하나다.
-- 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`)의 이름뿐이고, 별칭 `@game/shared/content`로 읽는다. 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
-- 확인: `npm run typecheck`(전체, 등불지기, 틀만, 틀만을 시험용 내용으로, 틀만을 예제의 내용으로, 예제) 오류 0, `npm test`(틀의 시험과 두 게임의 시험, 검사 1148개) 모두 통과.
+- 코드는 틀(`engine/`)과 게임 다섯(`games/deungbul/` 등불지기, 예제 `games/sample/`, 시제품 `games/cave`·`starmine`·`bastion`)이다. 방향은 게임 → 틀 하나다.
+- **틀은 장르와 무관한 핵심과 선택 모듈 열여섯이다(2026-11-26, 아래 '장르 중립 틀')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
+- 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
+- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 넷과 게임마다의 설정, 모두 13개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 게임 다섯의 시험: 검사 1530여 개) 모두 통과, `npm run build:all`(게임 다섯) 통과.
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
 - 에셋 불러오기(2026-11-26, 아래 '에셋 불러오기'): 모델 파일(glTF/GLB)과 애니메이션 클립, 효과음 파일·배경음·음량, 접속 화면의 미리 불러오기. 등록하지 않으면 예전과 같다(등불지기는 등록하지 않는다). `npm test` 검사 1369개.
 - 운영 안전 묶음(2026-11-26, 가지 `feat/ops`, 아래 '운영 안전 묶음'): 저장 형식 버전과 이전, 한 묶음 저장, 자동 백업, 감시자와 Node 재시작 스크립트, `/healthz`·`/metrics`, 압축 기본 켬, 시각이 붙는 로그. `npm test` 검사 1380개.
-- 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다. 프로토콜은 2다(호환 코드는 2026-11-24에 지웠다). 그 뒤 더한 사건(`buff`, `stun`)은 옛 화면이 모르는 채 무시한다.
+- 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다(장르 중립 틀에서도: 옛 견본 15개와 운영 DB 복사본 캐릭터 59·월드 1을 읽은 결과가 글자까지 같다). 프로토콜은 3이다(2026-11-26: 엔티티 종류를 문자열로, 상태 줄 뒤에 게임의 값, stat·meta의 칸이 모듈마다. 옛 화면은 새로고침을 안내받는다).
+
+## 장르 중립 틀 (2026-11-26, 가지 `feat/neutral`)
+
+독립 검토의 결론("쿼터뷰 탭 타깃 RPG 전용 틀")을 받아, 틀을 핵심과 선택 모듈로 나눴다. 새 게임을 만드는 법은 [making-a-game.md](making-a-game.md) 1절(핵심과 모듈), 3절(내용), 12절(전투 없는 게임의 짧은 예시).
+
+| 무엇 | 틀 쪽 | 지키는 것 |
+|---|---|---|
+| 모듈의 표 | `engine/shared/modules.ts`: economy, growth, classes, combat, build, items, gear, mail, daily, idle, party, guild, market, dungeon, rank, away와 의존(`MODULE_TABLE`), `checkModules`(모르는 이름·빠진 의존을 오류로), `RPG_MODULES` | `core/core` |
+| 계약 쪼개기 | `contract.ts`: `CoreContent`(MAP, MODULES)는 반드시, `CoreTuning`·`CombatContent`·`ItemsContent`·`GearContent`·`GrowthContent`·`MailContent`·`DungeonContent`·`SocialContent`·`EconomyContent`는 선택. `content.ts`가 게임이 적지 않은 이름을 `defaults.ts`(빈 표 포함)로 채운다: 게임은 `export *`로 받지 않는다. 몬스터 0, 직업 0, 아이템 0도 컴파일된다 | 최소 내용 `engine/test/core`의 타입 검사·시험 |
+| 서버의 모듈 | `Game`이 고른 모듈의 시스템만 만든다. 고르지 않은 칸은 건드리면 무엇을 고르라는지 던지는 자리표(`off`). `g.has(모듈)`, `GameOptions.modules`. 사람의 틱은 전투가 없으면 `Movement.step`. stat·meta는 `systems/status.ts`가 고른 모듈의 칸만(`g.perFlush`). 저장의 최상위 칸도 모듈마다(칸의 차례는 그대로) | `core/core`(명령 20가지가 웹소켓에서 거절), `fx/modules`(모듈을 줄인 서버는 뺀 모듈의 명령을 거절, 대조군은 응답) |
+| 끈 모듈의 저장 | `MODULE_SAVES`: 고르지 않은 모듈의 저장 칸(캐릭터의 ext·최상위, 월드)은 읽은 그대로 두었다가 다시 적는다(`Ent.kept`, `keptWorld`) | `fx/modules` |
+| 엔티티 종류 | 서버 `g.defineKind(id, { tick, sync, save, load })`, `g.place`, `Ent.data`. 화면 `registerKind(id, { model, update, label, snap, animate, h, dot })`, `makeBox`·`makeBall`. 상태 줄 `[id, x, z, 방향, 이동, 체력, …값]`. 저장은 월드의 `kind.<종류>` | `core/core` |
+| 주기와 시야 | 내용의 `NET`(tickMs, snapEvery, aoi, aoiLeave). 기본은 예전 값(50ms, 2틱, 32m, 36m) | `core/core`(시야 20m) |
+| 화면의 모듈 | 뼈대의 `data-mod`(붙일 때 고르지 않은 모듈의 요소를 뺀다), 틀의 화면 모듈은 고른 것만 init(`client/modules.ts`), 메뉴 탭마다 모듈, 키는 모듈이 `bindKey`로(숫자·Tab 전투, Q·B 아이템, R 자동 사냥, M·N·H 핵심), 기본 조작 안내도 고른 모듈의 키만, `hasModule`, `withIdNames` | `core/core`(뼈대의 표시), 화면(공 마당과 등불지기 전후) |
+| 저장소 | `Store`(핵심)와 `EconStore`(경제 장부)를 나눔. 서버는 economy와 `hasEcon(store)`일 때만 장부를 적는다 | `fx/ledger`, `fx/ops` |
+| 게임 등록 자동화 | `scripts/deploy.mjs`의 `listGames`(deploy.json이나 server/main.ts가 있는 폴더), `scripts/typecheck.mjs`, `node scripts/game.mjs list`·`build all`. `package.json`을 고치지 않아도 새 게임이 타입 검사·시험·빌드에 들어간다 | `npm run typecheck`, `npm test`, `npm run build:all` |
+
+게임 다섯이 고른 모듈: 등불지기·버섯 동굴은 전부. 모닥불 사냥터·별가루 광산·돌담 마을은 거래소·길드(메뉴에서 감추기만 하던 것)와 던전(없는 게임)을 뺐다.
+
+아직 RPG에 묶인 것(장르 중립 틀의 남은 한계):
+
+- `Ent`에 모듈의 칸(레벨, 골드, 장비 …)이 늘 처음 값으로 있다(저장·전송만 모듈마다). 타입에서 떼지 않은 까닭: 틀의 시스템 스무 개가 서로의 칸을 읽어, 떼면 고친 곳마다 '없는 칸'을 확인해야 하고 등불지기의 동작을 바꿀 위험이 컸다.
+- 상태 줄의 체력 칸(엔티티마다 하나), `EnterInfo`의 무기·직업·갑옷 칸, 서버의 바깥 통(`cdAcks`, `itemCds`, `gears`, `partyOut`)은 틀에 남았다(모듈을 고르지 않으면 비어 있다).
+- 핵심의 '집으로'(H, `goToTown`), '쓰러짐'에서 온 `rules.respawn`, 채널의 '바쁜 때'(`tellBusyS`)는 이름이 RPG에서 왔다.
+- 화면의 `hud/menu.ts`(장비·성장·우편·일일·거래소·길드·순위 탭의 그리기)는 쪼개지 않았다: 탭이 모듈마다 붙고 떨어지지만 그리는 코드는 한 파일이다.
+- 엔티티끼리의 물리, 점수판·팀 같은 비RPG의 흔한 기능은 틀에 없다(게임이 만든다).
 
 ## 0. 이어 갈 것
+
+0. **장르 중립 틀의 검증(다음 차례)**: 다른 에이전트가 [making-a-game.md](making-a-game.md)만 보고 **RPG가 아닌 게임**(전투·직업·장비·몬스터가 없는 게임)을 만든다. 출발점은 12절의 공 마당(`engine/test/core`). 막히는 곳을 고친다. 운영 서버에 올리기 전에 '운영 서버에 올릴 때'(5절)의 프로토콜 3 주의를 본다.
 
 틀이 최우선이다(사용자 결정). **2026-11-24 결정: 등불지기는 전통 MMORPG로 두고 새 장르 모드는 만들지 않는다. 작업은 틀만 한다.**
 
@@ -194,16 +223,16 @@
 
 | 접점 | 틀 쪽 | 이 게임이 채우는 곳 |
 |---|---|---|
-| 내용 계약 | `engine/shared/contract.ts`의 `ContentContract` (이름 61개: 맵, 직업·기술, 몬스터, 아이템·상점·제작, 장비와 성장, 던전, 파티·채널·길드·거래소, 경제 장부) | `shared/content/index.ts`가 그 이름들을 내보낸다 |
+| 내용 계약 | `engine/shared/contract.ts`: 핵심 계약 `CoreContent`(MAP, MODULES)와 모듈마다의 선택 계약(`CoreTuning`, `CombatContent` …: 모두 64개 이름). 틀은 `content.ts` 한 곳에서 읽고 적지 않은 이름은 `defaults.ts`로 채운다 | `shared/content/index.ts`가 그 이름들을 내보낸다(등불지기는 모두 적는다) |
 | 내용의 모양과 도우미 | `engine/shared/defs/*.ts` | 게임의 내용 파일이 타입만 가져온다 |
-| 수치의 기본값 | `engine/shared/defaults.ts` (아무것도 import하지 않는 값 파일) | 게임의 내용 통로가 `export *`로 받는다(예제). 등불지기는 자기 값을 갖는다 |
+| 수치의 기본값 | `engine/shared/defaults.ts` (아무것도 import하지 않는 값 파일). 틀이 게임이 적지 않은 이름을 이것으로 채운다 | 받지 않아도 된다. `GEAR_BASE` 같은 조각만 가져다 쓴다. 등불지기는 자기 값을 모두 적는다 |
 | 틀의 내용 통로 | `engine/shared/defs.ts`: 틀의 타입·도우미 + 계약의 이름만 `@game/shared/content`에서 다시 내보낸다 | |
 | 게임의 내용 통로 | | `shared/defs.ts`, `shared/world.ts`: 틀의 통로 + 이 게임에만 있는 내용. 게임의 파일은 여기서 읽는다 |
 | 안내문·메시지·공유 상태 | `engine/shared/ext.ts`의 `MsgMap, ServerMsgs, ClientMsgs, WorldState` | `shared/deungbul.ts`의 선언 병합. 개인 상태의 모양 `MeState`도 여기 있다 |
 | 맵 | `MapDef`, `buildWorld`가 `MAP`만 읽는다 | `shared/content/map.ts`의 `MAP`. 등탑·연못·빈터·길·구역은 게임만 읽는다 |
 | 잠금 | `ItemDef.needs`, `ForgeDef.needs`: 뜻 없는 열쇠 | 주민 id (`satisfies ResidentId`) |
 
-틀의 소스에서 `@game`을 import하는 파일은 정해져 있다: `engine/shared/defs.ts`, `engine/shared/defs/*.ts`, `engine/shared/contract.ts`, `engine/shared/world.ts`. 그 밖의 틀 파일은 `defs`와 `world`를 거친다.
+틀의 소스에서 `@game`을 import하는 파일은 둘이다: `engine/shared/content.ts`(내용을 꺼내 기본값을 채운다), `engine/shared/contract.ts`(컴파일할 때의 검사). 그 밖의 틀 파일은 `defs`와 `world`를 거친다.
 
 ### 화면
 
@@ -274,10 +303,13 @@
 - `games/deungbul/tsconfig.json`, `games/sample/tsconfig.json`: 게임마다. 뿌리의 설정을 물려받아 `@game`만 자기 폴더로 바꾸고 `include`는 틀의 소스와 자기 폴더다. 서버·시험·도구는 이것으로 돈다(`scripts/game.mjs`가 고른다). `games/sample/tsconfig.engine.json`은 `include`를 틀의 소스로 줄인 것(틀만을 예제의 내용으로).
 - `engine/test/fx/tsconfig.json`: 틀의 시험. `@game` → 시험용 내용. `include`는 틀의 소스, `harness.ts`, 그 폴더.
 - `tsconfig.engine.json`: 틀만(`engine/shared`, `engine/server`, `engine/client`). `@game`은 등불지기의 내용.
+- `engine/test/core/tsconfig.json`: 핵심만의 시험. `@game` → 최소 내용(공 마당: 모듈 0). 그 폴더에 화면(`client/`, `vite.config.ts` → `dist-core/`)과 실행 서버(`server/main.ts`)도 있다(눈으로 보는 용도).
 - `games/<게임>/vite.config.ts`: `root`는 그 게임의 `client`, 결과는 등불지기 `dist/`, 예제 `dist-sample/`. 등불지기의 도감은 게임 빌드가 끝난 뒤 같은 `dist/`에 따로 빌드한다.
-- `package.json`: 서버·화면·시험의 스크립트는 `scripts/game.mjs <start|watch|client|build|test> [게임]`을 부른다(인자, 없으면 `GAME`, 없으면 `deungbul`). `typecheck`는 여섯 설정을 차례로. 예제: `typecheck:sample, typecheck:engine:sample, test:sample, build:sample, start:sample, dev:sample`(포트 3002, 저장 `data/sample/game.db`).
+- `package.json`: 서버·화면·시험의 스크립트는 `scripts/game.mjs <start|watch|client|build|test|list> [게임]`을 부른다(인자, 없으면 `GAME`, 없으면 `deungbul`). 게임의 목록은 `scripts/deploy.mjs`의 `listGames`가 폴더에서 찾는다. `typecheck`는 `scripts/typecheck.mjs`(틀의 설정 넷 + 게임마다 `tsconfig.json`·`tsconfig.engine.json`, 넷씩 함께), `build:all`은 모든 게임을 빌드한다. 예제: `typecheck:sample, typecheck:engine:sample, test:sample, build:sample, start:sample, dev:sample`(포트 3002, 저장 `data/sample/game.db`).
 
 ## 5. 운영 서버에 올릴 때
+
+**장르 중립 틀(프로토콜 3)을 처음 올릴 때**: 서버와 화면을 함께 올린다(`npm run build:all` 또는 게임마다 build). 화면을 먼저 받은 사람이 옛 서버에 붙거나 그 반대면 접속 화면에서 새로고침을 안내받는다(프로토콜 2 ↔ 3). 저장 형식은 그대로다: 등불지기는 버전 칸(v1)이 그대로이고, 모듈을 뺀 시제품(모닥불 사냥터 3002, 별가루 광산 3004, 돌담 마을 3005)은 거래소·길드·던전의 저장 칸을 읽은 그대로 남긴다(지우지 않는다: 다시 켜면 이어진다). 다만 그 게임들의 화면에서 거래소·길드 탭이 사라지고, 거래소에 올려 둔 물건은 모듈을 다시 켜기 전에는 찾을 수 없다.
 
 1. `npm run typecheck`, `npm test`(두 번), `npm run test:engine`, `npm run build`가 모두 통과한 뒤에 커밋한다.
 2. 화면이 바뀌었으면 확인용 서버(`PORT=3013 DB=<임시 폴더>/check.db npm start`)를 띄워 PC·폰, 한국어·영어로 본다. 운영 서버(3001)에는 시험 캐릭터를 만들지 않는다(확인은 손님으로만).

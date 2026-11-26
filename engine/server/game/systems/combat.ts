@@ -171,7 +171,7 @@ export class Combat {
 
   private killPlayer(p: Ent): void {
     const g = this.g;
-    // 벌은 없다: 켜져 있는 가장 가까운 등탑 앞에서 온전한 체력으로 다시 일어난다
+    // 벌은 없다: 게임이 정한 곳(g.rules.respawn)에서 온전한 체력으로 다시 일어난다
     const at = g.rules.respawn(p);
     p.hp = p.maxHp; p.x = at.x; p.z = at.z; p.moving = false; p.path = null; p.targetId = 0; p.lastHurt = -99; p.dots = [];
     resolve(p, g.world.obstacles);
@@ -189,7 +189,7 @@ export class Combat {
     if (p.itemCd > 0) p.itemCd -= dt;
     for (let i = 0; i < p.cds.length; i++) if (p.cds[i] > 0) p.cds[i] = Math.max(0, p.cds[i] - dt);
     if (p.hp < p.maxHp && g.clock - p.lastHurt > COMBAT.regenAfterS) p.hp = Math.min(p.maxHp, p.hp + COMBAT.regenPerS * g.mods.product('regen', p) * dt);
-    // 이동 속도는 클라이언트가 같은 식으로 예측하므로 보정 목록이 아니라, 내가 있는 구역의 등탑 단계에서 바로 구한다
+    // 이동 속도는 클라이언트가 같은 식으로 예측하므로 보정 목록이 아니라 게임의 규칙(g.rules.speed)에서 바로 구한다
     const speed = g.rules.speed(p);
 
     if (!p.targetId) { if (p.moving) g.movement.walk(p, speed, dt); return; }

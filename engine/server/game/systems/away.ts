@@ -122,7 +122,7 @@ export class Away {
       }
       if (target) g.command(p, { t: 'attack', id: target.id });
       else if (resting) { /* 쉬는 중이고 둘레에 몬스터가 없다: 그 자리에서 쉰다 */ }
-      // 쓰러져 등탑에서 일어났거나 멀리 끌려갔으면 자리를 비운 곳으로 돌아간다
+      // 쓰러져 다시 일어나는 곳(g.rules.respawn)에서 일어났거나 멀리 끌려갔으면 자리를 비운 곳으로 돌아간다
       else if (!p.moving && dist(p, s) > 4) g.movement.goTo(p, s.x, s.z);
     }
     const d = target ? dist(p, target) : Infinity;

@@ -23,7 +23,7 @@ export class Craft {
   private craft(p: Ent, id: ItemId): void {
     const g = this.g, recipe = RECIPES.find((r) => r.id === id);
     if (!recipe) return;
-    // 닿는 대장간이 있어야 하고, 그 대장간의 잠금(이 게임에서는 대장장이 주민)이 풀려 있어야 한다
+    // 닿는 대장간이 있어야 하고, 그 대장간의 잠금(열쇠의 뜻은 게임이 정한다)이 풀려 있어야 한다
     const forge = FORGES.find((f) => dist(p, f) <= SMITHY_REACH);
     if (!forge) { g.notify(p, 'forgeFar'); return; }
     if (forge.needs && !g.rules.unlocked(forge.needs)) { g.notify(p, 'forgeClosed'); return; }

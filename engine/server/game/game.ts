@@ -81,7 +81,7 @@ export interface Hooks extends HooksExt {
 
 /**
  * 게임마다 다른 규칙이 끼어드는 자리. 기본값은 '그런 규칙이 없다'이고, 그 규칙을 가진 시스템이 덮어쓴다
- * (이 게임에서는 등탑과 습격). 이동·전투·상점 같은 틀은 등탑을 직접 알지 않고 여기만 본다.
+ * (등불지기에서는 등탑과 습격). 이동·전투·상점 같은 틀은 게임의 시스템을 직접 알지 않고 여기만 본다.
  */
 export interface Rules extends RulesExt {
   /** 쓰러진 사람이 다시 일어날 자리. id는 안내문에 넣을 장소의 이름표 */
@@ -92,7 +92,7 @@ export interface Rules extends RulesExt {
   canChangeClass: (p: Ent) => boolean;
   /** 조건(key)이 풀렸는가: 상점 물건과 제작의 잠금 */
   unlocked: (key: string) => boolean;
-  /** 습격으로 온 적이 향하는 곳. 없으면 평소의 몬스터처럼 군다 */
+  /** 몰려온 적(Ent.swarm)이 향하는 곳. 없으면 평소의 몬스터처럼 군다 */
   siege: { x: number; z: number } | null;
   /** 이 캐릭터에게 게임의 진행(틀이 모르는 칸)이 있는가. 아무것도 하지 않은 새 캐릭터를 저장하지 않는 규칙이 틀의 칸(직업, 레벨, 골드 등)에 더해 묻는다. 없으면 '없다' */
   touched?: (p: Ent) => boolean;
@@ -104,7 +104,7 @@ export interface Rules extends RulesExt {
  */
 export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: Readonly<Record<string, unknown>>) => unknown }
 
-/** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (주민 혜택, 나중의 장비와 버프). */
+/** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (장비, 기술의 강화, 게임의 규칙). */
 export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp' | keyof ModsExt;
 export class Modifiers {
   private list = new Map<ModName, ((p?: Ent) => number)[]>();
@@ -221,7 +221,7 @@ export class Game {
   readonly saves: Saver[] = [];
   /** 게임의 저장 이전 목록 (./migrate.ts): 게임의 칸의 모양을 바꿀 때 끝에 한 단계씩 더한다. 저장의 gv 칸이 이것의 버전이다 */
   readonly migrations: Migrations = { player: [], world: [] };
-  /** 모든 시스템이 만들어진 뒤에 한 번 불린다. 자기보다 뒤에 만들어지는 시스템의 접점을 채울 때 쓴다 (예: 습격이 채널의 extraFoes를) */
+  /** 모든 시스템이 만들어진 뒤에 한 번 불린다. 자기보다 뒤에 만들어지는 시스템의 접점을 채울 때 쓴다 (예: 게임의 규칙이 채널의 extraFoes를) */
   readonly ready: (() => void)[] = [];
   /** 엔티티가 만들어질 때마다 불린다. 게임이 더한 칸(EntExt)의 처음 값을 채운다 */
   readonly entInit: ((e: Ent) => void)[] = [];
@@ -395,7 +395,7 @@ export class Game {
   command(p: Ent, msg: Record<string, unknown>): void {
     const fn = typeof msg.t === 'string' ? this.commands.get(msg.t) : undefined;
     if (!fn) return;
-    p.lastAct = this.clock; // 무엇이든 명령을 냈으면 자리에 있는 사람이다 (습격의 인원 세기)
+    p.lastAct = this.clock; // 무엇이든 명령을 냈으면 자리에 있는 사람이다 (게임의 규칙이 인원을 셀 때)
     fn(p, msg);
   }
 

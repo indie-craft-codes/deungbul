@@ -14,7 +14,7 @@ import { Shop } from './shop';
 const LV_READ_MAX = 999;
 
 export class Players {
-  /** 개발용: 접속 위치를 바꾼다 (부활 위치는 그대로 등탑 앞). */
+  /** 개발용: 접속 위치를 바꾼다 (부활 위치는 그대로: g.rules.respawn). */
   devSpawn: { x: number; z: number } | null = null;
 
   /** 저장에서 읽은 '나갈 때의 몸 상태'. spawn이 직업과 장비를 다 입힌 뒤에 되살린다 */
@@ -49,7 +49,7 @@ export class Players {
         // 재화가 없는 게임은 처치를 알리기만 한다
         const money = g.has('economy');
         const got = money ? g.wallet.add(p, 'gold', gold, why) : 0;
-        // 안내문에는 실제로 받는 양을 넣는다 (배율이 걸려 있으면 그만큼 준다). 레벨 업 안내가 이 뒤에 오도록 경험치와 불씨는 안내문 다음에 준다
+        // 안내문에는 실제로 받는 양을 넣는다 (배율이 걸려 있으면 그만큼 준다). 레벨 업 안내가 이 뒤에 오도록 경험치와 두 번째 재화는 안내문 다음에 준다
         g.notify(p, 'kill', m.type, money && g.has('growth') ? g.wallet.amount(p, 'exp', exp, why) : 0, money ? g.wallet.amount(p, 'sparks', sparks, why) : 0, got);
         if (money) this.grant(p, g.has('growth') ? exp : 0, sparks, why);
       }
@@ -172,7 +172,7 @@ export class Players {
   huntWhy(p: Ent, m: Ent): string { return !isField(m.layer) ? ECON_HUNT.inst : this.g.has('away') && this.g.away.active(p) ? ECON_HUNT.away : ECON_HUNT.live; }
 
   /**
-   * 경험치와 불씨를 준다 (지갑을 거친다). 레벨이 오르면 체력이 늘고 가득 찬다.
+   * 경험치와 두 번째 재화를 준다 (지갑을 거친다). 레벨이 오르면 체력이 늘고 가득 찬다.
    * why: 원인의 이름 (장부에 그 이름으로 적힌다. 이름의 체계는 systems/wallet.ts). 비워 두면 장부가 그때의 경계(명령, 사건)로 가려 적는다
    */
   grant(p: Ent, exp: number, sparks: number, why = ''): void {

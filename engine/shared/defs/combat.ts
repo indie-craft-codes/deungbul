@@ -72,4 +72,4 @@ export const NO_CLASS: ClassDef = { hp: 100, range: 2, basic: [0, 0], skills: []
 export const classOf = (cls: string): ClassDef => (CLASSES as Readonly<Record<string, ClassDef>>)[isClassId(cls) ? cls : DEFAULT_CLASS] ?? NO_CLASS;
 
 export const maxHpFor = (cls: string, lv: number): number => classOf(cls).hp + HP_PER_LEVEL * (lv - 1);
-export const SPAWN = MAP.spawn; // 등탑 앞: 접속과 부활 지점 (자리는 맵 정의에 있다)
+export const SPAWN = MAP.spawn; // 처음 서는 곳: 접속과 (게임이 정하지 않았으면) 부활의 자리 (맵 정의에 있다)

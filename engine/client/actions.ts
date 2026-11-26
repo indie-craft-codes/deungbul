@@ -36,7 +36,7 @@ export function autoWalk(x: number, z: number): void {
   send({ t: 'move', x: me.tx, z: me.tz });
 }
 
-/** 마을까지 걸어간다 (물약을 사거나 볼일을 보러 돌아갈 때). 어디가 마을인지는 게임의 규칙이 안다 (rules.home: 이 게임에서는 첫불 마을의 등탑 앞). */
+/** 집(rules.home)까지 걸어간다 (물약을 사거나 볼일을 보러 돌아갈 때). 어디가 마을인지는 게임의 규칙이 안다 (rules.home: 이 게임에서는 첫불 마을의 등탑 앞). */
 export function goToTown(): void {
   if (!S.me) return;
   // 여럿이 눌러도 한 점에 겹치지 않게 조금씩 흩는다

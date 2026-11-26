@@ -1,6 +1,6 @@
 // 채널: 같은 들판을 여러 벌(층)로 돌린다. 채널이 다르면 서로 보이지 않고 몬스터도 따로다 (층 번호의 뜻은 ../layers.ts).
 // 접속하면 붐비지 않는 채널 가운데 번호가 가장 낮은 곳에 세우고, 명령으로 다른 채널로 옮긴다.
-// 등탑·주민·길드·순위·우편은 서버 전체의 것이라 채널로 나누지 않는다. 수치는 games/deungbul/shared/content/social.ts의 CHANNEL.
+// 길드·순위·우편과 게임의 공유 상태는 서버 전체의 것이라 채널로 나누지 않는다. 수치는 내용의 CHANNEL (기본값 engine/shared/defaults.ts).
 import { CHANNEL } from '../../../shared/defs';
 import { AOI_LEAVE } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -21,7 +21,7 @@ export class Channels {
   private hereAt = -1;
   private t = 0;
 
-  // 게임의 규칙이 채우는 접점. 비워 두면 그런 것이 없는 게임이다 (이 게임에서는 습격이 채운다: raid.ts)
+  // 게임의 규칙이 채우는 접점. 비워 두면 그런 것이 없는 게임이다 (등불지기에서는 습격이 채운다)
   /** 채널별로 남은, 평소의 몬스터 말고 따로 온 적의 수. 지금 그런 적이 없으면 undefined: 어느 채널에 적이 남았는지 화면이 보여 준다 */
   extraFoes?: () => number[] | undefined;
   /** 바쁜 때인가. 그동안은 채널 소식을 더 자주(CHANNEL.tellBusyS) 알린다 */
