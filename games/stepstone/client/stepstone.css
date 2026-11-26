@@ -1,4 +1,4 @@
-/* 징검돌 전술의 스타일: 틀의 스타일 뒤에 읽혀 덮어쓴다 */
+/* 징검돌 전술의 스타일: 틀의 스타일 뒤에 읽혀 덮어쓴다. 대기실 창·판의 막대·결과 창은 틀의 판 모듈의 것(#roomLobby, #roomBar, #roomEnd)이다 */
 :root {
   --sky: #cfe0d8;
   --ink: #1d2420;
@@ -7,42 +7,10 @@
   --line: rgba(220, 230, 190, .28);
   --gold: #ffd27a;
 }
-/* 판에 앉은 동안은 걷지 않으므로 폰의 조이스틱을 감춘다 */
-body.in-duel #stick { display: none; }
-
-#lobby { width: 290px; max-width: calc(100vw - 24px); }
-#lobby .btns { display: flex; gap: 6px; margin-top: 6px; }
-#lobby .btns button { flex: 1; }
-#lobby .note.sub { margin-top: 10px; font-weight: 700; }
-#lobby .note.wait { margin: 6px 0; color: var(--gold); }
-#tableList .mrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
-#tableList .mrow span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-button.go { font-weight: 700; }
-
-#duelBar { min-width: 300px; max-width: min(440px, calc(100vw - 24px)); }
-#duelBar .names { gap: 10px; font-weight: 700; }
-#duelBar .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .75; }
-#duelBar #nameB { text-align: right; }
-#duelBar .who.now { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
-#duelBar .who.mine::before { content: '● '; }
-#duelBar .turn { font-weight: 800; font-size: 1.05em; }
-#duelBar .bar.time { height: 6px; margin: 4px 0; }
-#duelBar .bar.time i { background: var(--gold); transform-origin: left; transition: transform .25s linear; }
-#duelBar .bar.time.low i { background: #ff6a4a; }
-#duelBar .btns { display: flex; gap: 6px; margin-top: 6px; }
-#duelBar .btns button { flex: 1; }
-#duelBar .btns button[hidden] { display: none; }
-#duelBar .note { margin-top: 4px; }
+#roomLobby { width: 290px; max-width: calc(100vw - 24px); }
 
 #unitCard { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); width: min(380px, calc(100vw - 24px)); z-index: 15; pointer-events: none; }
-#unitCard[hidden], #duelEnd[hidden], #turnFlash[hidden] { display: none; }
-
-#duelEnd { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100vw - 32px)); text-align: center; z-index: 30; padding: 18px; }
-#duelEnd .big { font-size: 30px; font-weight: 800; margin-bottom: 6px; }
-#duelEnd .big.r0 { color: var(--gold); }
-#duelEnd .big.r1 { color: #ff8a6a; }
-#duelEnd .btns { display: flex; gap: 8px; margin-top: 12px; }
-#duelEnd .btns button { flex: 1; }
+#unitCard[hidden], #turnFlash[hidden] { display: none; }
 
 #turnFlash { position: fixed; left: 50%; top: 24%; transform: translate(-50%, -50%); font-size: 44px; font-weight: 900; color: var(--gold);
   text-shadow: 0 0 8px #000, 0 2px 14px rgba(0, 0, 0, .7); pointer-events: none; z-index: 25; animation: flashIn 1.3s ease-out; }
@@ -52,12 +20,8 @@ button.go { font-weight: 700; }
 #dmgLayer .dmg { position: absolute; left: 0; top: 0; font-size: 26px; font-weight: 900; color: #ffe27a; text-shadow: 0 0 4px #000, 0 0 8px #000; }
 #dmgLayer .dmg.hurt { color: #ff6a4a; }
 
-/* 좁은 화면: 오른쪽 위의 칸이 좁고 대화창이 가운데 위를 덮으므로, 대기실 창과 판의 막대를 아래쪽에 띄운다 (판에 앉으면 조이스틱이 없다) */
+/* 좁은 화면: 고른 말의 카드는 위쪽의 빈 자리(내 정보·대화창 아래)에 (대기실 창과 판의 막대는 틀이 아래쪽에 띄운다) */
 @media (max-width: 720px) {
-  /* 틀의 '#rightcol .panel', '#topmid .panel'(position: static)보다 앞서게 아이디 둘로 고른다 */
-  #rightcol #lobby { position: fixed; left: 12px; right: 12px; bottom: 120px; width: auto; max-width: none; z-index: 12; }
-  #topmid #duelBar { position: fixed; left: 12px; right: 12px; bottom: 108px; width: auto; min-width: 0; max-width: none; z-index: 12; }
-  /* 고른 말의 카드는 위쪽의 빈 자리(내 정보·대화창 아래)에, 아래의 흘러가는 알림은 막대 밑에 보이게 */
   #unitCard { top: 118px; bottom: auto; }
   #turnFlash { font-size: 34px; top: 30%; }
 }

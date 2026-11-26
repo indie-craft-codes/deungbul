@@ -1,5 +1,5 @@
 // 판의 규칙만 (월드·시간 없이): 처음 자리, 걷기(바위·말·걸음 수), 치기(거리, 방패돌의 덜 받기), 다 쓰러뜨림·남은 체력, 컴퓨터끼리 끝까지 두기.
-import { BOARD, UNITS } from '../shared/content/board';
+import { BOARD, BOARDS, UNITS } from '../shared/content/board';
 import { aiStep, anyAction, byHp, cellAt, cellPos, damage, knockout, reach, seatPos, startUnits, targets, type Unit } from '../shared/rules';
 import { check } from '@engine/testing';
 
@@ -62,11 +62,11 @@ const unit = (type: Unit['type'], side: 0 | 1, c: number, r: number, hp = UNITS[
 // ---------- 판의 자리 ----------
 {
   let ok = true;
-  for (let b = 0; b < 6; b++) for (let c = 0; c < BOARD.size; c++) for (let r = 0; r < BOARD.size; r++) {
+  for (let b = 0; b < BOARDS.length; b++) for (let c = 0; c < BOARD.size; c++) for (let r = 0; r < BOARD.size; r++) {
     const p = cellPos(b, c, r), back = cellAt(b, p.x + 0.4, p.z - 0.3);
     if (!back || back.c !== c || back.r !== r) ok = false;
   }
-  check(ok, '칸의 가운데와 그 둘레의 점은 같은 칸으로 돌아온다 (판 여섯, 45° 돌린 판)');
+  check(ok, '칸의 가운데와 그 둘레의 점은 같은 칸으로 돌아온다 (45° 돌린 판)');
   const s0 = seatPos(0, 0), s1 = seatPos(0, 1);
   check(!cellAt(0, s0.x, s0.z) && !cellAt(0, s1.x, s1.z), '두는 사람의 자리는 판 밖이다');
 }

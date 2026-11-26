@@ -1,6 +1,6 @@
 // 징검돌 전술의 규칙: 서버(server/duels.ts), 화면(client/duel.ts의 칸 표시), 시험, 컴퓨터 상대가 함께 쓰는 한 곳.
 // 월드와 시간을 모른다: 말의 목록만 받아 셈한다.
-import { BOARD, BOARDS, START, UNITS, UNIT_TYPES, type UnitType } from './content/board';
+import { BOARD, BOARDS, START, TURN, UNITS, UNIT_TYPES, type UnitType } from './content/board';
 
 /** 판 위의 말 하나 (id는 서버가 놓은 엔티티의 id) */
 export interface Unit {
@@ -69,10 +69,13 @@ export function targets(units: readonly Unit[], u: Unit): Unit[] {
   return units.filter((t) => t.hp > 0 && t.side !== u.side && inRange(u, u, t));
 }
 
-/** a가 b를 칠 때의 피해: 방패돌은 2칸 이상 떨어진 곳에서 맞으면 덜 받는다 (그래도 1은 받는다) */
-export function damage(a: Unit, b: Unit, from: Cell = a): number {
+/**
+ * a가 b를 칠 때의 피해: 방패돌은 2칸 이상 떨어진 곳에서 맞으면 덜 받는다. opener(첫 바퀴의 나중 편)는 TURN.openerSoften만큼 덜 준다. 그래도 1은 준다.
+ * 첫 바퀴 보정의 까닭: 먼저 두는 편은 다가가야 하고, 다가온 말을 나중 편이 먼저 친다 (보정 없이 컴퓨터끼리 두면 나중 편이 약 89% 이긴다: docs/proof-stepstone.md)
+ */
+export function damage(a: Unit, b: Unit, from: Cell = a, opener = false): number {
   const guard = gap(from, b) >= 2 ? UNITS[b.type].guardFar ?? 0 : 0;
-  return Math.max(1, UNITS[a.type].atk - guard);
+  return Math.max(1, UNITS[a.type].atk - guard - (opener ? TURN.openerSoften : 0));
 }
 
 /** 그 편에 이번 차례에 할 수 있는 일이 남았는가 (걷기나 치기) */
@@ -125,29 +128,38 @@ function spotScore(units: readonly Unit[], u: Unit, at: Cell): number {
 
 /**
  * 컴퓨터의 한 수: 쓰러뜨릴 수 있는 적부터 치고, 칠 수 없으면 더 나은 칸으로 걷고, 할 것이 없으면 차례를 넘긴다.
- * 말의 목록에만 기대므로 같은 판이면 같은 수를 둔다 (시험이 끝까지 두어 본다). 한 수마다 판이 바뀌거나 'end'라 끝없이 돌지 않는다
+ * 말의 목록에만 기대므로 같은 판이면 같은 수를 둔다 (시험이 끝까지 두어 본다). 한 수마다 판이 바뀌거나 'end'라 끝없이 돌지 않는다.
+ * rng를 주면 점수가 가장 좋은 수에 가까운 수들 가운데 하나를 고른다 (컴퓨터끼리 여러 판을 두어 승률을 재는 시험: 늘 같은 판이 되지 않게)
  */
-export function aiStep(units: readonly Unit[], side: 0 | 1): Step {
+export function aiStep(units: readonly Unit[], side: 0 | 1, rng?: () => number, opener = false): Step {
+  const pick = <T extends { v: number }>(list: T[], spread: number): T | null => {
+    if (!list.length) return null;
+    const best = Math.max(...list.map((x) => x.v));
+    const near = list.filter((x) => x.v >= best - (rng ? spread : 0));
+    return rng ? near[Math.floor(rng() * near.length) % near.length] : near[0];
+  };
   const mine = units.filter((u) => u.side === side && u.hp > 0);
   // 1. 칠 수 있으면: 쓰러뜨리는 것 → 큰 피해 → 체력이 낮은 적
-  let hit: { u: Unit; t: Unit; v: number } | null = null;
+  const hits: { u: Unit; t: Unit; v: number }[] = [];
   for (const u of mine) {
     for (const t of targets(units, u)) {
-      const d = damage(u, t), v = (d >= t.hp ? 1000 : 0) + d * 10 - t.hp;
-      if (!hit || v > hit.v) hit = { u, t, v };
+      const d = damage(u, t, u, opener);
+      hits.push({ u, t, v: (d >= t.hp ? 1000 : 0) + d * 10 - t.hp });
     }
   }
+  const hit = pick(hits, 4);
   if (hit) return { a: 'hit', u: hit.u.id, t: hit.t.id };
   // 2. 걸어서 나아지는 말: 지금 칸보다 점수가 높은 칸 가운데 가장 좋은 곳
-  let walk: { u: Unit; c: number; r: number; gain: number } | null = null;
+  const walks: { u: Unit; c: number; r: number; v: number }[] = [];
   for (const u of mine) {
     const here = spotScore(units, u, u);
     for (const [, path] of reach(units, u)) {
       const to = path[path.length - 1], moved = units.map((x) => (x.id === u.id ? { ...x, c: to.c, r: to.r } : x));
       const gain = spotScore(moved, { ...u, c: to.c, r: to.r }, to) - here;
-      if (gain > 0 && (!walk || gain > walk.gain)) walk = { u, c: to.c, r: to.r, gain };
+      if (gain > 0) walks.push({ u, c: to.c, r: to.r, v: gain });
     }
   }
+  const walk = pick(walks, 3);
   if (walk) return { a: 'move', u: walk.u.id, c: walk.c, r: walk.r };
   return { a: 'end' };
 }
