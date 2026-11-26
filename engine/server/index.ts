@@ -13,6 +13,7 @@ export type { Roster } from './game/systems/roster';
 export type { Gacha } from './game/systems/gacha';
 export type { Squad } from './game/systems/squad';
 export type { Stages } from './game/systems/stages';
+export type { Room, RoomDef, RoomSeat, Rooms, Spot } from './game/systems/rooms';
 export type { AllyKind } from './game/systems/combat';
 export { channelOf, fieldLayer, isField, notifyLayer } from './game/layers';
 export { leaderFight } from './game/systems/leader';

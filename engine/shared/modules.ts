@@ -52,6 +52,8 @@ export const MODULE_TABLE = {
   stages: { needs: ['combat'] },
   /** 영웅 장비: 영웅마다의 장비 칸, 끼기·빼기·강화(재화와 재료)·분해, 세트, 단계·던전에서 떨어지는 장비 (표는 HERO_RULES.gear) */
   herogear: { needs: ['roster', 'items', 'economy'] },
+  /** 판: 사람(과 컴퓨터) 몇이 따로 된 층에서 차례대로 두는 판. 대기실·짝짓기, 차례와 기한, 끊긴 사람의 자리, 판의 저장. 턴제·보드·카드 게임의 바탕 */
+  rooms: { needs: [] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
@@ -74,9 +76,10 @@ export const COLLECT_MODULES: readonly ModuleId[] = ['roster', 'gacha', 'squad',
  * 전통적인 탭 타깃 MMORPG가 쓰는 모듈 전부. 등불지기처럼 다 쓰는 게임은 `MODULES = RPG_MODULES`로 적어도 된다.
  * 팀(teams)은 들지 않는다: RPG가 아닌 놀이(공놀이, 깃발 뺏기)의 모듈이고, 이 목록을 쓰는 게임이 저절로 팀을 갖지 않게 한다.
  * 수집형의 넷(COLLECT_MODULES)과 영웅 장비(herogear)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 뽑기와 단계를 갖지 않게 한다.
- * herogear는 COLLECT_MODULES에도 들지 않는다: 그 목록을 쓰는 게임이 저절로 영웅 장비(아이템 모듈에 기댄다)를 갖지 않게, 고르는 게임이 따로 적는다
+ * herogear는 COLLECT_MODULES에도 들지 않는다: 그 목록을 쓰는 게임이 저절로 영웅 장비(아이템 모듈에 기댄다)를 갖지 않게, 고르는 게임이 따로 적는다.
+ * 판(rooms)도 들지 않는다: 턴제·보드 게임의 모듈이고, 이 목록을 쓰는 게임이 저절로 대기실을 갖지 않게 한다
  */
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear');
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms');
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).

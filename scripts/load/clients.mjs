@@ -5,6 +5,8 @@
 //   field   단계에서 나와(단계가 없는 게임은 그대로) 처음 자리 둘레 14m 안을 1~3초마다 걷는다: 모두가 서로의 시야에 든다
 //   fight   field처럼 모여, 보이는 몬스터를 1~3초마다 친다 (기술도)
 //   spread  처음 자리 둘레 55m 안을 걷는다
+//   room    판이 있는 게임(rooms 모듈): 접속하면 빠른 대국(둘씩 한 판), 1~3초마다 내 차례면 넘긴다
+//   roomcpu 판이 있는 게임: 접속하면 컴퓨터와 두기(한 사람이 한 판, 컴퓨터가 0.7초마다 둔다), 1~3초마다 내 차례면 넘긴다
 // 바꿔 접속: 그 간격마다 한 사람이 끊고 같은 토큰으로 다시 들어온다 (저장과 읽기, 영웅·단계의 정리를 되풀이)
 // 토큰이 있어 저장된다. 끝에 한 줄 JSON: 접속한 수, 받은 글자(1인 초당), 끊긴 수
 import { WebSocket } from 'ws';
@@ -30,7 +32,12 @@ function client(i) {
     if (m.t === 'welcome') {
       joined++;
       if (st.cx === null) { st.cx = m.x; st.cz = m.z; }
-      if (mode !== 'stage') setTimeout(() => send({ t: 'stage', a: 'leave' }), 300);
+      if (mode === 'room' || mode === 'roomcpu') setTimeout(() => send({ t: 'room', a: mode === 'room' ? 'quick' : 'cpu' }), 300);
+      else if (mode !== 'stage') setTimeout(() => send({ t: 'stage', a: 'leave' }), 300);
+    } else if (m.t === 'me' && m.k === 'room') {
+      st.room = m.s;
+      // 끝난 판은 다시 둔다 (재는 동안 판이 계속 돌게)
+      if (m.s && m.s.st === 'over') setTimeout(() => send({ t: 'room', a: 'again' }), 500);
     } else if (m.t === 'snap') {
       for (const e of m.enter ?? []) if (e.kind === 'm') st.mons.add(e.id);
       for (const id of m.leave ?? []) st.mons.delete(id);
@@ -39,6 +46,7 @@ function client(i) {
   const act = () => {
     if (!st.alive) return;
     if (mode === 'stage') send({ t: 'ping', c: Date.now() % 1e6 });
+    else if (mode === 'room' || mode === 'roomcpu') { if (st.room && st.room.st === 'play' && st.room.turn === st.room.me) send({ t: 'room', a: 'pass' }); }
     else if (mode === 'fight' && st.mons.size && Math.random() < 0.7) {
       const ids = [...st.mons];
       send({ t: 'attack', id: ids[Math.floor(Math.random() * ids.length)] });

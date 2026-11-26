@@ -23,6 +23,7 @@ import { initCard, initParty } from './hud/party';
 import { initShop } from './hud/shop';
 import { initStages } from './hud/stagebar';
 import { initTeams } from './hud/teams';
+import { initRooms } from './hud/rooms';
 import { initWorldMap } from './hud/worldmap';
 import { hasModule } from './mods';
 import { initSound } from './sound';
@@ -47,6 +48,8 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initNear },
   { init: initSound },
   { init: initAutoName },
+  // 판 (턴제·보드의 대기실과 차례)
+  { init: initRooms, mod: 'rooms' },
   // 수집형·방치형: 맨 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)
   { init: initRoster, mod: 'roster' },
   { init: initGacha, mod: 'gacha' },

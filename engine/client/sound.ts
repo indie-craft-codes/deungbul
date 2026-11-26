@@ -180,7 +180,10 @@ const BY_MSG: Partial<Record<MsgKey, () => void>> = {
   died: sfx.bad, dungeonFail: sfx.bad, enhanceFail: sfx.bad, enhanceDown: sfx.bad, enhanceSaved: sfx.bad,
 };
 /** 안내문에 소리를 붙인다 (게임이 자기 안내문의 소리를 등록한다) */
-export function addMsgSounds(more: Partial<Record<MsgKey, () => void>>): void { Object.assign(BY_MSG, more); }
+export function addMsgSounds(more: Partial<Record<MsgKey, () => void>>, keep = false): void {
+  // keep: 이미 소리가 있는 안내문은 그대로 둔다 (틀의 모듈이 기본 소리를 줄 때: 게임이 먼저 정한 것이 이긴다)
+  for (const [k, fn] of Object.entries(more) as [MsgKey, () => void][]) if (!keep || !(k in BY_MSG)) BY_MSG[k] = fn;
+}
 
 // ---------- 배경음 ----------
 /** 배경음을 넘기는 시간(초): 앞의 것이 줄어들고 새것이 커진다 */

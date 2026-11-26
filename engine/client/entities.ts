@@ -239,6 +239,17 @@ function posOf(id: number): { x: number; z: number; h: number } | null {
 }
 
 // ---------- 서버가 보낸 것 반영 ----------
+/** 게임의 연출 사건을 받는 것들 (onEffect): 이름 → 처리기 */
+const effects = new Map<string, ((id: number, vals: number[]) => void)[]>();
+/**
+ * 게임의 연출 사건(서버의 g.effect(id, name, …vals))을 받는다: id는 사건이 일어난 엔티티(화면에 그것이 보일 때만 온다), vals는 게임이 정한 수들.
+ * 스냅샷의 사건으로 오므로 그 스냅샷의 자리·상태와 같은 때다. 같은 이름에 여럿을 걸 수 있다
+ */
+export function onEffect(name: string, fn: (id: number, vals: number[]) => void): void {
+  const l = effects.get(name);
+  if (l) l.push(fn); else effects.set(name, [fn]);
+}
+
 function onEvent(e: Ev, me: Me): void {
   // 공격 동작: 코드 모델은 swing(1에서 0으로)으로 팔을 휘두르고, 모델 파일은 공격 클립을 처음부터 튼다 (같은 신호)
   const swing = (id: number) => {
@@ -330,6 +341,11 @@ function onEvent(e: Ev, me: Me): void {
     case 'mh': {
       const r = S.others.get(e[1]);
       if (r) { r.maxHp = e[2]; r.tag.hp = -1; setTagHp(r.tag, r.hp, r.maxHp); }
+      break;
+    }
+    case 'fx': {
+      // 게임의 연출 사건 (서버 g.effect → 화면 onEffect)
+      for (const fn of effects.get(e[2]) ?? []) fn(e[1], e.slice(3) as number[]);
       break;
     }
     case 'heal': {

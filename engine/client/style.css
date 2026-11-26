@@ -101,14 +101,15 @@ button { background: var(--gold); color: var(--on-gold); font-weight: 700; paddi
   position: absolute; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; max-width: 100%;
 }
-#topmid .panel { position: static; }
+/* 자리 안의 창은 틀이 쌓는다 (position: static). 게임의 창에 class="panel free"를 주면 이 규칙을 받지 않아 게임의 css(#내창 { position: fixed … })가 그대로 먹는다 */
+#topmid .panel:not(.free) { position: static; }
 #tgt { width: 220px; display: flex; flex-direction: column; gap: 5px; }
 /* 오른쪽 위에 쌓이는 창들: 등탑, 상점, 퀘스트. 열린 것만 위에서부터 차례로 놓인다 */
 #rightcol {
   position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px));
   width: 250px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; z-index: 2; /* 게임의 길잡이 화살표(hud)가 창의 글자를 덮지 않게 */
 }
-#rightcol .panel { position: static; width: auto; }
+#rightcol .panel:not(.free) { position: static; width: auto; }
 #shop { right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); width: 250px; display: flex; flex-direction: column; gap: 6px; }
 #shopList, #forge, #forgeList { display: flex; flex-direction: column; gap: 6px; }
 #forge[hidden] { display: none; }
@@ -755,3 +756,36 @@ html:lang(en) body { overflow-wrap: break-word; }
 #idleBackPop button.on { background: var(--gold); color: var(--on-gold, #1b1b1b); border-color: var(--gold); font-weight: 700; }
 /* 화면의 틀 요소 끄기 (내용의 HUD.hide: hud/shell.ts) */
 .hudOff { display: none !important; }
+/* 판 (rooms 모듈: hud/rooms.ts): 대기실 창, 판의 막대, 결과 창. 앉은 동안 걷지 않는 판은 조이스틱을 감춘다 */
+body.room-still #stick { display: none; }
+#roomLobby[hidden], #roomBar[hidden], #roomEnd[hidden], #roomIdle[hidden], #roomWaitBox[hidden], #roomNote[hidden] { display: none; }
+#roomLobby { display: flex; flex-direction: column; gap: 5px; }
+#roomLobby .btns { margin-top: 2px; }
+#roomLobby .note.sub { margin-top: 8px; font-weight: 700; }
+#roomLobby .note.wait { margin: 4px 0; color: var(--gold); }
+#roomList .mrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+#roomList .mrow span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#roomList .mrow button { padding: 4px 10px; font-size: 12px; }
+#roomBar { display: flex; flex-direction: column; gap: 4px; min-width: 300px; max-width: min(440px, calc(100vw - 24px)); }
+#roomBar .rseats { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; }
+#roomBar .rseat { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .7; }
+#roomBar .rseat:last-child { text-align: right; }
+#roomBar .rseat.now { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+#roomBar .rseat.mine::before { content: '● '; }
+#roomBar .rseat.away { font-style: italic; }
+#roomBar .rturn { font-weight: 800; font-size: 1.05em; }
+#roomBar .bar.rtime { height: 6px; }
+#roomBar .bar.rtime[hidden], #roomBar .rclock[hidden], #roomBar .btns button[hidden] { display: none; }
+#roomBar .bar.rtime i { background: var(--gold); transition: none; }
+#roomBar .bar.rtime.low i { background: #ff6a4a; }
+#roomEnd { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100vw - 32px)); text-align: center; z-index: 30; padding: 18px; display: flex; flex-direction: column; gap: 4px; }
+#roomEnd .rbig { font-size: 30px; font-weight: 800; }
+#roomEnd .rbig.r0 { color: var(--gold); }
+#roomEnd .rbig.r1 { color: #ff8a6a; }
+#roomEnd .btns { margin-top: 10px; gap: 8px; }
+/* 좁은 화면: 오른쪽 위의 칸은 좁고(160px) 가운데 위는 대화창이 덮으므로, 대기실 창과 판의 막대를 아래쪽에 띄운다 (앉으면 조이스틱이 없다) */
+@media (max-width: 720px) {
+  #rightcol #roomLobby { position: fixed; left: 12px; right: 12px; bottom: 120px; width: auto; z-index: 12; }
+  #topmid #roomBar { position: fixed; left: 12px; right: 12px; bottom: 108px; width: auto; min-width: 0; max-width: none; z-index: 12; }
+  #roomEnd .rbig { font-size: 26px; }
+}

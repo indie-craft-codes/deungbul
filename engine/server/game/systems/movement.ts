@@ -37,6 +37,17 @@ export class Movement {
 
   goTo(e: Ent, x: number, z: number): void { e.tx = x; e.tz = z; e.moving = true; e.stuck = 0; }
 
+  /**
+   * 순간 이동: 자리와 걷던 목표를 (x, z)로 바꾸고 걷기·길을 멈춘 뒤, 화면에 '바로 옮김'(사건 r)을 알린다 (화면이 미끄러지지 않고 그 자리에 놓는다).
+   * face를 주면 그쪽을 본다 (atan2(dx, dz)). 층(e.layer)은 바꾸지 않는다: 다른 층(채널·판·던전)으로 옮기려면 부르기 전에 e.layer를 정한다.
+   * 장애물 검사는 하지 않는다 (부른 쪽이 빈 자리를 준다)
+   */
+  teleport(e: Ent, x: number, z: number, face?: number): void {
+    e.x = x; e.z = z; e.tx = x; e.tz = z; e.moving = false; e.path = null;
+    if (face !== undefined) e.face = face;
+    this.g.emit(['r', e.id]);
+  }
+
   /** 한 틱만큼 걷는다. 도착하거나 막히면 moving이 꺼진다. 길찾기는 engine/shared/nav.ts가 한다 (클라이언트 예측과 같은 코드). */
   walk(e: Ent, speed: number, dt: number): void {
     walk(e, speed, dt, this.g.world.obstacles, this.g.nav, this.g.clock);

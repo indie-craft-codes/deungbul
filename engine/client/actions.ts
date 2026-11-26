@@ -110,8 +110,18 @@ export function skillQueueTick(now: number): void {
   if (Math.hypot(t.x - me.x, t.z - me.z) <= (def.range ?? 0) - 0.3) { queued = null; send({ t: 'skill', n: q.n }); }
 }
 
-/** 화면의 점을 눌렀다: 몬스터면 공격, 아니면 그 자리로 이동. */
+/** 게임이 받는 화면 누르기 (setTapHandler). 참을 돌려주면 틀의 처리(공격·사람 카드·걷기)를 하지 않는다 */
+let tapHandler: ((sx: number, sy: number, touch: boolean) => boolean) | null = null;
+/**
+ * 3D 화면(땅·엔티티)의 누르기를 게임이 먼저 받는다: 마우스는 누를 때, 터치는 손가락을 거의 움직이지 않고 뗄 때 (두 손가락 확대·창의 단추는 그대로 틀의 것).
+ * fn이 참을 돌려주면 틀은 아무것도 하지 않는다 (몬스터 공격, 사람 카드, 그 자리로 걷기). 거짓이면 평소대로. 칸을 고르는 게임(턴제·보드)이
+ * view.pick(sx, sy)(누른 땅의 월드 점)과 view.project(x, y, z)(월드 → 화면)로 칸을 찾는다. 다시 틀의 것으로 돌리려면 null
+ */
+export function setTapHandler(fn: ((sx: number, sy: number, touch: boolean) => boolean) | null): void { tapHandler = fn; }
+
+/** 화면의 점을 눌렀다: 게임이 받으면 그것으로 끝(setTapHandler), 아니면 몬스터면 공격, 아니면 그 자리로 이동. */
 export function tapAt(sx: number, sy: number, touch: boolean): void {
+  if (tapHandler?.(sx, sy, touch)) return;
   let pick: Remote | null = null, best = touch ? 46 : 34;
   for (const r of S.others.values()) {
     if (r.kind !== 'm' || r.dying || r.gone) continue;
@@ -146,7 +156,11 @@ export function steer(kx: number, kz: number, now: number): void {
   if (!me) return;
   if (Math.abs(kx) + Math.abs(kz) > 0.2) {
     S.auto = false;
-    const mx = (kx + kz) * 0.7071, mz = (kz - kx) * 0.7071, len = Math.hypot(mx, mz);
+    let mx = (kx + kz) * 0.7071, mz = (kz - kx) * 0.7071;
+    // 카메라를 돌린 게임(setCameraYaw): 화면의 방향도 그만큼 돌린다
+    const yaw = view.yaw;
+    if (yaw) { const c = Math.cos(yaw), s = Math.sin(yaw), x = mx; mx = x * c + mz * s; mz = mz * c - x * s; }
+    const len = Math.hypot(mx, mz);
     const to = clampPoint(me.x + (mx / len) * 4, me.z + (mz / len) * 4);
     me.tx = to.x; me.tz = to.z;
     me.moving = true; me.stuck = 0; me.lastCmd = now; me.attackId = 0;

@@ -3,6 +3,7 @@
 import type { IdleBack, PullGot, SweepGot } from './defs/collect';
 import type { Gear, Mail, RankRow } from './defs/growth';
 import type { GuildView, MarketItem } from './defs/social';
+import type { RoomLobby } from './defs/rooms';
 import type { TeamBoard } from './defs/teams';
 import type { ClientMsgs, ServerMsgs, WorldState as GameWorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
@@ -60,11 +61,12 @@ export type Ev =
   | ['mh', id: number, maxHp: number] // 최대 체력이 바뀌었다 (필드 보스)
   | ['heal', id: number, amount: number]
   | ['buff', id: number, skill: string, dur: number] // 강화가 걸렸다 (그 기술로 dur초 동안)
-  | ['stun', id: number, dur: number]; // 기절했다
+  | ['stun', id: number, dur: number] // 기절했다
+  | ['fx', id: number, name: string, ...vals: number[]]; // 게임의 연출 사건 (g.effect): 그 엔티티가 보이는 화면에만. 화면은 onEffect(name)로 받는다
 
 /** 서버 전체가 공유하는 상태. 칸은 게임이 더한다 (engine/shared/ext.ts) */
-/** 모두가 보는 공유 상태: 게임이 더한 칸(engine/shared/ext.ts의 WorldState)과 틀의 모듈의 칸 (teams 모듈의 점수판: 그 모듈을 고른 게임에만 있다) */
-export type WorldState = GameWorldState & { teams?: TeamBoard };
+/** 모두가 보는 공유 상태: 게임이 더한 칸(engine/shared/ext.ts의 WorldState)과 틀의 모듈의 칸 (teams 모듈의 점수판, rooms 모듈의 대기실: 그 모듈을 고른 게임에만 있다) */
+export type WorldState = GameWorldState & { teams?: TeamBoard; rooms?: RoomLobby };
 
 /** 게임이 확장 지점(engine/shared/ext.ts의 ServerMsgs, ClientMsgs)에 더한 메시지들: 종류마다 { t: 종류 } & 나머지 칸. 더한 것이 없으면 never */
 type Added<M> = { [K in keyof M]: { t: K } & M[K] }[keyof M];
@@ -165,6 +167,8 @@ export type ClientMsg =
   | { t: 'gacha'; a: 'select'; item: string; hero: string }
   /** 메뉴에서 바로 던전에 들어간다 (DungeonDef.fromMenu인 던전): 들판이나 단계 안에서. 단계 안이면 단계에서 나와 들어간다 */
   | { t: 'dungeonGo'; id: string }
+  /** 판 (rooms 모듈): quick 빠른 대국, host 판 만들기, cpu 컴퓨터와 두기, join 들어가기(id: 판), leave 대기실로(두는 중이면 기권), pass 차례 넘기기, resign 기권, again 다시 하기 */
+  | { t: 'room'; a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again'; id?: number }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
