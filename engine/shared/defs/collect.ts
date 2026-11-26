@@ -100,6 +100,12 @@ export interface GachaRules {
 export type SweepCost = { cur: Coin; n: number } | { item: string; n: number };
 /** 소탕: 이미 깬 단계·던전을 싸우지 않고 바로 끝내 보통 보상(처음 깬 보상이 아니다)을 받는다. cost는 한 번마다의 값(없으면 공짜), max는 한 번에 할 수 있는 횟수(기본 10) */
 export interface SweepRule { cost?: SweepCost; max?: number }
+/**
+ * 오프라인 단계 진행: 접속하지 않은 동안 서버가 '얼마나 더 깼을까'를 셈한다 (자동 진행을 켜 둔 사람만).
+ * 가장 멀리 깬 단계의 다음부터, 편성의 전투력이 권장 전투력 × need(기본 1) 이상인 단계를 perStageS초에 하나씩 깬 것으로 친다.
+ * 비운 시간은 maxH시간까지만, 한 번 돌아올 때 maxStages단계까지만. clearReward(기본 true)면 깬 단계마다 보통 보상도 준다 (처음 깬 보상은 언제나)
+ */
+export interface OfflineRules { perStageS: number; maxH: number; maxStages: number; need?: number; clearReward?: boolean }
 
 /** 편성의 규칙 */
 export interface SquadRules {
@@ -155,6 +161,8 @@ export interface StageRules {
   enterOnJoin: boolean;
   /** 소탕(깬 단계를 바로 끝내기)의 값과 한 번에 하는 수. 없으면 소탕이 없다 */
   sweep?: SweepRule;
+  /** 오프라인 단계 진행. 없으면 하지 않는다 (방치 보상의 수치만 깬 단계로 커진다) */
+  offline?: OfflineRules;
 }
 
 /** 방치 보상(idle 모듈)의 셈에 틀이 넘기는 것: 깬 단계의 수 (stages 모듈이 없으면 0) */
@@ -236,6 +244,36 @@ export const sweepMax = (r: SweepRule | undefined): number => Math.max(1, Math.f
 /** 그 단계를 소탕할 수 있는 단계인가 (깼는가는 따로 본다) */
 export const stageSweepable = (s: StageRef | undefined): boolean => !!STAGE_RULE_VIEW.sweep && !!s && s.def.sweep !== false;
 
+/**
+ * 오프라인 단계 진행의 셈 (서버가 돌아온 사람에게, 시험과 화면이 같은 셈을 쓴다). 아무것도 바꾸지 않는다.
+ * best: 가장 멀리 깬 단계의 번호(-1이면 없음), power: 편성의 전투력, ms: 비운 시간.
+ * 돌려주는 것: 깬 것으로 칠 단계의 번호들과 그 각각을 깬 때(비우기 시작한 때부터의 ms). 깨진 시간(음수, NaN, 무한대)은 0으로 본다
+ */
+export function offlinePlan(best: number, power: number, ms: number, rules: OfflineRules | undefined): { passed: number[]; at: number[] } {
+  const out = { passed: [] as number[], at: [] as number[] };
+  if (!rules || !(ms > 0) || !Number.isFinite(power)) return out;
+  const budget = Math.min(ms, Math.max(0, rules.maxH) * 3600000);
+  const per = Math.max(1, rules.perStageS) * 1000, need = rules.need ?? 1, cap = Math.max(0, Math.floor(rules.maxStages));
+  for (let i = Math.max(-1, best) + 1, t = per; i < STAGES.length && out.passed.length < cap && t <= budget; i++, t += per) {
+    if (power < STAGES[i].def.rec * need) break;
+    out.passed.push(i); out.at.push(t);
+  }
+  return out;
+}
+/**
+ * 방치 보상의 분(minutes)을 깬 단계의 수가 같은 토막으로 나눈다: [분, 그동안 깬 단계의 수]. 토막의 분을 더하면 minutes다.
+ * cleared: 비우기 시작할 때 깬 단계의 수, at: offlinePlan이 준 깬 때들 (비었으면 한 토막: 예전의 셈과 같다)
+ */
+export function idleSegments(minutes: number, cleared: number, at: readonly number[]): [number, number][] {
+  const out: [number, number][] = [];
+  let from = 0;
+  at.forEach((t, k) => {
+    const to = Math.min(minutes, Math.floor(t / 60000));
+    if (to > from) { out.push([to - from, cleared + k]); from = to; }
+  });
+  if (minutes > from || !out.length) out.push([minutes - from, cleared + at.length]);
+  return out;
+}
 
 // ---------- 줄 위의 모양 (개인 상태와 메시지) ----------
 /** 개인 상태 'heroes': 가진 영웅마다 [레벨, 별, 조각] */

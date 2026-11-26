@@ -155,4 +155,5 @@ export type MsgKey =
   // ---- 소탕·오프라인 진행·픽업 배너·선택권 (stages.ts, dungeon.ts, gacha.ts) ----
   | 'swept' // ['stage' | 'dungeon', id, 횟수] 소탕했다 (받은 것은 메시지 sweep)
   | 'sweepLocked' // ['stage' | 'dungeon', id] 아직 소탕할 수 없다 (깨지 않았거나 소탕할 수 없는 곳)
-  | 'itemShort'; // [재화나 아이템 id, 드는 수, 가진 수] 값(소탕권, 선택권, 재화)이 모자란다
+  | 'itemShort' // [재화나 아이템 id, 드는 수, 가진 수] 값(소탕권, 선택권, 재화)이 모자란다
+  | 'stageAway'; // [처음 단계 id, 지금 단계 id, 깬 단계의 수] 자리를 비운 동안 단계가 앞으로 나아갔다

@@ -1907,6 +1907,13 @@
   "Skill upgraded to rank 1.",
   "Skill upgraded to rank 3."
  ],
+ "msg.stageAway": [
+  "14c23a92e07f7b8c",
+  "While you were away: undefined → undefined (undefined stages cleared)",
+  "While you were away: 0 → 0 (0 stages cleared)",
+  "While you were away: 1 → 1 (1 stage cleared)",
+  "While you were away: 2 → 3 (4 stages cleared)"
+ ],
  "msg.stageChanged": [
   "1be35710bcfe51c9",
   "undefined's light changed: undefined",

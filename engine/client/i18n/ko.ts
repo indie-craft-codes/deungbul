@@ -414,7 +414,7 @@ export const koBase = (n: ContentNames) => {
       power: (n: number) => `전투력 ${num(n)}`,
       streak: (n: number) => `출석 ${n}일째`,
       reward: (gold: number, exp: number, second: number) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : String(k)),
+      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : String(k)),
       status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
       itemDamage: (pct: number) => `공격 피해 +${pct}%`,
       itemGuard: (pct: number) => `받는 피해 -${pct}%`,
@@ -651,6 +651,7 @@ export const koBase = (n: ContentNames) => {
       swept: (a) => `${a[0] === 'stage' ? a[1] : dungeonName(a[1])} 소탕 ×${a[2]} 완료`,
       sweepLocked: (a) => `${a[0] === 'stage' ? a[1] : dungeonName(a[1])}은(는) 아직 소탕할 수 없습니다. 먼저 깨세요.`,
       itemShort: (a) => `${grantWhat(a[0])}이(가) 모자랍니다 (필요 ${num(a[1])}, 가진 것 ${num(a[2])}).`,
+      stageAway: (a) => `자리를 비운 동안 ${a[0]} → ${a[1]}까지 진행 (${a[2]}단계 깸)`,
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

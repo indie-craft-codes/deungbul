@@ -1,6 +1,7 @@
 // 단계의 화면 (stages 모듈): 가운데 위의 단계 막대('1-3', 장의 이름, 물결마다의 칸과 우두머리 칸, 남은 적과 시간, 자동 진행 단추, 도전·나가기)와
 // 메뉴의 '단계' 탭(장마다 단계의 목록: 깸·지금·잠김, 권장 전투력, 가기). 서버의 짝은 engine/server/game/systems/stages.ts.
 // 소탕(STAGE_RULES.sweep)이 있으면 단계 탭의 깬 단계마다 '소탕 ×1'·'소탕 ×n' 단추를, 소탕할 수 있는 열쇠 던전(DungeonDef.sweep)이 있으면 탭 끝에 던전 소탕의 줄을 붙인다.
+// 오프라인 진행(STAGE_RULES.offline)으로 단계가 나아갔으면 가운데 알림('자리를 비운 동안 1-4 → 2-3까지 진행')을 띄운다 (방치 보상 우편의 제목에도 적힌다).
 // 셈(막대의 칸, 단계의 줄, 소탕 단추)은 hud/collectcalc.ts. 게임이 더 할 수 있는 것: 내 단계 읽기(myStage).
 import { DUNGEON_IDS, STAGES, STAGE_RULE_VIEW, dungeonDef, dungeonSweepable, type StageMe } from '../../shared/defs';
 import { $ } from '../app';
@@ -106,7 +107,7 @@ export function initStages(): void {
   const sweeps = !!STAGE_RULE_VIEW.sweep || sweepDungeons().length > 0;
   addMenuTab({ id: 'stages', label: () => t('tabStages'), draw: drawStages, sig: () => (sweeps ? [stage?.cur, stage?.best, stage?.run?.id, power(), S.me?.gold, S.me?.sparks, S.me?.items, myKeys()] : [stage?.cur, stage?.best, stage?.run?.id, power()]), mod: 'stages' });
   onMsg('me', (m) => { if (m.k === 'stage') { stage = m.s as StageMe; render(); redraw(true); } });
-  addNotices({ banner: { stageFail: 'bad', stageLast: 'good' }, feed: ['stageClear', 'stageLocked'] });
+  addNotices({ banner: { stageFail: 'bad', stageLast: 'good', stageAway: 'good' }, feed: ['stageClear', 'stageLocked'] });
   if (sweeps) initSweep();
   onSlow(render);
   onLangChange(render);
