@@ -168,7 +168,7 @@ export type ClientMsg =
   /** 메뉴에서 바로 던전에 들어간다 (DungeonDef.fromMenu인 던전): 들판이나 단계 안에서. 단계 안이면 단계에서 나와 들어간다 */
   | { t: 'dungeonGo'; id: string }
   /** 판 (rooms 모듈): quick 빠른 대국, host 판 만들기, cpu 컴퓨터와 두기, join 들어가기(id: 판), leave 대기실로(두는 중이면 기권), pass 차례 넘기기, resign 기권, again 다시 하기 */
-  | { t: 'room'; a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again'; id?: number }
+  | { t: 'room'; a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again' | 'start'; id?: number }
   | Added<ClientMsgs>;
 
 export type ServerMsg =

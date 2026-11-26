@@ -1,7 +1,7 @@
 // 판(rooms 모듈)의 화면: 대기실 창(빠른 대국·컴퓨터와 두기·판 만들기·기다리는 판의 목록, 기다리는 동안의 그만두기), 판의 막대(자리들, 차례, 초읽기, 바퀴,
 // 차례 넘기기·기권), 결과 창(다시 하기·대기실로). 앉은 동안 걷지 않는 판(RoomDef.walk 없음)은 걷기를 멈추고 폰의 조이스틱을 감춘다. 서버의 짝은 engine/server/game/systems/rooms.ts.
 // 게임이 더 할 수 있는 것: 내 판 읽기(myRoom, myRoomTurn), 판이 바뀔 때 받기(onRoomChange), 매끄러운 남은 시간(roomLeftMs), 명령 보내기(roomSend),
-// 막대에 자기 글과 자리의 색 더하기(setRoomLook). 문장은 틀의 언어 파일(ui.room…, fmt.room…)이고, 게임은 같은 키를 자기 언어 파일에 적어 덮어쓴다(대기실의 설명 roomLobbyInfo, 끝난 까닭 fmt.roomWhy).
+// 막대에 자기 글과 자리의 색·이름 더하기, 좁은 화면에서 막대의 자리 고르기(setRoomLook). 문장은 틀의 언어 파일(ui.room…, fmt.room…)이고, 게임은 같은 키를 자기 언어 파일에 적어 덮어쓴다(대기실의 설명 roomLobbyInfo, 끝난 까닭 fmt.roomWhy).
 import type { RoomLobby, RoomView } from '../../shared/defs/rooms';
 import { $ } from '../app';
 import { onFrame, onMsg, onSlow } from '../bus';
@@ -13,13 +13,22 @@ import { addNotices } from './notify';
 import { mountPanel } from './shell';
 
 let room: RoomView | null = null;
-let lobby: RoomLobby = { rows: [], cpu: 0, cpuAfterS: 0 };
+let lobby: RoomLobby = { rows: [], cpu: 0, cpuAfterS: 0, startAfterS: 0 };
 /** 이번 차례의 기한 (performance.now 기준). 기한이 없으면 0 */
 let deadline = 0;
 /** 기다리는 판을 연 때 (performance.now 기준): 컴퓨터로 채우기까지의 초읽기 */
 let waitSince = 0;
 const changes: ((before: RoomView | null, now: RoomView | null) => void)[] = [];
-let look: { seatColor?: (seat: number) => string; note?: () => string; title?: () => string; lobby?: () => string } = {};
+/** 게임이 판 화면에 더하는 것 (setRoomLook) */
+interface RoomLook {
+  seatColor?: (seat: number) => string;
+  note?: () => string;
+  title?: () => string;
+  lobby?: () => string;
+  seatName?: (v: RoomView, seat: number) => string;
+  barAt?: 'top' | 'bottom';
+}
+let look: RoomLook = {};
 
 /** 내가 앉은 판 (없으면 null) */
 export const myRoom = (): RoomView | null => room;
@@ -30,17 +39,26 @@ export const roomLeftMs = (): number => (room && room.st === 'play' && deadline 
 /** 판이 바뀔 때마다 (들어옴, 차례, 끝남, 나감): 앞의 것과 지금의 것 */
 export function onRoomChange(fn: (before: RoomView | null, now: RoomView | null) => void): void { changes.push(fn); }
 /** 판의 명령 (서버의 room 명령) */
-export function roomSend(a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again', id?: number): void { send(id === undefined ? { t: 'room', a } : { t: 'room', a, id }); }
+export function roomSend(a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again' | 'start', id?: number): void { send(id === undefined ? { t: 'room', a } : { t: 'room', a, id }); }
 /**
  * 판의 화면에 게임의 것을 더한다: seatColor는 자리의 글자 색(css 색), note는 막대 아래 줄의 글(비우면 숨는다, 느린 주기마다), title은 결과 창의 큰 글을 대신한다(빈 문자열이면 틀의 것),
- * lobby는 대기실 창의 제목 옆 글(전적 같은 것)
+ * lobby는 대기실 창의 제목 옆 글(전적 같은 것), seatName은 자리의 이름(빈 문자열이면 틀의 것: 컴퓨터에 게임의 이름을 줄 때),
+ * barAt은 좁은 화면(폭 720px 이하)에서 판 막대의 자리: 'bottom'(기본, 화면 아래 108px 위) 또는 'top'(위쪽 내 정보 창 밑). 게임의 창이 아래에 있으면 'top'
  */
-export function setRoomLook(more: typeof look): void { look = { ...look, ...more }; }
-/** 자리의 이름: 컴퓨터는 roomCpu, 빈 자리는 roomEmpty */
+export function setRoomLook(more: RoomLook): void {
+  look = { ...look, ...more };
+  document.body.classList.toggle('room-bar-top', look.barAt === 'top');
+}
+/** 자리의 이름: 게임의 seatName, 사람은 이름, 컴퓨터는 RoomDef.cpuName의 이름이나 roomCpu(컴퓨터가 둘 이상이면 roomCpuN의 번호), 빈 자리는 roomEmpty */
 export function roomSeatName(v: RoomView, i: number): string {
   const s = v.seats[i];
   if (!s || s.empty) return t('roomEmpty');
-  return s.cpu ? t('roomCpu') : s.name || '?';
+  const mine = look.seatName?.(v, i);
+  if (mine) return mine;
+  if (!s.cpu) return s.name || '?';
+  if (s.name) return s.name;
+  const cpus = v.seats.filter((x) => x.cpu && !x.name).length;
+  return cpus > 1 ? L().fmt.roomCpuN(v.seats.slice(0, i).filter((x) => x.cpu && !x.name).length + 1) : t('roomCpu');
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -59,7 +77,7 @@ export function initRooms(): void {
       </div>
       <div id="roomWaitBox" hidden>
         <div class="note wait" id="roomWaitText"></div>
-        <div class="btns"><button type="button" id="roomWaitCpu"></button><button type="button" class="plain" id="roomCancel"></button></div>
+        <div class="btns"><button type="button" id="roomStartNow" class="go" hidden></button><button type="button" id="roomWaitCpu"></button><button type="button" class="plain" id="roomCancel"></button></div>
       </div>
     </div>`);
   mountPanel('topmid', `
@@ -74,21 +92,24 @@ export function initRooms(): void {
     <div class="panel" id="roomEnd" hidden>
       <div class="rbig" id="roomEndTitle"></div>
       <div class="note" id="roomEndWhy"></div>
+      <div class="rranks" id="roomEndRanks" hidden></div>
       <div class="note" id="roomEndNote"></div>
       <div class="btns"><button type="button" id="roomAgain" class="go"></button><button type="button" class="plain" id="roomToLobby"></button></div>
     </div>`);
   const ui = {
     lobby: $('roomLobby'), idle: $('roomIdle'), wait: $('roomWaitBox'), list: $('roomList'), playing: $('roomPlaying'), waitText: $('roomWaitText'),
-    cpu: $<HTMLButtonElement>('roomCpu'), waitCpu: $<HTMLButtonElement>('roomWaitCpu'),
+    cpu: $<HTMLButtonElement>('roomCpu'), waitCpu: $<HTMLButtonElement>('roomWaitCpu'), startNow: $<HTMLButtonElement>('roomStartNow'),
     bar: $('roomBar'), seats: $('roomSeats'), turn: $('roomTurn'), round: $('roomRound'), clock: $('roomClock'), clockBar: $('roomClockBar'), time: $('roomTime'), note: $('roomNote'),
     pass: $<HTMLButtonElement>('roomPass'), resign: $<HTMLButtonElement>('roomResign'),
-    end: $('roomEnd'), endTitle: $('roomEndTitle'), endWhy: $('roomEndWhy'), endNote: $('roomEndNote'), again: $<HTMLButtonElement>('roomAgain'),
+    end: $('roomEnd'), endTitle: $('roomEndTitle'), endWhy: $('roomEndWhy'), endRanks: $('roomEndRanks'), endNote: $('roomEndNote'), again: $<HTMLButtonElement>('roomAgain'),
   };
+  /** 기권은 한 번 더 눌러야 한다 (좁은 화면에서 잘못 누르지 않게): 첫 누름의 때, 3초 안에 다시 누르면 기권 */
+  let resignAt = 0, resignTimer = 0;
   const label = () => {
     $('roomLobbyTitle').textContent = t('roomLobby'); $('roomLobbyInfo').textContent = t('roomLobbyInfo');
     $('roomQuick').textContent = t('roomQuick'); ui.cpu.textContent = t('roomWithCpu'); $('roomHost').textContent = t('roomHost');
     $('roomOpenTitle').textContent = t('roomOpen'); ui.waitCpu.textContent = t('roomWithCpu'); $('roomCancel').textContent = t('roomCancel');
-    ui.pass.textContent = t('roomPass'); ui.resign.textContent = t('roomResign'); ui.again.textContent = t('roomAgain'); $('roomToLobby').textContent = t('roomToLobby');
+    ui.pass.textContent = t('roomPass'); ui.resign.textContent = t(resignAt ? 'roomResignSure' : 'roomResign'); ui.again.textContent = t('roomAgain'); $('roomToLobby').textContent = t('roomToLobby');
   };
   label();
   onLangChange(() => { label(); render(); });
@@ -106,7 +127,14 @@ export function initRooms(): void {
   click('roomWaitCpu', () => roomSend('cpu'));
   click('roomCancel', () => roomSend('leave'));
   click('roomPass', () => roomSend('pass'));
-  click('roomResign', () => roomSend('resign'));
+  click('roomResign', () => {
+    const now = performance.now();
+    window.clearTimeout(resignTimer);
+    if (resignAt && now - resignAt < 3000) { resignAt = 0; label(); roomSend('resign'); return; }
+    resignAt = now; label(); ui.resign.classList.add('warn');
+    resignTimer = window.setTimeout(() => { resignAt = 0; label(); ui.resign.classList.remove('warn'); }, 3000);
+  });
+  click('roomStartNow', () => roomSend('start'));
   click('roomAgain', () => roomSend('again'));
   click('roomToLobby', () => roomSend('leave'));
   ui.list.addEventListener('click', (e) => {
@@ -119,6 +147,7 @@ export function initRooms(): void {
     const before = room, now = performance.now();
     room = m.s as RoomView | null;
     deadline = room && room.st === 'play' && room.left > 0 ? now + room.left : 0;
+    if (!room || room.st !== 'play') { resignAt = 0; ui.resign.classList.remove('warn'); label(); }
     if (room && room.st === 'wait' && (!before || before.id !== room.id || before.st !== 'wait')) waitSince = now;
     document.body.classList.toggle('in-room', !!room);
     document.body.classList.toggle('room-still', !!room && !room.walk);
@@ -154,8 +183,15 @@ export function initRooms(): void {
         : `<div class="note">${esc(t(lobby.cpu ? 'roomNoneCpu' : 'roomNone'))}</div>`;
       ui.playing.textContent = loc.fmt.roomPlaying(lobby.rows.filter((x) => x[4] === 1).length);
     } else if (r.st === 'wait') {
-      const after = lobby.cpuAfterS ? Math.max(0, Math.ceil(lobby.cpuAfterS - (performance.now() - waitSince) / 1000)) : 0;
-      ui.waitText.textContent = loc.fmt.roomWaiting(r.seats.filter((s) => !s.empty).length, r.seats.length, after);
+      const waited = (performance.now() - waitSince) / 1000, left = (s: number) => (s ? Math.max(0, Math.ceil(s - waited)) : 0);
+      const seated = r.seats.filter((s) => !s.empty).length, min = r.min ?? r.seats.length;
+      // 모인 만큼으로 먼저 시작할 판이면 컴퓨터의 초는 적지 않는다
+      const startIn = seated >= min ? left(lobby.startAfterS ?? 0) : 0, cpuIn = startIn > 0 && (lobby.startAfterS ?? 0) <= lobby.cpuAfterS ? 0 : left(lobby.cpuAfterS);
+      ui.waitText.textContent = loc.fmt.roomWaiting(seated, r.seats.length, cpuIn, min, startIn);
+      // 자리 수가 범위인 판: 가장 먼저 앉은 사람이 min 이상 모이면 '지금 시작'
+      const lead = r.seats.findIndex((s) => !s.empty && !s.cpu);
+      ui.startNow.hidden = !(min < r.seats.length && r.me === lead && seated >= min && seated < r.seats.length);
+      ui.startNow.textContent = loc.fmt.roomStartNow(seated);
     }
     // 판의 막대
     const playing = !!r && r.st !== 'wait';
@@ -175,15 +211,25 @@ export function initRooms(): void {
     ui.time.hidden = ui.clock.hidden = r.st !== 'play' || !r.turnMs;
     if (r.st !== 'play') ui.clock.textContent = '';
     ui.pass.hidden = !r.pass || r.st !== 'play'; ui.pass.disabled = !mine;
-    ui.resign.hidden = r.st !== 'play';
+    ui.resign.hidden = r.st !== 'play' || r.seats[r.me]?.away === 2; // 이미 빠진 자리(기권)는 다시 기권하지 않는다
     const note = look.note?.() ?? '';
     ui.note.textContent = note; ui.note.hidden = !note;
     // 결과 창
     if (r.st === 'over') {
-      const res = r.win === -2 ? 2 : r.win === r.me ? 0 : 1;
-      ui.endTitle.textContent = look.title?.() || t(res === 0 ? 'roomWin' : res === 1 ? 'roomLose' : 'roomDraw');
+      // 등수로 끝낸 판(셋 이상): 내 등수가 큰 글, 아래에 모든 자리의 등수·점수. 아니면 이김/짐/비김
+      const ranks = r.ranks ?? [], scores = r.scores ?? [], rank = ranks[r.me] ?? 0, ranked = ranks.filter((k) => k > 0).length > 2 && rank > 0;
+      const tied = ranked && ranks.some((k, i) => i !== r.me && k === rank), last = Math.max(...ranks);
+      const res = ranked ? (rank === 1 ? (tied ? 2 : 0) : rank === last ? 1 : 3) : r.win === -2 ? 2 : r.win === r.me ? 0 : 1;
+      const base = ranked ? (rank === 1 && !tied ? t('roomWin') : loc.fmt.roomRankTitle(rank, tied)) : t(res === 0 ? 'roomWin' : res === 1 ? 'roomLose' : 'roomDraw');
+      ui.endTitle.textContent = look.title?.() || base;
       ui.endTitle.className = `rbig r${res}`;
       ui.endWhy.textContent = loc.fmt.roomWhy(r.why);
+      ui.endRanks.hidden = !ranked;
+      ui.endRanks.innerHTML = !ranked ? '' : r.seats.map((_, i) => i).filter((i) => ranks[i] > 0).sort((a, b) => ranks[a] - ranks[b] || a - b).map((i) => {
+        const color = look.seatColor?.(i);
+        const text = loc.fmt.roomRankRow(ranks[i], roomSeatName(r, i), scores.length ? loc.fmt.roomScore(scores[i] ?? 0) : '');
+        return `<div class="rrank${i === r.me ? ' mine' : ''}"${color ? ` style="color:${esc(color)}"` : ''}>${esc(text)}</div>`;
+      }).join('');
       const gone = r.seats.some((s, i) => i !== r.me && !s.cpu && !s.empty && s.away !== 0);
       ui.again.disabled = gone || r.seats[r.me]?.again === 1;
       ui.endNote.textContent = gone ? t('roomFoeGoneNote') : r.seats[r.me]?.again ? t('roomAgainWaitNote') : '';

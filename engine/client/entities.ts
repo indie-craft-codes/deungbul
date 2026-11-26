@@ -116,7 +116,7 @@ function addThing(e: EnterInfo): void {
   model.root.position.set(e.x, 0, e.z);
   model.root.rotation.y = e.face;
   view.scene.add(model.root);
-  const label = look.label?.(info) ?? '';
+  const label = look.label?.(info, []) ?? '';
   const tag = makeTag(label, look.hp ? 'thing ally' : 'thing', !!look.hp);
   tag.el.hidden = !look.label;
   S.others.set(e.id, {
@@ -169,7 +169,7 @@ export function clearEntities(): void {
 export function relabel(): void {
   for (const r of S.others.values()) {
     if (r.kind === 'm') { r.name = monsterName(r.type, r.swarm); setTagName(r.tag, r.name); }
-    else if (r.look?.label) setTagName(r.tag, r.look.label({ id: r.id, type: r.type, name: r.name }));
+    else if (r.look?.label) setTagName(r.tag, r.look.label({ id: r.id, type: r.type, name: r.name }, r.vals));
   }
   for (const n of npcs) setTagName(n.tag, n.name());
 }
@@ -381,7 +381,13 @@ export function applySnapshot(m: Extract<ServerMsg, { t: 'snap' }>, now: number)
     r.hp = hp;
     if (r.look) {
       // 게임의 종류: 실려 온 값이 처음이거나 바뀌었으면 모습을 맞춘다
-      if (!sameVals(vals, r.vals)) { r.vals = vals; r.look.update?.(r.model, vals, { id: r.id, type: r.type, name: r.name }); }
+      if (!sameVals(vals, r.vals)) {
+        r.vals = vals;
+        const info = { id: r.id, type: r.type, name: r.name };
+        r.look.update?.(r.model, vals, info);
+        const text = r.look.label?.(info, vals); // 이름표가 실려 온 값을 쓸 수 있다 (크기, 남은 수)
+        if (text !== undefined && text !== r.tag.label.textContent) setTagName(r.tag, text);
+      }
       if (r.look.hp) setTagHp(r.tag, hp, r.maxHp);
       continue;
     }

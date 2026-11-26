@@ -36,3 +36,5 @@ export { hudSlow } from './hud/me';
 export type { Look, Mood } from './scene/view';
 export { attachHand, cueAnim, defaultHumanoid, limb, makeBall, makeBlob, makeBox, makeHumanoid, mat, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setHumanoidBody, setHumanoidDeco, type ArmorLook, type BladeLook, type HandBuilder, type HumanoidLook, type Model, type MonsterBuilder, type Rig } from './scene/models';
 export { registerShot, type ShotLook } from './fx';
+// 판(rooms 모듈)의 모양: 화면에서 myRoom()·onRoomChange가 주는 것, 시험에서 개인 상태 room·공유 상태 rooms를 읽을 때
+export type { RoomLobby, RoomPhase, RoomRow, RoomSeatView, RoomView } from '../shared/defs/rooms';

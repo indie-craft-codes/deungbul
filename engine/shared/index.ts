@@ -8,3 +8,5 @@ export { AUTO, AWAY, POTIONS, pickPotion, potionOrder } from './auto';
 export { NavGrid, walk, type Walker } from './nav';
 export { PROTOCOL } from './protocol';
 export { ALL_MODULES, MODULE_TABLE, RPG_MODULES, checkModules, type ModuleId } from './modules';
+// 판(rooms 모듈)의 모양 (서버·화면·시험이 함께 읽는다: 개인 상태 room, 공유 상태 rooms)
+export type { RoomLobby, RoomPhase, RoomRow, RoomSeatView, RoomView } from './defs/rooms';

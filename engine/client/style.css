@@ -783,9 +783,16 @@ body.room-still #stick { display: none; }
 #roomEnd .rbig.r0 { color: var(--gold); }
 #roomEnd .rbig.r1 { color: #ff8a6a; }
 #roomEnd .btns { margin-top: 10px; gap: 8px; }
+#roomEnd .rranks[hidden], #roomWaitBox button[hidden] { display: none; }
+#roomEnd .rranks { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; font-weight: 700; }
+#roomEnd .rrank { opacity: .8; }
+#roomEnd .rrank.mine { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+#roomBar .btns button.warn { background: #b8452c; border-color: #ff8a6a; color: #fff; }
 /* 좁은 화면: 오른쪽 위의 칸은 좁고(160px) 가운데 위는 대화창이 덮으므로, 대기실 창과 판의 막대를 아래쪽에 띄운다 (앉으면 조이스틱이 없다) */
 @media (max-width: 720px) {
   #rightcol #roomLobby { position: fixed; left: 12px; right: 12px; bottom: 120px; width: auto; z-index: 12; }
-  #topmid #roomBar { position: fixed; left: 12px; right: 12px; bottom: 108px; width: auto; min-width: 0; max-width: none; z-index: 12; }
+  #topmid #roomBar { position: fixed; left: 12px; right: 12px; bottom: var(--room-bar-bottom, 108px); width: auto; min-width: 0; max-width: none; z-index: 12; }
+  /* 게임이 아래에 창을 두는 판 (setRoomLook({ barAt: 'top' })): 막대를 위쪽 내 정보 창 밑으로 */
+  body.room-bar-top #topmid #roomBar { bottom: auto; top: var(--room-bar-top, calc(env(safe-area-inset-top, 0px) + 96px)); }
   #roomEnd .rbig { font-size: 26px; }
 }

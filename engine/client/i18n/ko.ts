@@ -415,6 +415,8 @@ export const koBase = (n: ContentNames) => {
       roomToLobby: '대기실로',
       roomAgainWaitNote: '다른 사람이 다시 하기를 누르면 시작합니다.',
       roomFoeGoneNote: '함께 두던 사람이 판을 떠났습니다.',
+      /** 기권 단추를 한 번 누른 뒤 (3초 안에 다시 누르면 기권) */
+      roomResignSure: '한 번 더 누르면 기권',
     },
     monsters,
     dungeons,
@@ -623,10 +625,19 @@ export const koBase = (n: ContentNames) => {
       roomRound: (n: number, max: number) => `${n} / ${max} 바퀴`,
       roomPlaying: (n: number) => (n ? `두는 중인 판 ${n}` : ''),
       roomHostWaits: (name: string, seated: number, size: number) => (size > 2 ? `${name} 님의 판 (${seated}/${size})` : `${name} 님이 기다립니다`),
-      roomWaiting: (seated: number, size: number, cpuIn: number) => `사람을 기다리는 중… (${seated}/${size})${cpuIn > 0 ? ` ${cpuIn}초 뒤에는 컴퓨터가 앉습니다.` : ''}`,
+      roomWaiting: (seated: number, size: number, cpuIn: number, min: number = size, startIn: number = 0) =>
+        `사람을 기다리는 중… (${seated}/${size})${min < size ? ` ${min}명부터 시작할 수 있습니다.` : ''}${startIn > 0 && seated >= min ? ` ${startIn}초 뒤에 모인 만큼으로 시작합니다.` : ''}${cpuIn > 0 ? ` ${cpuIn}초 뒤에는 컴퓨터가 앉습니다.` : ''}`,
       roomTheirTurn: (name: string) => `${name}의 차례`,
       /** 판이 끝난 까닭 (게임이 finish에 준 것은 게임의 언어 파일이 덮어써 문장으로) */
       roomWhy: (why: string) => ({ resign: '기권으로 끝났습니다.', left: '연결이 끊긴 채 돌아오지 않았습니다.', rounds: '바퀴를 다 썼습니다.' } as Record<string, string>)[why] ?? '',
+      /** 자리 수가 범위인 판의 '지금 시작' 단추 (앉은 사람 수) */
+      roomStartNow: (n: number) => `지금 시작 (${n}명)`,
+      /** 컴퓨터가 둘 이상인 판의 컴퓨터 이름 (컴퓨터 가운데 몇째: 1부터). 게임은 RoomDef.cpuName이나 setRoomLook의 seatName으로 바꾼다 */
+      roomCpuN: (n: number) => `컴퓨터 ${n}`,
+      /** 등수로 끝낸 판: 결과 창의 큰 글 (1등 하나는 ui.roomWin), 등수 줄, 점수 */
+      roomRankTitle: (rank: number, tied: boolean) => `${tied ? '함께 ' : ''}${rank}등`,
+      roomRankRow: (rank: number, name: string, score: string) => `${rank}등 ${name}${score ? ` · ${score}` : ''}`,
+      roomScore: (n: number) => `${num(n)}점`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -793,7 +804,7 @@ export const koBase = (n: ContentNames) => {
       heroPicked: (a) => (Number(a[1]) ? `${heroName(a[0])}: 이미 있어 조각 +${num(a[2])}` : `${josa(heroName(a[0]), '을', '를')} 얻었습니다!`),
       heroTraded: (a) => `${heroName(a[0])}: 조각 +${num(a[1])} (남은 ${grantWhat(a[2])} ${num(a[3])})`,
       roomWait: () => '판을 열었습니다. 다른 사람을 기다립니다.',
-      roomStart: (a) => `판이 시작됐습니다. 상대: ${a[1] || '컴퓨터'}. ${Number(a[0]) ? '먼저 둡니다.' : '상대가 먼저 둡니다.'}`,
+      roomStart: (a) => (Number(a[2] ?? 2) > 2 ? `판이 시작됐습니다. ${a[2]}명이 둡니다.${Number(a[0]) ? ' 먼저 둡니다.' : ''}` : `판이 시작됐습니다. 상대: ${a[1] || '컴퓨터'}. ${Number(a[0]) ? '먼저 둡니다.' : '상대가 먼저 둡니다.'}`),
       roomFull: () => '지금은 판을 더 열 수 없습니다. 잠시 뒤에 다시 해 보세요.',
       roomBusy: () => '이미 판에 앉아 있습니다.',
       roomGone: () => '그 판에는 들어갈 수 없습니다.',
@@ -802,9 +813,12 @@ export const koBase = (n: ContentNames) => {
       roomFoeLeft: (a) => `${a[0]} 님의 연결이 끊겼습니다. ${a[1]}초 동안 기다립니다.`,
       roomFoeBack: (a) => `${a[0]} 님이 돌아왔습니다.`,
       roomBack: () => '두던 판으로 돌아왔습니다.',
-      roomResult: (a) => `${Number(a[0]) === 0 ? '이겼습니다!' : Number(a[0]) === 1 ? '졌습니다.' : '비겼습니다.'}`,
+      roomResult: (a) => (Number(a[2] ?? 0) > 0 && Number(a[3]) > 2
+        ? `${Number(a[0]) === 0 ? '이겼습니다! ' : ''}${a[3]}명 가운데 ${Number(a[4]) ? '함께 ' : ''}${a[2]}등입니다.`
+        : `${Number(a[0]) === 0 ? '이겼습니다!' : Number(a[0]) === 1 ? '졌습니다.' : '비겼습니다.'}`),
       roomAgainWait: () => '다른 사람이 다시 하기를 누르기를 기다립니다.',
       roomFoeGone: (a) => `${a[0]} 님이 판을 떠났습니다.`,
+      roomFewer: (a) => `${a[0]}명이 모여야 시작할 수 있습니다.`,
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,
