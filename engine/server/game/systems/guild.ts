@@ -83,7 +83,7 @@ export class Guild {
   /** 접속한 길드원의 이름·레벨·직업을 명단에 맞춘다 */
   private touch(p: Ent): void {
     const m = p.pid ? this.of.get(p.pid)?.members.find((x) => x.pid === p.pid) : undefined;
-    if (m) { m.name = p.name; m.lv = p.lv; m.cls = p.cls; }
+    if (m) { m.name = p.name; m.lv = this.g.field(p, 'lv'); m.cls = this.g.field(p, 'cls'); }
   }
 
   private view(rec: GuildRec, me: Ent): GuildView {
@@ -110,12 +110,12 @@ export class Guild {
     const g = this.g;
     if (!p.pid) { g.notify(p, 'guildGuest'); return; }
     if (this.of.has(p.pid)) return;
-    if (p.lv < GUILD.createLv) { g.notify(p, 'guildNeedLv', GUILD.createLv); return; }
+    if (g.field(p, 'lv') < GUILD.createLv) { g.notify(p, 'guildNeedLv', GUILD.createLv); return; }
     if ([...name].length < GUILD.nameMin || !isClean(name)) { g.notify(p, 'guildNameBad'); return; }
     if ([...this.guilds.values()].some((x) => x.name.toLowerCase() === name.toLowerCase())) { g.notify(p, 'guildNameTaken'); return; }
     if (!g.wallet.take(p, 'gold', GUILD.createGold, WHY.guildCreate)) { g.notify(p, 'noGold'); return; }
     p.dirty = true; p.unsaved = true;
-    const rec: GuildRec = { id: this.nextId++, name, leader: p.pid, exp: 0, notice: '', members: [{ pid: p.pid, name: p.name, lv: p.lv, cls: p.cls, gave: 0 }] };
+    const rec: GuildRec = { id: this.nextId++, name, leader: p.pid, exp: 0, notice: '', members: [{ pid: p.pid, name: p.name, lv: g.field(p, 'lv'), cls: g.field(p, 'cls'), gave: 0 }] };
     this.guilds.set(rec.id, rec);
     this.of.set(p.pid, rec);
     this.invites.delete(p.id);
@@ -150,7 +150,7 @@ export class Guild {
     if (inv) this.again.delete(inv.pair); // 받아들인 사이에는 간격을 두지 않는다
     if (!rec || !p.pid || this.of.has(p.pid) || inv!.until < g.clock) { this.tell(p); return; }
     if (rec.members.length >= GUILD.maxMembers) { g.notify(p, 'guildFull'); this.tell(p); return; }
-    rec.members.push({ pid: p.pid, name: p.name, lv: p.lv, cls: p.cls, gave: 0 });
+    rec.members.push({ pid: p.pid, name: p.name, lv: this.g.field(p, 'lv'), cls: this.g.field(p, 'cls'), gave: 0 });
     this.of.set(p.pid, rec);
     for (const e of this.online(rec)) g.notify(e, 'guildJoined', p.name);
     this.tag(p);

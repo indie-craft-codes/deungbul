@@ -249,6 +249,8 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   /** 직접 고쳐도 되는 곳: 파일, 그 줄의 모양, 까닭. 이 목록에 없는 곳에서 재화의 칸을 고치면 실패한다 */
   const ALLOWED: { file: string; line: RegExp; why: string }[] = [
     { file: 'engine/server/game/systems/players.ts', line: /p\.exp = n\(save\.exp,/, why: '저장을 읽는다 (spawn): 새로 생긴 재화가 아니다' },
+    { file: 'engine/server/game/parts.ts', line: /economy: \{ init: \(e\) => \{ e\.gold = 0; e\.sparks = 0; \} \},/, why: '엔티티의 처음 값 (재화 모듈의 칸: Game.create가 부른다). 새로 생긴 재화가 아니다' },
+    { file: 'engine/server/game/parts.ts', line: /growth: \{ init: \(e\) => \{ e\.lv = 1; e\.exp = 0;/, why: '엔티티의 처음 값 (성장 모듈의 칸)' },
     { file: 'engine/server/game/systems/players.ts', line: /p\.sparks = n\(save\.sparks,/, why: '저장을 읽는다 (spawn)' },
     { file: 'engine/server/game/systems/players.ts', line: /p\.gold = n\(save\.gold,/, why: '저장을 읽는다 (spawn)' },
     { file: 'engine/server/game/systems/players.ts', line: /p\.exp -= p\.need; p\.need = nextNeed/, why: '레벨 업 (levelUp): 찬 경험치를 필요치만큼 덜어 레벨로 바꾼다. 지갑이 경험치를 더한 뒤에 부른다' },

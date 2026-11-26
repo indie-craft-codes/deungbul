@@ -61,7 +61,10 @@ export class Players {
     const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 3;
     const at = (!bot && this.devSpawn) || SPAWN;
     const p = this.g.create('p', '', name, at.x + Math.cos(a) * r, at.z + Math.sin(a) * r, maxHpFor('', 1));
-    p.bot = bot; p.pid = bot ? '' : pid; p.wait = Math.random() * 3; p.cds = Array.from({ length: SKILL_SLOTS }, () => 0); p.dirty = true; p.metaDirty = true; p.weapon = START_WEAPON; p.armor = '';
+    const has = (m: ModuleId) => this.g.has(m);
+    p.bot = bot; p.pid = bot ? '' : pid; p.wait = Math.random() * 3; p.dirty = true; p.metaDirty = true;
+    if (has('combat')) p.cds = Array.from({ length: SKILL_SLOTS }, () => 0);
+    if (has('items')) { p.weapon = START_WEAPON; p.armor = ''; }
     // 옛 버전의 저장은 먼저 지금의 모양으로 올린다 (../migrate.ts). 버전 칸이 없던 저장의 옛 최상위 칸도 여기서 ext로 옮겨진다(Saver.legacy)
     if (save) save = this.g.upgradePlayer(save);
     if (save) {
@@ -69,7 +72,7 @@ export class Players {
       const n = (v: unknown, min: number, max: number, def: number) => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), min, max) : def);
       // 다음 레벨까지의 필요 경험치는 저장된 값이 아니라 레벨에서 다시 구한다 (체력과 같다): 레벨 업이 쓰는 수열과 같은 함수라 어긋날 수 없다.
       // 전에는 저장 값을 상한 1e9로 잘라 읽어서, 필요 경험치가 그것을 넘는 레벨(57부터)에서 다시 접속하면 필요 경험치가 줄었다
-      p.lv = n(save.lv, 1, LV_READ_MAX, 1); p.need = needFor(p.lv); p.exp = n(save.exp, 0, p.need, 0);
+      if (has('growth')) { p.lv = n(save.lv, 1, LV_READ_MAX, 1); p.need = needFor(p.lv); p.exp = n(save.exp, 0, p.need, 0); }
       // 시스템마다 저장해 둔 몫(장비, 우편, 일일 임무)을 읽는다. 깨진 값은 그 시스템이 걸러 낸다
       const ext = typeof save.ext === 'object' && save.ext !== null ? save.ext : {};
       // 이 게임이 고르지 않은 모듈의 칸은 읽은 그대로 남겨 두었다가 다시 적는다 (모듈을 껐다 켜도 이어지게)
@@ -83,8 +86,8 @@ export class Players {
       // 시스템마다 자기 칸을 읽는다 (옛 형식의 최상위 칸은 위의 이전이 이미 ext로 옮겼다)
       for (const s of this.g.saves) { try { const raw = ext[s.name]; if (raw !== undefined) s.load(p, raw); } catch { /* 읽지 못한 칸은 처음 상태로 둔다 */ } }
       // 체력은 저장된 값이 아니라 직업과 레벨로 다시 구한다
-      if (this.g.has('classes')) this.g.classes.apply(p, isClassId(save.cls) ? save.cls : ''); else this.refresh(p);
-      p.hp = p.maxHp;
+      if (has('classes')) this.g.classes.apply(p, isClassId(save.cls) ? save.cls : ''); else this.refresh(p);
+      if (has('combat')) p.hp = p.maxHp;
       // 재화는 게임이 정한 상한(CURRENCIES의 max)까지 읽는다. 전에는 1e9로 박혀 있어, 상한이 더 큰 게임은 다시 접속할 때 재화가 잘렸다
       if (this.g.has('economy')) {
         p.sparks = n(save.sparks, 0, this.g.wallet.limit('sparks'), 0);
@@ -95,7 +98,7 @@ export class Players {
         if (isItemId(save.armor) && itemDef(save.armor).kind === 'armor') p.armor = save.armor;
         p.items = Shop.readItems(save.items);
       }
-      p.auto = this.g.has('away') && save.auto === true;
+      if (has('away')) p.auto = save.auto === true;
       // 마지막으로 있던 자리에서 시작한다 (개발용 접속 위치가 정해져 있으면 그쪽이 먼저다)
       if (!this.devSpawn && Array.isArray(save.at) && Number.isFinite(save.at[0]) && Number.isFinite(save.at[1])) {
         p.x = save.at[0]; p.z = save.at[1]; clampInto(p); p.tx = p.x; p.tz = p.z;
@@ -106,7 +109,7 @@ export class Players {
     if (this.g.has('gear')) this.g.gear.adopt(p);
     if (save) this.revive(p);
     // 봇은 직업을 섞는다
-    if (bot) { if (this.g.has('classes') && CLASS_IDS.length) this.g.classes.apply(p, CLASS_IDS[Math.floor(Math.random() * CLASS_IDS.length)]); p.hp = p.maxHp; this.g.channels.seat(p); } // 봇은 접속 사건이 없으므로 채널을 여기서 정한다
+    if (bot) { if (has('classes') && CLASS_IDS.length) this.g.classes.apply(p, CLASS_IDS[Math.floor(Math.random() * CLASS_IDS.length)]); if (has('combat')) p.hp = p.maxHp; this.g.channels.seat(p); } // 봇은 접속 사건이 없으므로 채널을 여기서 정한다
     else this.g.fire('playerJoined', p);
     return p;
   }
@@ -161,10 +164,13 @@ export class Players {
 
   rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; if (this.g.has('rank')) this.g.rank.renamed(p); this.g.fire('playerRenamed', p); }
 
-  /** 최대 체력을 다시 구한다: 직업과 레벨, 그리고 보정(장비). 장비를 바꾸거나 레벨이 오르면 부른다 */
+  /** 최대 체력을 다시 구한다: 직업과 레벨, 그리고 보정(장비). 장비를 바꾸거나 레벨이 오르면 부른다. 체력이 없는 게임(전투 모듈 없음)은 알릴 표시만 세운다 */
   refresh(p: Ent): void {
-    p.maxHp = maxHpFor(p.cls, p.lv) + Math.round(this.g.mods.sum('hp', p));
-    p.hp = Math.min(p.hp, p.maxHp);
+    const g = this.g;
+    if (g.has('combat')) {
+      p.maxHp = maxHpFor(p.cls, g.field(p, 'lv')) + Math.round(g.mods.sum('hp', p));
+      p.hp = Math.min(p.hp, p.maxHp);
+    }
     p.dirty = true;
   }
 
@@ -185,7 +191,7 @@ export class Players {
   levelUp(p: Ent): void {
     if (!this.g.has('growth')) return; // 레벨이 없는 게임
     while (p.exp >= p.need) {
-      p.exp -= p.need; p.need = nextNeed(p.need); p.lv++; this.refresh(p); p.hp = p.maxHp;
+      p.exp -= p.need; p.need = nextNeed(p.need); p.lv++; this.refresh(p); if (this.g.has('combat')) p.hp = p.maxHp;
       this.g.notify(p, 'levelUp', p.lv);
       p.metaDirty = true; // 찍을 능력치 점수가 생겼다
     }

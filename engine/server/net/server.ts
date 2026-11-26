@@ -161,7 +161,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       const save = store.loadPlayer(key);
       if (!save || !save.auto) continue;
       const e = game.players.spawn(save.name, false, save, key);
-      if (!e.auto || e.cls === '' || e.lv < AWAY_MIN_LV) { game.players.leave(e.id); continue; }
+      if (!e.auto || e.cls === '' || game.field(e, 'lv') < AWAY_MIN_LV) { game.players.leave(e.id); continue; }
       away.set(key, e); awayIp.set(key, ip); game.away.start(e);
     }
     if (away.size) log.info(`[server] 자리 비움 사냥을 이어 갑니다: ${away.size}명`);
@@ -232,7 +232,9 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   function pendingOf(c: Client): Pending | null {
     const e = c.ent;
     if (!c.key || !e) return null;
-    const touched = e.cls !== '' || e.lv > 1 || e.exp > 0 || e.gold > 0 || e.sparks > 0 || !!game.rules.touched?.(e);
+    // 칸은 그 모듈을 고른 게임에만 있다: 없으면 처음 값(직업 없음, 레벨 1, 0)으로 본다
+    const money = game.has('economy');
+    const touched = game.field(e, 'cls') !== '' || game.field(e, 'lv') > 1 || game.field(e, 'exp') > 0 || (money && (e.gold > 0 || e.sparks > 0)) || !!game.rules.touched?.(e);
     return c.hadSave || touched ? exportEnt(c.key, e, () => { c.hadSave = true; }) : null;
   }
   /** 바뀐 캐릭터 모두: 접속 중인 사람과 자리 비움 사냥 중인 캐릭터 */
@@ -338,10 +340,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (let i = 0; i < 5 && taken(name, undefined, c.key); i++) name = ([...name].slice(0, NAME_MAX - 3).join('') + (100 + Math.floor(Math.random() * 900)));
     c.ent = game.players.spawn(name, false, save, c.key ?? '');
     byEnt.set(c.ent.id, c);
-    send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: c.ent.auto || undefined, v: PROTOCOL });
+    send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: (awayOn && c.ent.auto) || undefined, v: PROTOCOL });
     send(c, { t: 'world', s: game.state() });
     // 오늘의 자리 비움 사냥 시간을 다 써서 멈췄던 사람: 왜 멈춰 있는지 알린다
-    if (awayOn && save && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && game.away.left(c.ent) <= 0) game.notify(c.ent, 'awayLimit', AWAY.maxS / 3600);
+    if (awayOn && save && c.ent.cls !== '' && game.field(c.ent, 'lv') >= AWAY_MIN_LV && game.away.left(c.ent) <= 0) game.notify(c.ent, 'awayLimit', AWAY.maxS / 3600);
     broadcast(sys('joined', name));
     saveTogether(); // 접속하며 받은 것(맡아 둔 우편)이 월드에서 빠진 것과 함께 저장되게
     savePlayer(c);
@@ -453,7 +455,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       byEnt.delete(c.ent.id);
       // 자동 사냥 중이었으면 캐릭터를 남겨 두고 서버가 이어서 사냥한다.
       // 직업을 고르고 조금이라도 키운 캐릭터만, 정해진 수까지만 남긴다 (접속했다 끊기를 되풀이해 월드를 채우지 못하게)
-      if (awayOn && c.key && c.ent.auto && !stopped && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && away.size < maxAway && awayFrom(c.ip) < AWAY.maxPerIp) { awayIp.set(c.key, c.ip); away.set(c.key, c.ent); game.away.start(c.ent); return; }
+      if (awayOn && c.key && c.ent.auto && !stopped && c.ent.cls !== '' && game.field(c.ent, 'lv') >= AWAY_MIN_LV && away.size < maxAway && awayFrom(c.ip) < AWAY.maxPerIp) { awayIp.set(c.key, c.ip); away.set(c.key, c.ent); game.away.start(c.ent); return; }
       game.players.leave(c.ent.id);
       broadcast(sys('left', c.ent.name));
     }
@@ -465,7 +467,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (const c of [...clients]) {
       if (!(by.key ? c.key === by.key : normIp(c.ip) === by.ip)) continue;
       send(c, sys(k, ...a));
-      if (c.ent) c.ent.auto = false;
+      if (c.ent && awayOn) c.ent.auto = false;
       c.ws.close(code, k);
       dropClient(c); c.ent = null; n++;
     }
@@ -661,7 +663,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
           // 끄기 전에 전원과 월드를 한 묶음으로 저장한다.
           // 다시 켰을 때 이어서 사냥할 캐릭터를 적어 둔다: 자리 비움 사냥 중이던 것과, 자동 사냥을 켠 채 접속해 있던 것(재시작으로 끊긴다)
           const hunting: [string, string][] = [...away.keys()].map((key) => [key, awayIp.get(key) ?? '']);
-          for (const c of clients) if (awayOn && c.key && c.ent && c.ent.auto && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && !away.has(c.key)) hunting.push([c.key, c.ip]);
+          for (const c of clients) if (awayOn && c.key && c.ent && c.ent.auto && c.ent.cls !== '' && game.field(c.ent, 'lv') >= AWAY_MIN_LV && !away.has(c.key)) hunting.push([c.key, c.ip]);
           const list = [...[...clients].map(pendingOf), ...[...away].map(([key, e]) => exportEnt(key, e))];
           let world: WorldSave | undefined;
           try { world = { ...game.exportWorld(), [AWAY_AT_CLOSE]: hunting }; } catch (err) { saveFailed('월드 저장 값 만들기', err); }

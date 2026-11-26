@@ -14,7 +14,7 @@ export class Classes {
     if (p.cls !== '' && !g.rules.canChangeClass(p)) { g.notify(p, 'classFar'); return; }
     this.apply(p, cls);
     p.dirty = true; p.unsaved = true;
-    g.gears.push({ id: p.id, weapon: p.weapon, armor: p.armor, cls });
+    g.gears.push({ id: p.id, weapon: g.field(p, 'weapon'), armor: g.field(p, 'armor'), cls });
     g.notify(p, 'classChanged', cls);
   }
 
@@ -23,7 +23,9 @@ export class Classes {
     p.cls = cls;
     this.g.players.refresh(p);
     // 쿨다운은 칸에 걸려 있다: 직업을 바꿔도 지우지 않는다 (지우면 직업을 번갈아 바꾸는 것으로 쿨다운이 없어진다)
-    if (p.cds.length !== SKILL_SLOTS) p.cds = Array.from({ length: SKILL_SLOTS }, () => 0);
-    p.targetId = 0;
+    if (this.g.has('combat')) {
+      if (p.cds.length !== SKILL_SLOTS) p.cds = Array.from({ length: SKILL_SLOTS }, () => 0);
+      p.targetId = 0;
+    }
   }
 }

@@ -114,7 +114,8 @@ export class Party {
   /** 파티원 모두에게 서로의 상태를 보낸다. */
   private sync(group: Group): void {
     const list = this.ents(group);
-    const m: PartyMember[] = list.map((e) => ({ id: e.id, name: e.name, lv: e.lv, cls: e.cls, hp: Math.ceil(e.hp), maxHp: e.maxHp, x: Math.round(e.x), z: Math.round(e.z), ch: this.g.channels.of(e) }));
+    const g = this.g; // 파티는 다른 모듈 없이도 돈다: 레벨·직업·체력은 그 모듈이 없으면 처음 값(레벨 1, 직업 없음, 체력 0)
+    const m: PartyMember[] = list.map((e) => ({ id: e.id, name: e.name, lv: g.field(e, 'lv'), cls: g.field(e, 'cls'), hp: Math.ceil(g.field(e, 'hp')), maxHp: g.field(e, 'maxHp'), x: Math.round(e.x), z: Math.round(e.z), ch: this.g.channels.of(e) }));
     for (const e of list) { this.names.set(e.id, e.name); this.g.partyOut.push({ id: e.id, msg: { t: 'party', m } }); }
   }
 

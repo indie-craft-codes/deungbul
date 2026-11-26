@@ -839,7 +839,8 @@ export function initBonfire(): void {
 | 모두에게 알린다 | `g.announce(종류, 값…)` | 같다 |
 | 모두가 보는 값 | `WorldState`에 선언, `g.shared.push` + `g.stateDirty` | `onMsg('world', …)` |
 | 본인만 보는 값 | `g.personal.push` | `onMsg('me', …)` |
-| 캐릭터에 딸린 값 | `EntExt`에 선언, `g.entInit.push`, `g.saves.push` | |
+| 캐릭터에 딸린 값 | `EntExt`에 선언, `g.entInit.push`, `g.saves.push` (아래 '엔티티의 칸') | |
+| 다른 모듈의 칸(레벨, 골드, 체력 …)을 읽는다 | 그 모듈을 늘 고르는 게임이면 `p.lv` 그대로. 고르지 않을 수도 있으면 `g.has('growth')`로 묻거나 `g.field(p, 'lv')`(없으면 처음 값) | |
 | 서버 전체의 값을 저장 | `g.worldSaves.push` + `g.saveDirty` | |
 | 시간이 흐르면 | `g.ticks.push((dt) => …)`. 한 틱의 차례: 엔티티마다(사람의 걷기·전투, 몬스터, 게임의 종류의 `tick`) → `g.ticks`(등록한 차례) | `onFrame`, `onSlow` |
 | 사람이 들어오고 나가면 | `g.on('playerJoined', (p) => …)`(봇은 빼고), `g.on('playerLeft', (id) => …)`(월드에서 빠진 뒤: 엔티티 대신 id), `g.on('playerDropped', (p) => …)`(연결이 끊겨 저장하기 직전) | |
@@ -850,6 +851,24 @@ export function initBonfire(): void {
 | 틀의 수치를 바꾼다 | `g.mods.provide('damage' \| 'guard' \| 'regen' \| 'crit' \| 'hp' \| 'exp', (p) => 값)`. `damage`·`guard`·`regen`은 **곱하는 값**(1이 그대로, 1.1이면 10% 더), `crit`·`hp`·`exp`는 **더하는 값**(0이 그대로. `crit`은 확률, `hp`는 최대 체력, `exp`는 처치 경험치에 더하는 비율). 잘못 적어도 오류 없이 엉뚱한 값이 된다 | |
 | 틀의 규칙을 바꾼다 | `g.rules.respawn / speed / canChangeClass / unlocked` | `rules.speed / unlocked / lockNote / home` (속도와 잠금은 서버와 같은 답을 내야 한다) |
 | 보상을 준다 | `g.players.grant(p, exp, 0)`, `g.wallet.add(p, 'gold', n, 원인)`·`g.wallet.take(…)`(재화는 **지갑으로만** 바꾼다: `p.gold`를 직접 고치면 경제 장부에 '그 밖'으로 남고 `npm test`의 지갑 검사가 잡는다. 원인은 `WHY`의 것이나 영문 낱말), `g.bag.putItem(p, 아이템, n, 원인)`, `g.mail.send(p, 종류, 값, 보상)`, `g.daily.add(p, 종류, n)` | |
+
+### 엔티티의 칸: 핵심, 모듈의 몫, 게임의 칸
+
+엔티티(`Ent`, 사람·몬스터·게임의 종류)의 칸은 세 갈래다. 칸이 엔티티에 **있는지**가 갈래마다 다르다.
+
+| 갈래 | 칸 | 어디에 적혀 있나 | 처음 값을 채우는 곳 | 있는 엔티티 |
+|---|---|---|---|---|
+| 핵심 | `id`, `kind`, `type`, `name`, `x`, `z`, `face`, 이동과 길(`tx`, `tz`, `moving`, `stuck`, `lastMove`, `lastAct`, `path`, `pgx`, `pgz`, `pat`), `dead`, `layer`, `wait`, `data`, `bot`, `pid`, 표시(`dirty`, `unsaved`, `metaDirty`), `offMs` | `engine/server/game/entity.ts` | `Game.create` | 어느 게임에나 |
+| 모듈의 몫 | `economy`: `gold`, `sparks` · `growth`: `lv`, `exp`, `need` · `classes`: `cls` · `combat`: `hp`, `maxHp`, `targetId`, `atkCd`, `lastHurt`, `cds`, `itemCd`, 몬스터의 칸(`def`, `hx`, `hz`, `respawn`, `hitters`, `swarm`, `scale`, `cast`, `windup`, `slowUntil`, `stunUntil`, `buffs`, `dots`, `homing`) · `items`: `weapon`, `armor`, `items` · `gear`: `gear`, `worn`, `gearSeq`, `bagUp`, `lostFull`, `autoSalvage` · `mail`: `mail`, `mailSeq` · `daily`: `daily` · `build`: `stats`, `skillLv` · `away`: `auto`, `away` · `guild`: `guild` | `engine/server/game/parts.ts` (모듈마다 `*Part`) | 그 모듈의 `PARTS[모듈].init` (`Game.create`가 고른 모듈의 것만 부른다) | **그 모듈을 고른 게임에만** |
+| 게임의 칸 | 게임이 정한다 (`p.fed` 같은 것) | 게임의 선언 파일: `declare module '@engine/server/game/ext' { interface EntExt { … } }` | 게임의 `g.entInit.push((e) => …)` | 그 게임에 |
+
+- 만드는 차례: 핵심의 칸 → 고른 모듈의 칸(모듈 표의 차례) → 게임의 `g.entInit` → 장애물 밖으로 자리를 맞춤. 그래서 `entInit` 안에서 고른 모듈의 칸(`e.gold`)을 읽을 수 있다. 플러그인보다 먼저 만들어진 엔티티(첫 채널의 몬스터)도 `entInit`을 한 번 거친다.
+- 고르지 않은 모듈의 칸은 엔티티에 **없다**(`undefined`). 타입에는 늘 보이므로(`Ent`가 `EntParts`를 이어받는다) 컴파일러가 막아 주지 않는다. 그 모듈을 고르지 않을 수도 있는 코드는 이렇게 쓴다:
+  - 읽기만: `g.field(p, 'lv')`. 골랐으면 엔티티의 값, 아니면 그 칸의 처음 값(레벨 1, 직업 `''`, 체력 0, 빈 가방 …)을 돌려준다.
+  - 쓰기: 반드시 `if (g.has('combat')) p.targetId = 0;`처럼 묻고 쓴다. 묻지 않고 쓰면 칸이 없던 엔티티에 칸이 새로 생긴다(저장되지도 보내지지도 않지만, 엔티티의 모양이 틀린다).
+  - 내 게임이 그 모듈을 늘 고른다면(`MODULES`에 적었다면) 묻지 않고 `p.gold`로 써도 된다.
+- `g.place(종류, { hp })`의 `hp`는 전투 모듈의 체력이다: 전투를 고르지 않은 게임에서는 쓰이지 않는다. 게임의 종류에 체력 같은 값이 필요하면 `e.data`나 게임의 칸에 둔다.
+- 틀에 칸을 가진 모듈을 새로 더할 때(틀을 고칠 때)는 `parts.ts`에 인터페이스 하나와 `PARTS`의 한 줄을 더하고 `EntParts`에 잇는다. `engine/test/fx/parts.test.ts`가 모듈마다 그 모듈과 의존만 골라 띄워, 고르지 않은 모듈의 칸이 생기지 않는지 본다.
 
 ### 사람마다의 값과 겉모습
 
@@ -1047,7 +1066,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 
 알아 둘 한계:
 
-- 플레이어의 엔티티(`Ent`)에는 모듈의 칸(레벨, 골드, 장비, 우편 …)이 늘 처음 값으로 있다. 그 모듈을 고르지 않으면 저장되지도 화면에 가지도 않을 뿐이다: 전투가 없는 게임의 규칙이 그 칸을 쓰지 않는다.
+- 엔티티(`Ent`)의 모듈의 칸(레벨, 골드, 장비, 우편 …)은 그 모듈을 고른 게임의 엔티티에만 있지만, 타입(`Ent`)에는 늘 보인다(6절 '엔티티의 칸'). 고르지 않을 수도 있는 모듈의 칸은 `g.has`로 묻거나 `g.field`로 읽는다.
 - 엔티티의 상태 한 줄은 `[id, x, z, 방향, 이동 중, 체력, …게임의 값]`이고, **체력 칸은 전투(`combat`)를 고른 게임에만** 있다(없는 게임은 `[id, x, z, 방향, 이동 중, …값]`). 들어올 때의 정보(`EnterInfo`)도 무기(`w`)는 `items`, 직업(`c`)은 `classes`, 체력(`hp`, `maxHp`)은 `combat`을 고른 게임에만 있다. 게임의 값은 수로만 붙는다(글자는 `type`, `name`으로 처음 들어올 때 한 번). 본인의 `you`(`[x, z, 이동 중, 체력, 대상, …]`)는 모양이 고정이다(체력이 없는 게임은 0).
 - 엔티티끼리 부딪히는 물리는 없다: 사람은 장애물(둥근 기둥)만 피해 걷는다. 공을 차는 것 같은 일은 게임의 `tick`이 셈한다.
 - 재화(`economy`)는 세 칸(`gold`, `sparks`, 경험치)으로 정해져 있다. 두 번째 재화는 한 가지(`sparks`)뿐이다. 이름은 이름표의 `currency1`·`currency2`로 준다.
@@ -1087,7 +1106,8 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `g.on('playerJoined' \| 'playerLeft' \| 'playerDropped', …)` | 사람이 들어왔다(봇 제외) / 월드에서 빠졌다(id) / 연결이 끊겨 저장하기 직전 | `games/rollball/server/pitch.ts` (`playerLeft`) |
 | `g.perFlush` | 전송마다 본인에게 보낼 메시지를 만드는 것 (틀의 `stat`·`meta`가 쓴다) | |
 | `game/ext.ts`의 `GameSystems` | `g.내시스템` | `server/sample.ts` |
-| `game/ext.ts`의 `EntExt` + `g.entInit` | 엔티티 칸과 처음 값 | `server/sample.ts`, `server/bonfire.ts` |
+| `game/ext.ts`의 `EntExt` + `g.entInit` | 엔티티 칸과 처음 값 (고른 모듈의 칸이 채워진 뒤에 불린다) | `server/sample.ts`, `server/bonfire.ts` |
+| `game/parts.ts`의 `EntParts`(모듈마다 `CombatPart` 같은 것), `g.field(e, 칸)` | 모듈의 엔티티 칸: 그 모듈을 고른 게임에만 있다. `g.field`는 고르지 않았으면 처음 값 (6절 '엔티티의 칸') | |
 | `game/ext.ts`의 `HooksExt` + `g.on` / `g.fire` | 게임의 사건 | `server/sample.ts`, `server/bonfire.ts` |
 | `game/ext.ts`의 `RulesExt`, `ModsExt` | `g.rules`와 `g.mods`에 게임의 칸을 더한다 | |
 | `g.ready` | 모든 시스템이 만들어진 뒤에 한 번 | `server/sample.ts` |

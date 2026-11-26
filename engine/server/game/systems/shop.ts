@@ -34,15 +34,16 @@ export class Shop {
 
     if (!Shop.wear(g, p, id, false, WHY.buy)) g.bag.putItem(p, id, 1, WHY.buy);
     p.dirty = true; p.unsaved = true;
-    g.notify(p, 'bought', id, p.cls);
+    g.notify(p, 'bought', id, g.field(p, 'cls'));
     g.fire('bought', p, id);
   }
 
   private use(p: Ent, id: ItemId): void {
     const g = this.g, def = itemDef(id);
-    if (def.kind !== 'potion' || p.itemCd > 0) return;
+    // 물약은 체력을 채운다: 전투 모듈이 없으면(체력이 없으면) 늘 '가득 찼다'에서 멈춘다 (그 아래는 전투의 칸을 쓴다)
+    if (def.kind !== 'potion' || g.field(p, 'itemCd') > 0) return;
     if (!g.bag.count(p, id)) { g.notify(p, 'noPotion'); return; }
-    if (p.hp >= p.maxHp) { g.notify(p, 'hpFull'); return; }
+    if (g.field(p, 'hp') >= g.field(p, 'maxHp')) { g.notify(p, 'hpFull'); return; }
     const amount = Math.round(Math.min(def.heal ?? 0, p.maxHp - p.hp));
     g.bag.takeItem(p, id, 1, WHY.use);
     p.hp += amount;

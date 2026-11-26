@@ -142,7 +142,7 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
     who: () => {
       const list = host.people();
       if (!list.length) return '접속한 사람이 없습니다.';
-      return [`${list.length}명`, ...list.map((x) => `  ${x.name}  Lv${x.ent.lv} ${x.ent.cls || '-'}  ${x.away ? '(자리 비움 사냥) ' : ''}주소 ${x.ip || '-'}  키 ${short(x.key)}${S.muted(x.key, x.ip) ? '  [말 막힘]' : ''}`)].join('\n');
+      return [`${list.length}명`, ...list.map((x) => `  ${x.name}  Lv${g.field(x.ent, 'lv')} ${g.field(x.ent, 'cls') || '-'}  ${x.away ? '(자리 비움 사냥) ' : ''}주소 ${x.ip || '-'}  키 ${short(x.key)}${S.muted(x.key, x.ip) ? '  [말 막힘]' : ''}`)].join('\n');
     },
     find: (a) => {
       need(a.length >= 1, 'find 이름');

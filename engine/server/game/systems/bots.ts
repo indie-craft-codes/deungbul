@@ -11,7 +11,7 @@ export class Bots {
 
   think(p: Ent, dt: number): void {
     const g = this.g;
-    if (p.moving || p.targetId) return;
+    if (p.moving || (g.has('combat') && p.targetId)) return;
     p.wait -= dt;
     if (p.wait > 0) return;
     p.wait = 1 + Math.random() * 4;
@@ -21,7 +21,7 @@ export class Bots {
       const d = dist(p, m);
       if (d < nd) { nd = d; near = m; }
     }
-    if (near && nd < 8) { p.targetId = near.id; return; } // 가까우면 싸운다
+    if (near && nd < 8) { p.targetId = near.id; return; } // 가까우면 싸운다 (몬스터는 전투 모듈이 놓는다: 몬스터가 있으면 전투의 칸도 있다)
     if (near && Math.random() < 0.35) { g.movement.goTo(p, near.x, near.z); return; } // 가끔은 찾아간다
     const a = MAP.areas[0];
     g.movement.goTo(p, a.x0 + PAD_X + Math.random() * (a.x1 - a.x0 - PAD_X * 2), (a.z0 + a.z1) / 2 + (Math.random() - 0.5) * (a.z1 - a.z0 - PAD_Z * 2));

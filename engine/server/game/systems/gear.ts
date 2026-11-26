@@ -174,7 +174,7 @@ export class GearSys {
     if (!isBaseSlot(slot)) return;
     const base = p.gear.find((x) => x.uid === p.worn[slot])?.base ?? '';
     if ((slot as string) === 'weapon') p.weapon = base; else p.armor = base;
-    this.g.gears.push({ id: p.id, weapon: p.weapon, armor: p.armor, cls: p.cls });
+    this.g.gears.push({ id: p.id, weapon: p.weapon, armor: p.armor, cls: this.g.field(p, 'cls') });
   }
 
   unequip(p: Ent, slot: GearSlot): void {

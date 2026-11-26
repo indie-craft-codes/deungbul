@@ -5,6 +5,7 @@
 // (engine/shared/modules.ts): 게임이 내용의 MODULES에 적은 모듈의 시스템만 만들고, 적지 않은 모듈의 칸(g.wallet 같은 것)은
 // 건드리면 '그 모듈을 고르지 않았다'는 오류를 던지는 자리표다. 그 모듈의 명령·틱·저장 칸·개인 상태도 등록되지 않는다.
 // 핵심의 코드와 다른 모듈은 고르지 않았을 수 있는 모듈을 g.has('이름')으로 물은 뒤에 쓴다.
+// 엔티티도 같다: 핵심의 칸(./entity.ts)은 늘 있고, 모듈의 칸(./parts.ts)은 고른 모듈의 것만 만든다. 고르지 않았을 수 있는 모듈의 칸은 g.has로 묻고 쓰거나 g.field로 읽는다.
 //
 // 게임의 규칙은 틀을 고치지 않고 규칙 플러그인(GameOptions.plugins)으로 깐다: 게임의 서버 폴더에 시스템을 만들고 플러그인에서 g.이름 = new 시스템(g)으로 단다
 // (등불지기는 games/deungbul/server/deungbul.ts, 예제는 games/sample/server/sample.ts). 시스템은 생성자에서 필요한 것을 등록한다:
@@ -16,14 +17,15 @@ import type { MsgArg, MsgKey } from '../../shared/messages';
 import { NavGrid } from '../../shared/nav';
 import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
 import { resolve } from '../../shared/sim';
-import { LEVEL, MODULES } from '../../shared/defs';
-import { MODULE_SAVES, checkModules, type ModuleId } from '../../shared/modules';
+import { MODULES } from '../../shared/defs';
+import { ALL_MODULES, MODULE_SAVES, checkModules, type ModuleId } from '../../shared/modules';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
 import type { PlayerSave, WorldSave } from '../store';
-import type { Ent } from './entity';
-import type { EntExt, GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
+import type { CoreEnt, Ent } from './entity';
+import type { GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
 import { fieldLayer } from './layers';
 import { checkList, latest, PLAYER_UP, upgrade, WORLD_UP, type Migrations } from './migrate';
+import { blankOf, PARTS, partOwner, type Part, type PartKey } from './parts';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
 import { Bag } from './systems/bag';
@@ -223,8 +225,12 @@ export class Game {
   readonly migrations: Migrations = { player: [], world: [] };
   /** 모든 시스템이 만들어진 뒤에 한 번 불린다. 자기보다 뒤에 만들어지는 시스템의 접점을 채울 때 쓴다 (예: 게임의 규칙이 채널의 extraFoes를) */
   readonly ready: (() => void)[] = [];
-  /** 엔티티가 만들어질 때마다 불린다. 게임이 더한 칸(EntExt)의 처음 값을 채운다 */
+  /** 엔티티가 만들어질 때마다 불린다. 게임이 더한 칸(EntExt)의 처음 값을 채운다 (고른 모듈의 칸이 채워진 뒤에) */
   readonly entInit: ((e: Ent) => void)[] = [];
+  /** 고른 모듈이 엔티티에 두는 칸 (./parts.ts의 PARTS 가운데 고른 것, 모듈 표의 차례) */
+  private readonly parts: readonly Part[];
+  /** 전투 모듈을 골랐는가 (엔티티를 없앨 때 노리던 대상과 피해를 준 사람을 정리한다) */
+  private readonly fight: boolean;
   /** 몬스터를 잡은 사람이 덤으로 받는 경험치 (휴식 보너스 같은 것). 등록한 함수들의 값을 더한다 */
   readonly killBonus: ((p: Ent, m: Ent) => number)[] = [];
   /**
@@ -285,6 +291,9 @@ export class Game {
     this.modules = checkModules(opts.modules ?? MODULES, opts.modules ? 'GameOptions.modules' : '내용의 MODULES');
     // 만드는 차례가 곧 등록의 차례(저장 칸, 사건 처리기, 틱)다: 저장의 모양과 난수의 차례가 바뀌지 않게 예전 차례를 지킨다
     const has = (m: ModuleId) => this.modules.has(m);
+    // 엔티티의 모듈 칸은 어느 시스템보다 먼저 정한다: 시스템이 만들어지며 놓는 엔티티(첫 채널의 몬스터)도 고른 모듈의 칸을 다 갖는다
+    this.parts = ALL_MODULES.filter(has).flatMap((m) => PARTS[m] ?? []);
+    this.fight = has('combat');
     this.wallet = has('economy') ? new Wallet(this) : off('economy', 'wallet');
     this.bag = has('items') ? new Bag(this) : off('items', 'bag');
     this.movement = new Movement(this);
@@ -327,6 +336,14 @@ export class Game {
   // ---- 시스템이 쓰는 공용 통로 ----
   /** 그 모듈을 골랐는가 (engine/shared/modules.ts). 고르지 않았을 수 있는 모듈의 시스템(g.wallet 같은 것)은 이것으로 묻고 쓴다 */
   has(m: ModuleId): boolean { return this.modules.has(m); }
+  /**
+   * 고르지 않았을 수 있는 모듈의 칸을 읽는다: 그 모듈을 골랐으면 엔티티의 값, 아니면 그 칸의 처음 값(./parts.ts. 체력은 0).
+   * 다른 모듈의 칸을 읽기만 하는 곳(길드가 적는 레벨과 직업 같은 것)이 쓴다. 쓰는 곳은 g.has(모듈)로 막는다: 칸이 없는 엔티티에 칸을 만들지 않는다
+   */
+  field<K extends PartKey>(e: Ent, k: K): Ent[K] {
+    const m = partOwner(k);
+    return m && this.modules.has(m) ? e[k] : blankOf(k);
+  }
   on<K extends keyof Hooks>(name: K, fn: Hooks[K]): void { ((this.hooks[name] ??= []) as Hooks[K][]).push(fn); }
   fire<K extends keyof Hooks>(name: K, ...args: Parameters<Hooks[K]>): void {
     for (const fn of this.hooks[name] ?? []) (fn as (...a: Parameters<Hooks[K]>) => void)(...args);
@@ -375,25 +392,24 @@ export class Game {
 
   /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. 게임의 종류는 place로 놓는다 */
   create(kind: Kind, type: string, name: string, x: number, z: number, hp: number): Ent {
-    // 틀은 자기 칸만 채운다: 게임이 더한 칸(EntExt)은 여기 적을 수 없고(적으면 컴파일 오류), entInit이 채운다
-    const base: Omit<Ent, keyof EntExt> = {
+    // 틀은 핵심의 칸만 적는다(./entity.ts). 모듈의 칸(EntParts)은 고른 모듈의 PARTS가(hp는 전투 모듈의 체력), 게임이 더한 칸(EntExt)은 entInit이 채운다:
+    // 여기 적으면 컴파일 오류다. 고르지 않은 모듈의 칸은 엔티티에 없다
+    const base: CoreEnt = {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, lastAct: -99, path: null, pgx: x, pgz: z, pat: 0,
-      hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0, data: {},
-      bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: LEVEL.firstNeed, sparks: 0, cds: [], dirty: false, unsaved: false, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0,
-      gear: [], worn: {}, gearSeq: 0, bagUp: 0, lostFull: 0, autoSalvage: -1, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
-      def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), swarm: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, stunUntil: 0, buffs: [], dots: [], homing: false,
+      dead: false, layer: fieldLayer(1), wait: 0, data: {}, bot: false, pid: '', dirty: false, unsaved: false, metaDirty: false, offMs: 0,
     };
     const e = base as Ent;
+    for (const part of this.parts) part.init(e, hp);
     for (const init of this.entInit) init(e);
     resolve(e, this.world.obstacles);
-    e.hx = e.x; e.hz = e.z;
+    for (const part of this.parts) part.placed?.(e);
     this.ents.set(e.id, e);
     return e;
   }
 
   /** 엔티티를 없애고, 다른 엔티티가 붙들고 있던 참조를 정리한다. */
   remove(id: number): void {
-    if (!this.ents.delete(id)) return;
+    if (!this.ents.delete(id) || !this.fight) return;
     for (const e of this.ents.values()) {
       if (e.targetId === id) e.targetId = 0;
       e.hitters.delete(id);

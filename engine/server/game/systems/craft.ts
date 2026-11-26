@@ -38,6 +38,6 @@ export class Craft {
     for (const [mat, n] of mats) g.bag.takeItem(p, mat, n, WHY.craft);
     if (!Shop.wear(g, p, id, true, WHY.craft)) g.bag.putItem(p, id, 1, WHY.craft);
     p.dirty = true; p.unsaved = true;
-    g.notify(p, 'crafted', id, p.cls);
+    g.notify(p, 'crafted', id, g.field(p, 'cls'));
   }
 }
