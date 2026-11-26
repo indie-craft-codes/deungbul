@@ -76,6 +76,7 @@ export function snapshotFor(me: Ent, known: Set<number>, frame: Frame, events: r
           // 칸의 차례가 줄 위의 차례다 (undefined인 칸은 JSON에서 빠진다): 모듈을 다 고른 게임은 예전과 같은 글자
           const f = frame.fields;
           const info: EnterInfo = { id: e.id, kind: e.kind, type: e.type, name: e.name, w: f.weapon ? e.weapon : undefined, a: e.armor || undefined, c: f.cls ? e.cls : undefined, x: r2(e.x), z: r2(e.z), face: r2(e.face), hp: f.hp ? Math.ceil(e.hp) : undefined, maxHp: f.hp ? e.maxHp : undefined };
+          // 갑옷(아이템), 몰려온 적(전투), 길드(길드)는 그 모듈을 고르지 않은 게임의 엔티티에는 칸이 없다(undefined): 빠진다
           if (e.swarm) info.r = 1; // 줄 위의 칸 이름은 그대로 r (몰려온 적)
           if (e.guild) info.g = e.guild;
           enter.push(info);
@@ -91,8 +92,9 @@ export function snapshotFor(me: Ent, known: Set<number>, frame: Frame, events: r
   const sees = (id: number) => id === me.id || seen.has(id) || known.has(id);
   const ev = events.length ? events.filter((e) => (e[0] === 'h' ? sees(e[1]) || sees(e[2]) : sees(e[1]))) : [];
 
-  // you: 내 상태. 게임이 플레이어에게 실어 보내는 값(playerSync)이 있으면 끝에 붙는다
-  let json = `{"t":"snap","n":${online},"you":[${r2(me.x)},${r2(me.z)},${me.moving ? 1 : 0},${Math.ceil(me.hp)},${me.targetId}${frame.more.get(me.id) ?? ''}]`;
+  // you: 내 상태. 게임이 플레이어에게 실어 보내는 값(playerSync)이 있으면 끝에 붙는다. 체력과 노리는 대상의 칸은 늘 있고, 전투 모듈이 없으면 0이다
+  const fight = frame.fields.hp;
+  let json = `{"t":"snap","n":${online},"you":[${r2(me.x)},${r2(me.z)},${me.moving ? 1 : 0},${fight ? Math.ceil(me.hp) : 0},${fight ? me.targetId : 0}${frame.more.get(me.id) ?? ''}]`;
   if (enter.length) json += `,"enter":${JSON.stringify(enter)}`;
   if (leave.length) json += `,"leave":[${leave.join(',')}]`;
   json += `,"ents":[${ents.join(',')}]`;

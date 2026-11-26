@@ -86,9 +86,9 @@ export class Bag {
 
   // ---------- 장비 (낱개) ----------
   /** 그 캐릭터의 가방 칸 수 (낀 것 포함) */
-  slots(p: Ent): number { return bagSlots(p.bagUp); }
+  slots(p: Ent): number { return bagSlots(this.g.field(p, 'bagUp')); }
   /** 가방이 가득 찼는가 */
-  full(p: Ent): boolean { return p.gear.length >= this.slots(p); }
+  full(p: Ent): boolean { return this.g.has('gear') && p.gear.length >= this.slots(p); } // 장비 모듈이 없으면 장비 가방도 없다: 늘 비어 있다
 
   /**
    * 장비 한 점을 가방에 넣는다. 번호(uid)는 그 캐릭터 안에서 새로 붙는다.

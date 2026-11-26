@@ -27,7 +27,7 @@ export class Away {
     g.commands.set('auto', (p, m) => {
       const on = m.on === true;
       // 오늘 자리 비움 사냥 시간을 다 썼으면 켤 때 알린다: 창을 닫으면 멈춘다는 것을 모르고 끄고 나갔다가 멈춰 있었다
-      if (on && !p.auto && p.cls !== '' && p.lv >= AWAY.minLv && this.left(p) <= 0) g.notify(p, 'awayLimit', AWAY_MAX_S / 3600);
+      if (on && !p.auto && p.cls !== '' && g.field(p, 'lv') >= AWAY.minLv && this.left(p) <= 0) g.notify(p, 'awayLimit', AWAY_MAX_S / 3600);
       p.auto = on;
     });
     g.on('playerLeft', (id) => { this.stays.delete(id); this.resting.delete(id); });
@@ -54,7 +54,8 @@ export class Away {
   start(p: Ent): void {
     // 자동 사냥을 끄면 통신 계층이 다음 전송 때 저장하고 내보낸다 (시간이 다 됐을 때와 같은 길)
     if (this.left(p) <= 0) { p.auto = false; return; }
-    this.stays.set(p.id, { x: p.x, z: p.z, at: this.g.now(), sparks: p.sparks, gold: p.gold, lv: p.lv, lost: 0, salv: 0, dust: 0 });
+    const g = this.g, money = g.has('economy'); // 재화와 레벨은 그 모듈이 없으면 0과 1로 센다 (자리 비움 사냥은 전투만 있으면 돈다)
+    this.stays.set(p.id, { x: p.x, z: p.z, at: g.now(), sparks: money ? p.sparks : 0, gold: money ? p.gold : 0, lv: g.field(p, 'lv'), lost: 0, salv: 0, dust: 0 });
     p.wait = 0;
   }
 
@@ -73,7 +74,8 @@ export class Away {
     if (!s) return;
     this.stays.delete(p.id); this.resting.delete(p.id);
     const minutes = Math.max(1, Math.round((this.g.now() - s.at) / 60000));
-    this.g.notify(p, 'awayBack', minutes, Math.max(0, p.sparks - s.sparks), Math.max(0, p.gold - s.gold), p.lv - s.lv);
+    const g = this.g, money = g.has('economy');
+    g.notify(p, 'awayBack', minutes, Math.max(0, (money ? p.sparks : 0) - s.sparks), Math.max(0, (money ? p.gold : 0) - s.gold), g.field(p, 'lv') - s.lv);
     // 버려지거나 자동으로 분해된 장비가 있었으면 이어서 알린다 (조용히 사라지면 몰라서 손해 본다)
     if (s.lost || s.salv) this.g.notify(p, 'awayGear', s.lost, s.salv, s.dust);
   }
@@ -92,10 +94,10 @@ export class Away {
     const ratio = p.hp / p.maxHp;
     if (p.hp <= 0) { this.resting.delete(p.id); return; } // 쓰러졌다: 일어나면 체력이 차 있다
 
-    const potion = p.itemCd <= 0 ? pickPotion(ratio, p.items) : null;
+    const items = g.field(p, 'items'), potion = p.itemCd <= 0 ? pickPotion(ratio, items) : null;
     if (potion) g.command(p, { t: 'use', id: potion });
     // 물약이 없으면 체력이 찰 때까지 쉬어 간다 (화면의 자동 사냥과 같은 규칙)
-    if (shouldRest(ratio, p.items, this.resting.has(p.id))) this.resting.add(p.id); else this.resting.delete(p.id);
+    if (shouldRest(ratio, items, this.resting.has(p.id))) this.resting.add(p.id); else this.resting.delete(p.id);
     const resting = this.resting.has(p.id);
     // 쉬는 중: 둘레(10m)에 몬스터가 있으면 싸우지 않고 물러난다(쫓아오면 계속). 막혔을 때만 붙은 것과 싸운다 (화면의 자동 사냥과 같은 규칙)
     if (resting) {

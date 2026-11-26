@@ -127,7 +127,7 @@ export class Sanctions {
     let done = 0;
     if (isCur(what)) {
       if (k > 0) done = g.wallet.add(p, what, k, WHY.admin);
-      else { const cut = Math.min(-k, p[what]); if (cut > 0 && g.wallet.take(p, what, cut, WHY.admin)) done = -cut; }
+      else { const cut = Math.min(-k, g.field(p, what)); if (cut > 0 && g.wallet.take(p, what, cut, WHY.admin)) done = -cut; }
     } else {
       const id = what as ItemId;
       if (k > 0) done = g.bag.putItem(p, id, k, WHY.admin);

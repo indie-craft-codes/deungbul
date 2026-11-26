@@ -74,6 +74,7 @@ export class Wallet {
    */
   amount(p: Ent, cur: Cur, n: number, why: string): number {
     if (typeof n !== 'number' || !(n > 0) || n === Infinity) return 0;
+    if (cur === 'exp' && !this.g.has('growth')) return 0; // 성장 모듈이 없으면 경험치의 칸이 없다: 받지 않는다
     let k = 1;
     for (let i = 0; i < this.scale.length; i++) {
       const v = this.scale[i](p, cur, n, why);
@@ -98,12 +99,12 @@ export class Wallet {
   private static cost(n: number): number { return typeof n === 'number' && n >= 0 && n !== Infinity ? Math.ceil(n) : NaN; }
 
   /** 그만큼 낼 수 있는가. 배율은 걸리지 않는다 */
-  can(p: Ent, cur: Cur, n: number): boolean { return p[cur] >= Wallet.cost(n); }
+  can(p: Ent, cur: Cur, n: number): boolean { return this.g.field(p, cur) >= Wallet.cost(n); }
 
   /** 뺀다. 잔액이 모자라거나 값이 깨져 있으면 false를 돌려주고 아무것도 바꾸지 않는다. 배율은 걸리지 않는다 */
   take(p: Ent, cur: Cur, n: number, why: string): boolean {
     const cost = Wallet.cost(n);
-    if (!(p[cur] >= cost)) return false;
+    if (!(this.g.field(p, cur) >= cost)) return false; // 칸이 없는 재화(성장 없는 게임의 경험치)는 0으로 본다: 0이 아닌 값은 치를 수 없다
     if (cost === 0) return true;
     p[cur] -= cost; p.dirty = true; p.unsaved = true;
     for (let i = 0; i < this.seen.length; i++) this.seen[i](p, cur, -cost, why);

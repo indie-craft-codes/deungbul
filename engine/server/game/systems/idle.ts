@@ -8,7 +8,7 @@ export class Idle {
     g.on('playerJoined', (p) => {
       const minutes = Math.min(IDLE.maxMin, Math.floor(p.offMs / 60000));
       if (minutes < IDLE.minMin) return;
-      g.mail.send(p, 'idle', [minutes], IDLE.reward(minutes, p.lv));
+      g.mail.send(p, 'idle', [minutes], IDLE.reward(minutes, g.field(p, 'lv')));
     });
   }
 }

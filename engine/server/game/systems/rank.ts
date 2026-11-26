@@ -23,19 +23,21 @@ export class Rank {
 
   /** 전투력: 순위와 화면 표시에 쓴다. 식은 내용 정의에 있다 (engine/shared/defs/growth.ts의 powerOf) */
   power(p: Ent): number {
-    const worn: Gear[] = [];
+    // 순위는 성장만 있으면 돈다: 장비·아이템·기술 강화가 없는 게임은 그 몫을 0으로 센다
+    const g = this.g, worn: Gear[] = [], have = g.field(p, 'worn'), bag = g.field(p, 'gear');
     for (const slot of GEAR_SLOTS) {
-      const it = p.worn[slot] ? p.gear.find((x) => x.uid === p.worn[slot]) : undefined;
+      const it = have[slot] ? bag.find((x) => x.uid === have[slot]) : undefined;
       if (it) worn.push(it);
     }
-    return powerOf(p.lv, Shop.wornTier(p, 'weapon') + Shop.wornTier(p, 'armor'), Object.values(p.skillLv), worn);
+    const tier = g.has('items') ? Shop.wornTier(p, 'weapon') + Shop.wornTier(p, 'armor') : 0;
+    return powerOf(p.lv, tier, Object.values(g.field(p, 'skillLv')), worn);
   }
 
   private update(): void {
     for (const p of this.g.ents.values()) {
       // 손님(저장 키 없음)은 올리지 않는다: 가리킬 변하지 않는 값이 없어 이름으로 구분하게 되고, 이름은 남의 것으로 바꿀 수 있다
       if (p.kind !== 'p' || p.bot || !p.pid) continue;
-      const row: Row = { pid: p.pid, name: p.name, lv: p.lv, cls: p.cls, power: this.power(p) };
+      const row: Row = { pid: p.pid, name: p.name, lv: p.lv, cls: this.g.field(p, 'cls'), power: this.power(p) };
       let i = this.rows.findIndex((r) => r.pid === p.pid);
       // 이름으로만 저장하던 때의 내 줄이 남아 있으면 이어받는다. 이름이 같고 전투력이 그 줄보다 낮지 않을 때만이다:
       // 이름만 맞춰 온 약한 캐릭터가 남의 옛 줄을 낮은 값으로 덮어쓰지 못한다

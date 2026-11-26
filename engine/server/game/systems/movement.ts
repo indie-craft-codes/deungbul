@@ -27,9 +27,9 @@ export class Movement {
       const same = Math.hypot(to.x - p.tx, to.z - p.tz) < 0.3 && p.moving;
       this.goTo(p, to.x, to.z);
       if (!same && !soon) p.path = null; // 새로 찍은 곳: 길을 처음부터 다시 세운다
-      p.targetId = 0; // 직접 움직이면 공격을 그만둔다
+      if (g.has('combat')) p.targetId = 0; // 직접 움직이면 공격을 그만둔다
     });
-    g.commands.set('stop', (p) => { p.moving = false; p.targetId = 0; });
+    g.commands.set('stop', (p) => { p.moving = false; if (g.has('combat')) p.targetId = 0; });
   }
 
   /** 전투 모듈이 없는 게임의 사람 틱: 목표가 있으면 걷기만 한다 (전투가 있으면 전투의 tickPlayer가 추격과 함께 걷는다) */

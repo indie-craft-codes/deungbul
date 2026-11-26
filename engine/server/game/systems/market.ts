@@ -118,7 +118,7 @@ export class Market {
   private post(p: Ent, m: Record<string, unknown>): void {
     const g = this.g;
     if (!p.pid) { g.notify(p, 'marketGuest'); return; }
-    if (p.lv < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
+    if (g.field(p, 'lv') < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
     if (!int(m.price, MARKET.minPrice, MARKET.maxPrice)) { g.notify(p, 'marketPriceBad', MARKET.maxPrice); return; }
     if (this.own(p.pid).length >= MARKET.maxListings) { g.notify(p, 'marketFull', MARKET.maxListings); return; }
     if (this.mailFull(p)) return;
@@ -165,7 +165,7 @@ export class Market {
     // 이미 팔렸거나 내려갔거나, 기간이 지나 곧 돌아갈 물건
     if (!l || l.until <= g.now()) { g.notify(p, 'marketGone'); return; }
     if (l.seller === p.pid) { g.notify(p, 'marketOwn'); return; }
-    if (p.lv < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
+    if (g.field(p, 'lv') < MARKET.minLv) { g.notify(p, 'marketNeedLv', MARKET.minLv); return; }
     if (this.mailFull(p)) return;
     // 값을 치른 뒤부터는 되돌리지 않는다: 먼저 목록에서 빼서 같은 물건이 두 번 팔리지 않게 한다
     if (!g.wallet.take(p, 'gold', l.price, WHY.marketBuy)) { g.notify(p, 'noGold'); return; }

@@ -108,7 +108,7 @@ export class Channels {
   private fighting(p: Ent): boolean {
     const g = this.g, since = g.clock - CHANNEL.calmS;
     const key = Channels.key(p);
-    if (p.lastHurt > since || (this.killed.get(key) ?? -Infinity) > since || (this.fled.get(key) ?? -Infinity) > since) return true;
+    if ((g.has('combat') && p.lastHurt > since) || (this.killed.get(key) ?? -Infinity) > since || (this.fled.get(key) ?? -Infinity) > since) return true;
     // 때린 시각은 따로 적지 않는다: 내가 때린 몬스터가 방금 맞았으면 싸우는 중으로 본다.
     // 멀리 떠나온 싸움은 치지 않는다 (처치 보상을 받는 거리와 같다): 한 대 치고 떠난 보스를 남들이 잡는 동안 묶여 있지 않게
     for (const m of g.ents.values()) if (m.kind === 'm' && !m.dead && m.layer === p.layer && m.lastHurt > since && m.hitters.has(p.id) && dist(p, m) <= AOI_LEAVE) return true;
@@ -128,7 +128,8 @@ export class Channels {
     // 거절할 때도 최신 인원을 보낸다: 화면의 숫자가 낡아서 빈 줄 알고 누른 것이다
     if (this.counts()[to] >= CHANNEL.hard) { g.notify(p, 'channelFull', n); this.tell(p); return; }
 
-    p.layer = to; p.targetId = 0; p.moving = false; p.path = null; p.tx = p.x; p.tz = p.z;
+    p.layer = to; p.moving = false; p.path = null; p.tx = p.x; p.tz = p.z;
+    if (g.has('combat')) p.targetId = 0;
     // 떠난 채널의 몬스터는 나를 잊는다 (쫓던 몬스터가 보이지 않는 사람을 붙들고 있지 않게)
     for (const e of g.ents.values()) {
       if (e.kind === 'm') { e.hitters.delete(p.id); if (e.targetId === p.id) e.targetId = 0; }

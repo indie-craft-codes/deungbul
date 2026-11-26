@@ -99,7 +99,7 @@ export class Dungeon {
     const g = this.g, def = dungeonDef(id);
     if (this.of.has(p.id) || !isField(p.layer)) return;
     if (dist(p, def.portal) > PORTAL_REACH) { g.notify(p, 'dungeonFar'); return; }
-    if (p.lv < def.minLv) { g.notify(p, 'dungeonLevel', def.minLv); return; }
+    if (g.field(p, 'lv') < def.minLv) { g.notify(p, 'dungeonLevel', def.minLv); return; }
     g.daily.roll(p); // 날이 바뀌었으면 입장 횟수도 새로 센다
     const key = runKey(id), used = p.daily.prog[key] ?? 0;
     if (used >= def.perDay) { g.notify(p, 'dungeonNoRuns'); return; }

@@ -165,8 +165,8 @@ export class Ledger {
     });
     // 지갑을 지난 변화: 원인의 이름과 함께 바로 적는다
     g.wallet.seen.push((p, cur, d, why) => { try { this.direct(p, cur, d, why); } catch (err) { this.oops(err); } });
-    // 가방을 지난 변화(장비, 재료, 물약)도 원인의 이름과 함께 받는다
-    g.bag.seen.push((p, cur, d, why) => { try { this.stowed(p, cur, d, why); } catch (err) { this.oops(err); } });
+    // 가방을 지난 변화(장비, 재료, 물약)도 원인의 이름과 함께 받는다 (아이템 모듈이 없는 게임에는 가방이 없다)
+    if (g.has('items')) g.bag.seen.push((p, cur, d, why) => { try { this.stowed(p, cur, d, why); } catch (err) { this.oops(err); } });
     this.wrap();
   }
 
@@ -251,22 +251,25 @@ export class Ledger {
 
   // ---------- 재기 ----------
   private track(p: Ent, rec: CharStats): Track {
-    return { p, rec, gold: p.gold, sparks: p.sparks, lv: p.lv, gear: RARITIES.map(() => 0), nGear: 0, items: {}, nItems: 0, expIn: 0, credit: null, due: null };
+    return { p, rec, gold: p.gold, sparks: p.sparks, lv: this.g.field(p, 'lv'), gear: RARITIES.map(() => 0), nGear: 0, items: {}, nItems: 0, expIn: 0, credit: null, due: null };
   }
 
   /** 접속: 기준값을 지금 가진 것으로 잡는다 (저장에서 읽어 온 것은 새로 생긴 것이 아니다) */
   private join(p: Ent): Track | undefined {
     if (p.bot) return undefined;
+    const g = this.g;
     let t = this.tracks.get(p.id);
     if (!t) {
       // 기록이 없는 캐릭터: 아직 아무것도 하지 않았으면 지금 만든 것이고, 진행이 있으면 이 기록이 생기기 전의 캐릭터다
-      const fresh = p.lv === 1 && p.exp === 0 && p.gold === 0 && p.cls === '';
+      const fresh = g.field(p, 'lv') === 1 && g.field(p, 'exp') === 0 && p.gold === 0 && g.field(p, 'cls') === '';
       this.tracks.set(p.id, t = this.track(p, { born: fresh ? this.g.now() : 0, play: 0, away: 0, reach: {}, d: ['', 0, 0], y: ['', 0, 0] }));
     }
-    t.gold = p.gold; t.sparks = p.sparks; t.lv = p.lv; t.expIn = 0; t.credit = null; t.due = null;
-    t.gear.fill(0); t.nGear = p.gear.length;
-    for (const it of p.gear) t.gear[it.rar]++;
-    t.items = { ...p.items }; t.nItems = Object.keys(t.items).length;
+    // 레벨·장비·아이템은 그 모듈을 고르지 않았을 수 있다 (재화만 쓰는 게임): 없으면 처음 값(레벨 1, 빈 가방)으로 잰다
+    const gear = g.field(p, 'gear');
+    t.gold = p.gold; t.sparks = p.sparks; t.lv = g.field(p, 'lv'); t.expIn = 0; t.credit = null; t.due = null;
+    t.gear.fill(0); t.nGear = gear.length;
+    for (const it of gear) t.gear[it.rar]++;
+    t.items = { ...g.field(p, 'items') }; t.nItems = Object.keys(t.items).length;
     return t;
   }
 
@@ -334,12 +337,13 @@ export class Ledger {
       this.add('exp', stray, t.expIn, t);
       t.gold = p.gold; t.sparks = p.sparks; t.expIn = 0;
     }
-    if (p.lv !== t.lv) {
-      t.lv = p.lv;
+    const g = this.g, level = g.field(p, 'lv');
+    if (level !== t.lv) {
+      t.lv = level;
       // 레벨에 처음 닿은 플레이 시간: 만든 뒤로 줄곧 기록된 캐릭터만 (중간부터 기록된 캐릭터의 시간은 뜻이 없다)
-      if (t.rec.born > 0) for (const lv of ECON_LEVEL_MARKS) if (p.lv >= lv && !t.rec.reach[lv]) t.rec.reach[lv] = [Math.round(t.rec.play), Math.round(t.rec.away)];
+      if (t.rec.born > 0) for (const lv of ECON_LEVEL_MARKS) if (level >= lv && !t.rec.reach[lv]) t.rec.reach[lv] = [Math.round(t.rec.play), Math.round(t.rec.away)];
     }
-    const list = p.gear;
+    const list = g.field(p, 'gear');
     if (!full && !c && list.length === t.nGear) return;
     // 장비: 등급별 수
     const n = this.scratch;
@@ -352,16 +356,17 @@ export class Ledger {
     }
     // 재료와 물약: 아이템별 수
     let keys = 0;
-    for (const id in p.items) {
+    const items = g.field(p, 'items');
+    for (const id in items) {
       keys++;
-      const v = p.items[id], was = t.items[id], owed = c ? c.get(`item:${id}`) ?? 0 : 0;
+      const v = items[id], was = t.items[id], owed = c ? c.get(`item:${id}`) ?? 0 : 0;
       if (v === was && !owed) continue;
       if (was === undefined) t.nItems++;
       this.add(`item:${id}`, stray, v - (was ?? 0) - owed, t);
       t.items[id] = v;
     }
     if (keys !== t.nItems) { // 칸째로 없어진 아이템
-      for (const id in t.items) if (!(id in p.items)) { this.add(`item:${id}`, stray, -t.items[id] - (c ? c.get(`item:${id}`) ?? 0 : 0), t); delete t.items[id]; }
+      for (const id in t.items) if (!(id in items)) { this.add(`item:${id}`, stray, -t.items[id] - (c ? c.get(`item:${id}`) ?? 0 : 0), t); delete t.items[id]; }
       t.nItems = keys;
     }
   }

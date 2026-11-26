@@ -8,6 +8,7 @@ import { ALL_MODULES, checkModules } from '../../shared/modules';
 import type { EnterInfo, ServerMsg } from '../../shared/protocol';
 import { AOI, AOI_LEAVE, SNAP_EVERY, TICK_MS } from '../../shared/world';
 import { Game } from '../../server/game/game';
+import { partOwner } from '../../server/game/parts';
 import { startServer } from '../../server/net/server';
 import { MemoryStore } from '../../server/store';
 import { check, until } from '../harness';
@@ -112,7 +113,9 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
   await settled();
   const replies = got.slice(mark).filter((m) => m.t !== 'snap' && m.t !== 'pong').map((m) => m.t);
   check(RPG.every((m) => !s.game.commands.has(m.t)), `고르지 않은 모듈의 명령 ${RPG.length}가지는 서버에 등록되어 있지 않다`);
-  check(replies.length === 0 && ws.readyState === ws.OPEN && !me.auto && me.cls === '' && me.gold === 0 && !me.targetId, `웹소켓으로 직접 보내도 거절된다: 응답 없음(${replies.join(',') || '0개'}), 연결 유지, 상태 그대로`);
+  // 상태 그대로: 모듈의 칸(자동 사냥, 직업, 골드, 노리는 대상 …)이 엔티티에 생기지 않았다 (핵심만의 엔티티에는 처음부터 없다: engine/server/game/parts.ts)
+  const stray = Object.keys(me).filter((k) => partOwner(k) !== undefined);
+  check(replies.length === 0 && ws.readyState === ws.OPEN && stray.length === 0, `웹소켓으로 직접 보내도 거절된다: 응답 없음(${replies.join(',') || '0개'}), 연결 유지, 상태 그대로 (모듈의 칸 ${stray.join(',') || '없음'})`);
 
   // 저장: 이름을 바꾸면 저장된다. 핵심의 칸만 있다
   send({ t: 'rename', name: '공지기' });
