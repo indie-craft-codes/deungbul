@@ -8,7 +8,8 @@
 //   2. 10초 안에 안 꺼지면 강제로: 먼저 감시자(serve.pid)를 끄고(다시 띄우지 못하게), 그다음 그 포트에서 듣고 있는 프로세스(없으면 server.pid)를 끈다.
 //      끄기 전에 프로세스의 이름을 보고 cloudflared면 끄지 않는다. 깃발은 치운다.
 //   3. 로그(저장 파일 옆 server.log)를 server.log.prev로 돌린다 (앞 서버가 저장하고 꺼졌는지 볼 수 있게).
-//   4. 감시자를 뒤에 띄우고(이 스크립트가 끝나도 돈다), 포트가 열릴 때까지(60초) 기다린 뒤 /healthz를 찍는다.
+//   4. 감시자를 뒤에 띄우고(이 스크립트가 끝나도 돈다), 포트가 열릴 때까지(60초) 기다린 뒤 /healthz가 ticking:true가 될 때까지(20초) 다시 묻고 찍는다.
+//      20초 안에 되지 않으면 마지막 답과 로그의 끝을 찍고 코드 1로 끝난다 (서버와 감시자는 그대로 둔다).
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -59,10 +60,14 @@ function kill(pid, what) {
   if (/cloudflared/i.test(image)) { console.log(`  ${what} pid ${pid}는 cloudflared(${image})라 끄지 않습니다`); return false; }
   try { process.kill(pid, 'SIGKILL'); console.log(`  ${what}를 강제로 껐습니다 (pid ${pid}, ${image || '이름 모름'})`); return true; } catch (err) { console.log(`  ${what}(pid ${pid})를 끄지 못했습니다: ${err.message}`); return false; }
 }
+/** /healthz를 한 번 묻는다: 상태 번호와 본문 (닿지 못하면 status 0과 까닭) */
 const healthz = (port) => new Promise((ok) => {
-  const req = http.get({ host: '127.0.0.1', port, path: '/healthz', timeout: 2000 }, (res) => { let b = ''; res.on('data', (d) => { b += d; }); res.on('end', () => ok(`${res.statusCode} ${b}`)); });
-  req.on('error', (err) => ok(`오류 ${err.message}`)); req.on('timeout', () => { req.destroy(); ok('시간 초과'); });
+  const req = http.get({ host: '127.0.0.1', port, path: '/healthz', timeout: 2000 }, (res) => { let b = ''; res.on('data', (d) => { b += d; }); res.on('end', () => ok({ status: res.statusCode ?? 0, body: b })); });
+  req.on('error', (err) => ok({ status: 0, body: `오류 ${err.message}` })); req.on('timeout', () => { req.destroy(); ok({ status: 0, body: '시간 초과' }); });
 });
+/** 막 뜬 서버는 첫 틱 전에 503(ticking:false)을 줄 수 있다: ticking:true가 될 때까지 다시 묻는다 */
+const ticking = (h) => { try { return h.status === 200 && JSON.parse(h.body).ticking === true; } catch { return false; } };
+const HEALTH_WAIT_MS = 20_000;
 const tail = (file, n) => { try { return fs.readFileSync(file, 'utf8').trimEnd().split(/\r?\n/).slice(-n).join('\n'); } catch { return '(로그 없음)'; } };
 
 async function main() {
@@ -114,7 +119,15 @@ async function main() {
   console.log(`감시자를 띄웠습니다 (pid ${sup.pid}). 포트 ${s.port}이 열리기를 기다립니다…`);
   if (!(await waitFor(() => listening(s.port), 60_000, 500))) { console.log('서버가 뜨지 않았습니다. 로그의 끝:'); console.log(tail(s.log, 8)); return 1; }
   console.log(`서버가 떴습니다 (${s.game}, 포트 ${s.port})`);
-  console.log(`/healthz: ${await healthz(s.port)}`);
+  let h = await healthz(s.port);
+  const end = Date.now() + HEALTH_WAIT_MS;
+  while (!ticking(h) && Date.now() < end) { await sleep(250); h = await healthz(s.port); }
+  if (!ticking(h)) {
+    console.log(`/healthz가 ${HEALTH_WAIT_MS / 1000}초 안에 ticking:true가 되지 않았습니다 (마지막 답: ${h.status || ''} ${h.body}). 로그의 끝:`);
+    console.log(tail(s.log, 8));
+    return 1;
+  }
+  console.log(`/healthz: ${h.status} ${h.body}`);
   return 0;
 }
 
