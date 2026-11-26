@@ -18,3 +18,5 @@
 .mrow.rar2 .iname { color: var(--gold); }
 /* 가방 단추: 아이템 모듈은 던전 모듈의 의존으로만 있다. 이 게임의 아이템은 별정수 하나라 원정 탭에서 보인다 */
 #bagBtn { display: none; }
+/* 가까운 대상 공격 단추(전투 모듈): 단계와 던전에서 서버가 대신 싸우므로 쓸 일이 없다 */
+#tabBtn { display: none; }

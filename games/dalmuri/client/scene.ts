@@ -2,7 +2,8 @@
 // 영웅의 등급 꾸밈(희귀: 망토, 전설: 관과 빛고리), 몬스터의 날아가는 것(포자·불씨·얼음 조각), 미니맵의 바탕.
 import * as THREE from 'three';
 import { AREAS } from '@engine/shared/world';
-import { defaultHumanoid, type Look, limb, mat, type Model, part, registerMonsterModel, registerShot, setHumanoidBody, setMapPaint, view } from '@engine/client';
+import { defaultHumanoid, fitZoom, type Look, limb, mat, type Model, myStage, part, registerMonsterModel, registerShot, setCameraAim, setHumanoidBody, setMapPaint, view } from '@engine/client';
+import { CAMERA } from '@engine/shared/defs';
 import { ARENA, GATES, HEROES } from '../shared/content';
 
 const grass = [new THREE.Color(0x6f9a6a), new THREE.Color(0x5e8a62)];
@@ -106,6 +107,8 @@ export function initScene(): void {
   registerShot('spore', { shape: 'ball', color: 0x9ad04a, size: 0.6 });
   registerShot('ember', { shape: 'ball', color: 0xff7a3a, size: 0.6 });
   registerShot('shard', { shape: 'stick', color: 0xcfefff, size: 0.8 });
+  // 단계 안에서는 단계의 자리 전체를 비춘다 (폰 세로에서도 영웅·적이 함께 보이게). 들판·던전은 틀의 기본(나)
+  setCameraAim((me) => (me && myStage()?.run ? { x: ARENA.x, z: ARENA.z + 2, zoom: Math.min(CAMERA.zoomMax, Math.max(1, fitZoom(ARENA.x - 11, ARENA.z - 11, ARENA.x + 11, ARENA.z + 11))) } : null));
   view.setMood({ sky: 0xb8c8e8, hemi: 1.9, sun: 2.0, fogNear: 60, fogFar: 140 });
   setMapPaint((b) => {
     for (const a of AREAS) b.quad(a.x0, a.z0, a.x1, a.z1, a.id === 'camp' ? '#5f8a62' : a.id === 'goldvein' ? '#8a7a40' : '#3f5a80');
