@@ -27,3 +27,12 @@ button.kick { font-weight: 700; }
 #ballArrow { position: fixed; left: 0; top: 0; width: 32px; height: 32px; line-height: 32px; text-align: center; font-size: 24px; color: #fff;
   text-shadow: 0 0 4px #000, 0 0 8px #000; pointer-events: none; z-index: 20; }
 #ballArrow[hidden] { display: none; }
+/* 폰 세로: 점수판(가운데 위 자리)은 내 정보 창 아래 왼쪽에 놓이고, 오른쪽 위에는 대화창(폭 160px)이 있다. 대화 기록이 차면 대화창이 아래로 자라
+   점수판을 덮었다: 점수판의 폭을 대화창의 왼쪽까지로 줄이고, 팀 이름 아래에 사람 수를, 시계는 다음 줄에 둔다 */
+@media (max-width: 720px) {
+  #score { max-width: calc(100vw - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px)) - 160px - 8px);
+    padding: 4px 8px; gap: 0 8px; }
+  #score .team { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
+  #score .big { font-size: 22px; }
+  #score .clock { flex-basis: 100%; justify-content: center; margin-left: 0; }
+}

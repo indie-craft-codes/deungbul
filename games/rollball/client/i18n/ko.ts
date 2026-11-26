@@ -10,7 +10,9 @@ const team = (s: MsgArg) => TEAM[Number(s)] ?? '';
 export const koGame = {
   ui: {
     title: '굴림공',
-    hint: keyHints(['땅 클릭/WASD: 이동', '공에 부딪히면 밀린다', 'F: 차기', 'H: 우리 진영으로', 'M: 메뉴', 'N: 지도', 'Enter: 대화']),
+    hint: keyHints(['땅 클릭/WASD: 이동', '공에 부딪히면 밀린다', 'F: 차기', 'V: 전체 보기', 'H: 우리 진영으로', '휠: 멀리·가까이', 'M: 메뉴', 'N: 지도', 'Enter: 대화']),
+    // 미니맵 아래의 범례: 골문은 그 골문을 지키는 팀의 색
+    mapLegend: '■ 골문 · 흰 점 공과 사람',
     goingTown: '우리 진영으로 걸어갑니다.',
     // 이 게임의 창
     pickTitle: '팀을 고르세요',
@@ -18,6 +20,7 @@ export const koGame = {
     teamA: '노을',
     teamB: '물결',
     kick: '차기[[ (F)|]]',
+    overview: '전체[[ (V)|]]',
     switchTeam: '팀 바꾸기',
     phaseGoal: '골!',
     ballArrow: '공이 있는 쪽',

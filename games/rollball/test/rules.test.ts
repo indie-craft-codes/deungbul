@@ -165,6 +165,10 @@ function world() {
   check(sides[0].at(-1) === 0 && sides[1].at(-1) === 1 && b.sys.some((s) => s.startsWith('teamFull')), '접속한 둘이 팀을 고른다 (둘째는 같은 팀에 못 가고 다른 팀으로). 내 팀은 개인 상태로 온다');
   const ballId = g.pitch.ball.id;
   check(a.seen.has(ballId) && b.seen.has(ballId), '두 화면 모두 공(게임이 등록한 엔티티)을 본다');
+  // 사람마다의 팀은 엔티티에 실려 간다 (g.playerSync): 남에게는 상태 줄의 끝, 본인에게는 you의 끝. 전투가 없어 체력 칸은 없다
+  await until(() => a.youRaw[5] === 0 && b.youRaw[5] === 1 && a.lines.get(b.id)?.[5] === 1 && b.lines.get(a.id)?.[5] === 0, 10000);
+  check(a.youRaw.length === 6 && a.youRaw[5] === 0 && b.youRaw[5] === 1, `내 팀이 스냅샷의 you 끝에 온다 (${JSON.stringify(b.youRaw)})`);
+  check(a.lines.get(b.id)?.length === 6 && a.lines.get(b.id)?.[5] === 1 && b.lines.get(a.id)?.[5] === 0, `남의 팀이 그 사람의 상태 줄 끝에 온다: [id, x, z, 방향, 이동, 팀] (${JSON.stringify(a.lines.get(b.id))})`);
   // 알파가 공 옆으로 걸어가 차서 넣는다: 공을 골문 앞에 두고, 알파를 그 뒤에 세운다
   const pa = g.ents.get(a.id)!;
   g.pitch.ball.x = W - 4; g.pitch.ball.z = 0;
