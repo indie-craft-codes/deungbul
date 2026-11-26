@@ -1057,6 +1057,42 @@
   "Mist 1",
   "Mist 2"
  ],
+ "fmt.sweepCost": [
+  "d8bcf5e6610b4d05",
+  "Free",
+  "1 Sparks each · you have 1",
+  "3 Sparks each · you have 4",
+  "1,234,567 Sparks each · you have 1,234,567"
+ ],
+ "fmt.sweepGear": [
+  "fa32c9e51c3d174b",
+  "undefined gear pieces",
+  "0 gear pieces",
+  "1 gear piece",
+  "2 gear pieces"
+ ],
+ "fmt.sweepGot": [
+  "a0009389bf1366e9",
+  "Sparks +NaN",
+  "Sparks +0",
+  "Sparks +1",
+  "Sparks +3"
+ ],
+ "fmt.sweepKeyCost": "One key each",
+ "fmt.sweepTimes": [
+  "01e0876d336b103c",
+  "Sweep ×undefined",
+  "Sweep ×0",
+  "Sweep ×1",
+  "Sweep ×2"
+ ],
+ "fmt.sweepTitle": [
+  "fbcb7f39aa14d83f",
+  "undefined sweep ×undefined",
+  "0 sweep ×0",
+  "1 sweep ×1",
+  "3 sweep ×4"
+ ],
  "fmt.teamCount": [
   "1ff6c2d9ad194869",
   "undefined players",
@@ -1561,6 +1597,13 @@
   "2 reached level 3!"
  ],
  "msg.hpFull": "Your health is full.",
+ "msg.itemShort": [
+  "48e921d51ca34e29",
+  "Not enough Sparks (need NaN, have NaN).",
+  "Not enough Sparks (need 0, have 0).",
+  "Not enough Sparks (need 1, have 1).",
+  "Not enough Sparks (need 3, have 4)."
+ ],
  "msg.joined": [
   "9d24bb15d0f91008",
   "undefined joined.",
@@ -1895,6 +1938,20 @@
  ],
  "msg.statNone": "No attribute points to spend. You get 3 each level.",
  "msg.statReset": "All attribute points refunded. You can spend them again.",
+ "msg.sweepLocked": [
+  "6af8fc6ec523db12",
+  "undefined can't be swept yet. Clear it first.",
+  "0 can't be swept yet. Clear it first.",
+  "1 can't be swept yet. Clear it first.",
+  "3 can't be swept yet. Clear it first."
+ ],
+ "msg.swept": [
+  "123397f025874476",
+  "undefined swept ×undefined",
+  "0 swept ×0",
+  "1 swept ×1",
+  "3 swept ×4"
+ ],
  "msg.teamFull": " has more players. Pick another team.",
  "msg.teamJoined": "You joined .",
  "msg.teamStay": "You cannot switch teams in this game.",
@@ -2217,6 +2274,10 @@
  "ui.stale": "A new version is available. Please refresh the page.",
  "ui.stickLabel": "Movement joystick",
  "ui.stunned": "Stunned",
+ "ui.sweepDungeons": "Dungeon sweep",
+ "ui.sweepHead": "Sweep",
+ "ui.sweepInfo": "Finish a place you already cleared instantly, without fighting, for its normal reward (not the first-clear reward).",
+ "ui.sweepResult": "Sweep result",
  "ui.tabBuild": "Growth",
  "ui.tabDaily": "Daily",
  "ui.tabDevice": "Device",

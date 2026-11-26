@@ -5,13 +5,15 @@
 // 몬스터는 몰려온 적(swarm)으로 놓는다: 집으로 돌아가지 않고 죽으면 다시 나오지 않는다. 대상이 없으면 이 시스템이 사람이나 그 영웅을 노리게 한다.
 // 단계 안에서는 사람도 서버가 대신 싸운다 (STAGE_RULES.leaderAuto: 손으로 움직이면 1.5초 동안은 맡기지 않는다).
 // 방치 보상(idle 모듈)은 깬 단계의 수를 받는다 (g.idle.stageOf).
+// 소탕(STAGE_RULES.sweep): 깬 단계를 싸우지 않고 바로 끝내 보통 보상을 받는다 ({ t: 'stage', a: 'sweep', id, n }. 값은 소탕권이나 재화: systems/sweep.ts).
 // 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
-import { MONSTERS, STAGE_RULES, STAGES, classOf, isMonsterId, isSkillId, skillDef, stageIndex, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
+import { MONSTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, classOf, isMonsterId, isSkillId, skillDef, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, instanceLayer, isField } from '../layers';
+import { SWEEP_WHY, costCheck, costPay, costProblem, giveInto, sweepGot } from './sweep';
 import { CURS } from './wallet';
 
 /** 지갑과 가방에 넘기는 원인의 이름: 단계를 깬 보상 */
@@ -59,6 +61,8 @@ export class Stages {
     const respawn = g.rules.respawn;
     g.rules.respawn = (p) => (this.runs.has(p.id) ? { x: STAGE_RULES.arena.x, z: STAGE_RULES.arena.z, id: 'stage' } : respawn(p));
     if (g.has('idle')) g.idle.stageOf = (p) => this.cleared(p);
+    const bad = costProblem(g, STAGE_RULE_VIEW.sweep?.cost, '[stages] STAGE_RULES.sweep');
+    if (bad) throw new Error(bad);
   }
 
   // ---------- 읽기 ----------
@@ -85,6 +89,7 @@ export class Stages {
     if (m.a === 'start') { if (!this.runs.has(p.id)) this.start(p, this.curIndex(p)); }
     else if (m.a === 'leave') this.leave(p, true);
     else if (m.a === 'auto') { p.stage.auto = m.on === true; p.unsaved = true; }
+    else if (m.a === 'sweep' && typeof m.id === 'string') this.sweep(p, m.id, m.n);
     else if (m.a === 'go' && typeof m.id === 'string') {
       const i = stageIndex(m.id);
       if (i < 0) return;
@@ -93,6 +98,26 @@ export class Stages {
       p.stage.cur = STAGES[i].id; p.unsaved = true;
       this.start(p, i);
     }
+  }
+
+  // ---------- 소탕 ----------
+  /**
+   * 깬 단계를 n번 소탕한다: 값(STAGE_RULES.sweep.cost × n)을 치르고 그 단계의 보통 보상(reward, 처음 깬 보상 first는 아니다)을 n번 바로 준다.
+   * 깨지 않았거나 소탕할 수 없는 단계, 1~max가 아닌 횟수는 받지 않는다. 진행 중인 회차와 지금 단계는 바뀌지 않는다. 받은 것의 합을 돌려준다 (안 되면 null)
+   */
+  sweep(p: Ent, id: string, n: unknown): ReturnType<typeof sweepGot> | null {
+    const g = this.g, rule = STAGE_RULE_VIEW.sweep, i = stageIndex(id), s = STAGES[i];
+    if (!rule || p.bot || !s) return null;
+    if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > sweepMax(rule)) return null;
+    if (!stageSweepable(s) || i > this.bestIndex(p)) { g.notify(p, 'sweepLocked', 'stage', id); return null; }
+    if (!costCheck(g, p, rule.cost, n) || !costPay(g, p, rule.cost, n, 'cmd:stage:sweep')) return null;
+    const got = sweepGot('stage', id, n);
+    for (let k = 0; k < n; k++) giveInto(g, p, s.def.reward, SWEEP_WHY, got);
+    p.unsaved = true;
+    g.notify(p, 'swept', 'stage', id, n);
+    g.out.push({ id: p.id, msg: { t: 'sweep', got } });
+    g.fire('swept', p, 'stage', id, n);
+    return got;
   }
 
   // ---------- 회차 ----------

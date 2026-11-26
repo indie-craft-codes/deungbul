@@ -1,6 +1,6 @@
 // 던전의 모양과 도우미. 던전의 표는 게임의 내용에 있다 (@game/shared/content). 규칙은 engine/server/game/systems/dungeon.ts가 맡는다.
 import { DUNGEONS } from '../content';
-import type { Coin } from './collect';
+import type { Coin, SweepRule } from './collect';
 import type { Reward } from './growth';
 import type { MonsterId } from './monsters';
 
@@ -32,6 +32,11 @@ export interface DungeonDef {
    * perDay만 적은 던전은 예전과 글자까지 같다: 열쇠의 저장 칸도 개인 상태도 생기지 않는다
    */
   key?: DungeonKey;
+  /**
+   * 소탕: 열쇠를 쓰는 던전(key)을 한 번이라도 끝낸 사람이 싸우지 않고 바로 끝내 보통 보상(reward와, gear가 false가 아니면 장비)을 받는다.
+   * 한 번마다 열쇠 하나와 cost(있으면)를 쓴다. 보상은 우편이 아니라 지갑·가방으로 바로 (원인 sweep). 없으면 소탕이 없다
+   */
+  sweep?: SweepRule;
 }
 
 /**
@@ -58,3 +63,6 @@ export const clearRar = (def: Pick<DungeonDef, 'dropRar'>, rolled: number): numb
 export const runKey = (id: string): string => `run_${id}`;
 /** 열쇠를 쓰는 던전이 하나라도 있는가 (없으면 열쇠의 저장 칸·개인 상태·명령이 생기지 않는다) */
 export const hasDungeonKeys = (): boolean => Object.values(DUNGEON_TABLE).some((d) => !!d.key);
+
+/** 소탕할 수 있는 던전인가 (열쇠를 쓰고 sweep이 있는 던전) */
+export const dungeonSweepable = (id: string): boolean => { const d = DUNGEON_TABLE[id]; return !!d?.key && !!d.sweep; };

@@ -1,5 +1,6 @@
 // 던전 창: 문 가까이에서는 들어가는 조건과 입장 단추를, 안에서는 남은 시간과 적의 수, 나가기 단추를 보여 준다.
-import { DUNGEON_IDS, PORTAL_REACH, dungeonDef, hasDungeonKeys, runKey, type DungeonId, type KeysMe } from '../../shared/defs';
+// 소탕할 수 있는 열쇠 던전(DungeonDef.sweep)은 끝낸 적이 있으면 문 앞에 소탕의 줄('소탕 ×1'·'소탕 ×n')도 보인다 (소탕할 수 있는 던전이 없는 게임에는 붙지 않는다).
+import { DUNGEON_IDS, PORTAL_REACH, dungeonDef, dungeonSweepable, hasDungeonKeys, runKey, type DungeonId, type KeysMe } from '../../shared/defs';
 import { $ } from '../app';
 import { onFrame, onMsg, onSlow } from '../bus';
 import { AREAS, areaAt } from '../../shared/world';
@@ -7,7 +8,8 @@ import { L, forInput, onLangChange, t } from '../i18n';
 import { dungeonLabel } from '../i18n/names';
 import { send } from '../net';
 import { S } from '../state';
-import { keyView } from './collectcalc';
+import { keyView, sweepView } from './collectcalc';
+import { initSweep, sweepButtons, sweepHave } from './sweep';
 import { addNotices, banner } from './notify';
 import { makeTag, placeTag, setTagName, type Tag } from './tags';
 
@@ -21,6 +23,10 @@ const gates: { id: DungeonId; tag: Tag }[] = [];
 /** 열쇠를 쓰는 던전이 있는 게임: 서버가 보낸 내 열쇠 (개인 상태 'keys')와 열쇠 줄 (하루 횟수만 쓰는 게임에는 없다) */
 let keys: KeysMe | null = null;
 let keyRow: { box: HTMLElement; text: HTMLElement; buy: HTMLButtonElement } | null = null;
+/** 소탕의 줄 (소탕할 수 있는 던전이 있는 게임만) */
+let sweepRow: { box: HTMLElement; text: HTMLElement; btns: HTMLElement; sig: string } | null = null;
+/** 내 열쇠 (서버의 개인 상태 'keys'. 열쇠 던전이 없거나 아직 받지 않았으면 null) */
+export const myKeys = (): KeysMe | null => keys;
 
 const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -34,6 +40,7 @@ function render(now: number): void {
     ui.panel.hidden = false;
     ui.mates.hidden = true;
     if (keyRow) keyRow.box.hidden = true;
+    if (sweepRow) sweepRow.box.hidden = true;
     ui.name.textContent = dungeonLabel(loc, d.id).name;
     ui.runs.textContent = clock(left);
     ui.info.textContent = d.cleared ? loc.fmt.dungeonExit(left) : loc.fmt.dungeonFoes(d.foes);
@@ -47,6 +54,7 @@ function render(now: number): void {
   const def = dungeonDef(near);
   if (def.key) { renderKeys(near); return; }
   if (keyRow) keyRow.box.hidden = true;
+  if (sweepRow) sweepRow.box.hidden = true;
   const used = S.meta.daily.prog[runKey(near)] ?? 0;
   ui.name.textContent = dungeonLabel(loc, near).name;
   ui.runs.textContent = loc.fmt.dungeonRuns(def.perDay - used, def.perDay);
@@ -78,6 +86,16 @@ function renderKeys(id: DungeonId): void {
       keyRow.buy.disabled = k.buy.left <= 0 || (k.buy.cur === 'gold' ? me.gold : me.sparks) < k.buy.cost;
     }
   }
+  if (sweepRow) {
+    // 소탕: 끝낸 적이 있는 열쇠 던전만. 단추는 셈이 바뀔 때만 다시 만든다 (느린 주기마다 만들면 누르는 사이에 바뀐다)
+    const won = !!keys?.[id]?.won, view = dungeonSweepable(id) && won ? sweepView(def.sweep, sweepHave(def.sweep?.cost), k.n) : null;
+    sweepRow.box.hidden = !view || low;
+    if (view && !low) {
+      sweepRow.text.textContent = `${t('sweepHead')} · ${loc.fmt.sweepKeyCost()}${view.need ? ` · ${loc.fmt.sweepCost(view.what, view.need, view.have)}` : ''}`;
+      const sig = JSON.stringify([id, view, loc.code]);
+      if (sig !== sweepRow.sig) { sweepRow.sig = sig; sweepRow.btns.replaceChildren(...sweepButtons(view, (n) => send({ t: 'dungeonSweep', id, n }))); }
+    }
+  }
 }
 
 export function initDungeon(): void {
@@ -91,6 +109,15 @@ export function initDungeon(): void {
     buy.addEventListener('click', () => { if (near) send({ t: 'dungeonKey', id: near }); buy.blur(); });
     onMsg('me', (m) => { if (m.k === 'keys') { keys = m.s as KeysMe; render(performance.now()); } });
     addNotices({ feed: ['dungeonNoKeys', 'dungeonKeyBought', 'dungeonKeyLimit'] });
+    if (DUNGEON_IDS.some((id) => dungeonSweepable(id))) {
+      // 소탕의 줄: 열쇠 줄 아래, 입장 단추 위에
+      const sbox = document.createElement('div'), stext = document.createElement('span'), btns = document.createElement('span');
+      sbox.id = 'dgSweep'; sbox.hidden = true; btns.className = 'btns';
+      sbox.append(stext, btns);
+      ui.btn.before(sbox);
+      sweepRow = { box: sbox, text: stext, btns, sig: '' };
+      initSweep();
+    }
   }
   ui.btn.addEventListener('click', () => {
     if (S.dungeon.id) {

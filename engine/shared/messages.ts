@@ -151,4 +151,8 @@ export type MsgKey =
   | 'stageLast' // [] 마지막 단계까지 깼다: 같은 단계를 되풀이한다
   | 'dungeonNoKeys' // [던전 id] 열쇠가 없다
   | 'dungeonKeyBought' // [던전 id, 가진 열쇠] 열쇠를 샀다
-  | 'dungeonKeyLimit'; // [던전 id] 오늘은 더 살 수 없다
+  | 'dungeonKeyLimit' // [던전 id] 오늘은 더 살 수 없다
+  // ---- 소탕·오프라인 진행·픽업 배너·선택권 (stages.ts, dungeon.ts, gacha.ts) ----
+  | 'swept' // ['stage' | 'dungeon', id, 횟수] 소탕했다 (받은 것은 메시지 sweep)
+  | 'sweepLocked' // ['stage' | 'dungeon', id] 아직 소탕할 수 없다 (깨지 않았거나 소탕할 수 없는 곳)
+  | 'itemShort'; // [재화나 아이템 id, 드는 수, 가진 수] 값(소탕권, 선택권, 재화)이 모자란다

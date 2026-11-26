@@ -3,7 +3,7 @@
 // 서버(engine/server/game/systems/roster.ts, gacha.ts, squad.ts, stages.ts)와 화면(engine/client/hud/collect*.ts)이 함께 읽는다:
 // 영웅의 능력치·전투력, 뽑기의 확률(공개하는 확률표와 서버가 뽑는 확률이 이 한 곳의 셈이다), 단계의 목록은 여기의 함수로만 구한다.
 // 줄 위에서 영웅은 HEROES의 id로, 등급은 HERO_RARITIES의 번호(0부터, 클수록 귀하다)로, 단계는 '장-단계'의 id('1-3')로 오간다.
-import { BANNERS, CHAPTERS, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES } from '../content';
+import { BANNERS, CHAPTERS, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES, STAGE_RULES } from '../content';
 import type { Reward } from './growth';
 
 /** 뽑기와 영웅 레벨 업에 치르는 재화: 지갑이 다루는 것 가운데 사고팔 수 없는 경험치를 뺀 둘 (현금은 없다: 틀에 결제가 없다) */
@@ -96,6 +96,11 @@ export interface GachaRules {
   history: number;
 }
 
+/** 소탕의 값: 게임 안의 재화(cur) 또는 가방의 아이템(item, 소탕권) n개. 한 번 소탕할 때마다 */
+export type SweepCost = { cur: Coin; n: number } | { item: string; n: number };
+/** 소탕: 이미 깬 단계·던전을 싸우지 않고 바로 끝내 보통 보상(처음 깬 보상이 아니다)을 받는다. cost는 한 번마다의 값(없으면 공짜), max는 한 번에 할 수 있는 횟수(기본 10) */
+export interface SweepRule { cost?: SweepCost; max?: number }
+
 /** 편성의 규칙 */
 export interface SquadRules {
   /** 함께 싸우는 영웅의 수 */
@@ -129,6 +134,8 @@ export interface StageDef {
   rec: number;
   /** 제한 시간(초). 없으면 STAGE_RULES.timeS */
   timeS?: number;
+  /** false면 이 단계는 소탕할 수 없다 (STAGE_RULES.sweep이 있을 때. 기본은 깬 단계 모두) */
+  sweep?: boolean;
 }
 
 /** 장 하나: 이름의 문장 키와 단계들 (단계의 id는 '장 번호-단계 번호', 1부터) */
@@ -146,6 +153,8 @@ export interface StageRules {
   leaderAuto: boolean;
   /** 접속하면 바로 지금 단계로 들어간다 (방치형). 아니면 '도전'을 눌러야 들어간다 */
   enterOnJoin: boolean;
+  /** 소탕(깬 단계를 바로 끝내기)의 값과 한 번에 하는 수. 없으면 소탕이 없다 */
+  sweep?: SweepRule;
 }
 
 /** 방치 보상(idle 모듈)의 셈에 틀이 넘기는 것: 깬 단계의 수 (stages 모듈이 없으면 0) */
@@ -220,6 +229,13 @@ export const STAGES: readonly StageRef[] = CHAPTERS.flatMap((c, ch) => c.stages.
 export const stageIndex = (id: string): number => STAGES.findIndex((s) => s.id === id);
 /** 단계의 물결 수 (우두머리도 한 물결로 센다) */
 export const waveCount = (d: StageDef): number => d.waves.length + (d.boss ? 1 : 0);
+/** 단계의 규칙을 넓은 타입으로 본 것 (게임이 적은 STAGE_RULES의 타입에 선택 칸 sweep, offline이 없어도 읽힌다) */
+export const STAGE_RULE_VIEW: StageRules = STAGE_RULES;
+/** 한 번에 할 수 있는 소탕의 수 (SweepRule.max, 기본 10) */
+export const sweepMax = (r: SweepRule | undefined): number => Math.max(1, Math.floor(r?.max ?? 10));
+/** 그 단계를 소탕할 수 있는 단계인가 (깼는가는 따로 본다) */
+export const stageSweepable = (s: StageRef | undefined): boolean => !!STAGE_RULE_VIEW.sweep && !!s && s.def.sweep !== false;
+
 
 // ---------- 줄 위의 모양 (개인 상태와 메시지) ----------
 /** 개인 상태 'heroes': 가진 영웅마다 [레벨, 별, 조각] */
@@ -237,4 +253,6 @@ export interface StageRun { id: string; wave: number; waves: number; foes: numbe
 /** 개인 상태 'stage': 지금 단계, 가장 멀리 깬 단계(없으면 ''), 자동 진행, 안에 있으면 그 진행 */
 export interface StageMe { cur: string; best: string; auto: boolean; run: StageRun | null }
 /** 개인 상태 'keys' (열쇠를 쓰는 던전이 있는 게임): 던전마다 가진 열쇠와 오늘 산 수 */
-export type KeysMe = Record<string, { n: number; bought: number }>;
+export type KeysMe = Record<string, { n: number; bought: number; won?: boolean }>;
+/** 소탕의 결과 (메시지 sweep): 단계·던전, id, 횟수, 받은 것의 합: 재화(cur: 재화 id → 양), 아이템(goods: 아이템 id → 수), 장비의 수(equip) */
+export interface SweepGot { k: 'stage' | 'dungeon'; id: string; n: number; cur: Record<string, number>; goods: Record<string, number>; equip: number }

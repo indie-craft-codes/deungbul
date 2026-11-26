@@ -1,12 +1,13 @@
 // 던전: 문에서 들어가면 그 사람(과 파티)만의 인스턴스가 생긴다. 같은 지형을 여러 무리가 동시에 쓰지만
 // 층(Ent.layer)이 달라 서로 보이지 않고 싸우지 않는다. 우두머리를 잡으면 보상을 받고 밖으로 나온다.
 // 제한 시간을 넘기거나 모두 나가면 인스턴스는 사라진다. 내용과 수치는 games/deungbul/shared/content/dungeons.ts에 있다.
-import { DUNGEON_TABLE, ECON_HUNT, PORTAL_REACH, clearRar, dungeonDef, hasDungeonKeys, isDungeonId, runKey, type DungeonDef, type DungeonId, type KeysMe } from '../../../shared/defs';
+import { DUNGEON_TABLE, ECON_HUNT, PORTAL_REACH, clearRar, dungeonDef, dungeonSweepable, hasDungeonKeys, isDungeonId, runKey, sweepMax, type DungeonDef, type DungeonId, type KeysMe } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { AREAS, areaAt } from '../../../shared/world';
 import { dayOf, dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, instanceLayer, isField } from '../layers';
+import { SWEEP_WHY, costCheck, costPay, costProblem, giveInto, sweepGot } from './sweep';
 
 interface Run {
   id: DungeonId; def: DungeonDef; layer: number;
@@ -70,21 +71,52 @@ export class Dungeon {
     if (hasDungeonKeys()) {
       g.commands.set('dungeonKey', (p, m) => { if (isDungeonId(m.id)) this.buyKey(p, m.id); });
       g.saves.push({ name: 'keys', save: (p) => this.keysOf(p), load: (p, raw) => this.loadKeys(p, raw) });
-      g.personal.push({ name: 'keys', state: (p): KeysMe => { this.refill(p); return Object.fromEntries([...this.keyIds].map((id) => [id, { n: this.keyState(p, id).n, bought: this.keyState(p, id).bought }])); } });
+      g.personal.push({ name: 'keys', state: (p): KeysMe => { this.refill(p); return Object.fromEntries([...this.keyIds].map((id) => { const k = this.keyState(p, id); return [id, k.won ? { n: k.n, bought: k.bought, won: true } : { n: k.n, bought: k.bought }]; })); } });
       g.on('playerLeft', (id) => { this.keys.delete(id); });
+      // 소탕 (DungeonDef.sweep): 소탕할 수 있는 던전이 있는 게임에만 명령이 생긴다
+      if (Object.keys(DUNGEON_TABLE).some(dungeonSweepable)) {
+        for (const id of Object.keys(DUNGEON_TABLE)) { const bad = costProblem(g, DUNGEON_TABLE[id].sweep?.cost, `[dungeon] DUNGEONS.${id}.sweep`); if (bad) throw new Error(bad); }
+        g.commands.set('dungeonSweep', (p, m) => { if (isDungeonId(m.id)) this.sweep(p, m.id, m.n); });
+      }
     }
   }
 
   // ---------- 입장 열쇠 ----------
   /** 열쇠를 쓰는 던전들 */
   private readonly keyIds = new Set(Object.entries(DUNGEON_TABLE).filter(([, d]) => !!d.key).map(([id]) => id));
-  /** 사람(엔티티 id) → 던전마다의 열쇠: 가진 수, 오늘 산 수, 마지막으로 채운 날 */
-  private readonly keys = new Map<number, Record<string, { n: number; bought: number; day: string }>>();
+  /** 사람(엔티티 id) → 던전마다의 열쇠: 가진 수, 오늘 산 수, 마지막으로 채운 날, 끝낸 적이 있는가 (소탕의 조건) */
+  private readonly keys = new Map<number, Record<string, { n: number; bought: number; day: string; won?: boolean }>>();
   /** 그 사람의 그 던전의 열쇠 (처음이면 만든다: 그날 처음 채울 때 min(refill, cap)) */
-  private keyState(p: Ent, id: string): { n: number; bought: number; day: string } {
+  private keyState(p: Ent, id: string): { n: number; bought: number; day: string; won?: boolean } {
     let all = this.keys.get(p.id);
     if (!all) this.keys.set(p.id, all = {});
     return all[id] ??= { n: 0, bought: 0, day: '' };
+  }
+  /** 그 열쇠 던전을 끝낸 적이 있는가 (소탕할 수 있는가의 조건) */
+  won(p: Ent, id: string): boolean { return this.keyIds.has(id) && !!this.keyState(p, id).won; }
+
+  /**
+   * 열쇠 던전을 n번 소탕한다 (DungeonDef.sweep): 끝낸 적이 있어야 하고, 열쇠 n개와 값(cost × n)을 쓴다.
+   * 보상은 끝냈을 때의 것(reward와, gear가 false가 아니면 장비)을 n번, 우편이 아니라 지갑·가방으로 바로 준다(원인 sweep). 받은 것의 합을 돌려준다 (안 되면 null)
+   */
+  sweep(p: Ent, id: DungeonId, n: unknown): ReturnType<typeof sweepGot> | null {
+    const g = this.g, def = dungeonDef(id);
+    if (p.bot || !dungeonSweepable(id) || typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > sweepMax(def.sweep)) return null;
+    if (!this.won(p, id) || g.field(p, 'lv') < def.minLv) { g.notify(p, 'sweepLocked', 'dungeon', id); return null; }
+    const k = this.keyState(p, id);
+    if (this.keyCount(p, id) < n) { g.notify(p, 'dungeonNoKeys', id); return null; }
+    if (!costCheck(g, p, def.sweep!.cost, n) || !costPay(g, p, def.sweep!.cost, n, 'cmd:dungeonSweep')) return null;
+    k.n -= n;
+    const got = sweepGot('dungeon', id, n);
+    for (let i = 0; i < n; i++) {
+      giveInto(g, p, def.reward, SWEEP_WHY, got);
+      if (def.gear !== false && g.has('gear')) { const rar = clearRar(def, g.gear.roll(def.dropLv).rar); g.gear.give(p, g.gear.roll(def.dropLv, rar), SWEEP_WHY); got.equip++; }
+    }
+    p.unsaved = true;
+    g.notify(p, 'swept', 'dungeon', id, n);
+    g.out.push({ id: p.id, msg: { t: 'sweep', got } });
+    g.fire('swept', p, 'dungeon', id, n);
+    return got;
   }
   /** 날이 바뀌었으면 열쇠를 채운다: 하루가 지날 때마다 refill개, cap을 넘지 않게 (산 것으로 cap 위에 있으면 그대로). 산 수는 새로 센다 */
   private refill(p: Ent): void {
@@ -119,11 +151,12 @@ export class Dungeon {
     p.unsaved = true;
     g.notify(p, 'dungeonKeyBought', id, k.n);
   }
-  private keysOf(p: Ent): Record<string, [number, number, string]> | undefined {
+  private keysOf(p: Ent): Record<string, [number, number, string] | [number, number, string, 1]> | undefined {
     const all = this.keys.get(p.id);
     if (!all) return undefined;
-    const out: Record<string, [number, number, string]> = {};
-    for (const [id, k] of Object.entries(all)) if (this.keyIds.has(id)) out[id] = [k.n, k.bought, k.day];
+    const out: Record<string, [number, number, string] | [number, number, string, 1]> = {};
+    // 끝낸 적이 있으면 넷째 칸 1 (소탕의 조건). 없으면 예전처럼 셋
+    for (const [id, k] of Object.entries(all)) if (this.keyIds.has(id)) out[id] = k.won ? [k.n, k.bought, k.day, 1] : [k.n, k.bought, k.day];
     return Object.keys(out).length ? out : undefined;
   }
   private loadKeys(p: Ent, raw: unknown): void {
@@ -133,6 +166,7 @@ export class Dungeon {
       const int = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? Math.max(0, Math.min(9999, Math.floor(x))) : 0);
       const k = this.keyState(p, id);
       k.n = int(v[0]); k.bought = int(v[1]); k.day = typeof v[2] === 'string' ? v[2].slice(0, 10) : '';
+      if (v[3] === 1) k.won = true;
     }
   }
 
@@ -227,6 +261,7 @@ export class Dungeon {
     const g = this.g;
     run.cleared = true; run.exit = run.def.exitS;
     for (const p of this.players(run)) {
+      if (run.def.key && !this.keyState(p, run.id).won) { this.keyState(p, run.id).won = true; p.unsaved = true; } // 소탕의 조건 (열쇠 던전만)
       g.mail.send(p, 'dungeon', [run.id], run.def.reward);
       if (run.def.gear !== false) {
         const rar = clearRar(run.def, g.gear.roll(run.def.dropLv).rar);

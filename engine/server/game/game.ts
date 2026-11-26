@@ -88,6 +88,8 @@ export interface Hooks extends HooksExt {
   heroChanged: (p: Ent, id: string) => void;
   /** [stages] 단계를 깼다: 단계 id와 처음 깼는가 */
   stageCleared: (p: Ent, id: string, first: boolean) => void;
+  /** [stages, dungeon] 깬 단계나 열쇠 던전을 n번 소탕했다 */
+  swept: (p: Ent, kind: 'stage' | 'dungeon', id: string, n: number) => void;
 }
 
 /**

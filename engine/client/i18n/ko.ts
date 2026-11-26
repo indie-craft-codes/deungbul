@@ -165,6 +165,11 @@ export const koBase = (n: ContentNames) => {
       stageClearBig: '단계 깸!',
       stageFailBig: '실패: 깬 단계로 돌아갑니다',
       dungeonKeyBuy: '열쇠 사기',
+      // 소탕 (hud/sweep.ts, hud/stagebar.ts, hud/dungeon.ts)
+      sweepHead: '소탕',
+      sweepInfo: '이미 깬 곳을 싸우지 않고 바로 끝내 보통 보상을 받습니다 (처음 깬 보상은 없습니다).',
+      sweepResult: '소탕 결과',
+      sweepDungeons: '던전 소탕',
       tabDevice: '기기',
       deviceMoveHead: '다른 기기로 옮기기',
       deviceMoveInfo: '코드를 받아 다른 기기의 게임에 넣으면 이 캐릭터가 그 기기로 옮겨 갑니다. 옮긴 뒤에는 이 기기에서 이 캐릭터로 들어올 수 없습니다. 코드는 10분 동안 한 번만 쓸 수 있습니다. 남에게 알려 주면 그 사람이 캐릭터를 가져가니 조심하세요.',
@@ -489,6 +494,12 @@ export const koBase = (n: ContentNames) => {
       dungeonKeys: (n: number, cap: number) => `열쇠 ${n} / ${cap}`,
       dungeonKeyInfo: (refill: number, cap: number) => `열쇠 하나로 한 번 들어갑니다. 날마다 ${refill}개씩 채워집니다 (${cap}개까지).`,
       dungeonKeyPrice: (cost: number, cur: string, left: number) => `${curName(cur)} ${num(cost)} · 오늘 ${left}번 더`,
+      sweepTimes: (n: number) => `소탕 ×${n}`,
+      sweepCost: (what: string, need: number, have: number) => (need > 0 ? `한 번에 ${grantWhat(what)} ${num(need)} · 가진 것 ${num(have)}` : '값 없음'),
+      sweepTitle: (kind: string, id: string, n: number) => `${kind === 'stage' ? id : dungeonName(id)} 소탕 ×${n}`,
+      sweepGot: (what: string, n: number) => `${grantWhat(what)} +${num(n)}`,
+      sweepGear: (n: number) => `장비 ${num(n)}점`,
+      sweepKeyCost: () => '한 번에 열쇠 하나',
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -637,6 +648,9 @@ export const koBase = (n: ContentNames) => {
       dungeonNoKeys: (a) => `${dungeonName(a[0])}의 열쇠가 없습니다. 날이 바뀌면 채워집니다.`,
       dungeonKeyBought: (a) => `${dungeonName(a[0])}의 열쇠를 샀습니다 (${a[1]}개).`,
       dungeonKeyLimit: (a) => `${dungeonName(a[0])}의 열쇠는 오늘 더 살 수 없습니다.`,
+      swept: (a) => `${a[0] === 'stage' ? a[1] : dungeonName(a[1])} 소탕 ×${a[2]} 완료`,
+      sweepLocked: (a) => `${a[0] === 'stage' ? a[1] : dungeonName(a[1])}은(는) 아직 소탕할 수 없습니다. 먼저 깨세요.`,
+      itemShort: (a) => `${grantWhat(a[0])}이(가) 모자랍니다 (필요 ${num(a[1])}, 가진 것 ${num(a[2])}).`,
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

@@ -1,8 +1,8 @@
 // 수집형·방치형 화면의 셈 (영웅 탭, 뽑기의 확률표, 편성, 단계 막대, 던전 열쇠): 화면 요소도 three.js도 읽지 않는다 (시험 engine/test/collect/client.test.ts가 그대로 읽는다).
 // 그리는 것은 hud/collect.ts(메뉴 탭과 영웅의 겉모습)와 hud/stagebar.ts(단계 막대). 확률은 서버와 같은 셈(engine/shared/defs/collect.ts)이다.
 import {
-  BANNER_TABLE, HERO_IDS, HERO_RARITIES, HERO_RULES, STAGES, bannerOdds, heroDef, heroPower, heroStats, pityOdds, poolOdds, rarityDef, rarityOdds, waveCount,
-  type BannerDef, type HeroesMe, type Odds, type StageMe, type StageRun,
+  BANNER_TABLE, HERO_IDS, HERO_RARITIES, HERO_RULES, STAGES, bannerOdds, heroDef, heroPower, heroStats, pityOdds, poolOdds, rarityDef, rarityOdds, stageSweepable, sweepMax, waveCount,
+  type BannerDef, type HeroesMe, type Odds, type StageMe, type StageRun, type SweepRule,
 } from '../../shared/defs';
 import type { KeysMe } from '../../shared/defs/collect';
 import type { DungeonDef } from '../../shared/defs/dungeons';
@@ -90,11 +90,23 @@ export function stageSegments(bar: StageBar): { fill: number; boss: boolean }[] 
   });
 }
 
-/** 단계 탭의 한 줄: id, 장, 깼는가, 갈 수 있는가(깬 단계와 그다음), 지금 단계인가, 권장 전투력 */
-export interface StageRow { id: string; ch: number; cleared: boolean; open: boolean; now: boolean; rec: number; boss: boolean }
+/** 단계 탭의 한 줄: id, 장, 깼는가, 갈 수 있는가(깬 단계와 그다음), 지금 단계인가, 권장 전투력, 소탕할 수 있는가(깼고 소탕이 되는 단계) */
+export interface StageRow { id: string; ch: number; cleared: boolean; open: boolean; now: boolean; rec: number; boss: boolean; sweep: boolean }
 export function stageRows(me: StageMe | null): StageRow[] {
   const best = me ? STAGES.findIndex((s) => s.id === me.best) : -1;
-  return STAGES.map((s) => ({ id: s.id, ch: s.ch, cleared: s.i <= best, open: s.i <= best + 1, now: !!me && s.id === (me.run?.id ?? me.cur), rec: s.def.rec, boss: !!s.def.boss }));
+  return STAGES.map((s) => ({ id: s.id, ch: s.ch, cleared: s.i <= best, open: s.i <= best + 1, now: !!me && s.id === (me.run?.id ?? me.cur), rec: s.def.rec, boss: !!s.def.boss, sweep: s.i <= best && stageSweepable(s) }));
+}
+
+/**
+ * 소탕 단추의 셈: 한 번의 값(무엇을 몇 개), 가진 것, 지금 할 수 있는 횟수(값·열쇠·한 번의 상한으로), 단추의 횟수들(×1과 할 수 있는 만큼).
+ * have: 값으로 치르는 재화나 아이템의 가진 수, keys: 열쇠 던전이면 가진 열쇠 (단계는 무한). rule이 없으면 null (소탕이 없다)
+ */
+export interface SweepView { what: string; need: number; have: number; can: number; max: number; counts: number[] }
+export function sweepView(rule: SweepRule | undefined, have: number, keys = Infinity): SweepView | null {
+  if (!rule) return null;
+  const c = rule.cost, need = c && c.n > 0 ? Math.ceil(c.n) : 0, what = c ? ('item' in c ? c.item : c.cur) : '';
+  const max = sweepMax(rule), can = Math.max(0, Math.min(max, need > 0 ? Math.floor(have / need) : Infinity, keys));
+  return { what, need, have, can, max, counts: can > 1 ? [1, can] : max > 1 ? [1, max] : [1] };
 }
 
 /** 던전 창의 열쇠 줄: 가진 수, 상한, 날마다 채워지는 수, 살 수 있으면 값과 오늘 남은 수 */
