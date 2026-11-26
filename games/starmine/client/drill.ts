@@ -45,7 +45,7 @@ export function initDrill(): void {
   addMarks(() => [{ x: DRILL.x, z: DRILL.z, color: G.drill.lv > 0 ? MARK.lit : MARK.dark, shape: 'square', edge: true }, ...SHOPS.map((s): Mark => ({ x: s.x, z: s.z, color: MARK.shop, shape: 'dot' }))]);
   addMapPlaces(() => [{ x: DRILL.x, z: DRILL.z + 3, name: t('mine'), kind: 'town', info: t('mineInfo') }]);
   addMapLabels(() => [{ x: deep.x, z: deep.z - 9, text: t('deepVein'), big: true }]);
-  // 이 작은 게임에 맞지 않는 거래소와 길드 탭은 감춘다 (서버의 기능은 그대로다)
+  // 메뉴 탭의 차례. 거래소와 길드는 모듈을 고르지 않아(shared/content의 MODULES) 탭도 서버의 기능도 없다
   setMenuTabs(['gear', 'build', 'daily', 'mail', 'rank']);
 
   const take = () => send({ t: 'drillTake' });

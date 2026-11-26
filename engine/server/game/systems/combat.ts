@@ -48,7 +48,7 @@ export class Combat {
    * 쿨다운과 사거리는 부른 쪽(useSkill)이 본다. 시험과 게임의 규칙도 이것으로 효과만 낼 수 있다
    */
   cast(p: Ent, id: SkillId, target?: Ent): void {
-    const g = this.g, def = skillDef(id), fx = def.effect, up = g.build.skillScale(p, id); // 강화한 기술은 피해와 회복이 커진다
+    const g = this.g, def = skillDef(id), fx = def.effect, up = g.has('build') ? g.build.skillScale(p, id) : 1; // 강화한 기술은 피해와 회복이 커진다
     const stun = (m: Ent, s: number | undefined) => { if (s && !m.dead && m.kind === 'm') { m.stunUntil = g.clock + s; m.moving = false; g.emit(['stun', m.id, s]); } };
     /** 나와(allies면 범위 안의 사람들도) 같은 층의 사람들 */
     const friends = (allies: boolean | undefined): Ent[] => (allies ? [...g.ents.values()] : [p]).filter((e) => e.kind === 'p' && !e.dead && e.layer === p.layer && (e === p || dist(p, e) <= (def.radius ?? 0)));
@@ -166,12 +166,12 @@ export class Combat {
     m.hitters.clear();
     for (const e of g.ents.values()) if (e.targetId === m.id) e.targetId = 0;
     // 곁에 있던 파티원도 함께 잡은 것으로 친다
-    g.fire('monsterKilled', m, g.party.share(hitters, m));
+    g.fire('monsterKilled', m, g.has('party') ? g.party.share(hitters, m) : hitters);
   }
 
   private killPlayer(p: Ent): void {
     const g = this.g;
-    // 벌은 없다: 켜져 있는 가장 가까운 등탑 앞에서 온전한 체력으로 다시 일어난다
+    // 벌은 없다: 게임이 정한 곳(g.rules.respawn)에서 온전한 체력으로 다시 일어난다
     const at = g.rules.respawn(p);
     p.hp = p.maxHp; p.x = at.x; p.z = at.z; p.moving = false; p.path = null; p.targetId = 0; p.lastHurt = -99; p.dots = [];
     resolve(p, g.world.obstacles);
@@ -189,7 +189,7 @@ export class Combat {
     if (p.itemCd > 0) p.itemCd -= dt;
     for (let i = 0; i < p.cds.length; i++) if (p.cds[i] > 0) p.cds[i] = Math.max(0, p.cds[i] - dt);
     if (p.hp < p.maxHp && g.clock - p.lastHurt > COMBAT.regenAfterS) p.hp = Math.min(p.maxHp, p.hp + COMBAT.regenPerS * g.mods.product('regen', p) * dt);
-    // 이동 속도는 클라이언트가 같은 식으로 예측하므로 보정 목록이 아니라, 내가 있는 구역의 등탑 단계에서 바로 구한다
+    // 이동 속도는 클라이언트가 같은 식으로 예측하므로 보정 목록이 아니라 게임의 규칙(g.rules.speed)에서 바로 구한다
     const speed = g.rules.speed(p);
 
     if (!p.targetId) { if (p.moving) g.movement.walk(p, speed, dt); return; }

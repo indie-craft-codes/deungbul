@@ -11,4 +11,9 @@ export * from './items';
 export * from './monsters';
 export * from './party';
 export * from './social';
+
+// ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
+// 전통적인 MMORPG: 틀의 모듈을 모두 쓴다
+import { RPG_MODULES } from '@engine/shared/modules';
+export const MODULES = RPG_MODULES;
 export { MAP } from './map';

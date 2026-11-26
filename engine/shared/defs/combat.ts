@@ -1,5 +1,5 @@
 // 직업과 기술의 모양, 그리고 게임의 표(CLASSES, SKILL_DEFS)에서 값을 꺼내는 도우미. 표와 수치는 게임의 내용에 있다 (@game/shared/content).
-import { CLASSES, DEFAULT_CLASS, HP_PER_LEVEL, MAP, SKILL_DEFS } from '@game/shared/content';
+import { CLASSES, DEFAULT_CLASS, HP_PER_LEVEL, MAP, SKILL_DEFS } from '../content';
 
 /**
  * 기술이 하는 일. 서버(engine/server/game/systems/combat.ts)는 기술 이름이 아니라 이 종류만 보고 처리하므로,
@@ -67,7 +67,9 @@ export const CLASS_IDS = Object.keys(CLASSES) as ClassId[];
 export const isClassId = (v: unknown): v is ClassId => typeof v === 'string' && Object.hasOwn(CLASSES, v);
 /** 무기 이름을 고를 때 쓰는 손 모양 (직업이 없으면 기본 직업의 것) */
 export const handOf = (cls: unknown): ClassDef['hand'] => classOf(typeof cls === 'string' ? cls : '').hand;
-export const classOf = (cls: string): ClassDef => CLASSES[isClassId(cls) ? cls : DEFAULT_CLASS];
+/** 직업이 없는 게임(직업 모듈을 쓰지 않거나 CLASSES가 빈 표)의 캐릭터가 쓰는 자리 값: 기술도 손에 든 것도 없다 */
+export const NO_CLASS: ClassDef = { hp: 100, range: 2, basic: [0, 0], skills: [], hand: '' };
+export const classOf = (cls: string): ClassDef => (CLASSES as Readonly<Record<string, ClassDef>>)[isClassId(cls) ? cls : DEFAULT_CLASS] ?? NO_CLASS;
 
 export const maxHpFor = (cls: string, lv: number): number => classOf(cls).hp + HP_PER_LEVEL * (lv - 1);
-export const SPAWN = MAP.spawn; // 등탑 앞: 접속과 부활 지점 (자리는 맵 정의에 있다)
+export const SPAWN = MAP.spawn; // 처음 서는 곳: 접속과 (게임이 정하지 않았으면) 부활의 자리 (맵 정의에 있다)

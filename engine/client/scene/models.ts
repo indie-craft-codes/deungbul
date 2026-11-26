@@ -279,6 +279,21 @@ export function makeBlob(): Model {
   return { root, blob };
 }
 
+/** 땅에 놓인 상자 하나 (게임의 엔티티 종류를 빨리 그릴 때: registerKind). size는 한 변(m) */
+export function makeBox(color = 0x9a9a9a, size = 0.6): Model {
+  const root = new THREE.Group();
+  const box = part(new THREE.BoxGeometry(size, size, size), mat(color), 0, size / 2, 0);
+  root.add(box);
+  return { root, blob: box };
+}
+/** 땅 위에 떠 있는 공 하나 (게임의 엔티티 종류를 빨리 그릴 때). r은 반지름(m) */
+export function makeBall(color = 0xf0c040, r = 0.4): Model {
+  const root = new THREE.Group();
+  const ball = part(new THREE.IcosahedronGeometry(r, 1), mat(color), 0, r + 0.05, 0);
+  root.add(ball);
+  return { root, blob: ball };
+}
+
 /** 몬스터 모델. type은 MONSTERS의 키. 모델 파일(registerMonsterAsset)이 있으면 그것을, 없으면 코드 모델을, 등록되지 않은 종류는 기본 모델로 그린다. */
 export function makeMonster(type: string): Model {
   const m = (MONSTER_MODELS.get(type) ?? makeBlob)(type);

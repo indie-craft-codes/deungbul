@@ -80,7 +80,7 @@ function noonOf(day: unknown): number {
     const d: string[] = [];
     const OLD_CELLS = ['quest', 'contrib', 'tier', 'rested'];
     for (const k of Object.keys(was)) if (k !== 'ext' && k !== 'need' && !OLD_CELLS.includes(k)) d.push(...diff(was[k], is[k], k));
-    d.push(...diff(needFor(save.lv), out.need, 'need (레벨에서 다시 구한 값)'));
+    d.push(...diff(needFor(save.lv ?? 1), out.need, 'need (레벨에서 다시 구한 값)'));
     for (const k of Object.keys(wasExt)) {
       if (k !== 'gear') { d.push(...diff(wasExt[k], isExt[k], `ext.${k}`)); continue; }
       const a = wasExt.gear as GearSave, b = isExt.gear as GearSave;

@@ -1,36 +1,100 @@
 # 이 틀로 게임 만들기
 
-이 저장소는 두 덩어리다: 다른 게임에서도 그대로 쓰는 **틀**(`engine/`)과 게임들(`games/`). 이 문서는 틀 위에 새 게임을 만드는 차례를 적는다. 따라가며 읽을 본보기는 작은 예제 게임 `games/sample`("모닥불 사냥터")이다. 약 580줄(시험 빼고)이고, 이 문서의 차례대로 빈 폴더에서 채운 것이다. 큰 본보기가 필요하면 `games/deungbul`(등불지기)을 본다.
+이 저장소는 두 덩어리다: 다른 게임에서도 그대로 쓰는 **틀**(`engine/`)과 게임들(`games/`). 이 문서는 틀 위에 새 게임을 만드는 차례를 적는다.
 
-- 문서의 코드는 예제에서 그대로 따온 것이다. 코드 울타리의 머리에 적힌 경로가 그 출처다. `npm run test:sample`이 문서의 조각과 예제가 같은지 검사한다.
+틀은 **장르와 무관한 핵심**과 **고를 수 있는 모듈**로 되어 있다. 새 게임은 이 차례로 만든다.
+
+1. **핵심**: 맵과 쓸 모듈의 목록(`MAP`, `MODULES`)만 적으면 서버와 화면이 뜬다. 접속, 이동, 지도, 대화, 채널, 저장은 늘 있다(1절).
+2. **모듈 고르기**: 전투, 직업, 아이템, 장비, 재화, 우편, 파티, 길드, 던전 … 가운데 쓸 것을 내용의 `MODULES` 한 곳에 적는다. 고르지 않은 모듈은 서버의 명령·저장 칸도, 화면의 창·단추·메뉴 탭·단축키도 생기지 않는다(1절).
+3. **모듈별 내용**: 고른 모듈의 표(직업, 몬스터, 아이템 …)와 수치를 채운다(3절). 고르지 않은 모듈의 이름은 적지 않는다.
+4. **이 게임만의 규칙과 엔티티**: 서버 시스템, 게임이 등록하는 엔티티 종류(공, 구조물, 떨어진 물건 …)와 그 화면(6절, 12절).
+
+본보기는 둘이다.
+
+- **전투가 없는 게임**: 12절의 "공 마당"(`engine/test/core/`). 모듈을 하나도 고르지 않고, 게임이 등록한 엔티티(공)를 줍는다. 약 80줄. **RPG가 아닌 게임을 만든다면 12절부터 읽는다.**
+- **RPG 모듈을 쓰는 게임**: 작은 예제 `games/sample`("모닥불 사냥터", 약 580줄. 시험 빼고). 2절부터 이 문서의 차례대로 빈 폴더에서 채운 것이다. 큰 본보기는 `games/deungbul`(등불지기: 모듈 전부).
+
+- 문서의 코드는 본보기에서 그대로 따온 것이다. 코드 울타리의 머리에 적힌 경로가 그 출처다. `npm run test:sample`이 문서의 조각과 그 파일이 같은지 검사한다.
 - 조각 안의 `…`만 있는 줄은 건너뛴 자리다.
 - 명령은 모두 **저장소 뿌리**에서 실행한다.
 
-## 1. 틀이 주는 것
+## 1. 틀의 짜임: 핵심과 선택 모듈
 
-게임이 아무것도 더하지 않아도 되는 것들이다. 내용(직업, 몬스터, 아이템, 맵)만 채우면 돈다.
+### 장르의 범위
+
+틀은 **여럿이 함께 접속하는 쿼터뷰(비스듬히 내려다보는) 3D 월드**의 게임을 만든다. 서버가 위치와 결과를 정하고(서버 권위), 화면은 "무엇을 하고 싶다"만 보낸다.
+
+| 되는 것 | 어떻게 |
+|---|---|
+| 전통적인 탭 타깃 MMORPG (등불지기) | 모듈 전부 |
+| 협동 던전, 방치형, 마을 방어 같은 RPG 변형 (`games/cave`, `starmine`, `bastion`) | RPG 모듈 가운데 일부 + 게임의 규칙 |
+| 전투 없는 월드: 모으기·줍기, 술래잡기, 꾸미기·농장, 산책·대화 공간, 보물찾기, 가벼운 파티 게임 | 핵심만 + 게임이 등록하는 엔티티 종류(12절)와 명령 |
+| 재화·아이템은 있고 전투는 없는 게임 (가게 놀이, 채집과 거래) | `economy`, `items`, `mail` … 만 고른다 (전투·직업 없이) |
+| 액션성이 있는 게임 (공·발사체를 다루는 놀이) | 핵심 + 게임의 엔티티 종류. 틱마다 서버가 움직이고 시야 안의 화면에 값을 실어 보낸다 |
+
+| 안 되는 것 (틀을 고쳐야 한다) | 까닭 |
+|---|---|
+| 1인칭·옆 스크롤·위에서 곧장 내려다보는 시점, 높낮이가 있는 지형 | 카메라와 장면(`engine/client/scene/view.ts`)이 쿼터뷰의 평평한 땅을 전제한다. 땅은 지역(네모)들이고 장애물은 둥근 기둥이다 |
+| 빠른 반응이 승패를 가르는 액션(격투, 슈팅의 정밀 판정) | 서버는 20Hz로 돌고 화면에 10Hz로 보낸다(`NET`으로 바꿀 수는 있다). 지연 보정·되감기 판정이 없다 |
+| 턴제, 카드, 보드 게임처럼 월드가 없는 게임 | 핵심이 '월드 안의 사람'(이동, 시야, 채널)이다. 쓸 수는 있지만 거의 다 게임이 만든다 |
+| 한 서버에 수천 명이 한 화면에 | 측정된 상한은 접속 300(`docs/infra.md`). 시야(AOI)로 나누지만 샤딩은 없다 |
+| 플레이어가 아닌 사람끼리의 물리(밀기, 충돌하는 공) | 길찾기와 장애물 피하기만 있다. 엔티티끼리 부딪히는 물리는 게임이 틱에서 셈한다 |
+
+### 핵심 (늘 있다)
+
+게임이 아무것도 더하지 않아도 되는 것들이다. 모듈을 하나도 고르지 않아도 돈다.
 
 | 묶음 | 기능 |
 |---|---|
-| 접속 | 이름 없이 바로 접속, 브라우저에 간직한 값으로 캐릭터 이어받기, 끊기면 다시 접속, 이름 바꾸기, 서버 가득 참 안내 |
-| 이동 | 땅 누르기·WASD·터치 조이스틱, 길찾기, 서버 판정과 화면 예측 |
-| 전투 | 기본 공격, 직업마다 기술 셋(한 대상 피해 / 범위 피해와 느려짐 / 회복), 치명타, 자연 회복, 쓰러짐과 다시 일어남 |
-| 몬스터 | 무리와 되살아남, 먼저 덤비기, 집으로 돌아가기, 필드 보스(선택) |
-| 성장 | 레벨과 경험치, 능력치 찍기와 기술 강화, 직업 고르기와 바꾸기, 기술 효과 여섯 가지(단일·범위 피해, 회복, 강화, 돌진, 지속 피해. 기절·느려짐) |
-| 물건 | 상점과 물약, 재료 떨어뜨리기, 대장간 제작(선택), 떨어지는 장비(등급, 옵션, 강화, 팔기), 가방 |
-| 날마다 | 우편, 방치 보상, 출석, 일일 임무, 순위 |
-| 함께 | 대화와 금칙어·차단·신고, 파티, 채널, 길드, 거래소, 던전 인스턴스(선택) |
-| 자동 | 자동 사냥, 창을 닫아도 이어지는 자리 비움 사냥, 지도에서 고른 곳으로 자동 이동(사냥터면 도착해서 자동 사냥), 봇 |
-| 화면 | 3D 장면과 카메라, 내 정보(걸린 강화와 남은 시간)·대상·기술 단추, 미니맵, 전체 지도(장소 목록, 정보 카드, 확대·끌기), 알림 세 가지(가운데, 흘러가는 것, 대화창), 메뉴(장비·성장·우편·일일·거래소·길드·순위: 게임이 고르고 더한다), 소리, PC와 폰(가로·세로) 배치, 여러 언어 |
-| 운영 | 저장(SQLite 또는 메모리), 재시작 뒤 이어 가기, 서버 지표, 재화 흐름 장부 |
+| 접속 | 이름 없이 바로 접속, 브라우저에 간직한 값으로 캐릭터 이어받기, 끊기면 다시 접속, 이름 바꾸기, 서버 가득 참 안내, 프로토콜 번호(어긋나면 새로고침 안내) |
+| 이동 | 땅 누르기·WASD·터치 조이스틱, 길찾기, 서버 판정과 화면 예측, 집으로(H) |
+| 월드 | 맵·지역·장애물·나무와 바위, 엔티티와 시야(AOI) 동기화, 채널(층), 게임이 등록하는 엔티티 종류(`g.defineKind`, `registerKind`) |
+| 사람 사이 | 대화와 금칙어·차단·신고, 사람 카드, 봇(시험·부하용) |
+| 운영 | 저장(SQLite 또는 메모리)과 저장 형식의 이전·백업, 제재·관리자 통로, 기기 옮기기, `/healthz`·`/metrics`, 재시작 뒤 이어 가기 |
+| 화면 | 3D 장면과 카메라, 내 이름·접속자 수, 미니맵, 전체 지도(장소 목록, 정보 카드, 걸어가기), 알림 세 가지, 메뉴(소리, '기기' 탭과 게임의 탭), PC와 폰(가로·세로) 배치, 여러 언어 |
 
-게임이 채우는 것은 세 가지다.
+### 선택 모듈
 
-1. **내용**: 맵, 직업과 기술, 몬스터, 아이템. 틀이 요구하는 이름과 모양이 정해져 있다(내용 계약).
-2. **겉모습과 문장**: 땅과 나무의 색, 건물, 몬스터 모델, 이름과 문장(언어마다).
-3. **이 게임만의 규칙**(없어도 된다): 서버 시스템과 그 화면. 틀의 접점에 스스로 등록한다.
+게임은 쓸 모듈을 내용의 `MODULES`에 적는다(`engine/shared/modules.ts`의 표). 의존하는 모듈이 빠지면 서버와 화면이 시작할 때 "`market → items`가 빠졌습니다"처럼 무엇이 빠졌는지 오류로 알린다.
 
-방향은 게임 → 틀 하나다. 게임은 틀을 `@engine/…`으로 읽고, 틀은 게임에서 내용 하나(`@game/shared/content`)만 읽는다. **`engine/` 아래의 파일은 고치지 않는다.** 고쳐야 한다면 틀에 접점이 모자란 것이다(10절의 "틀을 고쳐야 할 때").
+| 모듈 | 무엇 | 의존 | 화면에 생기는 것 | 키 |
+|---|---|---|---|---|
+| `economy` | 재화(골드, 두 번째 재화), 지갑, 경제 장부 | | 내 정보 창의 재화, 메뉴 머리의 골드 | |
+| `growth` | 레벨과 경험치 | economy | 경험치 막대, 레벨 | |
+| `classes` | 직업 고르기·바꾸기, 직업마다의 체력과 기술 | | 직업 고르기 창, 레벨 옆 직업 이름 | |
+| `combat` | 체력·피해·기술·몬스터·리스폰·필드 보스, 쓰러짐, 처치 보상 | classes | 체력 막대, 기술 단추, 대상 창, 대상 공격 단추, 강화 표시 | 1–3(기술), Tab(대상) |
+| `build` | 능력치 점수와 기술 강화 | growth, combat, economy | 메뉴의 성장 탭 | |
+| `items` | 가방(재료·물약), 상점, 물약, 대장간 제작, 재료 드롭 | economy | 가방 단추·창, 상점·대장간 창, 물약 단추 | Q(물약), B(가방) |
+| `gear` | 떨어지는 장비, 끼기·팔기·비교, 강화·재련·분해, 장비 가방 넓히기 | items, economy | 메뉴의 장비 탭 | |
+| `mail` | 우편(보상을 맡아 둔다) | items, economy | 메뉴의 우편 탭 | |
+| `daily` | 일일 임무와 출석 | mail | 메뉴의 일일 탭 | |
+| `idle` | 접속하지 않은 동안의 보상 | mail | | |
+| `party` | 파티 초대, 함께 받는 보상, 파티원 표시 | | 파티 목록, 받은 초대, 사람 카드의 초대 단추 | |
+| `guild` | 길드 | economy | 메뉴의 길드 탭, 사람 카드의 길드 초대 | |
+| `market` | 거래소 | items, gear, mail, economy | 메뉴의 거래소 탭 | |
+| `dungeon` | 던전 인스턴스, 하루 횟수, 끝낸 보상 | combat, mail, daily, gear | 던전 창 | |
+| `rank` | 전투력 순위 | growth | 메뉴의 순위 탭 | |
+| `away` | 자동 사냥, 창을 닫아도 이어지는 자리 비움 사냥 | combat | 자동 사냥 단추, 지도의 '가서 사냥' | R |
+
+```ts engine/test/core/shared/content/index.ts
+/** 쓸 모듈: 없다 (핵심만) */
+export const MODULES: readonly ModuleId[] = [];
+```
+
+```ts games/sample/shared/content/index.ts
+import type { ModuleId } from '@engine/shared/modules';
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
+```
+
+모든 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다.
+
+**고르지 않은 모듈은**:
+
+- 서버: 그 시스템이 만들어지지 않는다. `g.wallet` 같은 칸은 건드리면 "모듈 'economy'를 고르지 않았습니다"를 던지는 자리표다. 명령이 등록되지 않으므로 웹소켓으로 직접 보내도 무시된다. 틱도, 캐릭터·월드 저장의 칸도, 본인에게 보내는 상태(`stat`·`meta`의 그 칸)도 없다.
+- 화면: 그 창·단추가 뼈대에서 빠지고(`engine/client/hud/skeleton.ts`의 `data-mod`), 메뉴 탭과 단축키도 없다. 빈 키는 게임이 `onKey`로 쓸 수 있다.
+- 저장: 예전에 그 모듈을 쓰던 저장(골드, 거래소에 맡긴 물건 …)은 읽은 그대로 두었다가 다시 적는다. 모듈을 다시 켜면 이어진다.
+
+**고를 수 있는지 묻기**: 게임의 서버 코드가 쓸지 말지 모르는 모듈을 쓸 때는 `g.has('economy')`로 묻는다. 화면은 `hasModule('economy')`(`@engine/client`).
 
 ### 틀에서 가져오는 곳 (입구)
 
@@ -38,15 +102,15 @@
 
 | 입구 | 무엇이 있나 | 예 |
 |---|---|---|
-| `@engine/server` | 서버의 모든 것: `Game`, `Ent`, `startServer`, `runServer`, 저장소(`MemoryStore` …), `dist`·`readInt`·`clamp`·`ri`, 층 도우미, `addBannedWords`, `WHY`·`mailWhy` | `import { dist, type Ent, type Game, readInt } from '@engine/server';` |
-| `@engine/client` | 화면의 모든 것: `startClient`, `bus`(`onMsg`·`onFrame`·`onSlow`·`onKey`), `rules`, `S`, `send`, 창(`mountPanel`, `addPlace`, `addNotices`), 모델·장면(`registerHand` …), 지도(`addMapPlaces` …), 메뉴(`setMenuTabs` …) | `import { addMapPlaces, onMsg, rules, S } from '@engine/client';` |
+| `@engine/server` | 서버의 모든 것: `Game`(`g.has`, `g.defineKind`, `g.place`), `Ent`, `KindDef`, `startServer`, `runServer`, 저장소(`MemoryStore` …), `dist`·`readInt`·`clamp`·`ri`·`dayOf`, 층 도우미, `addBannedWords`, `WHY`·`mailWhy` | `import { dist, type Ent, type Game, readInt } from '@engine/server';` |
+| `@engine/client` | 화면의 모든 것: `startClient`, `bus`(`onMsg`·`onFrame`·`onSlow`·`onKey`), `rules`, `S`, `send`, `hasModule`, 엔티티 종류(`registerKind`, `makeBox`, `makeBall`), 창(`mountPanel`, `addPlace`, `addNotices`), 모델·장면(`registerHand` …), 지도(`addMapPlaces` …), 메뉴(`setMenuTabs` …) | `import { addMapPlaces, onMsg, rules, S } from '@engine/client';` |
 | `@engine/client/i18n` | 문장: `L`, `t`, `setLocales`, `onLangChange`. 언어 묶음은 `@engine/client/i18n/ko`·`en`·`names`·`merge` | `import { L, t } from '@engine/client/i18n';` |
-| `@engine/shared` | 공용: 메시지 타입(`ServerMsg` …), 자동 사냥의 기준(`AUTO`, `AWAY`), 길찾기, `PROTOCOL` | `import type { ServerMsg } from '@engine/shared';` |
+| `@engine/shared` | 공용: 메시지 타입(`ServerMsg` …), 모듈의 표(`ALL_MODULES`, `RPG_MODULES`, `checkModules`, `ModuleId`), 자동 사냥의 기준(`AUTO`, `AWAY`), 길찾기, `PROTOCOL` | `import type { ServerMsg } from '@engine/shared';` |
 | `@engine/shared/defs`, `@engine/shared/world` | 내용 통로: 내용의 타입·도우미(`maxHpFor`, `itemDef` …)와 맵(`AREAS` …) | `import { maxHpFor } from '@engine/shared/defs';` |
 | `@engine/testing` | 시험 도구: `check`, `failures`, 가짜 클라이언트 | `import { check } from '@engine/testing';` |
 | `@engine/shared/ext`, `@engine/server/game/ext`, `@engine/client/i18n/ext` | 확장 지점(선언 병합만, 6절) | `declare module '@engine/shared/ext' { … }` |
 
-**예외 하나: 내용 파일**(`shared/content/` 아래)만은 `@engine/shared/defs/*`(예: `@engine/shared/defs/combat`)에서 **타입만**(`import type`), `@engine/shared/defaults`에서 기본값을 가져온다. 내용 통로(`@engine/shared/defs`)를 값으로 읽으면 초기화 순서가 꼬이기 때문이다(10절). 문서의 코드 조각은 import 줄을 빼고 적었으니, 머리는 예제의 같은 파일을 본다.
+**예외 하나: 내용 파일**(`shared/content/` 아래)만은 `@engine/shared/defs/*`(예: `@engine/shared/defs/combat`)에서 **타입만**(`import type`), `@engine/shared/defaults`에서 기본값(`GEAR_BASE` 같은 것)을, `@engine/shared/modules`에서 모듈의 목록(`RPG_MODULES`, `ModuleId`)을 가져온다. 내용 통로(`@engine/shared/defs`)를 값으로 읽으면 초기화 순서가 꼬이기 때문이다(10절). 문서의 코드 조각은 import 줄을 빼고 적었으니, 머리는 예제의 같은 파일을 본다.
 
 ## 2. 폴더와 설정
 
@@ -70,7 +134,7 @@ games/sample/
   test/                    시험
 ```
 
-**예제를 베껴 시작할 때**: `games/sample`을 통째로 `games/<내 게임>`에 복사한 뒤 `test/docs.test.ts`(이 문서와 예제가 같은지 보는 예제 전용 시험)와 `test/empty.test.ts`(예제의 빈 표 검사)는 지우거나 경로를 고친다: 둘은 `games/sample`을 경로로 적어 두었다. 뿌리의 `package.json`에 `start:<게임>`·`build:<게임>`·`test:<게임>`을 예제 줄을 베껴 더하고(`node scripts/game.mjs start <게임>` …), `typecheck`에 그 게임의 두 설정(`tsconfig.json`, `tsconfig.engine.json`)을 더한다. 운영 스크립트를 쓰려면 `deploy.json`(9절).
+**예제를 베껴 시작할 때**: `games/sample`을 통째로 `games/<내 게임>`에 복사한 뒤 `test/docs.test.ts`(이 문서와 예제가 같은지 보는 예제 전용 시험)와 `test/empty.test.ts`(예제의 빈 표 검사)는 지우거나 경로를 고친다: 둘은 `games/sample`을 경로로 적어 두었다. **`package.json`은 고치지 않는다**: 게임 폴더에 `deploy.json`이나 `server/main.ts`가 있으면 타입 검사(`npm run typecheck`), 시험(`npm test`), 게임 고르기(`node scripts/game.mjs <일> <게임>`)가 저절로 그 게임을 찾는다(`npm run games`가 찾은 목록). 운영 스크립트를 쓰려면 `deploy.json`(9절). 전투가 없는 게임은 예제 대신 12절의 공 마당에서 시작하는 편이 짧다.
 
 **별칭이 전부다.** `@game`이 어느 폴더를 가리키느냐가 "어느 게임인가"를 정한다. 두 파일에서 같아야 한다: `tsconfig.json`(타입 검사와 `tsx`), `vite.config.ts`(화면 빌드). 게임을 돌리는 도구 `scripts/game.mjs`가 게임 폴더의 이 두 파일을 골라 쓴다: `node scripts/game.mjs <start|watch|client|build> <게임 폴더 이름>`.
 
@@ -119,12 +183,11 @@ export default defineConfig({
 - `client/public/`의 파일(아이콘, manifest, 그림 시트, 모델과 소리 파일)은 빌드 결과에 그대로 들어간다. 예제는 모델과 소리 파일을 두므로 `publicDir: false` 줄이 없다. 그런 파일이 없는 게임은 `publicDir: false`를 둬도 된다(두면 `client/public/`을 읽지 않는다).
 - 빌드 결과 폴더(`dist-sample/`)는 `.gitignore`에 넣는다.
 
-`package.json`의 스크립트(게임 이름만 바꿔 같은 모양으로 더한다. 서버와 화면은 `scripts/game.mjs`를 거친다: 게임 폴더의 `tsconfig.json`이 있으면 `tsx --tsconfig`로 그것을 읽게 한다):
+명령(`package.json`은 고치지 않는다: 게임 폴더에 `deploy.json`이나 `server/main.ts`가 있으면 `scripts/game.mjs`·`scripts/typecheck.mjs`·`test/all.ts`가 스스로 찾는다. `npm run games`가 찾은 목록을 찍는다. 서버와 화면은 `scripts/game.mjs`를 거친다: 게임 폴더의 `tsconfig.json`이 있으면 `tsx --tsconfig`로 그것을 읽게 한다. 아래의 `:sample` 이름은 예제를 위해 남긴 줄임이고, 새 게임은 `node scripts/game.mjs <일> <게임>`으로 부른다):
 
 | 스크립트 | 하는 일 |
 |---|---|
-| `npm run typecheck:sample` | `tsc --noEmit -p games/sample/tsconfig.json`: 틀 + 이 게임 |
-| `npm run typecheck:engine:sample` | `tsc --noEmit -p games/sample/tsconfig.engine.json`: 틀만, 이 게임의 내용으로 |
+| `npm run typecheck:game -- sample` | `games/sample/tsconfig.json`(틀 + 이 게임)과 `games/sample/tsconfig.engine.json`(틀만, 이 게임의 내용으로). `npm run typecheck`는 모든 게임과 틀의 설정을 함께 |
 | `npm run build:sample` | `node scripts/game.mjs build sample`: `vite build -c games/sample/vite.config.ts` → `dist-sample/` |
 | `npm run start:sample` | `node scripts/game.mjs start sample`: `tsx --tsconfig games/sample/tsconfig.json games/sample/server/main.ts` (기본 포트 3002) |
 | `npm run dev:sample` | `watch`와 `client`를 함께: 서버(3002)와 vite 개발 서버(5174). 파일을 고치면 바로 반영 |
@@ -139,28 +202,31 @@ if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키�
 
 ## 3. 내용 채우기
 
-`shared/content/index.ts`가 내용 계약(`engine/shared/contract.ts`의 `ContentContract`)의 이름을 모두 내보내야 한다. 빠뜨리거나 모양이 다르면 `contract.ts`의 맨 아래 줄에서 컴파일 오류가 난다. 오류 글이 빠진 이름을 알려 준다.
+`shared/content/index.ts`가 내용 계약(`engine/shared/contract.ts`)의 이름을 내보낸다. 계약은 둘로 나뉜다.
 
-이름은 61개지만 대부분은 수치라서 틀의 기본값(`engine/shared/defaults.ts`)을 한 줄로 받는다. 같은 이름을 직접 내보내면 그것이 기본값을 가린다.
+- **핵심 계약**(`CoreContent`): `MAP`과 `MODULES`. 모든 게임이 반드시 적는다. 빠뜨리면 컴파일 오류가 난다.
+- **모듈의 계약**(`CombatContent`, `ItemsContent`, `GearContent`, `GrowthContent`, `MailContent`, `DungeonContent`, `SocialContent`, `EconomyContent`, 핵심의 수치 `CoreTuning`): 모두 선택이다. **적지 않은 이름은 틀이 기본값(`engine/shared/defaults.ts`)으로 채운다**: 받아 오는 줄(`export *`)도 필요 없다. 바꿀 이름만 같은 이름으로 직접 내보낸다. 적은 이름의 모양이 다르면 `contract.ts`의 맨 아래 줄에서 컴파일 오류가 난다.
+
+쓰지 않는 모듈의 이름은 적지 않는다: 전투가 없는 게임은 직업·몬스터·무기를 정의하지 않는다(빈 표가 기본값이다). 핵심의 수치(`GUEST_NAME`, `NET`: 틱·전송 주기와 시야 반경, `CHANNEL`, `REJOIN_KEEP_S`)도 바꿀 때만 적는다.
 
 ```ts games/sample/shared/content/index.ts
-// 수치의 기본값(전투, 장비, 강화, 길드, 거래소 …)은 틀의 것을 그대로 받는다. 바꿀 이름만 아래에 직접 적는다
-export * from '@engine/shared/defaults';
+import type { ModuleId } from '@engine/shared/modules';
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
 export const GUEST_NAME = 'Camper';
 ```
 
-**규칙 하나**: 내용 파일은 틀에서 **타입만** 가져온다(`import type`). 값을 가져와도 되는 곳은 `@engine/shared/defaults` 하나다. 틀의 도우미(`engine/shared/defs/*.ts`)는 게임의 내용을 읽으므로, 내용 파일이 그 도우미의 값을 읽으면 서로 물려 초기화 순서가 꼬인다(실행할 때 `undefined`로 드러난다).
+**규칙 하나**: 내용 파일은 틀에서 **타입만** 가져온다(`import type`). 값을 가져와도 되는 곳은 `@engine/shared/defaults`와 `@engine/shared/modules`다(둘 다 아무것도 읽지 않는 파일이다). 틀의 도우미(`engine/shared/defs/*.ts`)는 게임의 내용을 읽으므로, 내용 파일이 그 도우미의 값을 읽으면 서로 물려 초기화 순서가 꼬인다(실행할 때 `undefined`로 드러난다).
 
-직접 채워야 하는 이름(게임의 id가 드는 것):
+고른 모듈에서 직접 채우는 이름(게임의 id가 드는 것. 적지 않으면 빈 표다):
 
 | 이름 | 모양 | 비워도 되는가 |
 |---|---|---|
-| `MAP` | `MapDef`: 지역(`areas`), 가장자리, 시드, 처음 자리, 장애물, 나무·바위 뿌리는 규칙, `isFree`, 던전의 문 | `areas`는 하나 이상. 0번이 들판이다. `obstacles`, `scatter`, `portals`는 비워도 된다 |
-| `CLASSES`, `DEFAULT_CLASS` | 직업 id → `ClassDef`. 직업마다 기술 id를 `SKILL_SLOTS`개(기본 3) | 하나 이상 |
-| `SKILL_DEFS` | 기술 id → `SkillDef` (효과: `hit` / `area` / `heal` / `buff` / `dash` / `dot`, 3절의 표) | 직업이 쓰는 것은 있어야 한다 |
-| `MONSTERS` | 몬스터 id → `MonsterDef`. `sparks`(두 번째 재화)는 선택, `boss: true`면 필드 보스, `gearLv`면 떨어뜨리는 장비의 레벨을 따로 정한다 | 하나 이상 (비우면 틀이 컴파일되지 않는다) |
-| `CAMPS` | 무리의 자리와 사는 몬스터 | `[]` 가능 |
-| `ITEMS`, `START_WEAPON` | 아이템 id → `ItemDef` (`weapon` / `armor` / `potion` / `mat`). 처음 무기 하나는 있어야 한다 | 물약, 재료는 없어도 된다. 갑옷은 하나 두는 편이 낫다(떨어지는 갑옷 칸 장비의 바탕이 된다) |
+| `MAP` (핵심) | `MapDef`: 지역(`areas`), 가장자리, 시드, 처음 자리, 장애물, 나무·바위 뿌리는 규칙, `isFree`, 던전의 문 | `areas`는 하나 이상. 0번이 들판이다. `obstacles`, `scatter`, `portals`는 비워도 된다 |
+| `CLASSES`, `DEFAULT_CLASS` (classes) | 직업 id → `ClassDef`. 직업마다 기술 id를 `SKILL_SLOTS`개(기본 3) | 전투를 쓰면 하나 이상 |
+| `SKILL_DEFS` (combat) | 기술 id → `SkillDef` (효과: `hit` / `area` / `heal` / `buff` / `dash` / `dot`, 3절의 표) | 직업이 쓰는 것은 있어야 한다 |
+| `MONSTERS` | 몬스터 id → `MonsterDef`. `sparks`(두 번째 재화)는 선택, `boss: true`면 필드 보스, `gearLv`면 떨어뜨리는 장비의 레벨을 따로 정한다 | `{}` 가능 (몬스터 없는 전투: 게임의 규칙이 적을 놓는다) |
+| `CAMPS` (combat) | 무리의 자리와 사는 몬스터 | `[]` 가능 |
+| `ITEMS`, `START_WEAPON` (items) | 아이템 id → `ItemDef` (`weapon` / `armor` / `potion` / `mat`). 처음 무기 하나는 있어야 한다 | 물약, 재료는 없어도 된다. 갑옷은 하나 두는 편이 낫다(떨어지는 갑옷 칸 장비의 바탕이 된다) |
 | `SHOPS`, `SHOP_STOCK` | 상인의 자리들, 상점에 놓는 아이템 id의 차례 | `[]` 가능 (상점 없음) |
 | `DROPS` | 몬스터 id → 떨어뜨리는 재료와 확률 | `{}` 가능 |
 | `FORGES`, `RECIPES` | 대장간의 자리, 제작법 | `[]` 가능 (제작 없음) |
@@ -183,7 +249,8 @@ export const GUEST_NAME = 'Camper';
 | 두 번째 재화 | 몬스터에 `sparks`를 적지 않고 이름표에 `currency2`를 적지 않는다 | 틀의 문장에서 그 몫이 빠진다 |
 | 분해·가방 넓히기 | `SALVAGE`의 `item`을 비운다(기본값이 이미 꺼져 있다) | |
 | 강화의 위험·재련·귀속 (켜는 쪽) | 기본값은 모두 꺼져 있다. 켜려면 `ENHANCE`에 `dropFrom`(이 단계부터 실패하면 한 단계 내려감), `charm`(보호 부적: `kind: 'token'`인 아이템의 id. 거래소에 못 올림), `dust`(단계·등급마다 드는 `SALVAGE.item`의 수), `bindPlus`(이 단계 이상은 거래소에 못 올림)를 적고, `REFORGE = { max, gold(rar, n), dust(rar) }`를 내보낸다 | 장비 창에 경고와 부적 쓰기 단추, 재련 단추가 생긴다. 예: `games/deungbul/shared/content/economy.ts` |
-| 거래소·길드 탭 | 화면에서 `setMenuTabs([...])`로 고른다(5절). 서버의 기능은 그대로 돈다 | |
+| 모듈 하나를 통째로 (거래소, 길드, 던전, 파티, 전투 …) | `MODULES`에서 뺀다(1절). 그 모듈의 이름도 적지 않아도 된다 | 그 창·탭·단추·키가 없다. 서버의 명령도 없다 |
+| 메뉴의 탭 차례 | 화면에서 `setMenuTabs([...])`로 고른다(5절). 감추기만 하고 서버의 기능은 그대로다: 기능까지 빼려면 모듈을 뺀다 | |
 
 - `STATS`, `GEAR_SLOTS`, `RARITIES`, `BUILD_STATS`의 id는 게임이 짓는다. 이름은 이름표(`ContentNames`)의 `gearSlots`, `rarities`, `buildStats`에 적는다.
   - 장비 옵션(`STATS`)과 능력치(`BUILD_STATS`)는 `mod`로 틀의 효과 넷 가운데 하나에 든다: `damage`(공격 피해 %), `guard`(받는 피해 감소 %, 한도 `GEAR.guardCap`), `crit`(치명타 %p), `hp`(최대 체력). 옵션과 능력치가 주는 것의 문장("공격 피해 +3%")은 이 효과로 틀이 만든다. 효과의 종류를 새로 만들려면 틀을 고쳐야 한다.
@@ -307,7 +374,7 @@ export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 
 - 땅은 지역마다 틀이 깔고 게임의 `look.ground`가 칠한다(5절). 던전의 바닥을 다르게 하려면 `ground`에서 그 지역의 좌표일 때 다른 색을 주거나, `scenery`에서 바닥 판을 조금 위(y 0.02쯤)에 깐다.
 - 들어가기는 문 곁에서 던전 창의 '들어가기'(명령 `{ t: 'dungeon', id }`)다.
 
-여기까지 하면 `npm run typecheck:engine:sample`이 통과해야 한다.
+여기까지 하면 `npm run typecheck:game -- sample`이 통과해야 한다.
 
 ## 4. 서버 띄우기
 
@@ -693,7 +760,7 @@ export function initBonfire(): void {
 ```
 
 - 개인 상태의 값(`m.s`)은 타입이 `unknown`이다. 모양은 게임이 정하므로(`shared/sample.ts`의 `MeState`) 게임이 좁혀 읽는다.
-- 틀이 이미 쓰는 키(숫자, Q, R, H, B, M, Tab, Enter, Esc)는 `onKey`로 등록해도 불리지 않는다.
+- 틀의 키는 그 기능의 모듈이 단다: 핵심은 M(메뉴), N(지도), H(집으로), Enter(대화), Esc. 전투(`combat`)는 숫자(기술)와 Tab(대상), 아이템(`items`)은 Q(물약)와 B(가방), 자동 사냥(`away`)은 R. **고른 모듈의 키**는 `onKey`로 등록해도 틀의 것이 먼저라 불리지 않는다. 고르지 않은 모듈의 키는 게임이 쓸 수 있다(전투가 없는 게임은 숫자 키를 쓸 수 있다).
 - 가까운 창 하나만 남기는 것은 css의 몫이다(`addPlace`는 어느 창이 가까운지만 적어 준다). 짝을 지어 숨기는 규칙을 게임의 css에 적는다(예: `#rightcol[data-near="shop"] #bonfire { display: none; }`).
 
 ```css games/sample/client/sample.css
@@ -892,10 +959,14 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | 두 게임의 타입이 섞인다, `@game`이 엉뚱한 곳을 가리킨다 | 한 `tsc` 프로그램에 두 게임을 넣었다. 게임마다 자기 `tsconfig.json`으로만 검사한다. 뿌리의 `tsconfig.json`에 새 게임 폴더를 더하지 않는다 |
 | 화면의 글자가 비어 있다 | 그 키가 언어 묶음에 없다. `setLocales`를 `startClient`보다 늦게 불렀거나, 창을 `startClient` 뒤에 붙였다(그때는 `data-i18n`이 이미 채워진 뒤다) |
 | `$('내창')`이 `null` | 모듈이 읽히는 때에 요소를 잡았다. init 안에서 잡는다 |
-| `mountPanel: '…' 자리의 기준 요소가 화면에 없습니다` | 자리 이름이 틀렸다(`shell.ts`의 `SLOTS`) |
+| `mountPanel: '…' 자리의 기준 요소가 화면에 없습니다` | 자리 이름이 틀렸다(`shell.ts`의 `SLOTS`). 모듈을 고르지 않아 기준 요소가 없는 자리(`meHp`, `meGold`, `actions`)는 다른 자리로 대신 붙는다 |
+| `g.wallet: 모듈 'economy'를 고르지 않았습니다` (다른 모듈도 같은 꼴) | 고르지 않은 모듈의 시스템을 건드렸다. `MODULES`에 그 모듈을 더하거나, 쓰지 않을 수도 있는 곳이면 `g.has('economy')`로 먼저 묻는다 |
+| 서버·화면이 시작하자마자 "고른 모듈이 의존하는 모듈이 빠졌습니다: market → items" | `MODULES`에 의존하는 모듈을 함께 적는다(1절의 표) |
+| 내 엔티티 종류가 화면에 회색 상자로 보인다 | 화면에서 `registerKind`를 하지 않았거나 종류의 이름이 서버의 `g.defineKind`와 다르다 |
+| 내 엔티티가 보이지 않는다 | 층(채널)이 다르다: `g.place`의 `layer`를 주지 않으면 1채널의 들판이다. 채널이 여럿이면 채널마다 놓거나 `CHANNEL.count`를 1로 둔다. 또는 시야(`NET.aoi`) 밖이다 |
 | 내 창이 다른 창 뒤에 그려진다, 처리기가 엉뚱한 차례로 불린다 | 등록한 차례가 불리는 차례다. `modules`의 차례를 바꾼다. 게임의 모듈은 틀의 덧붙는 모듈보다 먼저 init된다 |
 | 걷다가 뒤로 당겨진다 | 화면의 `rules.speed`와 서버의 `g.rules.speed`가 다른 값을 낸다. 같은 공용 함수로 셈한다 |
-| `g.daily`(또는 `g.mail`, `g.gear` …)가 플러그인 안에서 `undefined` | 그 시스템은 플러그인보다 뒤에 만들어진다. `g.ready.push(() => …)` 안에서 쓴다 |
+| `g.daily`(또는 `g.mail`, `g.gear` …)가 플러그인 안에서 `undefined` | 그 시스템은 플러그인보다 뒤에 만들어진다. `g.ready.push(() => …)` 안에서 쓴다 (그 모듈을 고르지 않았으면 위의 '고르지 않았습니다' 오류다) |
 | 값을 바꿨는데 화면에 오지 않는다 | 표시를 세우지 않았다: `p.dirty`(틀의 수치), `g.stateDirty`(공유 상태). 6절의 표 |
 | 재시작하면 값이 처음으로 돌아간다 | `g.saves`나 `g.worldSaves`에 등록하지 않았거나, `p.unsaved` / `g.saveDirty`를 세우지 않았다 |
 | 내가 띄운 서버가 저절로 꺼진다 | 다른 서버와 저장 폴더가 같다(`stop.flag`). 게임마다, 확인용 서버마다 폴더를 따로 준다 |
@@ -903,16 +974,19 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `npm test`의 `boundary`가 "알림 …: 'hex' (games/…의 id와 같은 틀의 낱말. 잡지 않는다)"라고 적는다 | 실패가 아니다. 그 게임의 id가 틀이 자기 뜻으로 쓰는 낱말(`hex`, `heal` 같은 것)과 같을 뿐이다. 헷갈리지 않게 다른 id로 짓기를 권한다 |
 | 타입 검사와 그 게임의 시험은 통과하는데 `npm test`의 `boundary`에서 "게임은 틀을 입구로만 읽는다"가 실패한다 | 틀의 내부 파일을 깊게 import했다(`@engine/server/game/entity` 같은 것). 1절의 입구(`@engine/server` 등)에서 가져온다. 실패 글이 파일과 줄을 알려 준다 |
 | 쓰러지면 "…에서 다시 일어났습니다"의 자리에 엉뚱한 말이 나온다 | 이름표의 `places`에 `g.rules.respawn`이 돌려주는 id의 이름이 없다(5절). 정하지 않았으면 '처음 자리'다 |
-| 내 내용은 계약을 지키는데 `engine/` 안의 파일에서 타입 오류가 난다 | 틀은 내용을 계약의 타입이 아니라 **게임이 적은 그대로의 타입**으로 본다. 표를 비웠거나(`{}`의 id는 `never`가 된다) 함수를 계약보다 좁게 적은 자리에서 틀이 걸릴 수 있다. 시험이 지키는 경우: 던전·대장간·보스·두 번째 재화가 없다(예제), 상점·무리·재료·일일 임무가 없다, 아이템이 무기 하나뿐이다(`games/sample/test/empty.test.ts`). 그 밖의 경우(직업이 하나, 몬스터가 한 종류 …)에 걸리면 틀의 수리 대상이다: `npm run typecheck:engine:sample`과 같은 검사를 자기 게임의 설정으로 돌려 자리를 찾는다 |
+| 내 내용은 계약을 지키는데 `engine/` 안의 파일에서 타입 오류가 난다 | 틀은 내용을 계약의 타입이 아니라 **게임이 적은 그대로의 타입**으로 본다. 표를 비웠거나(`{}`의 id는 `never`가 된다) 함수를 계약보다 좁게 적은 자리에서 틀이 걸릴 수 있다. 시험이 지키는 경우: 던전·대장간·보스·두 번째 재화가 없다(예제), 상점·무리·재료·일일 임무가 없다, 아이템이 무기 하나뿐이다(`games/sample/test/empty.test.ts`). 그 밖의 경우(직업이 하나, 몬스터가 한 종류 …)에 걸리면 틀의 수리 대상이다: `npm run typecheck:game -- sample`과 같은 검사를 자기 게임의 설정으로 돌려 자리를 찾는다 |
 
 **틀을 고쳐야 할 때**: 게임에서 할 수 없는 일이면 틀에 접점을 더한다. 틀의 파일이 게임의 폴더를 import하거나 게임의 id를 적으면 안 된다(`games/deungbul/test/split.test.ts`가 검사한다). 고친 뒤에는 8절의 검사를 모두 돌린다. 틀에 남아 있는 등불지기의 흔적과 알려진 한계는 `docs/framework-status.md`에 있다.
 
 알아 둘 한계:
 
-- 재화는 세 칸(`gold`, `sparks`, 경험치)으로 정해져 있다. 두 번째 재화는 한 가지(`sparks`)뿐이다. 이름은 이름표의 `currency1`·`currency2`로 준다.
+- 플레이어의 엔티티(`Ent`)에는 모듈의 칸(레벨, 골드, 장비, 우편 …)이 늘 처음 값으로 있다. 그 모듈을 고르지 않으면 저장되지도 화면에 가지도 않을 뿐이다: 전투가 없는 게임의 규칙이 그 칸을 쓰지 않는다.
+- 엔티티의 상태 한 줄에는 체력 칸이 늘 있다(체력이 없는 종류는 0). 게임의 값은 그 뒤에 수로만 붙는다(글자는 `type`, `name`으로 처음 들어올 때 한 번).
+- 엔티티끼리 부딪히는 물리는 없다: 사람은 장애물(둥근 기둥)만 피해 걷는다. 공을 차는 것 같은 일은 게임의 `tick`이 셈한다.
+- 재화(`economy`)는 세 칸(`gold`, `sparks`, 경험치)으로 정해져 있다. 두 번째 재화는 한 가지(`sparks`)뿐이다. 이름은 이름표의 `currency1`·`currency2`로 준다.
 - 기술의 효과는 여섯 가지다(`engine/shared/defs/combat.ts`의 `SkillEffect`). 이보다 새로운 효과는 틀의 `engine/server/game/systems/combat.ts`의 `cast`를 고쳐야 한다.
 - 사람 모델은 틀의 네모난 사람이 기본이다. 꾸밈을 더하거나(`setHumanoidDeco`) 통째로 바꿀 수 있다(`setHumanoidBody`: 옷 색·손 모양·살갗 색을 받아 모델을 돌려준다. 걷는 동작은 `rig`의 팔다리 넷으로, 무기의 겉모습은 `blade`로 따라간다). 손 모양과 날아가는 것은 등록으로 늘린다(`registerHand`, `registerShot`).
-- 메뉴의 탭은 틀의 일곱(`gear` 장비, `build` 성장, `mail` 우편, `daily` 일일, `market` 거래소, `guild` 길드, `rank` 순위)이다. 게임은 `setMenuTabs([...])`로 보일 탭과 차례를 고르고, `addMenuTab({ id, label, draw, dot?, open?, sig? }, 뒤에 올 탭)`으로 자기 탭을 더한다. 일일 임무도 출석도 없으면 일일 탭은 저절로 숨는다. 탭을 감춰도 서버의 기능(길드, 거래소)은 그대로 돈다(화면에서 감출 뿐이다). 예제는 거래소와 길드를 감추고 모닥불 탭을 더했다(`client/bonfire.ts`).
+- 메뉴의 탭은 틀의 일곱(`gear` 장비, `build` 성장, `mail` 우편, `daily` 일일, `market` 거래소, `guild` 길드, `rank` 순위)이다. 게임은 `setMenuTabs([...])`로 보일 탭과 차례를 고르고, `addMenuTab({ id, label, draw, dot?, open?, sig? }, 뒤에 올 탭)`으로 자기 탭을 더한다. 일일 임무도 출석도 없으면 일일 탭은 저절로 숨는다. 틀의 탭은 그 모듈을 고른 게임에만 있다: 거래소·길드를 쓰지 않으면 `MODULES`에서 뺀다(탭도 서버의 기능도 없다). `setMenuTabs`로 감추기만 하면 서버의 기능은 그대로 돈다. 예제는 거래소와 길드를 모듈에서 빼고 모닥불 탭을 더했다(`client/bonfire.ts`).
 - 장부를 보는 도구(`npm run econ`)는 등불지기의 것이다(`games/deungbul/scripts/econ.ts`). 장부 자체(`g.ledger`)와 서버 지표의 한 줄 요약은 틀의 것이라 어느 게임에서나 돈다.
 
 ## 11. 접점 일람표
@@ -923,8 +997,9 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 
 | 접점 | 한 줄 설명 | 예제 |
 |---|---|---|
-| `contract.ts`의 `ContentContract` | 게임의 내용이 갖춰야 하는 이름과 모양 | `shared/content/index.ts` |
-| `defaults.ts` | 수치의 기본값 묶음. `GEAR_BASE` | `shared/content/index.ts` |
+| `contract.ts`의 `CoreContent`(`MAP`, `MODULES`)와 모듈의 계약(`CombatContent` …) | 게임의 내용이 갖춰야 하는 이름과 모양. 모듈의 것은 선택(적지 않으면 기본값) | `shared/content/index.ts` |
+| `modules.ts`의 `MODULE_TABLE`, `RPG_MODULES`, `ModuleId`, `checkModules`, `MODULE_SAVES` | 선택 모듈의 표와 의존, 모듈의 저장 칸 | `shared/content/index.ts` |
+| `defaults.ts` | 수치의 기본값 묶음(게임이 적지 않은 이름을 틀이 채운다). `NET`(틱·전송 주기, 시야), `GEAR_BASE` | `shared/content/index.ts` |
 | `defs/*.ts`의 타입 | `MapDef`, `ClassDef`, `SkillDef`, `MonsterDef`, `ItemDef`, `ForgeDef`, `Recipe`, `DungeonDef`, `DailyDef`, `Reward` | `shared/content/index.ts` |
 | `defs.ts`, `world.ts` | 틀의 내용 통로: 타입, 도우미(`maxHpFor`, `itemDef` …), 계약의 내용, 엔진 상수. 내용 파일 밖에서는 여기서 읽는다 | `client/scene.ts`, `test/sample.test.ts` |
 | `ext.ts`의 `MsgMap` | 안내문의 종류와 값 | `shared/sample.ts` |
@@ -939,6 +1014,9 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `run.ts`의 `runServer` | 환경 변수, 저장소, 종료 처리까지 한 번에 | `server/main.ts` |
 | `net/server.ts`의 `startServer` | 서버만 띄운다 (시험, 손수 다루는 진입점) | `test/sample.test.ts` |
 | `GameOptions.plugins` | 규칙 플러그인 `(g) => void` | `server/sample.ts` |
+| `GameOptions.modules`, `g.has(모듈)`, `g.modules` | 쓸 모듈(주지 않으면 내용의 `MODULES`), 골랐는가 | |
+| `g.defineKind(종류, KindDef)`, `g.place(종류, 자리)`, `Ent.data` | 게임의 엔티티 종류(틱, 화면에 실을 값, 저장)와 놓기 (12절) | `engine/test/core/server/balls.ts` |
+| `g.perFlush` | 전송마다 본인에게 보낼 메시지를 만드는 것 (틀의 `stat`·`meta`가 쓴다) | |
 | `game/ext.ts`의 `GameSystems` | `g.내시스템` | `server/sample.ts` |
 | `game/ext.ts`의 `EntExt` + `g.entInit` | 엔티티 칸과 처음 값 | `server/sample.ts`, `server/bonfire.ts` |
 | `game/ext.ts`의 `HooksExt` + `g.on` / `g.fire` | 게임의 사건 | `server/sample.ts`, `server/bonfire.ts` |
@@ -969,13 +1047,16 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `i18n`의 `t`, `L`, `onLangChange` | 문장 읽기, 언어가 바뀔 때 | `client/bonfire.ts` (`onLangChange`는 쓰지 않는다: 느린 주기가 다시 쓴다) |
 | `hud/shell.ts`의 `mountPanel` | 게임의 창을 틀의 빈 자리에 | `client/bonfire.ts` |
 | `app.ts`의 `$`, `view` | 요소 잡기, 3D 화면(`view.scene`, `view.setMood`) | `client/bonfire.ts`, `client/scene.ts` |
-| `bus.ts`의 `onMsg`, `onFrame`, `onSlow`, `onKey` | 서버 메시지, 매 프레임, 0.25초마다, 단축키 | `client/bonfire.ts`, `client/scene.ts` |
+| `bus.ts`의 `onMsg`, `onFrame`, `onSlow`, `onKey` | 서버 메시지, 매 프레임, 0.25초마다, 단축키(고른 모듈이 쓰지 않는 키) | `client/bonfire.ts`, `client/scene.ts` |
+| `kinds.ts`의 `registerKind`, `scene/models.ts`의 `makeBox`, `makeBall` | 게임의 엔티티 종류의 모습 (12절) | `engine/test/core/client/main.ts` |
+| `mods.ts`의 `hasModule`, `anyModule` | 이 게임이 그 모듈을 골랐는가 | |
+| `i18n/names.ts`의 `withIdNames` | 적지 않은 이름표는 id 그대로 (쓰지 않는 모듈의 이름을 적지 않아도 된다) | `engine/test/core/client/main.ts` |
 | `net.ts`의 `send` | 서버로 명령 | `client/bonfire.ts` |
 | `state.ts`의 `S` | 틀의 상태: 내 캐릭터(`S.me`), 주변, 파티 | `client/bonfire.ts` |
 | `rules.ts`의 `rules` | 화면 쪽 규칙 | `client/bonfire.ts` (`home`) |
 | `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳 | `client/bonfire.ts` |
 | `hud/icons.ts`의 `addIconSheet`(`addItemSheet`), `itemIcon`, `gearIcon`, `hasItemIcon` | 그림 시트를 등록하고(열쇠: 아이템 id, `slot:칸`, `cur:gold`, `cur:second`, `ui:mail`), 그림 하나의 요소를 만든다(게임의 창에서도 쓸 수 있다) | |
-| `hud/menu.ts`의 `setMenuTabs`, `addMenuTab`, `openMenu`, `MENU_TABS` | 메뉴에 보일 탭과 차례, 게임의 탭, 탭을 골라 열기 | `client/bonfire.ts` |
+| `hud/menu.ts`의 `setMenuTabs`, `addMenuTab`, `openMenu`, `MENU_TABS` | 메뉴에 보일 탭과 차례(틀의 탭은 그 모듈을 고른 게임에만 있다), 게임의 탭, 탭을 골라 열기 | `client/bonfire.ts` |
 | `hud/near.ts`의 `addPlace` | 가까이 가면 열리는 창: id는 **화면에 있는 그 창의 요소 id**(mountPanel로 붙인 것). 창이 없는 곳(지도의 거점)은 부르지 않는다(지도는 `addMapPlaces`) | `client/bonfire.ts` |
 | (미니맵에는 틀이 스스로 찍는 표식이 없다: 몬스터·사람·파티원·나만 찍고, 상인·거점·목적지 같은 표식은 게임이 `addMarks`로 찍는다. 색은 `MARK`의 `lit`, `dark`, `shop`, `quest`, `portal`을 쓰거나 아무 색이나 준다) `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels`. `hud/worldmap.ts`의 `addMapPlaces`, `travelTo`, `stopTravel` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도의 큰 이름(구역)과 장소. 전체 지도(N 키·미니맵·`지도` 단추)는 틀이 그린다: 상점·대장간·던전의 문·사냥터(`CAMPS`)·우두머리는 틀이 내용에서 스스로 장소로 찍고, 게임은 자기 장소(거점, 목적지 …)를 `addMapPlaces`로 더한다(갈래 `PlaceKind`: goal, town, shop, forge, dungeon, hunt, boss, other). 장소를 누르면 정보 카드, 목록에서 '자동 이동'과 '가서 자동 사냥'(`hunt: true`). 모양: `addMapLabels(() => [{ x, z, text, big: true }])`, `addMapPlaces(() => [{ x, z, name, kind: 'town', info?, locked?, hunt? }])`. 함수는 그릴 때마다 불리므로 안에서 `t()`·지금 상태를 읽으면 언어와 상태를 따라간다. 게임이 `travelTo({ x, z, name }, hunt?)`를 직접 불러 다른 지역(던전 안)의 자리를 주면, 들판에서는 그 던전의 문까지 데려가 멈추고(들어가는 것은 사람이: 하루 횟수를 쓴다) 던전 안에서는 먼저 나가라고 알린다 | `client/bonfire.ts`, `client/scene.ts` |
 | `hud/classes.ts`의 `openClasses` | 직업 고르기 창 열기 | `client/bonfire.ts` |
@@ -994,4 +1075,99 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 |---|---|---|
 | `harness.ts`의 `check`, `failures` | 검사 기록 | `test/sample.test.ts`, `test/all.ts` |
 | `harness.ts`의 `connect`, `until`, `sleep` | 가짜 클라이언트, 기다리기 | `test/sample.test.ts` |
-| `new Game({ plugins, now })` | 서버 없이 규칙만 | `test/sample.test.ts` |
+| `new Game({ plugins, now, modules })` | 서버 없이 규칙만 (모듈을 줄여 볼 수도 있다) | `test/sample.test.ts` |
+
+## 12. 짧은 예시: 전투 없는 게임 (공 마당)
+
+모듈을 하나도 고르지 않고(핵심만), 게임이 등록한 엔티티 "공"을 줍는 게임이다. 전투·직업·장비·몬스터·재화가 없다. 본보기는 틀의 시험용 최소 내용 `engine/test/core/`에 있다(시험과 화면을 함께 쓴다). 새 게임으로 만들 때는 이 파일들을 `games/<게임>/`의 같은 자리(`shared/content/index.ts`, `server/`, `client/`)에 옮기고, 2절의 설정(`tsconfig.json`, `vite.config.ts`, `deploy.json`)을 둔다. 틀의 파일은 입구(`@engine/server`, `@engine/client`)로 가져온다(본보기는 틀 안의 시험이라 상대 경로로 가져온다).
+
+### 내용: 맵과 모듈만
+
+```ts engine/test/core/shared/content/index.ts
+/** 쓸 모듈: 없다 (핵심만) */
+export const MODULES: readonly ModuleId[] = [];
+export const GUEST_NAME = 'Picker';
+/** 시야를 기본(32m)과 다르게: 틀이 시야를 박아 두지 않고 내용에서 읽는지 시험이 본다 */
+export const NET = { tickMs: 50, snapEvery: 2, aoi: 20, aoiLeave: 24 };
+/** 채널은 하나 */
+export const CHANNEL = { count: 1, soft: 30, hard: 50, switchCdS: 10, calmS: 5, tellS: 10, tellBusyS: 2 };
+```
+
+```ts engine/test/core/shared/content/index.ts
+export const MAP: MapDef = {
+  areas: [{ id: 'yard', x0: -40, x1: 40, z0: -40, z1: 40 }],
+  edge: 2,
+  seed: 5,
+  spawn: { x: 0, z: 0 },
+  obstacles: [{ x: 10, z: 0, r: 2, tag: 'well' }],
+  scatter: [{ kind: 'rock', count: 6, x0: -36, x1: 36, pad: -4, s0: 0.6, s1: 0.5 }],
+  isFree: (x, z) => Math.hypot(x, z) > 12,
+  portals: {},
+  portalClear: 0,
+};
+```
+
+직업, 몬스터, 아이템, 재화 같은 이름은 적지 않는다. 이 게임만의 값(`BALL_SPOTS`)은 같은 파일에 더해도 된다(틀은 읽지 않는다).
+
+### 서버: 엔티티 종류 하나와 명령 하나
+
+`g.defineKind(종류, { tick, sync, save, load })`로 게임의 엔티티를 등록하고 `g.place(종류, { x, z, type, name, layer })`로 놓는다.
+
+- `sync`: 시야 안의 화면에 실어 보낼 수 몇 개. 바뀌면 다시 간다(엔티티 상태 `[id, x, z, 방향, 이동, 체력, …이 값들]`).
+- `save`·`load`: 주면 월드 저장의 `kind.<종류>` 칸에 적히고, 다시 켜면 처음 놓은 것을 지우고 저장에서 되살린다.
+- `tick`: 틱마다 그 종류의 엔티티 하나마다. 움직이게 하려면 `x`, `z`를 바꾸거나 `g.movement.goTo`·`walk`를 쓴다.
+- 게임의 값은 `e.data`(아무 값이나)나 선언 병합한 칸(`EntExt`, 6절)에 둔다.
+
+```ts engine/test/core/server/balls.ts
+export const balls: Plugin = (g) => {
+  g.defineKind('ball', {
+    tick: (e, dt) => { e.data.age = Number(e.data.age ?? 0) + dt; },
+    sync: (e) => [Number(e.data.glow ?? 0), Number(e.data.owner ?? 0)],
+    save: (e) => ({ x: e.x, z: e.z, glow: Number(e.data.glow ?? 0) }),
+    load: (raw) => {
+      const r = raw as { x: number; z: number; glow: number };
+      g.place('ball', { x: r.x, z: r.z, type: 'gold' }).data.glow = r.glow;
+    },
+  });
+  for (const s of BALL_SPOTS) g.place('ball', { x: s.x, z: s.z, type: 'gold' }).data.glow = 1;
+  g.commands.set('pick', (p) => {
+    for (const b of g.ents.values()) if (b.kind === 'ball' && !b.data.owner && dist(p, b) < 2.5) { b.data.owner = p.id; b.data.glow = 0; g.saveDirty = true; }
+  });
+};
+```
+
+서버의 진입점은 RPG 게임과 같다: `runServer({ port, db, dist, plugins: [balls] })`. 명령(`pick`)의 모양을 화면과 함께 쓰려면 6절처럼 `ClientMsgs`에 선언한다(본보기는 줄이려고 하지 않았다).
+
+### 화면: 엔티티의 모습과 단축키
+
+```ts engine/test/core/client/main.ts
+setLocales([
+  koBase(withIdNames({ nameA: ['빠른', '느긋한', '반짝이는'], nameB: ['공잡이', '마당지기'] })),
+  enBase(withIdNames({ nameA: ['Quick', 'Calm', 'Shiny'], nameB: ['Catcher', 'Keeper'] })),
+]);
+// 서버의 공(g.defineKind('ball'))을 그린다: 빛나는 공은 금빛, 누가 주운 공은 회색으로 작게
+registerKind('ball', {
+  model: () => makeBall(0xf0c040, 0.45),
+  update: (m, [glow]) => { m.root.scale.setScalar(glow ? 1 : 0.6); },
+  label: () => '공',
+  dot: '#f0c040',
+});
+// F: 가까운 공 줍기 (게임의 명령)
+onKey('f', () => send({ t: 'pick' } as never));
+startClient({});
+```
+
+- `registerKind(종류, { model, update, label, snap, animate, h, dot })`(`engine/client/kinds.ts`): `model`은 `{ root: THREE.Group }`을 돌려준다(`makeBox`, `makeBall`, `part`, `mat` 또는 three.js). `update`는 실려 온 값이 바뀔 때, `label`은 이름표(없으면 달지 않는다), `snap`은 보간 없이 바로 그 자리에, `animate`는 틀의 걷기·번쩍임을 쓴다, `dot`은 미니맵·지도의 점 색. 등록하지 않은 종류는 회색 상자로 그린다.
+- 이름표는 `withIdNames({ nameA, nameB })`: 쓰지 않는 모듈의 이름(몬스터, 장비 칸 …)을 적지 않아도 된다. 게임의 문장이 있으면 `mergeLocale`로 더한다(5절).
+- 화면에 보이는 것: 내 이름과 접속자 수, 메뉴('기기' 탭과 소리), 언어, 대화, 미니맵과 지도, 조작 안내(고른 모듈의 키만), 폰의 조이스틱. 체력 막대·재화·가방·기술 단추·대상 창은 없다.
+
+### 시험과 띄우기
+
+- 시험: `engine/test/core/core.test.ts`가 접속, 이동, 공의 동기화와 값의 변화, 공의 월드 저장, 고르지 않은 모듈의 명령 20가지가 웹소켓에서 거절되는 것, 캐릭터 저장에 모듈의 칸이 없는 것을 본다(`npm test`의 `core/core`).
+- 눈으로 보기: `npx vite build -c engine/test/core/vite.config.ts`(→ `dist-core/`) 뒤에 `PORT=3015 DB=memory npx tsx --tsconfig engine/test/core/tsconfig.json engine/test/core/server/main.ts`.
+
+### 다음에 붙일 것
+
+- 재화가 있는 게임: `MODULES`에 `economy`(그리고 아이템이 있으면 `items`)를 더하면 지갑(`g.wallet.add(p, 'gold', n, '이유')`), 내 정보 창의 재화, 상점이 생긴다. 전투·직업 없이 된다.
+- 게임의 창·공유 상태·안내문: 6절과 같다(`mountPanel`, `g.shared`, `MsgMap`).
+- 사람 수를 세는 순위·점수판은 게임의 공유 상태로 만든다(`rank` 모듈은 전투력 순위라 전투 게임의 것이다).

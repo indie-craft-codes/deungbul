@@ -15,9 +15,9 @@ export type MsgKey =
   | 'replaced' // []
   | 'noTarget' // []
   | 'tooFar' // []
-  | 'kill' // [몬스터 id, 경험치, 불씨, 골드]
+  | 'kill' // [몬스터 id, 경험치, 두 번째 재화, 골드]
   | 'levelUp' // [레벨]
-  | 'died' // [다시 일어난 등탑 id]
+  | 'died' // [다시 일어난 곳의 id (g.rules.respawn이 돌려준 것)]
   | 'bought' // [아이템 id, 직업 id]
   | 'classChanged' // [직업 id]
   | 'classFar' // []
@@ -44,7 +44,7 @@ export type MsgKey =
   | 'marketBound' // [귀속 단계] 강화한 장비라 거래소에 올릴 수 없다
   | 'enhanceMax' // []
   | 'mailNew' // [] 우편이 왔다
-  | 'mailGot' // [골드, 경험치, 불씨, 장비 수, 아이템 수] 우편의 보상을 받았다
+  | 'mailGot' // [골드, 경험치, 두 번째 재화, 장비 수, 아이템 수] 우편의 보상을 받았다
   | 'dungeonMate' // [들어간 사람 이름, 던전 id] 파티원이 던전에 들어갔다
   | 'dungeonFar' // [] 문에서 멀다
   | 'dungeonLevel' // [필요한 레벨]
@@ -93,7 +93,7 @@ export type MsgKey =
   | 'guildGave' // [골드]
   | 'guildLevelUp' // [길드 레벨]
   | 'guildNone' // [] 길드가 없는데 길드 대화를 했다
-  | 'awayBack' // [자리를 비운 분, 얻은 불씨, 얻은 골드, 오른 레벨] 자리를 비운 동안 자동 사냥을 했다
+  | 'awayBack' // [자리를 비운 분, 얻은 두 번째 재화, 얻은 골드, 오른 레벨] 자리를 비운 동안 자동 사냥을 했다
   | 'loot' // [재료 id] 재료를 주웠다
   | 'crafted' // [아이템 id, 직업 id]
   | 'forgeFar' // []

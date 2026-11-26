@@ -1,6 +1,6 @@
 // 우편: 보상을 바로 주지 않고 우편으로 보내 두면, 플레이어가 열어서 받는다.
 // 방치 보상, 출석, 일일 임무, 거래소가 이 통로를 쓴다. 새 보상도 send()만 부르면 된다.
-// 우편에는 골드·경험치·불씨뿐 아니라 장비와 재료도 붙는다. 접속해 있지 않은 사람에게는 sendTo()로 보내면
+// 우편에는 골드·경험치·두 번째 재화뿐 아니라 장비와 재료도 붙는다. 접속해 있지 않은 사람에게는 sendTo()로 보내면
 // 월드와 함께 맡아 두었다가 그 사람이 접속할 때 우편함에 넣는다.
 import { MAIL_MAX, isItemId, itemCap, mailKept, type Gear, type ItemId, type Mail, type MailKind, type Reward } from '../../../shared/defs';
 import type { Ent } from '../entity';
@@ -15,7 +15,7 @@ interface Waiting { k: MailKind; a: (string | number)[]; r: Reward }
 /** 그 아이템을 들 수 있는 한도. 낱개 장비로 다루는 무기와 갑옷은 0이다 */
 const cap = (id: ItemId): number => itemCap(id);
 
-/** 우편 한 통에 붙을 수 있는 골드·경험치·불씨의 상한. 정상적인 보상(거래소의 가장 비싼 값 100만)보다 넉넉하고, 깨진 저장이 캐릭터를 망가뜨릴 만큼 크지는 않다 */
+/** 우편 한 통에 붙을 수 있는 골드·경험치·두 번째 재화의 상한. 정상적인 보상(거래소의 가장 비싼 값 100만)보다 넉넉하고, 깨진 저장이 캐릭터를 망가뜨릴 만큼 크지는 않다 */
 const REWARD_MAX = 1e7;
 /** 우편 한 통에 붙을 수 있는 장비의 수 */
 const MAIL_GEAR_MAX = 8;
@@ -24,7 +24,7 @@ const readArgs = (a: unknown[]): (string | number)[] => a.filter((v): v is strin
 
 /**
  * 저장된 보상을 읽는다: 숫자가 아닌 값(문자열), 음수, 모양이 깨진 장비, 없어진 아이템은 버린다.
- * 골드·경험치·불씨는 1 이상 REWARD_MAX 이하의 정수로, 아이템 수는 그 아이템을 들 수 있는 한도까지로 맞춘다.
+ * 골드·경험치·두 번째 재화는 1 이상 REWARD_MAX 이하의 정수로, 아이템 수는 그 아이템을 들 수 있는 한도까지로 맞춘다.
  */
 function readReward(raw: unknown): Reward {
   const d = raw as Record<string, unknown>, r: Reward = {};
@@ -59,7 +59,7 @@ export class MailSys {
       load: (p, raw) => {
         const d = raw as { list?: unknown; seq?: unknown };
         if (!Array.isArray(d.list)) return;
-        // 예전 형식(골드·경험치·불씨만 든 보상)도 그대로 읽힌다
+        // 예전 형식(골드·경험치·두 번째 재화만 든 보상)도 그대로 읽힌다
         p.mail = (d.list as unknown[]).filter((x): x is Mail => shaped(x) && num((x as Mail).id)).map((x) => ({ id: x.id, k: x.k, a: readArgs(x.a), r: readReward(x.r) }));
         MailSys.trim(p.mail);
         p.mailSeq = Math.max(num(d.seq) ? d.seq : 0, ...p.mail.map((x) => x.id));
@@ -144,14 +144,14 @@ export class MailSys {
     if (!take.length) return;
     let gold = 0, exp = 0, sparks = 0, gears = 0, items = 0;
     const left = new Set<Mail>();
-    /** 우편마다 붙어 있던 골드·경험치·불씨: 물건을 다 살핀 뒤에 우편의 종류를 원인으로 지갑에 넣는다 */
+    /** 우편마다 붙어 있던 골드·경험치·두 번째 재화: 물건을 다 살핀 뒤에 우편의 종류를 원인으로 지갑에 넣는다 */
     const paid: { why: string; r: Reward }[] = [];
     for (const m of take) {
       const why = mailWhy(m.k);
       paid.push({ why, r: m.r });
       const restGear: Gear[] = [], restItems: Record<string, number> = {};
       // 가방에는 베낀 것을 넣는다: 같은 보상 값을 여러 우편이 함께 쓰더라도 한 장비가 두 가방에 들어가지 않게
-      for (const it of m.r.gear ?? []) { if (g.gear.put(p, { ...it, opts: it.opts.map(([k, v]): [typeof k, number] => [k, v]) }, why)) gears++; else restGear.push(it); }
+      for (const it of m.r.gear ?? []) { if (g.has('gear') && g.gear.put(p, { ...it, opts: it.opts.map(([k, v]): [typeof k, number] => [k, v]) }, why)) gears++; else restGear.push(it); }
       for (const [item, n] of Object.entries(m.r.items ?? {})) {
         if (!isItemId(item) || !(n >= 1)) continue;
         const got = g.bag.putItem(p, item, Math.floor(n), why);
@@ -159,7 +159,7 @@ export class MailSys {
         if (n > got) restItems[item] = n - got;
       }
       if (!restGear.length && !Object.keys(restItems).length) continue;
-      // 골드·경험치·불씨는 이미 받았으므로 남은 물건만 적어 둔다. 보상 값을 여러 우편이 함께 쓸 수 있어 새로 만든다
+      // 골드·경험치·두 번째 재화는 이미 받았으므로 남은 물건만 적어 둔다. 보상 값을 여러 우편이 함께 쓸 수 있어 새로 만든다
       m.r = {};
       if (restGear.length) m.r.gear = restGear;
       if (Object.keys(restItems).length) m.r.items = restItems;

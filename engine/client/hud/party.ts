@@ -1,10 +1,11 @@
-// 사람을 눌렀을 때 뜨는 창(파티 초대, 차단, 신고), 받은 초대, 파티원 목록.
+// 사람을 눌렀을 때 뜨는 창(차단, 신고: 핵심 / 파티 초대: party / 길드 초대: guild), 받은 초대, 파티원 목록(party).
 import type { PartyMember } from '../../shared/protocol';
 import { $ } from '../app';
 import { L, onLangChange, t } from '../i18n';
 import { send } from '../net';
 import { isBlocked, toggleBlock } from '../social';
 import { S } from '../state';
+import { onMsg } from '../bus';
 import { feed } from './notify';
 
 const ui = {
@@ -18,9 +19,10 @@ let reportArmed = false;
 let inviteTimer = 0;
 let inviteFrom = '';
 
-export function initParty(): void {
-  $('pcardInvite').addEventListener('click', () => { if (cardId) send({ t: 'party', a: 'invite', id: cardId }); hideCard(); });
-  $('pcardGuild').addEventListener('click', () => { if (cardId) send({ t: 'guild', a: 'invite', id: cardId }); hideCard(); });
+/** 사람 카드: 핵심 (차단, 신고). 파티·길드 초대 단추는 그 모듈을 고른 게임에만 있다 */
+export function initCard(): void {
+  $('pcardInvite')?.addEventListener('click', () => { if (cardId) send({ t: 'party', a: 'invite', id: cardId }); hideCard(); });
+  $('pcardGuild')?.addEventListener('click', () => { if (cardId) send({ t: 'guild', a: 'invite', id: cardId }); hideCard(); });
   $('pcardReport').addEventListener('click', () => {
     // 잘못 누르지 않게, 처음 누르면 확인 문구로 바뀌고 한 번 더 눌러야 접수된다
     if (!reportArmed) { reportArmed = true; $('pcardReport').textContent = t('reportConfirm'); return; }
@@ -31,7 +33,13 @@ export function initParty(): void {
     if (cardName) feed(toggleBlock(cardName) ? L().fmt.blocked(cardName) : L().fmt.unblocked(cardName));
     hideCard();
   });
+}
+
+/** 파티: 파티원 목록과 받은 초대 (party) */
+export function initParty(): void {
   $('partyLeave').addEventListener('click', () => send({ t: 'party', a: 'leave' }));
+  onMsg('party', (m) => setParty(m.m));
+  onMsg('pinv', (m) => showInvite(m.name, m.s));
   $('inviteYes').addEventListener('click', () => { send({ t: 'party', a: 'accept' }); closeInvite(); });
   $('inviteNo').addEventListener('click', () => { send({ t: 'party', a: 'decline' }); closeInvite(); });
   onLangChange(renderParty);
@@ -45,9 +53,10 @@ export function showCard(id: number, name: string, sx: number, sy: number): void
   $('pcardReport').textContent = L().ui.report;
   $('pcardBlock').textContent = L().ui[isBlocked(name) ? 'unblock' : 'block'];
   // 이미 같은 파티면 초대할 필요가 없다
-  $('pcardInvite').hidden = S.party.some((m) => m.id === id);
+  const inv = $('pcardInvite'), gi = $('pcardGuild');
+  if (inv) inv.hidden = S.party.some((m) => m.id === id);
   // 내가 길드장이고 상대가 아직 길드가 없을 때만 길드 초대를 보인다
-  $('pcardGuild').hidden = !S.guild?.leader || S.gtags.has(id);
+  if (gi) gi.hidden = !S.guild?.leader || S.gtags.has(id);
   ui.card.hidden = false;
   // 화면 밖으로 나가지 않게 한다
   const w = ui.card.offsetWidth, h = ui.card.offsetHeight;
@@ -69,6 +78,7 @@ export function showInvite(name: string, seconds: number): void {
 
 /** 파티원 목록이 왔다 (빈 목록이면 파티가 없다). */
 export function setParty(members: PartyMember[]): void {
+  if (!ui.box) return; // 파티가 없는 게임
   const before = new Set(S.party.map((m) => m.id));
   S.party = members;
   // 파티원의 이름표를 다른 색으로 보여 준다

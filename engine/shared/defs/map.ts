@@ -1,6 +1,6 @@
 // 맵 정의의 모양과, 게임의 맵 정의(MAP)에서 꺼내 쓰는 것. 맵의 값은 게임의 내용에 있다 (@game/shared/content의 MAP).
 // 틀(engine/shared/world.ts의 buildWorld, 길찾기, 이동, 봇)은 게임의 맵을 이 모양으로만 안다: 등탑이나 연못 같은 낱말은 모른다.
-import { MAP } from '@game/shared/content';
+import { MAP } from '../content';
 
 /** 걸어 다닐 수 있는 네모난 지역 */
 export interface Area { id: string; x0: number; x1: number; z0: number; z1: number }

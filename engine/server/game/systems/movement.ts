@@ -32,6 +32,9 @@ export class Movement {
     g.commands.set('stop', (p) => { p.moving = false; p.targetId = 0; });
   }
 
+  /** 전투 모듈이 없는 게임의 사람 틱: 목표가 있으면 걷기만 한다 (전투가 있으면 전투의 tickPlayer가 추격과 함께 걷는다) */
+  step(e: Ent, dt: number): void { if (e.moving) this.walk(e, this.g.rules.speed(e), dt); }
+
   goTo(e: Ent, x: number, z: number): void { e.tx = x; e.tz = z; e.moving = true; e.stuck = 0; }
 
   /** 한 틱만큼 걷는다. 도착하거나 막히면 moving이 꺼진다. 길찾기는 engine/shared/nav.ts가 한다 (클라이언트 예측과 같은 코드). */

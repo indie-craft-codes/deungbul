@@ -70,3 +70,9 @@ export const idNames = (): ContentNames => ({
   nameA: ['Player'],
   nameB: [''],
 });
+
+/**
+ * 적은 것 말고는 id를 그대로 이름으로 쓰는 이름표. 쓰지 않는 모듈의 이름(몬스터, 아이템, 장비 칸, 등급 …)을 적지 않아도 된다:
+ * 핵심만 쓰는 게임은 koBase(withIdNames({ nameA: [...], nameB: [...] }))처럼 처음 이름의 재료만 적는다
+ */
+export const withIdNames = (names: Partial<ContentNames>): ContentNames => ({ ...idNames(), ...names });

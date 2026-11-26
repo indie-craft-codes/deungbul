@@ -4,7 +4,7 @@ import { AUTO, AWAY, pickPotion, pickSkill, restSpot, shouldRest } from '../shar
 import { dungeonDef, isDungeonId, isMonsterId, monsterDef } from '../shared/defs';
 import { attack, autoWalk, monstersNear, usePotion, useSkill } from './actions';
 import { $ } from './app';
-import { onMsg } from './bus';
+import { bindKey, onMsg } from './bus';
 import { feed } from './hud/notify';
 import { L, t } from './i18n';
 import { send } from './net';
@@ -88,6 +88,7 @@ export function syncAuto(kept: boolean): void {
 }
 
 export function initAuto(): void {
+  bindKey('r', toggleAuto);
   btn.addEventListener('click', () => { toggleAuto(); btn.blur(); });
   setInterval(tick, 300);
   onMsg('welcome', (m) => syncAuto(m.auto === true));

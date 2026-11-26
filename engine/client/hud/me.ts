@@ -3,7 +3,8 @@
 import { SKILL_SLOTS, classOf, isClassId } from '../../shared/defs';
 import { nextTarget, rename, useSkill } from '../actions';
 import { $, clamp, view } from '../app';
-import { onFrame, onSlow } from '../bus';
+import { bindKey, onFrame, onSlow } from '../bus';
+import { hasModule } from '../mods';
 import { L, LOCALES, onLangChange, setLang, t } from '../i18n';
 import type { UiKey } from '../i18n/ko';
 import { S } from '../state';
@@ -13,6 +14,7 @@ import { itemIcon } from './icons';
 const placed = new Map<string, HTMLElement>();
 function placeCurrencyIcons(): void {
   for (const [key, at] of [['cur:gold', ui.gold], ['cur:second', ui.coin]] as const) {
+    if (!at) continue; // 재화가 없는 게임
     let pic = placed.get(key);
     if (!pic) {
       // 게임이 css로 감춘 표시(등불지기의 #coin)에는 붙이지 않는다
@@ -27,7 +29,7 @@ function placeCurrencyIcons(): void {
   }
 }
 
-/** 화면의 요소들. initMe에서 잡는다 (게임이 자기 창을 붙인 뒤여도 되게, 모듈이 읽히는 때에 잡지 않는다) */
+/** 화면의 요소들. initMe에서 잡는다 (게임이 자기 창을 붙인 뒤여도 되게, 모듈이 읽히는 때에 잡지 않는다). 고르지 않은 모듈의 칸(체력, 재화 …)은 null이다 */
 let ui: Record<'hpb' | 'xpb' | 'hpt' | 'lv' | 'status' | 'myName' | 'tgt' | 'tname' | 'thp' | 'tbar' | 'gold' | 'coin', HTMLElement>;
 let skillUi: { name: HTMLElement; cd: HTMLElement; time: HTMLElement; button: HTMLButtonElement }[] = [];
 
@@ -53,9 +55,13 @@ export function initMe(): void {
     hpb: $('hpb'), xpb: $('xpb'), hpt: $('hpt'), lv: $('lv'), status: $('status'), myName: $('myName'),
     tgt: $('tgt'), tname: $('tname'), thp: $('thp'), tbar: $('tbar'), gold: $('gold'), coin: $('coin'),
   };
-  // 기술 버튼
+  // 기술 버튼과 그 단축키(숫자), 대상 고르기(Tab): 전투 모듈의 것
   const skillsEl = $('skills');
-  skillUi = Array.from({ length: SKILL_SLOTS }, (_, i) => {
+  if (hasModule('combat')) {
+    for (let i = 0; i < SKILL_SLOTS && i < 9; i++) bindKey(String(i + 1), () => useSkill(i));
+    bindKey('tab', nextTarget);
+  }
+  skillUi = !hasModule('combat') ? [] : Array.from({ length: SKILL_SLOTS }, (_, i) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'skill';
@@ -64,7 +70,7 @@ export function initMe(): void {
     skillsEl.appendChild(b);
     return { button: b, name: b.querySelector<HTMLElement>('.n')!, cd: b.querySelector<HTMLElement>('.cd')!, time: b.querySelector<HTMLElement>('.t')! };
   });
-  $('tabBtn').addEventListener('click', nextTarget);
+  $('tabBtn')?.addEventListener('click', nextTarget);
 
   // 이름 바꾸기
   const form = $<HTMLFormElement>('renameForm'), input = $<HTMLInputElement>('renameInput');
@@ -97,6 +103,7 @@ export function renderTexts(): void {
   // 기술 칸에 든 기술은 직업마다 다르다
   classOf(S.me?.cls ?? '').skills.forEach((id, i) => {
     const text = loc.skills[id];
+    if (!skillUi[i] || !text) return;
     skillUi[i].name.textContent = text.name;
     skillUi[i].button.title = text.info;
     skillUi[i].button.setAttribute('aria-label', loc.fmt.skillLabel(text.name, text.info, i + 1));
@@ -109,8 +116,8 @@ export function hudFrame(now: number): void {
   const me = S.me;
   const target = me?.attackId ? S.others.get(me.attackId) : undefined;
   view.targetRing.visible = !!target;
-  ui.tgt.hidden = !target;
-  if (target) {
+  if (ui.tgt) ui.tgt.hidden = !target;
+  if (target && ui.tgt) {
     view.targetRing.position.set(target.x, 0.08, target.z);
     view.targetRing.rotation.y = now / 1000;
     ui.tname.textContent = target.name;
@@ -118,8 +125,8 @@ export function hudFrame(now: number): void {
     ui.tbar.style.transform = `scaleX(${clamp(target.hp / target.maxHp, 0, 1)})`;
   }
   if (me) {
-    ui.hpb.style.transform = `scaleX(${clamp(me.hp / me.maxHp, 0, 1)})`;
-    ui.xpb.style.transform = `scaleX(${clamp(me.exp / me.need, 0, 1)})`;
+    if (ui.hpb) ui.hpb.style.transform = `scaleX(${clamp(me.hp / me.maxHp, 0, 1)})`;
+    if (ui.xpb) ui.xpb.style.transform = `scaleX(${clamp(me.exp / me.need, 0, 1)})`;
   }
   skillUi.forEach((s, i) => {
     const left = S.cdEnd[i] - now;
@@ -135,12 +142,15 @@ export function hudSlow(_now: number): void {
   ui.status.textContent = loc.fmt.status(S.online || '–', S.others.size, S.pingMs < 0 ? '–' : S.pingMs + 'ms');
 
   if (!me) return;
-  ui.hpt.textContent = `${me.hp} / ${me.maxHp}`;
-  ui.lv.textContent = loc.fmt.level(me.lv, isClassId(me.cls) ? loc.classes[me.cls].name : '');
-  ui.gold.textContent = loc.fmt.gold(me.gold);
+  // 칸마다 그 모듈을 고른 게임에만 있다 (뼈대의 data-mod)
+  if (ui.hpt) ui.hpt.textContent = `${me.hp} / ${me.maxHp}`;
+  if (ui.lv) ui.lv.textContent = hasModule('growth') ? loc.fmt.level(me.lv, isClassId(me.cls) ? loc.classes[me.cls].name : '') : isClassId(me.cls) ? loc.classes[me.cls].name : '';
+  if (ui.gold) ui.gold.textContent = loc.fmt.gold(me.gold);
   // 두 번째 재화: 이름표에 currency2가 있는 게임만. 자기 표시를 따로 그리는 게임(등불지기)은 css로 #coin을 감춘다
-  const coin = loc.fmt.coinHave(me.sparks);
-  ui.coin.hidden = !coin;
-  ui.coin.textContent = coin;
+  if (ui.coin) {
+    const coin = loc.fmt.coinHave(me.sparks);
+    ui.coin.hidden = !coin;
+    ui.coin.textContent = coin;
+  }
   placeCurrencyIcons();
 }

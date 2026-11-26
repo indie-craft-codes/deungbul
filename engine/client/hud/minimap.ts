@@ -1,8 +1,9 @@
 // 미니맵 (PC 전용): 나를 가운데에 두고 주변을 화면과 같은 방향으로 그린다.
-// 등탑과 퀘스트 목적지는 범위 밖이어도 가장자리에 붙여 보여 줘서, 어느 쪽인지 항상 알 수 있다.
+// 게임이 등록한 표식(addMarks: 등불지기의 등탑과 퀘스트 목적지 같은 것)은 범위 밖이어도 가장자리에 붙여 보여 줘서, 어느 쪽인지 항상 알 수 있다.
 import { AREAS } from '../../shared/world';
 import { $ } from '../app';
 import { onSlow } from '../bus';
+import { kindLook } from '../kinds';
 import { S } from '../state';
 
 const canvas = $('minimap') as HTMLCanvasElement;
@@ -87,6 +88,7 @@ function draw(): void {
     const p = at(r.x, r.z);
     if (r.kind === 'm') dot(c, p.x, p.y, 1.8, COLOR.foe);
     else if (r.kind === 'p') dot(c, p.x, p.y, 2.2, COLOR.other);
+    else { const col = kindLook(r.kind)?.dot; if (col) dot(c, p.x, p.y, 1.8, col); } // 게임의 종류 (registerKind의 dot)
   }
   // 표식: 등탑, 상인, 퀘스트 목적지처럼 게임마다 다른 것은 밖에서 등록한다 (addMarks)
   for (const fn of markers) {

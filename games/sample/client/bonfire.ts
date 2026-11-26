@@ -53,7 +53,7 @@ export function initBonfire(): void {
   addMapPlaces(() => [{ x: BONFIRE.x, z: BONFIRE.z, name: t('bonfire'), kind: 'town', info: G.heat > 0 ? t('bonfireWarm') : t('bonfireCold') }]);
 
   ui.one.addEventListener('click', () => { feed(1); ui.one.blur(); });
-  // 메뉴: 모닥불 탭을 장비 탭 뒤에 더하고, 이 작은 게임에 맞지 않는 거래소와 길드 탭은 감춘다 (서버의 기능은 그대로다)
+  // 메뉴: 모닥불 탭을 장비 탭 뒤에 더하고 탭의 차례를 고른다. 거래소와 길드는 모듈을 고르지 않아(shared/content의 MODULES) 탭도 서버의 기능도 없다
   addMenuTab({
     id: 'camp', label: () => t('bonfire'), sig: () => [G.heat, G.fed, logs()],
     draw: (list) => {

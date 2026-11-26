@@ -12,8 +12,11 @@ import type { ItemDef, ItemId } from '@engine/shared/defs/items';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import { GEAR_BASE } from '@engine/shared/defaults';
+import { RPG_MODULES } from '@engine/shared/modules';
 
-export * from '@engine/shared/defaults';
+/** 쓸 모듈: 틀의 시험이라 모두 켠다 */
+export const MODULES = RPG_MODULES;
+
 export const GUEST_NAME = 'Tester';
 /** 재화: 상한을 기본값(1e9)과 다르게 둔다. 틀이 상한을 박아 두지 않고 이 표에서 읽는지 시험이 보게 한다 (wallet.test) */
 export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: true, max: 5e10 }, sparks: { tradable: false, max: 3e9 }, exp: { tradable: false } };

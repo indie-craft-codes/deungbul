@@ -150,7 +150,7 @@ export class GearSys {
 
   /** 가방에 넣는다. 가득 찼으면 넣지 못하고 알린다: 그 장비는 버려진다. why: 원인의 이름 (systems/bag.ts) */
   give(p: Ent, it: Gear, why = ''): boolean {
-    if (!this.g.bag.giveGear(p, it, why)) { this.g.notify(p, 'gearFull'); this.g.bag.lost(p, it, why); this.g.away.tally(p, 'lost', 1); return false; }
+    if (!this.g.bag.giveGear(p, it, why)) { this.g.notify(p, 'gearFull'); this.g.bag.lost(p, it, why); if (this.g.has('away')) this.g.away.tally(p, 'lost', 1); return false; }
     this.g.notify(p, 'gearDrop', it.slot, RARITIES[it.rar].id);
     return true;
   }

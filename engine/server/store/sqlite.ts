@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { EconRow, PlayerSave, ReportSave, Store, WorldSave } from './types';
+import type { EconRow, EconStore, PlayerSave, ReportSave, Store, WorldSave } from './types';
 
 /**
  * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
@@ -17,7 +17,7 @@ export const SCHEMA: readonly string[] = [
 ];
 
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
-export class SqliteStore implements Store {
+export class SqliteStore implements Store, EconStore {
   private db: DatabaseSync;
   readonly file: string;
   /** 지금 열린 묶음의 깊이 (transaction의 SAVEPOINT 이름에 쓴다) */

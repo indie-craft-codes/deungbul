@@ -9,17 +9,23 @@ import type { MsgArg, MsgKey } from './messages';
  * 프로토콜 번호. 서버가 welcome에 실어 보내고, 클라이언트는 자기 빌드의 번호와 다르면 새로고침을 권한다
  * (서버만 새로 올라가고 화면은 옛 빌드가 남아 있는 때). 메시지의 모양이나 뜻을 바꾸면 올린다. 칸을 덧붙이기만 한 것은 올리지 않는다.
  */
-export const PROTOCOL = 2;
+export const PROTOCOL = 3;
 
-/** 'p' 플레이어, 'm' 몬스터 */
-export type Kind = 'p' | 'm';
+/**
+ * 엔티티의 종류: 'p' 플레이어(핵심), 'm' 몬스터(전투 모듈), 그 밖의 것은 게임이 등록한 종류 (서버 g.defineKind, 화면 registerKind):
+ * 구조물, 떨어진 물건, 공, 탈것 같은 것. 이름은 영문 소문자로 시작하는 16자 이내
+ */
+export type Kind = string;
 
-/** [id, x, z, 바라보는 방향, 이동 중(1) 여부, 체력] */
-export type EntState = [id: number, x: number, z: number, face: number, moving: 0 | 1, hp: number];
+/**
+ * [id, x, z, 바라보는 방향, 이동 중(1) 여부, 체력, …게임의 값]. 게임의 값은 그 종류가 등록한 sync가 돌려준 수들이다 (없으면 칸이 없다).
+ * 체력 칸은 체력이 없는 종류에서 0이다
+ */
+export type EntState = [id: number, x: number, z: number, face: number, moving: 0 | 1, hp: number, ...vals: number[]];
 
 export interface EnterInfo {
   id: number; kind: Kind;
-  /** 몬스터 종류 (MONSTERS의 키). 플레이어는 빈 문자열 */
+  /** 몬스터 종류 (MONSTERS의 키), 게임의 종류는 놓을 때 준 type. 플레이어는 빈 문자열 */
   type: string;
   /** 플레이어 이름. 몬스터는 빈 문자열이고 이름은 클라이언트가 type으로 찾는다 */
   name: string;
@@ -32,7 +38,7 @@ export interface EnterInfo {
   /** 플레이어의 직업 (CLASSES의 키). 아직 고르지 않았거나 몬스터면 빈 문자열 */
   c: string;
   x: number; z: number; face: number; hp: number; maxHp: number;
-  /** 습격으로 온 적이면 1 */
+  /** 몰려온 적(게임의 규칙이 부른 적: Ent.swarm)이면 1 */
   r?: 1;
 }
 
@@ -150,22 +156,25 @@ export type ServerMsg =
       ents: EntState[];
       ev?: Ev[];
     }
-  /** 내 성장 수치. 바뀔 때만 온다 */
+  /**
+   * 내 성장 수치. 바뀔 때만 온다. 칸은 그 모듈을 고른 게임에만 있다 (engine/server/game/systems/status.ts):
+   * maxHp[combat], lv·exp·need[growth], sparks·gold[economy], weapon·armor·items[items], cls[classes]. 그 모듈이 하나도 없으면 오지 않는다
+   */
   | {
-      t: 'stat'; maxHp: number; lv: number; exp: number; need: number; sparks: number;
-      gold: number; weapon: string;
+      t: 'stat'; maxHp?: number; lv?: number; exp?: number; need?: number; sparks?: number;
+      gold?: number; weapon?: string;
       /** 입은 갑옷. 없으면 빈 문자열 */
-      armor: string;
+      armor?: string;
       /** 직업. 아직 고르지 않았으면 빈 문자열 */
-      cls: string;
+      cls?: string;
       /** 가진 물약: 아이템 id별 개수 */
-      items: Record<string, number>;
+      items?: Record<string, number>;
     }
-  /** 내 장비·우편·일일 임무. 바뀔 때만 온다 */
-  | { t: 'meta'; gear: Gear[]; worn: Record<string, number>; mail: Mail[]; daily: { prog: Record<string, number>; got: string[]; streak: number }; power: number; build: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
+  /** 내 장비·우편·일일 임무. 바뀔 때만 온다. 칸은 그 모듈을 고른 게임에만 있다: gear·worn[gear], mail[mail], daily[daily], power[rank], build[build] */
+  | { t: 'meta'; gear?: Gear[]; worn?: Record<string, number>; mail?: Mail[]; daily?: { prog: Record<string, number>; got: string[]; streak: number }; power?: number; build?: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
   /** 내가 들어가 있는 던전의 상태. id가 빈 문자열이면 밖이다. left는 남은 시간(초, 끝낸 뒤에는 나가기까지), foes는 남은 적 */
   | { t: 'dungeon'; id: string; left: number; foes: number; cleared: boolean }
-  /** 채널: me는 내 채널 번호(1부터), list는 채널별 인원. foes는 습격 중일 때만 오는 채널별 남은 적의 수 */
+  /** 채널: me는 내 채널 번호(1부터), list는 채널별 인원. foes는 게임의 규칙이 '바쁜 때'(Channels.extraFoes)를 알릴 때만 오는 채널별 남은 적의 수 */
   | { t: 'channels'; me: number; list: number[]; foes?: number[] }
   /** 순위표. me는 내 순위(0부터, 없으면 -1) */
   | { t: 'rank'; list: RankRow[]; me: number }

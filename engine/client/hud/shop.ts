@@ -3,7 +3,7 @@ import { POTIONS } from '../../shared/auto';
 import { ITEMS, POTION_MAX, SHOPS, nearShop, SHOP_STOCK, itemDef, isItemId, type ItemId } from '../../shared/defs';
 import { buy, usePotion } from '../actions';
 import { $ } from '../app';
-import { onFrame, onMsg, onSlow } from '../bus';
+import { bindKey, onFrame, onMsg, onSlow } from '../bus';
 import { L, itemInfo, itemName, onLangChange, t } from '../i18n';
 import { rules } from '../rules';
 import { S } from '../state';
@@ -15,6 +15,7 @@ let potion: { button: HTMLButtonElement; count: HTMLElement; cd: HTMLElement; ti
 
 export function initShop(): void {
   ui = { panel: $('shop'), gold: $('shopGold'), list: $('shopList') };
+  bindKey('q', usePotion);
   // 물약 버튼: 기술 버튼 옆에 둔다 (단축키 Q). 물약 아이템이 하나도 없는 게임에는 두지 않는다
   if (POTIONS.length > 0) {
     const b = document.createElement('button');

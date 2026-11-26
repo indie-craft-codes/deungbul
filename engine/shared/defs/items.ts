@@ -1,5 +1,5 @@
 // 아이템의 모양과 도우미. 아이템과 상점의 표는 게임의 내용에 있다 (@game/shared/content).
-import { ITEMS, MAT_MAX, POTION_MAX, SHOPS, SHOP_REACH } from '@game/shared/content';
+import { ITEMS, MAT_MAX, POTION_MAX, SHOPS, SHOP_REACH } from '../content';
 
 export interface ItemDef {
   /** mat: 제작 재료 (제작법의 모양은 engine/shared/defs/craft.ts의 Recipe, 표는 게임의 내용에 있다) */
@@ -18,7 +18,7 @@ export interface ItemDef {
   max?: number;
   /**
    * 잠금 열쇠: 이 조건이 풀려야 상점에 들어온다. 틀은 열쇠의 뜻을 모르고 g.rules.unlocked(열쇠)에 묻기만 한다.
-   * 이 게임에서는 돌아와야 하는 주민의 id다 (아래 ITEMS에서 satisfies ResidentId로 오타를 잡는다)
+   * 열쇠의 뜻은 게임이 정한다 (등불지기에서는 돌아와야 하는 주민의 id)
    */
   needs?: string;
 }

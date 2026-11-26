@@ -1,0 +1,76 @@
+// 틀의 선택 모듈: 장르에 매인 기능(전투, 직업, 아이템, 장비, 재화 …)의 묶음과 그 사이의 의존.
+// 틀의 핵심(게임 루프, 접속과 세션, 이동, 맵·지역·길찾기, 엔티티와 시야 동기화, 채널, 대화·이름·신고·제재·관리자 통로·기기 옮기기,
+// 저장과 이전·백업, 언어, 입력, 카메라, 장면)은 늘 돈다. 아래 모듈은 게임이 내용의 MODULES에 적은 것만 돈다:
+//   서버  그 모듈의 시스템을 만들고 명령·틱·저장 칸·개인 상태를 등록한다. 적지 않은 모듈의 명령은 등록되지 않아 웹소켓으로 보내도 무시된다
+//   화면  그 모듈의 창·단추·메뉴 탭·단축키를 붙인다 (engine/client/modules.ts)
+// 의존: 모듈은 needs의 모듈 없이는 돌지 않는다. 빠진 것이 있으면 서버와 화면이 시작할 때 무엇이 빠졌는지 오류로 알린다 (checkModules).
+// 이 파일은 아무것도 import하지 않는다 (서버·화면·내용 파일 어디서나 읽는다).
+
+/** 모듈마다: 무엇인가(한 줄), 없으면 돌지 않는 모듈 */
+export const MODULE_TABLE = {
+  /** 재화: 지갑(골드, 두 번째 재화)과 경제 장부. 재화를 내고 받는 모든 모듈의 바탕 */
+  economy: { needs: [] },
+  /** 성장: 레벨과 경험치 (경험치는 지갑을 지나는 재화다) */
+  growth: { needs: ['economy'] },
+  /** 직업: 고르기와 바꾸기, 직업마다의 체력과 기술 */
+  classes: { needs: [] },
+  /** 전투: 체력·피해·기술·몬스터·리스폰·필드 보스, 쓰러짐과 부활, 처치 보상 */
+  combat: { needs: ['classes'] },
+  /** 능력치와 기술 강화: 레벨마다 받는 점수를 찍고 기술을 올린다 */
+  build: { needs: ['growth', 'combat', 'economy'] },
+  /** 아이템: 가방(재료·물약), 상점, 물약 마시기, 대장간 제작, 처치의 재료 드롭 */
+  items: { needs: ['economy'] },
+  /** 장비: 드롭 장비, 끼기·팔기·비교, 강화·재련·분해, 장비 가방과 넓히기 */
+  gear: { needs: ['items', 'economy'] },
+  /** 우편: 보상을 맡아 두었다가 받는다 */
+  mail: { needs: ['items', 'economy'] },
+  /** 일일 임무와 출석 (보상은 우편으로) */
+  daily: { needs: ['mail'] },
+  /** 접속하지 않은 동안의 보상 (우편으로) */
+  idle: { needs: ['mail'] },
+  /** 파티: 초대, 함께 받는 처치 보상, 파티원 표시 */
+  party: { needs: [] },
+  /** 길드: 만들기, 초대, 기부, 공지, 길드 대화 */
+  guild: { needs: ['economy'] },
+  /** 거래소: 장비와 재료를 사고판다 (판 돈은 우편으로) */
+  market: { needs: ['items', 'gear', 'mail', 'economy'] },
+  /** 던전: 인스턴스, 하루 횟수, 끝낸 보상 */
+  dungeon: { needs: ['combat', 'mail', 'daily', 'gear'] },
+  /** 순위: 전투력 순위표 */
+  rank: { needs: ['growth'] },
+  /** 자동 사냥과 자리 비움 사냥 (접속이 끊겨도 서버가 이어서 싸운다) */
+  away: { needs: ['combat'] },
+} as const satisfies Record<string, { needs: readonly string[] }>;
+
+export type ModuleId = keyof typeof MODULE_TABLE;
+
+/**
+ * 모듈의 저장 칸: 캐릭터 저장의 ext 칸·최상위 칸과 월드 저장의 칸이 어느 모듈의 것인가.
+ * 고르지 않은 모듈의 칸은 읽은 그대로 두었다가 다시 적는다 (engine/server/game/game.ts): 모듈을 꺼도 사람과 월드의 것(골드, 우편, 거래소에 맡긴 물건)이 사라지지 않고, 다시 켜면 이어진다.
+ * 틀에 저장 칸을 가진 모듈을 더하면 여기에도 적는다 (engine/test/fx/modules.test.ts가 등록된 칸과 견준다)
+ */
+export const MODULE_SAVES: { player: Readonly<Record<string, ModuleId>>; top: Readonly<Record<string, ModuleId>>; world: Readonly<Record<string, ModuleId>> } = {
+  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build' },
+  top: { lv: 'growth', exp: 'growth', need: 'growth', maxHp: 'combat', sparks: 'economy', gold: 'economy', weapon: 'items', armor: 'items', items: 'items', cls: 'classes', auto: 'away' },
+  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank' },
+};
+/** 모든 모듈 (표의 차례) */
+export const ALL_MODULES = Object.keys(MODULE_TABLE) as ModuleId[];
+/** 전통적인 탭 타깃 MMORPG가 쓰는 모듈 전부. 등불지기처럼 다 쓰는 게임은 `MODULES = RPG_MODULES`로 적어도 된다 */
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES;
+
+/**
+ * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).
+ * 고른 모듈의 집합을 돌려준다.
+ */
+export function checkModules(list: readonly string[], where = 'MODULES'): ReadonlySet<ModuleId> {
+  if (!Array.isArray(list)) throw new Error(`${where}가 목록이 아닙니다: 내용(shared/content)에서 export const MODULES = [...]로 쓸 모듈을 고른다 (빈 목록이면 핵심만)`);
+  const known = new Set<string>(ALL_MODULES);
+  const bad = list.filter((m) => !known.has(m));
+  if (bad.length) throw new Error(`${where}에 모르는 모듈이 있습니다: ${bad.join(', ')} (있는 모듈: ${ALL_MODULES.join(', ')})`);
+  const on = new Set(list as ModuleId[]);
+  const missing: string[] = [];
+  for (const m of on) for (const need of MODULE_TABLE[m].needs as readonly ModuleId[]) if (!on.has(need)) missing.push(`${m} → ${need}`);
+  if (missing.length) throw new Error(`${where}에서 고른 모듈이 의존하는 모듈이 빠졌습니다: ${missing.join(', ')}. 빠진 모듈을 함께 고르거나 그 모듈을 뺀다`);
+  return on;
+}

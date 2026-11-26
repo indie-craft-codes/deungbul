@@ -1,18 +1,23 @@
 // 게임의 중심. 상태(엔티티, 시계)와 시스템들을 묶고, 시스템끼리 쓰는 공용 통로를 제공한다.
 // 통신은 모른다: 밖으로 나갈 것은 outbox에 쌓아 두고 net 계층이 가져간다.
 //
-// 새 기능을 더하는 방법:
-//   1. engine/server/game/systems/에 시스템 파일을 만든다.
-//   2. 생성자에서 필요한 것을 등록한다: commands(플레이어 명령), on(사건 구독), mods(수치 보정),
-//      ticks(주기 처리), saves(캐릭터 저장), worldSaves(월드 저장), shared(모두에게 보내는 공유 상태).
-//   3. 아래 Game 생성자에 한 줄 추가한다.
-// 이 게임에만 있는 규칙(등탑, 습격, 등탑지기, 퀘스트)은 생성자에 적지 않고 규칙 플러그인(GameOptions.plugins)으로 깐다: ./deungbul.ts
+// 틀의 핵심(이동, 플레이어, 채널, 제재, 봇)은 늘 만들어진다. 장르에 매인 시스템(전투, 직업, 아이템, 장비, 재화 …)은 선택 모듈이다
+// (engine/shared/modules.ts): 게임이 내용의 MODULES에 적은 모듈의 시스템만 만들고, 적지 않은 모듈의 칸(g.wallet 같은 것)은
+// 건드리면 '그 모듈을 고르지 않았다'는 오류를 던지는 자리표다. 그 모듈의 명령·틱·저장 칸·개인 상태도 등록되지 않는다.
+// 핵심의 코드와 다른 모듈은 고르지 않았을 수 있는 모듈을 g.has('이름')으로 물은 뒤에 쓴다.
+//
+// 게임의 규칙은 틀을 고치지 않고 규칙 플러그인(GameOptions.plugins)으로 깐다: 게임의 서버 폴더에 시스템을 만들고 플러그인에서 g.이름 = new 시스템(g)으로 단다
+// (등불지기는 games/deungbul/server/deungbul.ts, 예제는 games/sample/server/sample.ts). 시스템은 생성자에서 필요한 것을 등록한다:
+//   commands(플레이어 명령), on(사건 구독), mods(수치 보정), ticks(주기 처리), saves(캐릭터 저장), worldSaves(월드 저장),
+//   shared(모두에게 보내는 공유 상태), personal(본인에게만 보내는 상태), defineKind(게임의 엔티티 종류).
+// 틀 자체에 어느 게임에나 쓸 새 모듈을 더할 때만 engine/server/game/systems/에 파일을 만들고 engine/shared/modules.ts의 표와 아래 생성자에 한 줄씩 더한다.
 import { MONSTERS, SPAWN, type MonsterDef } from '../../shared/defs';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import { NavGrid } from '../../shared/nav';
 import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
 import { resolve } from '../../shared/sim';
-import { LEVEL } from '../../shared/defs';
+import { LEVEL, MODULES } from '../../shared/defs';
+import { MODULE_SAVES, checkModules, type ModuleId } from '../../shared/modules';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
 import type { PlayerSave, WorldSave } from '../store';
 import type { Ent } from './entity';
@@ -44,6 +49,7 @@ import { Party } from './systems/party';
 import { Movement } from './systems/movement';
 import { Players } from './systems/players';
 import { Shop } from './systems/shop';
+import { Status } from './systems/status';
 import { Wallet } from './systems/wallet';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
@@ -75,7 +81,7 @@ export interface Hooks extends HooksExt {
 
 /**
  * 게임마다 다른 규칙이 끼어드는 자리. 기본값은 '그런 규칙이 없다'이고, 그 규칙을 가진 시스템이 덮어쓴다
- * (이 게임에서는 등탑과 습격). 이동·전투·상점 같은 틀은 등탑을 직접 알지 않고 여기만 본다.
+ * (등불지기에서는 등탑과 습격). 이동·전투·상점 같은 틀은 게임의 시스템을 직접 알지 않고 여기만 본다.
  */
 export interface Rules extends RulesExt {
   /** 쓰러진 사람이 다시 일어날 자리. id는 안내문에 넣을 장소의 이름표 */
@@ -86,7 +92,7 @@ export interface Rules extends RulesExt {
   canChangeClass: (p: Ent) => boolean;
   /** 조건(key)이 풀렸는가: 상점 물건과 제작의 잠금 */
   unlocked: (key: string) => boolean;
-  /** 습격으로 온 적이 향하는 곳. 없으면 평소의 몬스터처럼 군다 */
+  /** 몰려온 적(Ent.swarm)이 향하는 곳. 없으면 평소의 몬스터처럼 군다 */
   siege: { x: number; z: number } | null;
   /** 이 캐릭터에게 게임의 진행(틀이 모르는 칸)이 있는가. 아무것도 하지 않은 새 캐릭터를 저장하지 않는 규칙이 틀의 칸(직업, 레벨, 골드 등)에 더해 묻는다. 없으면 '없다' */
   touched?: (p: Ent) => boolean;
@@ -98,7 +104,7 @@ export interface Rules extends RulesExt {
  */
 export interface Saver { name: string; save: (p: Ent) => unknown; load: (p: Ent, raw: unknown) => void; legacy?: (whole: Readonly<Record<string, unknown>>) => unknown }
 
-/** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (주민 혜택, 나중의 장비와 버프). */
+/** 수치 보정. 여러 시스템이 같은 수치에 보정을 걸 수 있다 (장비, 기술의 강화, 게임의 규칙). */
 export type ModName = 'damage' | 'guard' | 'regen' | 'sparkBonus' | 'crit' | 'hp' | 'exp' | keyof ModsExt;
 export class Modifiers {
   private list = new Map<ModName, ((p?: Ent) => number)[]>();
@@ -121,7 +127,24 @@ export class Modifiers {
  */
 export type Plugin = (g: Game) => void;
 
+/**
+ * 게임이 등록하는 엔티티 종류 (g.defineKind): 구조물, 떨어진 물건, 발사체, 탈것, 공 같은 것. 놓는 것은 g.place.
+ * 위치·이동·층·이름은 틀이 다루고(시야에 들어오면 화면에 보낸다), 그 밖의 값은 아래 함수로 게임이 정한다
+ */
+export interface KindDef {
+  /** 틱마다 그 종류의 엔티티 하나마다 (움직이게 하려면 g.movement.goTo와 g.movement.walk를 쓰거나 x, z를 직접 바꾼다) */
+  tick?: (e: Ent, dt: number) => void;
+  /** 시야 안의 화면에 실어 보낼 값: 수 몇 개 (소수 둘째 자리까지). 바뀌면 다시 간다. 화면은 registerKind의 update로 받는다 */
+  sync?: (e: Ent) => readonly number[];
+  /** 월드와 함께 저장한다: 하나를 저장할 값으로. 주면 월드 저장의 'kind.<종류>' 칸에 그 종류의 엔티티가 모두 적힌다 */
+  save?: (e: Ent) => unknown;
+  /** 저장한 값 하나로 엔티티를 되살린다 (g.place를 부른다). 저장에 그 칸이 있으면 먼저 지금 있는 그 종류의 엔티티를 모두 지운 뒤 하나씩 부른다 */
+  load?: (raw: unknown) => void;
+}
+
 export interface GameOptions {
+  /** 쓸 모듈. 주지 않으면 내용의 MODULES (시험이 같은 내용으로 모듈을 줄여 보려고 준다) */
+  modules?: readonly ModuleId[];
   /** 규칙 플러그인들. 주지 않으면 틀만으로 만들어진다: 게임을 만드는 쪽이 자기 규칙을 적어 넘긴다 (이 게임은 games/deungbul/server/main.ts와 games/deungbul/test/game.ts) */
   plugins?: Plugin[];
   /** 현재 시각(ms). 시험에서 시간을 다루려고 바꿀 수 있다 */
@@ -130,6 +153,15 @@ export interface GameOptions {
 
 /** 게임의 규칙 시스템이 다는 칸(g.tower 같은 것)을 Game의 타입에 잇는다: GameSystems(./ext.ts)에 게임이 더한다 */
 export interface Game extends GameSystems {}
+
+/**
+ * 고르지 않은 모듈의 시스템 자리: 무엇을 건드리든 '그 모듈을 고르지 않았다'는 오류를 던진다.
+ * 핵심과 다른 모듈은 g.has(모듈)로 먼저 묻고 쓰므로, 이 오류는 묻지 않고 쓴 곳(게임의 규칙이나 틀의 빠진 확인)을 바로 가리킨다
+ */
+function off<T extends object>(module: ModuleId, name: string): T {
+  const fail = (): never => { throw new Error(`g.${name}: 모듈 '${module}'를 고르지 않았습니다. 내용의 MODULES에 '${module}'를 더하거나, 쓰기 전에 g.has('${module}')로 확인하세요`); };
+  return new Proxy({} as T, { get: fail, set: fail, has: fail });
+}
 
 /** 등록되지 않은 싸우는 법을 이미 알린 몬스터 (한 프로세스에 한 번만 알린다: 시험은 게임을 여러 번 만든다) */
 const warnedBehavior = new Set<string>();
@@ -142,6 +174,8 @@ export class Game {
   /** 서버가 켜진 뒤 흐른 게임 시간(초) */
   clock = 0;
   readonly now: () => number;
+  /** 이 게임이 고른 모듈 (내용의 MODULES 또는 GameOptions.modules) */
+  readonly modules: ReadonlySet<ModuleId>;
 
   // ---- 밖으로 나갈 것 (net 계층이 가져가고 비운다) ----
   /** 마지막 스냅샷 뒤에 쌓인 사건 */
@@ -187,86 +221,101 @@ export class Game {
   readonly saves: Saver[] = [];
   /** 게임의 저장 이전 목록 (./migrate.ts): 게임의 칸의 모양을 바꿀 때 끝에 한 단계씩 더한다. 저장의 gv 칸이 이것의 버전이다 */
   readonly migrations: Migrations = { player: [], world: [] };
-  /** 모든 시스템이 만들어진 뒤에 한 번 불린다. 자기보다 뒤에 만들어지는 시스템의 접점을 채울 때 쓴다 (예: 습격이 채널의 extraFoes를) */
+  /** 모든 시스템이 만들어진 뒤에 한 번 불린다. 자기보다 뒤에 만들어지는 시스템의 접점을 채울 때 쓴다 (예: 게임의 규칙이 채널의 extraFoes를) */
   readonly ready: (() => void)[] = [];
   /** 엔티티가 만들어질 때마다 불린다. 게임이 더한 칸(EntExt)의 처음 값을 채운다 */
   readonly entInit: ((e: Ent) => void)[] = [];
   /** 몬스터를 잡은 사람이 덤으로 받는 경험치 (휴식 보너스 같은 것). 등록한 함수들의 값을 더한다 */
   readonly killBonus: ((p: Ent, m: Ent) => number)[] = [];
   /**
+   * 전송마다 본인에게 보낼 메시지를 만드는 것들: 사람마다 불려, 보낼 것이 있으면 메시지를, 없으면 null을 돌려준다
+   * (모듈의 성장 수치 'stat'과 장비·우편 'meta'가 쓴다: systems/status.ts). 값 하나를 바뀔 때마다 보내는 것이면 personal이 더 쉽다
+   */
+  readonly perFlush: ((p: Ent) => ServerMsg | null)[] = [];
+  /**
    * 개인 상태: 본인에게만 보내는 값의 한 칸 (모두에게 보내는 shared의 짝). 통신 계층이 { t: 'me', k: name, s: state(p) }로 보낸다: 접속 직후에 전부, 그 뒤로는 바뀐 칸만.
    * dirty를 주지 않으면 마지막으로 보낸 값과 달라졌을 때 보낸다 (수 하나처럼 값이 작을 때). dirty를 주면 그것이 참일 때 보내고, 보낸 뒤에 sent가 불린다 (표시를 지우는 자리)
    */
   readonly personal: { name: string; state: (p: Ent) => unknown; dirty?: (p: Ent) => boolean; sent?: (p: Ent) => void }[] = [];
+  /** 게임이 등록한 엔티티 종류 (defineKind) */
+  readonly kinds = new Map<string, KindDef>();
+  /** 월드 저장에서 읽었지만 이 게임이 고르지 않은 모듈의 칸 (거래소, 길드 …): 다시 저장할 때 그대로 적는다 (MODULE_SAVES) */
+  private keptWorld: WorldSave = {};
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
   private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;
 
   // ---- 시스템 ----
-  /** 재화(골드, 불씨, 경험치)를 더하고 빼는 한 통로. 다른 시스템과 규칙 플러그인이 만들어질 때부터 쓸 수 있게 가장 먼저 만든다 */
+  // 모듈의 시스템은 그 모듈을 고르지 않았으면 자리표다(off): 쓰기 전에 g.has(모듈)로 묻는다. 모듈 이름은 칸마다 [ ]에 적었다
+  /** [economy] 재화(골드, 두 번째 재화, 경험치)를 더하고 빼는 한 통로. 다른 시스템과 규칙 플러그인이 만들어질 때부터 쓸 수 있게 가장 먼저 만든다 */
   readonly wallet: Wallet;
-  /** 아이템(재료, 물약)과 낱개 장비를 넣고 빼는 한 통로. 지갑과 같은 까닭으로 먼저 만든다 */
+  /** [items] 아이템(재료, 물약)과 낱개 장비를 넣고 빼는 한 통로. 지갑과 같은 까닭으로 먼저 만든다 */
   readonly bag: Bag;
   readonly movement: Movement;
   readonly players: Players;
-  readonly combat: Combat;
-  readonly monsters: Monsters;
+  /** [combat] */ readonly combat: Combat;
+  /** [combat] */ readonly monsters: Monsters;
   readonly bots: Bots;
-  readonly away: Away;
-  readonly shop: Shop;
-  readonly classes: Classes;
-  readonly boss: Boss;
-  readonly craft: Craft;
-  readonly party: Party;
-  readonly gear: GearSys;
-  readonly salvage: Salvage;
-  readonly mail: MailSys;
-  readonly idle: Idle;
-  readonly ledger: Ledger;
-  readonly daily: Daily;
-  readonly rank: Rank;
-  readonly dungeon: Dungeon;
+  /** [away] */ readonly away: Away;
+  /** [items] */ readonly shop: Shop;
+  /** [classes] */ readonly classes: Classes;
+  /** [combat] */ readonly boss: Boss;
+  /** [items] */ readonly craft: Craft;
+  /** [party] */ readonly party: Party;
+  /** [gear] */ readonly gear: GearSys;
+  /** [gear] */ readonly salvage: Salvage;
+  /** [mail] */ readonly mail: MailSys;
+  /** [idle] */ readonly idle: Idle;
+  /** [economy] */ readonly ledger: Ledger;
+  /** [daily] */ readonly daily: Daily;
+  /** [rank] */ readonly rank: Rank;
+  /** [dungeon] */ readonly dungeon: Dungeon;
   readonly channels: Channels;
-  readonly build: Build;
-  readonly market: Market;
-  readonly guild: Guild;
+  /** [build] */ readonly build: Build;
+  /** [market] */ readonly market: Market;
+  /** [guild] */ readonly guild: Guild;
   /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
   readonly sanctions: Sanctions;
 
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
-    this.wallet = new Wallet(this);
-    this.bag = new Bag(this);
+    // 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 여기서 멈춘다 (engine/shared/modules.ts)
+    this.modules = checkModules(opts.modules ?? MODULES, opts.modules ? 'GameOptions.modules' : '내용의 MODULES');
+    // 만드는 차례가 곧 등록의 차례(저장 칸, 사건 처리기, 틱)다: 저장의 모양과 난수의 차례가 바뀌지 않게 예전 차례를 지킨다
+    const has = (m: ModuleId) => this.modules.has(m);
+    this.wallet = has('economy') ? new Wallet(this) : off('economy', 'wallet');
+    this.bag = has('items') ? new Bag(this) : off('items', 'bag');
     this.movement = new Movement(this);
     this.players = new Players(this);
-    this.combat = new Combat(this);
-    this.monsters = new Monsters(this);
+    this.combat = has('combat') ? new Combat(this) : off('combat', 'combat');
+    this.monsters = has('combat') ? new Monsters(this) : off('combat', 'monsters');
     this.bots = new Bots(this);
-    this.away = new Away(this);
+    this.away = has('away') ? new Away(this) : off('away', 'away');
     // 게임의 규칙이 깔리는 자리 (Plugin의 설명)
     for (const install of opts.plugins ?? []) install(this);
     // 몬스터가 적은 싸우는 법이 등록되어 있는가 (없으면 기본대로 싸운다: 이름을 잘못 적은 것을 서버를 띄울 때 알린다)
-    for (const [type, def] of Object.entries(MONSTERS as Readonly<Record<string, MonsterDef>>)) if (def.behavior && !this.monsters.hasBehavior(def.behavior) && !warnedBehavior.has(type) && warnedBehavior.add(type)) console.warn(`[monsters] ${type}의 behavior '${def.behavior}'가 등록되어 있지 않습니다 (g.monsters.addBehavior). 기본대로 싸웁니다`);
+    if (has('combat')) for (const [type, def] of Object.entries(MONSTERS as Readonly<Record<string, MonsterDef>>)) if (def.behavior && !this.monsters.hasBehavior(def.behavior) && !warnedBehavior.has(type) && warnedBehavior.add(type)) console.warn(`[monsters] ${type}의 behavior '${def.behavior}'가 등록되어 있지 않습니다 (g.monsters.addBehavior). 기본대로 싸웁니다`);
     // 플러그인보다 먼저 만들어진 엔티티(첫 채널의 몬스터)도 게임이 더한 칸을 갖게 한다
     for (const e of this.ents.values()) for (const init of this.entInit) init(e);
-    this.shop = new Shop(this);
-    this.classes = new Classes(this);
-    this.boss = new Boss(this);
-    this.craft = new Craft(this);
-    this.party = new Party(this);
-    this.gear = new GearSys(this);
-    this.salvage = new Salvage(this);
-    this.mail = new MailSys(this);
-    this.idle = new Idle(this);
-    this.ledger = new Ledger(this);
-    this.daily = new Daily(this);
-    this.rank = new Rank(this);
-    this.dungeon = new Dungeon(this);
+    this.shop = has('items') ? new Shop(this) : off('items', 'shop');
+    this.classes = has('classes') ? new Classes(this) : off('classes', 'classes');
+    this.boss = has('combat') ? new Boss(this) : off('combat', 'boss');
+    this.craft = has('items') ? new Craft(this) : off('items', 'craft');
+    this.party = has('party') ? new Party(this) : off('party', 'party');
+    this.gear = has('gear') ? new GearSys(this) : off('gear', 'gear');
+    this.salvage = has('gear') ? new Salvage(this) : off('gear', 'salvage');
+    this.mail = has('mail') ? new MailSys(this) : off('mail', 'mail');
+    this.idle = has('idle') ? new Idle(this) : off('idle', 'idle');
+    this.ledger = has('economy') ? new Ledger(this) : off('economy', 'ledger');
+    this.daily = has('daily') ? new Daily(this) : off('daily', 'daily');
+    this.rank = has('rank') ? new Rank(this) : off('rank', 'rank');
+    this.dungeon = has('dungeon') ? new Dungeon(this) : off('dungeon', 'dungeon');
     this.channels = new Channels(this);
-    this.build = new Build(this);
-    this.market = new Market(this);
-    this.guild = new Guild(this);
+    this.build = has('build') ? new Build(this) : off('build', 'build');
+    this.market = has('market') ? new Market(this) : off('market', 'market');
+    this.guild = has('guild') ? new Guild(this) : off('guild', 'guild');
     this.sanctions = new Sanctions(this);
+    new Status(this); // 본인에게 보내는 성장 수치(stat)와 장비·우편(meta): 그 칸의 모듈을 고른 게임만
     for (const fn of this.ready) fn();
     // 저장 이전 목록이 1부터 하나씩인가: 틀린 목록은 저장을 잘못 올리므로 서버를 띄울 때 멈춘다
     checkList(PLAYER_UP, '틀의 캐릭터 저장'); checkList(WORLD_UP, '틀의 월드 저장');
@@ -274,6 +323,8 @@ export class Game {
   }
 
   // ---- 시스템이 쓰는 공용 통로 ----
+  /** 그 모듈을 골랐는가 (engine/shared/modules.ts). 고르지 않았을 수 있는 모듈의 시스템(g.wallet 같은 것)은 이것으로 묻고 쓴다 */
+  has(m: ModuleId): boolean { return this.modules.has(m); }
   on<K extends keyof Hooks>(name: K, fn: Hooks[K]): void { ((this.hooks[name] ??= []) as Hooks[K][]).push(fn); }
   fire<K extends keyof Hooks>(name: K, ...args: Parameters<Hooks[K]>): void {
     for (const fn of this.hooks[name] ?? []) (fn as (...a: Parameters<Hooks[K]>) => void)(...args);
@@ -282,12 +333,43 @@ export class Game {
   notify(p: Ent, k: MsgKey, ...a: MsgArg[]): void { if (!p.bot) this.notices.push({ id: p.id, k, a }); }
   announce(k: MsgKey, ...a: MsgArg[]): void { this.announces.push({ k, a }); }
 
-  /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. */
+  /**
+   * 게임의 엔티티 종류를 등록한다 (KindDef). id는 영문 소문자로 시작하는 16자 이내이고, 'p'(플레이어)와 'm'(몬스터)는 틀의 것이다.
+   * 화면에는 같은 id로 registerKind(engine/client)를 해 둔다: 하지 않으면 작은 상자로 그린다
+   */
+  defineKind(id: string, def: KindDef): void {
+    if (!/^[a-z][a-z0-9_]{0,15}$/.test(id) || id === 'p' || id === 'm') throw new Error(`엔티티 종류의 이름이 이상합니다: '${id}' (영문 소문자로 시작하는 16자 이내, 'p'와 'm'은 틀의 것)`);
+    if (this.kinds.has(id)) throw new Error(`엔티티 종류 '${id}'가 이미 등록되어 있습니다`);
+    this.kinds.set(id, def);
+    const { save, load } = def;
+    if (save) {
+      this.worldSaves.push({
+        name: `kind.${id}`,
+        save: () => [...this.ents.values()].filter((e) => e.kind === id && !e.dead).map((e) => save(e)),
+        load: (raw) => {
+          if (!Array.isArray(raw) || !load) return;
+          for (const e of [...this.ents.values()]) if (e.kind === id) this.remove(e.id);
+          for (const one of raw) { try { load(one); } catch (err) { console.error(`[game] 저장된 '${id}' 하나를 되살리지 못했습니다:`, err); } }
+        },
+      });
+    }
+  }
+
+  /** 게임이 등록한 종류의 엔티티를 놓는다. 층(layer)을 주지 않으면 1채널의 들판이다 (채널이 여럿이면 채널마다 놓는다: layers.ts의 fieldLayer) */
+  place(kind: string, at: { x: number; z: number; type?: string; name?: string; hp?: number; layer?: number; face?: number }): Ent {
+    if (!this.kinds.has(kind)) throw new Error(`엔티티 종류 '${kind}'가 등록되지 않았습니다: 먼저 g.defineKind('${kind}', …)`);
+    const e = this.create(kind, at.type ?? '', at.name ?? '', at.x, at.z, at.hp ?? 0);
+    if (at.layer !== undefined) e.layer = at.layer;
+    if (at.face !== undefined) e.face = at.face;
+    return e;
+  }
+
+  /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. 게임의 종류는 place로 놓는다 */
   create(kind: Kind, type: string, name: string, x: number, z: number, hp: number): Ent {
     // 틀은 자기 칸만 채운다: 게임이 더한 칸(EntExt)은 여기 적을 수 없고(적으면 컴파일 오류), entInit이 채운다
     const base: Omit<Ent, keyof EntExt> = {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, lastAct: -99, path: null, pgx: x, pgz: z, pat: 0,
-      hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
+      hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0, data: {},
       bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: LEVEL.firstNeed, sparks: 0, cds: [], dirty: false, unsaved: false, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0,
       gear: [], worn: {}, gearSeq: 0, bagUp: 0, lostFull: 0, autoSalvage: -1, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), swarm: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, stunUntil: 0, buffs: [], dots: [], homing: false,
@@ -313,17 +395,21 @@ export class Game {
   command(p: Ent, msg: Record<string, unknown>): void {
     const fn = typeof msg.t === 'string' ? this.commands.get(msg.t) : undefined;
     if (!fn) return;
-    p.lastAct = this.clock; // 무엇이든 명령을 냈으면 자리에 있는 사람이다 (습격의 인원 세기)
+    p.lastAct = this.clock; // 무엇이든 명령을 냈으면 자리에 있는 사람이다 (게임의 규칙이 인원을 셀 때)
     fn(p, msg);
   }
 
   tick(dt: number): void {
     this.clock += dt;
     this.nav.budget = NAV_VISITS_PER_TICK; // 길찾기가 한 틱에 쓸 수 있는 양 (engine/shared/nav.ts)
+    const fight = this.modules.has('combat'), away = this.modules.has('away');
     for (const e of this.ents.values()) {
-      if (e.kind === 'p') { if (e.bot) this.bots.think(e, dt); else this.away.think(e, dt); this.combat.tickPlayer(e, dt); }
-      else this.monsters.tick(e, dt);
-      this.combat.tickEffects(e, dt); // 강화와 지속 피해의 시간
+      if (e.kind === 'p') {
+        if (e.bot) this.bots.think(e, dt); else if (away) this.away.think(e, dt);
+        if (fight) this.combat.tickPlayer(e, dt); else this.movement.step(e, dt); // 전투가 없으면 걷기만 한다
+      } else if (e.kind === 'm') { if (fight) this.monsters.tick(e, dt); }
+      else this.kinds.get(e.kind)?.tick?.(e, dt); // 게임이 등록한 종류
+      if (fight) this.combat.tickEffects(e, dt); // 강화와 지속 피해의 시간
     }
     for (const fn of this.ticks) fn(dt);
   }
@@ -347,11 +433,13 @@ export class Game {
   exportWorld(): WorldSave {
     const out: WorldSave = {};
     for (const s of this.worldSaves) out[s.name] = s.save();
-    return { ...out, ...this.saveVersion('world') };
+    return { ...out, ...this.keptWorld, ...this.saveVersion('world') };
   }
   importWorld(saved: WorldSave): void {
     // 옛 버전의 저장은 먼저 지금의 모양으로 올린다 (버전 칸이 없던 저장의 '자기 칸이 없으면 legacy로 찾기'도 여기서: migrate.ts의 WORLD_UP)
     const w = this.upgradeWorld(saved);
+    // 고르지 않은 모듈의 칸은 읽은 그대로 남긴다 (모듈을 껐다 켜도 맡겨 둔 것이 이어지게)
+    this.keptWorld = Object.fromEntries(Object.entries(w).filter(([k, v]) => { const m = MODULE_SAVES.world[k]; return !!m && !this.modules.has(m) && v !== undefined; }));
     for (const s of this.worldSaves) {
       // 한 칸이 깨져 있어도 서버는 떠야 한다: 그 칸만 처음 상태로 둔다
       try { if (s.name in w) s.load(w[s.name]); } catch (err) { console.error(`[game] 월드 저장의 '${s.name}' 칸을 읽지 못했습니다:`, err); }

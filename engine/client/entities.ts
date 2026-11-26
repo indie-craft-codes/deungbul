@@ -11,6 +11,9 @@ import { rules } from './rules';
 import { sfx } from './sound';
 import { animate, cueAnim, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
 import { S, newMe, type Me, type Remote } from './state';
+import { kindLook, type KindInfo, type KindLook } from './kinds';
+import { hasModule } from './mods';
+import { makeBox } from './scene/models';
 
 const INTERP_MS = 150; // 다른 엔티티는 이만큼 과거 시점을 그려서 스냅샷 사이를 부드럽게 잇는다
 const SWING_S = 0.3;
@@ -72,15 +75,36 @@ const monsterName = (type: string, swarm = false): string => {
 
 // ---------- 만들고 지우기 ----------
 export function spawnMe(id: number, name: string, x: number, z: number): Me {
-  const model = makeHumanoid(MY_CLOTH);
+  const model = makeHumanoid(MY_CLOTH, hasModule('combat')); // 전투가 없는 게임의 사람은 아무것도 들지 않는다
   view.scene.add(model.root);
   S.me = newMe(id, name, x, z, model, makeTag(name, 'me', false));
   return S.me;
 }
 
+/** 등록하지 않은 게임의 종류: 작은 회색 상자로 그린다 (이름표 없음) */
+const UNKNOWN_KIND: KindLook = { model: () => makeBox() };
+
+/** 게임이 등록한 종류의 엔티티 (플레이어·몬스터가 아닌 것): kinds.ts의 모습으로 */
+function addThing(e: EnterInfo): void {
+  const look = kindLook(e.kind) ?? UNKNOWN_KIND, info: KindInfo = { id: e.id, type: e.type, name: e.name };
+  const model = look.model(info);
+  model.root.position.set(e.x, 0, e.z);
+  model.root.rotation.y = e.face;
+  view.scene.add(model.root);
+  const label = look.label?.(info) ?? '';
+  const tag = makeTag(label, 'thing', false);
+  tag.el.hidden = !look.label;
+  S.others.set(e.id, {
+    id: e.id, kind: e.kind, type: e.type, name: e.name, model, tag, h: look.h ?? 1.5,
+    buf: [{ t: performance.now(), x: e.x, z: e.z, face: e.face, moving: false }], x: e.x, z: e.z, face: e.face, walking: false, phase: Math.random() * 6,
+    hp: e.hp, maxHp: e.maxHp, swing: 0, weapon: '', armor: '', cls: '', swarm: false, dying: 0, gone: false, vals: [], look,
+  });
+}
+
 function addRemote(e: EnterInfo): void {
   const old = S.others.get(e.id);
   if (old) { if (!old.gone) return; dropRemote(old); }
+  if (e.kind !== 'p' && e.kind !== 'm') { addThing(e); return; }
   const monster = e.kind === 'm';
   const model = monster ? makeMonster(e.type) : makeHumanoid(CLOTH[e.id % CLOTH.length], gearOf(e.c), undefined, e.c);
   model.root.position.set(e.x, 0, e.z);
@@ -95,7 +119,7 @@ function addRemote(e: EnterInfo): void {
   S.others.set(e.id, {
     id: e.id, kind: e.kind, type: e.type, name, model, tag, h: monster && isMonsterId(e.type) ? MONSTERS[e.type].h : 2.5,
     buf: [{ t: performance.now(), x: e.x, z: e.z, face: e.face, moving: false }], x: e.x, z: e.z, face: e.face, walking: false, phase: Math.random() * 6,
-    hp: e.hp, maxHp: e.maxHp, swing: 0, weapon: e.w, armor: e.a ?? '', cls: e.c, swarm: e.r === 1, dying: 0, gone: false,
+    hp: e.hp, maxHp: e.maxHp, swing: 0, weapon: e.w, armor: e.a ?? '', cls: e.c, swarm: e.r === 1, dying: 0, gone: false, vals: [],
   });
 }
 
@@ -114,7 +138,10 @@ export function clearEntities(): void {
 
 /** 언어가 바뀌면 몬스터와 NPC의 이름표를 다시 쓴다. */
 export function relabel(): void {
-  for (const r of S.others.values()) if (r.kind === 'm') { r.name = monsterName(r.type, r.swarm); setTagName(r.tag, r.name); }
+  for (const r of S.others.values()) {
+    if (r.kind === 'm') { r.name = monsterName(r.type, r.swarm); setTagName(r.tag, r.name); }
+    else if (r.look?.label) setTagName(r.tag, r.look.label({ id: r.id, type: r.type, name: r.name }));
+  }
   for (const n of npcs) setTagName(n.tag, n.name());
 }
 
@@ -277,12 +304,17 @@ export function applySnapshot(m: Extract<ServerMsg, { t: 'snap' }>, now: number)
     if (!r) continue;
     if (r.dying > 0) r.gone = true; else dropRemote(r);
   }
-  for (const [id, x, z, face, moving, hp] of m.ents) {
+  for (const [id, x, z, face, moving, hp, ...vals] of m.ents) {
     const r = S.others.get(id);
     if (!r || r.gone) continue;
     r.buf.push({ t: now, x, z, face, moving: moving === 1 });
     if (r.buf.length > 20) r.buf.shift();
     r.hp = hp;
+    if (r.look) {
+      // 게임의 종류: 실려 온 값이 처음이거나 바뀌었으면 모습을 맞춘다
+      if (vals.length !== r.vals.length || vals.some((v, i) => v !== r.vals[i])) { r.vals = vals; r.look.update?.(r.model, vals, { id: r.id, type: r.type, name: r.name }); }
+      continue;
+    }
     setTagHp(r.tag, hp, r.maxHp);
   }
 }
@@ -325,7 +357,8 @@ function updateRemote(r: Remote, dt: number, now: number): void {
     }
   }
   const buf = r.buf;
-  if (buf.length) {
+  if (r.look?.snap && buf.length) { const b = buf[buf.length - 1]; r.x = b.x; r.z = b.z; r.face = b.face; r.walking = b.moving; }
+  else if (buf.length) {
     const t = now - INTERP_MS;
     let a = buf[0], b = buf[buf.length - 1];
     if (t <= a.t) b = a;
@@ -338,6 +371,8 @@ function updateRemote(r: Remote, dt: number, now: number): void {
     r.walking = a.moving || b.moving;
   }
   r.phase += dt * 10;
+  // 게임의 종류는 자리와 방향만 맞춘다 (틀의 움직임을 쓰겠다고 한 것 말고)
+  if (r.look && !r.look.animate) { r.model.root.position.set(r.x, r.model.root.position.y, r.z); r.model.root.rotation.y = r.face; return; }
   if (r.swing > 0) r.swing = Math.max(0, r.swing - dt / SWING_S);
   const rc = recoilOf(r.id);
   setFlash(r.model, rc.flash);

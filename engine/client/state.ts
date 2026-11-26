@@ -5,11 +5,12 @@ import type { Point } from '../shared/nav';
 import type { Kind, PartyMember } from '../shared/protocol';
 import { areaAt } from '../shared/world';
 import type { Tag } from './hud/tags';
+import type { KindLook } from './kinds';
 import type { Model } from './scene/models';
 
 export interface Sample { t: number; x: number; z: number; face: number; moving: boolean }
 
-/** 서버가 알려 준 다른 엔티티 (플레이어, 몬스터) */
+/** 서버가 알려 준 다른 엔티티 (플레이어, 몬스터, 게임이 등록한 종류) */
 export interface Remote {
   id: number; kind: Kind; type: string; name: string; model: Model; tag: Tag; h: number;
   /** 받은 스냅샷들. 조금 과거 시점을 보간해서 그린다 */
@@ -28,6 +29,9 @@ export interface Remote {
   dieS?: number;
   /** 서버가 시야에서 뺐다: 연출이 끝나면 지운다 */
   gone: boolean;
+  /** 게임의 종류(플레이어·몬스터가 아닌 것)가 실어 보낸 값 (서버 KindDef.sync)과 그 종류의 모습 (kinds.ts) */
+  vals: number[];
+  look?: KindLook;
 }
 
 /** 내 캐릭터. 위치는 먼저 예측하고 서버 값(sx, sz)으로 보정한다 */

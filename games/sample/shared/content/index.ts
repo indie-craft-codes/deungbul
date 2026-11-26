@@ -10,8 +10,11 @@ import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import { GEAR_BASE } from '@engine/shared/defaults';
 import { BONFIRE } from './bonfire';
 
-// 수치의 기본값(전투, 장비, 강화, 길드, 거래소 …)은 틀의 것을 그대로 받는다. 바꿀 이름만 아래에 직접 적는다
-export * from '@engine/shared/defaults';
+
+// ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
+// 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다
+import type { ModuleId } from '@engine/shared/modules';
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
 export const GUEST_NAME = 'Camper';
 
 // ---------- 맵: 지역 하나 ----------

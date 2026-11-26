@@ -1,6 +1,6 @@
 // 채널: 같은 들판을 여러 벌(층)로 돌린다. 채널이 다르면 서로 보이지 않고 몬스터도 따로다 (층 번호의 뜻은 ../layers.ts).
 // 접속하면 붐비지 않는 채널 가운데 번호가 가장 낮은 곳에 세우고, 명령으로 다른 채널로 옮긴다.
-// 등탑·주민·길드·순위·우편은 서버 전체의 것이라 채널로 나누지 않는다. 수치는 games/deungbul/shared/content/social.ts의 CHANNEL.
+// 길드·순위·우편과 게임의 공유 상태는 서버 전체의 것이라 채널로 나누지 않는다. 수치는 내용의 CHANNEL (기본값 engine/shared/defaults.ts).
 import { CHANNEL } from '../../../shared/defs';
 import { AOI_LEAVE } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -21,7 +21,7 @@ export class Channels {
   private hereAt = -1;
   private t = 0;
 
-  // 게임의 규칙이 채우는 접점. 비워 두면 그런 것이 없는 게임이다 (이 게임에서는 습격이 채운다: raid.ts)
+  // 게임의 규칙이 채우는 접점. 비워 두면 그런 것이 없는 게임이다 (등불지기에서는 습격이 채운다)
   /** 채널별로 남은, 평소의 몬스터 말고 따로 온 적의 수. 지금 그런 적이 없으면 undefined: 어느 채널에 적이 남았는지 화면이 보여 준다 */
   extraFoes?: () => number[] | undefined;
   /** 바쁜 때인가. 그동안은 채널 소식을 더 자주(CHANNEL.tellBusyS) 알린다 */
@@ -29,13 +29,15 @@ export class Channels {
 
   constructor(private g: Game) {
     // 1채널의 몬스터는 몬스터 시스템이 이미 놓았다. 나머지 채널에도 같은 무리를 놓는다
-    for (let ch = 2; ch <= CHANNEL.count; ch++) g.monsters.populate(fieldLayer(ch));
-    // 아무도 없는 채널의 몬스터는 쉰다: 채널 수만큼 몬스터가 늘어도 틱 비용은 사람이 있는 채널만큼만 든다
-    g.monsters.asleep = (layer) => isField(layer) && this.present(layer) === 0;
+    // 아무도 없는 채널의 몬스터는 쉰다: 채널 수만큼 몬스터가 늘어도 틱 비용은 사람이 있는 채널만큼만 든다 (몬스터는 전투 모듈의 것)
+    if (g.has('combat')) {
+      for (let ch = 2; ch <= CHANNEL.count; ch++) g.monsters.populate(fieldLayer(ch));
+      g.monsters.asleep = (layer) => isField(layer) && this.present(layer) === 0;
+    }
 
     g.commands.set('channel', (p, m) => { if (typeof m.n === 'number') this.move(p, m.n); });
     // 던전의 하던 회차로 돌아간 사람(dungeon.ts의 rejoin)은 그 회차의 층에 둔다: 채널은 나올 때 돌아갈 층으로 이미 정해 두었다
-    g.on('playerJoined', (p) => { if (!g.dungeon.runOf(p)) this.seat(p); });
+    g.on('playerJoined', (p) => { if (!g.has('dungeon') || !g.dungeon.runOf(p)) this.seat(p); });
     g.on('playerLeft', () => { this.hereAt = -1; });
     g.on('playerDropped', (p) => { if (this.fighting(p)) this.fled.set(Channels.key(p), g.clock); });
     g.on('monsterKilled', (_m, hitters) => { for (const p of hitters) this.killed.set(Channels.key(p), g.clock); });
@@ -46,7 +48,7 @@ export class Channels {
   private static key(p: Ent): string { return p.pid || '#' + p.id; }
 
   /** 그 캐릭터의 들판 층. 던전 안에 있으면 나와서 돌아갈 층이다 */
-  private home(p: Ent): number { return isField(p.layer) ? p.layer : this.g.dungeon.homeOf(p) ?? fieldLayer(1); }
+  private home(p: Ent): number { return isField(p.layer) ? p.layer : (this.g.has('dungeon') ? this.g.dungeon.homeOf(p) : undefined) ?? fieldLayer(1); }
 
   /** 그 캐릭터의 채널 번호 (1부터) */
   of(p: Ent): number { return channelOf(this.home(p)); }
@@ -81,7 +83,7 @@ export class Channels {
    * (서버 전체 인원은 통신 계층의 접속 상한이 따로 막는다).
    */
   pick(p: Ent): number {
-    const mate = this.g.party.mates(p)[0];
+    const mate = this.g.has('party') ? this.g.party.mates(p)[0] : undefined;
     if (mate) return this.of(mate);
     const n = this.counts(p);
     const open = n.findIndex((c) => c < CHANNEL.soft);

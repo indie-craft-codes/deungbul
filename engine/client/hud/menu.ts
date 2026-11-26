@@ -5,7 +5,9 @@
 import { ATTEND, BAG_UP, BUILD, FORGES, RECIPES, SHOPS, SHOP_STOCK, BUILD_STAT_IDS, buildStatDef, GUILD, DAILY_IDS, ENHANCE, REFORGE, GEAR_SLOTS, ITEMS, MARKET, MARKET_FILTERS, MARKET_SORTS, RARITIES, SALVAGE, STAT_IDS, autoSalvageChoices, bagUpPrice, baseOpt, canSalvage, compareGear, deltaSigns, dustFor, enhanceMax, classOf, gearVerdict, isItemId, isSupply, itemCap, marketFee, optValue, sellPrice, type Gear, type GearDelta, type GearVerdict, type ItemId, type MarketFilter, type MarketItem, type MarketSort, type Reward, type Stat, itemDef, dailyDef } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
-import { onMsg, onSlow } from '../bus';
+import { bindKey, onMsg, onSlow } from '../bus';
+import { hasModule } from '../mods';
+import type { ModuleId } from '../../shared/modules';
 import { L, forInput, itemName, onLangChange, t } from '../i18n';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { UiKey } from '../i18n/ko';
@@ -31,21 +33,23 @@ export interface MenuTab {
   sig?: () => unknown;
   /** 게임이 고른 탭 목록(setMenuTabs)에 없어도 늘 맨 뒤에 보인다: 어느 게임에나 있어야 하는 틀의 탭 (기기 옮기기: hud/device.ts) */
   always?: boolean;
+  /** 이 탭이 속한 선택 모듈 (틀의 탭). 그 모듈을 고르지 않은 게임에서는 탭이 없다 */
+  mod?: ModuleId;
 }
 /** 틀의 탭의 id */
 export const MENU_TABS = ['gear', 'build', 'mail', 'daily', 'market', 'guild', 'rank'] as const;
 export type EngineMenuTab = (typeof MENU_TABS)[number];
 const ENGINE_TABS: MenuTab[] = [
-  { id: 'gear', label: () => t('tabGear'), draw: drawGear },
-  { id: 'build', label: () => t('tabBuild'), draw: drawBuild, dot: () => S.meta.build.left > 0 },
-  { id: 'mail', label: () => t('tabMail'), draw: drawMail, dot: () => S.meta.mail.length > 0 },
-  { id: 'daily', label: () => t('tabDaily'), draw: drawDaily },
-  { id: 'market', label: () => t('tabMarket'), draw: drawMarket, open: () => marketOpen() },
-  { id: 'guild', label: () => t('tabGuild'), draw: drawGuild },
-  { id: 'rank', label: () => t('tabRank'), draw: drawRank, open: () => askRank() },
+  { id: 'gear', label: () => t('tabGear'), draw: drawGear, mod: 'gear' },
+  { id: 'build', label: () => t('tabBuild'), draw: drawBuild, dot: () => S.meta.build.left > 0, mod: 'build' },
+  { id: 'mail', label: () => t('tabMail'), draw: drawMail, dot: () => S.meta.mail.length > 0, mod: 'mail' },
+  { id: 'daily', label: () => t('tabDaily'), draw: drawDaily, mod: 'daily' },
+  { id: 'market', label: () => t('tabMarket'), draw: drawMarket, open: () => marketOpen(), mod: 'market' },
+  { id: 'guild', label: () => t('tabGuild'), draw: drawGuild, mod: 'guild' },
+  { id: 'rank', label: () => t('tabRank'), draw: drawRank, open: () => askRank(), mod: 'rank' },
 ];
-/** 탭 모두 (틀의 것 + 게임이 더한 것), 그리고 게임이 고른 보일 탭의 차례 (null이면 모두, 더한 차례대로) */
-const allTabs: MenuTab[] = [...ENGINE_TABS];
+/** 탭 모두 (틀의 것 가운데 고른 모듈의 것 + 게임이 더한 것), 그리고 게임이 고른 보일 탭의 차례 (null이면 모두, 더한 차례대로) */
+const allTabs: MenuTab[] = ENGINE_TABS.filter((x) => !x.mod || hasModule(x.mod));
 let order: string[] | null = null;
 /** 일일 임무도 출석도 없는 게임: 일일 탭을 숨긴다 */
 const noDaily = (): boolean => DAILY_IDS.length === 0 && ATTEND.length === 0;
@@ -54,7 +58,10 @@ const tabs = (): MenuTab[] => {
   const picked = (order ? order.map((id) => allTabs.find((x) => x.id === id)).filter((x): x is MenuTab => !!x) : allTabs).filter((x) => !(x.id === 'daily' && noDaily()));
   return [...picked, ...allTabs.filter((x) => x.always && !picked.includes(x))];
 };
-/** 보일 탭과 그 차례를 고른다 (틀의 id와 게임이 더한 탭의 id). 고르지 않은 탭은 숨는다. 서버의 기능(거래소, 길드)은 그대로 돈다: 화면에서 감출 뿐이다 */
+/**
+ * 보일 탭과 그 차례를 고른다 (틀의 id와 게임이 더한 탭의 id). 고르지 않은 탭은 숨는다: 화면에서 감출 뿐이다.
+ * 기능 자체를 빼려면(서버의 명령까지) 내용의 MODULES에서 그 모듈을 뺀다: 그러면 탭도 저절로 없다
+ */
 export function setMenuTabs(ids: readonly string[]): void { order = [...ids]; lastSig = ''; }
 /** 게임의 탭을 더한다. after를 주면 그 탭 뒤에, 아니면 맨 뒤에. setMenuTabs를 썼다면 그 목록에도 id를 넣어야 보인다 */
 export function addMenuTab(def: MenuTab, after?: string): void {
@@ -66,7 +73,7 @@ export function addMenuTab(def: MenuTab, after?: string): void {
 const SELLS_GEAR = SHOPS.length > 0 && SHOP_STOCK.some((id) => isItemId(id) && (itemDef(id).kind === 'weapon' || itemDef(id).kind === 'armor'));
 /** 지금 고른 탭의 id */
 let cur = 'gear';
-const current = (): MenuTab => { const list = tabs(); return list.find((x) => x.id === cur) ?? list[0] ?? ENGINE_TABS[0]; };
+const current = (): MenuTab => { const list = tabs(); return list.find((x) => x.id === cur) ?? list[0] ?? allTabs[0]; };
 /** 마지막으로 그린 내용의 지문 (같으면 다시 그리지 않는다) */
 let lastSig = '';
 
@@ -667,13 +674,13 @@ export function renderMenu(soft = false): void {
   if (ui.panel.hidden || !S.me) return;
   const focus = document.activeElement;
   // 글을 치는 중이거나 고르는 상자를 펼쳐 둔 동안에는 다시 그리지 않는다 (칸이 새로 만들어지면 커서와 펼친 목록이 사라진다)
-  if ((focus instanceof HTMLInputElement || focus instanceof HTMLSelectElement) && ui.list.contains(focus)) { ui.gold.textContent = L().fmt.gold(S.me.gold); return; }
+  if ((focus instanceof HTMLInputElement || focus instanceof HTMLSelectElement) && ui.list.contains(focus)) { if (ui.gold) ui.gold.textContent = L().fmt.gold(S.me.gold); return; }
   // 전투 중에는 상태 메시지가 초당 여러 번 온다. 그때마다 단추를 새로 만들면 누르는 사이에 단추가 사라져 클릭이 먹지 않으므로,
   // 화면에 영향을 주는 값이 그대로면 다시 그리지 않는다
   const sig = JSON.stringify([cur, current().sig?.(), L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid, act.openUid, act.salvUid, act.upArmed, act.bulk, act.res, S.bag, S.salvage, S.me.items]);
   if (soft === true && sig === lastSig) return;
   lastSig = sig;
-  ui.gold.textContent = L().fmt.gold(S.me.gold);
+  if (ui.gold) ui.gold.textContent = L().fmt.gold(S.me.gold); // 재화가 없는 게임에는 없다
   const left = ui.tabs.scrollLeft;
   ui.tabs.textContent = '';
   const on = current();
@@ -715,13 +722,15 @@ export function toggleMenu(): void {
 }
 
 export function initMenu(): void {
+  bindKey('m', toggleMenu);
   ui.btn.addEventListener('click', (e) => { toggleMenu(); (e.currentTarget as HTMLElement).blur(); });
   // 분해·잠금·가방 넓히기의 안내문을 어디에 띄울지: 한 일의 결과는 흘러가는 알림, 자리를 비운 동안의 장비 소식은 가운데 알림
   addNotices({ banner: { awayGear: '' }, feed: ['salvaged', 'salvageCant', 'salvageFull', 'gearLocked', 'autoSalvaged', 'bagUpDone', 'bagUpMax'] });
   // 가방 칸 수와 분해 설정(개인 상태)이 바뀌면 다시 그린다. 값은 가방 창(hud/bag.ts)이 먼저 받아 넣는다
   onMsg('me', (m) => { if (m.k === 'bag' || m.k === 'salvage') renderMenu(true); });
   $('menuClose').addEventListener('click', () => { ui.panel.hidden = true; });
-  onMsg('meta', (m) => { S.meta = { gear: m.gear, worn: m.worn, mail: m.mail, daily: m.daily, power: m.power, build: m.build }; renderMenu(true); });
+  // 칸은 그 모듈을 고른 게임에만 온다: 오지 않은 칸은 그대로 둔다
+  onMsg('meta', (m) => { const o = S.meta; S.meta = { gear: m.gear ?? o.gear, worn: m.worn ?? o.worn, mail: m.mail ?? o.mail, daily: m.daily ?? o.daily, power: m.power ?? o.power, build: m.build ?? o.build }; renderMenu(true); });
   onMsg('guild', (m) => { S.guild = m.g; S.guildInvite = m.invite ?? null; renderMenu(); });
   onMsg('gtag', (m) => setGuildTag(m.id, m.g));
   onMsg('market', (m) => {

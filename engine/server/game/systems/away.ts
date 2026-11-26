@@ -2,7 +2,7 @@
 // 다시 접속하면 그 캐릭터를 그대로 이어받는다. 판단은 클라이언트의 자동 사냥(engine/client/auto.ts)과 같고,
 // 사람이 누른 것과 같은 명령(g.command)만 내므로 전투 규칙은 그대로다.
 import { AUTO, AWAY, pickPotion, pickSkill, restSpot, shouldRest } from '../../../shared/auto';
-import { dist, type Ent } from '../entity';
+import { dayOf, dist, type Ent } from '../entity';
 import type { Game } from '../game';
 
 const ROAM = AWAY.roam; // 자리를 비운 곳에서 이보다 먼 몬스터는 쫓지 않는다
@@ -45,7 +45,7 @@ export class Away {
 
   /** 오늘 더 쓸 수 있는 자리 비움 사냥 시간(초). 날이 바뀌었으면 쓴 시간을 비운다 */
   left(p: Ent): number {
-    const today = this.g.daily.dayOf(this.g.now());
+    const today = dayOf(this.g.now());
     if (p.away.day !== today) p.away = { day: today, used: 0 };
     return Math.max(0, AWAY_MAX_S - p.away.used);
   }
@@ -122,7 +122,7 @@ export class Away {
       }
       if (target) g.command(p, { t: 'attack', id: target.id });
       else if (resting) { /* 쉬는 중이고 둘레에 몬스터가 없다: 그 자리에서 쉰다 */ }
-      // 쓰러져 등탑에서 일어났거나 멀리 끌려갔으면 자리를 비운 곳으로 돌아간다
+      // 쓰러져 다시 일어나는 곳(g.rules.respawn)에서 일어났거나 멀리 끌려갔으면 자리를 비운 곳으로 돌아간다
       else if (!p.moving && dist(p, s) > 4) g.movement.goTo(p, s.x, s.z);
     }
     const d = target ? dist(p, target) : Infinity;

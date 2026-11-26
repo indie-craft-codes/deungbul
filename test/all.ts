@@ -5,7 +5,8 @@
 //   npx tsx test/all.ts 이름     고른 것만 (예: boundary fx/shop deungbul/quests sample/docs)
 // 어디에 무엇이 있나:
 //   틀의 경계 검사  engine/test/boundary.test.ts      소스를 읽기만 하므로 이 프로세스에서 돈다 (이름: boundary)
-//   틀의 시험       engine/test/fx/이름.test.ts        시험용 내용(engine/test/fx/shared/content) 위에서. 목록은 engine/test/fx/all.ts (이름: fx/이름)
+//   틀의 시험       engine/test/fx/이름.test.ts        시험용 내용(engine/test/fx/shared/content: 모듈 전부) 위에서. 목록은 engine/test/fx/all.ts (이름: fx/이름)
+//   핵심만의 시험    engine/test/core/이름.test.ts      최소 내용(engine/test/core/shared/content: 모듈 0개, 공 마당) 위에서. 목록은 engine/test/core/all.ts (이름: core/이름)
 //   게임의 시험     games/<게임>/test/이름.test.ts     목록은 그 게임의 test/all.ts (이름: <게임>/이름)
 // 틀의 시험과 게임의 시험은 별칭 @game이 가리키는 곳이 달라 저마다 따로 된 프로세스로 돈다 (그 폴더의 tsconfig.json으로). 이 도구는 결과만 모은다.
 // 새 시험: 틀의 기능이면 engine/test/fx/에 만들어 그 폴더의 all.ts의 FX에, 게임의 규칙이면 games/<게임>/test/에 만들어 그 게임의 all.ts에 더한다.
@@ -29,10 +30,10 @@ for (const a of only) {
   const at = a.indexOf('/');
   if (at < 0) continue;
   const [group, name] = [a.slice(0, at), a.slice(at + 1)];
-  if (group !== 'fx' && !GAMES.includes(group)) { console.error(`모르는 이름입니다: ${a} (fx/이름, ${GAMES.map((g) => `${g}/이름`).join(', ')})`); process.exit(1); }
+  if (group !== 'fx' && group !== 'core' && !GAMES.includes(group)) { console.error(`모르는 이름입니다: ${a} (fx/이름, core/이름, ${GAMES.map((g) => `${g}/이름`).join(', ')})`); process.exit(1); }
   picked.set(group, [...(picked.get(group) ?? []), name]);
 }
-const runs = (group: string): boolean => (only.length ? picked.has(group) : group === 'fx' ? !gameOnly : !engineOnly && (!gameOnly || group === (process.env.GAME ?? 'deungbul')));
+const runs = (group: string): boolean => (only.length ? picked.has(group) : group === 'fx' || group === 'core' ? !gameOnly : !engineOnly && (!gameOnly || group === (process.env.GAME ?? 'deungbul')));
 
 // 1. 틀의 경계 검사 (이 프로세스)
 const ENGINE = ['boundary'];
@@ -49,6 +50,7 @@ const spawnRun = (label: string, tsconfig: string, entry: string, names: string[
   if (r.status !== 0) failed.push(label);
 };
 if (runs('fx')) spawnRun('fx', path.join(root, 'engine', 'test', 'fx', 'tsconfig.json'), path.join(root, 'engine', 'test', 'fx', 'all.ts'), picked.get('fx') ?? []);
+if (runs('core')) spawnRun('core', path.join(root, 'engine', 'test', 'core', 'tsconfig.json'), path.join(root, 'engine', 'test', 'core', 'all.ts'), picked.get('core') ?? []);
 for (const game of GAMES) {
   if (!runs(game)) continue;
   const dir = path.join(root, 'games', game);

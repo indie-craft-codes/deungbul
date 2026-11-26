@@ -1,5 +1,5 @@
 // 틀의 화면 코드가 이 게임의 규칙을 묻는 자리. 서버의 g.rules(engine/server/game/game.ts의 Rules)와 짝이다.
-// 틀(상점, 대장간, 알림, 이동 예측)은 주민이나 등탑을 직접 읽지 않고 여기에 묻고, 게임의 모듈(games/deungbul/client/deungbul.ts)이 값을 채운다.
+// 틀(상점, 대장간, 알림, 이동 예측)은 게임의 시스템을 직접 읽지 않고 여기에 묻고, 게임의 모듈(games/deungbul/client/deungbul.ts)이 값을 채운다.
 // 아무도 채우지 않으면 기본 규칙이다: 기본 속도, 잠긴 것 없음. 서버의 기본값과 같아야 예측이 어긋나지 않는다.
 import { MAP, PLAYER_SPEED } from '../shared/world';
 

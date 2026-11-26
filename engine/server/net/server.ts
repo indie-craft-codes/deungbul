@@ -14,7 +14,7 @@ import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
 import { Sanctions, normIp } from '../game/systems/sanctions';
 import { log } from '../log';
-import { MemoryStore, type PlayerSave, type Store, type WorldSave } from '../store';
+import { MemoryStore, hasEcon, type PlayerSave, type Store, type WorldSave } from '../store';
 import { startBackups, type BackupOptions } from '../store/backup';
 import { isClean, mask, tidy } from '../text';
 import { CLOSE, createAdmin, type Admin, type AdminOptions } from './admin';
@@ -122,6 +122,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   /** 운영 지표의 누적 수 (/healthz, /metrics: ./ops.ts) */
   const ops = new OpsCounters();
   const game = new Game(opts.game);
+  /** 고른 모듈 (engine/shared/modules.ts): 핵심이 모듈의 시스템을 부르기 전에 묻는다 */
+  // 경제 장부는 economy 모듈을 고르고 저장소가 장부를 적을 수 있을 때만 (store/types.ts의 EconStore)
+  const ledgerStore = game.has('economy') && hasEcon(store) ? store : null;
+  const econ = !!ledgerStore, awayOn = game.has('away');
   const handoff = new Handoff(game); // 기기 옮기기: 월드 저장에 자기 칸을 두므로 월드를 읽기 전에 만든다
   const saved = store.loadWorld();
   if (saved) game.importWorld(saved);
@@ -140,7 +144,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const maxPerIp = opts.maxPerIp ?? MAX_PER_IP, maxAway = opts.maxAway ?? MAX_AWAY;
   // 서버를 껐다 켜도 자리 비움 사냥은 이어진다: 끄기 직전에 사냥 중이던 캐릭터를 다시 세운다 (주인이 접속하면 평소처럼 넘겨받는다).
   // 끌 때 적어 둔 목록이 있으면 그것을 쓰고, 없으면(갑자기 죽었거나 이 기능 이전의 저장) 마지막 저장 무렵에 자동 사냥을 켠 채 저장된 캐릭터를 찾는다
-  try {
+  if (awayOn) try {
     let list = Array.isArray(saved?.[AWAY_AT_CLOSE]) ? (saved[AWAY_AT_CLOSE] as unknown[]).filter((v): v is [string, string] => Array.isArray(v) && typeof v[0] === 'string').map((v) => [v[0], String(v[1] ?? '')] as [string, string]) : null;
     if (!list && saved) {
       const found: { name: string; seen: number }[] = [];
@@ -241,14 +245,14 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   }
   /** 모은 것(월드, 캐릭터, 재화 흐름 지표의 줄)을 한 묶음으로 적는다. 적혔으면 true. 실패하면 하나도 적히지 않고, 지표의 줄은 되돌려 다음에 다시 얹는다 */
   function writeAll(list: (Pending | null)[], world?: WorldSave): boolean {
-    const rows = game.ledger.drain();
+    const rows = econ ? game.ledger.drain() : [];
     try {
       store.transaction(() => {
         if (world) store.saveWorld(world);
         for (const p of list) if (p) store.savePlayer(p.key, p.save);
-        if (rows.length) store.addEcon(rows);
+        if (rows.length) ledgerStore?.addEcon(rows);
       });
-    } catch (err) { game.ledger.giveBack(rows); saveFailed(world ? '월드와 캐릭터 저장' : '캐릭터 저장', err); return false; }
+    } catch (err) { if (econ) game.ledger.giveBack(rows); saveFailed(world ? '월드와 캐릭터 저장' : '캐릭터 저장', err); return false; }
     for (const p of list) p?.done();
     ops.lastSaveAt = Date.now();
     econSnapshot();
@@ -283,9 +287,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
    */
   let snapDay = '';
   function econSnapshot(): void {
+    if (!econ) return;
     const day = game.ledger.today();
     if (day === snapDay) return;
-    try { if (!store.econSnapshot(day)) store.saveEconSnapshot(day, game.ledger.snapshot((fn) => store.eachPlayer(fn))); snapDay = day; }
+    try { if (ledgerStore && !ledgerStore.econSnapshot(day)) ledgerStore.saveEconSnapshot(day, game.ledger.snapshot((fn) => store.eachPlayer(fn))); snapDay = day; }
     catch (err) { log.error('[server] 지표 스냅샷 실패:', err); }
   }
   econSnapshot(); // 켜질 때: 오늘의 스냅샷이 없으면 남긴다
@@ -315,7 +320,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         game.away.stop(kept);
         send(c, { t: 'welcome', id: kept.id, name: kept.name, x: r2(kept.x), z: r2(kept.z), auto: true, v: PROTOCOL });
         send(c, { t: 'world', s: game.state() });
-        game.party.resend(kept.id);
+        if (game.has('party')) game.party.resend(kept.id);
         game.channels.tell(kept); // 있던 채널 그대로다: 화면에 다시 알린다
         return;
       }
@@ -333,7 +338,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: c.ent.auto || undefined, v: PROTOCOL });
     send(c, { t: 'world', s: game.state() });
     // 오늘의 자리 비움 사냥 시간을 다 써서 멈췄던 사람: 왜 멈춰 있는지 알린다
-    if (save && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && game.away.left(c.ent) <= 0) game.notify(c.ent, 'awayLimit', AWAY.maxS / 3600);
+    if (awayOn && save && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && game.away.left(c.ent) <= 0) game.notify(c.ent, 'awayLimit', AWAY.maxS / 3600);
     broadcast(sys('joined', name));
     saveTogether(); // 접속하며 받은 것(맡아 둔 우편)이 월드에서 빠진 것과 함께 저장되게
     savePlayer(c);
@@ -445,7 +450,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       byEnt.delete(c.ent.id);
       // 자동 사냥 중이었으면 캐릭터를 남겨 두고 서버가 이어서 사냥한다.
       // 직업을 고르고 조금이라도 키운 캐릭터만, 정해진 수까지만 남긴다 (접속했다 끊기를 되풀이해 월드를 채우지 못하게)
-      if (c.key && c.ent.auto && !stopped && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && away.size < maxAway && awayFrom(c.ip) < AWAY.maxPerIp) { awayIp.set(c.key, c.ip); away.set(c.key, c.ent); game.away.start(c.ent); return; }
+      if (awayOn && c.key && c.ent.auto && !stopped && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && away.size < maxAway && awayFrom(c.ip) < AWAY.maxPerIp) { awayIp.set(c.key, c.ip); away.set(c.key, c.ent); game.away.start(c.ent); return; }
       game.players.leave(c.ent.id);
       broadcast(sys('left', c.ent.name));
     }
@@ -522,7 +527,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
 
   /** 게임이 쌓아 둔 것을 클라이언트에 내보낸다. */
   function flush(): void {
-    const frame = buildFrame(game.ents.values());
+    const frame = buildFrame(game.ents.values(), (e) => game.kinds.get(e.kind)?.sync?.(e));
     const events = game.events;
     game.events = [];
     let online = 0;
@@ -534,15 +539,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       const { json, seen } = snapshotFor(me, c.known, frame, events, online);
       c.known = seen;
       if (c.ws.readyState === c.ws.OPEN) { count(json.length); c.ws.send(json); }
-      if (me.dirty) {
-        me.dirty = false;
-        const stat: Extract<ServerMsg, { t: 'stat' }> = { t: 'stat', maxHp: me.maxHp, lv: me.lv, exp: me.exp, need: me.need, sparks: me.sparks, gold: me.gold, weapon: me.weapon, armor: me.armor, cls: me.cls, items: me.items };
-        send(c, stat);
-      }
-      if (me.metaDirty) {
-        me.metaDirty = false;
-        send(c, { t: 'meta', gear: me.gear, worn: me.worn, mail: me.mail, daily: { prog: me.daily.prog, got: me.daily.got, streak: me.daily.streak }, power: game.rank.power(me), build: { stats: me.stats, skillLv: me.skillLv, left: game.build.left(me) } });
-      }
+      // 모듈이 만드는 본인의 메시지 (성장 수치 stat, 장비·우편 meta: engine/server/game/systems/status.ts)
+      for (const make of game.perFlush) { const msg = make(me); if (msg) send(c, msg); }
       // 개인 상태: 게임의 시스템이 등록한 칸을 돌며, 이 연결에 처음이거나 바뀐 것만 보낸다
       for (const it of game.personal) {
         const first = !c.mine.has(it.name);
@@ -658,7 +656,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
           // 끄기 전에 전원과 월드를 한 묶음으로 저장한다.
           // 다시 켰을 때 이어서 사냥할 캐릭터를 적어 둔다: 자리 비움 사냥 중이던 것과, 자동 사냥을 켠 채 접속해 있던 것(재시작으로 끊긴다)
           const hunting: [string, string][] = [...away.keys()].map((key) => [key, awayIp.get(key) ?? '']);
-          for (const c of clients) if (c.key && c.ent && c.ent.auto && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && !away.has(c.key)) hunting.push([c.key, c.ip]);
+          for (const c of clients) if (awayOn && c.key && c.ent && c.ent.auto && c.ent.cls !== '' && c.ent.lv >= AWAY_MIN_LV && !away.has(c.key)) hunting.push([c.key, c.ip]);
           const list = [...[...clients].map(pendingOf), ...[...away].map(([key, e]) => exportEnt(key, e))];
           let world: WorldSave | undefined;
           try { world = { ...game.exportWorld(), [AWAY_AT_CLOSE]: hunting }; } catch (err) { saveFailed('월드 저장 값 만들기', err); }

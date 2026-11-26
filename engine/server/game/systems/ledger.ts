@@ -1,8 +1,8 @@
-// 재화 흐름 지표(경제 장부): 골드·불씨·경험치·장비·재료가 어디서 얼마나 생기고 어디로 얼마나 사라지는지를 날짜별·원인별로 적는다.
+// 재화 흐름 지표(경제 장부): 골드·두 번째 재화·경험치·장비·재료가 어디서 얼마나 생기고 어디로 얼마나 사라지는지를 날짜별·원인별로 적는다.
 // 게임의 규칙은 하나도 바꾸지 않는다. 기록만 더한다.
 //
 // 방식은 둘이 겹쳐 있다.
-//   1. 통로가 알린다: 골드·불씨·경험치는 지갑(wallet.ts)을, 장비와 재료·물약은 가방(bag.ts)을 지날 때 원인의 이름과 함께 적힌다 (direct, stowed). 주는 쪽이 원인을 아니까 가장 정확하다.
+//   1. 통로가 알린다: 골드·두 번째 재화·경험치는 지갑(wallet.ts)을, 장비와 재료·물약은 가방(bag.ts)을 지날 때 원인의 이름과 함께 적힌다 (direct, stowed). 주는 쪽이 원인을 아니까 가장 정확하다.
 //   2. 경계에서 차이를 잰다: 명령·처치 사건·틱의 앞뒤로 캐릭터가 가진 것의 차이를 잰다. 통로가 알린 만큼을 빼고 남는 것이 '통로 밖에서 일어난 변화'다.
 //      캐릭터마다 '여기까지는 적었다'는 기준값을 들고 있다가, 경계가 끝날 때 기준값과 지금 값의 차이를 적고 기준값을 옮긴다(settle).
 //      안쪽 경계(명령 안에서 일어난 처치)가 먼저 적고 기준값을 옮기므로, 바깥 경계에는 나머지만 남는다: 같은 변화가 두 번 적히지 않는다.
@@ -30,7 +30,7 @@
 // 캐릭터별 기록(플레이 시간, 레벨 도달, 오늘 번·쓴 골드)은 g.saves로 캐릭터와 함께 저장된다(PlayerSave.ext.stats).
 import { ECON_CURS, ECON_FRESH_DAYS, ECON_LEVEL_MARKS, ECON_LOST_FULL, ECON_MOVES, ECON_UNKNOWN, GEAR_SLOTS, RARITIES, isEconMove, type Gear } from '../../../shared/defs';
 import type { EconRow, PlayerSave } from '../../store';
-import type { Ent } from '../entity';
+import { dayOf, type Ent } from '../entity';
 import type { Game } from '../game';
 import { isField } from '../layers';
 import { gearCur } from './bag';
@@ -225,7 +225,7 @@ export class Ledger {
     };
 
     // 틱의 앞뒤: 틱 밖에서 쌓인 것은 other로, 틱 안에서 어느 경계에도 잡히지 않은 것은 tick으로. 플레이 시간도 여기서 센다.
-    // 틱의 앞뒤에서는 모두를 가볍게만 잰다(골드·불씨·경험치·장비 수). 재화가 실제로 바뀌는 곳(명령, 처치)은 그 경계가 이미 다 세었으므로,
+    // 틱의 앞뒤에서는 모두를 가볍게만 잰다(골드·두 번째 재화·경험치·장비 수). 재화가 실제로 바뀌는 곳(명령, 처치)은 그 경계가 이미 다 세었으므로,
     // 여기서 남는 것은 '있어서는 안 되는 변화'뿐이다. 장비의 구성과 재료까지 다 세는 것은 캐릭터마다 AUDIT_TICKS틱에 한 번씩 돌아가며 한다
     // (모두를 틱마다 다 세면 300명일 때 틱마다 0.4ms쯤 든다). 그래서 명령 밖에서 재료만 바뀐 경우는 길어야 1초 뒤에 tick으로 드러난다
     const tick = g.tick.bind(g);
@@ -237,7 +237,7 @@ export class Ledger {
           const slot = this.tickNo++ % AUDIT_TICKS;
           for (const t of this.tracks.values()) {
             this.settle(t, ECON_UNKNOWN[1], t.p.id % AUDIT_TICKS === slot);
-            if (g.away.active(t.p)) t.rec.away += dt; else t.rec.play += dt;
+            if (g.has('away') && g.away.active(t.p)) t.rec.away += dt; else t.rec.play += dt;
           }
         } catch (err) { this.oops(err); }
         this.base = ECON_UNKNOWN[0];
@@ -309,7 +309,7 @@ export class Ledger {
 
   /**
    * 기준값과 지금 값의 차이를 적고, 기준값을 지금으로 옮긴다.
-   * full이 아니면 가볍게만 잰다: 골드·불씨·경험치는 언제나 재고, 장비와 재료는 장비 수가 달라졌을 때만 센다
+   * full이 아니면 가볍게만 잰다: 골드·두 번째 재화·경험치는 언제나 재고, 장비와 재료는 장비 수가 달라졌을 때만 센다
    * (틱의 앞뒤에서 모두를 훑을 때 쓴다. 그때 놓친 것은 다음에 다 셀 때 드러나므로 사라지지 않는다).
    * 남은 차이는 통로 밖에서 일어난 변화다 (지갑을 지난 것은 direct가, 가방을 지난 것은 stowed가 이미 적었거나 due에 모아 두었다):
    * 명령이나 처치의 경계에서 드러났더라도 그 이름이 아니라 other·tick으로 적어 경보가 되게 한다. named(g.ledger.note가 붙인 이름)일 때만 그 이름으로 적는다.
@@ -396,8 +396,8 @@ export class Ledger {
       const d = new Date(now);
       this.dayFrom = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       this.dayTo = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
-      const before = this.day, keep = this.g.daily.dayOf(now - DAY_MS);
-      this.day = this.g.daily.dayOf(now);
+      const before = this.day, keep = dayOf(now - DAY_MS);
+      this.day = dayOf(now);
       // 켜진 뒤의 합계는 오늘과 어제 것만 남긴다 (오래 켜 둔 서버에서 끝없이 늘지 않게)
       if (before) for (const k of this.all.keys()) { const day = k.slice(0, k.indexOf('|')); if (day !== this.day && day !== keep) this.all.delete(k); }
     }
@@ -463,7 +463,7 @@ export class Ledger {
    * 접속 중인 사람은 마지막으로 저장된 값으로 들어간다. 진행이 없는 캐릭터(레벨 1, 골드 0)는 분포에서 빼고 수만 센다.
    */
   snapshot(each: (fn: (s: PlayerSave) => void) => void): EconSnapshot {
-    const now = this.g.now(), day = this.today(), yesterday = this.g.daily.dayOf(now - DAY_MS);
+    const now = this.g.now(), day = this.today(), yesterday = dayOf(now - DAY_MS);
     const golds: number[] = [], incomes: number[] = [], levels: Record<string, number> = {}, rar: Record<string, number> = {};
     const plus: number[] = [], active = { d1: 0, d7: 0, d30: 0 };
     const reach: Record<string, { play: number[]; total: number[] }> = {};
@@ -504,7 +504,7 @@ export class Ledger {
     });
     const sum = golds.reduce((a, b) => a + b, 0), top = [...golds].sort((a, b) => b - a).slice(0, 10).reduce((a, b) => a + b, 0);
     const kinds: Record<string, number[]> = {};
-    const listed = this.g.market.listed();
+    const listed = this.g.has('market') ? this.g.market.listed() : [];
     for (const l of listed) (kinds[l.kind] ??= []).push(l.price);
     return {
       day, at: now, chars: golds.length, blank, active, levels,

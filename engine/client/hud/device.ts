@@ -73,6 +73,7 @@ function drawDevice(list: HTMLElement): void {
 /** 직업 고르기 창(새 캐릭터의 첫 화면)의 '코드로 이어받기' */
 function initClaim(): void {
   const open = $('claimOpen'), form = $<HTMLFormElement>('claimForm'), input = $<HTMLInputElement>('claimInput'), msg = $('claimMsg');
+  if (!open) return; // 직업 고르기 창이 없는 게임(classes 없음): 코드로 이어받기는 메뉴의 '기기' 탭에서
   open.addEventListener('click', () => { form.hidden = !form.hidden; if (!form.hidden) input.focus(); });
   input.addEventListener('keydown', (e) => e.stopPropagation());
   form.addEventListener('submit', (e) => { e.preventDefault(); use(input.value); });

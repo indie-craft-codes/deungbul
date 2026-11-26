@@ -16,11 +16,14 @@ import { CAMPS, DUNGEON_IDS, FORGES, MONSTERS, SHOPS, dungeonDef, type MonsterDe
 import { AREAS, areaAt, clampPoint } from '../../shared/world';
 import { autoWalk, moveTo } from '../actions';
 import { toggleAuto } from '../auto';
+import { bindKey } from '../bus';
+import { hasModule } from '../mods';
 import { $, world } from '../app';
 import { onFrame, onSlow } from '../bus';
 import { L, onLangChange, t } from '../i18n';
 import { dungeonLabel } from '../i18n/names';
 import { rules } from '../rules';
+import { kindLook } from '../kinds';
 import { S } from '../state';
 import { feed } from './notify';
 import { allLabels, allMarks, cssVar, paintWith } from './minimap';
@@ -183,7 +186,7 @@ export function travelTo(p: Pick<MapPlace, 'x' | 'z' | 'name'>, hunt = false): v
     return;
   }
   const to = clampPoint(p.x, p.z);
-  if (S.auto) toggleAuto(); // 사냥하던 중이면 끄고 간다 (가는 길에 몬스터를 쫓지 않게)
+  if (S.auto && hasModule('away')) toggleAuto(); // 사냥하던 중이면 끄고 간다 (가는 길에 몬스터를 쫓지 않게)
   moveTo(to.x, to.z);
   travel = { x: to.x, z: to.z, name: p.name, hunt, retry: 0 };
   feed(L().fmt.mapTravel(p.name));
@@ -205,7 +208,7 @@ function travelTick(): void {
     const done = travel;
     travel = null; showTravel();
     feed(done.door ? L().fmt.mapAtDoor(done.name, done.door) : L().fmt.mapArrived(done.name, done.hunt));
-    if (done.hunt && !S.auto) toggleAuto();
+    if (done.hunt && !S.auto && hasModule('away')) toggleAuto();
     return;
   }
   // 멈췄는데 아직 멀다 (막혔거나 서버가 되돌렸다): 한 번 더 걷게 한다
@@ -295,6 +298,7 @@ function draw(): void {
     const p = toMap(r.x, r.z);
     if (r.kind === 'm') dot(c, p.x, p.y, 2.4, COLOR.foe);
     else if (r.kind === 'p') dot(c, p.x, p.y, 2.8, COLOR.other);
+    else { const col = kindLook(r.kind)?.dot; if (col) dot(c, p.x, p.y, 2.4, col); } // 게임의 종류 (registerKind의 dot)
   }
   // 장소의 표식
   for (const p of ps) { const q = toMap(p.x, p.z); icon(c, p, q.x, q.y, p === selected || p === hover); }
@@ -360,7 +364,7 @@ function showCard(): void {
   ui.cardInfo.textContent = p.info ?? '';
   ui.cardInfo.hidden = !p.info;
   ui.cardDist.textContent = distText(p);
-  ui.hunt.hidden = !p.hunt;
+  ui.hunt.hidden = !p.hunt || !hasModule('away'); // 가서 사냥하기는 자동 사냥(away)이 있는 게임만
 }
 function select(p: MapPlace | null): void { selected = p; showCard(); draw(); }
 
@@ -397,8 +401,9 @@ function renderList(): void {
       rows.push({ p, d });
       what.addEventListener('click', () => { focusOn(p); select(p); });
       const go = document.createElement('button');
-      go.type = 'button'; go.className = 'wmgo'; go.textContent = p.hunt ? t('mapHunt') : t('mapGo');
-      go.addEventListener('click', () => { travelTo(p, !!p.hunt); closeWorldMap(); });
+      const hunt = !!p.hunt && hasModule('away');
+      go.type = 'button'; go.className = 'wmgo'; go.textContent = hunt ? t('mapHunt') : t('mapGo');
+      go.addEventListener('click', () => { travelTo(p, hunt); closeWorldMap(); });
       row.append(what, go);
       ui.list.append(row);
     }
@@ -480,6 +485,7 @@ export function toggleWorldMap(): void {
 }
 
 export function initWorldMap(): void {
+  bindKey('n', toggleWorldMap);
   ui.btn.addEventListener('click', (e) => { toggleWorldMap(); (e.currentTarget as HTMLElement).blur(); });
   $('minimap').addEventListener('click', toggleWorldMap);
   $('wmapClose').addEventListener('click', closeWorldMap);

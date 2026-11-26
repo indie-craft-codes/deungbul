@@ -1,6 +1,8 @@
-// 플레이어: 생성, 저장 값 주고받기, 성장(경험치와 불씨).
+// 플레이어: 생성, 저장 값 주고받기(핵심), 그리고 고른 모듈의 몫: 나갈 때의 몸 상태와 처치 보상[combat], 성장(경험치와 두 번째 재화)[growth].
+// 저장의 최상위 칸도 모듈마다다 (export): 핵심은 이름·마지막 시각·자리, 그 밖의 칸은 그 모듈을 고른 게임에만 적힌다.
 import { CLASS_IDS, ECON_HUNT, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, needFor, nextNeed, itemDef } from '../../../shared/defs';
 import type { PlayerSave } from '../../store';
+import { MODULE_SAVES, type ModuleId } from '../../../shared/modules';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { clamp, type Ent } from '../entity';
@@ -12,13 +14,14 @@ import { Shop } from './shop';
 const LV_READ_MAX = 999;
 
 export class Players {
-  /** 개발용: 접속 위치를 바꾼다 (부활 위치는 그대로 등탑 앞). */
+  /** 개발용: 접속 위치를 바꾼다 (부활 위치는 그대로: g.rules.respawn). */
   devSpawn: { x: number; z: number } | null = null;
 
   /** 저장에서 읽은 '나갈 때의 몸 상태'. spawn이 직업과 장비를 다 입힌 뒤에 되살린다 */
   private vitals: { at: number; hp: number; cds: number[]; icd: number; hurt: number } | null = null;
 
   constructor(private g: Game) {
+    if (!g.has('combat')) return;
     // 나갈 때의 몸 상태: 체력(비율), 기술 쿨다운, 물약 대기, 마지막으로 맞은 뒤 지난 시간. 예전 저장에는 이 칸이 없고, 그러면 가득 찬 채로 시작한다
     const sec = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
     g.saves.push({
@@ -43,10 +46,12 @@ export class Players {
         // 길드 같은 보정으로 더 받는 경험치
         const extra = Math.round(def.exp * g.mods.sum('exp', p));
         const why = this.huntWhy(p, m), exp = def.exp + bonus + extra;
-        const got = g.wallet.add(p, 'gold', gold, why);
-        // 안내문에는 실제로 받는 양을 넣는다 (배율이 걸려 있으면 그만큼 준다). 레벨 업 안내가 이 뒤에 오도록 경험치와 불씨는 안내문 다음에 준다
-        g.notify(p, 'kill', m.type, g.wallet.amount(p, 'exp', exp, why), g.wallet.amount(p, 'sparks', sparks, why), got);
-        this.grant(p, exp, sparks, why);
+        // 재화가 없는 게임은 처치를 알리기만 한다
+        const money = g.has('economy');
+        const got = money ? g.wallet.add(p, 'gold', gold, why) : 0;
+        // 안내문에는 실제로 받는 양을 넣는다 (배율이 걸려 있으면 그만큼 준다). 레벨 업 안내가 이 뒤에 오도록 경험치와 두 번째 재화는 안내문 다음에 준다
+        g.notify(p, 'kill', m.type, money && g.has('growth') ? g.wallet.amount(p, 'exp', exp, why) : 0, money ? g.wallet.amount(p, 'sparks', sparks, why) : 0, got);
+        if (money) this.grant(p, g.has('growth') ? exp : 0, sparks, why);
       }
     });
   }
@@ -67,20 +72,30 @@ export class Players {
       p.lv = n(save.lv, 1, LV_READ_MAX, 1); p.need = needFor(p.lv); p.exp = n(save.exp, 0, p.need, 0);
       // 시스템마다 저장해 둔 몫(장비, 우편, 일일 임무)을 읽는다. 깨진 값은 그 시스템이 걸러 낸다
       const ext = typeof save.ext === 'object' && save.ext !== null ? save.ext : {};
+      // 이 게임이 고르지 않은 모듈의 칸은 읽은 그대로 남겨 두었다가 다시 적는다 (모듈을 껐다 켜도 이어지게)
+      const off = (m: ModuleId | undefined) => !!m && !this.g.has(m);
+      const whole = save as Readonly<Record<string, unknown>>;
+      const top = Object.fromEntries(Object.keys(MODULE_SAVES.top).filter((k) => off(MODULE_SAVES.top[k]) && whole[k] !== undefined).map((k) => [k, whole[k]]));
+      const keptExt = Object.fromEntries(Object.entries(ext).filter(([k, v]) => off(MODULE_SAVES.player[k]) && v !== undefined));
+      if (Object.keys(top).length || Object.keys(keptExt).length) p.kept = { top, ext: keptExt };
       this.vitals = null;
       p.offMs = typeof save.seen === 'number' ? Math.max(0, this.g.now() - save.seen) : 0; // 칸을 읽는 시스템(휴식 보너스)이 쓰므로 먼저 구한다
       // 시스템마다 자기 칸을 읽는다 (옛 형식의 최상위 칸은 위의 이전이 이미 ext로 옮겼다)
       for (const s of this.g.saves) { try { const raw = ext[s.name]; if (raw !== undefined) s.load(p, raw); } catch { /* 읽지 못한 칸은 처음 상태로 둔다 */ } }
       // 체력은 저장된 값이 아니라 직업과 레벨로 다시 구한다
-      this.g.classes.apply(p, isClassId(save.cls) ? save.cls : '');
+      if (this.g.has('classes')) this.g.classes.apply(p, isClassId(save.cls) ? save.cls : ''); else this.refresh(p);
       p.hp = p.maxHp;
       // 재화는 게임이 정한 상한(CURRENCIES의 max)까지 읽는다. 전에는 1e9로 박혀 있어, 상한이 더 큰 게임은 다시 접속할 때 재화가 잘렸다
-      p.sparks = n(save.sparks, 0, this.g.wallet.limit('sparks'), 0);
-      p.gold = n(save.gold, 0, this.g.wallet.limit('gold'), 0);
-      if (isItemId(save.weapon) && itemDef(save.weapon).kind === 'weapon') p.weapon = save.weapon;
-      if (isItemId(save.armor) && itemDef(save.armor).kind === 'armor') p.armor = save.armor;
-      p.items = Shop.readItems(save.items);
-      p.auto = save.auto === true;
+      if (this.g.has('economy')) {
+        p.sparks = n(save.sparks, 0, this.g.wallet.limit('sparks'), 0);
+        p.gold = n(save.gold, 0, this.g.wallet.limit('gold'), 0);
+      }
+      if (this.g.has('items')) {
+        if (isItemId(save.weapon) && itemDef(save.weapon).kind === 'weapon') p.weapon = save.weapon;
+        if (isItemId(save.armor) && itemDef(save.armor).kind === 'armor') p.armor = save.armor;
+        p.items = Shop.readItems(save.items);
+      }
+      p.auto = this.g.has('away') && save.auto === true;
       // 마지막으로 있던 자리에서 시작한다 (개발용 접속 위치가 정해져 있으면 그쪽이 먼저다)
       if (!this.devSpawn && Array.isArray(save.at) && Number.isFinite(save.at[0]) && Number.isFinite(save.at[1])) {
         p.x = save.at[0]; p.z = save.at[1]; clampInto(p); p.tx = p.x; p.tz = p.z;
@@ -88,10 +103,10 @@ export class Players {
       }
     }
     // 낀 무기와 갑옷을 낱개 장비와 맞춘다 (처음 온 사람은 기본 무기를 장비로 받는다)
-    this.g.gear.adopt(p);
+    if (this.g.has('gear')) this.g.gear.adopt(p);
     if (save) this.revive(p);
     // 봇은 직업을 섞는다
-    if (bot) { this.g.classes.apply(p, CLASS_IDS[Math.floor(Math.random() * CLASS_IDS.length)]); p.hp = p.maxHp; this.g.channels.seat(p); } // 봇은 접속 사건이 없으므로 채널을 여기서 정한다
+    if (bot) { if (this.g.has('classes') && CLASS_IDS.length) this.g.classes.apply(p, CLASS_IDS[Math.floor(Math.random() * CLASS_IDS.length)]); p.hp = p.maxHp; this.g.channels.seat(p); } // 봇은 접속 사건이 없으므로 채널을 여기서 정한다
     else this.g.fire('playerJoined', p);
     return p;
   }
@@ -124,14 +139,27 @@ export class Players {
   }
 
   export(p: Ent): PlayerSave {
-    const ext: Record<string, unknown> = {};
-    for (const s of this.g.saves) ext[s.name] = s.save(p);
+    const g = this.g, ext: Record<string, unknown> = {};
+    for (const s of g.saves) ext[s.name] = s.save(p);
     // 시스템의 몫은 ext에만 적는다. 옛 최상위 칸은 읽기만 한다 (spawn의 이전이 Saver.legacy를 부른다): 칸을 옮긴 배포 한 번 동안 함께 적던 것은 껐다
     // 버전 칸(v, gv)을 적는다: 다음에 읽을 때 이 버전부터 올린다 (../migrate.ts)
-    return { ...this.g.saveVersion('player'), ext, name: p.name, lv: p.lv, exp: p.exp, need: p.need, maxHp: p.maxHp, sparks: p.sparks, seen: this.g.now(), gold: p.gold, weapon: p.weapon, armor: p.armor, items: { ...p.items }, cls: p.cls, at: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10], auto: p.auto };
+    // 최상위 칸: 핵심은 ext·이름·시각·자리. 그 밖의 칸은 그 모듈을 고른 게임만 적는다 (칸의 차례는 예전 그대로: 모듈을 다 쓰는 게임의 저장 글자는 전과 같다)
+    const out: PlayerSave = { ...g.saveVersion('player'), ext, name: p.name };
+    if (g.has('growth')) { out.lv = p.lv; out.exp = p.exp; out.need = p.need; }
+    if (g.has('combat')) out.maxHp = p.maxHp;
+    if (g.has('economy')) out.sparks = p.sparks;
+    out.seen = g.now();
+    if (g.has('economy')) out.gold = p.gold;
+    if (g.has('items')) { out.weapon = p.weapon; out.armor = p.armor; out.items = { ...p.items }; }
+    if (g.has('classes')) out.cls = p.cls;
+    out.at = [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10];
+    if (g.has('away')) out.auto = p.auto;
+    // 고르지 않은 모듈의 칸: 읽은 그대로 (spawn)
+    if (p.kept) { Object.assign(out, p.kept.top); out.ext = { ...ext, ...p.kept.ext }; }
+    return out;
   }
 
-  rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; this.g.rank.renamed(p); this.g.fire('playerRenamed', p); }
+  rename(p: Ent, name: string): void { p.name = name; p.unsaved = true; if (this.g.has('rank')) this.g.rank.renamed(p); this.g.fire('playerRenamed', p); }
 
   /** 최대 체력을 다시 구한다: 직업과 레벨, 그리고 보정(장비). 장비를 바꾸거나 레벨이 오르면 부른다 */
   refresh(p: Ent): void {
@@ -141,20 +169,21 @@ export class Players {
   }
 
   /** 처치로 얻은 것의 원인 이름: 던전 인스턴스 안, 자리 비움 사냥 중, 접속 중. 지갑에 넘기는 이름과 장부가 처치의 앞뒤 차이(장비, 재료)에 붙이는 이름이 이것 하나다 */
-  huntWhy(p: Ent, m: Ent): string { return !isField(m.layer) ? ECON_HUNT.inst : this.g.away.active(p) ? ECON_HUNT.away : ECON_HUNT.live; }
+  huntWhy(p: Ent, m: Ent): string { return !isField(m.layer) ? ECON_HUNT.inst : this.g.has('away') && this.g.away.active(p) ? ECON_HUNT.away : ECON_HUNT.live; }
 
   /**
-   * 경험치와 불씨를 준다 (지갑을 거친다). 레벨이 오르면 체력이 늘고 가득 찬다.
+   * 경험치와 두 번째 재화를 준다 (지갑을 거친다). 레벨이 오르면 체력이 늘고 가득 찬다.
    * why: 원인의 이름 (장부에 그 이름으로 적힌다. 이름의 체계는 systems/wallet.ts). 비워 두면 장부가 그때의 경계(명령, 사건)로 가려 적는다
    */
   grant(p: Ent, exp: number, sparks: number, why = ''): void {
-    this.g.wallet.add(p, 'sparks', sparks, why); this.g.wallet.add(p, 'exp', exp, why);
+    this.g.wallet.add(p, 'sparks', sparks, why); if (this.g.has('growth')) this.g.wallet.add(p, 'exp', exp, why);
     p.dirty = true; p.unsaved = true;
     this.levelUp(p); // 받은 경험치가 없어도 확인한다 (전과 같게: 저장에서 필요치를 꽉 채운 채 읽힌 캐릭터)
   }
 
   /** 경험치가 찼으면 레벨을 올린다. 경험치가 늘어난 뒤에 불린다 (지갑이 부른다) */
   levelUp(p: Ent): void {
+    if (!this.g.has('growth')) return; // 레벨이 없는 게임
     while (p.exp >= p.need) {
       p.exp -= p.need; p.need = nextNeed(p.need); p.lv++; this.refresh(p); p.hp = p.maxHp;
       this.g.notify(p, 'levelUp', p.lv);

@@ -114,6 +114,8 @@ export class Sanctions {
 
   /** 지급·회수할 수 있는 것인가: 재화 셋과 아이템 id */
   static canGrant(what: string): boolean { return isCur(what) || isItemId(what); }
+  /** 이 게임에서 지급·회수할 수 있는가: 재화는 economy, 아이템은 items 모듈을 고른 게임만 */
+  grantable(what: string): boolean { return isCur(what) ? this.g.has('economy') : isItemId(what) && this.g.has('items'); }
 
   /**
    * 지금 접속해 있는(또는 자리 비움 사냥 중인) 캐릭터에게 준다(n > 0) 또는 거둔다(n < 0). 실제로 바뀐 양을 돌려준다 (부호 포함).
@@ -121,7 +123,7 @@ export class Sanctions {
    */
   apply(p: Ent, what: string, n: number): number {
     const g = this.g, k = Math.trunc(n);
-    if (!k || !Sanctions.canGrant(what)) return 0;
+    if (!k || !this.grantable(what)) return 0;
     let done = 0;
     if (isCur(what)) {
       if (k > 0) done = g.wallet.add(p, what, k, WHY.admin);
@@ -137,7 +139,7 @@ export class Sanctions {
 
   /** 접속해 있지 않은 캐릭터(저장 키)에게 다음 접속 때 줄 것(또는 거둘 것)을 미뤄 둔다. 가득 찼으면 false */
   queue(key: string, what: string, n: number, by: string): boolean {
-    if (!Sanctions.canGrant(what) || !Math.trunc(n)) return false;
+    if (!this.grantable(what) || !Math.trunc(n)) return false;
     const list = this.pending.get(key) ?? [];
     if (list.length >= PENDING_MAX) return false;
     list.push({ what, n: Math.trunc(n), at: this.g.now(), by: by.slice(0, 40) });

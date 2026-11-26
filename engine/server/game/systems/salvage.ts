@@ -105,7 +105,7 @@ export class Salvage {
     // 장부에는 그 원인(사냥)으로 생겼다가 자동 분해로 사라진 장비와, 자동 분해로 생긴 가루로 적힌다
     g.bag.passed(p, it, why, WHY.autoSalvage);
     if (dust > 0) g.bag.putItem(p, item, dust, WHY.autoSalvage);
-    if (g.away.active(p)) { g.away.tally(p, 'salv', 1); g.away.tally(p, 'dust', dust); return true; } // 자리를 비운 동안의 것은 돌아왔을 때 한 번에 알린다
+    if (g.has('away') && g.away.active(p)) { g.away.tally(p, 'salv', 1); g.away.tally(p, 'dust', dust); return true; } // 자리를 비운 동안의 것은 돌아왔을 때 한 번에 알린다
     const w = this.pending.get(p.id);
     if (w) { w.n++; w.dust += dust; } else this.pending.set(p.id, { n: 1, dust, at: g.clock });
     return true;

@@ -37,6 +37,8 @@ export class Bag {
   readonly seen: ((p: Ent, cur: string, d: number, why: string) => void)[] = [];
 
   constructor(private g: Game) {
+    // 아래는 장비 가방의 것: 장비 모듈을 고른 게임만 (재료·물약의 가방은 칸 수가 없다)
+    if (!g.has('gear')) return;
     g.commands.set('bagUp', (p) => this.grow(p));
     g.saves.push({
       name: 'bag',

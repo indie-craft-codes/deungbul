@@ -4,7 +4,7 @@
 // 장비 가방의 칸 수와 분해 설정(서버의 개인 상태 bag, salvage)도 여기서 받아 넣고, 가방이 가득 찼으면 가방 단추에 표시한다.
 import { GEAR, ITEMS, SALVAGE, itemCap, itemDef, type ItemId } from '../../shared/defs';
 import { $ } from '../app';
-import { onMsg } from '../bus';
+import { bindKey, onMsg } from '../bus';
 import { L, itemInfo, onLangChange, t } from '../i18n';
 import { S } from '../state';
 import { itemIcon } from './icons';
@@ -113,10 +113,11 @@ export function toggleBag(): void {
 }
 
 export function initBag(): void {
+  bindKey('b', toggleBag);
   $('bagBtn').addEventListener('click', (e) => { toggleBag(); (e.currentTarget as HTMLElement).blur(); });
   $('bagClose').addEventListener('click', () => { ui.panel.hidden = true; });
   onMsg('stat', renderBag);
-  onMsg('meta', (m) => { gearCount = m.gear.length; markBtn(); renderBag(); });
+  onMsg('meta', (m) => { if (m.gear) gearCount = m.gear.length; markBtn(); renderBag(); });
   // 개인 상태: 가방의 칸 수와 버려진 수, 분해의 설정. 메뉴(hud/menu.ts)보다 먼저 등록되므로 여기서 값을 넣는다
   onMsg('me', (m) => {
     const s = (typeof m.s === 'object' && m.s !== null ? m.s : {}) as Record<string, unknown>, n = (v: unknown, def: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : def);

@@ -1,12 +1,9 @@
 // 입력 장치: 마우스, 터치(탭, 핀치), 가상 조이스틱, 키보드. 장치의 신호를 actions의 행동으로 바꾼다.
-import { toggleAuto } from './auto';
-import { onFrame, runKey } from './bus';
-import { toggleBag } from './hud/bag';
-import { toggleMenu } from './hud/menu';
-import { closeWorldMap, toggleWorldMap, worldMapOpen } from './hud/worldmap';
+import { bindKey, onFrame, runKey } from './bus';
+import { closeWorldMap, worldMapOpen } from './hud/worldmap';
 import { goToTown } from './actions';
-import { SKILL_SLOTS } from '../shared/defs';
-import { nextTarget, skillQueueTick, stop, tapAt, usePotion, useSkill } from './actions';
+import { skillQueueTick, stop, tapAt } from './actions';
+import { hasModule } from './mods';
 import { $, clamp, view } from './app';
 import { blurChat, focusChat } from './hud/chat';
 import { S } from './state';
@@ -85,16 +82,9 @@ function initKeyboard(): void {
     if (typing()) { if (ev.key === 'Escape') (document.activeElement as HTMLElement).blur(); return; }
     if (!S.me) return;
     if (ev.key === 'Enter') { ev.preventDefault(); focusChat(); return; }
-    if (ev.key === 'Tab') { ev.preventDefault(); nextTarget(); return; }
     if (ev.key === 'Escape') { if (worldMapOpen()) closeWorldMap(); else stop(); return; }
-    if (ev.key >= '1' && ev.key <= String(SKILL_SLOTS)) { useSkill(Number(ev.key) - 1); return; }
-    if (ev.key.toLowerCase() === 'q') { usePotion(); return; }
-    if (ev.key.toLowerCase() === 'r') { toggleAuto(); return; }
-    if (ev.key.toLowerCase() === 'h') { goToTown(); return; }
-    if (ev.key.toLowerCase() === 'b') { toggleBag(); return; }
-    if (ev.key.toLowerCase() === 'm') { toggleMenu(); return; }
-    if (ev.key.toLowerCase() === 'n') { toggleWorldMap(); return; }
-    if (runKey(ev.key)) return; // 게임의 모듈이 등록한 단축키 (bus.onKey)
+    // 틀의 모듈이 단 키(bus.bindKey: 숫자·Tab은 전투, Q·B는 아이템, R은 자동 사냥, M·N·H는 핵심)와 게임의 키(bus.onKey)
+    if (runKey(ev.key)) { if (ev.key === 'Tab') ev.preventDefault(); return; }
     keys.add(ev.key.toLowerCase());
   });
   window.addEventListener('keyup', (ev) => keys.delete(ev.key.toLowerCase()));
@@ -102,7 +92,8 @@ function initKeyboard(): void {
 }
 
 export function initInput(): void {
-  onFrame(skillQueueTick); // 사거리 밖이라 다가가며 기다리는 기술
+  if (hasModule('combat')) onFrame(skillQueueTick); // 사거리 밖이라 다가가며 기다리는 기술
+  bindKey('h', goToTown); // 집(rules.home, 없으면 처음 서는 곳)으로 걸어간다: 핵심
   initPointer(view.renderer.domElement);
   initJoystick();
   initKeyboard();

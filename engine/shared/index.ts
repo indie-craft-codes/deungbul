@@ -7,3 +7,4 @@ export type { MsgArg, MsgKey } from './messages';
 export { AUTO, AWAY, POTIONS, pickPotion, potionOrder } from './auto';
 export { NavGrid, walk, type Walker } from './nav';
 export { PROTOCOL } from './protocol';
+export { ALL_MODULES, MODULE_TABLE, RPG_MODULES, checkModules, type ModuleId } from './modules';
