@@ -14,7 +14,7 @@
 - 코드는 틀(`engine/`)과 게임 둘(`games/deungbul/` 등불지기, 예제 `games/sample/`)이다. 방향은 게임 → 틀 하나다. **2026-11-27에 시제품·증명 게임 일곱(`cave`·`starmine`·`bastion`·`rollball`·`dalmuri`·`stepstone`·`pond`)을 지웠다**: 코드는 커밋 `7e347c9`에 남아 있고(`git checkout 7e347c9 -- games/<이름>`), 운영 데이터는 `data/backup/retired-<시각>/`로 옮겼다. 증명 기록([proof-rollball.md](proof-rollball.md), [proof-dalmuri.md](proof-dalmuri.md), [proof-stepstone.md](proof-stepstone.md), [proof-pond.md](proof-pond.md))은 틀을 검증한 기록으로 남긴다. 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험이 지킨다.
 - **틀은 장르와 무관한 핵심과 선택 모듈 스물셋이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈', 영웅 장비 `herogear`는 아래 '영웅의 성장', 판 `rooms`는 아래 '턴제의 빈 곳 메우기')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
 - 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
-- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 8개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 둘의 시험: 검사 2070개, 2026-11-27 게임 정리 뒤) 모두 통과, `npm run build:all` 통과.
+- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 8개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 둘의 시험: 검사 2106개, 2026-11-27 판 모듈의 빈 곳 메우기 뒤. 게임 정리 뒤 2070개) 모두 통과, `npm run build:all` 통과.
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
@@ -32,6 +32,30 @@
 - 소탕·오프라인 진행·픽업 배너(2026-11-26, 가지 `feat/sweep`, 아래 같은 이름의 절): 단계·열쇠 던전의 소탕(소탕권·재화·열쇠, 보상은 바로), 접속하지 않은 동안의 단계 진행(편성의 전투력과 권장 전투력, 시간·단계의 상한, 방치 보상을 깬 단계로 토막 내어), 픽업·반반·천장 공유·기간 한정 배너와 영웅 선택권(공개 확률표에 실효 확률까지). 모두 내용의 선택 칸이라 적지 않은 게임은 예전과 같다. 등불지기 황금 실행이 바이트까지 같다. `npm test` 검사 1930개.
 - 부하와 장시간(2026-11-26, 가지 `feat/loadtest`, 아래 같은 이름의 절): 영웅이 많은 편성·장시간 운영·팀 셋 이상의 화면을 쟀다. 틀의 뜨거운 길 넷(층마다의 스냅샷 격자, 층마다의 몬스터 색인 `g.monstersIn`, 장애물 칸 색인, 상태 글자 다시 쓰기)과 소켓 쓰기 모으기, 운영에서 끝없이 쌓이던 측정 값을 고쳤다(게임의 결과·줄 위의 바이트는 그대로). 도구 `npm run load:game`, 수치는 [infra.md](infra.md) '부하와 장시간'.
 - 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다(장르 중립 틀에서도: 옛 견본 15개와 운영 DB 복사본 캐릭터 59·월드 1을 읽은 결과가 글자까지 같다). 프로토콜은 3이다(2026-11-26: 엔티티 종류를 문자열로, 상태 줄 뒤에 게임의 값, stat·meta의 칸이 모듈마다. 옛 화면은 새로고침을 안내받는다).
+
+## 판 모듈의 빈 곳 메우기 (2026-11-27, 가지 `feat/roomfix`)
+
+문서만 보고 만든 넷의 판 게임 반딧불 연못의 증명 기록 [proof-pond.md](proof-pond.md)(평가 4.0/5)의 '문서의 빈 곳'·'꼼수'·'틀 수리 제안'을 판 모듈 `rooms`에서 메웠다. 항목마다의 표(틀의 칸·호환·연못에서 지운 꼼수)는 그 기록의 '메운 것', 쓰는 법은 [making-a-game.md](making-a-game.md) 14절(새 절 '셋 이상의 판', '자리 수의 범위', 화면의 막대 자리, '판 게임을 만들 때 걸리는 작은 것들').
+
+| 무엇 | 틀의 칸 | 선택인가 |
+|---|---|---|
+| 바퀴마다 선 돌리기 | `RoomDef.rotateFirst`, `roundEnd(room)`, `skip(room, i)` (`pass`가 '이번 바퀴의 다음 자리' → '바퀴의 끝'으로) | 주지 않으면 차례·바퀴의 셈이 예전과 같다 |
+| 셋 이상의 판에서 빠진 자리 | `RoomDef.outEnds`(판 끝내기), `out(room, i, why)`. 기본은 남은 사람끼리 잇기(예전 동작, 이제 문서에) | 기본이 예전 |
+| 등수로 끝내기 | `g.rooms.finish(room, 등수 배열, 까닭, 점수?)`, `room.ranks`·`scores`, `RoomView.ranks`·`scores`, `g.rooms.rankOf`, `roomResult`의 셋째~다섯째 값, 결과 창의 등수 줄, 문장 `fmt.roomRankTitle`·`roomRankRow`·`roomScore` | 이긴 자리를 주는 `finish`는 그대로 |
+| 자리 수의 범위 | `RoomDef.seats: { min, max }`, `startAfterS`, `cpuFill`, 명령 `room a:'start'`('지금 시작'), 안내문 `roomFewer`, `RoomView.min`, `RoomLobby.startAfterS` | `seats`가 수면 예전과 같다 |
+| 좁은 화면의 막대 자리, 기권 확인 | `setRoomLook({ barAt: 'top' })`, css 변수 `--room-bar-bottom`·`--room-bar-top`, 기권은 3초 안에 두 번(`ui.roomResignSure`) | 막대 자리는 선택. 기권 확인은 모든 판 |
+| 컴퓨터의 이름 | `RoomDef.cpuName`, `setRoomLook({ seatName })`, 컴퓨터가 둘 이상이면 틀이 번호(`fmt.roomCpuN`) | 하나면 예전처럼 `roomCpu` |
+| 안내문 `roomStart` | 셋째 값 '자리 수': 셋 이상이면 'n명이 둡니다' | 앞 둘은 그대로 |
+| 이름표가 실려 온 값을 쓰기 | `KindLook.label(e, vals)` (`engine/client/kinds.ts`, `entities.ts`: 값이 바뀌고 글이 바뀔 때만 쓴다) | `label(e)`는 그대로 |
+| 타입의 입구 | `@engine/shared`·`@engine/client`가 `RoomView`, `RoomLobby`, `RoomRow`, `RoomSeatView`, `RoomPhase`를 `export type` | 새 내보내기 |
+| 작은 문서의 빈 곳 | 5절(카메라 yaw 0의 방향, `forInput`), 8절(`spawn`의 `pid`와 `players.leave`, 게임의 시계 `game: { now }`), 11절(`onFrame`의 `(now ms, dt 초)`, 판의 본보기 파일), 12절(`label(e, vals)`), 14절(`Room.cpuAt`, 부하 도구의 `PLUGINS` 표) | |
+| 본보기 | 틀의 시험의 '별 줍기'(셋~넷, `engine/test/core/server/stars.ts`, 화면 `client/stars.ts`): 14절의 조각이 지운 징검돌 대신 여기서 따온다(문서 견본 시험이 확인) | |
+
+확인:
+- `npm run typecheck` 설정 8개 오류 0. `npm test` 두 번 모두 통과(검사 2070 → 2106개: 판 모듈의 틀 시험 `core/rooms` 60 → 95개). 등불지기의 문장 견본(`games/deungbul/test/fixtures/locale-*.json`)은 틀의 새 문장 7개와 바뀐 3개(`roomWaiting`, `roomResult`, `roomStart`)만 새로 떴다. `npm run build:all` 통과.
+- 황금 실행(`turnfw-tools/golden.mts`, 바탕 `a517a06`과 이 가지): 등불지기(sim) 7,489,205바이트·sample 3,364,852바이트 모두 바이트까지 같다. 두 게임은 판 모듈을 쓰지 않는다.
+- 되살린 연못·징검돌(이 가지의 복사본에서만 `git checkout 7e347c9 -- …`, 확인 뒤 지움: 커밋하지 않았다): 연못의 꼼수 넷(선 돌리기, 등수의 결과 글, 폰 막대 css, 컴퓨터 이름)과 타입 끌어내기를 새 칸으로 바꾸고 셋으로 시작을 더해 시험 115 → 124개 통과, 징검돌은 고치지 않고 87개 통과. 화면(PC·폰 × 한국어·영어): 넷의 판의 등수 결과 창, 사람 셋이 '지금 시작'으로 셋의 판, 폰 막대가 위·기권 확인, 컴퓨터 이름(게임의 '컴퓨터(파랑)'과 틀의 '컴퓨터 1·2·3'), 징검돌은 예전 그대로. 자세히는 [proof-pond.md](proof-pond.md) '메운 것'.
+- 부하(30초, 바탕과 번갈아 두 번씩): 사람끼리 판 100개 틱 평균 0.19·0.20 → 0.18·0.21ms, 컴퓨터와 둔 넷의 판 100개 0.87·0.81 → 0.83·0.77ms. 느려지지 않았다.
 
 ## 턴제의 빈 곳 메우기 (2026-11-26, 가지 `feat/turnfw`)
 
@@ -270,6 +294,7 @@
 
 ## 0. 이어 갈 것
 
+0. **판 모듈의 빈 곳 메우기: 끝(2026-11-27, 가지 `feat/roomfix`)**: 위 '판 모듈의 빈 곳 메우기'. 반딧불 연못이 찾은 빈 곳(선 돌리기 `rotateFirst`·`roundEnd`·`skip`, 셋 이상의 빠진 자리 `outEnds`·`out`, 등수 `finish(room, 등수, 까닭, 점수)`·`rankOf`, 자리 수의 범위 `seats: { min, max }`·`startAfterS`·`cpuFill`·'지금 시작', 막대 자리 `barAt`·기권 확인, 컴퓨터 이름, 타입의 입구, 작은 문서 빈 곳)을 메우고 14절의 본보기를 틀의 시험의 '별 줍기'로 바꿨다. 검사 2070 → 2106개, 등불지기·sample 황금 실행 같음. **남은 것**: 판 구경(앉지 않고 보기), 대기실의 판 목록 넘기기, 자리 수를 판을 열 때 고르기(지금은 게임마다 하나의 범위), 3D 월드를 쓰지 않는 화면(카드 탁자), 좁은 화면에서 자리가 다섯 이상인 막대. **다음**: 문서(14절)만 보고 셋 이상의 다른 판 게임(카드)을 만드는 검증(별도 에이전트).
 0. **판 모듈의 문서 검증 (넷이 두는 판 게임): 끝(2026-11-27, 가지 `feat/boardgame`)**: 14절과 입구만 보고 `games/pond` 반딧불 연못(넷이 미끼 패를 엎어 던져 물고기를 낚는 원작 판 게임: 숨긴 손패·엎은 미끼, 바퀴마다 도는 선, 포트 3010)을 만들었다. 틀은 고치지 않았다. 평가 4.0/5. 검사 2380 → 2495개(이 게임 115), 타입 검사 설정 20 → 22, 등불지기 황금 실행 같음. 컴퓨터끼리 자리별 승률: 처음 규칙 26.5/24.1/21.2/25.5%(4000판) → '물고기는 제 크기보다 작은 미끼를 물지 않는다'를 더해 24.2/24.1/25.2/23.6%(2000판). 문서의 빈 곳 열여섯과 꼼수 여섯은 [proof-pond.md](proof-pond.md). 큰 것: 바퀴마다 선 돌리기(`room.first` + `turnStart`의 `pass`로 우회), 셋 이상의 판의 기권·몰수 동작, 등수 없는 결과, 자리 수 고정, 폰에서 판 막대와 게임의 아래 창이 겹침(기권을 잘못 누름), `RoomView` 타입을 내보내는 입구가 없음(경계 검사만 실패). **다음 후보**: 틀 수리 — `rotateFirst`(또는 `roundEnd`·`skip`), 등수가 있는 `finish`, 자리 수의 범위, 판 막대 자리(`barAt`), 컴퓨터 자리의 이름, `KindLook.label(e, vals)`, `RoomView`의 입구. 문서 — `onFrame` 인자, yaw 0의 방향, `forInput`, `game: { now }`, `spawn`의 `pid`·`players.leave`, 부하 도구의 `PLUGINS` 표. 그 뒤 반딧불 연못을 그 칸으로 옮긴다.
 0. **턴제의 빈 곳: 끝(2026-11-26, 가지 `feat/turnfw`)**: 위 '턴제의 빈 곳 메우기'. 판 모듈 `rooms`(판마다의 층, 대기실·짝짓기·컴퓨터 상대, 차례와 기한·초읽기, 끊긴 사람의 자리, 판의 저장), `setTapHandler`, `g.effect`/`onEffect`, `setCameraYaw`, `CameraAim.center`, `addNotices`의 `quiet`, `g.movement.teleport`, 자리 css의 `free`, 문서 14절. 징검돌을 옮기고 균형(첫 바퀴 보정)을 고쳤다. `feat/dalmig`와 함께 합쳤다. **다음**: 문서(14절)만 보고 다른 판 게임(카드·보드, 셋 이상)을 만드는 검증 → 위 `feat/boardgame`에서 했다.
 0. **달무리 원정대가 찾은 빈 곳 메우기: 끝(2026-11-26, 가지 `feat/idleflow`)**: 위 '단계 밖과 달무리의 빈 곳 메우기'. 던전 안의 자동 전투(`DungeonDef.auto`), 던전 뒤 단계로(`STAGE_RULES.returnAfterDungeon`), 메뉴에서 바로 던전(`DungeonDef.fromMenu`, 명령 `dungeonGo`), 돌아왔을 때의 창(`IDLE.popup`, 메시지 `idleBack`), 재료로 영웅 조각(`HERO_RULES.trade`), 영웅 모델에 id·등급(`setHeroModel`, `HumanoidLook.hero`), 딸려 온 화면 감추기(`HUD.hide`), 메뉴 줄 도우미의 입구(`menuRow` …), 틀 안의 타입 오류 둘, 문서. **달무리 옮기기도 끝(2026-11-26, 가지 `feat/dalmig`)**: 위 '달무리 옮기기'. 꼼수를 지우고 이 칸들로, 소탕·오프라인 진행·픽업 배너·영웅의 성장도 쓴다. 남은 것: 월식 소환 뒤의 배너(소탕 결과 창의 바탕은 합칠 때 고쳤다).

@@ -118,3 +118,37 @@
 - 서버를 실제로 껐다 켠 뒤 브라우저가 두던 판으로 돌아오는 것(시험의 `exportWorld`/`importWorld`로만).
 - 부하(`scripts/load`에 등록만 했다. 판의 방식 `room`은 둘씩 짝짓는 봇이라 넷의 판은 `roomcpu`가 맞다).
 - 소리.
+
+## 메운 것 (2026-11-27, 가지 `feat/roomfix`)
+
+위의 '문서의 빈 곳'·'게임 안의 꼼수'·'틀 수리 제안'을 틀(`engine/`)에서 메웠다. 칸은 모두 선택이고 예전의 쓰는 법은 그대로 된다(`finish(room, 이긴 자리 | -2, 까닭)`, `seats: 2`, 하나의 컴퓨터, 아래 막대). 쓰는 법은 [making-a-game.md](making-a-game.md) 14절. 저장소 안의 본보기는 틀의 시험의 '별 줍기'(`engine/test/core/server/stars.ts`, `client/stars.ts`, 시험 `engine/test/core/rooms.test.ts`).
+
+| 빈 곳 (위의 번호) | 틀의 칸 (파일) | 호환 | 연못에서 지운 꼼수 |
+|---|---|---|---|
+| 바퀴마다 선 돌리기 (1, 꼼수 1, 제안 1) | `RoomDef.rotateFirst`(바퀴마다 `room.first`를 다음의 빠지지 않은 자리로), `RoomDef.roundEnd(room)`(바퀴의 끝: 펼치기·점수, 여기서 `finish`나 `room.first`를 바꿔도 된다), `RoomDef.skip(room, i)`(그 자리를 이번에 건너뛰기). `pass`가 '이번 바퀴에 남은 자리' → '바퀴의 끝'으로 나뉘었다 (`engine/server/game/systems/rooms.ts`) | 셋 다 주지 않으면 차례·바퀴의 셈이 예전과 같다 (시험: 둘의 판에서 바퀴가 바뀌어도 자리 0이 먼저) | 펼칠 때 `room.first = t.leader`, `turnStart`에서 '던질 자리가 아니면 `g.rooms.pass`', `turnEnd`의 펼치기 → `rotateFirst: true`와 `roundEnd: 펼치기`. `turnStart`는 컴퓨터 쉬기(`room.cpuAt`)만 |
+| 셋 이상의 기권·몰수 (2) | 동작을 문서에 적고(14절 '셋 이상의 판'), `RoomDef.outEnds`(true면 판을 끝낸다: 남은 자리 함께 1등, 빠진 자리 그다음)와 `RoomDef.out(room, i, why)`(여기서 `finish`를 불러 끝을 정해도 된다) | 기본(false)은 예전 그대로 남은 사람끼리 잇는다 | (연못은 기본: 셋이 이어 간다) |
+| 등수 (3, 꼼수 2, 제안 2) | `g.rooms.finish(room, 등수 배열, 까닭, 점수?)`: `room.ranks`·`room.scores`, `RoomView.ranks`·`scores`, 1등이 하나면 `room.win`, 여럿이면 -2. `roomResult`의 값 [이김/짐/비김, 까닭, 내 등수, 등수를 받은 자리 수, 같은 등수]. 결과 창은 셋 이상이면 큰 글이 내 등수('2등', '함께 1등', 1등 하나면 '이겼습니다!'), 아래에 모든 자리의 등수·이름·점수(`fmt.roomRankTitle`·`roomRankRow`·`roomScore`), 안내문은 'n명 가운데 k등입니다'. 전적은 `g.rooms.rankOf(room, i)` (`engine/client/hud/rooms.ts`, 언어 파일) | `finish(room, 이긴 자리 | -2, 까닭)`은 그대로: `ranks`·`scores`는 빈 배열, 안내문의 앞 둘이 같고 화면도 이김/짐/비김 | `setRoomLook.title`의 '2등 · 15점', `winner()`로 1등 하나만 틀에 주던 것 → `finish(room, 등수, 'score', 점수)`. 전적의 승은 `rankOf(...) === 1` |
+| 자리 수 범위 (4, 제안 3) | `RoomDef.seats: { min, max }`, `startAfterS`(기다림 뒤 모인 만큼으로), `cpuFill: 'max' | 'min'`(컴퓨터가 채우는 만큼), 명령 `room a:'start'`(가장 먼저 앉은 사람의 '지금 시작 (n명)' 단추, 모자라면 안내문 `roomFewer`), `RoomView.min`, `RoomLobby.startAfterS`. 모인 만큼으로 시작하면 빈 자리를 빼고 당긴다. 판의 저장은 자리 수가 `min`~`max`인 판을 받는다 | `seats`가 수 하나면 예전과 같다 | 넷으로 고정 → `seats: { min: 3, max: 4 }, startAfterS: 20`(셋이 모여 20초면 셋으로, 둘 이하면 20초에 컴퓨터가 넷까지). 판 상태의 크기를 `POND.seats` 대신 `room.seats.length`로 |
+| 폰의 판 막대 (5, 꼼수 3, 제안 4) | `setRoomLook({ barAt: 'top' })`(좁은 화면에서 위쪽 내 정보 창 밑), css 변수 `--room-bar-bottom`·`--room-bar-top`, 기권은 한 번 누르면 '한 번 더 누르면 기권'(3초 안에 다시 눌러야 기권: `ui.roomResignSure`, PC는 Click·폰은 Tap). 문서에 막대의 자리와 높이(아래 108px, `z-index` 12) | `barAt`을 주지 않으면 예전 자리. 기권의 확인은 모든 판에 (한 번 더 누른다) | `pond.css`의 `body.in-room #topmid #roomBar { … top: 96px }` → `barAt: 'top'` |
+| 컴퓨터 자리의 이름 (6, 꼼수 4, 제안 5) | 서버 `RoomDef.cpuName(room, i)`(이름을 `RoomSeatView.name`·`roomTimeout`에 싣는다), 화면 `setRoomLook({ seatName(view, i) })`(언어마다), 아무것도 주지 않으면 컴퓨터가 둘 이상일 때 틀이 번호를 붙인다(`fmt.roomCpuN`: '컴퓨터 1·2·3', 'Computer 1·2·3') | 컴퓨터가 하나면 예전처럼 `roomCpu` | 연못의 글 밖에서만 쓰던 `fmt.pondCpu(i)` → `seatName`으로 틀의 막대·결과 창·차례 글에도 '컴퓨터(파랑)' |
+| `roomStart`가 둘을 전제 (7) | 셋째 값 '자리 수'. 틀의 문장은 셋 이상이면 'n명이 둡니다' | 앞 둘은 그대로 | '넷이 낚시를 시작합니다' → `${a[2]}명이 낚시를 시작합니다` |
+| 카메라 yaw의 방향 (8) | 문서: 5절 '카메라'와 14절 '화면'(yaw 0에서 카메라는 +x+z 쪽, 각만큼 `applyAxisAngle(위, yaw)`, 자리마다 `i × 2π / 자리 수`) | 문서만 | |
+| `onFrame`의 인자 (9) | 문서: 11절 일람표와 14절 '작은 것들'(`(now ms, dt 초)`) | 문서만 | |
+| 이름표가 실려 온 값을 받기 (10, 제안 6) | `KindLook.label(e, vals)`: 놓일 때(빈 배열), 값이 바뀔 때(글이 바뀔 때만 쓴다), 언어가 바뀔 때 (`engine/client/kinds.ts`, `entities.ts`) | `label(e)`는 그대로 된다 | (연못의 캔버스 글자는 그대로 두었다: 모델 안의 큰 숫자라 이름표와 다르다) |
+| `[[PC|터치]]`와 `forInput` (11) | 문서: 5절 '문장' | 문서만 | |
+| 시험의 시계 `game: { now }` (12) | 문서: 8절과 14절 '작은 것들' | 문서만 | |
+| `spawn`의 `pid`와 `players.leave` (13) | 문서: 8절과 14절 '작은 것들' | 문서만 | |
+| `Room.cpuAt` (14) | `Room`의 칸 목록과 주석(차례가 시작될 때 `turnStart`보다 먼저 정해진다: `turnStart`에서 늦춰도 된다) | 문서만 | |
+| 타입의 입구 (16, 제안 7) | `@engine/shared`와 `@engine/client`가 `RoomView`, `RoomLobby`, `RoomRow`, `RoomSeatView`, `RoomPhase`를 `export type`으로 | 새 내보내기 | `type RoomView = NonNullable<ReturnType<typeof myRoom>>` → `import { type RoomView } from '@engine/client'` |
+| 부하 도구의 플러그인 표 (15) | 문서: 14절 '작은 것들'(`scripts/load/server.ts`의 `PLUGINS`에 한 줄, 셋 이상의 판은 `mode=roomcpu`) | 문서만 | |
+
+**되살린 연못·징검돌로 확인한 것** (이 가지의 복사본 안에서만 `git checkout 7e347c9 -- games/pond games/stepstone`, 꼼수를 새 칸으로 바꾼 뒤 돌리고 지웠다. 저장소에는 넣지 않았다):
+
+- 시험: 연못 115 → 124개 통과(사람 셋의 판이 이제 20초에 셋으로 시작하므로 '컴퓨터 채우기'는 '컴퓨터와 낚기' 단추로 바꾸고, 셋으로 시작·선 0·1·2 돌기와 `room.first`·`round`가 규칙의 선·던지기 번호와 늘 같음·등수와 점수·`roomResult`의 등수·전적의 승·둘이면 컴퓨터 둘·`rankOf`를 더했다). 징검돌 87개는 고치지 않고 그대로 통과(둘의 판의 호환).
+- 화면(임시 서버 3017·3018, 헤드리스 Chrome GPU, 실제 마우스·터치 사건, 콘솔 오류 없음):
+  - PC 한국어·영어, 컴퓨터 셋과 끝까지: 막대에 '컴퓨터(파랑)·(분홍)·(초록)', 결과 창 '4등'/'3rd'와 네 줄의 등수·점수, 대화창 '4명 가운데 4등입니다.'/'You finished 3rd of 4.'
+  - 사람 셋(브라우저 + 소켓 둘): 대기실 '(3/4) 3명부터 시작할 수 있습니다. 12초 뒤에 모인 만큼으로 시작합니다.'와 '지금 시작 (3명)' → 눌러 셋으로 시작 → 한 사람이 다섯째 차례에 기권(막대 '여울 (떠남)', 둘이 끝까지) → 결과 '이겼습니다!'와 1·2·3등(기권한 사람은 점수가 더 많아도 3등: 연못의 규칙). 소켓 둘의 `roomResult`도 같은 등수.
+  - 폰(390×844) 한국어·영어: 막대가 위(위에서 96~223px)이고 내 미끼 창(610~838px)과 겹치지 않는다. 기권을 한 번 누르면 붉은 '한 번 더 누르면 기권'/'Tap again to resign', 3초 뒤 되돌아간다. 영어에서 두 번 눌러 기권 → 컴퓨터 셋이 끝내고 결과 '4th'.
+  - 게임의 `seatName`을 빼고 지은 연못: 막대가 '컴퓨터 1 | 컴퓨터 2 | 컴퓨터 3'(영어 'Computer 1 …').
+  - 징검돌(둘): 막대 '이름 | 돌부처(컴퓨터)', 결과 '졌습니다'/'You lost'(등수 줄 없음), 폰에서 막대는 예전처럼 아래.
+- 부하(`npm run load:game`, 30초, 포트 3017, 같은 PC에서 바탕 `a517a06`의 작업 트리와 번갈아 두 번씩): 사람끼리 판 100개(징검돌 200명, `mode=room`) 틱 평균 바탕 0.19·0.20ms → 이 가지 0.18·0.21ms(99% 0.39·0.43 → 0.35·0.43), 컴퓨터와 둔 넷의 판 100개(연못 100명, `mode=roomcpu`) 0.87·0.81ms → 0.83·0.77ms(99% 6.61·6.67 → 6.79·6.10). 느려지지 않았다(차이는 잴 때마다의 흔들림 안).
