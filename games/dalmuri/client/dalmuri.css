@@ -1,0 +1,20 @@
+/* 달무리 원정대: 밤하늘 빛의 창 */
+:root {
+  --sky: #b8c8e8;
+  --ink: #1b2238;
+  --ink-rgb: 27, 34, 56;
+  --panel: rgba(var(--ink-rgb), .88);
+  --cover-rgb: 14, 18, 32;
+  --line: rgba(190, 210, 255, .3);
+  --gold: #f2cf6a;
+}
+/* 방치 보상 창: 화면 가운데 */
+#idlePop { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 40; min-width: 260px; max-width: calc(100vw - 32px); text-align: center; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; }
+#idlePop[hidden] { display: none; }
+#idlePop .num { font-size: 18px; }
+#idlePop .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+#idlePop button.on { background: var(--gold); color: var(--on-gold, #1b1b1b); border-color: var(--gold); font-weight: 700; }
+.mrow.rar1 .iname { color: #7fb0ff; }
+.mrow.rar2 .iname { color: var(--gold); }
+/* 가방 단추: 아이템 모듈은 던전 모듈의 의존으로만 있다. 이 게임의 아이템은 별정수 하나라 원정 탭에서 보인다 */
+#bagBtn { display: none; }
