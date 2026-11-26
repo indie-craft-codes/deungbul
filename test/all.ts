@@ -13,8 +13,9 @@
 // 새 게임: games/<게임>/test/all.ts(와 tsconfig.json)를 두면 npm test가 저절로 함께 돌린다.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { failures } from '../engine/test/harness';
+import { failures, passes, removeTemp } from '../engine/test/harness';
 
 const root = path.resolve(import.meta.dirname, '..');
 const tsx = path.join(root, 'node_modules', 'tsx', 'dist', 'cli.mjs');
@@ -37,17 +38,24 @@ const runs = (group: string): boolean => (only.length ? picked.has(group) : grou
 
 // 1. 틀의 경계 검사 (이 프로세스)
 const ENGINE = ['boundary'];
+const inProc: string[] = [];
 for (const name of only.length ? only.filter((a) => !a.includes('/')) : gameOnly ? [] : ENGINE) {
+  inProc.push(name);
   if (!ENGINE.includes(name)) { console.error(`모르는 이름입니다: ${name}`); process.exit(1); }
   console.log(`\n[${name}]`);
   await import(`../engine/test/${name}.test.ts`);
 }
 
 // 2. 따로 된 프로세스들: 틀의 시험, 게임마다의 시험. 그 출력은 [fx/이름], [<게임>/이름]으로 시작한다
-const failed: string[] = [];
+/** 따로 된 프로세스마다: 이름, 통과·실패한 검사의 수, 끝난 코드. 검사의 수는 그 프로세스의 시험 도구가 끝날 때 파일에 적는다 (harness.ts의 TEST_REPORT) */
+const runsDone: { label: string; pass: number; fail: number; code: number | null; report: boolean }[] = [];
+const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dg-test-'));
 const spawnRun = (label: string, tsconfig: string, entry: string, names: string[]) => {
-  const r = spawnSync(process.execPath, [tsx, '--tsconfig', tsconfig, entry, ...names], { cwd: root, stdio: 'inherit' });
-  if (r.status !== 0) failed.push(label);
+  const file = path.join(reportDir, `${label}.json`);
+  const r = spawnSync(process.execPath, [tsx, '--tsconfig', tsconfig, entry, ...names], { cwd: root, stdio: 'inherit', env: { ...process.env, TEST_REPORT: file } });
+  let got: { pass?: number; fail?: number } | null = null;
+  try { got = JSON.parse(fs.readFileSync(file, 'utf8')) as { pass?: number; fail?: number }; } catch { /* 적기 전에 죽었다 */ }
+  runsDone.push({ label, pass: Number(got?.pass ?? 0), fail: Number(got?.fail ?? 0), code: r.status, report: !!got });
 };
 if (runs('fx')) spawnRun('fx', path.join(root, 'engine', 'test', 'fx', 'tsconfig.json'), path.join(root, 'engine', 'test', 'fx', 'all.ts'), picked.get('fx') ?? []);
 if (runs('core')) spawnRun('core', path.join(root, 'engine', 'test', 'core', 'tsconfig.json'), path.join(root, 'engine', 'test', 'core', 'all.ts'), picked.get('core') ?? []);
@@ -58,6 +66,18 @@ for (const game of GAMES) {
   spawnRun(game, fs.existsSync(own) ? own : path.join(root, 'tsconfig.json'), path.join(dir, 'test', 'all.ts'), picked.get(game) ?? []);
 }
 
-const bad = failures() > 0 || failed.length > 0;
-console.log(bad ? `\n실패 ${failures()}건${failed.length ? ` (따로 돈 시험에도 실패가 있다: ${failed.join(', ')}. 위의 [${failed[0]}/…]를 보라)` : ''}` : '\n모두 통과');
-process.exit(bad ? 1 : 0);
+removeTemp(reportDir);
+
+// 끝 줄: 첫 낱말이 곧 결과다 ('실패 N건' 또는 '모두 통과'). 실패한 검사가 없어도 프로세스가 0이 아닌 코드로 끝났으면(예외로 죽음) 그것을 한 건으로 센다
+const total = { pass: passes(), fail: failures() };
+const where: string[] = failures() ? [`${inProc.join(', ')} ${failures()}건`] : [];
+for (const r of runsDone) {
+  total.pass += r.pass; total.fail += r.fail;
+  if (r.fail) where.push(`${r.label} ${r.fail}건`);
+  if (r.code !== 0 && !r.fail) { total.fail++; where.push(`${r.label}: 검사 밖에서 끝남 (코드 ${r.code ?? '없음'}${r.report ? '' : ', 결과를 적지 못함'})`); }
+}
+const checks = total.pass + total.fail;
+console.log(total.fail > 0
+  ? `\n실패 ${total.fail}건 (검사 ${checks}개. ${where.join(', ')}: 위의 '실패' 줄과 오류를 보라)`
+  : `\n모두 통과 (검사 ${checks}개: ${[...inProc, ...runsDone.map((r) => r.label)].join(', ')})`);
+process.exit(total.fail > 0 ? 1 : 0);
