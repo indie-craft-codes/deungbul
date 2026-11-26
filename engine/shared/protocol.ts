@@ -142,8 +142,8 @@ export type ClientMsg =
   | { t: 'handoff'; a: 'use'; code: string }
   /** 팀 고르기·옮기기 (teams 모듈): team은 TEAMS의 번호 */
   | { t: 'team'; team: number }
-  /** 영웅 (roster 모듈): 레벨 업(재화) / 별 올리기(조각) */
-  | { t: 'hero'; a: 'level' | 'star'; id: string }
+  /** 영웅 (roster 모듈): 레벨 업(재화) / 별 올리기(조각) / 기술 레벨·각성 (HERO_RULES.skill·awaken을 켠 게임) */
+  | { t: 'hero'; a: 'level' | 'star' | 'skill' | 'awaken'; id: string }
   /** 뽑기 (gacha 모듈): 배너 id와 횟수(1 또는 10) */
   | { t: 'gacha'; id: string; n: number }
   /** 편성 (squad 모듈): 함께 싸울 영웅 (자리의 차례, SQUAD_RULES.size까지) */
