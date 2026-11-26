@@ -13,7 +13,7 @@ import { PLAYER_UP, WORLD_UP } from '../../server/game/migrate';
 import { setLogSink } from '../../server/log';
 import { startServer } from '../../server/net/server';
 import { isLocalRequest, PROXY_HEADERS } from '../../server/net/ops';
-import { MemoryStore, SqliteStore, type PlayerSave, type Store } from '../../server/store';
+import { MemoryStore, SqliteStore, type EconStore, type PlayerSave, type Store } from '../../server/store';
 import { AUTO_NAME, prune, startBackups } from '../../server/store/backup';
 import { SCHEMA } from '../../server/store/sqlite';
 import { check, connect, sleep, until } from '../harness';
@@ -106,7 +106,7 @@ const base: PlayerSave = { name: '옛사람', lv: 3, exp: 5, need: 109, maxHp: 2
 
 // ---------- 저장의 묶음 (transaction): 도중에 예외가 나면 아무것도 적히지 않는다 ----------
 {
-  const stores: [string, Store][] = [['SQLite', new SqliteStore(path.join(tmp, 'tx', 'game.db'))], ['메모리', new MemoryStore()]];
+  const stores: [string, Store & EconStore][] = [['SQLite', new SqliteStore(path.join(tmp, 'tx', 'game.db'))], ['메모리', new MemoryStore()]];
   for (const [what, st] of stores) {
     st.saveWorld({ n: 1 }); st.savePlayer('a', { ...base, lv: 1 }); st.addEcon([{ day: '2026-11-26', cur: 'gold', why: 'kill', dir: '+', amount: 10, n: 1 }]);
     let threw = false;

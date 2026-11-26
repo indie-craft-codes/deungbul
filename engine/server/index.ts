@@ -13,7 +13,7 @@ export { createAdmin, parseSpan, type Admin, type AdminOptions } from './net/adm
 export type { RunOptions };
 export { WHY, mailWhy, type Cur } from './game/systems/wallet';
 export type { EconSnapshot } from './game/systems/ledger';
-export { MemoryStore, SqliteStore, type EconRow, type PlayerSave, type Store, type WorldSave } from './store';
+export { MemoryStore, SqliteStore, hasEcon, type EconRow, type EconStore, type PlayerSave, type Store, type WorldSave } from './store';
 export type { Migration, Migrations } from './game/migrate';
 export type { BackupOptions } from './store/backup';
 export { log } from './log';

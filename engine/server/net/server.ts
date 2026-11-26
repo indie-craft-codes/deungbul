@@ -14,7 +14,7 @@ import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
 import { Sanctions, normIp } from '../game/systems/sanctions';
 import { log } from '../log';
-import { MemoryStore, type PlayerSave, type Store, type WorldSave } from '../store';
+import { MemoryStore, hasEcon, type PlayerSave, type Store, type WorldSave } from '../store';
 import { startBackups, type BackupOptions } from '../store/backup';
 import { isClean, mask, tidy } from '../text';
 import { CLOSE, createAdmin, type Admin, type AdminOptions } from './admin';
@@ -123,7 +123,9 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const ops = new OpsCounters();
   const game = new Game(opts.game);
   /** 고른 모듈 (engine/shared/modules.ts): 핵심이 모듈의 시스템을 부르기 전에 묻는다 */
-  const econ = game.has('economy'), awayOn = game.has('away');
+  // 경제 장부는 economy 모듈을 고르고 저장소가 장부를 적을 수 있을 때만 (store/types.ts의 EconStore)
+  const ledgerStore = game.has('economy') && hasEcon(store) ? store : null;
+  const econ = !!ledgerStore, awayOn = game.has('away');
   const handoff = new Handoff(game); // 기기 옮기기: 월드 저장에 자기 칸을 두므로 월드를 읽기 전에 만든다
   const saved = store.loadWorld();
   if (saved) game.importWorld(saved);
@@ -248,7 +250,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       store.transaction(() => {
         if (world) store.saveWorld(world);
         for (const p of list) if (p) store.savePlayer(p.key, p.save);
-        if (rows.length) store.addEcon(rows);
+        if (rows.length) ledgerStore?.addEcon(rows);
       });
     } catch (err) { if (econ) game.ledger.giveBack(rows); saveFailed(world ? '월드와 캐릭터 저장' : '캐릭터 저장', err); return false; }
     for (const p of list) p?.done();
@@ -288,7 +290,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (!econ) return;
     const day = game.ledger.today();
     if (day === snapDay) return;
-    try { if (!store.econSnapshot(day)) store.saveEconSnapshot(day, game.ledger.snapshot((fn) => store.eachPlayer(fn))); snapDay = day; }
+    try { if (ledgerStore && !ledgerStore.econSnapshot(day)) ledgerStore.saveEconSnapshot(day, game.ledger.snapshot((fn) => store.eachPlayer(fn))); snapDay = day; }
     catch (err) { log.error('[server] 지표 스냅샷 실패:', err); }
   }
   econSnapshot(); // 켜질 때: 오늘의 스냅샷이 없으면 남긴다

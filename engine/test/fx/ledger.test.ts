@@ -8,7 +8,7 @@ import type { Ent } from '../../server/game/entity';
 import { Game } from '../../server/game/game';
 import { median, quantile, type EconSnapshot } from '../../server/game/systems/ledger';
 import { startServer } from '../../server/net/server';
-import { MemoryStore, SqliteStore, type EconRow, type PlayerSave, type Store } from '../../server/store';
+import { MemoryStore, SqliteStore, type EconRow, type EconStore, type PlayerSave, type Store } from '../../server/store';
 import { check } from '../harness';
 
 const DAY = 24 * 3600000;
@@ -112,7 +112,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
 {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deungbul-ledger-'));
   const file = path.join(dir, 'econ.db');
-  const stores: [string, () => Store, boolean][] = [['메모리 저장소', () => new MemoryStore(), false], ['SQLite 파일', () => new SqliteStore(file), true]];
+  const stores: [string, () => Store & EconStore, boolean][] = [['메모리 저장소', () => new MemoryStore(), false], ['SQLite 파일', () => new SqliteStore(file), true]];
   for (const [name, open, reopens] of stores) {
     let s = open();
     const row = (day: string, cur: string, why: string, dir: '+' | '-', amount: number, n: number): EconRow => ({ day, cur, why, dir, amount, n });
@@ -120,7 +120,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
     s.addEcon([row('2026-01-10', 'gold', 'hunt', '+', 50, 2), row('2026-01-10', 'gold', 'hunt', '-', 7, 1), row('2026-01-11', 'gear:rare', 'lostFull', '-', 1, 1)]);
     s.addEcon([]);
     const find = (rows: EconRow[], day: string, cur: string, why: string, dir: string) => rows.find((r) => r.day === day && r.cur === cur && r.why === why && r.dir === dir);
-    const ok = (st: Store) => { const all = st.econ('2026-01-01'), h = find(all, '2026-01-10', 'gold', 'hunt', '+'); return all.length === 5 && h?.amount === 150 && h.n === 6 && find(all, '2026-01-10', 'gold', 'hunt', '-')?.amount === 7 && st.econ('2026-01-10').length === 4 && st.econ('2026-01-11').length === 1 && st.econ('2026-02-01').length === 0; };
+    const ok = (st: Store & EconStore) => { const all = st.econ('2026-01-01'), h = find(all, '2026-01-10', 'gold', 'hunt', '+'); return all.length === 5 && h?.amount === 150 && h.n === 6 && find(all, '2026-01-10', 'gold', 'hunt', '-')?.amount === 7 && st.econ('2026-01-10').length === 4 && st.econ('2026-01-11').length === 1 && st.econ('2026-02-01').length === 0; };
     check(ok(s), `${name}: 두 번에 나눠 얹어도 같은 줄(날짜·재화·원인·방향)은 합쳐지고, 날짜로 걸러 읽힌다`);
     s.saveEconSnapshot('2026-01-10', { day: '2026-01-10', chars: 1 }); s.saveEconSnapshot('2026-01-11', { day: '2026-01-11', chars: 2 }); s.saveEconSnapshot('2026-01-11', { day: '2026-01-11', chars: 3 });
     s.savePlayer('k1', { name: '하나', lv: 3, exp: 0, need: 60, maxHp: 100, sparks: 1, gold: 5 }); s.savePlayer('k2', { name: '둘', lv: 4, exp: 0, need: 60, maxHp: 100, sparks: 2, gold: 6 });

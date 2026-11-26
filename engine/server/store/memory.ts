@@ -1,7 +1,7 @@
-import type { EconRow, PlayerSave, ReportSave, Store, WorldSave } from './types';
+import type { EconRow, EconStore, PlayerSave, ReportSave, Store, WorldSave } from './types';
 
 /** 시험용 저장소: 프로세스가 끝나면 사라진다. */
-export class MemoryStore implements Store {
+export class MemoryStore implements Store, EconStore {
   private world: WorldSave | null = null;
   private players = new Map<string, PlayerSave>();
   loadWorld(): WorldSave | null { return this.world && structuredClone(this.world); }

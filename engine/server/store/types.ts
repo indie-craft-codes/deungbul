@@ -46,6 +46,24 @@ export interface EconRow { day: string; cur: string; why: string; dir: '+' | '-'
 /** 시스템마다 자기 이름의 칸에 저장할 것을 넣는다 (예: { tower: {...} }). 칸 v·gv는 저장 형식의 버전이다 (engine/server/game/migrate.ts): 시스템의 이름으로 쓰지 않는다 */
 export type WorldSave = Record<string, unknown>;
 
+/**
+ * 경제 장부의 저장 (economy 모듈의 재화 흐름 지표: engine/server/game/systems/ledger.ts). 틀의 저장소 둘(SqliteStore, MemoryStore)은 이것도 갖는다.
+ * 이것이 없는 저장소를 넘기면 서버는 장부를 적지 않는다 (economy를 고르지 않은 게임은 쓰지 않는다)
+ */
+export interface EconStore {
+  /** 재화 흐름 지표의 줄을 얹는다: 같은 (day, cur, why, dir)이 이미 있으면 양과 건수를 더한다 */
+  addEcon(rows: EconRow[]): void;
+  /** 그 날짜(YYYY-MM-DD)부터의 지표 줄 */
+  econ(fromDay: string): EconRow[];
+  /** 그날의 분포 스냅샷을 적는다 (하루에 하나. 다시 적으면 덮어쓴다) */
+  saveEconSnapshot(day: string, data: unknown): void;
+  /** 그날의 분포 스냅샷. 날짜를 주지 않으면 가장 최근 것. 없으면 null */
+  econSnapshot(day?: string): { day: string; data: unknown } | null;
+}
+/** 그 저장소가 경제 장부도 적는가 */
+export const hasEcon = (s: Store): s is Store & EconStore => typeof (s as Partial<EconStore>).addEcon === 'function';
+
+/** 핵심의 저장소: 캐릭터, 월드, 신고, 한 묶음 쓰기, 백업 */
 export interface Store {
   loadWorld(): WorldSave | null;
   saveWorld(w: WorldSave): void;
@@ -60,14 +78,6 @@ export interface Store {
   reports(limit: number): ReportSave[];
   /** 저장된 모든 캐릭터를 훑는다 (지표의 분포 스냅샷용). 저장 키는 넘기지 않는다 */
   eachPlayer(fn: (p: PlayerSave) => void): void;
-  /** 재화 흐름 지표의 줄을 얹는다: 같은 (day, cur, why, dir)이 이미 있으면 양과 건수를 더한다 */
-  addEcon(rows: EconRow[]): void;
-  /** 그 날짜(YYYY-MM-DD)부터의 지표 줄 */
-  econ(fromDay: string): EconRow[];
-  /** 그날의 분포 스냅샷을 적는다 (하루에 하나. 다시 적으면 덮어쓴다) */
-  saveEconSnapshot(day: string, data: unknown): void;
-  /** 그날의 분포 스냅샷. 날짜를 주지 않으면 가장 최근 것. 없으면 null */
-  econSnapshot(day?: string): { day: string; data: unknown } | null;
   /**
    * fn 안의 쓰기를 한 묶음으로: fn이 끝까지 돌면 모두 적히고, 예외를 던지면 하나도 적히지 않은 채 그 예외를 다시 던진다.
    * 안에서 다시 불러도 된다(안쪽 묶음은 바깥 묶음의 일부가 된다). fn은 동기 함수여야 한다(await 사이에 다른 쓰기가 끼면 묶음이 깨진다)

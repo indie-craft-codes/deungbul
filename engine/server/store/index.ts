@@ -1,3 +1,3 @@
 export { MemoryStore } from './memory';
 export { SqliteStore } from './sqlite';
-export type { EconRow, PlayerSave, Store, WorldSave } from './types';
+export { hasEcon, type EconRow, type EconStore, type PlayerSave, type Store, type WorldSave } from './types';
