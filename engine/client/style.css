@@ -747,8 +747,8 @@ html:lang(en) body { overflow-wrap: break-word; }
   #stageBar .sid { font-size: 17px; }
   .gcard { width: 64px; }
 }
-/* 돌아왔을 때의 창 (hud/idleback.ts, IDLE.popup) */
-#idleBackPop { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(340px, calc(100vw - 32px)); z-index: 41; background: rgba(var(--ink-rgb), .97); display: flex; flex-direction: column; gap: 6px; text-align: center; padding: 14px 16px; }
+/* 돌아왔을 때의 창 (hud/idleback.ts, IDLE.popup): 바탕은 메뉴·가방·지도와 같은 불투명한 --ink (폰에서 뒤의 글자가 비치지 않게) */
+#idleBackPop { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(340px, calc(100vw - 32px)); z-index: 41; background: var(--ink); display: flex; flex-direction: column; gap: 6px; text-align: center; padding: 14px 16px; }
 #idleBackPop[hidden] { display: none; }
 #idleBackList { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--gold); }
 #idleBackPop .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }

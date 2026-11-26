@@ -9,7 +9,7 @@
 // 던전 뒤 단계로 돌아가기(STAGE_RULES.returnAfterDungeon): 던전을 끝내거나 스스로 나온 사람을 몇 초 뒤 지금 단계로 들여보낸다 (사건 dungeonExited).
 // 오프라인 단계 진행(STAGE_RULES.offline): 돌아온 사람이 자동 진행을 켜 두었으면 편성의 전투력과 권장 전투력으로 '그동안 깼을 단계'를 셈해 앞으로 옮긴다 (offlinePlan).
 // 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
-import { MONSTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
+import { IDLE_VIEW, MONSTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -65,7 +65,8 @@ export class Stages {
     g.on('playerLeft', (id) => { const r = this.runs.get(id); if (r) this.end(r); });
     // 오프라인 진행: 방치 보상(idle)이 있으면 그 셈 안에서(깬 단계로 토막을 나눠 보상을 셈한다), 없으면 접속할 때 따로. 둘 다 단계로 들어가기(enterOnJoin)보다 먼저다
     if (STAGE_RULE_VIEW.offline) {
-      if (g.has('idle')) g.idle.advance = (p, ms) => this.offline(p, ms);
+      // 돌아왔을 때의 창(IDLE.popup)을 쓰는 게임은 그 창이 진행을 함께 보이므로 안내문 stageAway를 따로 내지 않는다 (창이 뜨지 않으면 idle.ts가 낸다)
+      if (g.has('idle')) g.idle.advance = (p, ms) => this.offline(p, ms, !!IDLE_VIEW.popup);
       else g.on('playerJoined', (p) => { if (!p.bot) this.offline(p, p.offMs); });
     }
     g.on('playerJoined', (p) => { if (STAGE_RULES.enterOnJoin && !p.bot && STAGES.length) this.start(p, this.curIndex(p)); });
@@ -142,9 +143,9 @@ export class Stages {
   /**
    * 돌아온 사람의 오프라인 진행 (STAGE_RULES.offline. 자동 진행을 켜 둔 사람만): ms 동안 깼을 단계를 셈해 가장 멀리 깬 단계와 지금 단계를 옮기고,
    * 깬 것으로 친 단계마다 처음 깬 보상(first)과 보통 보상(clearReward)을 바로 준다(원인 stageAway). 깬 단계마다 사건 stageCleared(처음)도 난다.
-   * 비우기 시작할 때 깬 단계의 수와 단계마다의 깬 때(ms)를 돌려준다 (방치 보상의 토막: idle.ts)
+   * 비우기 시작할 때 깬 단계의 수와 단계마다의 깬 때(ms)를 돌려준다 (방치 보상의 토막: idle.ts). quiet면 안내문 stageAway를 내지 않는다 (돌아왔을 때의 창이 대신 알린다)
    */
-  offline(p: Ent, ms: number): { cleared: number; at: number[]; from: string; to: string } | null {
+  offline(p: Ent, ms: number, quiet = false): { cleared: number; at: number[]; from: string; to: string } | null {
     const g = this.g, rules = STAGE_RULE_VIEW.offline;
     if (!rules || p.bot || !p.stage.auto || !STAGES.length) return null;
     const best = this.bestIndex(p), power = g.has('squad') ? g.squad.power(p) : 0;
@@ -161,7 +162,7 @@ export class Stages {
     const last = plan.passed[plan.passed.length - 1];
     p.stage.cur = STAGES[Math.min(STAGES.length - 1, last + 1)].id;
     p.unsaved = true;
-    g.notify(p, 'stageAway', from, p.stage.cur, plan.passed.length);
+    if (!quiet) g.notify(p, 'stageAway', from, p.stage.cur, plan.passed.length);
     return { cleared: best + 1, at: plan.at, from, to: p.stage.cur };
   }
 

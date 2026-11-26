@@ -3,7 +3,7 @@
 //   전투력이 권장 이상/미만, 시간의 상한(maxH), 단계 수의 상한(maxStages), 마지막 단계, 자동 진행을 끈 사람, 시계가 거꾸로 간 것(음수), 아주 큰 틈.
 // 돌아오면 가장 멀리 깬 단계와 지금 단계가 옮겨지고, 처음 깬 보상이 바로 오고(원인 stageAway), 방치 보상은 깬 단계로 토막 내어 셈한다. 같은 입력이면 같은 결과.
 // 내용에서 offline을 빼면(기본) 예전과 같다: 진행도 없고 방치 우편의 값도 같다.
-import { IDLE, STAGES, STAGE_RULE_VIEW, heroPower, idleSegments, offlinePlan, type OfflineRules, type Reward } from '../../shared/defs';
+import { IDLE, IDLE_VIEW, STAGES, STAGE_RULE_VIEW, heroPower, idleSegments, offlinePlan, type OfflineRules, type Reward } from '../../shared/defs';
 import type { Ent } from '../../server/game/entity';
 import { Game } from '../../server/game/game';
 import { check } from '../harness';
@@ -25,6 +25,11 @@ function join(gap: number, heroes: Record<string, number[]>, best: string, auto 
   return { g, p, mail: p.mail.find((m) => m.k === 'idle'), away: g.notices.find((n) => n.id === p.id && n.k === 'stageAway') };
 }
 const power = (h: Record<string, number[]>) => Object.entries(h).reduce((s, [id, [lv, st]]) => s + heroPower(id, lv, st), 0);
+
+// 아래의 표와 '돌아오면'은 돌아왔을 때의 창(IDLE.popup)을 쓰지 않는 게임의 길이다: 진행을 안내문 stageAway로 알린다 (예전과 같다).
+// 창을 쓰는 게임(이 내용의 기본)은 끝의 '돌아왔을 때의 창을 쓰는 게임'에서 본다.
+const setPopup = (on: boolean) => { (IDLE_VIEW as { popup?: boolean }).popup = on; };
+setPopup(false);
 
 // ---------- 표: 전투력, 비운 시간, 상한 ----------
 {
@@ -106,4 +111,26 @@ const power = (h: Record<string, number[]>) => Object.entries(h).reduce((s, [id,
   const g = new Game({ now: () => T, plugins: [], modules: ['economy', 'growth', 'classes', 'combat', 'items', 'roster', 'squad', 'stages'] });
   const p: Ent = g.players.spawn('방치 없음', false, { name: '방치 없음', v: 1, seen: T - H, ext: { roster: STRONG, squad: Object.keys(STRONG), stages: { cur: '1-1', best: '', auto: true } } } as never, 'off-3');
   check(p.stage.best === '2-1' && p.stage.cur === '2-2', `idle 모듈이 없는 게임도 오프라인 진행은 한다 (${p.stage.best} → 지금 ${p.stage.cur})`);
+}
+
+// ---------- 돌아왔을 때의 창을 쓰는 게임 (IDLE.popup): 진행은 창 하나로만, 안내문 stageAway는 창이 뜨지 않을 때만 ----------
+{
+  setPopup(true);
+  const r = join(H, STRONG, '');
+  const backs = r.g.out.filter((o) => o.id === r.p.id && o.msg.t === 'idleBack').map((o) => o.msg as { from?: string; to?: string; n?: number });
+  const aways = r.g.notices.filter((n) => n.id === r.p.id && n.k === 'stageAway');
+  check(backs.length === 1 && backs[0].from === '1-1' && backs[0].to === '2-2' && backs[0].n === 6 && aways.length === 0,
+    `창을 쓰면 진행(1-1 → 2-2, 6단계)은 창(idleBack) 하나로만 알리고 안내문 stageAway는 내지 않는다 (창 ${backs.length}, 안내문 ${aways.length})`);
+  check(r.p.stage.best === '2-1' && r.p.stage.cur === '2-2' && !!r.mail && r.mail.a.join() === '60,1-1,2-2', '진행·방치 우편은 창이 없을 때와 같다');
+  // 창이 뜨지 않을 만큼 짧게 비웠는데 진행은 있으면(단계마다 1분으로 줄여 5분 비움): 안내문으로 한 번
+  Object.assign(rules, base, { perStageS: 60 });
+  const s = join(5 * MIN, STRONG, '');
+  const sb = s.g.out.filter((o) => o.id === s.p.id && o.msg.t === 'idleBack').length, sa = s.g.notices.filter((n) => n.id === s.p.id && n.k === 'stageAway');
+  check(sb === 0 && !s.mail && sa.length === 1 && sa[0].a.join() === '1-1,2-1,5' && s.p.stage.best === '1-5',
+    `창이 뜨지 않으면(10분보다 짧게 비움) 진행은 안내문 stageAway 하나로 (${sa.map((x) => x.a.join()).join(' | ')})`);
+  Object.assign(rules, base);
+  // 봇은 창도 안내문도 없다 (오프라인 진행을 하지 않는다)
+  const g = new Game({ now: () => T, plugins: [] });
+  const b = g.players.spawn('봇', true);
+  check(!g.out.some((o) => o.id === b.id && o.msg.t === 'idleBack') && !g.notices.some((n) => n.id === b.id && n.k === 'stageAway'), '봇에게는 창도 안내문도 없다');
 }
