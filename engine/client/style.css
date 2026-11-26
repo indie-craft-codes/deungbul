@@ -733,7 +733,7 @@ html:lang(en) body { overflow-wrap: break-word; }
 #dgSweep { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; flex-wrap: wrap; }
 #dgSweep[hidden] { display: none; }
 #dgSweep .btns { display: flex; gap: 4px; }
-#sweepPop { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100vw - 32px)); z-index: 40; display: flex; flex-direction: column; gap: 6px; text-align: center; cursor: pointer; }
+#sweepPop { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100vw - 32px)); z-index: 40; background: var(--ink); display: flex; flex-direction: column; gap: 6px; text-align: center; cursor: pointer; }
 #sweepPop[hidden] { display: none; }
 #sweepList { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
 /* 픽업 배너 */
