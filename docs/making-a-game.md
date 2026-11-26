@@ -731,6 +731,8 @@ export function installSample(g: Game): void {
     // 서버를 껐다 켜도 온기가 남는다
     g.worldSaves.push({ name: 'bonfire', save: () => ({ heat: this.heat }), load: (raw) => { this.heat = readInt((raw as { heat?: unknown } | null)?.heat, 0, BONFIRE.heatMax, 0); } });
     g.commands.set('feed', (p, m) => { if (typeof m.n === 'number') this.feed(p, m.n); });
+    // 기능 깃발 bonfire가 꺼져 있으면 장작 넣기를 받지 않는다 (내용의 FLAGS. 꺼진 동안 안내문 featureOff)
+    g.live.gate('feed', 'bonfire');
     g.ticks.push((dt) => this.cool(dt));
     // 틀의 규칙과 수치에 끼어든다: 일어나는 자리, 직업을 바꿀 수 있는 곳, 자연 회복의 배율
     g.rules.respawn = () => ({ x: BONFIRE.x, z: BONFIRE.z + 4, id: 'bonfire' });
@@ -751,7 +753,8 @@ export function installSample(g: Game): void {
     // 장작은 틀의 가방 통로로 뺀다: 장부가 어디로 나갔는지 적고, 아이템 칸을 고치는 곳이 가방 하나로 남는다
     g.bag.takeItem(p, 'log', n, 'cmd:feed');
     p.fed += n; p.dirty = true; p.unsaved = true;
-    this.heat = Math.min(BONFIRE.heatMax, this.heat + n * BONFIRE.heatPerLog);
+    // 장작 하나의 온기는 원격 설정으로 바꿀 수 있다 (내용의 LIVE_KEYS의 bonfireHeat: 처음 값은 BONFIRE.heatPerLog와 같다)
+    this.heat = Math.min(BONFIRE.heatMax, this.heat + n * this.g.live.get<number>('bonfireHeat'));
     g.stateDirty = true; g.saveDirty = true;
     if (cold) g.announce('bonfireLit', p.name);
     g.notify(p, 'fed', n, Math.ceil(this.heat));

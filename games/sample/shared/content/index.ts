@@ -10,7 +10,8 @@ import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import type { CharRules } from '@engine/shared/defs/chardef';
 import type { LookRules } from '@engine/shared/defs/look';
 import type { MorphRules } from '@engine/shared/defs/morph';
-import { GEAR_BASE } from '@engine/shared/defaults';
+import type { LiveKeys, ResetRules } from '@engine/shared/defs/live';
+import { GEAR_BASE, liveRange } from '@engine/shared/defaults';
 import { BONFIRE } from './bonfire';
 
 
@@ -85,10 +86,12 @@ export const FORGES: readonly ForgeDef[] = [];
 export const RECIPES: readonly Recipe[] = [];
 export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 ? 'axe2' : 'axe1'), armorFor: (): ItemId => 'coat' };
 
-// ---------- 일일 임무. 'feed'는 이 게임의 규칙이 센다 ----------
+// ---------- 일일·주간·월간 임무. 'feed'는 이 게임의 규칙이 센다. period를 적지 않으면 날마다('day') ----------
 export const DAILIES = {
   kill20: { kind: 'kill', n: 20, r: { gold: 40, exp: 100 } },
   feed5: { kind: 'feed', n: 5, r: { gold: 30 } },
+  kill150: { kind: 'kill', n: 150, r: { gold: 250, exp: 600 }, period: 'week' },
+  feed40: { kind: 'feed', n: 40, r: { gold: 400 }, period: 'month' },
 } as const satisfies Record<string, DailyDef>;
 
 // ---------- 던전은 없다 ----------
@@ -112,3 +115,18 @@ export const MORPH_RULES: MorphRules = {
 };
 // 겉모습의 부품: 모자에 '사슴뿔'을 더하고(화면의 client/scene.ts가 그리는 법을 등록한다), 등 장식의 '날개'는 뺀다
 export const LOOK_RULES: LookRules = { add: { hat: ['antlers'] }, remove: { back: ['wings'] } };
+
+// ---------- 운영: 초기화 시각, 원격 설정으로 바꿀 수 있는 칸, 게임의 기능 깃발 (engine/shared/defs/live.ts) ----------
+// 초기화 시각: 서버 PC의 현지 자정, 주는 월요일에 (적지 않은 것과 같다. 한국 시각 새벽 5시로 하려면 { tz: 'Asia/Seoul', dayAt: 5, weekStart: 1 })
+export const RESET: ResetRules = { tz: 'local', dayAt: 0, weekStart: 1 };
+// 원격 설정(관리자 명령 set)으로 재시작 없이 바꿀 수 있는 칸. 여기 적지 않은 칸은 소스 그대로다. 값은 처음 값과 같은 모양이고 check를 지나야 반영된다
+export const LIVE_KEYS: LiveKeys = {
+  // 일일 사냥 임무의 마릿수: 화면의 임무 창도 같은 칸을 읽으므로 접속한 화면에도 보낸다
+  'DAILIES.kill20.n': { client: true, check: liveRange(1, 500, true), note: '일일 사냥 임무의 마릿수' },
+  // 변신의 재사용 대기(초): 서버만 읽는다
+  'MORPH_RULES.cooldownS': { check: liveRange(0, 600, true), note: '변신의 재사용 대기(초)' },
+  // 내용 계약에 없는 이 게임만의 값: 서버가 g.live.get('bonfireHeat')으로 읽는다 (server/bonfire.ts)
+  bonfireHeat: { value: BONFIRE.heatPerLog, check: liveRange(1, 50, true), note: '장작 하나가 올리는 모닥불의 온기' },
+};
+// 이 게임의 기능 깃발: 관리자 명령 flag bonfire off로 장작 넣기를 막는다 (server/bonfire.ts의 g.live.gate)
+export const FLAGS: readonly string[] = ['bonfire'];

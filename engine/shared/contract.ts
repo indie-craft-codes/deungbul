@@ -21,6 +21,7 @@ import type { TeamDef, TeamRules } from './defs/teams';
 import type { LookRules } from './defs/look';
 import type { CharRules } from './defs/chardef';
 import type { MorphRules } from './defs/morph';
+import type { LiveKeys, ResetRules } from './defs/live';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
 import * as content from '@game/shared/content';
@@ -211,8 +212,18 @@ export interface CharsContent {
   MORPH_RULES: MorphRules;
 }
 
+/** 운영의 바탕(핵심): 초기화 시각, 원격 설정으로 덮어쓸 수 있는 칸, 게임의 기능 깃발 (engine/shared/defs/live.ts). 적지 않으면 지금과 같다 */
+export interface OpsContent {
+  /** 초기화 시각: 시간대, 하루 시작 시각, 주의 시작 요일. 기본은 서버 PC의 현지 자정, 월요일 */
+  RESET: ResetRules;
+  /** 원격 설정으로 덮어쓸 수 있는 칸: 이름(내용의 칸의 길) → 화면에도 보내는가, 모양, 검사. 선언하지 않은 칸은 소스 그대로다 */
+  LIVE_KEYS: LiveKeys;
+  /** 게임의 기능 깃발의 이름 (틀의 것 join, chat, market, mail, gacha에 더한다). g.flags.on(이름)으로 묻는다 */
+  FLAGS: readonly string[];
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

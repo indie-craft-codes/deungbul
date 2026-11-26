@@ -37,7 +37,7 @@ export class Status {
         const s: Meta = { t: 'meta' };
         if (has('gear')) { s.gear = me.gear; s.worn = me.worn; }
         if (has('mail')) s.mail = me.mail;
-        if (has('daily')) s.daily = { prog: me.daily.prog, got: me.daily.got, streak: me.daily.streak };
+        if (has('daily')) s.daily = { prog: me.daily.prog, got: me.daily.got, streak: me.daily.streak, ...(g.daily.long ? { next: [...g.daily.next()] } : {}) }; // 주간·월간 임무가 있는 게임만 다음 초기화 시각
         if (has('rank')) s.power = g.rank.power(me);
         if (has('build')) s.build = { stats: me.stats, skillLv: me.skillLv, left: g.build.left(me) };
         return s;

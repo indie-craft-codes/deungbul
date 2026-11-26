@@ -12,7 +12,8 @@ import type { ItemDef, ItemId } from '@engine/shared/defs/items';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import type { TeamDef, TeamRules } from '@engine/shared/defs/teams';
-import { GEAR_BASE } from '@engine/shared/defaults';
+import type { LiveKeys } from '@engine/shared/defs/live';
+import { GEAR_BASE, liveRange } from '@engine/shared/defaults';
 import { RPG_MODULES } from '@engine/shared/modules';
 
 /** 쓸 모듈: 틀의 시험이라 모두 켠다 */
@@ -182,3 +183,18 @@ export const TEAMS: readonly TeamDef[] = [
 ];
 /** 시험이 규칙을 바꿔 가며 본다 (teams.test가 고쳤다가 되돌린다) */
 export const TEAM_RULES: TeamRules = { balance: true, switch: true, persist: false };
+
+// ---------- 운영: 원격 설정으로 바꿀 수 있는 칸과 게임의 깃발 (engine/test/fx/liveops.test.ts) ----------
+export const LIVE_KEYS: LiveKeys = {
+  // 기본값 묶음(MARKET)의 칸, 화면에도 보낸다
+  'MARKET.tax': { client: true, check: liveRange(0, 0.5), note: '거래소 수수료' },
+  // 수의 목록
+  'SALVAGE.dust': {},
+  // 처음 값이 없는 칸: 모양(type)을 적는다
+  'NET.extra': { type: 'number' },
+  // 함수로 된 칸은 선언해도 바꿀 수 없다
+  'GEAR.weaponFor': {},
+  // 내용에 없는 게임만의 값
+  testKnob: { value: 3, check: liveRange(1, 9, true) },
+};
+export const FLAGS: readonly string[] = ['testGate'];
