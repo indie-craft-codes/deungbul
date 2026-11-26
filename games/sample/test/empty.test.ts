@@ -42,7 +42,8 @@ export const BUILD_STATS = { grit: { mod: 'hp', per: 6 } } as const;
 };
 const WHAT: Record<string, string> = { bare: '상점·무리·재료·일일 임무 없음', weaponOnly: '아이템이 무기 하나뿐', otherGear: '갑옷 칸 없이 장비 칸 둘, 옵션 둘, 등급 둘, 능력치 하나' };
 
-const cache = new URL('node_modules/.cache/empty-content/', root);
+// 프로세스마다 따로: 같은 저장소에서 시험을 함께 돌리면 한쪽이 지운 폴더를 다른 쪽이 컴파일했다
+const cache = new URL(`node_modules/.cache/empty-content-${process.pid}/`, root);
 for (const [name, pairs] of Object.entries(VARIANTS)) {
   const dir = new URL(`${name}/`, cache);
   fs.mkdirSync(new URL('shared/content/', dir), { recursive: true });
