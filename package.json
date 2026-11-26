@@ -20,6 +20,7 @@
     "test:engine": "tsx test/all.ts --engine",
     "test:game": "node scripts/game.mjs test",
     "load": "tsx games/deungbul/test/load.ts",
+    "load:game": "node scripts/load.mjs",
     "econ": "tsx games/deungbul/scripts/econ.ts",
     "build:bastion": "node scripts/game.mjs build bastion",
     "build:cave": "node scripts/game.mjs build cave",

@@ -2,6 +2,8 @@
 // 비용을 줄이는 두 가지 (근거는 docs/infra.md의 측정):
 //   1. 엔티티 상태는 한 번만 문자열로 만들어 모든 클라이언트가 나눠 쓴다.
 //   2. 지난번과 상태가 같은 엔티티(서 있는 캐릭터)는 다시 보내지 않는다. 클라이언트는 마지막 상태를 그대로 둔다.
+//   3. 공간 격자를 층(Ent.layer)마다 따로 둔다: 단계·던전의 인스턴스는 사람마다 다른 층이지만 같은 좌표(경기장)에서 벌어지므로,
+//      한 격자에 모으면 사람마다 남의 인스턴스 엔티티까지 모두 훑었다(인원의 제곱). 층마다 나누어도 한 칸 안의 차례(엔티티를 만든 차례)는 같아 보내는 글자는 그대로다.
 import type { EnterInfo, Ev } from '../../shared/protocol';
 import { AOI, AOI_LEAVE, CELL } from '../../shared/world';
 import type { Ent } from '../game/entity';
@@ -11,13 +13,25 @@ const cellOf = (v: number) => Math.floor((v + 4096) / CELL); // 4096: 음수 좌
 const cellKey = (cx: number, cz: number) => cx * 1024 + cz;
 const REACH = Math.ceil(AOI_LEAVE / CELL);
 
-/** 엔티티마다 지난번에 보낸 상태 */
-const lastState = new WeakMap<Ent, string>();
+/** 엔티티마다 지난번에 만든 상태: 줄 위의 글자와 그 재료(둘째 자리로 자른 수). 재료가 같으면 글자를 다시 만들지 않는다 */
+interface Last { x: number; z: number; f: number; m: number; hp: number; withHp: boolean; more: string; s: string }
+const lastState = new WeakMap<Ent, Last>();
+/**
+ * Math.hypot(dx, dz) > r 와 같은 답을 더 싸게: 제곱의 합이 r²에서 넉넉히(10⁻⁹) 떨어져 있으면 그것으로, 경계 가까이면 예전처럼 hypot으로 (시야 경계의 판정이 한 자리도 달라지지 않게)
+ */
+function outside(dx: number, dz: number, r: number): boolean {
+  const q = dx * dx + dz * dz, rr = r * r;
+  if (q < rr * (1 - 1e-9)) return false;
+  if (q > rr * (1 + 1e-9)) return true;
+  return Math.hypot(dx, dz) > r;
+}
+/** 같은 수인가: 글자로 견주던 것과 같게 NaN끼리도 같다 (0과 -0은 글자가 '0'으로 같고 ===도 같다) */
+const same = (a: number, b: number) => a === b || (a !== a && b !== b);
 
 /** 한 번의 전송에 쓰는 재료: 공간 격자, 엔티티별 상태 문자열, 지난번과 달라진 엔티티 */
 export interface Frame {
-  /** 가까운 칸만 훑어서 주변 엔티티를 찾기 위한 격자 */
-  grid: Map<number, Ent[]>;
+  /** 가까운 칸만 훑어서 주변 엔티티를 찾기 위한 격자: 층 → 칸 → 엔티티 (칸 안은 엔티티를 만든 차례) */
+  grid: Map<number, Map<number, Ent[]>>;
   /** EntState를 JSON으로 만든 것: [id, x, z, 방향, 이동 중, 체력(전투가 있는 게임만), …게임의 값] */
   state: Map<number, string>;
   /** 엔티티마다 게임의 값만 (',값,값' 꼴): 본인에게 보내는 you의 끝에 붙인다 (플레이어의 playerSync) */
@@ -41,13 +55,23 @@ export function buildFrame(ents: Iterable<Ent>, syncOf: (e: Ent) => readonly num
     const vals = syncOf(e);
     let more = '';
     if (vals) for (const v of vals) more += ',' + (typeof v === 'number' && Number.isFinite(v) ? r2(v) : 0);
-    const s = `[${e.id},${r2(e.x)},${r2(e.z)},${r2(e.face)},${e.moving ? 1 : 0}${fields.hp ? `,${Math.ceil(e.hp)}` : ''}${more}]`;
-    if (lastState.get(e) !== s) { frame.changed.add(e.id); lastState.set(e, s); }
+    const x = r2(e.x), z = r2(e.z), f = r2(e.face), m = e.moving ? 1 : 0, hp = fields.hp ? Math.ceil(e.hp) : 0;
+    const L = lastState.get(e);
+    let s: string;
+    // 지난번과 재료가 같으면 글자도 같다: 다시 만들지 않는다 (서 있는 것, 그대로인 것)
+    if (L && same(L.x, x) && same(L.z, z) && same(L.f, f) && L.m === m && L.withHp === fields.hp && same(L.hp, hp) && L.more === more) s = L.s;
+    else {
+      s = `[${e.id},${x},${z},${f},${m}${fields.hp ? `,${hp}` : ''}${more}]`;
+      if (L?.s !== s) frame.changed.add(e.id);
+      lastState.set(e, { x, z, f, m, hp, withHp: fields.hp, more, s });
+    }
     frame.state.set(e.id, s);
     if (more) frame.more.set(e.id, more);
+    let cells = frame.grid.get(e.layer);
+    if (!cells) frame.grid.set(e.layer, cells = new Map());
     const k = cellKey(cellOf(e.x), cellOf(e.z));
-    const list = frame.grid.get(k);
-    if (list) list.push(e); else frame.grid.set(k, [e]);
+    const list = cells.get(k);
+    if (list) list.push(e); else cells.set(k, [e]);
   }
   return frame;
 }
@@ -62,15 +86,15 @@ export function snapshotFor(me: Ent, known: Set<number>, frame: Frame, events: r
   const seen = new Set<number>();
   const ents: string[] = [];
   const enter: EnterInfo[] = [];
-  for (let ix = cx - REACH; ix <= cx + REACH; ix++) {
+  const cells = frame.grid.get(me.layer);
+  if (cells) for (let ix = cx - REACH; ix <= cx + REACH; ix++) {
     for (let iz = cz - REACH; iz <= cz + REACH; iz++) {
-      const cell = frame.grid.get(cellKey(ix, iz));
+      const cell = cells.get(cellKey(ix, iz));
       if (!cell) continue;
       for (const e of cell) {
         if (e === me || e.layer !== me.layer) continue;
-        const d = Math.hypot(e.x - me.x, e.z - me.z);
         const was = known.has(e.id);
-        if (d > (was ? AOI_LEAVE : AOI)) continue;
+        if (outside(e.x - me.x, e.z - me.z, was ? AOI_LEAVE : AOI)) continue;
         seen.add(e.id);
         if (!was) {
           // 칸의 차례가 줄 위의 차례다 (undefined인 칸은 JSON에서 빠진다): 모듈을 다 고른 게임은 예전과 같은 글자

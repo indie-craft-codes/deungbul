@@ -200,7 +200,7 @@ export class Squad {
       if (mine && mine.kind === 'm' && !mine.dead && mine.layer === e.layer) t = mine;
       else {
         let best = SQUAD_RULES.seek;
-        for (const m of g.ents.values()) {
+        for (const m of g.monstersIn(e.layer)) {
           if (m.kind !== 'm' || m.dead || m.homing || m.layer !== e.layer) continue;
           if (m.def?.boss && m.targetId === 0 && !m.swarm) continue; // 들판의 필드 보스는 주인이 먼저 건드릴 때까지 두고 본다
           const d = dist(o, m);
@@ -245,7 +245,7 @@ export class Squad {
     e.data.tt = TAUNT_S;
     const g = this.g, reach = ROWS!.taunt, mine = new Set<number>([o.id]);
     for (const h of this.out.get(o.id) ?? []) if (h !== e && o.squadBack.includes(h.type)) mine.add(h.id);
-    for (const m of g.ents.values()) {
+    for (const m of g.monstersIn(e.layer)) {
       if (m.kind !== 'm' || m.dead || m.layer !== e.layer || !mine.has(m.targetId) || dist(m, e) > reach) continue;
       m.targetId = e.id;
     }
