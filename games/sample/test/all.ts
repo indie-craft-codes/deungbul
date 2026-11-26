@@ -3,7 +3,7 @@
 //   npm run test:sample -- docs   고른 것만 (sample, empty, docs)
 import { failures } from '@engine/testing';
 
-const ALL = ['sample', 'empty', 'docs'];
+const ALL = ['sample', 'empty', 'morph', 'docs'];
 const only = process.argv.slice(2);
 for (const name of only.length ? only : ALL) {
   console.log(`\n[sample/${name}]`);

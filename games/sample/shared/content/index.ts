@@ -7,14 +7,17 @@ import type { DailyDef } from '@engine/shared/defs/growth';
 import type { ItemDef, ItemId } from '@engine/shared/defs/items';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
+import type { CharRules } from '@engine/shared/defs/chardef';
+import type { LookRules } from '@engine/shared/defs/look';
+import type { MorphRules } from '@engine/shared/defs/morph';
 import { GEAR_BASE } from '@engine/shared/defaults';
 import { BONFIRE } from './bonfire';
 
 
 // ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
-// 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다
+// 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다. 캐릭터 정의(chars)와 변신(morph)을 쓴다
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph'];
 export const GUEST_NAME = 'Camper';
 
 // ---------- 맵: 지역 하나 ----------
@@ -90,3 +93,22 @@ export const DAILIES = {
 
 // ---------- 던전은 없다 ----------
 export const DUNGEONS = {} as const satisfies Record<string, DungeonDef>;
+
+// ---------- 캐릭터 정의와 변신 (chars, morph 모듈) ----------
+// 캐릭터 정의(engine/shared/defs/chardef.ts)는 바깥(나중에는 AI)이 만들고 서버가 검증한다. 이 예제의 정의는 server/chars.ts에 손으로 적었다.
+// 영웅(roster)이 없는 게임이라 예산의 표를 직접 적는다: 등급마다 (공격 × 4 + 체력 × 0.5)의 합과 칸마다의 상한. 역할은 쓰지 않는다
+export const CHAR_RULES: CharRules = {
+  budget: [{ total: 160, cap: { atk: 20, hp: 220 } }, { total: 200, cap: { atk: 26, hp: 260 } }, { total: 240, cap: { atk: 32, hp: 320 } }],
+  roles: [],
+  skills: ['chop', 'aim', 'rest'],
+  nameMax: 12, bioMax: 80,
+  banned: ['운영자', 'admin'],
+};
+// 변신: 3분 동안, 풀리고 15초 뒤에 다시, 맞은 지 4초 안에는 못 한다. 보정은 작게: 공격에서 주는 피해, 체력에서 받는 피해 감소 (상한 8%, 6%)
+export const MORPH_RULES: MorphRules = {
+  durationS: 180, cooldownS: 15, noFightS: 4, maxOwn: 8,
+  mods: (d) => ({ damage: (d.stats.atk ?? 0) / 300, guard: (d.stats.hp ?? 0) / 4000 }),
+  cap: { damage: 0.08, guard: 0.06 },
+};
+// 겉모습의 부품: 모자에 '사슴뿔'을 더하고(화면의 client/scene.ts가 그리는 법을 등록한다), 등 장식의 '날개'는 뺀다
+export const LOOK_RULES: LookRules = { add: { hat: ['antlers'] }, remove: { back: ['wings'] } };
