@@ -8,7 +8,7 @@ import { fieldLayer } from '../../server/game/layers';
 import { AWAY_MAX_S } from '../../server/game/systems/away';
 import { startServer } from '../../server/net/server';
 import { MemoryStore } from '../../server/store';
-import { check, connect, sleep, until } from '../harness';
+import { check, connect, settle, until } from '../harness';
 
 const runOn = (g: Game) => (seconds: number) => { for (let i = 0; i < Math.round(seconds * 20); i++) g.tick(0.05); };
 const saidOn = (g: Game) => (p: Ent) => g.notices.filter((n) => n.id === p.id).map((n) => [n.k, ...n.a].join(':'));
@@ -364,9 +364,12 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 }
 
 // ---------- 2·3·5. 통신 계층: 제한은 연결이 아니라 사람에게 붙는다 ----------
+// 간격과 대화량은 시험의 시계(now)로 본다: 벽시계로 자면 바쁜 컴퓨터에서 다시 접속하는 데만 0.7초가 넘어 '곧바로'가 곧바로가 아니게 된다
 {
   const store = new MemoryStore();
-  const server = await startServer(0, { store });
+  let t = Date.now();
+  const pass = (ms: number) => { t += ms; };
+  const server = await startServer(0, { store, now: () => t });
   const game = server.game;
   const tok = (s: string) => `harden-token-${s}-0123456789`;
   try {
@@ -380,9 +383,9 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
     c1.ws.close();
     const c2 = await connect(server.port, undefined, tok('chat'));
     c2.send({ t: 'chat', text: '재접속하고바로' });
-    await sleep(400);
+    await settle(c2); await settle(watch);
     check(heard('첫마디') === 1 && heard('재접속하고바로') === 0, '다시 접속해도 대화 간격은 지워지지 않는다');
-    await sleep(500);
+    pass(900);
     c2.send({ t: 'chat', text: '기다렸다가' });
     check(await until(() => heard('기다렸다가') === 1), '간격이 지나면 평소처럼 말할 수 있다');
 
@@ -396,7 +399,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
 
     // 신고: 간격과 기록
     const bad = await connect(server.port, '말썽', tok('bad'));
-    await sleep(750);
+    pass(750);
     bad.send({ t: 'chat', text: '나쁜말' });
     await until(() => heard('나쁜말') === 1);
     bad.ws.close();
@@ -413,20 +416,24 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
     c4.ws.close(); bad3.ws.close();
 
     // 대화량: 한 사람이 천천히 말하는 것은 그대로 되고, 한 주소에서 연결을 여러 개 열어 뿌리는 것은 막힌다
-    await sleep(2500);
+    pass(2500);
     const calm = await connect(server.port, '차분', tok('calm'));
-    for (let i = 0; i < 4; i++) { calm.send({ t: 'chat', text: '차분' + i }); await sleep(750); }
+    for (let i = 0; i < 4; i++) { calm.send({ t: 'chat', text: '차분' + i }); await settle(calm); pass(750); }
     check(await until(() => [0, 1, 2, 3].every((i) => heard('차분' + i) === 1)), '한 사람이 간격을 두고 하는 말은 모두 전해진다');
     calm.ws.close();
-    await sleep(2500);
+    pass(2500);
     const many = await Promise.all(Array.from({ length: 10 }, (_, i) => connect(server.port, '도배' + i, tok('flood' + i))));
-    const t0 = Date.now(), before = watch.chat.length;
-    for (let round = 0; round < 4; round++) { for (const p of many) p.send({ t: 'chat', text: `도배${round}` }); await sleep(720); }
-    await sleep(200);
-    const seconds = (Date.now() - t0) / 1000, got = watch.chat.length - before;
+    const t0 = t, before = watch.chat.length;
+    for (let round = 0; round < 4; round++) {
+      for (const p of many) p.send({ t: 'chat', text: `도배${round}` });
+      await Promise.all(many.map((p) => settle(p)));
+      if (round < 3) pass(720);
+    }
+    await settle(watch);
+    const seconds = (t - t0) / 1000, got = watch.chat.length - before;
     check(got >= 6 && got <= 6 + 3 * seconds + 1 && many.some((p) => p.sys.includes('chatWait')), `연결 10개로 40줄을 보내도 한 주소의 대화는 한도까지만 전해진다 (${seconds.toFixed(1)}초 동안 ${got}줄, 넘친 사람에게는 알린다)`);
     for (const p of many) p.ws.close();
-    await sleep(300);
+    await until(() => many.every((p) => !game.ents.has(p.id)));
 
     // 재접속: 체력이 가득 차지 않는다
     const h1 = await connect(server.port, '다친이', tok('hurt'));
@@ -451,7 +458,8 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
       p.send({ t: 'auto', on: true });
       await until(() => e.auto);
       p.ws.close();
-      await sleep(400);
+      // 서버가 끊김을 처리할 때까지: 월드에서 빠지거나 자리 비움 사냥으로 남는다
+      await until(() => !game.ents.has(p.id) || game.away.active(e));
       return game.ents.has(p.id);
     };
     check(!(await stay('awayused', AWAY_MAX_S)), '오늘 한도를 다 쓴 캐릭터는 자동 사냥을 켠 채 끊겨도 월드에 남지 않는다');
@@ -479,7 +487,7 @@ const MAT = Object.keys(ITEMS).find((id) => ITEMS[id as keyof typeof ITEMS].kind
   let first = await startServer(0, { store });
   const gone = await grow(first.port, first.game, '이어사냥', 'restore-token-away-0001', 6, true);
   gone.p.ws.close();
-  await sleep(400);
+  await until(() => !first.game.ents.has(gone.p.id) || first.game.away.active(gone.e));
   const here = await grow(first.port, first.game, '켜둔사람', 'restore-token-conn-0002', 6, true);
   const idle = await grow(first.port, first.game, '안켠사람', 'restore-token-idle-0003', 6, false);
   const low = await grow(first.port, first.game, '낮은사람', 'restore-token-low-00004', 1, true);

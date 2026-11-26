@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { check } from '@engine/testing';
+import { check, removeTemp } from '@engine/testing';
 
 const root = new URL('../../../', import.meta.url);
 const src = fs.readFileSync(new URL('games/sample/shared/content/index.ts', root), 'utf8').replace(/\r\n/g, '\n');
@@ -59,4 +59,4 @@ for (const [name, pairs] of Object.entries(VARIANTS)) {
   for (const l of errors.slice(0, 12)) console.log('  ' + l);
   check(tsc.status === 0 && errors.length === 0, `틀이 더 비우거나 바꾼 내용으로도 컴파일된다 (${name}: ${WHAT[name]})${errors.length ? `: 오류 ${errors.length}개` : ''}`);
 }
-fs.rmSync(cache, { recursive: true, force: true });
+removeTemp(cache);

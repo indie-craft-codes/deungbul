@@ -9,7 +9,7 @@ import { Game } from '../../server/game/game';
 import { median, quantile, type EconSnapshot } from '../../server/game/systems/ledger';
 import { startServer } from '../../server/net/server';
 import { MemoryStore, SqliteStore, type EconRow, type EconStore, type PlayerSave, type Store } from '../../server/store';
-import { check } from '../harness';
+import { check, removeTemp } from '../harness';
 
 const DAY = 24 * 3600000;
 type MonsterType = Parameters<Game['monsters']['spawn']>[0];
@@ -143,7 +143,7 @@ function bench(start = new Date(2026, 0, 10, 9).getTime()) {
   s.addEcon([{ day: '2026-01-10', cur: 'gold', why: 'hunt', dir: '+', amount: 1, n: 1 }]);
   check(s.econ('').length === 1 && s.econSnapshot() === null && JSON.stringify(s.loadWorld()) === '{}', '지표가 없던 때의 DB 파일에도 표가 그대로 붙는다 (있던 것은 그대로)');
   s.close();
-  fs.rmSync(dir, { recursive: true, force: true });
+  removeTemp(dir);
 }
 
 // ---------- 캐릭터별 기록: 플레이 시간, 레벨 도달, 오늘 번·쓴 골드 ----------

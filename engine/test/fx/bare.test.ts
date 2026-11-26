@@ -10,7 +10,7 @@ import { Game } from '../../server/game/game';
 import { channelOf, isField } from '../../server/game/layers';
 import { startServer } from '../../server/net/server';
 import { MemoryStore, type PlayerSave } from '../../server/store';
-import { check, sleep, until } from '../harness';
+import { check, until } from '../harness';
 
 /** 정해 둔 날의 낮 12시 (서버 현지 시간) */
 const noon = (): number => new Date(2026, 0, 10, 12).getTime();
@@ -164,7 +164,8 @@ const SHOP = SHOPS[0], SPAWN = MAP.spawn;
   check(got[0]?.t === 'welcome' && !!world && Object.keys(world.s).length === 0, '틀만의 서버에 접속하면 welcome, 빈 공유 상태, 스냅샷과 내 상태를 받는다');
   ws.send(JSON.stringify({ t: 'class', id: 'knight' }));
   ws.send(JSON.stringify({ t: 'move', x: 5, z: 8 }));
-  await sleep(400);
+  ws.send(JSON.stringify({ t: 'ping', c: 7 })); // 앞의 둘을 서버가 처리했는가
+  await until(() => got.some((m) => m.t === 'pong' && m.c === 7));
   ws.close();
   await s.close();
   const saved = store.loadWorld();

@@ -5,7 +5,7 @@ import type { ServerMsg } from '../../shared/protocol';
 import { Game } from '../../server/game/game';
 import { startServer } from '../../server/net/server';
 import { MemoryStore } from '../../server/store';
-import { check, connect, sleep } from '../harness';
+import { check, connect, settle } from '../harness';
 
 /** 뺄 모듈: 사람들 사이의 것과 일일 임무·순위·던전(던전은 일일 임무에 기댄다) */
 const OFF: ModuleId[] = ['party', 'guild', 'market', 'daily', 'rank', 'dungeon'];
@@ -17,13 +17,13 @@ async function probe(modules: readonly ModuleId[]): Promise<{ types: string[]; m
   const types: string[] = [], meta: Extract<ServerMsg, { t: 'meta' }>[] = [];
   const a = await connect(s.port, '모듈갑', 'modules-token-a-000001', (m) => { types.push(m.t); if (m.t === 'meta') meta.push(m); });
   const b = await connect(s.port, '모듈을', 'modules-token-b-000001');
-  await sleep(200);
+  await settle(a, 2); // 접속 직후에 오는 것들을 먼저 다 받는다
   types.length = 0;
   for (const m of [
     { t: 'guild', a: 'create', name: '모듈길드' }, { t: 'market', a: 'list' }, { t: 'market', a: 'mine' }, { t: 'rank' },
     { t: 'party', a: 'invite', id: b.id }, { t: 'dungeon', id: 'nope' }, { t: 'gchat', text: '안녕' },
   ] as const) a.send(m as never);
-  await sleep(500);
+  await settle(a, 2); // 보낸 명령을 다 처리하고 틱이 두 번 더 돈 뒤 (즉답이든 틱에서 나오는 답이든 이미 왔다)
   const g = s.game, e = g.ents.get(a.id)!;
   const ext = Object.keys(g.players.export(e).ext ?? {});
   a.ws.close(); b.ws.close();

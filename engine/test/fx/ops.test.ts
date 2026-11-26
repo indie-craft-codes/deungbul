@@ -16,7 +16,7 @@ import { isLocalRequest, PROXY_HEADERS } from '../../server/net/ops';
 import { MemoryStore, SqliteStore, type EconStore, type PlayerSave, type Store } from '../../server/store';
 import { AUTO_NAME, prune, startBackups } from '../../server/store/backup';
 import { SCHEMA } from '../../server/store/sqlite';
-import { check, connect, sleep, until } from '../harness';
+import { check, connect, removeTemp, settle, until } from '../harness';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fx-ops-'));
 const base: PlayerSave = { name: '옛사람', lv: 3, exp: 5, need: 109, maxHp: 230, sparks: 5 };
@@ -138,7 +138,13 @@ const base: PlayerSave = { name: '옛사람', lv: 3, exp: 5, need: 109, maxHp: 2
   }
   const store = new Flaky();
   const lines: string[] = [];
-  setLogSink((_l, line) => { lines.push(line); });
+  /** 실패를 적는 그 순간의 모습 (다시 시도는 1초 뒤라 그 전에 보아야 한다: 바쁜 컴퓨터에서는 시험이 1초 넘게 늦을 수 있어 그 자리에서 찍는다) */
+  let atFail: { mark?: number; gold?: number; dirty: boolean; unsaved: boolean } | null = null;
+  let watchEnt: { unsaved: boolean } | null = null, watchKey = '';
+  setLogSink((_l, line) => {
+    lines.push(line);
+    if (!atFail && watchEnt && line.includes('월드와 캐릭터 저장 실패')) atFail = { mark: (store.loadWorld() as { mark?: number } | null)?.mark, gold: store.loadPlayer(watchKey)?.gold, dirty: server.game.saveDirty, unsaved: watchEnt.unsaved };
+  });
   const server = await startServer(0, { store });
   try {
     let mark = 1;
@@ -146,14 +152,15 @@ const base: PlayerSave = { name: '옛사람', lv: 3, exp: 5, need: 109, maxHp: 2
     const TOKEN = 'ops-token-aaaaaaaaaaaaaa', key = createHash('sha256').update(TOKEN).digest('hex');
     store.savePlayer(key, { ...base, name: '묶음이' });
     const a = await connect(server.port, undefined, TOKEN);
-    await sleep(300);
+    await settle(a);
     const ent = server.game.ents.get(a.id)!;
     // 한쪽은 월드에, 한쪽은 캐릭터에 적히는 일(거래 같은 것)을 흉내 낸다
+    watchEnt = ent; watchKey = key;
     mark = 2; ent.gold = 777; ent.unsaved = true; store.failPlayer = 1; server.game.saveDirty = true;
-    await until(() => lines.some((l) => l.includes('월드와 캐릭터 저장 실패')), 2000);
-    const w1 = store.loadWorld() as { mark?: number } | null, p1 = store.loadPlayer(key);
-    check(w1?.mark !== 2 && p1?.gold !== 777 && server.game.saveDirty && ent.unsaved, `저장 도중(캐릭터)에 실패하면 월드도 적히지 않고, 표시(saveDirty, unsaved)가 남는다 (월드 mark ${w1?.mark}, 골드 ${p1?.gold})`);
-    check(await until(() => (store.loadWorld() as { mark?: number } | null)?.mark === 2 && store.loadPlayer(key)?.gold === 777, 3000) && !server.game.saveDirty && !ent.unsaved, '잠시 뒤 다시 시도해 월드와 캐릭터가 함께 적힌다');
+    await until(() => atFail !== null);
+    const f = atFail as { mark?: number; gold?: number; dirty: boolean; unsaved: boolean } | null;
+    check(!!f && f.mark !== 2 && f.gold !== 777 && f.dirty && f.unsaved, `저장 도중(캐릭터)에 실패하면 월드도 적히지 않고, 표시(saveDirty, unsaved)가 남는다 (월드 mark ${f?.mark}, 골드 ${f?.gold})`);
+    check(await until(() => (store.loadWorld() as { mark?: number } | null)?.mark === 2 && store.loadPlayer(key)?.gold === 777) && !server.game.saveDirty && !ent.unsaved, '잠시 뒤 다시 시도해 월드와 캐릭터가 함께 적힌다');
     const metrics = await get(server.port, '/metrics');
     check(/game_save_failures_total 1\b/.test(metrics.body) && /game_last_save_timestamp_seconds [1-9]/.test(metrics.body), '저장 실패 수와 마지막 저장 시각이 /metrics에 나온다');
     a.ws.close();
@@ -200,8 +207,10 @@ function get(port: number, p: string, headers: Record<string, string> = {}): Pro
 {
   const server = await startServer(0, { staticDir: path.join(tmp, 'no-dist') });
   try {
-    await sleep(200);
-    const h = await get(server.port, '/healthz');
+    // 첫 틱 전에는 503(ticking:false)이다: 틱이 돌 때까지 기다린다 (벽시계로 0.2초를 자면 바쁜 컴퓨터에서는 첫 틱 전일 수 있다)
+    let h = await get(server.port, '/healthz');
+    const end = Date.now() + 10_000;
+    while (h.status !== 200 && Date.now() < end) { await new Promise((r) => setTimeout(r, 25)); h = await get(server.port, '/healthz'); }
     const body = JSON.parse(h.body) as { ok: boolean; ticking: boolean; clients: number; lastSaveAt: unknown };
     check(h.status === 200 && body.ok && body.ticking && body.clients === 0 && 'lastSaveAt' in body, `GET /healthz: 틱이 도는지, 접속 수, 마지막 저장 시각 (${h.body})`);
     const m = await get(server.port, '/metrics');
@@ -230,7 +239,7 @@ function get(port: number, p: string, headers: Record<string, string> = {}): Pro
 {
   const db = path.join(tmp, 'crash', 'game.db');
   const root = path.resolve(import.meta.dirname, '..', '..', '..');
-  const r = spawnSync(process.execPath, [path.join(root, 'node_modules', 'tsx', 'dist', 'cli.mjs'), '--tsconfig', path.join(import.meta.dirname, 'tsconfig.json'), path.join(import.meta.dirname, 'crash.ts')], { cwd: root, encoding: 'utf8', timeout: 30_000, env: { ...process.env, DB: db, PORT: '0', BACKUP: '0' } });
+  const r = spawnSync(process.execPath, [path.join(root, 'node_modules', 'tsx', 'dist', 'cli.mjs'), '--tsconfig', path.join(import.meta.dirname, 'tsconfig.json'), path.join(import.meta.dirname, 'crash.ts')], { cwd: root, encoding: 'utf8', timeout: 120_000, env: { ...process.env, DB: db, PORT: '0', BACKUP: '0' } });
   const out = (r.stdout ?? '') + (r.stderr ?? '');
   const rej = out.indexOf('처리되지 않은 거부 (계속 돕니다)'), exc = out.indexOf('처리되지 않은 예외. 저장하고 끝냅니다');
   check(r.status === 1 && rej >= 0 && exc > rej, `처리되지 않은 거부는 적고 계속 돌고, 뒤의 예외는 적은 뒤 코드 1로 끝난다 (코드 ${r.status})`);
@@ -243,4 +252,4 @@ function get(port: number, p: string, headers: Record<string, string> = {}): Pro
   if (r.status !== 1) console.log(out.split('\n').slice(-15).join('\n'));
 }
 
-fs.rmSync(tmp, { recursive: true, force: true });
+removeTemp(tmp);

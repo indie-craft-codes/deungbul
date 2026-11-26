@@ -113,10 +113,13 @@ export interface Options {
   compress?: boolean;
   /** 관리자 통로의 설정 (net/admin.ts) */
   admin?: AdminOptions;
+  /** 사람별 제한(대화·이름 바꾸기·신고의 간격, 대화량의 통)이 읽는 시계(ms). 기본 Date.now. 시험이 시간을 직접 옮겨 벽시계 없이 간격을 본다 */
+  now?: () => number;
 }
 
 export function startServer(port: number, opts: Options = {}): Promise<Running> {
   const store = opts.store ?? new MemoryStore();
+  const clock = opts.now ?? Date.now;
   // 켜질 때의 백업을 무엇보다 먼저: 이 서버가 저장을 읽고 고쳐 쓰기 전의 모습이 남는다
   const backups = opts.backup === false ? null : startBackups(store, opts.backup);
   /** 운영 지표의 누적 수 (/healthz, /metrics: ./ops.ts) */
@@ -171,10 +174,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     const k = who(c);
     let p = people.get(k);
     if (!p) people.set(k, p = { lastChat: 0, lastRename: 0, said: [], reported: new Map(), used: 0 });
-    p.used = Date.now();
+    p.used = clock();
     return p;
   }
-  const chatIp = new Map<string, Bucket>(), chatAll: Bucket = { left: CHAT_ALL_BURST, at: Date.now() };
+  const chatIp = new Map<string, Bucket>(), chatAll: Bucket = { left: CHAT_ALL_BURST, at: clock() };
   /** 통에서 한 줄 몫을 꺼낸다. 비어 있으면 false */
   function take(b: Bucket, now: number, burst: number, perS: number): boolean {
     b.left = Math.min(burst, b.left + ((now - b.at) / 1000) * perS);
@@ -356,7 +359,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
 
   function rename(c: Client, e: Ent, raw: unknown): void {
     const name = tidyName(raw);
-    const now = Date.now();
+    const now = clock();
     if (!name || name === e.name) return;
     if (!isClean(name)) { send(c, sys('nameBad')); return; }
     if (taken(name, e, c.key)) { send(c, sys('nameTaken')); return; }
@@ -372,7 +375,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
 
   function chat(c: Client, e: Ent, raw: unknown): void {
     const text = clean(raw, CHAT_MAX);
-    const now = Date.now(), me = person(c);
+    const now = clock(), me = person(c);
     if (!text || now - me.lastChat < CHAT_GAP_MS) return;
     const mute = game.sanctions.muted(c.key, c.ip);
     if (mute) { send(c, sys('muted', Sanctions.minutesLeft(mute, game.now()))); return; }
@@ -392,7 +395,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     const target = byEnt.get(id);
     if (!target?.ent || target === c) return;
     // 신고한 사람도 당한 사람도 연결이 아니라 사람으로 본다: 어느 쪽이 다시 접속해도 간격이 이어지고, 당한 사람이 한 말도 남아 있다
-    const now = Date.now(), me = person(c), tk = who(target);
+    const now = clock(), me = person(c), tk = who(target);
     if (now - (me.reported.get(tk) ?? -Infinity) < REPORT_GAP_MS) { send(c, sys('reportWait')); return; }
     me.reported.set(tk, now);
     try { store.saveReport({ at: now, by: e.name, byKey: c.key, target: target.ent.name, targetKey: target.key, lines: [...(people.get(tk)?.said ?? [])] }); }
@@ -626,7 +629,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   // 응답 없는 연결 정리
   const heartbeat = setInterval(() => {
     // 사람별 제한 기록도 여기서 정리한다: 접속해 있지 않고 오래 쓰지 않은 기록, 간격이 지난 신고 기록, 다시 가득 찼을 대화 통
-    const now = Date.now(), online = new Set<string>();
+    const now = clock(), online = new Set<string>();
     for (const c of clients) online.add(who(c));
     for (const [k, p] of people) {
       for (const [t, at] of p.reported) if (now - at >= REPORT_GAP_MS) p.reported.delete(t);

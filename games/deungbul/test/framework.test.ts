@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import { FORGES, ITEMS, QUESTS, RESIDENTS, REST, SMITHY, goalCount, needFor, restGain } from '../shared/defs';
 import { TOWER, TOWERS } from '../shared/world';
 import { type Ent, Game, MemoryStore, type PlayerSave, startServer, type WorldSave } from '@engine/server';
-import { check, connect, sleep, until } from '@engine/testing';
+import { check, connect, settle, until } from '@engine/testing';
 import { newGame, startDeungbul } from './game';
 import { WebSocket } from 'ws';
 import type { ServerMsg } from '@engine/shared';
@@ -218,7 +218,7 @@ function noonOf(day: unknown): number {
     const h = await connect(s.port, undefined, token);
     const e = s.game.ents.get(h.id)!;
     touch(e, (m) => h.ws.send(JSON.stringify(m)));
-    await sleep(120);
+    await settle(h); // 보낸 것(이름 바꾸기)을 서버가 처리한 뒤에 끊는다
     h.ws.close();
     await until(() => !s.game.ents.has(e.id));
     return store.loadPlayer(keyOf(token));
@@ -317,13 +317,16 @@ function noonOf(day: unknown): number {
   /** 접속해서 받은 메시지를 차례로 모은다 (스냅샷은 뺀다) */
   const join = async (port: number, name: string, token?: string) => {
     const ws = new WebSocket(`ws://127.0.0.1:${port}`), got: ServerMsg[] = [];
+    let snaps = 0;
     await new Promise<void>((done, fail) => {
       ws.on('open', () => ws.send(JSON.stringify({ t: 'join', name, token })));
-      ws.on('message', (data) => { const m = JSON.parse(data.toString()) as ServerMsg; if (m.t !== 'snap') got.push(m); if (m.t === 'welcome') done(); });
+      ws.on('message', (data) => { const m = JSON.parse(data.toString()) as ServerMsg; if (m.t !== 'snap') got.push(m); else snaps++; if (m.t === 'welcome') done(); });
       ws.on('error', fail);
     });
     return {
       ws, got,
+      /** 받은 스냅샷의 수 (서버가 내보낸 횟수를 센다: settle) */
+      snaps: () => snaps,
       id: (got[0] as Extract<ServerMsg, { t: 'welcome' }>).id,
       // 틀이 스스로 등록한 칸(가방, 분해)은 따로 본다: 아래 검사는 게임과 플러그인이 등록한 칸을 본다
       mine: (from = 0) => got.slice(from).filter((m): m is Me => m.t === 'me' && !ENGINE_CELLS.includes(m.k)),
@@ -334,8 +337,8 @@ function noonOf(day: unknown): number {
     };
   };
   const BARE_STAT = 't,maxHp,lv,exp,need,sparks,gold,weapon,armor,cls,items';
-  /** 서버가 몇 번 내보낼 만큼 기다린다 (0.1초마다 내보낸다) */
-  const settle = () => sleep(350);
+  /** 서버가 몇 번 더 내보낼 때까지 기다린다: 스냅샷을 세 번 더 받는다 (벽시계로 0.35초를 자면 바쁜 컴퓨터에서는 한 번도 못 내보냈을 수 있다) */
+  const settle = async (x: { snaps: () => number }) => { const n = x.snaps(); await until(() => x.snaps() >= n + 3); };
 
   // 틀만의 서버: 등록한 칸이 없으니 me를 하나도 보내지 않고, stat에는 틀의 칸만 있다
   {
@@ -346,7 +349,7 @@ function noonOf(day: unknown): number {
     c.ws.send(JSON.stringify({ t: 'class', id: 'warrior' }));
     p.gold += 3; p.dirty = true;
     await until(() => c.stats().some((m) => m.gold === 3 && m.cls === 'warrior'));
-    await settle();
+    await settle(c);
     check(s.game.personal.map((x) => x.name).join() === ENGINE_CELLS.join() && c.own().map((m) => m.k).join() === ENGINE_CELLS.join() && c.mine().length === 0 && c.olds().length === 0, `틀만의 서버는 틀의 개인 상태(${ENGINE_CELLS.join(', ')})만 보내고, 게임의 칸도 옛 quest 메시지도 보내지 않는다`);
     check(c.stats().length >= 2 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), `틀만의 서버의 stat에는 게임의 칸(기여, 휴식, 기여 단계)이 없다 (${Object.keys(c.stats()[0]).join()})`);
     c.ws.close();
@@ -360,7 +363,7 @@ function noonOf(day: unknown): number {
     const token = 'personal-token-0001';
     const c = await join(s.port, '개인상태', token);
     await until(() => c.mine().length >= 4);
-    await settle();
+    await settle(c);
     const p = s.game.ents.get(c.id)!;
     const first = c.mine();
     check(s.game.personal.map((x) => x.name).filter((k) => !ENGINE_CELLS.includes(k)).join() === 'contrib,quest,tier,rested' && first.map((m) => m.k).join() === 'contrib,quest,tier,rested' && JSON.stringify(first.map((m) => m.s)) === '[0,{"c":0,"s":0,"n":0},0,0]',
@@ -384,7 +387,7 @@ function noonOf(day: unknown): number {
     let at = c.got.length, before = now();
     p.gold += 1; p.dirty = true;
     await until(() => c.stats(at).length > 0);
-    await settle();
+    await settle(c);
     check(c.mine(at).length === 0 && c.olds(at).length === 0 && c.stats(at).length === 1, '값이 바뀌지 않으면 개인 상태는 다시 가지 않는다 (stat만 간다)');
 
     // 불씨를 바친다: 기여가 바뀐다 (퀘스트의 지금 단계가 바치기가 아니면 퀘스트는 가지 않는다)
@@ -392,7 +395,7 @@ function noonOf(day: unknown): number {
     p.sparks = 300; p.x = TOWER.x + 2; p.z = TOWER.z + 2;
     c.ws.send(JSON.stringify({ t: 'offer', to: 'tower', n: 4 }));
     await until(() => c.mine(at).some((m) => m.k === 'contrib'));
-    await settle();
+    await settle(c);
     check(p.contrib === 4 && c.mine(at).some((m) => m.k === 'contrib' && m.s === 4) && onlyChanged(before, at), `불씨를 바치면 바뀐 칸만 한 번 온다 (${c.mine(at).map((m) => `${m.k}=${JSON.stringify(m.s)}`).join(' ')})`);
     check(c.stats(at).some((m) => m.sparks === 296) && c.stats(at).every((m) => Object.keys(m).join() === BARE_STAT) && c.olds(at).length === 0, '바뀐 기여는 개인 상태로만 간다: stat에는 옛 칸이 없고(줄어든 불씨만 실린다) 옛 quest 메시지도 가지 않는다');
 
@@ -401,14 +404,14 @@ function noonOf(day: unknown): number {
     at = c.got.length; before = now();
     c.ws.send(JSON.stringify({ t: 'offer', to: 'tower', n: 8 }));
     await until(() => c.mine(at).some((m) => m.k === 'tier'));
-    await settle();
+    await settle(c);
     check(p.contrib === 12 && p.tier === 1 && c.mine(at).some((m) => m.k === 'tier' && m.s === 1) && onlyChanged(before, at), `기여 단계가 오르면 그 칸이 온다 (${c.mine(at).map((m) => `${m.k}=${JSON.stringify(m.s)}`).join(' ')})`);
 
     // 휴식 보너스와 퀘스트 진행: 값이 달라진 틱에 한 번씩
     at = c.got.length; before = now();
     p.rested = 40; p.qn += 1; p.questDirty = true;
     await until(() => c.mine(at).length >= 2);
-    await settle();
+    await settle(c);
     check(onlyChanged(before, at) && c.mine(at).map((m) => m.k).join() === 'quest,rested' && !p.questDirty, '휴식 보너스와 퀘스트 진행도 바뀐 때에 한 번씩 오고, 보낸 뒤에는 퀘스트의 더러움 표시가 지워진다');
     check(c.olds().length === 0 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), '퀘스트 진행이 바뀌어도 옛 quest 메시지는 가지 않는다 (접속한 뒤 지금까지 한 번도, stat의 옛 칸도)');
 
@@ -418,7 +421,7 @@ function noonOf(day: unknown): number {
     await until(() => !s.game.ents.has(c.id));
     const c2 = await join(s.port, '개인상태', token);
     await until(() => c2.mine().length >= 4);
-    await settle();
+    await settle(c2);
     check(c2.mine().length === 4 && JSON.stringify(c2.mine().map((m) => m.s)) === want, `다시 접속하면 저장된 값으로 전부 다시 받는다 (${JSON.stringify(c2.mine().map((m) => m.s))})`);
     c2.ws.close();
     await s.close();
@@ -434,17 +437,17 @@ function noonOf(day: unknown): number {
     }] } });
     const c = await join(s.port, '장작꾼');
     await until(() => c.mine().length >= 2);
-    await settle();
+    await settle(c);
     check(JSON.stringify(c.mine()) === '[{"t":"me","k":"logs","s":0},{"t":"me","k":"note","s":{"lv":1,"at":"camp"}}]' && cleared === 1, `플러그인이 g.personal에 등록한 칸이 접속 직후에 me로 온다 (${JSON.stringify(c.mine())})`);
     let at = c.got.length;
     logs.set(c.id, 7);
     await until(() => c.mine(at).length > 0);
-    await settle();
+    await settle(c);
     check(JSON.stringify(c.mine(at)) === '[{"t":"me","k":"logs","s":7}]', '값이 달라진 칸만 다시 온다 (dirty를 주지 않으면 마지막으로 보낸 값과 견준다)');
     at = c.got.length;
     flag = true;
     await until(() => c.mine(at).length > 0);
-    await settle();
+    await settle(c);
     check(JSON.stringify(c.mine(at)) === '[{"t":"me","k":"note","s":{"lv":1,"at":"camp"}}]' && cleared === 2 && !flag, 'dirty를 준 칸은 그것이 참일 때 한 번 가고, 보낸 뒤 sent가 불려 표시를 지운다');
     check(c.olds().length === 0 && c.stats().every((m) => Object.keys(m).join() === BARE_STAT), '시험용 플러그인의 서버도 옛 메시지를 보내지 않는다 (옛 모양을 만드는 접점 g.oldMsgs는 없어졌다)');
     c.ws.close();

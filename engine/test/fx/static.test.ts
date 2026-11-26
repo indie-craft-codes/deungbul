@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { mimeOf, serveStatic } from '../../server/net/static';
 import { startServer } from '../../server/net/server';
-import { check } from '../harness';
+import { check, removeTemp } from '../harness';
 
 /** 시험마다 새 폴더: base/dist가 화면 폴더, base/outside.txt가 그 밖의 파일 (함께 도는 다른 시험과 겹치지 않는다) */
 const base = fs.mkdtempSync(path.join(os.tmpdir(), 'fx-static-')), root = path.join(base, 'dist');
@@ -58,4 +58,4 @@ try {
   } finally { await s.close(); }
 }
 
-fs.rmSync(base, { recursive: true, force: true });
+removeTemp(base);
