@@ -139,3 +139,28 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
     `뼈대의 모듈 요소(data-mod ${marks.length}곳)는 아는 모듈 이름만 적고, 가방·기술·대상·상점·직업 고르기·자동 사냥이 모듈의 것으로 표시되어 있다${bad.length ? ': 모르는 ' + bad.join(', ') : ''}`);
   check(['myName', 'menuBtn', 'lang', 'chat', 'minimap', 'mapBtn', 'wmap', 'menu', 'gate', 'pcard'].every((id) => SKELETON.includes(`id="${id}"`) && !modIds.includes(id)), '이름·메뉴·언어·대화·지도·접속 화면·사람 카드는 핵심이다 (모든 게임에 있다)');
 }
+
+// ---------- 전투 없이 재화·아이템·성장만 고른 게임 ----------
+{
+  const modules = ['economy', 'growth', 'items', 'mail', 'daily', 'idle', 'party', 'rank'] as const;
+  const store = new MemoryStore();
+  const s = await startServer(0, { store, game: { modules, plugins: [balls] } });
+  const g = s.game;
+  const ws = new WebSocket(`ws://127.0.0.1:${s.port}`);
+  const got: ServerMsg[] = [];
+  ws.on('message', (data) => { got.push(JSON.parse(data.toString()) as ServerMsg); });
+  await new Promise((ok, fail) => { ws.on('open', ok); ws.on('error', fail); });
+  ws.send(JSON.stringify({ t: 'join', name: '가게', token: 'core-token-shop-00001' }));
+  await until(() => got.some((m) => m.t === 'welcome'));
+  const id = (got.find((m) => m.t === 'welcome') as { id: number }).id, p = g.ents.get(id)!;
+  g.wallet.add(p, 'gold', 50, ''); g.wallet.add(p, 'exp', 1000, '');
+  await until(() => got.some((m) => m.t === 'stat' && m.gold === 50));
+  const stat = got.filter((m): m is Extract<ServerMsg, { t: 'stat' }> => m.t === 'stat').at(-1)!;
+  check(!g.has('combat') && stat.gold === 50 && (stat.lv ?? 0) > 1 && stat.maxHp === undefined && stat.cls === undefined && stat.items !== undefined,
+    `전투·직업 없이 재화·성장·아이템만 고른 게임: 골드와 레벨이 오르고, 본인에게 그 칸만 간다 (체력·직업 칸이 없다: Lv${stat.lv})`);
+  ws.send(JSON.stringify({ t: 'rank' }));
+  await until(() => got.some((m) => m.t === 'rank'));
+  check(got.some((m) => m.t === 'rank') && !g.commands.has('attack') && !g.commands.has('class') && g.commands.has('buy'), '그 게임에는 상점·순위의 명령이 있고 공격·직업의 명령은 없다');
+  ws.close();
+  await s.close();
+}
