@@ -1,8 +1,8 @@
 // 수집형·방치형 화면의 셈 (영웅 탭, 뽑기의 확률표, 편성, 단계 막대, 던전 열쇠): 화면 요소도 three.js도 읽지 않는다 (시험 engine/test/collect/client.test.ts가 그대로 읽는다).
 // 그리는 것은 hud/collect.ts(메뉴 탭과 영웅의 겉모습)와 hud/stagebar.ts(단계 막대). 확률은 서버와 같은 셈(engine/shared/defs/collect.ts)이다.
 import {
-  BANNER_TABLE, HERO_IDS, HERO_RARITIES, HERO_RULES, STAGES, bannerOdds, heroDef, heroPower, heroStats, pityOdds, poolOdds, rarityDef, rarityOdds, waveCount,
-  type BannerDef, type HeroesMe, type Odds, type StageMe, type StageRun,
+  BANNER_TABLE, HERO_IDS, HERO_RARITIES, HERO_RULES, STAGES, bannerOdds, gearOn, growthOf, heroDef, heroFull, pityOdds, poolOdds, rarityDef, rarityOdds, waveCount,
+  type BannerDef, type HeroGearPiece, type HeroesMe, type Odds, type StageMe, type StageRun,
 } from '../../shared/defs';
 import type { KeysMe } from '../../shared/defs/collect';
 import type { DungeonDef } from '../../shared/defs/dungeons';
@@ -20,16 +20,19 @@ export interface HeroRow {
   inSquad: boolean;
 }
 
-/** 영웅 탭의 줄들: 가진 영웅이 먼저(등급이 높은 것부터, 전투력이 큰 것부터), 그다음 없는 영웅(등급이 높은 것부터). money는 레벨 업에 치를 재화의 보유량 */
-export function heroRows(me: HeroesMe, money: number, squad: readonly string[] = []): HeroRow[] {
+/**
+ * 영웅 탭의 줄들: 가진 영웅이 먼저(등급이 높은 것부터, 전투력이 큰 것부터), 그다음 없는 영웅(등급이 높은 것부터). money는 레벨 업에 치를 재화의 보유량.
+ * 공격·체력·전투력은 서버와 같은 heroFull(각성·기술 레벨, gear를 주면 낀 영웅 장비까지)이다: 성장이 없는 게임에서는 heroStats·heroPower와 같다
+ */
+export function heroRows(me: HeroesMe, money: number, squad: readonly string[] = [], gear: readonly HeroGearPiece[] = []): HeroRow[] {
   const rows = HERO_IDS.map((id): HeroRow => {
     const d = heroDef(id), h = me[id], owned = !!h;
     const lv = h?.[0] ?? 1, stars = h?.[1] ?? rarityDef(d.rarity).stars, shards = h?.[2] ?? 0;
-    const maxLv = HERO_RULES.maxLv(stars), s = heroStats(id, lv, stars);
+    const maxLv = HERO_RULES.maxLv(stars), s = heroFull(id, h ? growthOf(h) : { lv, stars }, gearOn(gear, id));
     const starNeed = stars >= HERO_RULES.maxStars ? 0 : HERO_RULES.starCost(stars);
     const levelCost = lv >= maxLv ? 0 : HERO_RULES.levelCost(lv, d.rarity);
     return {
-      id, owned, rarity: d.rarity, lv, maxLv, stars, shards, starNeed, atk: s.atk, hp: s.hp, power: heroPower(id, lv, stars), levelCost,
+      id, owned, rarity: d.rarity, lv, maxLv, stars, shards, starNeed, atk: s.atk, hp: s.hp, power: s.power, levelCost,
       canLevel: owned && levelCost > 0 && money >= levelCost, canStar: owned && starNeed > 0 && shards >= starNeed, inSquad: squad.includes(id),
     };
   });

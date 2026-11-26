@@ -14,6 +14,7 @@ import { initGacha, initRoster, initSquad } from './hud/collect';
 import { initDevice } from './hud/device';
 import { initDungeon } from './hud/dungeon';
 import { initForge } from './hud/forge';
+import { initHeroGear } from './hud/herogrow';
 import { initMenu } from './hud/menu';
 import { initMinimap } from './hud/minimap';
 import { initNear } from './hud/near';
@@ -50,6 +51,8 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initGacha, mod: 'gacha' },
   { init: initSquad, mod: 'squad' },
   { init: initStages, mod: 'stages' },
+  // 영웅 장비 (수집형의 선택 모듈): 그 뒤에
+  { init: initHeroGear, mod: 'herogear' },
 ];
 
 export function initModules(): void {

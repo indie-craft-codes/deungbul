@@ -676,6 +676,28 @@ html:lang(en) body { overflow-wrap: break-word; }
 .sqslot.full { border-style: solid; border-color: var(--rc); }
 .sqslot b { color: var(--rc); }
 .srow.now .iname { color: var(--gold); }
+/* 영웅의 성장 (hud/herogrow.ts): 영웅 상세, 영웅 장비와 강화 창, 편성의 진형과 시너지. 모자란 값은 붉게, 켜진 단은 금색 */
+.hdetail { display: flex; flex-direction: column; gap: 2px; border-left: 3px solid var(--line); padding-left: 7px; }
+.hdetail .iname { font-weight: 700; font-size: 15px; color: var(--rc, inherit); }
+.hdetail .hstar { color: var(--gold); letter-spacing: -1px; margin-left: 4px; font-size: 12px; }
+.hdetail .haw, .hrow .haw { color: #c9a0ff; margin-left: 4px; font-size: 12px; }
+.hstats { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.htab, .hnext, .hpick, .henh, .sqrow, .synbox { display: flex; flex-direction: column; gap: 5px; }
+.hnext, .henh, .hpick { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+.henh .btns { display: flex; gap: 6px; }
+.henh .btns button { flex: 1 1 6em; }
+.hcost .opt.short, .note.short { color: var(--bad); }
+.htab .ghd, .hpick .ghd, .henh .ghd, .sqrow .ghd, .synbox .ghd { color: var(--gold); font-weight: 700; font-size: 12.5px; }
+.hgslot .mslot, .hgrow .mslot { margin-right: 4px; }
+.sqrow { border-left: 3px solid var(--line); padding-left: 7px; }
+.sqrow.front { border-left-color: #d98a5a; }
+.sqrow.back { border-left-color: #5a9ad9; }
+.sqrow .sqslot button { margin-top: 3px; padding: 2px 6px; font-size: 11px; }
+.synrow { display: flex; flex-direction: column; gap: 1px; opacity: .65; }
+.synrow.on { opacity: 1; }
+.synrow.on .iname { color: var(--gold); }
+.synrow .opt.on, .hdetail ~ .htab .opt.on, .htab .opt.on { color: var(--gold); }
+.synrow .opt.off, .htab .opt.off { opacity: .7; }
 .srow.locked { opacity: .45; }
 /* 단계 막대: 가운데 위 (폰은 내 정보 아래) */
 #stageBar { display: flex; flex-direction: column; gap: 4px; min-width: 230px; padding: 6px 10px; pointer-events: auto; }

@@ -16,6 +16,7 @@ import { send } from '../net';
 import { makeHumanoid } from '../scene/models';
 import { S } from '../state';
 import { heroRows, rateTable, squadToggle, type RateRow } from './collectcalc';
+import { drawFormation, drawHeroDetail, growthSig, heroDetailShown, initHeroGrowth, myHeroGear, openHero } from './herogrow';
 import { addMenuTab } from './menu';
 import { button, el, redraw, row, span } from './menu/parts';
 import { addNotices } from './notify';
@@ -44,7 +45,8 @@ const roleName = (id: string) => uiText.get(heroRole(id).name);
 
 // ---------- 영웅 탭 ----------
 function drawHeroes(list: HTMLElement): void {
-  const loc = L(), rows = heroRows(heroes, money(HERO_RULES.levelCur), squad.ids);
+  if (drawHeroDetail(list, heroes)) return; // 영웅 상세를 펼쳤다 (성장을 켠 게임: hud/herogrow.ts)
+  const loc = L(), rows = heroRows(heroes, money(HERO_RULES.levelCur), squad.ids, myHeroGear());
   if (!rows.some((r) => r.owned)) list.append(el('note', t('heroNone')));
   for (const r of rows) {
     const name = tinted(el('iname', heroName(r.id)), r.rarity);
@@ -55,7 +57,7 @@ function drawHeroes(list: HTMLElement): void {
     note.append(el('', `${loc.fmt.heroRole(roleName(r.id), rarityName(r.rarity))} · ${loc.fmt.heroLv(r.lv, r.maxLv)}`), el('', loc.fmt.heroStats(r.atk, r.hp, r.power)), el('', r.starNeed ? loc.fmt.heroShards(r.shards, r.starNeed) : `${loc.fmt.heroShards(r.shards, 0).split('/')[0]} · ${t('heroMax')}`));
     const lvBtn = button(r.levelCost ? `${t('heroLevelBtn')} · ${loc.fmt.heroCost(r.levelCost, HERO_RULES.levelCur)}` : t('heroMax'), () => send({ t: 'hero', a: 'level', id: r.id }), !r.canLevel);
     const starBtn = button(t('heroStarBtn'), () => send({ t: 'hero', a: 'star', id: r.id }), !r.canStar);
-    list.append(row(name, note, [lvBtn, starBtn], 'hrow'));
+    list.append(row(name, note, [lvBtn, starBtn, ...(heroDetailShown() ? [button(t('heroDetail'), () => openHero(r.id))] : [])], 'hrow'));
   }
 }
 
@@ -116,15 +118,18 @@ function drawGacha(list: HTMLElement): void {
 function drawSquad(list: HTMLElement): void {
   const loc = L(), size = SQUAD_RULES.size;
   list.append(el('baghead', `${t('squadHead')} ${loc.fmt.squadCount(squad.ids.length, size)} · ${loc.fmt.squadPower(squad.power)}`));
-  const slots = el('sqslots');
-  for (let i = 0; i < size; i++) {
-    const id = squad.ids[i], s = el('sqslot' + (id ? ' full' : ''));
-    if (id) { const b = document.createElement('b'); b.textContent = heroName(id); s.append(b, el('', stars(heroes[id]?.[1] ?? 1))); tinted(s, heroDef(id).rarity); }
-    else s.textContent = t('squadEmpty');
-    slots.append(s);
+  // 진형·시너지를 켠 게임은 앞줄·뒷줄과 시너지 (hud/herogrow.ts), 아니면 자리 칸
+  if (!drawFormation(list, heroes, squad)) {
+    const slots = el('sqslots');
+    for (let i = 0; i < size; i++) {
+      const id = squad.ids[i], s = el('sqslot' + (id ? ' full' : ''));
+      if (id) { const b = document.createElement('b'); b.textContent = heroName(id); s.append(b, el('', stars(heroes[id]?.[1] ?? 1))); tinted(s, heroDef(id).rarity); }
+      else s.textContent = t('squadEmpty');
+      slots.append(s);
+    }
+    list.append(slots);
   }
-  list.append(slots);
-  const owned = heroRows(heroes, 0, squad.ids).filter((r) => r.owned);
+  const owned = heroRows(heroes, 0, squad.ids, myHeroGear()).filter((r) => r.owned);
   if (!owned.length) list.append(el('note', t('squadNone')));
   for (const r of owned) {
     const name = tinted(el('iname', heroName(r.id)), r.rarity);
@@ -181,9 +186,10 @@ function heroLook(): void {
 }
 
 export function initRoster(): void {
-  addMenuTab({ id: 'heroes', label: () => t('tabHeroes'), draw: drawHeroes, sig: () => [heroes, squad.ids, S.me?.gold, S.me?.sparks], mod: 'roster', dot: () => heroRows(heroes, money(HERO_RULES.levelCur)).some((r) => r.canStar) });
+  addMenuTab({ id: 'heroes', label: () => t('tabHeroes'), draw: drawHeroes, sig: () => [heroes, squad.ids, S.me?.gold, S.me?.sparks, growthSig()], mod: 'roster', dot: () => heroRows(heroes, money(HERO_RULES.levelCur)).some((r) => r.canStar) });
   onMsg('me', (m) => { if (m.k === 'heroes') { heroes = m.s as HeroesMe; redraw(true); } });
   addNotices({ feed: ['costShort', 'heroUp', 'heroStar', 'heroMaxLv', 'heroShards', 'heroNew'] });
+  initHeroGrowth();
 }
 
 export function initGacha(): void {
@@ -200,7 +206,7 @@ export function initGacha(): void {
 }
 
 export function initSquad(): void {
-  addMenuTab({ id: 'squad', label: () => t('tabSquad'), draw: drawSquad, sig: () => [heroes, squad], mod: 'squad' }, hasModule('gacha') ? 'gacha' : 'heroes');
+  addMenuTab({ id: 'squad', label: () => t('tabSquad'), draw: drawSquad, sig: () => [heroes, squad, growthSig()], mod: 'squad' }, hasModule('gacha') ? 'gacha' : 'heroes');
   onMsg('me', (m) => { if (m.k === 'squad') { squad = m.s as SquadMe; redraw(true); } });
   heroLook();
 }
