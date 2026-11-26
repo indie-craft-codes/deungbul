@@ -1,9 +1,10 @@
 // 수집형·방치형 모듈의 시험용 내용("영웅 들판"): 틀의 roster, gacha, squad, stages와 던전 열쇠를 쓰는 가장 작은 내용. 운영하는 게임이 아니다.
-// 영웅 여섯(등급 셋, 역할 넷), 배너 하나(천장 50, 10번 뽑기의 희귀 보장), 장 둘 × 단계 다섯(다섯째마다 우두머리), 열쇠를 쓰는 금광 던전 하나.
+// 영웅 여섯(등급 셋, 역할 넷), 상시 배너 하나(천장 50, 10번 뽑기의 희귀 보장)와 기간 한정 픽업 배너 둘(반반, 천장 공유), 영웅 선택권,
+// 장 둘 × 단계 다섯(다섯째마다 우두머리. 소탕권으로 소탕, 오프라인 진행), 열쇠를 쓰는 금광 던전 하나(열쇠로 소탕).
 // 영웅의 성장도 모두 켠다: 기술 레벨, 각성 세 단계, 영웅 장비(칸 넷, 세트 둘, 단계·던전에서 떨어짐), 진영 셋의 시너지, 앞줄·뒷줄 둘씩의 진형.
 // 이 내용 위에서 틀만의 타입 검사(engine/test/collect/tsconfig.json)와 서버·화면 셈의 시험(engine/test/collect/*.test.ts), 그리고 화면(npx vite build -c engine/test/collect/vite.config.ts)이 돈다.
 // 별칭 @game이 이 폴더를 가리키는 것은 engine/test/collect/tsconfig.json과 vite.config.ts뿐이다.
-import type { BannerDef, ChapterDef, HeroDef, HeroRoleDef, HeroRules, IdleCtx, SquadRules, StageDef } from '@engine/shared/defs/collect';
+import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRoleDef, HeroRules, IdleCtx, SquadRules, StageDef, StageRules } from '@engine/shared/defs/collect';
 import type { HeroGearRules } from '@engine/shared/defs/herogrow';
 import type { ClassDef, ClassId, SkillDef } from '@engine/shared/defs/combat';
 import type { DungeonDef } from '@engine/shared/defs/dungeons';
@@ -77,9 +78,9 @@ export const MONSTERS = {
 } as const satisfies Record<string, MonsterDef>;
 export const RESPAWN_S = 20;
 
-// ---------- 아이템: 무기 하나 (장비는 떨어뜨리지 않는다), 영웅의 성장 재료 셋 (단계를 깨면 생긴다) ----------
+// ---------- 아이템: 무기 하나 (장비는 떨어뜨리지 않는다), 영웅의 성장 재료 셋 (단계를 깨면 생긴다), 소탕권과 영웅 선택권 (지니고만 있는 것: 거래소에 올릴 수 없다) ----------
 /** 종류를 넓혀 적는다 (무기와 재료뿐인 좁은 타입이면 틀의 '갑옷인가' 확인이 컴파일되지 않는다) */
-export const ITEMS: Readonly<Record<'oakblade' | 'skillbook' | 'awakenstone' | 'gearstone', ItemDef>> = {
+export const ITEMS: Readonly<Record<'oakblade' | 'skillbook' | 'awakenstone' | 'gearstone' | 'sweepticket' | 'herochoice', ItemDef>> = {
   oakblade: { kind: 'weapon', price: 0, damage: 1, tier: 1 },
   /** 기술서: 기술 레벨 */
   skillbook: { kind: 'mat', price: 0 },
@@ -87,6 +88,10 @@ export const ITEMS: Readonly<Record<'oakblade' | 'skillbook' | 'awakenstone' | '
   awakenstone: { kind: 'mat', price: 0 },
   /** 강화석: 영웅 장비의 강화 (분해하면 돌아온다) */
   gearstone: { kind: 'mat', price: 0, max: 999 },
+  /** 소탕권 */
+  sweepticket: { kind: 'token', price: 0, max: 999 },
+  /** 영웅 선택권 */
+  herochoice: { kind: 'token', price: 0, max: 99 },
 };
 export const START_WEAPON: ItemId = 'oakblade';
 export const SHOPS: readonly { x: number; z: number }[] = [];
@@ -176,7 +181,18 @@ export const HERO_RULES: HeroRules = {
   },
   gear: HERO_GEAR,
 };
-/** 배너 하나: 보석 100 / 10번 900. 일반 75%, 희귀 22%, 전설 3%. 전설이 50번째까지 나오지 않으면 50번째는 전설, 10번 뽑기의 열째는 희귀 이상 보장 */
+/** 한정 배너가 열리는 때 (서버 시계): 별똥별은 11월 20일부터 2주, 폭풍은 그다음 2주 (UTC) */
+const DAY = 86400000, LIMITED_FROM = Date.UTC(2026, 10, 20);
+/** 한정 배너의 판: 상시와 같은 무게 (전설 3%). 픽업이 전설의 반을 갖는다 */
+const LIMITED_POOL = [
+  { hero: 'ironwall', w: 375 }, { hero: 'swiftarrow', w: 375 },
+  { hero: 'cinderwitch', w: 110 }, { hero: 'dawnpriest', w: 110 },
+  { hero: 'stormblade', w: 15 }, { hero: 'starseer', w: 15 },
+];
+/**
+ * 배너 셋. 새벽의 부름(상시): 보석 100 / 10번 900. 일반 75%, 희귀 22%, 전설 3%. 전설이 50번째까지 나오지 않으면 50번째는 전설, 10번 뽑기의 열째는 희귀 이상 보장.
+ * 별똥별·폭풍(기간 한정 픽업): 전설 3% 가운데 픽업이 반(1.5%), 반반(픽업이 아닌 전설이 나오면 다음 전설은 픽업 확정), 천장 60, 둘이 천장과 확정을 함께 센다(limited)
+ */
 export const BANNERS: Readonly<Record<string, BannerDef>> = {
   dawn: {
     name: 'bannerDawn', cur: 'sparks', one: 100, ten: 900,
@@ -188,7 +204,21 @@ export const BANNERS: Readonly<Record<string, BannerDef>> = {
     pity: { after: 50, rarity: 2 },
     tenAtLeast: 1,
   },
+  starfall: {
+    name: 'bannerStarfall', cur: 'sparks', one: 120, ten: 1080, pool: LIMITED_POOL,
+    pity: { after: 60, rarity: 2 }, tenAtLeast: 1,
+    pickup: { hero: 'starseer', share: 0.5 }, fiftyFifty: true, pityGroup: 'limited',
+    start: LIMITED_FROM, end: LIMITED_FROM + 14 * DAY,
+  },
+  stormcall: {
+    name: 'bannerStormcall', cur: 'sparks', one: 120, ten: 1080, pool: LIMITED_POOL,
+    pity: { after: 60, rarity: 2 }, tenAtLeast: 1,
+    pickup: { hero: 'stormblade', share: 0.5 }, fiftyFifty: true, pityGroup: 'limited',
+    start: LIMITED_FROM + 14 * DAY, end: LIMITED_FROM + 28 * DAY,
+  },
 };
+/** 영웅 선택권: 전설 둘 가운데 하나를 고른다 */
+export const GACHA_RULES: GachaRules = { history: 50, select: { herochoice: ['stormblade', 'starseer'] } };
 /** 넷이 싸운다: 앞줄 둘(받는 피해 −25%, 둘레 9m의 적을 끈다), 뒷줄 둘(주는 피해 +10%). 진영 셋의 시너지 (물결은 편성 모두가 받는다) */
 export const SQUAD_RULES: SquadRules = {
   size: 4, seek: 13, leash: 22, reviveS: 8, regen: 0.06, autoFill: true,
@@ -213,14 +243,23 @@ const stage = (ch: number, n: number): StageDef => {
     reward: { gold: 40 + k * 20, exp: 30 + k * 15, sparks: 30 + k * 5, items: { gearstone: 2 + ch, skillbook: 1 } },
     first: { sparks: 100, ...(n === 4 ? { items: { awakenstone: 1 } } : {}) },
     rec: Math.round(250 * scale * (n === 4 ? 1.6 : 1)),
+    // 마지막 장의 우두머리(2-5)는 소탕할 수 없다
+    ...(ch === 1 && n === 4 ? { sweep: false } : {}),
   };
 };
 export const CHAPTERS: readonly ChapterDef[] = [
   { name: 'chapterMeadow', stages: [0, 1, 2, 3, 4].map((n) => stage(0, n)) },
   { name: 'chapterRidge', stages: [0, 1, 2, 3, 4].map((n) => stage(1, n)) },
 ];
-/** 단계는 들판 가운데(0, 10)에서. 접속하면 바로 지금 단계로 들어간다 (방치형) */
-export const STAGE_RULES = { arena: { x: 0, z: 10 }, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: true };
+/**
+ * 단계는 들판 가운데(0, 10)에서. 접속하면 바로 지금 단계로 들어간다 (방치형).
+ * 소탕: 소탕권 하나에 한 번, 한 번에 열 번까지. 오프라인 진행: 편성의 전투력이 권장 이상인 단계를 10분에 하나, 12시간까지, 한 번에 20단계까지
+ */
+export const STAGE_RULES: StageRules = {
+  arena: { x: 0, z: 10 }, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: true,
+  sweep: { cost: { item: 'sweepticket', n: 1 }, max: 10 },
+  offline: { perStageS: 600, maxH: 12, maxStages: 20 },
+};
 
 // ---------- 열쇠 던전: 금광 (열쇠 하루 2개, 2개까지, 보석 50으로 하루 2번 더) ----------
 export const DUNGEONS = {
@@ -237,10 +276,12 @@ export const DUNGEONS = {
     dropRar: 0, dropLv: 1,
     gear: false,
     key: { refill: 2, cap: 2, buy: { cur: 'sparks', cost: 50, perDay: 2 } },
+    // 한 번이라도 끝냈으면 열쇠 하나로 소탕 (한 번에 다섯까지)
+    sweep: { max: 5 },
   },
 } as const satisfies Record<string, DungeonDef>;
 export const PORTAL_REACH = 5;
 
 // ---------- 이 '게임'만의 것 (틀은 읽지 않는다) ----------
-/** 처음 온 사람이 받는 것: 보석(10번 뽑기 두 번 남짓)과 골드 */
-export const STARTER: Reward = { sparks: 2000, gold: 1500 };
+/** 처음 온 사람이 받는 것: 보석(10번 뽑기 두 번 남짓)과 골드, 소탕권 다섯과 영웅 선택권 하나 */
+export const STARTER: Reward = { sparks: 2000, gold: 1500, items: { sweepticket: 5, herochoice: 1 } };

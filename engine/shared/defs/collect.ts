@@ -3,7 +3,7 @@
 // 서버(engine/server/game/systems/roster.ts, gacha.ts, squad.ts, stages.ts)와 화면(engine/client/hud/collect*.ts)이 함께 읽는다:
 // 영웅의 능력치·전투력, 뽑기의 확률(공개하는 확률표와 서버가 뽑는 확률이 이 한 곳의 셈이다), 단계의 목록은 여기의 함수로만 구한다.
 // 줄 위에서 영웅은 HEROES의 id로, 등급은 HERO_RARITIES의 번호(0부터, 클수록 귀하다)로, 단계는 '장-단계'의 id('1-3')로 오간다.
-import { BANNERS, CHAPTERS, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES } from '../content';
+import { BANNERS, CHAPTERS, GACHA_RULES, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES, STAGE_RULES } from '../content';
 import type { Reward } from './growth';
 import type { HeroAwakenRules, HeroGearRules, HeroSkillRules, PowerIn, SquadRowRules, SynergyDef, SynergyMe } from './herogrow';
 
@@ -99,13 +99,37 @@ export interface BannerDef {
   pity?: { after: number; rarity: number };
   /** 10번 뽑기의 보장: 앞의 아홉에 이 등급 이상이 없으면 열째는 이 등급 이상의 칸에서만 뽑는다 */
   tenAtLeast?: number;
+  /**
+   * 픽업(확률 업): 이 영웅이 자기 등급의 확률 가운데 share(0~1)만큼을 갖는다. 그 등급의 나머지 영웅은 남은 몫을 자기 무게의 비율로 나눈다.
+   * 등급의 확률(그 등급 영웅들의 무게의 합)은 그대로다. 없으면 무게 그대로 (예전과 같다)
+   */
+  pickup?: { hero: string; share: number };
+  /** 반반(50/50): 픽업의 등급이 나왔는데 픽업이 아니면, 다음에 그 등급이 나올 때는 픽업이 확정이다 (확정은 천장 무리 pityGroup과 함께 이어진다) */
+  fiftyFifty?: boolean;
+  /** 천장을 함께 세는 무리: 같은 이름의 배너들이 천장의 셈과 반반의 확정을 함께 쓴다 (기간 한정 배너가 바뀌어도 이어진다). 무리의 배너들은 pity가 같아야 한다 */
+  pityGroup?: string;
+  /** 열리는 때와 닫히는 때 (서버 시계의 ms, Date.getTime()). 이 사이에만 화면에 보이고 뽑을 수 있다. 없으면 늘 열려 있다 */
+  start?: number; end?: number;
 }
 
 /** 뽑기의 규칙 */
 export interface GachaRules {
   /** 사람마다 남기는 뽑기 기록의 수 (최근 것부터) */
   history: number;
+  /** 영웅 선택권: 아이템 id(가방의 'token' 같은 것) → 고를 수 있는 영웅들. 선택권 하나를 쓰고 그 가운데 하나를 얻는다 (items 모듈이 있어야 한다). 없으면 선택권이 없다 */
+  select?: Readonly<Record<string, readonly string[]>>;
 }
+
+/** 소탕의 값: 게임 안의 재화(cur) 또는 가방의 아이템(item, 소탕권) n개. 한 번 소탕할 때마다 */
+export type SweepCost = { cur: Coin; n: number } | { item: string; n: number };
+/** 소탕: 이미 깬 단계·던전을 싸우지 않고 바로 끝내 보통 보상(처음 깬 보상이 아니다)을 받는다. cost는 한 번마다의 값(없으면 공짜), max는 한 번에 할 수 있는 횟수(기본 10) */
+export interface SweepRule { cost?: SweepCost; max?: number }
+/**
+ * 오프라인 단계 진행: 접속하지 않은 동안 서버가 '얼마나 더 깼을까'를 셈한다 (자동 진행을 켜 둔 사람만).
+ * 가장 멀리 깬 단계의 다음부터, 편성의 전투력이 권장 전투력 × need(기본 1) 이상인 단계를 perStageS초에 하나씩 깬 것으로 친다.
+ * 비운 시간은 maxH시간까지만, 한 번 돌아올 때 maxStages단계까지만. clearReward(기본 true)면 깬 단계마다 보통 보상도 준다 (처음 깬 보상은 언제나)
+ */
+export interface OfflineRules { perStageS: number; maxH: number; maxStages: number; need?: number; clearReward?: boolean }
 
 /** 편성의 규칙 */
 export interface SquadRules {
@@ -144,6 +168,8 @@ export interface StageDef {
   rec: number;
   /** 제한 시간(초). 없으면 STAGE_RULES.timeS */
   timeS?: number;
+  /** false면 이 단계는 소탕할 수 없다 (STAGE_RULES.sweep이 있을 때. 기본은 깬 단계 모두) */
+  sweep?: boolean;
 }
 
 /** 장 하나: 이름의 문장 키와 단계들 (단계의 id는 '장 번호-단계 번호', 1부터) */
@@ -161,6 +187,10 @@ export interface StageRules {
   leaderAuto: boolean;
   /** 접속하면 바로 지금 단계로 들어간다 (방치형). 아니면 '도전'을 눌러야 들어간다 */
   enterOnJoin: boolean;
+  /** 소탕(깬 단계를 바로 끝내기)의 값과 한 번에 하는 수. 없으면 소탕이 없다 */
+  sweep?: SweepRule;
+  /** 오프라인 단계 진행. 없으면 하지 않는다 (방치 보상의 수치만 깬 단계로 커진다) */
+  offline?: OfflineRules;
 }
 
 /** 방치 보상(idle 모듈)의 셈에 틀이 넘기는 것: 깬 단계의 수 (stages 모듈이 없으면 0) */
@@ -179,6 +209,10 @@ export const rarityDef = (r: number): HeroRarityDef => HERO_RARITIES[r] ?? HERO_
 export const BANNER_TABLE: Readonly<Record<string, BannerDef>> = BANNERS;
 export const BANNER_IDS: readonly string[] = Object.keys(BANNERS);
 export const isBannerId = (v: unknown): v is string => typeof v === 'string' && Object.hasOwn(BANNERS, v);
+/** 뽑기의 규칙을 넓은 타입으로 본 것 (게임이 적은 GACHA_RULES에 선택 칸 select가 없어도 읽힌다) */
+export const GACHA_RULE_VIEW: GachaRules = GACHA_RULES;
+/** 선택권의 표: 아이템 id → 고를 수 있는 영웅들 (없는 영웅은 뺀다) */
+export const SELECT_TICKETS: Readonly<Record<string, readonly string[]>> = Object.fromEntries(Object.entries(GACHA_RULE_VIEW.select ?? {}).map(([k, v]) => [k, v.filter((h) => isHeroId(h))]));
 
 /** 영웅 하나의 지금 능력치: 레벨과 별로 (서버의 영웅 엔티티와 화면의 카드가 같은 셈을 쓴다) */
 export function heroStats(id: string, lv: number, stars: number): { atk: number; hp: number } {
@@ -218,6 +252,75 @@ export function pickOdds(odds: readonly Odds[], r: number): Odds | undefined {
   for (const o of odds) { acc += o.p; if (r < acc) return o; }
   return odds[odds.length - 1];
 }
+// ---------- 픽업·반반·천장 무리·기간 (공개 확률표와 서버가 같은 셈) ----------
+/**
+ * 한 번 뽑을 때의 확률표: 이 함수 하나가 서버의 뽑기와 화면의 공개 확률표를 함께 만든다 (둘이 어긋날 수 없다).
+ * floor: 이 등급 이상의 칸에서만 (천장·10번 보장. -1이면 모두). sure: 반반의 확정 (픽업의 등급이 나오면 픽업).
+ * 픽업이 있으면 픽업의 등급의 확률(합)은 그대로 두고, 그 안에서 픽업이 share(확정이면 전부)를, 나머지 영웅이 남은 몫을 무게의 비율로 나눈다.
+ * 픽업이 없는 배너는 poolOdds와 같다 (예전과 글자까지 같은 확률)
+ */
+export function pullOdds(b: BannerDef, floor = -1, sure = false): Odds[] {
+  const base = poolOdds(b.pool, floor), pk = b.pickup;
+  const me = pk ? base.find((o) => o.hero === pk.hero) : undefined;
+  if (!pk || !me) return base;
+  const same = base.filter((o) => o.rarity === me.rarity);
+  const mass = same.reduce((s, o) => s + o.p, 0), others = mass - me.p;
+  const share = sure || others <= 0 ? 1 : Math.max(0, Math.min(1, pk.share));
+  return base.map((o) => (o.rarity !== me.rarity ? o : o === me ? { ...o, p: mass * share } : { ...o, p: others > 0 ? (o.p / others) * mass * (1 - share) : 0 }));
+}
+/** 배너가 천장을 세는 열쇠: 무리(pityGroup)가 있으면 'group:이름', 없으면 배너 id (예전 저장과 같은 열쇠) */
+export const pityKey = (id: string): string => { const g = BANNER_TABLE[id]?.pityGroup; return g ? `group:${g}` : id; };
+/** 같은 천장 무리의 배너들 (무리가 없으면 자기 하나) */
+export const pityMates = (id: string): string[] => { const k = pityKey(id); return BANNER_IDS.filter((x) => pityKey(x) === k); };
+/** 그 시각(서버 시계의 ms)에 열려 있는 배너인가 */
+export const bannerOpen = (b: BannerDef, now: number): boolean => (b.start === undefined || now >= b.start) && (b.end === undefined || now < b.end);
+/** 기간이 있는 배너가 하나라도 있는가 (없으면 개인 상태에 열린 배너의 칸이 생기지 않는다) */
+export const hasTimedBanners = (): boolean => Object.values(BANNER_TABLE).some((b) => b.start !== undefined || b.end !== undefined);
+/** 반반을 쓰는 배너가 하나라도 있는가 (없으면 확정의 칸이 생기지 않는다) */
+export const hasFiftyFifty = (): boolean => Object.values(BANNER_TABLE).some((b) => !!b.fiftyFifty && !!b.pickup);
+/** 한 번 뽑은 뒤의 반반 확정: 픽업의 등급이 나왔으면 픽업이 아니었을 때 확정이 되고 픽업이면 풀린다. 다른 등급이면 그대로 */
+export function nextSure(b: BannerDef, got: { hero: string; rarity: number }, sure: boolean): boolean {
+  if (!b.fiftyFifty || !b.pickup || !isHeroId(b.pickup.hero)) return sure;
+  return got.rarity === heroDef(b.pickup.hero).rarity ? got.hero !== b.pickup.hero : sure;
+}
+/**
+ * 1번 뽑기를 오래 되풀이할 때 영웅마다 실제로 나오는 비율 (천장과 반반까지 넣은 '실효 확률'): 천장의 셈과 확정을 상태로 한 마르코프 사슬의 정상 분포로 셈한다.
+ * 이 셈도 pullOdds만 쓴다. 천장도 반반도 없는 배너는 평소의 확률과 같다
+ */
+export function effectiveOdds(b: BannerDef): Odds[] {
+  const after = b.pity ? Math.max(1, b.pity.after) : 1, fifty = !!b.fiftyFifty && !!b.pickup;
+  const S = after * (fifty ? 2 : 1), idx = (c: number, s: boolean) => c * (fifty ? 2 : 1) + (s ? 1 : 0);
+  const tables: Odds[][] = [];
+  for (let c = 0; c < after; c++) for (const s of fifty ? [false, true] : [false]) tables[idx(c, s)] = pullOdds(b, b.pity && c + 1 >= b.pity.after ? b.pity.rarity : -1, s);
+  // 정상 분포 π: π(P − I) = 0, Σπ = 1. 상태가 많아야 천장 × 2개라 가우스 소거로 바로 푼다 (A πᵀ = e, A = (P − I)ᵀ의 마지막 줄을 1로)
+  const A = Array.from({ length: S }, () => new Float64Array(S + 1));
+  for (let c = 0; c < after; c++) for (const s of fifty ? [false, true] : [false]) {
+    const i = idx(c, s);
+    A[i][i] -= 1;
+    for (const o of tables[i]) {
+      const c2 = b.pity && o.rarity >= b.pity.rarity ? 0 : Math.min(after - 1, c + 1);
+      A[idx(c2, fifty ? nextSure(b, o, s) : false)][i] += o.p;
+    }
+  }
+  for (let j = 0; j <= S; j++) A[S - 1][j] = 1;
+  for (let col = 0; col < S; col++) {
+    let piv = col;
+    for (let r = col + 1; r < S; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
+    [A[col], A[piv]] = [A[piv], A[col]];
+    const d = A[col][col];
+    if (Math.abs(d) < 1e-300) continue;
+    for (let r = 0; r < S; r++) {
+      if (r === col || !A[r][col]) continue;
+      const f = A[r][col] / d;
+      for (let j = col; j <= S; j++) A[r][j] -= f * A[col][j];
+    }
+  }
+  const pi = A.map((r, i) => (Math.abs(r[i]) < 1e-300 ? 0 : Math.max(0, r[S] / r[i])));
+  const out = new Map<string, Odds>();
+  for (let i = 0; i < S; i++) for (const o of tables[i] ?? []) { const x = out.get(o.hero) ?? { ...o, p: 0 }; x.p += pi[i] * o.p; out.set(o.hero, x); }
+  return [...out.values()];
+}
+
 /** 확률을 백분율 글로: 소수 넷째 자리까지, 끝의 0은 지운다 (0.7500% → 0.75%) */
 export const pctText = (p: number): string => `${(Math.round(p * 1e6) / 1e4).toFixed(4).replace(/\.?0+$/, '')}%`;
 
@@ -235,6 +338,43 @@ export const STAGES: readonly StageRef[] = CHAPTERS.flatMap((c, ch) => c.stages.
 export const stageIndex = (id: string): number => STAGES.findIndex((s) => s.id === id);
 /** 단계의 물결 수 (우두머리도 한 물결로 센다) */
 export const waveCount = (d: StageDef): number => d.waves.length + (d.boss ? 1 : 0);
+/** 단계의 규칙을 넓은 타입으로 본 것 (게임이 적은 STAGE_RULES의 타입에 선택 칸 sweep, offline이 없어도 읽힌다) */
+export const STAGE_RULE_VIEW: StageRules = STAGE_RULES;
+/** 한 번에 할 수 있는 소탕의 수 (SweepRule.max, 기본 10) */
+export const sweepMax = (r: SweepRule | undefined): number => Math.max(1, Math.floor(r?.max ?? 10));
+/** 그 단계를 소탕할 수 있는 단계인가 (깼는가는 따로 본다) */
+export const stageSweepable = (s: StageRef | undefined): boolean => !!STAGE_RULE_VIEW.sweep && !!s && s.def.sweep !== false;
+
+/**
+ * 오프라인 단계 진행의 셈 (서버가 돌아온 사람에게, 시험과 화면이 같은 셈을 쓴다). 아무것도 바꾸지 않는다.
+ * best: 가장 멀리 깬 단계의 번호(-1이면 없음), power: 편성의 전투력, ms: 비운 시간.
+ * 돌려주는 것: 깬 것으로 칠 단계의 번호들과 그 각각을 깬 때(비우기 시작한 때부터의 ms). 깨진 시간(음수, NaN, 무한대)은 0으로 본다
+ */
+export function offlinePlan(best: number, power: number, ms: number, rules: OfflineRules | undefined): { passed: number[]; at: number[] } {
+  const out = { passed: [] as number[], at: [] as number[] };
+  if (!rules || !(ms > 0) || !Number.isFinite(power)) return out;
+  const budget = Math.min(ms, Math.max(0, rules.maxH) * 3600000);
+  const per = Math.max(1, rules.perStageS) * 1000, need = rules.need ?? 1, cap = Math.max(0, Math.floor(rules.maxStages));
+  for (let i = Math.max(-1, best) + 1, t = per; i < STAGES.length && out.passed.length < cap && t <= budget; i++, t += per) {
+    if (power < STAGES[i].def.rec * need) break;
+    out.passed.push(i); out.at.push(t);
+  }
+  return out;
+}
+/**
+ * 방치 보상의 분(minutes)을 깬 단계의 수가 같은 토막으로 나눈다: [분, 그동안 깬 단계의 수]. 토막의 분을 더하면 minutes다.
+ * cleared: 비우기 시작할 때 깬 단계의 수, at: offlinePlan이 준 깬 때들 (비었으면 한 토막: 예전의 셈과 같다)
+ */
+export function idleSegments(minutes: number, cleared: number, at: readonly number[]): [number, number][] {
+  const out: [number, number][] = [];
+  let from = 0;
+  at.forEach((t, k) => {
+    const to = Math.min(minutes, Math.floor(t / 60000));
+    if (to > from) { out.push([to - from, cleared + k]); from = to; }
+  });
+  if (minutes > from || !out.length) out.push([minutes - from, cleared + at.length]);
+  return out;
+}
 
 // ---------- 줄 위의 모양 (개인 상태와 메시지) ----------
 /** 개인 상태 'heroes': 가진 영웅마다 [레벨, 별, 조각]. 기술 레벨·각성을 켠 게임은 [.., 기술 레벨, 각성]까지 */
@@ -242,7 +382,13 @@ export type HeroesMe = Record<string, [lv: number, stars: number, shards: number
 /** 뽑기 기록 한 줄: 시각(ms), 배너, 영웅, 등급, 천장·10번 보장으로 나온 것인가 */
 export interface PullLog { at: number; b: string; h: string; r: number; pity: boolean }
 /** 개인 상태 'gacha': 배너마다 천장의 셈(그 등급 이상이 나오지 않은 뽑기의 수)과 최근 기록 (새 것이 앞) */
-export interface GachaMe { pity: Record<string, number>; log: PullLog[] }
+export interface GachaMe {
+  pity: Record<string, number>; log: PullLog[];
+  /** 기간이 있는 배너가 있는 게임만: 지금 열린 배너 → 닫히기까지 남은 분(끝이 없으면 -1). 여기에 없는 배너는 닫혀 있다 */
+  open?: Record<string, number>;
+  /** 반반을 쓰는 게임만: 천장의 열쇠(pityKey) → 1이면 다음 픽업 등급은 픽업 확정 */
+  sure?: Record<string, 1>;
+}
 /** 뽑기의 결과 하나 (메시지 gacha): 영웅, 등급, 이미 가진 것이라 조각이 되었나와 받은 조각, 천장·보장으로 나왔나 */
 export interface PullGot { h: string; r: number; dup: boolean; n: number; pity: boolean }
 /** 개인 상태 'squad': 편성한 영웅(자리의 차례)과 그 전투력의 합. 진형을 켠 게임은 뒷줄(back), 시너지를 켠 게임은 켜진 시너지(syn)도 */
@@ -252,4 +398,6 @@ export interface StageRun { id: string; wave: number; waves: number; foes: numbe
 /** 개인 상태 'stage': 지금 단계, 가장 멀리 깬 단계(없으면 ''), 자동 진행, 안에 있으면 그 진행 */
 export interface StageMe { cur: string; best: string; auto: boolean; run: StageRun | null }
 /** 개인 상태 'keys' (열쇠를 쓰는 던전이 있는 게임): 던전마다 가진 열쇠와 오늘 산 수 */
-export type KeysMe = Record<string, { n: number; bought: number }>;
+export type KeysMe = Record<string, { n: number; bought: number; won?: boolean }>;
+/** 소탕의 결과 (메시지 sweep): 단계·던전, id, 횟수, 받은 것의 합: 재화(cur: 재화 id → 양), 아이템(goods: 아이템 id → 수), 장비의 수(equip) */
+export interface SweepGot { k: 'stage' | 'dungeon'; id: string; n: number; cur: Record<string, number>; goods: Record<string, number>; equip: number }

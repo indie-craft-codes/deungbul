@@ -1,21 +1,23 @@
 // 수집형·방치형의 화면 (roster, gacha, squad 모듈): 메뉴의 '영웅'·'뽑기'·'편성' 탭(addMenuTab), 뽑기 결과 창, 싸우는 영웅의 겉모습(registerKind('hero')).
 // 서버의 짝은 engine/server/game/systems/roster.ts, gacha.ts, squad.ts. 셈(줄의 차례, 확률표, 편성 바꾸기)은 hud/collectcalc.ts에 있다.
-// 확률표는 서버가 뽑는 셈과 같은 함수(engine/shared/defs/collect.ts의 poolOdds)로 만든다: 배너의 영웅마다·등급마다의 확률, 천장과 10번 뽑기 보장의 규칙과 그때의 확률을 모두 보인다.
+// 확률표는 서버가 뽑는 셈과 같은 함수(engine/shared/defs/collect.ts의 pullOdds)로 만든다: 배너의 영웅마다·등급마다의 확률, 천장과 10번 뽑기 보장의 규칙과 그때의 확률을 모두 보인다.
+// 픽업 배너는 픽업의 몫·반반의 규칙·확정일 때의 표·실효 확률(천장과 반반을 넣은 오랜 평균)·천장을 함께 쓰는 배너·남은 기간·지금의 셈과 확정을 함께 보인다.
+// 기간이 있는 배너는 서버가 열려 있다고 보낸 것(GachaMe.open)만 보인다. 영웅 선택권(GACHA_RULES.select)이 있으면 뽑기 탭 끝에 고르는 줄이 붙는다.
 // 게임이 더 할 수 있는 것: 뽑기 결과를 받기(onGachaResult: 연출, 소리), 내 영웅·편성 읽기(myHeroes, mySquad).
 import * as THREE from 'three';
-import { BANNER_IDS, BANNER_TABLE, GACHA_RULES, HERO_RULES, SQUAD_RULES, heroDef, heroRole, rarityDef, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
+import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, SQUAD_RULES, heroDef, heroRole, pctText, rarityDef, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
 import { teamCss } from '../../shared/defs/teams';
 import { $ } from '../app';
 import { onMsg } from '../bus';
 import { registerKind } from '../kinds';
 import { L, onLangChange, t } from '../i18n';
-import { heroName, rarityName } from '../i18n/ko';
+import { bannerName, heroName, rarityName } from '../i18n/ko';
 import { uiText } from '../i18n/names';
 import { hasModule } from '../mods';
 import { send } from '../net';
 import { makeHumanoid } from '../scene/models';
 import { S } from '../state';
-import { heroRows, rateTable, squadToggle, type RateRow } from './collectcalc';
+import { bannerPity, heroRows, openBanners, rateTable, squadToggle, type RateRow } from './collectcalc';
 import { drawFormation, drawHeroDetail, growthSig, heroDetailShown, initHeroGrowth, myHeroGear, openHero } from './herogrow';
 import { addMenuTab } from './menu';
 import { button, el, redraw, row, span } from './menu/parts';
@@ -81,27 +83,46 @@ function drawRates(box: HTMLElement, id: string): void {
   for (const x of tab.rarity) { const tr = rt.insertRow(); const a = tr.insertCell(); a.className = 'rn'; a.textContent = rarityName(x.rarity); tinted(a, x.rarity); tr.insertCell().textContent = loc.fmt.ratePct(x.p); }
   wrap.append(el('ghd', t('gachaRatesRarity')), rt);
   wrap.append(...rateRows(t('gachaRatesHero'), tab.heroes));
-  if (b.pity) wrap.append(el('note', loc.fmt.gachaPity(rarityName(b.pity.rarity), b.pity.after, gacha.pity[id] ?? 0)), el('note', loc.fmt.gachaSameRatio(rarityName(b.pity.rarity))), ...rateRows(t('gachaRatesPity'), tab.pity));
+  const st = bannerPity(id, gacha);
+  if (b.pity) wrap.append(el('note', loc.fmt.gachaPity(rarityName(b.pity.rarity), b.pity.after, st.count)), el('note', loc.fmt.gachaSameRatio(rarityName(b.pity.rarity))), ...rateRows(t('gachaRatesPity'), tab.pity));
+  if (st.mates.length) wrap.append(el('note', loc.fmt.gachaGroup(st.mates.map(bannerName).join(', '))));
   if (b.tenAtLeast !== undefined) wrap.append(el('note', loc.fmt.gachaTenRule(rarityName(b.tenAtLeast))), ...rateRows(t('gachaRatesTen'), tab.ten));
+  // 픽업과 반반: 규칙, 평소와 확정일 때의 픽업 확률, 확정일 때의 표, 실효 확률
+  const pk = tab.pickup;
+  if (pk) {
+    const name = heroName(pk.hero), rn = rarityName(pk.rarity);
+    wrap.append(el('ghd', t('gachaRatesPickup')), el('note', loc.fmt.gachaPickupRule(name, rn, pctText(pk.share))));
+    if (b.fiftyFifty) wrap.append(el('note', loc.fmt.gachaFiftyRule(name, rn)), el('note', loc.fmt.gachaSureNow(st.sure, name)), ...rateRows(t('gachaRatesSure'), tab.sure));
+    wrap.append(el('note', loc.fmt.gachaEffective(name, loc.fmt.ratePct(pk.effective))));
+  }
+  if (tab.effective.length) wrap.append(...rateRows(t('gachaRatesEffective'), tab.effective));
   box.append(wrap);
 }
 function drawGacha(list: HTMLElement): void {
-  const loc = L();
-  for (const id of BANNER_IDS) {
-    const b = BANNER_TABLE[id], box = el('gbanner');
+  const loc = L(), ids = openBanners(gacha);
+  if (!ids.length) list.append(el('note', t('gachaNoOpen')));
+  for (const id of ids) {
+    const b = BANNER_TABLE[id], box = el('gbanner' + (b.pickup ? ' pick' : ''));
     box.append(el('ttitle', uiText.get(b.name)));
+    // 픽업과 남은 기간
+    if (b.pickup) { const pk = el('gpick'); pk.append(span('gtag', t('gachaPickup')), tinted(span('', heroName(b.pickup.hero)), heroDef(b.pickup.hero)?.rarity ?? 0)); box.append(pk); }
+    if (gacha.open && Object.hasOwn(gacha.open, id)) box.append(el('note gleft', loc.fmt.gachaLeft(gacha.open[id])));
     const have = money(b.cur), btns = el('btns');
     const one = button('', () => send({ t: 'gacha', id, n: 1 }), have < b.one), ten = button('', () => send({ t: 'gacha', id, n: 10 }), have < b.ten);
     one.append(t('gachaOne'), document.createElement('small')); one.lastElementChild!.textContent = loc.fmt.gachaCost(b.one, b.cur);
     ten.append(t('gachaTen'), document.createElement('small')); ten.lastElementChild!.textContent = loc.fmt.gachaCost(b.ten, b.cur);
     btns.append(one, ten);
     box.append(btns);
-    if (b.pity) box.append(el('note', loc.fmt.gachaPity(rarityName(b.pity.rarity), b.pity.after, gacha.pity[id] ?? 0)));
+    const st = bannerPity(id, gacha);
+    if (b.pity) box.append(el('note', loc.fmt.gachaPity(rarityName(b.pity.rarity), b.pity.after, st.count)));
+    if (b.fiftyFifty && b.pickup) box.append(el('note', loc.fmt.gachaSureNow(st.sure, heroName(b.pickup.hero))));
+    if (st.mates.length) box.append(el('note', loc.fmt.gachaGroup(st.mates.map(bannerName).join(', '))));
     const open = ratesOpen.has(id);
     box.append(button(t(open ? 'gachaRatesHide' : 'gachaRates'), () => { if (open) ratesOpen.delete(id); else ratesOpen.add(id); redraw(); }));
     if (open) drawRates(box, id);
     list.append(box);
   }
+  drawSelect(list);
   list.append(el('baghead', t('gachaHistory')));
   if (!gacha.log.length) list.append(el('note', t('gachaNoHistory')));
   const fmtAt = (ms: number) => { const d = new Date(ms); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
@@ -111,6 +132,21 @@ function drawGacha(list: HTMLElement): void {
     tinted(who, g.r);
     line.append(who, span('note', `${uiText.get(BANNER_TABLE[g.b]?.name ?? g.b)} · ${fmtAt(g.at)}`));
     list.append(line);
+  }
+}
+
+/** 영웅 선택권: 선택권마다 가진 수와 고를 수 있는 영웅들 (선택권이 없으면 단추가 잠긴다) */
+function drawSelect(list: HTMLElement): void {
+  const loc = L();
+  for (const [item, heroIds] of Object.entries(SELECT_TICKETS)) {
+    const have = S.me?.items[item] ?? 0;
+    list.append(el('baghead', t('gachaSelectHead')), el('note', loc.fmt.gachaSelectHave(item, have)));
+    for (const h of heroIds) {
+      const r = heroDef(h).rarity, owned = heroes[h];
+      const name = tinted(el('iname', heroName(h)), r);
+      list.append(row(name, `${loc.fmt.heroRole(roleName(h), rarityName(r))}${owned ? ` · ${loc.fmt.heroLv(owned[0], HERO_RULES.maxLv(owned[1]))}` : ` · ${t('heroNotOwned')}`}`,
+        [button(t('gachaSelectBtn'), () => send({ t: 'gacha', a: 'select', item, hero: h }), have <= 0)], 'hrow'));
+    }
   }
 }
 
@@ -203,6 +239,7 @@ export function initGacha(): void {
   onMsg('me', (m) => { if (m.k === 'gacha') { gacha = m.s as GachaMe; redraw(true); } });
   onMsg('gacha', (m) => showPull(m.b, m.got));
   onLangChange(() => { $('gachaPop').hidden = true; });
+  addNotices({ feed: ['bannerClosed', 'heroPicked', 'itemShort', 'costShort'] });
 }
 
 export function initSquad(): void {

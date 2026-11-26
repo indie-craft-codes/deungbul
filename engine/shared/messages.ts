@@ -151,7 +151,6 @@ export type MsgKey =
   | 'heroAwaken' // [영웅 id, 각성 단계] 각성했다
   | 'heroAwakenMax' // [영웅 id] 더 각성할 수 없다
   | 'heroAwakenStars' // [영웅 id, 필요한 별] 별이 최대여야 각성한다
-  | 'itemShort' // [아이템 id, 모자란 수] 값을 치를 재료가 모자란다
   | 'hgDrop' // [영웅 장비 id] 영웅 장비를 얻었다
   | 'hgFull' // [영웅 장비 id] 영웅 장비가 가득 차 줍지 못했다
   | 'hgEnhance' // [영웅 장비 id, 강화, 성공 1 실패 0] 영웅 장비를 강화했다
@@ -163,4 +162,11 @@ export type MsgKey =
   | 'stageLast' // [] 마지막 단계까지 깼다: 같은 단계를 되풀이한다
   | 'dungeonNoKeys' // [던전 id] 열쇠가 없다
   | 'dungeonKeyBought' // [던전 id, 가진 열쇠] 열쇠를 샀다
-  | 'dungeonKeyLimit'; // [던전 id] 오늘은 더 살 수 없다
+  | 'dungeonKeyLimit' // [던전 id] 오늘은 더 살 수 없다
+  // ---- 소탕·오프라인 진행·픽업 배너·선택권 (stages.ts, dungeon.ts, gacha.ts) ----
+  | 'swept' // ['stage' | 'dungeon', id, 횟수] 소탕했다 (받은 것은 메시지 sweep)
+  | 'sweepLocked' // ['stage' | 'dungeon', id] 아직 소탕할 수 없다 (깨지 않았거나 소탕할 수 없는 곳)
+  | 'itemShort' // [재화나 아이템 id, 드는 수, 가진 수] 값(소탕권, 선택권, 재화, 영웅 성장의 재료)이 모자란다
+  | 'stageAway' // [처음 단계 id, 지금 단계 id, 깬 단계의 수] 자리를 비운 동안 단계가 앞으로 나아갔다
+  | 'bannerClosed' // [배너 id] 지금 열려 있지 않은 배너다 (기간이 아니다)
+  | 'heroPicked'; // [영웅 id, 이미 가졌으면 1, 받은 조각] 선택권으로 영웅을 골랐다

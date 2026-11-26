@@ -5,7 +5,7 @@ import { BUILD, ENHANCE, GUILD, HOME_KEY, MARKET, PARTY, pctText } from '../../s
 import type { BuildStat, ClassId, GearSlot, HeroBonus, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
-import { heroGearName, heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
+import { bannerName, heroGearName, heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
 import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
@@ -165,6 +165,18 @@ export const enBase = (n: ContentNames): EngineLocale => {
       stageClearBig: 'Stage clear!',
       stageFailBig: 'Failed: back to your cleared stage',
       dungeonKeyBuy: 'Buy key',
+      sweepHead: 'Sweep',
+      sweepInfo: 'Finish a place you already cleared instantly, without fighting, for its normal reward (not the first-clear reward).',
+      sweepResult: 'Sweep result',
+      sweepDungeons: 'Dungeon sweep',
+      gachaPickup: 'Rate-up',
+      gachaRatesPickup: 'Rate-up and 50/50',
+      gachaRatesSure: 'Rates while guaranteed (after losing a 50/50)',
+      gachaRatesEffective: 'Effective rates (long-run average of single summons, including pity and 50/50)',
+      gachaAlways: 'Permanent',
+      gachaSelectHead: 'Hero selector',
+      gachaSelectBtn: 'Pick',
+      gachaNoOpen: 'No banner is open right now.',
       tabDevice: 'Device',
       deviceMoveHead: 'Move to another device',
       deviceMoveInfo: 'Get a code and enter it in the game on your other device to move this character there. Afterwards, this device can no longer open this character. A code works once, for 10 minutes. Anyone you share it with can take your character, so keep it to yourself.',
@@ -417,7 +429,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       power: (n) => `Power ${num(n)}`,
       streak: (n) => `Day ${n} streak`,
       reward: (gold, exp, second) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
+      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)${a[2] ? ` · advanced ${a[1]} → ${a[2]}` : ''}` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
       potions: (n) => `Potions ${n}`,
       distance: (m) => `${m} m`,
       num: (n) => num(n),
@@ -499,6 +511,19 @@ export const enBase = (n: ContentNames): EngineLocale => {
       dungeonKeys: (n, cap) => `Keys ${n} / ${cap}`,
       dungeonKeyInfo: (refill, cap) => `One key per run. ${refill} key${refill === 1 ? '' : 's'} refill each day (up to ${cap}).`,
       dungeonKeyPrice: (cost, cur, left) => `${num(cost)} ${curName(cur)} · ${left} more today`,
+      sweepTimes: (n) => `Sweep ×${n}`,
+      sweepCost: (what, need, have) => (need > 0 ? `${num(need)} ${grantWhat(what)} each · you have ${num(have)}` : 'Free'),
+      sweepTitle: (kind, id, n) => `${kind === 'stage' ? `Stage ${id}` : dungeonName(id)} sweep ×${n}`,
+      sweepGot: (what, n) => `${grantWhat(what)} +${num(n)}`,
+      sweepGear: (n) => count(n, 'gear piece'),
+      sweepKeyCost: () => 'One key each',
+      gachaLeft: (min) => (min < 0 ? 'Permanent' : `${min >= 1440 ? `${Math.floor(min / 1440)}d ` : ''}${min >= 60 ? `${Math.floor((min % 1440) / 60)}h ` : ''}${min % 60}m left`),
+      gachaPickupRule: (hero, rarity, share) => `Rate-up: when a ${rarity} hero comes, it is ${hero} with ${share} probability (the ${rarity} rate itself is unchanged).`,
+      gachaFiftyRule: (hero, rarity) => `50/50: if a ${rarity} hero comes and it is not ${hero}, the next ${rarity} hero is guaranteed to be ${hero}. Getting ${hero} turns the guarantee off again.`,
+      gachaSureNow: (on, hero) => (on ? `Now: guaranteed (next rate-up rarity is ${hero})` : 'Now: not guaranteed (50/50)'),
+      gachaGroup: (names) => `Shared pity: pity count and guarantee are shared with ${names}.`,
+      gachaEffective: (hero, pct) => `${hero} effective rate ${pct}`,
+      gachaSelectHave: (item, n) => `${grantWhat(item)} ×${num(n)} · use one to get a hero of your choice below (shards if you already have it).`,
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -643,7 +668,6 @@ export const enBase = (n: ContentNames): EngineLocale => {
       heroAwaken: (a) => `${heroName(a[0])} awakened to step ${a[1]}!`,
       heroAwakenMax: (a) => `${heroName(a[0])} cannot awaken any further.`,
       heroAwakenStars: (a) => `${heroName(a[0])} needs ${a[1]} stars to awaken.`,
-      itemShort: (a) => `Not enough ${itemName(a[0])} (${num(a[1])} more needed).`,
       hgDrop: (a) => `Hero gear found: ${heroGearName(a[0])}.`,
       hgFull: (a) => `Hero gear is full, so ${heroGearName(a[0])} was left behind. Salvage some to make room.`,
       hgEnhance: (a) => (Number(a[2]) ? `${heroGearName(a[0])} enhanced to +${a[1]}!` : `${heroGearName(a[0])} enhance failed (stays at +${a[1]}).`),
@@ -656,6 +680,12 @@ export const enBase = (n: ContentNames): EngineLocale => {
       dungeonNoKeys: (a) => `No keys for ${dungeonName(a[0])}. They refill when the day changes.`,
       dungeonKeyBought: (a) => `Bought a key for ${dungeonName(a[0])} (${a[1]} now).`,
       dungeonKeyLimit: (a) => `No more keys for ${dungeonName(a[0])} can be bought today.`,
+      swept: (a) => `${a[0] === 'stage' ? `Stage ${a[1]}` : dungeonName(a[1])} swept ×${a[2]}`,
+      sweepLocked: (a) => `${a[0] === 'stage' ? `Stage ${a[1]}` : dungeonName(a[1])} can't be swept yet. Clear it first.`,
+      itemShort: (a) => `Not enough ${grantWhat(a[0])} (need ${num(a[1])}, have ${num(a[2])}).`,
+      stageAway: (a) => `While you were away: ${a[0]} → ${a[1]} (${count(a[2], 'stage')} cleared)`,
+      bannerClosed: (a) => `${bannerName(a[0])} is not open right now.`,
+      heroPicked: (a) => (Number(a[1]) ? `${heroName(a[0])}: already owned, +${num(a[2])} shards` : `You got ${heroName(a[0])}!`),
     },
     nameA: n.nameA,
     nameB: n.nameB,

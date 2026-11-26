@@ -5,17 +5,22 @@
 // 몬스터는 몰려온 적(swarm)으로 놓는다: 집으로 돌아가지 않고 죽으면 다시 나오지 않는다. 대상이 없으면 이 시스템이 사람이나 그 영웅을 노리게 한다.
 // 단계 안에서는 사람도 서버가 대신 싸운다 (STAGE_RULES.leaderAuto: 손으로 움직이면 1.5초 동안은 맡기지 않는다).
 // 방치 보상(idle 모듈)은 깬 단계의 수를 받는다 (g.idle.stageOf).
+// 소탕(STAGE_RULES.sweep): 깬 단계를 싸우지 않고 바로 끝내 보통 보상을 받는다 ({ t: 'stage', a: 'sweep', id, n }. 값은 소탕권이나 재화: systems/sweep.ts).
+// 오프라인 단계 진행(STAGE_RULES.offline): 돌아온 사람이 자동 진행을 켜 두었으면 편성의 전투력과 권장 전투력으로 '그동안 깼을 단계'를 셈해 앞으로 옮긴다 (offlinePlan).
 // 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
-import { MONSTERS, STAGE_RULES, STAGES, classOf, isMonsterId, isSkillId, skillDef, stageIndex, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
+import { MONSTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, classOf, isMonsterId, isSkillId, offlinePlan, skillDef, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, instanceLayer, isField } from '../layers';
+import { SWEEP_WHY, costCheck, costPay, costProblem, giveInto, sweepGot } from './sweep';
 import { CURS } from './wallet';
 
 /** 지갑과 가방에 넘기는 원인의 이름: 단계를 깬 보상 */
 export const STAGE_WHY = 'stage';
+/** 오프라인 단계 진행으로 깬 것으로 친 단계의 보상 */
+export const STAGE_AWAY_WHY = 'stageAway';
 
 interface Run {
   p: Ent; layer: number; stage: StageRef;
@@ -54,11 +59,18 @@ export class Stages {
     g.on('playerDied', (p) => { const r = this.runs.get(p.id); if (r && r.state !== 'fail') this.fail(r, 0); });
     g.on('playerDropped', (p) => this.leave(p, false));
     g.on('playerLeft', (id) => { const r = this.runs.get(id); if (r) this.end(r); });
+    // 오프라인 진행: 방치 보상(idle)이 있으면 그 셈 안에서(깬 단계로 토막을 나눠 보상을 셈한다), 없으면 접속할 때 따로. 둘 다 단계로 들어가기(enterOnJoin)보다 먼저다
+    if (STAGE_RULE_VIEW.offline) {
+      if (g.has('idle')) g.idle.advance = (p, ms) => this.offline(p, ms);
+      else g.on('playerJoined', (p) => { if (!p.bot) this.offline(p, p.offMs); });
+    }
     g.on('playerJoined', (p) => { if (STAGE_RULES.enterOnJoin && !p.bot && STAGES.length) this.start(p, this.curIndex(p)); });
     // 단계 안에서 쓰러지면 그 단계의 가운데에서 일어난다 (회차는 실패로 끝나고 잠시 뒤 다시 시작한다)
     const respawn = g.rules.respawn;
     g.rules.respawn = (p) => (this.runs.has(p.id) ? { x: STAGE_RULES.arena.x, z: STAGE_RULES.arena.z, id: 'stage' } : respawn(p));
     if (g.has('idle')) g.idle.stageOf = (p) => this.cleared(p);
+    const bad = costProblem(g, STAGE_RULE_VIEW.sweep?.cost, '[stages] STAGE_RULES.sweep');
+    if (bad) throw new Error(bad);
   }
 
   // ---------- 읽기 ----------
@@ -85,6 +97,7 @@ export class Stages {
     if (m.a === 'start') { if (!this.runs.has(p.id)) this.start(p, this.curIndex(p)); }
     else if (m.a === 'leave') this.leave(p, true);
     else if (m.a === 'auto') { p.stage.auto = m.on === true; p.unsaved = true; }
+    else if (m.a === 'sweep' && typeof m.id === 'string') this.sweep(p, m.id, m.n);
     else if (m.a === 'go' && typeof m.id === 'string') {
       const i = stageIndex(m.id);
       if (i < 0) return;
@@ -93,6 +106,53 @@ export class Stages {
       p.stage.cur = STAGES[i].id; p.unsaved = true;
       this.start(p, i);
     }
+  }
+
+  // ---------- 소탕 ----------
+  /**
+   * 깬 단계를 n번 소탕한다: 값(STAGE_RULES.sweep.cost × n)을 치르고 그 단계의 보통 보상(reward, 처음 깬 보상 first는 아니다)을 n번 바로 준다.
+   * 깨지 않았거나 소탕할 수 없는 단계, 1~max가 아닌 횟수는 받지 않는다. 진행 중인 회차와 지금 단계는 바뀌지 않는다. 받은 것의 합을 돌려준다 (안 되면 null)
+   */
+  sweep(p: Ent, id: string, n: unknown): ReturnType<typeof sweepGot> | null {
+    const g = this.g, rule = STAGE_RULE_VIEW.sweep, i = stageIndex(id), s = STAGES[i];
+    if (!rule || p.bot || !s) return null;
+    if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > sweepMax(rule)) return null;
+    if (!stageSweepable(s) || i > this.bestIndex(p)) { g.notify(p, 'sweepLocked', 'stage', id); return null; }
+    if (!costCheck(g, p, rule.cost, n) || !costPay(g, p, rule.cost, n, 'cmd:stage:sweep')) return null;
+    const got = sweepGot('stage', id, n);
+    for (let k = 0; k < n; k++) giveInto(g, p, s.def.reward, SWEEP_WHY, got);
+    p.unsaved = true;
+    g.notify(p, 'swept', 'stage', id, n);
+    g.out.push({ id: p.id, msg: { t: 'sweep', got } });
+    g.fire('swept', p, 'stage', id, n);
+    return got;
+  }
+
+  // ---------- 오프라인 진행 ----------
+  /**
+   * 돌아온 사람의 오프라인 진행 (STAGE_RULES.offline. 자동 진행을 켜 둔 사람만): ms 동안 깼을 단계를 셈해 가장 멀리 깬 단계와 지금 단계를 옮기고,
+   * 깬 것으로 친 단계마다 처음 깬 보상(first)과 보통 보상(clearReward)을 바로 준다(원인 stageAway). 깬 단계마다 사건 stageCleared(처음)도 난다.
+   * 비우기 시작할 때 깬 단계의 수와 단계마다의 깬 때(ms)를 돌려준다 (방치 보상의 토막: idle.ts)
+   */
+  offline(p: Ent, ms: number): { cleared: number; at: number[]; from: string; to: string } | null {
+    const g = this.g, rules = STAGE_RULE_VIEW.offline;
+    if (!rules || p.bot || !p.stage.auto || !STAGES.length) return null;
+    const best = this.bestIndex(p), power = g.has('squad') ? g.squad.power(p) : 0;
+    const plan = offlinePlan(best, power, ms, rules);
+    if (!plan.passed.length) return { cleared: best + 1, at: [], from: '', to: '' };
+    const from = STAGES[this.curIndex(p)].id;
+    for (const i of plan.passed) {
+      const s = STAGES[i];
+      if (rules.clearReward !== false) this.give(p, s.def.reward, STAGE_AWAY_WHY);
+      if (s.def.first) this.give(p, s.def.first, STAGE_AWAY_WHY);
+      p.stage.best = s.id;
+      g.fire('stageCleared', p, s.id, true);
+    }
+    const last = plan.passed[plan.passed.length - 1];
+    p.stage.cur = STAGES[Math.min(STAGES.length - 1, last + 1)].id;
+    p.unsaved = true;
+    g.notify(p, 'stageAway', from, p.stage.cur, plan.passed.length);
+    return { cleared: best + 1, at: plan.at, from, to: p.stage.cur };
   }
 
   // ---------- 회차 ----------
@@ -188,11 +248,11 @@ export class Stages {
   }
 
   /** 보상을 바로 준다: 재화는 지갑, 재료·물약은 가방(아이템 모듈이 있으면), 장비는 장비 모듈이 있으면 */
-  private give(p: Ent, rw: Reward): void {
+  private give(p: Ent, rw: Reward, why = STAGE_WHY): void {
     const g = this.g;
-    if (g.has('economy')) for (const cur of CURS) { const n = rw[cur]; if (n) g.wallet.add(p, cur, n, STAGE_WHY); }
-    if (g.has('items')) for (const [id, n] of Object.entries(rw.items ?? {})) g.bag.putItem(p, id as Parameters<typeof g.bag.putItem>[1], n, STAGE_WHY);
-    if (g.has('gear')) for (const it of rw.gear ?? []) g.gear.give(p, it, STAGE_WHY);
+    if (g.has('economy')) for (const cur of CURS) { const n = rw[cur]; if (n) g.wallet.add(p, cur, n, why); }
+    if (g.has('items')) for (const [id, n] of Object.entries(rw.items ?? {})) g.bag.putItem(p, id as Parameters<typeof g.bag.putItem>[1], n, why);
+    if (g.has('gear')) for (const it of rw.gear ?? []) g.gear.give(p, it, why);
   }
 
   /** 회차의 몬스터를 치운다 */

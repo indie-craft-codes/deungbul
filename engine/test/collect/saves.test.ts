@@ -79,3 +79,45 @@ const quiet = () => new Game({ plugins: [] });
   check(p.heroes.dawnpriest.lv === 4 && p.heroes.dawnpriest.shards === 6 && p.stage.cur === '1-2' && p.gold === 77 && typeof out.v === 'number' && out.v >= 1,
     `버전 칸이 없는 저장도 틀의 이전(PLAYER_UP)을 지나 읽히고, 쓸 때는 지금 버전(v ${out.v})을 적는다`);
 }
+
+// ---------- 픽업 배너·소탕·오프라인 진행의 저장 (칸을 더하기만 했다: 이전 없이 옛 저장이 그대로 읽히고, 옛 서버가 새 저장을 읽어도 모르는 칸은 무시한다) ----------
+{
+  const FROM = Date.UTC(2026, 10, 21);
+  const g = new Game({ now: () => FROM, plugins: [] });
+  const p = g.players.spawn('픽업 저장', false, null, 'sv-5');
+  g.stages.leave(p, false);
+  g.wallet.add(p, 'sparks', 1e6, '');
+  g.gacha.rng = () => 0;
+  for (let i = 0; i < 60; i++) g.gacha.draw(p, 'starfall', 1); // 60번째에 반반을 진다 → 확정
+  for (let i = 0; i < 7; i++) g.gacha.draw(p, 'starfall', 1);
+  for (let i = 0; i < 3; i++) g.gacha.draw(p, 'dawn', 1);
+  g.bag.putItem(p, 'sweepticket', 4, ''); g.bag.putItem(p, 'herochoice', 1, '');
+  const save = g.players.export(p);
+  const ga = save.ext?.gacha as { pity: Record<string, number>; sure?: Record<string, number> };
+  check(ga.pity['group:limited'] === 7 && ga.pity.dawn === 3 && !('starfall' in ga.pity) && ga.sure?.['group:limited'] === 1, `뽑기의 저장: 천장 무리는 'group:limited'에, 확정은 sure에 (${JSON.stringify(ga.pity)}, ${JSON.stringify(ga.sure)})`);
+  const h = new Game({ now: () => FROM, plugins: [] });
+  const q = h.players.spawn('픽업 저장', false, structuredClone(save), 'sv-5');
+  check(h.gacha.pityOf(q, 'stormcall') === 7 && h.gacha.sureOf(q, 'stormcall') && h.gacha.pityOf(q, 'dawn') === 3 && q.items.sweepticket === 4 && q.items.herochoice === 1, '다시 읽으면 천장 무리의 셈과 확정, 소탕권과 선택권이 같다');
+  check(JSON.stringify(h.players.export(q).ext?.gacha) === JSON.stringify(save.ext?.gacha), '읽고 다시 적은 뽑기의 칸이 글자까지 같다');
+  // 확정이 없으면 예전 모양 그대로 (sure 칸이 없다)
+  const r = g.players.spawn('예전 모양', false, null, 'sv-6');
+  g.stages.leave(r, false);
+  g.wallet.add(r, 'sparks', 1000, ''); g.gacha.draw(r, 'dawn', 1);
+  check(!('sure' in (g.players.export(r).ext?.gacha as object)), '확정이 없는 사람의 뽑기 저장에는 sure 칸이 없다 (예전과 같은 모양)');
+}
+
+// ---------- 옛 저장: 무리에 들기 전의 셈(배너 id), 깨진 확정, 끝낸 적 ----------
+{
+  const g = new Game({ now: () => Date.UTC(2026, 10, 21), plugins: [] });
+  const old = { name: '옛 픽업', v: 1, ext: { gacha: { pity: { starfall: 12, dawn: 4 }, log: [] }, keys: { goldmine: [1, 0, '2026-11-21'] } } };
+  const p = g.players.spawn('옛 픽업', false, structuredClone(old) as never, 'sv-7');
+  check(g.gacha.pityOf(p, 'starfall') === 12 && g.gacha.pityOf(p, 'stormcall') === 12 && !('starfall' in p.pity) && g.gacha.pityOf(p, 'dawn') === 4, '배너 id에 적힌 예전 셈(starfall 12)은 그 배너의 천장 무리로 옮겨 읽는다');
+  check(!g.dungeon.won(p, 'goldmine') && JSON.stringify((g.players.export(p).ext?.keys as Record<string, unknown>).goldmine) === '[1,0,"2026-11-21"]', '끝낸 적이 없는 열쇠의 저장은 예전처럼 셋 (넷째 칸이 없다)');
+  const both = { name: '둘 다', v: 1, ext: { gacha: { pity: { starfall: 12, 'group:limited': 30 }, log: [] } } };
+  const q = g.players.spawn('둘 다', false, structuredClone(both) as never, 'sv-8');
+  check(g.gacha.pityOf(q, 'starfall') === 30, '무리의 셈이 이미 있으면 그것을 쓴다');
+  const bad = { name: '깨진 픽업', v: 1, ext: { gacha: { pity: { 'group:limited': 9999, 'group:nope': 3 }, log: [], sure: { 'group:limited': 'x', 'group:nope': 1, dawn: 1 } }, keys: { goldmine: [1, 0, '', 'x'] } } };
+  const r = g.players.spawn('깨진 픽업', false, structuredClone(bad) as never, 'sv-9');
+  check(g.gacha.pityOf(r, 'starfall') === 59 && !('group:nope' in r.pity) && !g.gacha.sureOf(r, 'starfall') && !('sure' in (g.players.export(r).ext?.gacha as object)) && !g.dungeon.won(r, 'goldmine'),
+    `깨진 값: 셈은 after-1까지, 없는 무리와 1이 아닌 확정, 반반이 없는 배너(dawn)의 확정, 1이 아닌 끝낸 적은 버린다 (${JSON.stringify(r.pity)})`);
+}

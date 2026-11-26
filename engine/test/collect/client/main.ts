@@ -9,7 +9,7 @@ import { setMenuTabs, startClient } from '@engine/client';
 
 const koNames = withIdNames({
   monsters: { slime: '풀슬라임', wolf: '들늑대', goblin: '고블린', archer: '고블린 궁수', ogre: '들판의 오우거', golem: '능선 골렘', coinbug: '동전벌레', hoarder: '금광 수전노' },
-  items: { oakblade: { name: '참나무 검' }, skillbook: { name: '기술서' }, awakenstone: { name: '각성석' }, gearstone: { name: '강화석' } },
+  items: { oakblade: { name: '참나무 검' }, skillbook: { name: '기술서' }, awakenstone: { name: '각성석' }, gearstone: { name: '강화석' }, sweepticket: { name: '소탕권' }, herochoice: { name: '전설 영웅 선택권' } },
   classes: { captain: { name: '대장', info: '영웅들을 이끄는 대장입니다.' } },
   skills: { slash: { name: '베기', info: '' }, sweep: { name: '휩쓸기', info: '' }, rally: { name: '진군의 함성', info: '' }, shieldbash: { name: '방패 치기', info: '' }, volley: { name: '화살 비', info: '' }, blaze: { name: '불꽃', info: '' }, prayer: { name: '기도', info: '' } },
   dungeons: { goldmine: { name: '금광', info: '동전벌레를 잡고 수전노를 쓰러뜨리면 골드를 많이 받습니다.' } },
@@ -19,7 +19,7 @@ const koNames = withIdNames({
 });
 const enNames = withIdNames({
   monsters: { slime: 'Grass Slime', wolf: 'Field Wolf', goblin: 'Goblin', archer: 'Goblin Archer', ogre: 'Meadow Ogre', golem: 'Ridge Golem', coinbug: 'Coin Bug', hoarder: 'Mine Hoarder' },
-  items: { oakblade: { name: 'Oak Blade' }, skillbook: { name: 'Skill Tome' }, awakenstone: { name: 'Awakening Stone' }, gearstone: { name: 'Forge Stone' } },
+  items: { oakblade: { name: 'Oak Blade' }, skillbook: { name: 'Skill Tome' }, awakenstone: { name: 'Awakening Stone' }, gearstone: { name: 'Forge Stone' }, sweepticket: { name: 'Sweep Ticket' }, herochoice: { name: 'Legend Selector' } },
   classes: { captain: { name: 'Captain', info: 'Leads the heroes.' } },
   skills: { slash: { name: 'Slash', info: '' }, sweep: { name: 'Sweep', info: '' }, rally: { name: 'Rally', info: '' }, shieldbash: { name: 'Shield Bash', info: '' }, volley: { name: 'Volley', info: '' }, blaze: { name: 'Blaze', info: '' }, prayer: { name: 'Prayer', info: '' } },
   dungeons: { goldmine: { name: 'Gold Mine', info: 'Beat the coin bugs and the hoarder for lots of gold.' } },
@@ -32,7 +32,7 @@ const koUi = {
   title: '영웅 들판',
   heroIronwall: '철벽', heroSwiftarrow: '날쌘활', heroCinderwitch: '잿불 마녀', heroDawnpriest: '새벽 사제', heroStormblade: '폭풍검', heroStarseer: '별읽는이',
   roleGuard: '수호', roleBowman: '궁수', rolePyro: '불 마법', roleCleric: '치유',
-  bannerDawn: '새벽의 부름', chapterMeadow: '풀밭', chapterRidge: '바람 능선',
+  bannerDawn: '새벽의 부름', bannerStarfall: '별똥별의 밤', bannerStormcall: '폭풍의 부름', chapterMeadow: '풀밭', chapterRidge: '바람 능선',
   // 영웅의 성장: 장비의 칸·이름·세트, 진영의 시너지, 각성의 패시브
   hgSlotWeapon: '무기', hgSlotArmor: '갑옷', hgSlotHelm: '투구', hgSlotCharm: '장신구',
   hgBronzeblade: '청동 검', hgLeathercoat: '가죽 외투', hgLeathercap: '가죽 모자', hgWoodcharm: '나무 부적',
@@ -47,7 +47,7 @@ const enUi = {
   title: 'Hero Heath',
   heroIronwall: 'Ironwall', heroSwiftarrow: 'Swiftarrow', heroCinderwitch: 'Cinder Witch', heroDawnpriest: 'Dawn Priest', heroStormblade: 'Stormblade', heroStarseer: 'Starseer',
   roleGuard: 'Guard', roleBowman: 'Bowman', rolePyro: 'Pyromancer', roleCleric: 'Cleric',
-  bannerDawn: 'Call of Dawn', chapterMeadow: 'Meadow', chapterRidge: 'Windy Ridge',
+  bannerDawn: 'Call of Dawn', bannerStarfall: 'Night of Falling Stars', bannerStormcall: 'Call of the Storm', chapterMeadow: 'Meadow', chapterRidge: 'Windy Ridge',
   hgSlotWeapon: 'Weapon', hgSlotArmor: 'Armor', hgSlotHelm: 'Helm', hgSlotCharm: 'Charm',
   hgBronzeblade: 'Bronze Blade', hgLeathercoat: 'Leather Coat', hgLeathercap: 'Leather Cap', hgWoodcharm: 'Wooden Charm',
   hgVgblade: 'Vanguard Blade', hgVgplate: 'Vanguard Plate', hgVghelm: 'Vanguard Helm', hgVgcharm: 'Vanguard Crest',

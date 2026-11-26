@@ -4,7 +4,7 @@
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, HeroBonus, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, HERO_TABLE, heroGearDef, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
+import { BANNER_TABLE, BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, HERO_TABLE, heroGearDef, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
@@ -66,6 +66,8 @@ export const heroName = (id: MsgArg): string => { const d = HERO_TABLE[String(id
 export const heroGearName = (id: MsgArg): string => { const d = heroGearDef(String(id)); return d ? uiText.get(d.name) : String(id); };
 /** 등급의 이름 (HeroRarityDef.name 키: 틀의 기본 등급은 heroRarity0~2) */
 export const rarityName = (r: MsgArg): string => uiText.get(rarityDef(Number(r)).name);
+/** 배너의 이름 (BannerDef.name 키). 없는 배너는 id 그대로 */
+export const bannerName = (id: MsgArg): string => { const b = BANNER_TABLE[String(id)]; return b ? uiText.get(b.name) : String(id); };
 /** 장의 이름 (ChapterDef.name 키). 없는 장은 빈 문자열 */
 export const chapterName = (ch: number): string => { const c = CHAPTERS[ch]; return c ? uiText.get(c.name) : ''; };
 /** 큰 수에 자릿수 구분을 넣는다 (1,000,000). 골드와 값은 모두 이것을 거친다 */
@@ -207,6 +209,19 @@ export const koBase = (n: ContentNames) => {
       stageClearBig: '단계 깸!',
       stageFailBig: '실패: 깬 단계로 돌아갑니다',
       dungeonKeyBuy: '열쇠 사기',
+      // 소탕·오프라인 진행·픽업 배너·선택권 (hud/sweep.ts, hud/stagebar.ts, hud/dungeon.ts, hud/collect.ts)
+      sweepHead: '소탕',
+      sweepInfo: '이미 깬 곳을 싸우지 않고 바로 끝내 보통 보상을 받습니다 (처음 깬 보상은 없습니다).',
+      sweepResult: '소탕 결과',
+      sweepDungeons: '던전 소탕',
+      gachaPickup: '픽업',
+      gachaRatesPickup: '픽업과 반반',
+      gachaRatesSure: '확정일 때의 확률 (반반에서 진 다음)',
+      gachaRatesEffective: '실효 확률 (1번 뽑기를 오래 되풀이할 때의 평균: 천장과 반반을 넣은 것)',
+      gachaAlways: '상시',
+      gachaSelectHead: '영웅 선택권',
+      gachaSelectBtn: '고르기',
+      gachaNoOpen: '지금 열린 배너가 없습니다.',
       tabDevice: '기기',
       deviceMoveHead: '다른 기기로 옮기기',
       deviceMoveInfo: '코드를 받아 다른 기기의 게임에 넣으면 이 캐릭터가 그 기기로 옮겨 갑니다. 옮긴 뒤에는 이 기기에서 이 캐릭터로 들어올 수 없습니다. 코드는 10분 동안 한 번만 쓸 수 있습니다. 남에게 알려 주면 그 사람이 캐릭터를 가져가니 조심하세요.',
@@ -451,7 +466,7 @@ export const koBase = (n: ContentNames) => {
       power: (n: number) => `전투력 ${num(n)}`,
       streak: (n: number) => `출석 ${n}일째`,
       reward: (gold: number, exp: number, second: number) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : String(k)),
+      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : String(k)),
       status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
       itemDamage: (pct: number) => `공격 피해 +${pct}%`,
       itemGuard: (pct: number) => `받는 피해 -${pct}%`,
@@ -551,6 +566,19 @@ export const koBase = (n: ContentNames) => {
       dungeonKeys: (n: number, cap: number) => `열쇠 ${n} / ${cap}`,
       dungeonKeyInfo: (refill: number, cap: number) => `열쇠 하나로 한 번 들어갑니다. 날마다 ${refill}개씩 채워집니다 (${cap}개까지).`,
       dungeonKeyPrice: (cost: number, cur: string, left: number) => `${curName(cur)} ${num(cost)} · 오늘 ${left}번 더`,
+      sweepTimes: (n: number) => `소탕 ×${n}`,
+      sweepCost: (what: string, need: number, have: number) => (need > 0 ? `한 번에 ${grantWhat(what)} ${num(need)} · 가진 것 ${num(have)}` : '값 없음'),
+      sweepTitle: (kind: string, id: string, n: number) => `${kind === 'stage' ? id : dungeonName(id)} 소탕 ×${n}`,
+      sweepGot: (what: string, n: number) => `${grantWhat(what)} +${num(n)}`,
+      sweepGear: (n: number) => `장비 ${num(n)}점`,
+      sweepKeyCost: () => '한 번에 열쇠 하나',
+      gachaLeft: (min: number) => (min < 0 ? '상시' : `남은 시간 ${min >= 1440 ? `${Math.floor(min / 1440)}일 ` : ''}${min >= 60 ? `${Math.floor((min % 1440) / 60)}시간 ` : ''}${min % 60}분`),
+      gachaPickupRule: (hero: string, rarity: string, share: string) => `픽업: ${rarity} 영웅이 나오면 ${share}의 확률로 ${hero}입니다 (${rarity}의 확률은 그대로).`,
+      gachaFiftyRule: (hero: string, rarity: string) => `반반: ${rarity} 영웅이 나왔는데 ${josa(hero, '이', '가')} 아니면, 다음에 나오는 ${rarity} 영웅은 ${hero} 확정입니다. ${josa(hero, '이', '가')} 나오면 확정은 다시 꺼집니다.`,
+      gachaSureNow: (on: boolean, hero: string) => (on ? `지금: 확정 켜짐 (다음 픽업 등급은 ${hero})` : '지금: 확정 꺼짐 (반반)'),
+      gachaGroup: (names: string) => `천장 공유: ${josa(names, '과', '와')} 천장의 셈과 확정을 함께 씁니다.`,
+      gachaEffective: (hero: string, pct: string) => `${hero}의 실효 확률 ${pct}`,
+      gachaSelectHave: (item: string, n: number) => `${grantWhat(item)} ${num(n)}개 · 하나를 쓰고 아래 영웅 가운데 하나를 얻습니다 (가진 영웅이면 조각).`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -697,7 +725,6 @@ export const koBase = (n: ContentNames) => {
       heroAwaken: (a) => `${heroName(a[0])} 각성 ${a[1]}단계!`,
       heroAwakenMax: (a) => `${heroName(a[0])}: 더 각성할 수 없습니다.`,
       heroAwakenStars: (a) => `${heroName(a[0])}: 별 ${a[1]}개가 되어야 각성합니다.`,
-      itemShort: (a) => `${josa(itemName(a[0]), '이', '가')} ${num(a[1])}개 모자랍니다.`,
       hgDrop: (a) => `영웅 장비 ${josa(heroGearName(a[0]), '을', '를')} 얻었습니다.`,
       hgFull: (a) => `영웅 장비가 가득 차 ${josa(heroGearName(a[0]), '을', '를')} 줍지 못했습니다. 분해해서 자리를 비우세요.`,
       hgEnhance: (a) => (Number(a[2]) ? `${heroGearName(a[0])} +${a[1]} 강화 성공!` : `${heroGearName(a[0])} 강화 실패 (+${a[1]} 그대로)`),
@@ -710,6 +737,12 @@ export const koBase = (n: ContentNames) => {
       dungeonNoKeys: (a) => `${dungeonName(a[0])}의 열쇠가 없습니다. 날이 바뀌면 채워집니다.`,
       dungeonKeyBought: (a) => `${dungeonName(a[0])}의 열쇠를 샀습니다 (${a[1]}개).`,
       dungeonKeyLimit: (a) => `${dungeonName(a[0])}의 열쇠는 오늘 더 살 수 없습니다.`,
+      swept: (a) => `${a[0] === 'stage' ? a[1] : dungeonName(a[1])} 소탕 ×${a[2]} 완료`,
+      sweepLocked: (a) => `${a[0] === 'stage' ? a[1] : dungeonName(a[1])}은(는) 아직 소탕할 수 없습니다. 먼저 깨세요.`,
+      itemShort: (a) => `${josa(grantWhat(a[0]), '이', '가')} 모자랍니다 (필요 ${num(a[1])}, 가진 것 ${num(a[2])}).`,
+      stageAway: (a) => `자리를 비운 동안 ${a[0]} → ${a[1]}까지 진행 (${a[2]}단계 깸)`,
+      bannerClosed: (a) => `${josa(bannerName(a[0]), '은', '는')} 지금 열려 있지 않습니다.`,
+      heroPicked: (a) => (Number(a[1]) ? `${heroName(a[0])}: 이미 있어 조각 +${num(a[2])}` : `${josa(heroName(a[0]), '을', '를')} 얻었습니다!`),
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

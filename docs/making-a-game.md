@@ -1326,7 +1326,7 @@ startClient({});
 
 ## 13. 수집형·방치형 RPG 만들기
 
-"○○ 키우기"(세븐나이츠 키우기, 버섯커 키우기 같은 것)처럼 **동료(영웅)를 뽑아 모으고, 키우고, 편성해 자동으로 싸우며 단계를 차례로 깨고, 접속하지 않은 동안에도 보상이 쌓이는** 게임은 선택 모듈 넷과 던전의 열쇠로 만든다. 본보기는 틀 안의 시험용 내용 "영웅 들판"(`engine/test/collect/`: 영웅 여섯, 배너 하나, 장 둘 × 단계 다섯, 열쇠 던전 하나)이다. 운영하는 게임이 아니라 이 절의 모든 칸을 쓰는 가장 작은 본보기이고, 시험과 화면을 함께 쓴다.
+"○○ 키우기"(세븐나이츠 키우기, 버섯커 키우기 같은 것)처럼 **동료(영웅)를 뽑아 모으고, 키우고, 편성해 자동으로 싸우며 단계를 차례로 깨고, 접속하지 않은 동안에도 보상이 쌓이는** 게임은 선택 모듈 넷과 던전의 열쇠로 만든다. 본보기는 틀 안의 시험용 내용 "영웅 들판"(`engine/test/collect/`: 영웅 여섯, 상시 배너 하나와 기간 한정 픽업 배너 둘, 영웅 선택권, 장 둘 × 단계 다섯(소탕·오프라인 진행), 열쇠 던전 하나(소탕))이다. 운영하는 게임이 아니라 이 절의 모든 칸을 쓰는 가장 작은 본보기이고, 시험과 화면을 함께 쓴다.
 
 | 모듈 | 무엇 | 의존 | 서버 | 화면 |
 |---|---|---|---|---|
@@ -1336,6 +1336,13 @@ startClient({});
 | `stages` | 장과 단계(1-1, 1-2 …), 물결과 우두머리, 깨면 다음 단계로, 실패하면 깬 단계로. 방치 보상이 깬 단계로 커진다 | combat | `g.stages` | 가운데 위의 단계 막대, 메뉴의 '단계' 탭 |
 | (던전의 열쇠) | 던전마다 입장 열쇠: 날마다 채움, 상한, 재화로 사기 | (`dungeon`) | `g.dungeon` | 던전 창의 열쇠 줄 |
 | `herogear` | 영웅 장비: 칸, 끼기·강화·분해, 세트, 단계·던전에서 떨어짐 (아래 '영웅의 성장') | roster, items, economy | `g.herogear` | 메뉴의 '영웅 장비' 탭, 영웅 상세의 장비 탭 |
+| (소탕) | 깬 단계·끝낸 열쇠 던전을 싸우지 않고 n번 끝내 보통 보상 (소탕권·재화·열쇠) | `stages`, `dungeon`의 선택 칸 | `g.stages.sweep`, `g.dungeon.sweep` | '단계' 탭과 던전 창의 '소탕 ×n', 결과 창 |
+| (오프라인 진행) | 접속하지 않은 동안 편성의 전투력으로 단계가 나아간다 | `stages`의 선택 칸 | `g.stages.offline` | 돌아왔을 때의 가운데 알림, 방치 우편의 제목 |
+| (픽업·선택권) | 픽업(확률 업)·반반·천장 공유·기간 한정 배너, 영웅 선택권 | `gacha`의 선택 칸 | `g.gacha` | '뽑기' 탭(픽업, 남은 기간, 확률표), 선택권의 줄 |
+
+```ts engine/test/collect/shared/content/index.ts
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'dungeon', 'roster', 'gacha', 'squad', 'stages', 'herogear'];
+```
 
 - 넷은 `RPG_MODULES`에 들지 않는다(`COLLECT_MODULES`로 따로 있다): `MODULES = RPG_MODULES`인 게임(등불지기)은 저절로 뽑기나 단계를 갖지 않는다. 고르지 않으면 서버의 시스템·명령·저장 칸·개인 상태, 엔티티의 칸(`heroes`, `pity`, `pulls`, `squad`, `stage`), 엔티티 종류 `hero`, 화면의 탭·막대가 모두 없다.
 - 이끄는 사람(플레이어)은 그대로 직업 하나를 가진 캐릭터다(`classes`·`combat`). 단계 안에서는 서버가 사람도 대신 싸운다(`STAGE_RULES.leaderAuto`). 사람을 숨기고 영웅만 싸우게 하는 길은 없다(아래 '남은 것').
@@ -1379,6 +1386,7 @@ export const BANNERS: Readonly<Record<string, BannerDef>> = {
     pity: { after: 50, rarity: 2 },
     tenAtLeast: 1,
   },
+  …
 };
 ```
 
@@ -1416,14 +1424,18 @@ const stage = (ch: number, n: number): StageDef => {
     reward: { gold: 40 + k * 20, exp: 30 + k * 15, sparks: 30 + k * 5, items: { gearstone: 2 + ch, skillbook: 1 } },
     first: { sparks: 100, ...(n === 4 ? { items: { awakenstone: 1 } } : {}) },
     rec: Math.round(250 * scale * (n === 4 ? 1.6 : 1)),
+    …
   };
 };
 export const CHAPTERS: readonly ChapterDef[] = [
   { name: 'chapterMeadow', stages: [0, 1, 2, 3, 4].map((n) => stage(0, n)) },
   { name: 'chapterRidge', stages: [0, 1, 2, 3, 4].map((n) => stage(1, n)) },
 ];
-/** 단계는 들판 가운데(0, 10)에서. 접속하면 바로 지금 단계로 들어간다 (방치형) */
-export const STAGE_RULES = { arena: { x: 0, z: 10 }, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: true };
+…
+export const STAGE_RULES: StageRules = {
+  arena: { x: 0, z: 10 }, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: true,
+  …
+};
 ```
 
 - `CHAPTERS`: 장마다 `{ name: 문장 키, stages }`. 단계의 id는 '장 번호-단계 번호'(1부터: `1-1` … `2-5`)이고 저장과 줄 위에서 이 id로 오간다(단계를 사이에 끼워 넣으면 뒤의 id가 밀린다: 뒤에 더한다).
@@ -1453,6 +1465,7 @@ export const IDLE = {
 
 - `DungeonDef.key`가 있는 던전은 하루 횟수(`perDay`) 대신 **열쇠 하나**를 쓰고 들어간다. 날이 바뀌면 `refill`개가 더해지되 `cap`을 넘지 않는다(며칠 비웠어도 `cap`까지. 산 것으로 `cap` 위에 있으면 그대로). 처음 온 사람은 `min(refill, cap)`개. `buy`가 있으면 그 재화로 하나씩 산다(하루 `perDay`번, 명령 `{ t: 'dungeonKey', id }`, 원인 `cmd:dungeonKey`. 안내문 `dungeonKeyBought`·`dungeonKeyLimit`·`costShort`). 열쇠가 없으면 `dungeonNoKeys`. 보상·이벤트로 주려면 `g.dungeon.giveKeys(p, id, n)`, 읽기는 `g.dungeon.keyCount(p, id)`.
 - `DungeonDef.gear: false`는 끝낼 때 장비를 주지 않는다(골드 던전, 재료 던전: `reward`의 골드·재료만 우편으로).
+- 열쇠의 저장 넷째 칸 `1`은 '이 던전을 끝낸 적이 있다'(소탕의 조건)이다. 끝낸 적이 없으면 예전처럼 셋이다.
 - 열쇠를 쓰는 던전이 하나도 없는 게임(등불지기: `perDay`만)에는 열쇠의 저장 칸·개인 상태·명령이 **생기지 않는다**: 예전과 글자까지 같다. 하루 3번(`perDay: 3`)은 `refill: 3, cap: 3`의 열쇠와 같은 셈이다(쓰지 않은 것이 쌓이지 않는다).
 - 줄 위: 개인 상태 `keys`(`{ 던전: { n, bought } }`), 저장 `ext.keys`(`{ 던전: [가진 수, 오늘 산 수, 날] }`). 화면: 문 앞의 던전 창이 '열쇠 n / cap', 채워지는 규칙, 값과 오늘 남은 사기 수, '열쇠 사기' 단추를 보인다.
 - 던전 모듈은 파티 모듈 없이도 돈다(파티가 없으면 파티원도 없다).
@@ -1570,12 +1583,78 @@ export const SQUAD_RULES: SquadRules = {
   // 영웅의 성장: 장비의 칸·이름·세트, 진영의 시너지, 각성의 패시브
   hgSlotWeapon: '무기', hgSlotArmor: '갑옷', hgSlotHelm: '투구', hgSlotCharm: '장신구',
 ```
+### 소탕 (`stages`·`dungeon`의 선택 칸)
+
+깬 단계, 또는 한 번이라도 끝낸 열쇠 던전을 **싸우지 않고 바로** n번 끝내 그 곳의 **보통 보상**(처음 깬 보상이 아니다)을 받는다. 값은 한 번마다 소탕권(가방의 아이템)이나 게임 안의 재화. 열쇠 던전은 열쇠도 한 번에 하나씩 쓴다.
+
+```ts engine/test/collect/shared/content/index.ts
+  sweepticket: { kind: 'token', price: 0, max: 999 },
+…
+    ...(ch === 1 && n === 4 ? { sweep: false } : {}),
+…
+  sweep: { cost: { item: 'sweepticket', n: 1 }, max: 10 },
+…
+    // 한 번이라도 끝냈으면 열쇠 하나로 소탕 (한 번에 다섯까지)
+    sweep: { max: 5 },
+```
+
+| 칸 | 모양 (`@engine/shared/defs/collect`) | 기본 |
+|---|---|---|
+| `STAGE_RULES.sweep` | `SweepRule`: `{ cost?: { item: 아이템 id, n } \| { cur: 'gold' \| 'sparks', n }, max?: 한 번에 하는 수 }` | 없다 (소탕이 없다) |
+| `StageDef.sweep` | `false`면 그 단계는 소탕하지 않는다 | 깬 단계는 모두 |
+| `DungeonDef.sweep` | `SweepRule`. 열쇠(`key`)가 있는 던전만. `cost`는 열쇠에 더해 치르는 값 | 없다 |
+
+- 명령: `{ t: 'stage', a: 'sweep', id: 단계 id, n }`, `{ t: 'dungeonSweep', id: 던전 id, n }`. `n`은 1~`max`(기본 10)의 정수. 깨지 않은 단계·끝낸 적이 없는 던전·`sweep: false`는 안내문 `sweepLocked`, 값이 모자라면 `itemShort`(`[무엇, 드는 수, 가진 수]`), 열쇠가 모자라면 `dungeonNoKeys`: 모두 아무것도 바뀌지 않는다(한꺼번에 되거나 하나도 안 된다).
+- 값은 `g.bag.takeItem`/`g.wallet.take`(원인 `cmd:stage:sweep`, `cmd:dungeonSweep`), 보상은 우편이 아니라 지갑·가방·장비로 **바로**(원인 `sweep`). 결과는 본인에게 메시지 `{ t: 'sweep', got: { k, id, n, cur, goods, equip } }`(받은 재화·아이템·장비 수의 합), 안내문 `swept`, 사건 `swept(p, 'stage' | 'dungeon', id, n)`. 진행 중인 단계와 지금 단계는 바뀌지 않는다.
+- 서버에서: `g.stages.sweep(p, id, n)`, `g.dungeon.sweep(p, id, n)`(받은 것의 합, 안 되면 `null`), `g.dungeon.won(p, id)`. 값과 보상의 도우미는 `engine/server/game/systems/sweep.ts`.
+- 화면: '단계' 탭의 깬 단계마다 '소탕 ×1'·'소탕 ×n'(n은 지금 할 수 있는 만큼, 상한까지. 할 수 없으면 잠긴다), 탭 위에 값과 가진 수, 탭 끝에 '던전 소탕'의 줄(열쇠·값·잠김). 문 앞의 던전 창에도 끝낸 적이 있으면 소탕의 줄. 누르면 결과 창(받은 것). 셈은 `sweepView`(`hud/collectcalc.ts`).
+
+### 오프라인 단계 진행 (`stages`의 선택 칸)
+
+자동 진행을 켜 둔 채 나간 사람이 돌아오면, 서버가 '그동안 얼마나 더 깼을까'를 셈해 단계를 앞으로 옮긴다. 기본은 꺼져 있다(예전처럼 방치 보상의 수치만 깬 단계로 커진다).
+
+```ts engine/test/collect/shared/content/index.ts
+  offline: { perStageS: 600, maxH: 12, maxStages: 20 },
+```
+
+- `STAGE_RULES.offline`: `{ perStageS: 한 단계에 드는 초, maxH: 셈하는 시간의 상한(시간), maxStages: 한 번 돌아올 때 나아가는 단계의 상한, need?: 권장 전투력에 곱하는 수(기본 1), clearReward?: 깬 단계의 보통 보상도 주는가(기본 true) }`.
+- 셈(`offlinePlan(가장 멀리 깬 번호, 편성의 전투력, 비운 ms, 규칙)`, 서버·시험·화면이 같은 함수): 가장 멀리 깬 단계의 다음부터, `편성의 전투력 ≥ 권장 전투력(rec) × need`인 단계를 `perStageS`초에 하나씩. 전투력이 모자란 단계에서 멈춘다. 비운 시간은 `maxH`까지(시계가 거꾸로 갔거나 깨진 시각이면 0, 아주 큰 틈은 상한), 단계는 `maxStages`와 마지막 단계까지. 시계는 서버의 것(`g.now`)이라 시험은 `new Game({ now })`로 정한다.
+- 돌아오면: 가장 멀리 깬 단계와 지금 단계를 옮기고, 깬 것으로 친 단계마다 처음 깬 보상(`first`)과 보통 보상을 바로 준다(원인 `stageAway`), 사건 `stageCleared(p, id, true)`, 안내문 `stageAway`(`[처음 단계, 지금 단계, 깬 수]`: 화면의 가운데 알림 '자리를 비운 동안 1-4 → 2-3까지 진행 (4단계 깸)'). 자동 진행을 끈 사람(실패했거나 파밍 중)은 나아가지 않는다.
+- 방치 보상(`idle` 모듈)은 비운 분을 **깬 단계의 수가 같은 토막**으로 나눠 토막마다 `IDLE.reward(분, 레벨, { stage })`를 부르고 더한다(`idleSegments`). 진행이 없으면 한 토막이라 예전과 같다. 방치 우편의 제목 값은 `[분, 처음 단계, 지금 단계]`(진행이 없으면 예전처럼 `[분]`): '쉬는 동안 모인 것 (45분) · 1-4 → 2-3까지 진행'. `idle` 모듈이 없어도 진행은 한다.
+
+### 픽업·기간 한정 배너와 선택권 (`gacha`의 선택 칸)
+
+```ts engine/test/collect/shared/content/index.ts
+  starfall: {
+    name: 'bannerStarfall', cur: 'sparks', one: 120, ten: 1080, pool: LIMITED_POOL,
+    pity: { after: 60, rarity: 2 }, tenAtLeast: 1,
+    pickup: { hero: 'starseer', share: 0.5 }, fiftyFifty: true, pityGroup: 'limited',
+    start: LIMITED_FROM, end: LIMITED_FROM + 14 * DAY,
+  },
+…
+export const GACHA_RULES: GachaRules = { history: 50, select: { herochoice: ['stormblade', 'starseer'] } };
+```
+
+| 칸 (`BannerDef`) | 뜻 | 없으면 |
+|---|---|---|
+| `pickup: { hero, share }` | 픽업 영웅이 **자기 등급의 확률 가운데 `share`**(0~1)를 갖는다. 등급의 확률은 그대로이고 그 등급의 나머지 영웅이 남은 몫을 무게의 비율로 나눈다(위: 전설 3% 가운데 1.5%) | 무게 그대로 |
+| `fiftyFifty: true` | 반반: 픽업의 등급이 나왔는데 픽업이 아니면 확정이 켜지고, 다음에 그 등급이 나오면(천장이든 아니든) 픽업이다. 픽업이 나오면 꺼진다 | 확정 없음 |
+| `pityGroup: 이름` | 같은 이름의 배너들이 천장의 셈과 확정을 **함께** 센다(기간 한정 배너가 바뀌어도 이어진다). 무리의 배너는 `pity`가 같아야 한다(다르면 서버가 시작할 때 멈춘다) | 배너마다 |
+| `start`, `end` | 서버 시계의 ms(`Date.UTC(…)`). 이 사이에만 화면에 보이고 뽑힌다. 닫힌 배너의 뽑기는 `bannerClosed`(값도 치르지 않는다) | 늘 열림 |
+
+- **확률은 한 함수**: `pullOdds(배너, 바닥 등급, 확정)`이 서버의 뽑기와 공개 확률표를 함께 만든다(픽업이 없는 배너는 예전의 `poolOdds`와 같다). 공개 확률표(`rateTable`)는 등급별·영웅별·천장·10번 보장에 더해 픽업의 몫과 평소·확정일 때의 픽업 확률, 반반의 규칙과 지금의 확정, 확정일 때의 표, **실효 확률**(`effectiveOdds`: 천장의 셈과 확정을 상태로 한 마르코프 사슬의 정상 분포, 1번 뽑기를 오래 되풀이할 때의 평균. 위 배너의 픽업은 약 2.38%), 천장을 함께 쓰는 배너, 남은 기간, 지금의 셈을 보인다. 시험(`collect/pickup`)이 정해진 난수로 12만 번 뽑아 실효 확률과 견준다.
+- 줄 위: 개인 상태 `gacha`에 기간이 있는 배너가 있는 게임만 `open`(열린 배너 → 남은 분, 끝이 없으면 −1), 반반이 있는 게임만 `sure`(천장의 열쇠 → 1). 천장의 셈의 열쇠는 `pityKey(배너)`: 무리면 `group:이름`, 아니면 배너 id(예전과 같다). 서버: `g.gacha.pityOf(p, 배너)`, `g.gacha.sureOf(p, 배너)`, `g.gacha.isOpen(배너)`.
+- 저장 `ext.gacha`: `{ pity: { 열쇠: 셈 }, log, sure?: { 열쇠: 1 } }`(확정이 없으면 예전 모양). 배너를 무리에 넣으면 배너 id에 적힌 예전 셈은 읽을 때 무리의 셈으로 옮긴다(무리의 셈이 이미 있으면 그것). 칸을 더하기만 해서 이전(migration)은 없고, 옛 서버는 모르는 칸을 무시한다.
+- **선택권** `GACHA_RULES.select`: 아이템 id → 고를 수 있는 영웅들(`items` 모듈이 있어야 한다). 명령 `{ t: 'gacha', a: 'select', item, hero }`: 선택권 하나(`g.bag.takeItem`, 원인 `cmd:gacha:select`)로 그 영웅을 `g.roster.grant`(가진 영웅이면 조각). 안내문 `heroPicked`(`[영웅, 이미 가졌으면 1, 조각]`), 선택권이 없으면 `itemShort`. 서버: `g.gacha.select(p, item, hero)`. 화면: '뽑기' 탭 끝의 '영웅 선택권' 줄(가진 수, 영웅마다 '고르기').
+- 화면의 '뽑기' 탭은 열린 배너만 보인다(서버가 `open`을 보내기 전에는 기간이 없는 배너만). 픽업 배너는 금색 테두리에 픽업 영웅, 남은 기간, 확정, 천장 공유를 적는다. 셈은 `openBanners`, `bannerPity`, `rateTable`(`hud/collectcalc.ts`).
 
 ### 화면과 문장
 
 - 탭 넷(`heroes`, `gacha`, `squad`, `stages`)은 그 모듈의 화면이 `addMenuTab`으로 붙인다. 차례와 보일 탭은 게임이 `setMenuTabs([...])`로 고른다(아래 본보기). 단계 막대와 뽑기 결과 창도 그 모듈을 고른 게임에만 붙는다.
 - 게임이 읽을 수 있는 것(`@engine/client`): `myHeroes()`, `mySquad()`, `myStage()`, `onGachaResult((배너, 결과) => …)`(연출·소리). 영웅의 성장을 켠 게임은 `myHeroGear()`(내 영웅 장비)도.
 - 틀의 문장(한국어·영어)이 탭·단추·확률표·단계 막대·안내문을 다 갖고 있다. 게임은 **이름 키만** 적는다: 영웅(`HeroDef.name`), 역할(`HeroRoleDef.name`), 배너(`BannerDef.name`), 장(`ChapterDef.name`), 등급을 바꿨으면 그 이름. 두 번째 재화의 이름은 이름표의 `currency2`(뽑기·열쇠의 값에 쓰인다). 쓰러진 뒤 일어나는 곳의 이름표는 `places.stage`.
+- 게임이 읽을 수 있는 것(`@engine/client`): `myHeroes()`, `mySquad()`, `myStage()`, `onGachaResult((배너, 결과) => …)`(연출·소리).
+- 틀의 문장(한국어·영어)이 탭·단추·확률표·단계 막대·소탕·안내문을 다 갖고 있다. 게임은 **이름 키만** 적는다: 영웅(`HeroDef.name`), 역할(`HeroRoleDef.name`), 배너(`BannerDef.name`), 장(`ChapterDef.name`), 등급을 바꿨으면 그 이름. 두 번째 재화의 이름은 이름표의 `currency2`(뽑기·열쇠의 값에 쓰인다). 쓰러진 뒤 일어나는 곳의 이름표는 `places.stage`.
 
 ### 본보기: 영웅 들판
 
@@ -1583,6 +1662,8 @@ export const SQUAD_RULES: SquadRules = {
 
 - 내용 `engine/test/collect/shared/content/index.ts`: 위의 조각 전부(맵, 직업 하나 '대장', 몬스터, 영웅·역할·배너·편성·장·단계, 열쇠 던전, 방치 보상, 영웅의 성장: 재료 셋, 영웅 장비 열셋(세트 둘), 기술 레벨, 각성 세 단계, 진영 셋의 시너지, 앞줄·뒷줄 둘씩).
 - 서버의 규칙 플러그인 `engine/test/collect/server/heath.ts`: 처음 온 사람에게 직업, 처음 보석·골드, 처음 영웅 둘. 나머지는 틀의 모듈이다.
+- 내용 `engine/test/collect/shared/content/index.ts`: 위의 조각 전부(맵, 직업 하나 '대장', 몬스터, 영웅·역할·배너·편성·장·단계, 열쇠 던전, 방치 보상).
+- 서버의 규칙 플러그인 `engine/test/collect/server/heath.ts`: 처음 온 사람에게 직업, 처음 보석·골드·소탕권·선택권, 처음 영웅 둘. 나머지는 틀의 모듈이다.
 
 ```ts engine/test/collect/server/heath.ts
 export const heath: Plugin = (g) => {
@@ -1591,6 +1672,7 @@ export const heath: Plugin = (g) => {
     if (!fresh(p)) return;
     if (STARTER.gold) g.wallet.add(p, 'gold', STARTER.gold, 'start');
     if (STARTER.sparks) g.wallet.add(p, 'sparks', STARTER.sparks, 'start');
+    for (const [id, n] of Object.entries(STARTER.items ?? {})) g.bag.putItem(p, id as Parameters<typeof g.bag.putItem>[1], n, 'start');
     // 처음 영웅 둘 (편성의 빈 자리에 저절로 든다: SQUAD_RULES.autoFill)
     g.roster.grant(p, 'ironwall');
     g.roster.grant(p, 'swiftarrow');
@@ -1608,6 +1690,7 @@ startClient({});
 ```
 
 - 시험 `engine/test/collect/`(`npm test`의 `collect/…`): `rules`(영웅·뽑기의 확률과 천장·편성의 싸움·단계의 깸과 실패·열쇠·방치 보상), `saves`(왕복, 깨진 값, 모듈을 끈 게임, 버전 없는 저장), `client`(화면의 셈), `net`(실제 서버와 접속 둘), 영웅의 성장 `growth`(셈·값·장부의 원인·떨어지기·세트·시너지·앞줄이 먼저 맞기·전투력이 한 셈인가), `growthsaves`(왕복, 성장 전의 저장이 글자까지 같게, 깨진 값, 모듈을 끈 게임), `growthnet`(실제 서버로 끼기·강화·기술·진형, 화면의 셈 = 서버), `growthclient`(상세·장비 창·진형·시너지의 셈, 두 언어의 문장).
+- 시험 `engine/test/collect/`(`npm test`의 `collect/…`): `rules`(영웅·뽑기의 확률과 천장·편성의 싸움·단계의 깸과 실패·열쇠·방치 보상), `saves`(왕복, 깨진 값, 모듈을 끈 게임, 버전 없는 저장, 천장 무리·확정·끝낸 적), `client`(화면의 셈, 확률표가 뽑기와 같은 셈인가, 문장), `net`(실제 서버와 접속 둘), `sweep`(소탕권과 보상의 셈, 장부의 원인, 열쇠 던전), `offline`(전투력·상한·거꾸로 간 시계·아주 큰 틈의 표, 방치 보상의 토막), `pickup`(픽업의 몫, 정해진 난수 12만 번과 실효 확률, 반반, 천장 무리, 기간, 선택권), `sweepnet`(정해진 서버 시계로 실제 접속: 소탕·픽업·선택권·오프라인 진행).
 - 띄우기: `npx vite build -c engine/test/collect/vite.config.ts`(→ `dist-collect/`) 뒤에 `PORT=3015 DB=memory npx tsx --tsconfig engine/test/collect/tsconfig.json engine/test/collect/server/main.ts`. 접속하면 1-1이 바로 시작되고, 메뉴(M)의 '뽑기'에서 보석으로 뽑는다. 금광의 문은 들판의 남동쪽(26, −26)이다(`DEV_SPAWN=26,-26`으로 그 곁에서 시작하면 단계에서 '나가기'한 뒤가 문 앞이다).
 - 새 게임으로 만들 때는 이 파일들을 `games/<게임>/`의 같은 자리에 옮기고 2절의 설정을 둔다(12절의 공 마당과 같다). 틀의 파일은 입구(`@engine/server`, `@engine/client`, 타입은 `@engine/shared/defs/collect`)로 가져온다.
 
@@ -1615,6 +1698,6 @@ startClient({});
 
 - 영웅의 전용 무기(그 영웅만 끼는 장비), 장비의 무작위 옵션·재련, 장비 뽑기는 없다. 영웅 장비는 거래소에 올릴 수 없다(장부에는 재화·재료의 흐름만 적힌다).
 - 이끄는 사람 없이 영웅만 싸우는 모드, 영웅을 직접 조작하기, 영웅의 궁극기 연출은 없다.
-- 뽑기는 영웅만 준다(장비·재료 뽑기 없음). 픽업(배너 기간, 확률 업)과 천장의 '선택권', 배너 사이에 이어지는 천장은 없다. 배너의 기간은 게임이 `BANNERS`를 바꿔 배포해야 한다.
-- 단계는 한 사람씩이다(파티로 함께 깨기 없음). 단계의 순위표, 스킵·소탕권, 오프라인 동안의 단계 진행(지금은 방치 보상의 수치만 커진다)은 없다.
+- 뽑기는 영웅만 준다(장비·재료 뽑기 없음). 천장에 닿으면 고르는 '천장 선택'(교환 상점)은 없다(선택권 아이템은 있다). 기간 한정 배너를 더하거나 고치려면 게임이 `BANNERS`를 바꿔 배포한다(기간은 서버 시계로 저절로 열리고 닫힌다).
+- 단계는 한 사람씩이다(파티로 함께 깨기 없음). 단계의 순위표, 하루 소탕 횟수의 한도는 없다. 오프라인 진행은 전투력과 권장 전투력만 본다(실제 싸움을 흉내 내지 않는다).
 - 열쇠는 던전 모듈의 것이라 그 의존(`combat`, `mail`, `daily`, `gear`)을 함께 고른다.

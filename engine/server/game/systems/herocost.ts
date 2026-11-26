@@ -4,13 +4,13 @@ import { isItemId, type HeroCost } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 
-/** 값을 치를 수 있는가: 모자란 것이 있으면 그것 (재화 또는 재료와 모자란 수), 없으면 null */
-export function costShort(g: Game, p: Ent, c: HeroCost): { cur: string } | { item: string; miss: number } | null {
+/** 값을 치를 수 있는가: 모자란 것이 있으면 그것 (재화, 또는 재료와 드는 수·가진 수), 없으면 null */
+export function costShort(g: Game, p: Ent, c: HeroCost): { cur: string } | { item: string; need: number; have: number } | null {
   if (c.cur && c.n && c.n > 0 && !g.wallet.can(p, c.cur, c.n)) return { cur: c.cur };
   for (const [id, n] of Object.entries(c.items ?? {})) {
     if (!(n > 0)) continue;
     const have = g.has('items') && isItemId(id) ? g.bag.count(p, id) : 0;
-    if (have < n) return { item: id, miss: n - have };
+    if (have < n) return { item: id, need: n, have };
   }
   return null;
 }
@@ -19,7 +19,7 @@ export function costShort(g: Game, p: Ent, c: HeroCost): { cur: string } | { ite
 export function payCost(g: Game, p: Ent, c: HeroCost, why: string): boolean {
   const short = costShort(g, p, c);
   if (short) {
-    if ('cur' in short) g.notify(p, 'costShort', short.cur); else g.notify(p, 'itemShort', short.item, short.miss);
+    if ('cur' in short) g.notify(p, 'costShort', short.cur); else g.notify(p, 'itemShort', short.item, short.need, short.have);
     return false;
   }
   if (c.cur && c.n && c.n > 0) g.wallet.take(p, c.cur, c.n, why);

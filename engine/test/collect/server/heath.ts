@@ -1,4 +1,4 @@
-// 영웅 들판의 규칙 플러그인: 처음 온 사람에게 직업(하나뿐), 처음 보석과 골드, 처음 영웅 둘을 준다. 나머지는 모두 틀의 모듈이다.
+// 영웅 들판의 규칙 플러그인: 처음 온 사람에게 직업(하나뿐), 처음 보석과 골드, 소탕권과 선택권, 처음 영웅 둘을 준다. 나머지는 모두 틀의 모듈이다.
 // 시험(../*.test.ts)과 실행 서버(./main.ts)가 함께 쓴다.
 import { CLASS_IDS } from '../../../shared/defs';
 import type { Plugin } from '../../../server/game/game';
@@ -13,6 +13,7 @@ export const heath: Plugin = (g) => {
     if (!fresh(p)) return;
     if (STARTER.gold) g.wallet.add(p, 'gold', STARTER.gold, 'start');
     if (STARTER.sparks) g.wallet.add(p, 'sparks', STARTER.sparks, 'start');
+    for (const [id, n] of Object.entries(STARTER.items ?? {})) g.bag.putItem(p, id as Parameters<typeof g.bag.putItem>[1], n, 'start');
     // 처음 영웅 둘 (편성의 빈 자리에 저절로 든다: SQUAD_RULES.autoFill)
     g.roster.grant(p, 'ironwall');
     g.roster.grant(p, 'swiftarrow');
