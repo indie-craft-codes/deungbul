@@ -148,6 +148,9 @@ export type ClientMsg =
   | { t: 'gacha'; id: string; n: number }
   /** 편성 (squad 모듈): 함께 싸울 영웅 (자리의 차례, SQUAD_RULES.size까지) */
   | { t: 'squad'; ids: string[] }
+  /** 영웅 장비 (herogear 모듈): 끼기(hero에게), 빼기, 강화, 분해(uids: 끼지 않은 것만) */
+  | { t: 'hgear'; a: 'equip' | 'unequip' | 'enhance'; uid: number; hero?: string }
+  | { t: 'hgear'; a: 'salvage'; uids: number[] }
   /** 단계 (stages 모듈): start 지금 단계로 들어간다, leave 나온다, auto 자동 진행 켜고 끄기(on), go 그 단계로(id: 깬 단계나 그다음) */
   | { t: 'stage'; a: 'start' | 'leave' | 'auto' | 'go'; on?: boolean; id?: string }
   /** 던전의 열쇠를 산다 (DungeonDef.key.buy가 있는 던전) */

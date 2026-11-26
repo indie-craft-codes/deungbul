@@ -57,6 +57,7 @@ import { Roster } from './systems/roster';
 import { Gacha } from './systems/gacha';
 import { Squad } from './systems/squad';
 import { Stages } from './systems/stages';
+import { HeroGear } from './systems/herogear';
 import { Wallet } from './systems/wallet';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
@@ -296,6 +297,7 @@ export class Game {
   /** [gacha] 뽑기 */ readonly gacha: Gacha;
   /** [squad] 편성: 함께 싸우는 영웅 */ readonly squad: Squad;
   /** [stages] 장과 단계 */ readonly stages: Stages;
+  /** [herogear] 영웅 장비 */ readonly herogear: HeroGear;
   /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
   readonly sanctions: Sanctions;
 
@@ -345,6 +347,7 @@ export class Game {
     this.gacha = has('gacha') ? new Gacha(this) : off('gacha', 'gacha');
     this.squad = has('squad') ? new Squad(this) : off('squad', 'squad');
     this.stages = has('stages') ? new Stages(this) : off('stages', 'stages');
+    this.herogear = has('herogear') ? new HeroGear(this) : off('herogear', 'herogear');
     this.sanctions = new Sanctions(this);
     new Status(this); // 본인에게 보내는 성장 수치(stat)와 장비·우편(meta): 그 칸의 모듈을 고른 게임만
     for (const fn of this.ready) fn();
