@@ -57,7 +57,7 @@ export function initTeams(): void {
     <div class="panel" id="teamPick" hidden>
       <div class="ttitle" id="teamPickTitle"></div>
       <p class="note" id="teamPickInfo"></p>
-      <div class="btns">${TEAMS.map((tm, i) => `<button type="button" class="teamBtn" id="teamBtn${i}" style="--tc:${teamCss(tm.color)}"><b id="teamBtnName${i}"></b><small id="teamBtnNote${i}"></small></button>`).join('')}</div>
+      <div class="btns${n >= 3 ? ' many' : ''}${n >= 4 ? ' two' : ''}">${TEAMS.map((tm, i) => `<button type="button" class="teamBtn" id="teamBtn${i}" style="--tc:${teamCss(tm.color)}"><b id="teamBtnName${i}"></b><small id="teamBtnNote${i}"></small></button>`).join('')}</div>
     </div>`);
   // 내 정보 창: 내 팀과 점수, 팀 바꾸기
   mountPanel('meRows', `<div class="row" id="teamMeRow" hidden><span class="note" id="teamMine"></span><button type="button" class="plain" id="teamSwitch"></button></div>`);

@@ -20,7 +20,7 @@ import { isClean, mask, tidy } from '../text';
 import { CLOSE, createAdmin, type Admin, type AdminOptions } from './admin';
 import { Handoff, hashToken } from './handoff';
 import { REPORT_GAP_MS, REPORT_LINES } from './moderation';
-import { OpsCounters, opsHandler } from './ops';
+import { OpsCounters, opsHandler, pushCapped } from './ops';
 import { buildFrame, snapshotFor } from './snapshot';
 import { serveStatic } from './static';
 
@@ -43,10 +43,14 @@ const CHAT_ALL_BURST = 40;
 const CHAT_ALL_PER_S = 20;
 /** 사람별 제한 기록을 마지막으로 쓴 뒤 이만큼 지나고 접속해 있지도 않으면 지운다 (가장 긴 간격인 신고 간격과 같다) */
 const LIMIT_KEEP_MS = REPORT_GAP_MS;
+/** 측정 구간(metrics)의 틱·전송·지연 값을 이만큼까지만 모은다: 틱 20번/초로 약 1시간 */
+const M_KEEP = 72_000;
 const AWAY_MIN_LV = AWAY.minLv; // 이 레벨부터 자리 비움 사냥이 된다 (막 만든 캐릭터를 수천 개 남겨 두지 못하게)
 
 interface Client {
   ws: WebSocket; ent: Ent | null; known: Set<number>;
+  /** 이 연결의 소켓 (전송 한 번의 쓰기를 모으는 cork) */
+  so: Socket;
   /** 이 연결에 보낸 개인 상태: 칸의 이름 → 마지막으로 보낸 값(JSON). 아직 없는 칸은 한 번도 보내지 않은 것이다 (그래서 접속 직후에는 전부 간다) */
   mine: Map<string, string>;
   tokens: number; alive: boolean;
@@ -186,8 +190,10 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     b.left--;
     return true;
   }
-  // 측정: 구간 동안의 시간과 전송량을 모은다
+  // 측정: 구간 동안의 시간과 전송량을 모은다 (metrics()가 읽으며 비운다)
   const m = { since: performance.now(), tick: [] as number[], flush: [] as number[], lag: [] as number[], bytes: 0, msgs: 0 };
+  /** 구간의 값 하나를 더한다. metrics()를 부르는 쪽(METRICS 로그, 부하 측정)이 없으면 비워지지 않으므로, M_KEEP을 넘으면 오래된 반을 버린다 (예전에는 하루에 수십 MB씩 쌓였다) */
+  const keepIn = (a: number[], v: number) => pushCapped(a, v, M_KEEP);
 
   const dist = opts.staticDir ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist');
   /** 열린 연결의 소켓 (실제로 보낸 바이트를 세는 데 쓴다) */
@@ -508,7 +514,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     sockets.add(so);
     ws.on('close', () => { if (sockets.delete(so)) ops.closedWire += so.bytesWritten; });
     const c: Client = {
-      ws, ent: null, known: new Set(), mine: new Map(), tokens: MSG_BURST, alive: true, key: null, ip, hadSave: false,
+      ws, so, ent: null, known: new Set(), mine: new Map(), tokens: MSG_BURST, alive: true, key: null, ip, hadSave: false,
       // 이름 바꾸기 간격도 사람의 기록에 둔다 (다시 접속해서 간격을 지우지 못하게)
       get lastRename() { return people.get(who(c))?.lastRename ?? 0; },
       set lastRename(at: number) { person(c).lastRename = at; },
@@ -540,6 +546,11 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     game.events = [];
     let online = 0;
     for (const c of clients) if (c.ent) online++;
+    // 이번 전송에서 한 연결에 가는 메시지들(스냅샷, 개인 상태, 안내문 …)을 소켓에 한 번에 쓰게 모은다: 메시지마다 시스템 호출을 하지 않는다.
+    // 프레임과 바이트는 그대로다(쓰는 횟수만 준다). 압축하는 큰 메시지는 일꾼 스레드에서 끝나는 대로 따로 나간다. 다음 차례(setImmediate)에 놓아 준다
+    const corked: Socket[] = [];
+    for (const c of clients) if (c.ent && c.ws.readyState === c.ws.OPEN && !c.so.destroyed) { c.so.cork(); corked.push(c.so); }
+    if (corked.length) setImmediate(() => { for (const so of corked) so.uncork(); });
 
     for (const c of clients) {
       const me = c.ent;
@@ -589,17 +600,17 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const step = () => {
     if (stopped) return;
     const now = performance.now();
-    m.lag.push(Math.max(0, now - nextAt));
+    keepIn(m.lag, Math.max(0, now - nextAt));
     const dt = Math.min(0.2, (now - last) / 1000);
     last = now;
     tick++;
     // 틱 안의 예외 하나로 루프가 멈추면 모두의 게임이 멈춘다: 적어 두고 다음 틱으로 넘어간다
     try { game.tick(dt); } catch (err) { console.error('[server] 틱 처리 중 예외:', err); }
     const afterTick = performance.now();
-    m.tick.push(afterTick - now);
+    keepIn(m.tick, afterTick - now);
     ops.tick(afterTick - now);
     for (const c of clients) c.tokens = Math.min(MSG_BURST, c.tokens + MSG_PER_TICK);
-    if (tick % SNAP_EVERY === 0) { try { flush(); } catch (err) { console.error('[server] 전송 중 예외:', err); } m.flush.push(performance.now() - afterTick); }
+    if (tick % SNAP_EVERY === 0) { try { flush(); } catch (err) { console.error('[server] 전송 중 예외:', err); } keepIn(m.flush, performance.now() - afterTick); }
     nextAt += TICK_MS;
     const end = performance.now();
     if (nextAt < end - 250) nextAt = end; // 크게 밀렸으면 따라잡으려 하지 않고 여기서 다시 센다

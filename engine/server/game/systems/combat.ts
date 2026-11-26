@@ -74,7 +74,13 @@ export class Combat {
     const g = this.g, def = skillDef(id), fx = def.effect, up = ally ? ally.skillScale?.(p) ?? 1 : g.has('build') ? g.build.skillScale(p, id) : 1; // 강화한 기술은 피해와 회복이 커진다 (사람 편의 종류는 그 종류가 정한 배율)
     const stun = (m: Ent, s: number | undefined) => { if (s && !m.dead && m.kind === 'm') { m.stunUntil = g.clock + s; m.moving = false; g.emit(['stun', m.id, s]); } };
     /** 나와(allies면 범위 안의 사람들도) 같은 층의 사람들 */
-    const friends = (allies: boolean | undefined): Ent[] => (allies ? [...g.ents.values()] : [p]).filter((e) => (e.kind === 'p' || (this.allies.size > 0 && this.allies.has(e.kind))) && !e.dead && e.layer === p.layer && (e === p || dist(p, e) <= (def.radius ?? 0)));
+    const friends = (allies: boolean | undefined): Ent[] => {
+      const ok = (e: Ent) => (e.kind === 'p' || (this.allies.size > 0 && this.allies.has(e.kind))) && !e.dead && e.layer === p.layer && (e === p || dist(p, e) <= (def.radius ?? 0));
+      if (!allies) return ok(p) ? [p] : [];
+      const out: Ent[] = []; // 엔티티 전부를 복사하지 않고 고른다 (고르는 동안 아무것도 바뀌지 않는다)
+      for (const e of g.ents.values()) if (ok(e)) out.push(e);
+      return out;
+    };
     switch (fx.kind) {
       case 'hit':
         if (!target) break;
@@ -122,7 +128,7 @@ export class Combat {
       }
       case 'dot': {
         const hit = fx.area && target
-          ? [...g.ents.values()].filter((m) => m.kind === 'm' && !m.dead && m.layer === p.layer && dist(target, m) <= (def.radius ?? 0))
+          ? g.monstersIn(p.layer).filter((m) => m.kind === 'm' && !m.dead && m.layer === p.layer && dist(target, m) <= (def.radius ?? 0))
           : target && target.kind === 'm' && !target.dead ? [target] : [];
         for (const m of hit) {
           m.dots = m.dots.filter((d) => !(d.src === p.id && d.skill === id));
@@ -157,7 +163,8 @@ export class Combat {
   /** center 주변 radius 안의 몬스터 모두에게 피해를 준다. also가 있으면 맞은 몬스터마다 부른다. */
   private area(src: Ent, center: { x: number; z: number }, radius: number, min: number, max: number, also?: (m: Ent) => void): void {
     const at = { x: center.x, z: center.z }; // 대상이 죽어 사라져도 자리는 남는다
-    for (const m of [...this.g.ents.values()]) {
+    // 그 층의 몬스터만 (g.monstersIn: 돌려받은 목록은 바뀌지 않는다. 피해로 쓰러져 없어지는 몬스터가 있어도 처음의 목록을 끝까지 돈다: 예전의 복사본과 같다)
+    for (const m of this.g.monstersIn(src.layer)) {
       if (m.kind === 'm' && !m.dead && m.layer === src.layer && dist(at, m) <= radius) { also?.(m); this.damage(src, m, ri(min, max), false); }
     }
   }

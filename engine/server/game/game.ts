@@ -177,6 +177,9 @@ function off<T extends object>(module: ModuleId, name: string): T {
   return new Proxy({} as T, { get: fail, set: fail, has: fail });
 }
 
+/** 빈 목록 (monstersIn) */
+const NONE: readonly Ent[] = [];
+
 /** 등록되지 않은 싸우는 법을 이미 알린 몬스터 (한 프로세스에 한 번만 알린다: 시험은 게임을 여러 번 만든다) */
 const warnedBehavior = new Set<string>();
 
@@ -264,6 +267,8 @@ export class Game {
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
   private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;
+  /** 층마다의 몬스터 (monstersIn): 엔티티를 만들거나 없앨 때와 틱의 처음에 버리고, 물을 때 다시 만든다 */
+  private mobsByLayer: Map<number, Ent[]> | null = null;
 
   // ---- 시스템 ----
   // 모듈의 시스템은 그 모듈을 고르지 않았으면 자리표다(off): 쓰기 전에 g.has(모듈)로 묻는다. 모듈 이름은 칸마다 [ ]에 적었다
@@ -415,6 +420,25 @@ export class Game {
     return e;
   }
 
+  /**
+   * 그 층의 몬스터(종류 'm')를 엔티티를 만든 차례로 (g.ents를 훑어 고른 것과 같은 차례). 쓰러진 것도 든다: 부른 쪽이 dead 같은 것을 본다.
+   * 사람·영웅이 많은 게임에서 '둘레의 몬스터 찾기'가 엔티티 전부를 훑지 않게 한다 (편성의 영웅: systems/squad.ts).
+   * 색인은 엔티티를 만들거나 없앨 때와 틱의 처음에 버려진다(돌려준 목록은 그 뒤에도 바뀌지 않는다: 돌면서 몬스터를 없애도 된다).
+   * 몬스터의 층은 만든 자리에서 정한다(spawn 바로 뒤): 다른 때에 층을 옮기면 그 틱 안에서는 옛 층으로 보인다
+   */
+  monstersIn(layer: number): readonly Ent[] {
+    let idx = this.mobsByLayer;
+    if (!idx) {
+      idx = this.mobsByLayer = new Map();
+      for (const e of this.ents.values()) {
+        if (e.kind !== 'm') continue;
+        const l = idx.get(e.layer);
+        if (l) l.push(e); else idx.set(e.layer, [e]);
+      }
+    }
+    return idx.get(layer) ?? NONE;
+  }
+
   /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. 게임의 종류는 place로 놓는다 */
   create(kind: Kind, type: string, name: string, x: number, z: number, hp: number): Ent {
     // 틀은 핵심의 칸만 적는다(./entity.ts). 모듈의 칸(EntParts)은 고른 모듈의 PARTS가(hp는 전투 모듈의 체력), 게임이 더한 칸(EntExt)은 entInit이 채운다:
@@ -429,12 +453,15 @@ export class Game {
     resolve(e, this.world.obstacles);
     for (const part of this.parts) part.placed?.(e);
     this.ents.set(e.id, e);
+    this.mobsByLayer = null;
     return e;
   }
 
   /** 엔티티를 없애고, 다른 엔티티가 붙들고 있던 참조를 정리한다. */
   remove(id: number): void {
-    if (!this.ents.delete(id) || !this.fight) return;
+    if (!this.ents.delete(id)) return;
+    this.mobsByLayer = null;
+    if (!this.fight) return;
     for (const e of this.ents.values()) {
       if (e.targetId === id) e.targetId = 0;
       e.hitters.delete(id);
@@ -451,6 +478,7 @@ export class Game {
 
   tick(dt: number): void {
     this.clock += dt;
+    this.mobsByLayer = null;
     this.nav.budget = NAV_VISITS_PER_TICK; // 길찾기가 한 틱에 쓸 수 있는 양 (engine/shared/nav.ts)
     const fight = this.modules.has('combat'), away = this.modules.has('away');
     for (const e of this.ents.values()) {

@@ -8,7 +8,7 @@ import { check, failures } from '../harness';
 import { AREAS } from '../../shared/world';
 
 /** 틀의 시험 (engine/test/fx/이름.test.ts). 새 시험은 여기에 더한다 */
-export const FX = ['bare', 'monsters', 'move', 'nav', 'classes', 'shop', 'craft', 'party', 'build', 'guild', 'boss', 'combat', 'growth', 'dungeon', 'compare', 'skills', 'locale', 'icons', 'assets', 'bag', 'salvage', 'wallet', 'ledger', 'market', 'channel', 'security', 'harden', 'server', 'admin', 'handoff', 'ops', 'static', 'client', 'modules', 'parts', 'wire', 'teams'];
+export const FX = ['bare', 'monsters', 'move', 'nav', 'classes', 'shop', 'craft', 'party', 'build', 'guild', 'boss', 'combat', 'growth', 'dungeon', 'compare', 'skills', 'locale', 'icons', 'assets', 'bag', 'salvage', 'wallet', 'ledger', 'market', 'channel', 'security', 'harden', 'server', 'admin', 'handoff', 'ops', 'static', 'client', 'modules', 'parts', 'wire', 'teams', 'hotpath'];
 // 별칭이 이 폴더를 가리키는가: 틀이 읽은 맵이 시험용 맵이어야 한다 (뿌리의 tsconfig로 돌리면 등불지기의 맵으로 조용히 돈다)
 if (AREAS !== MAP.areas || AREAS[0].id !== 'meadow') throw new Error('별칭 @game이 engine/test/fx를 가리키지 않습니다. tsx --tsconfig engine/test/fx/tsconfig.json 으로 실행하세요 (npm test가 그렇게 부른다)');
 

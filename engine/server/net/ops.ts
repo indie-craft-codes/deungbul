@@ -14,6 +14,15 @@ export function isLocalRequest(req: http.IncomingMessage): boolean {
   return loop && PROXY_HEADERS.every((h) => req.headers[h] === undefined);
 }
 
+/**
+ * 값을 목록에 더하되 max를 넘으면 오래된 반을 버린다: 읽는 쪽이 비워 주지 않아도 끝없이 자라지 않게 (server.ts의 측정 구간 metrics()의 틱·전송·지연 값.
+ * 운영에서는 METRICS 로그를 켜지 않으면 아무도 읽지 않아, 예전에는 틱마다 쌓여 하루에 수십 MB가 되었다)
+ */
+export function pushCapped(a: number[], v: number, max: number): void {
+  a.push(v);
+  if (a.length > max) a.splice(0, a.length - (max >> 1));
+}
+
 /** 틱 시간을 모으는 고리: 최근 n개만 남긴다 (지표 로그의 metrics()와 달리 읽어도 비지 않는다) */
 class Ring {
   private a: number[] = []; private i = 0;
