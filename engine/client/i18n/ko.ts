@@ -4,12 +4,12 @@
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
+import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { LocaleExt } from './ext';
-import { dungeonLabel, itemNameOf, type ContentNames } from './names';
+import { dungeonLabel, itemNameOf, uiText, type ContentNames } from './names';
 import { anyModule } from '../../shared/picked';
 
 /** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
@@ -53,6 +53,8 @@ export const keyHints = (items: string[]) => items.map((s) => s.replace(/ /g, '�
 /** [글, true/false] 짝은 그 값이 참일 때만 넣는다 (내용의 HOME_KEY처럼 모듈이 아닌 켜고 끄기) */
 export const moduleHints = (items: (string | [string, string | boolean])[]): string => keyHints(items.filter((x) => typeof x === 'string' || (typeof x[1] === 'boolean' ? x[1] : anyModule(x[1]))).map((x) => (typeof x === 'string' ? x : x[0])));
 export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
+/** 팀의 이름 (teams 모듈): 팀 번호 → 게임이 언어 파일의 ui에 적은 이름 (TEAMS의 name 키). 없는 번호는 빈 문자열 */
+export const teamName = (i: MsgArg): string => { const d = TEAMS[Number(i)]; return d ? uiText.get(d.name) : ''; };
 /** 큰 수에 자릿수 구분을 넣는다 (1,000,000). 골드와 값은 모두 이것을 거친다 */
 export const num = (n: MsgArg) => Number(n).toLocaleString('ko-KR');
 
@@ -104,6 +106,13 @@ export const koBase = (n: ContentNames) => {
       gateKicked: '운영자가 접속을 끊었습니다.',
       gateHandedOff: '이 캐릭터는 다른 기기로 옮겨 갔습니다. 다시 접속하면 이 기기에서는 새 캐릭터로 시작합니다.',
       gateHandoffDone: '캐릭터를 이어받았습니다. 다시 접속하는 중입니다…',
+      // 팀 (teams 모듈: hud/teams.ts). 팀의 이름은 게임이 TEAMS의 name 키로 적는다
+      teamPickTitle: '팀을 고르세요',
+      teamPickInfo: '고른 팀의 색 옷을 입습니다.',
+      teamPickBalance: '사람이 더 많은 팀으로는 갈 수 없습니다.',
+      teamMore: '사람이 더 많음',
+      teamSwitch: '팀 바꾸기',
+      teamBoard: '점수판',
       tabDevice: '기기',
       deviceMoveHead: '다른 기기로 옮기기',
       deviceMoveInfo: '코드를 받아 다른 기기의 게임에 넣으면 이 캐릭터가 그 기기로 옮겨 갑니다. 옮긴 뒤에는 이 기기에서 이 캐릭터로 들어올 수 없습니다. 코드는 10분 동안 한 번만 쓸 수 있습니다. 남에게 알려 주면 그 사람이 캐릭터를 가져가니 조심하세요.',
@@ -401,6 +410,8 @@ export const koBase = (n: ContentNames) => {
       cmpArrow: (verdict: string) => `지금 바꾸면: ${verdict}`,
       haveBig: (n: number, max: number) => `${num(n)} / ${num(max)}`,
       deviceCode: (minutes: number) => `${minutes}분 안에 다른 기기에서 이 코드를 넣으세요. 한 번 쓰면 사라집니다.`,
+      teamCount: (n: number) => `${n}명`,
+      teamMine: (team: string, score: number) => `내 팀 ${team} · 점수 ${num(score)}`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -532,6 +543,9 @@ export const koBase = (n: ContentNames) => {
       handoffWait: (a) => `코드를 너무 많이 틀렸습니다. ${a[0]}분 뒤에 다시 해 주세요.`,
       handoffSelf: () => '이 기기에서 하고 있는 캐릭터의 코드입니다. 다른 기기에서 넣어 주세요.',
       handedOff: () => '이 캐릭터를 다른 기기로 옮겼습니다. 이 기기에서는 더 이어지지 않습니다.',
+      teamJoined: (a) => `${teamName(a[0])} 팀에 들어갔습니다.`,
+      teamFull: (a) => `${teamName(a[0])} 팀에 사람이 더 많습니다. 다른 팀을 고르세요.`,
+      teamStay: () => '이 게임에서는 팀을 바꿀 수 없습니다.',
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

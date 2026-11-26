@@ -76,3 +76,9 @@ export const idNames = (): ContentNames => ({
  * 핵심만 쓰는 게임은 koBase(withIdNames({ nameA: [...], nameB: [...] }))처럼 처음 이름의 재료만 적는다
  */
 export const withIdNames = (names: Partial<ContentNames>): ContentNames => ({ ...idNames(), ...names });
+
+/**
+ * 지금 언어의 고정 문구(ui)를 키로 찾는 통로: 틀의 문장 묶음(ko.ts, en.ts)이 게임이 채운 문구(팀의 이름: TEAMS의 name 키)를 넣을 때 쓴다.
+ * 언어를 고르는 index.ts가 채운다 (그 전에는 키 그대로). 없는 키는 키 그대로 돌려준다
+ */
+export const uiText: { get: (key: string) => string } = { get: (key) => key };

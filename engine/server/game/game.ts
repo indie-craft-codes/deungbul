@@ -52,6 +52,7 @@ import { Movement } from './systems/movement';
 import { Players } from './systems/players';
 import { Shop } from './systems/shop';
 import { Status } from './systems/status';
+import { Teams } from './systems/teams';
 import { Wallet } from './systems/wallet';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
@@ -265,6 +266,7 @@ export class Game {
   /** [combat] */ readonly monsters: Monsters;
   readonly bots: Bots;
   /** [away] */ readonly away: Away;
+  /** [teams] 팀과 점수 (규칙 플러그인보다 먼저 만든다: 게임이 플러그인에서 쓴다) */ readonly teams: Teams;
   /** [items] */ readonly shop: Shop;
   /** [classes] */ readonly classes: Classes;
   /** [combat] */ readonly boss: Boss;
@@ -302,6 +304,7 @@ export class Game {
     this.monsters = has('combat') ? new Monsters(this) : off('combat', 'monsters');
     this.bots = new Bots(this);
     this.away = has('away') ? new Away(this) : off('away', 'away');
+    this.teams = has('teams') ? new Teams(this) : off('teams', 'teams');
     // 게임의 규칙이 깔리는 자리 (Plugin의 설명)
     for (const install of opts.plugins ?? []) install(this);
     // 몬스터가 적은 싸우는 법이 등록되어 있는가 (없으면 기본대로 싸운다: 이름을 잘못 적은 것을 서버를 띄울 때 알린다)

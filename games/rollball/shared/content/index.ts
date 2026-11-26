@@ -1,11 +1,17 @@
-// 굴림공(Rollball)의 내용: 핵심 계약(MAP, MODULES)과 핵심의 수치 몇 개만. 전투·직업·아이템·재화가 없다.
+// 굴림공(Rollball)의 내용: 핵심 계약(MAP, MODULES)과 핵심의 수치 몇 개, 팀 둘. 전투·직업·아이템·재화가 없다.
 // 이 게임만의 수치(경기장, 공의 물리, 경기 시간)는 ./pitch.ts에 있다: 틀은 읽지 않는다.
 import type { MapDef } from '@engine/shared/defs/map';
+import type { TeamDef } from '@engine/shared/defs/teams';
 import type { ModuleId } from '@engine/shared/modules';
-import { PITCH } from './pitch';
+import { PITCH, TEAM_COLOR } from './pitch';
 
-/** 쓸 모듈: 없다 (핵심만) */
-export const MODULES: readonly ModuleId[] = [];
+/** 쓸 모듈: 팀 하나 (팀 고르기와 균형, 점수판, 팀 색 옷). 나머지는 핵심만 */
+export const MODULES: readonly ModuleId[] = ['teams'];
+/** 팀 둘: 0 노을(오른쪽 골문을 노린다), 1 물결. 이름은 언어 파일의 ui.teamA, ui.teamB. 규칙(TEAM_RULES)은 틀의 기본: 사람이 더 많은 팀으로는 못 가고, 옮길 수 있고, 저장하지 않는다 */
+export const TEAMS: readonly TeamDef[] = [
+  { id: 'ember', color: TEAM_COLOR[0], name: 'teamA' },
+  { id: 'tide', color: TEAM_COLOR[1], name: 'teamB' },
+];
 export const GUEST_NAME = 'Roller';
 /** 경기장 전체(48m)가 한 화면의 시야에 들어오게 넓히고, 공이 부드럽게 보이게 틱마다 보낸다 */
 export const NET = { tickMs: 50, snapEvery: 1, aoi: 60, aoiLeave: 64 };

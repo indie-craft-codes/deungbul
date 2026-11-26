@@ -65,11 +65,16 @@ export function initScene(): void {
   });
   registerBlade('axe2', { color: 0xffd9a0, scale: 1.25, glow: false });
   registerArmor('coat', { color: 0x8a6a48, pads: false });
+  registerArmor('scale', { color: 0x8f969e, pads: true });
   // 모델 파일: 곰과 멧돼지는 뼈대 애니메이션 모델 하나를 크기와 털빛만 바꿔 쓴다 (클립 idle/walk/attack/hit/die). 토끼는 위의 코드 모델 그대로
   registerMonsterAsset('bear', { url: './models/beast.glb', height: 2.3, tint: { fur: 0x5a4030 } });
   registerMonsterAsset('boar', { url: './models/beast.glb', height: 1.4, tint: { fur: 0x7b5a44, belly: 0x9a7a5a } });
-  // 사람(모든 직업, 상인): 틀의 사람과 같은 크기의 야영꾼. 팔 뼈에 틀의 손 모양(도끼, 활)이 붙고, 옷과 살갗은 사람마다 칠한다
-  registerHumanoidAsset({ url: './models/camper.glb', arms: { left: 'arm_l', right: 'arm_r' }, paint: { cloth: 'cloth', skin: 'skin' } });
+  // 사람(모든 직업, 상인): 틀의 사람과 같은 크기의 야영꾼. 팔 뼈에 틀의 손 모양(도끼, 활)이 붙고, 옷과 살갗은 사람마다 칠한다.
+  // 갑옷: 몸통(재질 torso)을 갑옷 색으로 칠하고, 틀의 덧대기(가슴받이·허리띠·어깨받이)를 등뼈(spine)에 붙인다
+  registerHumanoidAsset({
+    url: './models/camper.glb', arms: { left: 'arm_l', right: 'arm_r' }, paint: { cloth: ['cloth', 'torso'], skin: 'skin' },
+    armor: { tint: ['torso'], attach: 'spine' },
+  });
   // 도끼(손 모양 axe의 무기 전부): 도끼날 자리에 양날 도끼 머리
   registerWeaponAsset('axe', { url: './models/axe.glb', height: 0.5 });
   // 소리 파일: 때림과 얻음은 파일로, 나머지 효과음은 틀의 합성음. 배경음은 모닥불 곁(20m 안)에서만

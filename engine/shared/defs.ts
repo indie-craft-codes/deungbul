@@ -11,6 +11,7 @@ export * from './defs/growth';
 export * from './defs/items';
 export * from './defs/monsters';
 export * from './defs/social';
+export * from './defs/teams';
 // 맵 정의의 모양과 MAP에서 꺼낸 것(AREAS, GRID 등)은 world.ts가 다시 내보낸다. 여기서는 MAP만 내보낸다
 
 export {
@@ -28,6 +29,8 @@ export {
   DUNGEONS, PORTAL_REACH,
   // 사람들 사이의 것
   PARTY, CHANNEL, GUILD, MARKET,
+  // 팀
+  TEAMS, TEAM_RULES,
   // 재화
   CURRENCIES,
   // 재화 흐름 지표

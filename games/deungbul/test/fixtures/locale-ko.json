@@ -888,6 +888,20 @@
   "안개 1",
   "안개 2"
  ],
+ "fmt.teamCount": [
+  "ad612eb330df57ad",
+  "undefined명",
+  "0명",
+  "1명",
+  "2명"
+ ],
+ "fmt.teamMine": [
+  "e7650888c88c67ea",
+  "내 팀 undefined · 점수 NaN",
+  "내 팀 0 · 점수 NaN",
+  "내 팀 1 · 점수 NaN",
+  "내 팀 2 · 점수 NaN"
+ ],
  "fmt.tier": [
   "548c4980b100c96a",
   "기여 undefined단계 · 다음 undefined",
@@ -1633,6 +1647,9 @@
  ],
  "msg.statNone": "찍을 능력치 점수가 없습니다. 레벨이 오르면 3점씩 받습니다.",
  "msg.statReset": "능력치를 모두 돌려받았습니다. 다시 찍을 수 있습니다.",
+ "msg.teamFull": " 팀에 사람이 더 많습니다. 다른 팀을 고르세요.",
+ "msg.teamJoined": " 팀에 들어갔습니다.",
+ "msg.teamStay": "이 게임에서는 팀을 바꿀 수 없습니다.",
  "msg.tierUp": [
   "368dbdba97381ffb",
   "기여 undefined단계에 올랐습니다. 등탑지기 할멈이 골드 NaN을 건넵니다.",
@@ -1921,6 +1938,12 @@
  "ui.tabMail": "우편",
  "ui.tabMarket": "거래소",
  "ui.tabRank": "순위",
+ "ui.teamBoard": "점수판",
+ "ui.teamMore": "사람이 더 많음",
+ "ui.teamPickBalance": "사람이 더 많은 팀으로는 갈 수 없습니다.",
+ "ui.teamPickInfo": "고른 팀의 색 옷을 입습니다.",
+ "ui.teamPickTitle": "팀을 고르세요",
+ "ui.teamSwitch": "팀 바꾸기",
  "ui.title": "등불지기",
  "ui.toTown": "마을로",
  "ui.tower": "등탑",

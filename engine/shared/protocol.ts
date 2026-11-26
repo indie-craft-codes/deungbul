@@ -2,7 +2,8 @@
 // 화면에 보일 문장은 싣지 않는다: 종류와 값만 보내고 문장은 클라이언트가 언어에 맞게 만든다.
 import type { Gear, Mail, RankRow } from './defs/growth';
 import type { GuildView, MarketItem } from './defs/social';
-import type { ClientMsgs, ServerMsgs, WorldState } from './ext';
+import type { TeamBoard } from './defs/teams';
+import type { ClientMsgs, ServerMsgs, WorldState as GameWorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
 
 /**
@@ -61,7 +62,8 @@ export type Ev =
   | ['stun', id: number, dur: number]; // 기절했다
 
 /** 서버 전체가 공유하는 상태. 칸은 게임이 더한다 (engine/shared/ext.ts) */
-export type { WorldState };
+/** 모두가 보는 공유 상태: 게임이 더한 칸(engine/shared/ext.ts의 WorldState)과 틀의 모듈의 칸 (teams 모듈의 점수판: 그 모듈을 고른 게임에만 있다) */
+export type WorldState = GameWorldState & { teams?: TeamBoard };
 
 /** 게임이 확장 지점(engine/shared/ext.ts의 ServerMsgs, ClientMsgs)에 더한 메시지들: 종류마다 { t: 종류 } & 나머지 칸. 더한 것이 없으면 never */
 type Added<M> = { [K in keyof M]: { t: K } & M[K] }[keyof M];
@@ -137,6 +139,8 @@ export type ClientMsg =
   /** 기기 옮기기 (engine/server/net/handoff.ts): make는 이 캐릭터를 옮길 일회용 코드를 달라는 것, use는 다른 기기에서 받은 코드로 이어받는 것 */
   | { t: 'handoff'; a: 'make' }
   | { t: 'handoff'; a: 'use'; code: string }
+  /** 팀 고르기·옮기기 (teams 모듈): team은 TEAMS의 번호 */
+  | { t: 'team'; team: number }
   | Added<ClientMsgs>;
 
 export type ServerMsg =

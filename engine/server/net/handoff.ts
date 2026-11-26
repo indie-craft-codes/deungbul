@@ -5,9 +5,12 @@
 // 그래서 옮길 때 저장 키를 바꾸지 않고, '토큰 해시 → 저장 키'의 별칭을 둔다. 새 토큰의 해시는 별칭으로 저장 키를 가리키고, 옛 토큰의 해시는 '물러난 것'으로 적어 받지 않는다.
 // 이것은 accounts.md의 설계(캐릭터 번호와 손님 토큰 해시를 따로 둔다)와 같은 방향이다: 계정이 생기면 별칭 표가 그 '손님 토큰 해시' 칸으로 옮겨 간다.
 //
-// 코드: 헷갈리는 글자(0 O 1 I L)를 뺀 31자에서 8자. 10분 동안 한 번만 쓰인다. 서버 메모리에만 있다 (다시 켜면 사라지고, 새로 받으면 된다).
+// 코드: 헷갈리는 글자(0 O 1 I L)를 뺀 31자에서 8자. 10분 동안 한 번만 쓰인다.
+// 살아 있는 코드는 월드 저장의 'handoff' 칸(codes)에 **코드의 해시로만** 남는다: 서버를 다시 켜도(배포) 받은 코드가 끝날 때까지 쓰인다.
+// 코드 그 글자는 메모리에만 있다. 그래서 다시 켠 뒤 같은 캐릭터가 코드를 다시 달라고 하면 옛 코드를 보여 줄 수 없어, 옛 것을 지우고 새 코드를 준다.
 // 틀린 코드: 접속 주소와 사람(저장 키, 손님은 주소)마다 10분에 5번까지. 넘으면 그 10분이 지날 때까지 받지 않는다.
-// 별칭과 물러난 토큰은 월드와 함께 저장한다 (game.worldSaves의 'handoff' 칸).
+// 별칭과 물러난 토큰, 살아 있는 코드의 해시는 월드와 함께 저장한다 (game.worldSaves의 'handoff' 칸. codes는 살아 있는 코드가 있을 때만 적는다:
+// 코드가 없으면 칸의 모양이 예전과 같다. 칸을 더하기만 했으므로 저장 형식의 이전은 없다. 옛 서버는 모르는 칸 codes를 무시한다).
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import type { Game } from '../game/game';
 
@@ -21,6 +24,8 @@ export const TRY_MAX = 5;
 export const TRY_WINDOW_MS = 10 * 60000;
 
 export const hashToken = (token: string): string => createHash('sha256').update(token).digest('hex');
+/** 저장하는 코드의 해시 (토큰의 해시와 섞이지 않게 앞머리를 붙인다) */
+export const hashCode = (code: string): string => createHash('sha256').update('handoff-code:' + code).digest('hex');
 /** 접속에 쓸 수 있는 토큰의 모양 (server.ts의 join이 받는 모양과 같다) */
 export const TOKEN_RE = /^[A-Za-z0-9-]{16,64}$/;
 
@@ -28,10 +33,12 @@ export const TOKEN_RE = /^[A-Za-z0-9-]{16,64}$/;
 export const normCode = (raw: unknown): string => (typeof raw === 'string' ? raw.toUpperCase().replace(/[\s-]/g, '').slice(0, 16) : '');
 
 export class Handoff {
-  /** 살아 있는 코드: 코드 → 저장 키와 끝나는 시각 */
+  /** 살아 있는 코드: 코드의 해시 → 저장 키와 끝나는 시각 (저장한다) */
   private codes = new Map<string, { key: string; until: number }>();
-  /** 저장 키 → 그 키의 지금 코드 (새로 받으면 옛 코드는 지운다) */
+  /** 저장 키 → 그 키의 지금 코드의 해시 (새로 받으면 옛 코드는 지운다) */
   private codeOf = new Map<string, string>();
+  /** 코드의 해시 → 코드 그 글자 (같은 코드를 다시 보여 주려고. 메모리에만: 저장하지 않는다) */
+  private plain = new Map<string, string>();
   /** 새 토큰의 해시 → 저장 키 */
   private alias = new Map<string, string>();
   /** 저장 키 → 지금 그 캐릭터를 여는 토큰의 해시 (별칭이 없으면 저장 키 자신) */
@@ -44,12 +51,32 @@ export class Handoff {
   constructor(private g: Game) {
     g.worldSaves.push({
       name: 'handoff',
-      save: () => (this.alias.size || this.retired.size ? { alias: Object.fromEntries(this.alias), retired: [...this.retired] } : undefined),
+      save: () => {
+        const now = this.g.now(), live = [...this.codes].filter(([, c]) => c.until > now);
+        if (!this.alias.size && !this.retired.size && !live.length) return undefined;
+        const out: { alias: Record<string, string>; retired: string[]; codes?: Record<string, [string, number]> } = { alias: Object.fromEntries(this.alias), retired: [...this.retired] };
+        if (live.length) out.codes = Object.fromEntries(live.map(([h, c]) => [h, [c.key, c.until]]));
+        return out;
+      },
       load: (raw) => {
-        const d = (typeof raw === 'object' && raw !== null ? raw : {}) as { alias?: unknown; retired?: unknown };
+        const d = (typeof raw === 'object' && raw !== null ? raw : {}) as { alias?: unknown; retired?: unknown; codes?: unknown };
         const hex = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
         if (typeof d.alias === 'object' && d.alias !== null) for (const [h, k] of Object.entries(d.alias)) if (hex(h) && hex(k)) { this.alias.set(h, k); this.owner.set(k, h); }
         if (Array.isArray(d.retired)) for (const h of d.retired) if (hex(h)) this.retired.add(h);
+        // 살아 있던 코드 (해시만). 끝난 것과 깨진 것은 버린다. 한 캐릭터에 코드는 하나: 여럿이면 가장 늦게 끝나는 것
+        if (typeof d.codes === 'object' && d.codes !== null) {
+          const now = this.g.now();
+          for (const [h, v] of Object.entries(d.codes)) {
+            if (!hex(h) || !Array.isArray(v) || !hex(v[0]) || typeof v[1] !== 'number' || !Number.isFinite(v[1])) continue;
+            const key = v[0] as string, until = Math.min(v[1] as number, now + CODE_MS);
+            if (until <= now) continue;
+            const had = this.codeOf.get(key), hadAt = had ? this.codes.get(had) : undefined;
+            if (hadAt && hadAt.until >= until) continue;
+            if (had) this.codes.delete(had);
+            this.codes.set(h, { key, until });
+            this.codeOf.set(key, h);
+          }
+        }
       },
     });
   }
@@ -64,13 +91,16 @@ export class Handoff {
 
   /** 그 캐릭터(저장 키)를 옮길 코드를 만든다. 살아 있는 코드가 1분 넘게 남았으면 그것을 다시 준다 */
   make(key: string): { code: string; ms: number } {
-    const now = this.g.now(), old = this.codeOf.get(key), had = old ? this.codes.get(old) : undefined;
-    if (old && had && had.until - now > 60000) return { code: old, ms: had.until - now };
-    if (old) this.codes.delete(old);
-    let code = '';
-    do { code = Array.from({ length: CODE_LEN }, () => ALPHABET[randomInt(ALPHABET.length)]).join(''); } while (this.codes.has(code));
-    this.codes.set(code, { key, until: now + CODE_MS });
-    this.codeOf.set(key, code);
+    const now = this.g.now(), old = this.codeOf.get(key), had = old ? this.codes.get(old) : undefined, shown = old ? this.plain.get(old) : undefined;
+    if (old && had && shown && had.until - now > 60000) return { code: shown, ms: had.until - now };
+    // 옛 코드는 지운다 (다시 켠 뒤라 글자를 모르는 코드도: 한 캐릭터에 살아 있는 코드는 하나)
+    if (old) { this.codes.delete(old); this.plain.delete(old); }
+    let code = '', h = '';
+    do { code = Array.from({ length: CODE_LEN }, () => ALPHABET[randomInt(ALPHABET.length)]).join(''); h = hashCode(code); } while (this.codes.has(h));
+    this.codes.set(h, { key, until: now + CODE_MS });
+    this.codeOf.set(key, h);
+    this.plain.set(h, code);
+    this.g.saveDirty = true; // 다시 켜도 쓰이게 곧 저장한다
     return { code, ms: CODE_MS };
   }
 
@@ -96,9 +126,9 @@ export class Handoff {
     const now = this.g.now();
     const wait = this.blocked(who);
     if (wait > 0) return { wait };
-    const code = normCode(raw), hit = code.length === CODE_LEN ? this.codes.get(code) : undefined;
+    const code = normCode(raw), h = code.length === CODE_LEN ? hashCode(code) : '', hit = h ? this.codes.get(h) : undefined;
     if (!hit || hit.until <= now) {
-      if (hit) { this.codes.delete(code); this.codeOf.delete(hit.key); } // 시간이 지난 코드는 지운다
+      if (hit) this.drop(h, hit.key); // 시간이 지난 코드는 지운다
       let left = TRY_MAX;
       for (const k of who) {
         const w = this.wrong.get(k), cur: [number, number] = w && now - w[0] < TRY_WINDOW_MS ? w : [now, 0];
@@ -110,7 +140,7 @@ export class Handoff {
     }
     if (self === hit.key) return { self: true };
     // 맞았다: 한 번만 쓰이게 지우고, 새 토큰을 만들어 별칭을 옮긴다. 지금 그 캐릭터를 여는 토큰은 물러난다
-    this.codes.delete(code); this.codeOf.delete(hit.key);
+    this.drop(h, hit.key);
     const token = randomBytes(16).toString('hex'), fresh = hashToken(token);
     const before = this.owner.get(hit.key) ?? hit.key;
     this.retired.add(before);
@@ -121,10 +151,17 @@ export class Handoff {
     return { token, key: hit.key };
   }
 
+  /** 코드 하나를 지운다 (저장에서도 빠지게) */
+  private drop(h: string, key: string): void {
+    this.codes.delete(h); this.plain.delete(h);
+    if (this.codeOf.get(key) === h) this.codeOf.delete(key);
+    this.g.saveDirty = true;
+  }
+
   /** 오래된 기록(지난 코드, 창이 지난 틀린 시도)을 지운다. 주기적으로 부른다 */
   sweep(): void {
     const now = this.g.now();
-    for (const [code, c] of this.codes) if (c.until <= now) { this.codes.delete(code); if (this.codeOf.get(c.key) === code) this.codeOf.delete(c.key); }
+    for (const [h, c] of this.codes) if (c.until <= now) this.drop(h, c.key);
     for (const [k, w] of this.wrong) if (now - w[0] >= TRY_WINDOW_MS) this.wrong.delete(k);
   }
 }

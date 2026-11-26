@@ -6,7 +6,7 @@ import { handOf, type ItemId } from '../../shared/defs';
 import { NAME_MAX } from '../../shared/world';
 import { enBase } from './en';
 import { itemInfo as itemInfoOf, koBase, type Locale, type UiKey } from './ko';
-import { idNames } from './names';
+import { idNames, uiText } from './names';
 
 export { mergeLocale } from './merge';
 export type { EngineLocale, Locale, UiKey } from './ko';
@@ -61,6 +61,8 @@ export function forInput(text: string): string {
 }
 /** 고정 문구 */
 export const t = (key: UiKey): string => forInput(current.ui[key]);
+// 틀의 문장이 게임의 고정 문구(팀의 이름)를 키로 찾는 통로 (names.ts의 uiText)
+uiText.get = (key) => { const v: unknown = (current.ui as Readonly<Record<string, unknown>>)[key]; return typeof v === 'string' ? forInput(v) : key; };
 
 /** applyDom으로 화면을 한 번이라도 채웠는가 */
 let applied = false;

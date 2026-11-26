@@ -1,7 +1,8 @@
-// 화면(engine/client)의 셈을 브라우저 없이 본다: 화면 요소를 읽지 않게 떼어 낸 순수한 파일만 읽는다 (hud/bagcells.ts, hud/menu/tabs.ts, keys.ts).
+// 화면(engine/client)의 셈을 브라우저 없이 본다: 화면 요소를 읽지 않게 떼어 낸 순수한 파일만 읽는다 (hud/bagcells.ts, hud/menu/tabs.ts, keys.ts, hud/teamboard.ts).
 //   1. 가방의 그림 칸: 어떤 아이템이 어떤 차례로, 칸 귀퉁이의 든 수
 //   2. 메뉴의 탭: 고른 모듈마다 틀의 탭, 게임이 고른 차례(setMenuTabs)와 더한 탭(addMenuTab), 늘 보이는 탭, 일일 탭 숨기기
 //   3. 단축키: 고른 모듈마다 틀이 다는 키. 표(keys.ts)가 실제로 bindKey를 부르는 소스와 같은가
+//   4. 팀(teams 모듈): 사람의 팀, 점수판의 줄, 고르기 단추(서버의 균형 규칙과 같다), 팀 바꾸기
 // 그리는 것 자체(요소, 스타일)는 화면으로 본다. 화면은 startClient가 실제로 달린 키를 이 표와 견주어 다르면 콘솔에 경고한다.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -80,4 +81,23 @@ import { check } from '../harness';
   const wrong = engineKeys(1).filter((k) => modOf.has(k.where) && modOf.get(k.where) !== k.mod).map((k) => `${k.key}: 표 ${k.mod}, modules.ts ${modOf.get(k.where)}`);
   const listed = engineKeys(1).filter((k) => modOf.has(k.where)).length;
   check(wrong.length === 0 && listed >= 5, `키를 다는 화면 모듈이 modules.ts에서 그 모듈일 때만 init된다 (${listed}개 견줌${wrong.length ? `, 다름: ${wrong.join('; ')}` : ''})`);
+}
+
+// ---------- 4. 팀(teams 모듈)의 셈: 사람의 팀, 점수판의 줄, 고르기 단추, 팀 바꾸기 (hud/teamboard.ts) ----------
+{
+  const { TEAMS } = await import('../../shared/defs');
+  const { boardLayout, boardRows, pickButtons, switchAction, teamOfVals } = await import('../../client/hud/teamboard');
+  const two = TEAMS.slice(0, 2);
+  check(teamOfVals([1, 9], 3) === 1 && teamOfVals([-1], 3) === -1 && teamOfVals([3], 3) === -1 && teamOfVals([0.5], 3) === -1 && teamOfVals([], 3) === -1, '상태 줄의 첫 값이 팀 번호 (없거나 이상하면 팀 없음)');
+  check(boardLayout(2) === 'versus' && boardLayout(3) === 'list' && boardLayout(1) === 'list', '점수판: 팀이 둘이면 맞대결, 그 밖에는 줄마다');
+  const rows = boardRows(TEAMS, { score: [3, 1, 0], count: [2, 1, 1] }, 1);
+  check(rows.map((r) => `${r.color}:${r.score}:${r.count}:${r.mine ? 'M' : ''}`).join() === '#d04040:3:2:,#4060d0:1:1:M,#40a040:0:1:', `점수판의 줄: 팀의 색·점수·사람 수·내 팀 (${rows.map((r) => r.score).join()})`);
+  check(boardRows(two, undefined, -1).every((r) => r.score === 0 && r.count === 0), '점수판을 아직 받지 않았으면 0');
+  const more = (b: { more: boolean }[]) => b.map((x) => (x.more ? 1 : 0)).join('');
+  check(more(pickButtons(two, { score: [0, 0], count: [1, 0] }, -1, true)) === '10' && more(pickButtons(two, { score: [0, 0], count: [1, 1] }, -1, true)) === '00', '고르기: 사람이 더 많은 팀의 단추는 막힌다 (같으면 열린다)');
+  check(more(pickButtons(two, { score: [0, 0], count: [2, 1] }, 0, true)) === '00' && more(pickButtons(two, { score: [0, 0], count: [1, 2] }, 0, true)) === '01', '옮길 때는 나를 빼고 센다 (서버의 규칙과 같다)');
+  check(more(pickButtons(TEAMS, { score: [0, 0, 0], count: [1, 1, 0] }, -1, true)) === '110' && more(pickButtons(two, { score: [0, 0], count: [5, 0] }, -1, false)) === '00', '팀이 셋이면 가장 적은 다른 팀과 견주고, balance가 꺼지면 막지 않는다');
+  check(pickButtons(two, undefined, 1, true)[1].mine && !pickButtons(two, undefined, 1, true)[0].mine, '내 팀의 단추를 안다');
+  const sw = switchAction(2, 0, true), sw3 = switchAction(3, 1, true);
+  check(typeof sw === 'object' && sw.pick === 1 && sw3 === 'open' && switchAction(2, -1, true) === 'none' && switchAction(2, 1, false) === 'none', '팀 바꾸기: 둘이면 곧바로 다른 팀, 셋 이상이면 고르기 창, 팀이 없거나 바꿀 수 없으면 단추가 없다');
 }

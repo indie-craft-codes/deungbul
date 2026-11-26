@@ -8,6 +8,7 @@ export { Game, Modifiers, type GameOptions, type KindDef, type ModName, type Plu
 export { clamp, dayOf, dist, readInt, type Ent } from './game/entity';
 export type { AwayPart, BuildPart, ClassesPart, CombatPart, DailyPart, EconomyPart, EntParts, GearPart, GrowthPart, GuildPart, ItemsPart, MailPart } from './game/parts';
 export type { MonsterAct, MonsterBehavior } from './game/systems/monsters';
+export type { Teams } from './game/systems/teams';
 export { channelOf, fieldLayer, isField, notifyLayer } from './game/layers';
 export { startServer, type Options, type Running } from './net/server';
 export { createAdmin, parseSpan, type Admin, type AdminOptions } from './net/admin';

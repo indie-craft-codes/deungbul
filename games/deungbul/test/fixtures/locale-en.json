@@ -888,6 +888,20 @@
   "Mist 1",
   "Mist 2"
  ],
+ "fmt.teamCount": [
+  "1ff6c2d9ad194869",
+  "undefined players",
+  "0 players",
+  "1 player",
+  "2 players"
+ ],
+ "fmt.teamMine": [
+  "bc23deb1e4b54989",
+  "Team undefined · score NaN",
+  "Team 0 · score NaN",
+  "Team 1 · score NaN",
+  "Team 2 · score NaN"
+ ],
  "fmt.tier": [
   "2133fedeaeba9b67",
   "Tier undefined · next at undefined",
@@ -1633,6 +1647,9 @@
  ],
  "msg.statNone": "No attribute points to spend. You get 3 each level.",
  "msg.statReset": "All attribute points refunded. You can spend them again.",
+ "msg.teamFull": " has more players. Pick another team.",
+ "msg.teamJoined": "You joined .",
+ "msg.teamStay": "You cannot switch teams in this game.",
  "msg.tierUp": [
   "a6a696002c58c590",
   "You reached contribution tier undefined. Granny hands you NaN gold.",
@@ -1921,6 +1938,12 @@
  "ui.tabMail": "Mail",
  "ui.tabMarket": "Market",
  "ui.tabRank": "Rank",
+ "ui.teamBoard": "Scoreboard",
+ "ui.teamMore": "More players",
+ "ui.teamPickBalance": "You cannot join the team with more players.",
+ "ui.teamPickInfo": "You wear the color of the team you pick.",
+ "ui.teamPickTitle": "Pick a team",
+ "ui.teamSwitch": "Switch team",
  "ui.title": "Lampkeeper",
  "ui.toTown": "To town",
  "ui.tower": "Lamp tower",
