@@ -11,7 +11,7 @@
 
 ## 요약
 
-- 코드는 틀(`engine/`)과 게임 일곱(`games/deungbul/` 등불지기, 예제 `games/sample/`, 시제품 `games/cave`·`starmine`·`bastion`, RPG가 아닌 시제품 `games/rollball` 굴림공, 문서만 보고 만든 수집형·방치형 `games/dalmuri` 달무리 원정대: 증명 기록 [proof-dalmuri.md](proof-dalmuri.md))이다. 방향은 게임 → 틀 하나다.
+- 코드는 틀(`engine/`)과 게임 여덟(`games/deungbul/` 등불지기, 예제 `games/sample/`, 시제품 `games/cave`·`starmine`·`bastion`, RPG가 아닌 시제품 `games/rollball` 굴림공, 문서만 보고 만든 수집형·방치형 `games/dalmuri` 달무리 원정대: 증명 기록 [proof-dalmuri.md](proof-dalmuri.md), 문서만 보고 만든 턴제 전술 `games/stepstone` 징검돌 전술: [proof-stepstone.md](proof-stepstone.md))이다. 방향은 게임 → 틀 하나다.
 - **틀은 장르와 무관한 핵심과 선택 모듈 스물둘이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈', 영웅 장비 `herogear`는 아래 '영웅의 성장')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
 - 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
 - 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 18개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 일곱의 시험: 검사 2159개, 2026-11-26 `feat/idleflow`) 모두 통과, `npm run build:all` 통과.
@@ -204,6 +204,7 @@
 
 ## 0. 이어 갈 것
 
+0. **다음 후보: 턴제의 빈 곳** ([proof-stepstone.md](proof-stepstone.md), 평가 3.5/5): 판·방 나누기(게임이 쓸 수 있는 인스턴스 층), 대기실·짝짓기, 차례와 기한(화면의 초읽기), 땅 누르기를 게임이 가로채는 접점, 순간 이동·엔티티 지우기의 문서, 끊긴 사람 알아보기(`pid`, `REJOIN_KEEP_S`), 카메라 돌리기, 게임의 연출 사건 통로, 안내문을 대화창에 남기지 않기, 폰 세로의 화면 밀림과 틀 css의 세기. 그리고 징검돌의 균형(나중에 두는 편이 유리).
 0. **달무리 원정대가 찾은 빈 곳 메우기: 끝(2026-11-26, 가지 `feat/idleflow`)**: 위 '단계 밖과 달무리의 빈 곳 메우기'. 던전 안의 자동 전투(`DungeonDef.auto`), 던전 뒤 단계로(`STAGE_RULES.returnAfterDungeon`), 메뉴에서 바로 던전(`DungeonDef.fromMenu`, 명령 `dungeonGo`), 돌아왔을 때의 창(`IDLE.popup`, 메시지 `idleBack`), 재료로 영웅 조각(`HERO_RULES.trade`), 영웅 모델에 id·등급(`setHeroModel`, `HumanoidLook.hero`), 딸려 온 화면 감추기(`HUD.hide`), 메뉴 줄 도우미의 입구(`menuRow` …), 틀 안의 타입 오류 둘, 문서. **다음**: 달무리를 이 칸들로 옮긴다(게임 명령 `keyrun`·`essence`, 메시지 `idleGain`, 옷 색 꼼수, css 감추기를 지운다). 그 뒤 달무리가 소탕·오프라인 진행·픽업 배너·영웅의 성장을 쓰게 한다.
 0. **영웅의 성장: 끝(2026-11-26, 가지 `feat/herogrow`)**: 위 '영웅의 성장'. 같은 때 다른 가지(`sweep`: 소탕권·오프라인 단계 진행·픽업 배너)가 단계·뽑기·방치·던전을 고치고 있다: 합칠 때 `modules.ts`, 언어 파일, 문서의 13절이 겹친다.
 0. **소탕·오프라인 진행·픽업 배너: 끝(2026-11-26, 가지 `feat/sweep`)**: 위 같은 이름의 절. 영웅의 장비·각성·스킬 레벨·시너지·진형은 다른 가지(`herogrow`)가 맡는다.
