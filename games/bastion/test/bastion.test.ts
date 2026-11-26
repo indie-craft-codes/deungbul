@@ -131,7 +131,7 @@ import { check, connect, until } from '@engine/testing';
   const onMsg = (m: ServerMsg) => { if (m.t === 'world') Object.assign(seen, m.s.defense); };
   const a = await connect(server.port, '파수꾼', 'token-bastion-test-0001', onMsg);
   check(await until(() => seen.hp === WAVE.gateHp && seen.left >= 0), '접속하면 우물의 내구와 초읽기가 온다');
-  check(await until(() => seen.phase === 'active' && seen.foes > 0, 6000) && a.sys.some((s) => s.startsWith('waveStart:1')), '때가 되면 접속한 사람에게 물결이 시작됐다고 알린다');
+  check(await until(() => seen.phase === 'active' && seen.foes > 0, 20_000) && a.sys.some((s) => s.startsWith('waveStart:1')), '때가 되면 접속한 사람에게 물결이 시작됐다고 알린다');
   a.ws.close();
   await server.close();
 }

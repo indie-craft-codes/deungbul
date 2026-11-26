@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { FORGE, GLOW_START, RAID, needFor, nextRaidAt, raidExp } from '../shared/defs';
 import { TOWER } from '../shared/world';
 import { MemoryStore } from '@engine/server';
-import { check, sleep, until } from '@engine/testing';
+import { check, settle, until } from '@engine/testing';
 import { connectDeungbul as connect } from './peer';
 import { startDeungbul } from './game';
 
@@ -48,7 +48,7 @@ try {
   check(await until(() => a.sparks === 0) && a.glow === GLOW_START + 1 + (had - 3), '가진 것보다 많이 바칠 수 없다');
   a.send({ t: 'offer', to: 'tower', n: -5 });
   a.ws.send('{"t":"offer","to":"x","n":1}');
-  await sleep(300);
+  await settle(a, 2);
   check(a.sparks === 0 && a.ws.readyState === a.ws.OPEN, '잘못된 바치기 요청은 무시된다');
 
   // 메인 퀘스트 1장: 새로 온 사람이 처음부터 끝까지 따라간다 (위치와 불씨는 서버에서 직접 옮겨 시간을 줄인다)
@@ -65,21 +65,21 @@ try {
   check(await until(isAt(0, 0)), '처음 접속하면 1장 첫 단계에서 시작한다');
   check(slay('slime', 2) === 2 && (await until(isAt(0, 0, 2))), '슬라임을 잡으면 진행 수치가 오른다');
   slay('wisp', 1);
-  await sleep(300);
+  await settle(q, 2);
   check(isAt(0, 0, 2)(), '다른 몬스터는 세지 않는다');
   check(slay('slime', 1) === 1 && (await until(isAt(0, 1))) && q.sys.some((x) => x.startsWith('questStep:')), '세 마리를 잡으면 다음 단계로 넘어가고 보상을 받는다');
   place(TOWER.x, TOWER.z + 3);
-  await sleep(200);
+  await settle(q, 1);
   q.send({ t: 'offer', to: 'tower', n: 1 });
   check(await until(isAt(0, 2)), '등탑에 불씨를 바치면 다음 단계로 넘어간다');
   place(FORGE.x + 3, FORGE.z);
-  check(await until(isAt(0, 3), 2000), '옛 대장간 터에 가면 다음 단계로 넘어간다');
+  check(await until(isAt(0, 3)), '옛 대장간 터에 가면 다음 단계로 넘어간다');
   check(slay('shade_bram', 1) === 1 && (await until(isAt(0, 4))), '브람의 그림자를 쓰러뜨리면 다음 단계로 넘어간다');
   place(TOWER.x, TOWER.z + 3);
   qEnt.sparks = 40;
-  await sleep(200);
+  await settle(q, 1);
   q.send({ t: 'offer', to: 'tower', n: 3 });
-  await new Promise((r) => setTimeout(r, 150));
+  await settle(q, 2);
   check(isAt(0, 4, 0)(), '주민에게 보태는 단계에서 등탑에 바친 불씨는 세지 않는다');
   q.send({ t: 'offer', to: 'resident', n: 3 });
   check(await until(isAt(0, 4, 3)), '불씨를 일부만 바치면 그만큼만 진행된다');
@@ -89,11 +89,11 @@ try {
   q.send({ t: 'offer', to: 'resident', n: 2 });
   check(await until(isAt(1, 0)) && q.sys.some((x) => x === 'questDone:bram'), '마지막 단계(30)를 마치면 장이 끝나고 다음 장이 시작된다');
   q.ws.close();
-  await sleep(300);
+  await until(() => !g0.ents.has(q.id));
   const q2 = await connect(server.port, undefined, TOKEN_Q);
   check(await until(() => q2.quest[0] === 1 && q2.quest[1] === 0), '다시 접속해도 퀘스트 진행이 남는다');
   q2.ws.close();
-  await sleep(300);
+  await until(() => !g0.ents.has(q2.id));
 
   // 습격 시각표
   const at = (h: number, m: number) => new Date(2026, 10, 23, h, m, 0, 0).getTime();
@@ -111,10 +111,10 @@ try {
   game.raid.start();
   check(await until(() => a.raid.phase === 'active' && a.raid.foes === 10 && a.raid.towerMaxHp === RAID.towerHpBase + glow0 * 3), `습격이 시작되면 인원에 맞는 적이 온다 (2명: ${a.raid.foes}마리, 등탑 내구 ${a.raid.towerMaxHp})`);
   check(await until(() => [...game.ents.values()].filter((e) => e.swarm).length === 10), '습격 적이 월드에 나타난다');
-  const before = [...game.ents.values()].filter((e) => e.swarm).map((e) => Math.hypot(e.x - TOWER.x, e.z - TOWER.z));
-  await sleep(1500);
-  const after = [...game.ents.values()].filter((e) => e.swarm).map((e) => Math.hypot(e.x - TOWER.x, e.z - TOWER.z));
-  check(after.length === 10 && after.reduce((s, d) => s + d, 0) < before.reduce((s, d) => s + d, 0) - 10, '습격 적이 등탑으로 다가온다');
+  const dists = () => [...game.ents.values()].filter((e) => e.swarm).map((e) => Math.hypot(e.x - TOWER.x, e.z - TOWER.z));
+  const before = dists(), sum = (l: number[]) => l.reduce((s, d) => s + d, 0);
+  // 1.5초를 자고 재지 않는다: 다가오는 만큼은 틱이 돈 만큼이라 바쁜 컴퓨터에서는 늦다
+  check(await until(() => dists().length === 10 && sum(dists()) < sum(before) - 10, 20_000), '습격 적이 등탑으로 다가온다');
   const aEnt = game.ents.get(a.id)!;
   for (const m of [...game.ents.values()]) if (m.swarm) game.combat.damage(aEnt, m, 9999, false);
   check(await until(() => a.raid.phase === 'idle' && a.glow === glow0 + 10), '다 막으면 습격이 끝나고 밝기가 10 오른다');
@@ -125,14 +125,14 @@ try {
   const glow1 = a.glow;
   Object.assign(game.raid.cfg, { durationS: 1 });
   game.raid.start();
-  check(await until(() => a.raid.phase === 'idle' && a.glow === glow1 + RAID.loseGlow, 5000) && a.sys.some((s) => s === `raidLost:${RAID.loseGlow}`), `못 막으면 밝기가 10 내려간다 (${glow1} → ${a.glow})`);
+  check(await until(() => a.raid.phase === 'idle' && a.glow === glow1 + RAID.loseGlow, 20_000) && a.sys.some((s) => s === `raidLost:${RAID.loseGlow}`), `못 막으면 밝기가 10 내려간다 (${glow1} → ${a.glow})`);
   check([...game.ents.values()].every((e) => !e.swarm), '진 뒤에도 습격 적이 남지 않는다');
-  await sleep(300);
+  await settle(a, 2);
   const glowEnd = a.glow, contribEnd = a.contrib, sparksEnd = a.sparks, resEnd = a.residents[0];
 
   // 서버를 껐다 켜도 등탑과 캐릭터가 남는다
   a.ws.close(); b.ws.close();
-  await sleep(300);
+  await until(() => !game.ents.has(a.id) && !game.ents.has(b.id));
   await server.close();
   server = await startDeungbul(0, { store, game: { raid: raidCfg } });
   const a3 = await connect(server.port, undefined, TOKEN_A);

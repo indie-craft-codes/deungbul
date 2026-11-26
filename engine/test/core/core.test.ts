@@ -10,7 +10,7 @@ import { AOI, AOI_LEAVE, SNAP_EVERY, TICK_MS } from '../../shared/world';
 import { Game } from '../../server/game/game';
 import { startServer } from '../../server/net/server';
 import { MemoryStore } from '../../server/store';
-import { check, sleep, until } from '../harness';
+import { check, until } from '../harness';
 import { balls } from './server/balls';
 
 const keyOf = (token: string) => createHash('sha256').update(token).digest('hex');
@@ -32,10 +32,12 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
   check(msg.includes("'economy'") && msg.includes('MODULES'), `고르지 않은 모듈의 시스템을 건드리면 무엇을 고르라는지 알리는 오류가 난다 (${msg.slice(0, 80)}…)`);
   // 틱이 돈다: 사람은 걷고(전투 모듈 없이), 공은 게임의 틱을 받는다
   const p = g.players.spawn('걷는이', false);
-  g.movement.goTo(p, p.x + 6, p.z);
+  // 나는 자리는 처음 서는 곳 둘레의 아무 데나다: 동쪽의 우물(x 10)에 막혀 돌아가면 덜 걷는다. 정해진 자리에서 서쪽으로 걷는다
+  p.x = 0; p.z = 0;
+  g.movement.goTo(p, p.x - 6, p.z);
   const x0 = p.x, b0 = [...g.ents.values()].find((e) => e.kind === 'ball')!;
   for (let i = 0; i < 20; i++) g.tick(0.05);
-  check(p.x > x0 + 4 && Number(b0.data.age) > 0.9, `전투 모듈 없이도 사람이 걷고(${(p.x - x0).toFixed(1)}m), 게임의 종류가 틱을 받는다`);
+  check(x0 - p.x > 4 && Number(b0.data.age) > 0.9, `전투 모듈 없이도 사람이 걷고(${(x0 - p.x).toFixed(1)}m), 게임의 종류가 틱을 받는다`);
   const out = g.players.export(p);
   check(Object.keys(out).sort().join(',') === 'at,ext,name,seen,v' && Object.keys(out.ext ?? {}).length === 0, `핵심만의 캐릭터 저장에는 핵심의 칸만 있다 (${Object.keys(out).join(', ')})`);
 }
@@ -60,6 +62,15 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
   ws.on('message', (data) => { got.push(JSON.parse(data.toString()) as ServerMsg); });
   await new Promise((ok, fail) => { ws.on('open', ok); ws.on('error', fail); });
   const send = (m: Record<string, unknown>) => ws.send(JSON.stringify(m));
+  /** 서버가 앞서 보낸 메시지를 다 처리하고(ping → pong) 스냅샷을 두 번 더 보낼 때까지 기다린다: '아무 일도 없다'를 벽시계로 자지 않고 본다 */
+  let pingNo = 1;
+  const settled = async () => {
+    const c = pingNo++;
+    send({ t: 'ping', c });
+    await until(() => got.some((m) => m.t === 'pong' && m.c === c));
+    const n = got.filter((m) => m.t === 'snap').length;
+    await until(() => got.filter((m) => m.t === 'snap').length >= n + 2);
+  };
   send({ t: 'join', name: '공줍기', token });
   await until(() => got.some((m) => m.t === 'welcome'));
   const welcome = got.find((m): m is Extract<ServerMsg, { t: 'welcome' }> => m.t === 'welcome')!;
@@ -77,7 +88,7 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
   // 움직인다: 첫 공 곁으로
   const target = BALL_SPOTS[0];
   send({ t: 'move', x: target.x, z: target.z - 1.2 });
-  const near = await until(() => { const you = snaps().at(-1)?.you; return !!you && Math.hypot(you[0] - target.x, you[1] - (target.z - 1.2)) < 0.6; }, 4000);
+  const near = await until(() => { const you = snaps().at(-1)?.you; return !!you && Math.hypot(you[0] - target.x, you[1] - (target.z - 1.2)) < 0.6; }, 20_000);
   const me = s.game.ents.get(welcome.id)!;
   check(near && Math.hypot(me.x - target.x, me.z - (target.z - 1.2)) < 0.6, `이동 명령으로 서버의 내 자리가 옮겨지고 스냅샷의 you가 따라온다 (${me.x.toFixed(1)}, ${me.z.toFixed(1)})`);
 
@@ -97,8 +108,8 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
   ];
   const mark = got.length;
   for (const m of RPG) send(m);
-  await sleep(500);
-  const replies = got.slice(mark).filter((m) => m.t !== 'snap').map((m) => m.t);
+  await settled();
+  const replies = got.slice(mark).filter((m) => m.t !== 'snap' && m.t !== 'pong').map((m) => m.t);
   check(RPG.every((m) => !s.game.commands.has(m.t)), `고르지 않은 모듈의 명령 ${RPG.length}가지는 서버에 등록되어 있지 않다`);
   check(replies.length === 0 && ws.readyState === ws.OPEN && !me.auto && me.cls === '' && me.gold === 0 && !me.targetId, `웹소켓으로 직접 보내도 거절된다: 응답 없음(${replies.join(',') || '0개'}), 연결 유지, 상태 그대로`);
 

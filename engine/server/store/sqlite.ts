@@ -26,8 +26,9 @@ export class SqliteStore implements Store, EconStore {
     this.file = file;
     fs.mkdirSync(path.dirname(file), { recursive: true });
     this.db = new DatabaseSync(file);
-    this.db.exec('PRAGMA journal_mode = WAL;');
-    this.migrate(schema);
+    // 열다가(스키마를 올리다가) 실패하면 연 파일을 닫고 예외를 낸다: 열린 채 남으면 Windows에서는 그 파일을 옮기거나 지우지 못한다
+    try { this.db.exec('PRAGMA journal_mode = WAL;'); this.migrate(schema); }
+    catch (err) { try { this.db.close(); } catch { /* 이미 닫혔으면 그것으로 됐다 */ } throw err; }
   }
   /** 이 DB의 스키마 번호 (PRAGMA user_version) */
   schemaVersion(): number { return Number(this.db.prepare('PRAGMA user_version').get()?.user_version ?? 0); }

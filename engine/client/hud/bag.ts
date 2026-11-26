@@ -7,6 +7,7 @@ import { $ } from '../app';
 import { bindKey, onMsg } from '../bus';
 import { L, itemInfo, onLangChange, t } from '../i18n';
 import { S } from '../state';
+import { BAG_KINDS, bagCells } from './bagcells';
 import { itemIcon } from './icons';
 import { openMenu } from './menu';
 import { sourceText } from './sources';
@@ -58,8 +59,7 @@ export function renderBag(): void {
   ui.list.append(row(t('tabGear'), loc.fmt.have(gearCount, S.bag.max), ''));
   if (gearFull()) { const warn = document.createElement('div'); warn.className = 'note gwarn'; warn.setAttribute('role', 'status'); warn.textContent = S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull'); ui.list.append(warn); }
   // 물약, 재료, 특별한 물건(보호석 등)의 칸: 이 차례로 늘어선다. 없는 것도 흐리게 보여, 무엇을 모을 수 있는지 알 수 있다
-  const kinds = [['potion', 'bagPotions'], ['mat', 'bagMats'], ['token', 'bagCharms']] as const;
-  const items = kinds.flatMap(([k]) => ids.filter((id) => itemDef(id).kind === k));
+  const cells = bagCells(me.items, ids), items = cells.map((c) => c.id);
   if (!items.length) return;
   ui.list.append(head(t('bagItems')));
   const grid = document.createElement('div');
@@ -72,7 +72,7 @@ export function renderBag(): void {
     for (const c of grid.children) c.classList.toggle('on', (c as HTMLElement).dataset.id === id);
     info.textContent = '';
     if (!id) { info.append(Object.assign(document.createElement('div'), { className: 'note', textContent: t('bagPick') })); return; }
-    const n = me.items[id] ?? 0, kind = kinds.find(([k]) => k === itemDef(id).kind)?.[1] ?? 'bagMats';
+    const n = me.items[id] ?? 0, kind = BAG_KINDS.find(([k]) => k === itemDef(id).kind)?.[1] ?? 'bagMats';
     const top = document.createElement('div');
     top.className = 'row';
     top.append(Object.assign(document.createElement('span'), { className: 'iname', textContent: loc.items[id].name }), Object.assign(document.createElement('span'), { className: 'num', textContent: (itemDef(id).kind === 'mat' ? loc.fmt.haveBig : loc.fmt.have)(n, itemCap(id)) }));
@@ -80,8 +80,7 @@ export function renderBag(): void {
     const note = itemDef(id).kind === 'mat' ? (id === SALVAGE.item ? t('salvageSource') : sourceText(id)) : itemInfo(id);
     info.append(top, Object.assign(document.createElement('div'), { className: 'note', textContent: [t(kind), note].filter(Boolean).join(' · ') }));
   };
-  for (const id of items) {
-    const n = me.items[id] ?? 0;
+  for (const { id, n, count } of cells) {
     const cell = document.createElement('button');
     cell.type = 'button';
     cell.className = n > 0 ? 'bagcell' : 'bagcell none';
@@ -91,7 +90,7 @@ export function renderBag(): void {
     // 그림이 없는 아이템(그림 시트를 등록하지 않은 게임)은 이름의 앞 글자를 보인다
     const pic = itemIcon(id);
     cell.append(pic ?? Object.assign(document.createElement('span'), { className: 'bagabbr', textContent: loc.items[id].name.slice(0, 2) }));
-    if (n > 0) cell.append(Object.assign(document.createElement('span'), { className: 'bagn', textContent: n >= 10000 ? `${Math.floor(n / 1000)}k` : String(n) }));
+    if (count !== null) cell.append(Object.assign(document.createElement('span'), { className: 'bagn', textContent: count }));
     cell.addEventListener('click', () => show(picked === id ? null : id));
     grid.append(cell);
   }

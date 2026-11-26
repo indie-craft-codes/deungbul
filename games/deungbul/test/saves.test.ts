@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { SqliteStore, type PlayerSave, type WorldSave } from '@engine/server';
-import { check } from '@engine/testing';
+import { check, removeTemp } from '@engine/testing';
 import { newGame } from './game';
 import { readV0, v0Samples } from './v0read';
 
@@ -47,5 +47,5 @@ const firstDiff = (a: string, b: string): number => { for (let i = 0; i < Math.m
   const p2 = newGame({ now: () => 1_795_000_000_000 }).players.spawn(back.name, false, back, 'k00');
   check(back.v === 1 && back.gv === undefined && p2.qc === p.qc && p2.contrib === p.contrib && p2.tier === p.tier && p2.gold === p.gold && p2.lv === p.lv, `다시 쓴 저장에는 틀의 버전(v${back.v})이 붙고(등불지기는 아직 게임의 이전이 없어 gv가 없다), 다시 읽어도 같은 상태다`);
   store.close();
-  fs.rmSync(dir, { recursive: true, force: true });
+  removeTemp(dir);
 }

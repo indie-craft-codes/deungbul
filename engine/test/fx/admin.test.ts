@@ -15,7 +15,7 @@ import type { ServerMsg } from '../../shared/protocol';
 import { AUDIT_FILE, FORWARD_HEADERS, TOKEN_FILE, createAdmin, parseSpan } from '../../server/net/admin';
 import { startServer, type Running } from '../../server/net/server';
 import { MemoryStore } from '../../server/store';
-import { check, connect, sleep, until, type Peer } from '../harness';
+import { check, connect, removeTemp, settle, until, type Peer } from '../harness';
 
 const keyOf = (t: string) => createHash('sha256').update(t).digest('hex');
 const TA = 'admin-test-token-aaaaaaaa', TB = 'admin-test-token-bbbbbbbb', TC = 'admin-test-token-cccccccc';
@@ -59,7 +59,10 @@ function tryJoin(port: number, token?: string): Promise<{ welcome: boolean; code
 }
 const closed = (p: Peer): Promise<number> => new Promise((done) => { if (p.ws.readyState === p.ws.CLOSED) done(-1); else p.ws.on('close', (c) => done(c)); });
 
-let server: Running = await startServer(0, { store, admin: { dir } });
+// 대화 간격(0.7초)은 시험의 시계로 넘긴다 (벽시계로 자지 않는다)
+let t = Date.now();
+const pass = (ms: number) => { t += ms; };
+let server: Running = await startServer(0, { store, admin: { dir }, now: () => t });
 let port = server.port;
 const run = async (cmd: string, ...args: string[]) => (await post(port, { cmd, args, by: '시험' }, { 'x-admin-token': server.admin.token })).body ?? {};
 try {
@@ -113,17 +116,17 @@ try {
 
   // 말 막기
   check((await run('mute', '가람', '2', '도배')).ok === true && (await until(() => a.sys.some((s) => s.startsWith('muted:')))), 'mute: 막힌 사람에게 알린다');
-  await sleep(800);
+  pass(800);
   a.send({ t: 'chat', text: '막힌 뒤의 말' });
   check(await until(() => a.sys.filter((s) => s.startsWith('muted:')).length >= 2), '막힌 사람이 전체 대화를 하면 안내문을 받는다');
-  await sleep(300);
+  await settle(a); await settle(b);
   check(!b.chat.some((c) => c.endsWith('막힌 뒤의 말')), '막힌 사람의 전체 대화는 남에게 가지 않는다');
   const aEnt = server.game.ents.get(a.id)!;
   const before = a.sys.length;
   server.game.command(aEnt, { t: 'gchat', text: '길드 대화' });
   check(await until(() => a.sys.slice(before).some((s) => s.startsWith('muted:'))), '막힌 사람은 길드 대화도 막힌다 (명령을 감싼다)');
   check((await run('unmute', '가람')).ok === true, 'unmute');
-  await sleep(800);
+  pass(800);
   a.send({ t: 'chat', text: '풀린 뒤의 말' });
   check(await until(() => b.chat.some((c) => c.endsWith('풀린 뒤의 말'))), '말 막기를 풀면 다시 전해진다');
 
@@ -191,7 +194,7 @@ try {
   const logBefore = server.game.sanctions.log.length;
   await server.close();
   check(!fs.existsSync(file), '끌 때 토큰 파일을 지운다 (다음에 켜면 새로 만든다)');
-  server = await startServer(0, { store, admin: { dir } });
+  server = await startServer(0, { store, admin: { dir }, now: () => t });
   port = server.port;
   check(fs.existsSync(file) && fs.readFileSync(file, 'utf8').trim() === server.admin.token, '다시 켜면 새 토큰 파일');
   check((await tryJoin(port, TA)).code === 4003 && (await tryJoin(port, TB)).code === 4003, '다시 켜도 차단이 남는다 (시간 차단, 영구 차단)');
@@ -212,12 +215,12 @@ try {
   const refused = noLog.run('banip', ['10.0.0.9', 'perm'], '시험', 'local');
   check(refused.ok === false && !server.game.sanctions.banned(null, '10.0.0.9'), '관리자 기록을 적지 못하면 명령을 처리하지 않는다');
   noLog.close();
-  fs.rmSync(bad, { recursive: true, force: true });
+  removeTemp(bad);
   // 저장 폴더가 없는 서버(DB=memory): 토큰을 따로 주지 않으면 통로가 닫혀 있다
   const closedOne = await startServer(0, { store: new MemoryStore() });
   check((await post(closedOne.port, { cmd: 'who' }, { 'x-admin-token': closedOne.admin.token })).status === 404, '토큰 파일을 둘 곳이 없는 서버는 관리자 통로를 열지 않는다');
   await closedOne.close();
 } finally {
   await server.close();
-  fs.rmSync(dir, { recursive: true, force: true });
+  removeTemp(dir);
 }

@@ -8,8 +8,9 @@
 // 틀의 스타일: 게임의 index.html이 틀의 폴더를 가리키지 않아도 되게 여기서 읽는다. 맨 먼저 읽어야 게임의 스타일(틀의 것을 덮어쓴다)보다 앞에 놓인다
 import './style.css';
 import { PROTOCOL } from '../shared/protocol';
+import { SKILL_SLOTS } from '../shared/defs';
 import { MAP } from '../shared/world';
-import { dispatch, onMsg, runFrame, runSlow } from './bus';
+import { boundKeys, dispatch, onMsg, runFrame, runSlow } from './bus';
 import { initModules } from './modules';
 import { steer } from './actions';
 import { $, startApp, view } from './app';
@@ -19,7 +20,8 @@ import { initChat, logChat } from './hud/chat';
 import { hideGate, initMe, renderTexts, setMyName, showGate } from './hud/me';
 import { notifySys } from './hud/notify';
 import { setParty } from './hud/party';
-import { anyModule } from './mods';
+import { keyDiff, keysFor } from './keys';
+import { anyModule, hasModule } from './mods';
 import { speak, updateFloats } from './hud/tags';
 import { applyDom, onLangChange, t } from './i18n';
 import { axis, initInput } from './input';
@@ -161,6 +163,9 @@ export function startClient(opts: ClientOptions = {}): void {
   document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
   spawnMerchant();
   initInput();
+  // 틀이 단 단축키가 표(keys.ts)와 같은가: 다르면 표를 고치라고 알린다 (화면은 그대로 돈다)
+  const keyGap = keyDiff(boundKeys(), keysFor(hasModule, SKILL_SLOTS));
+  if (keyGap.missing.length || keyGap.extra.length) console.warn(`[keys] 틀의 단축키가 engine/client/keys.ts의 표와 다릅니다: 표에만 있는 것 ${keyGap.missing.join(',') || '없음'}, 표에 없는 것 ${keyGap.extra.join(',') || '없음'}`);
 
   initNet({
     message: (m) => {

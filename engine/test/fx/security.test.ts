@@ -7,7 +7,7 @@ import { Game } from '../../server/game/game';
 import { isClean, mask, tidy } from '../../server/net/moderation';
 import { startServer } from '../../server/net/server';
 import { MemoryStore } from '../../server/store';
-import { check, connect, sleep, until } from '../harness';
+import { check, connect, settle, until } from '../harness';
 
 const get = (port: number, path: string): Promise<number> => new Promise((ok) => {
   const req = http.request({ host: '127.0.0.1', port, path, method: 'GET' }, (res) => { res.resume(); ok(res.statusCode ?? 0); });
@@ -112,7 +112,8 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
     await until(() => !server.game.ents.has(a2.id));
     a1.ws.resume();
     try { a1.send({ t: 'rename', name: '유령1' }); } catch { /* 이미 닫혔으면 그것으로 됐다 */ }
-    await sleep(300);
+    // 옛 연결이 다 닫힐 때까지: 서버는 그 연결이 닫히기 전에 보낸 것을 먼저 처리한다
+    await until(() => a1.ws.readyState === a1.ws.CLOSED);
     const a3 = await connect(server.port, undefined, T);
     check(server.game.ents.get(a3.id)!.gold === 0 && a3.name === '유령', '밀려난 연결이 보낸 명령은 버려지고, 저장을 옛 상태로 되돌리지 못한다');
     a3.ws.close();
@@ -128,7 +129,7 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
     n1.ws.close();
     await until(() => !server.game.ents.has(n1.id));
     n2.send({ t: 'rename', name: '챔피언' });
-    await sleep(300);
+    await settle(n2);
     check(server.game.ents.get(n2.id)!.name === '도전자', '접속하지 않은 사람의 이름도 차지할 수 없다');
     // 이름만 바꾸고 나가도 그 이름이 남는다
     const r1 = await connect(server.port, '임시', 'rename-token-0123456789');
@@ -140,7 +141,7 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
     check(r2.name === '내가고른이름', '이름만 바꾸고 나가도 다음 접속에 그 이름이 남는다');
     r2.ws.close();
     n2.ws.close(); n3.ws.close();
-    await sleep(200);
+    await until(() => !server.game.ents.has(n2.id) && !server.game.ents.has(n3.id));
 
     // 막 만든 캐릭터는 자동 사냥을 켜고 끊어도 남지 않는다. 키운 캐릭터도 정해진 수까지만 남는다
     const fresh = await connect(server.port, '새내기', 'away-token-0123456789aa');
@@ -159,20 +160,24 @@ const get = (port: number, path: string): Promise<number> => new Promise((ok) =>
       await until(() => e.auto);
       stay.push(p.id);
       p.ws.close();
-      await sleep(250);
+      await until(() => !server.game.ents.has(p.id) || server.game.away.active(e)); // 서버가 끊김을 처리할 때까지
     }
     check(server.game.ents.has(stay[0]) && !server.game.ents.has(stay[1]), '자리 비움 캐릭터는 상한(시험에서는 1명)까지만 남는다');
 
     // 한 주소에서 여는 연결 수에 상한이 있다
     const socks: WebSocket[] = [];
     let refused = 0;
+    const pongs = new Set<WebSocket>();
     for (let i = 0; i < 9; i++) {
       const ws = new WebSocket(`ws://127.0.0.1:${server.port}`);
-      ws.on('message', (d) => { if (d.toString().includes('"full"')) refused++; });
+      ws.on('message', (d) => { const text = d.toString(); if (text.includes('"full"')) refused++; else if (text.includes('"pong"')) pongs.add(ws); });
       ws.on('error', () => {});
       socks.push(ws);
     }
-    await sleep(500);
+    // 받아들인 연결은 ping에 답한다(접속 절차 전에도). 거절은 연결하자마자 오므로, 답이 온 연결과 거절된 연결을 합해 9개면 다 정해진 것이다
+    await until(() => socks.every((ws) => ws.readyState !== ws.CONNECTING));
+    for (const ws of socks) if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ t: 'ping', c: 1 }));
+    await until(() => pongs.size + refused >= 9);
     check(refused === 3, `한 주소에서 6개를 넘는 연결은 받지 않는다 (9개 가운데 ${refused}개 거절)`);
     for (const ws of socks) ws.terminate();
   } finally {

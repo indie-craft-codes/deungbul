@@ -7,7 +7,7 @@ import { SHOPS } from '../../shared/defs';
 import { AREAS, PLAYER_SPEED } from '../../shared/world';
 import { startServer } from '../../server/net/server';
 import { MemoryStore, SqliteStore } from '../../server/store';
-import { check, until, sleep, connect } from '../harness';
+import { check, until, settle, connect, removeTemp } from '../harness';
 
 /** 들판(0번 지역)의 경계 */
 const { x0: MIN_X, x1: MAX_X, z0: MIN_Z, z1: MAX_Z } = AREAS[0];
@@ -18,7 +18,10 @@ const TOKEN_A = 'test-token-aaaaaaaaaaaa';
 const keyA = createHash('sha256').update(TOKEN_A).digest('hex');
 store.savePlayer(keyA, { name: '가나다', lv: 3, exp: 5, need: 109, maxHp: 230, sparks: 5 });
 
-let server = await startServer(0, { store });
+// 대화 간격은 시험의 시계로 넘긴다 (벽시계로 자지 않는다)
+let t = Date.now();
+const pass = (ms: number) => { t += ms; };
+let server = await startServer(0, { store, now: () => t });
 try {
   const a = await connect(server.port, undefined, TOKEN_A);
   const b = await connect(server.port, '  <b>라마바사아자차카타파하</b>  ');
@@ -33,26 +36,30 @@ try {
 
   // 이동이 상대에게 전달되는가
   const start = { x: a.you[0], z: a.you[1] };
+  // 속도는 보낸 뒤 흐른 시간으로 잰다 (서버의 틱은 흐른 시간만큼만 움직이고, 받은 위치는 그보다 늦다: 1초를 자고 재면 바쁜 컴퓨터에서 틀린다)
+  const sentAt = performance.now();
   a.send({ t: 'move', x: start.x, z: start.z + 20 }); // 남쪽 길: 장애물이 없다
-  await sleep(1000);
-  const moved = Math.hypot(a.you[0] - start.x, a.you[1] - start.z);
-  const atB = b.seen.get(a.id)!;
-  check(moved > 3, `A가 서버에서 움직였다 (${moved.toFixed(2)})`);
-  check(moved <= PLAYER_SPEED * 1.25, `A의 속도가 서버 한계 안이다 (1초에 ${moved.toFixed(2)}, 한계 ${PLAYER_SPEED})`);
-  check(Math.hypot(atB.x - a.you[0], atB.z - a.you[1]) < 1.5, 'B가 보는 A의 위치가 서버 위치와 맞는다');
+  const away = () => Math.hypot(a.you[0] - start.x, a.you[1] - start.z);
+  const movedOk = await until(() => away() > 3);
+  const moved = away(), secs = (performance.now() - sentAt) / 1000;
+  check(movedOk, `A가 서버에서 움직였다 (${moved.toFixed(2)})`);
+  // 틱 한 번의 dt(최대 0.2초)는 이동 명령보다 먼저 시작됐을 수 있어 그만큼 더 허락한다
+  check(moved <= PLAYER_SPEED * (secs * 1.25 + 0.2), `A의 속도가 서버 한계 안이다 (${secs.toFixed(2)}초에 ${moved.toFixed(2)}, 한계 초당 ${PLAYER_SPEED})`);
+  const atB = () => b.seen.get(a.id)!;
+  check(await until(() => Math.hypot(atB().x - a.you[0], atB().z - a.you[1]) < 1.5), 'B가 보는 A의 위치가 서버 위치와 맞는다');
 
   // 월드 밖 좌표와 잘못된 입력
   a.send({ t: 'move', x: 99999, z: -99999 });
   a.ws.send('{"t":"move","x":"NaN","z":null}');
   a.ws.send('not json');
-  await sleep(300);
+  await settle(a, 2);
   check(a.you[0] >= MIN_X && a.you[0] <= MAX_X && a.you[1] >= MIN_Z && a.you[1] <= MAX_Z && a.ws.readyState === a.ws.OPEN, '잘못된 입력에도 서버가 버티고 위치가 월드 안이다');
 
   // 정지
   a.send({ t: 'stop' });
-  await sleep(250);
+  await settle(a, 2); // 정지를 처리한 뒤의 스냅샷까지
   const p1 = [a.you[0], a.you[1]];
-  await sleep(400);
+  await settle(a, 3);
   check(Math.hypot(a.you[0] - p1[0], a.you[1] - p1[1]) < 0.01 && a.you[2] === 0, '정지 명령 뒤에 멈춘다');
 
   // 채팅
@@ -62,7 +69,7 @@ try {
   // 금칙어와 신고
   b.send({ t: 'rename', name: 'f.u.c.k왕' });
   check(await until(() => b.sys.some((s) => s === 'nameBad')), '금칙어가 든 이름으로는 바꿀 수 없다 (글자 사이에 점을 끼워도)');
-  await sleep(750);
+  pass(750);
   b.send({ t: 'chat', text: '야 이 병신아 Fuck you' });
   check(await until(() => a.chat.some((c) => c.endsWith('야 이 **아 **** you'))), '금칙어는 별표로 가려져 전달된다');
   a.send({ t: 'report', id: b.id });
@@ -93,11 +100,11 @@ try {
   a.send({ t: 'skill', n: 0 });
   check(await until(() => a.cds.includes(0)), '사거리 안에서는 강타가 받아들여진다');
   a.send({ t: 'skill', n: 0 });
-  await sleep(300);
+  await settle(a, 2);
   check(a.cds.filter((n) => n === 0).length === 1, '쿨다운 중에는 강타가 다시 나가지 않는다');
   check(await until(() => a.sparks >= 6, 20000), '처치하면 두 번째 재화를 받는다');
   a.send({ t: 'attack', id: b.id });
-  await sleep(300);
+  await settle(a, 2);
   check(a.you[2] === 0, '다른 플레이어는 공격 대상이 되지 않는다');
 
   const sparksEnd = a.sparks;
@@ -115,7 +122,7 @@ try {
 
   // 서버를 껐다 켜도 캐릭터가 남는다
   await server.close();
-  server = await startServer(0, { store });
+  server = await startServer(0, { store, now: () => t });
   const a3 = await connect(server.port, undefined, TOKEN_A);
   check(a3.name === '새이름' && (await until(() => a3.sparks === sparksEnd && a3.lv >= 3)), '서버를 다시 켜도 캐릭터가 남는다');
   a3.ws.close();
@@ -183,7 +190,7 @@ try {
   const w = db2.loadWorld(), pl = db2.loadPlayer('k1');
   check(w?.glow === 77 && (w.residents as number[])[0] === 30 && pl?.name === '파일2' && pl.gold === 20 && db2.loadPlayer('none') === null, '파일 저장소가 닫았다 열어도 값을 돌려준다');
   db2.close();
-  fs.rmSync(path.dirname(file), { recursive: true, force: true });
+  removeTemp(path.dirname(file));
 } finally {
   await server.close();
 }

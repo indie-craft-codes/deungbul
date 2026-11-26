@@ -589,7 +589,7 @@ export function initScene(): void {
 - **자동 재생**: 브라우저는 첫 입력 전에는 소리를 막는다. 틀은 첫 입력(누르기, 키) 전에는 소리 장치를 만들지도 틀지도 않는다. 효과음 파일은 접속 화면에서 받아 두고 첫 입력에서 푼다. 배경음은 미리 받지 않고 틀 때 흘려 받는다.
 - **음량**: 소리 파일이나 배경음을 하나라도 등록한 게임은 메뉴 머리의 소리 단추 앞에 '음량' 단추가 생긴다(효과음·배경음 막대. 배경음이 없으면 효과음만). 합성음만 쓰는 게임도 `enableVolume()`으로 보일 수 있다. 소리 켜고 끄기와 음량은 이 기기에 저장된다(localStorage `sound`, `soundMix`. 저장소를 못 쓰는 브라우저에서는 기본값으로 돈다). 소리를 끄면 배경음도 줄어들어 멈춘다.
 - **형식과 크기(권장)**: 효과음은 MP3 또는 OGG, 0.1~1초, 모노, 한 파일 30KB 아래(풀어 둔 소리는 메모리에 남는다). 배경음은 MP3 또는 OGG 64~128kbps, 1~3분, 끝과 처음이 이어지게(1~3MB). WAV는 크다: 예제의 12초 배경음이 375KB다(시험용으로 스크립트가 만든 것이라 WAV). 모든 브라우저에서 돌리려면 MP3가 가장 넓다.
-- 틀의 서버(`engine/server/net/static.ts`)는 `.glb`에 형식을 붙여 내보내고, 소리 파일은 형식 없이(`application/octet-stream`) 내보낸다. 틀은 소리를 받아서 풀므로(배경음은 audio 요소가 내용으로 가린다) 그대로 들린다.
+- 틀의 서버(`engine/server/net/static.ts`의 `MIME`)는 파일에 형식을 붙여 내보낸다: 소리 `.wav` `audio/wav`, `.ogg` `audio/ogg`, `.mp3` `audio/mpeg`, `.m4a` `audio/mp4`, 모델 `.glb` `model/gltf-binary`, `.gltf` `model/gltf+json`, 그 밖에 `.webp`, `.woff2`, `.json`, `.webmanifest` 등. 표에 없는 확장자는 `application/octet-stream`이다.
 
 **방치형**: 접속할 때 자동 사냥을 켜고 시작하려면 게임의 화면 모듈에서 `rules.autoAtStart = () => true`(`@engine/client`의 `rules`). 예: `games/starmine/client/drill.ts`. 금빛 단추를 만들 때 class `gold`는 **글자색**이다(배경이 금빛인 단추는 틀의 `button.on`이나 게임의 css로).
 
@@ -621,7 +621,7 @@ declare module '@engine/shared/ext' {
 }
 ```
 
-- `MsgMap`에 안내문을 더하면 **모든 언어 파일의 `msg`에 그 문장이 있어야** 컴파일된다. 언어 파일을 아직 만들지 않았으면 틀의 `engine/client/hud/notify.ts`와 `hud/menu.ts`에서 오류가 난다("Property '…' does not exist on type …": 문장이 없는 안내문의 이름이 '…'에 나온다). 언어 파일의 `msg`에 그 문장을 채우면 사라진다.
+- `MsgMap`에 안내문을 더하면 **모든 언어 파일의 `msg`에 그 문장이 있어야** 컴파일된다. 언어 파일을 아직 만들지 않았으면 틀의 `engine/client/hud/notify.ts`와 `hud/menu/gear.ts`에서 오류가 난다("Property '…' does not exist on type …": 문장이 없는 안내문의 이름이 '…'에 나온다). 언어 파일의 `msg`에 그 문장을 채우면 사라진다.
 - 서버는 문장을 보내지 않는다. 종류와 값만 보낸다.
 - 인자가 없는 명령은 빈 칸으로 적는다: `interface ClientMsgs { restore: Record<never, never> }` (화면은 `send({ t: 'restore' })`).
 
@@ -864,7 +864,7 @@ g.migrations.player.push({
 ```
 
 - `startServer(port, …)`는 `{ port, game, close() }`를 돌려준다(포트 0이면 `port`가 고른 포트). 시험의 끝에 `await server.close()`.
-- 가짜 클라이언트 `connect(port, 이름, 토큰, onMsg?)`(`@engine/testing`)는 접속한 피어를 돌려준다. 토큰은 영문·숫자·`-`로 16~64자여야 저장된 캐릭터로 이어진다(아니면 손님으로 들어가 저장되지 않는다). 피어는 `id`, `name`, `lv`, 받은 안내문 `sys`(이름의 목록), `send(메시지)`, 그리고 `ws`(끊을 때 `ws.close()`). 기다릴 때는 `until(() => 조건)`, `sleep(ms)`. 모양은 `engine/test/harness.ts`의 `Peer`.
+- 가짜 클라이언트 `connect(port, 이름, 토큰, onMsg?)`(`@engine/testing`)는 접속한 피어를 돌려준다. 토큰은 영문·숫자·`-`로 16~64자여야 저장된 캐릭터로 이어진다(아니면 손님으로 들어가 저장되지 않는다). 피어는 `id`, `name`, `lv`, 받은 안내문 `sys`(이름의 목록), `send(메시지)`, 그리고 `ws`(끊을 때 `ws.close()`). 기다릴 때는 `until(() => 조건)`(기본 기한 10초. 참이 되면 바로 끝난다). '아무 일도 없어야 한다'를 볼 때는 `sleep`으로 자지 말고 `settle(피어, 스냅샷 수?)`로: ping을 보내 서버가 앞의 메시지를 다 처리했는지(pong) 보고, 스냅샷 수를 주면 틱이 그만큼 더 돈 뒤에 끝난다. 벽시계로 자는 시험은 바쁜 컴퓨터에서 가끔 실패한다. 대화·이름 바꾸기·신고의 간격은 `startServer(0, { now: () => t })`로 시험의 시계를 주고 `t`를 옮겨 넘긴다. 임시 폴더는 `removeTemp(폴더)`로 지운다(Windows에서 막 닫은 DB가 잠깐 잠겨도 실패하지 않는다). 모양은 `engine/test/harness.ts`의 `Peer`.
 - 틀의 가짜 클라이언트는 틀의 메시지만 읽는다. 게임의 메시지(`world`, `me`)는 `connect`의 넷째 인자로 받는다.
 - 시험에서 플레이어의 행동은 명령으로 낸다: `g.command(p, { t: '명령', … })`. 틀의 명령은 `engine/shared/protocol.ts`의 `ClientMsg`에 모두 있다(예: `{ t: 'attack', id }`, `{ t: 'skill', n }`, `{ t: 'class', id }`, `{ t: 'dungeon', id }`, `{ t: 'craft', id }`, `{ t: 'buy', id }`).
 - 서버 없이 규칙만 볼 때는 `new Game({ plugins: [installSample] })`로 만들고 `g.tick(초)`로 시간을 흘린다. 기술의 효과만 내려면 `g.combat.cast(플레이어, 기술 id, 대상)`(대상이 없으면 `undefined`. 쿨다운·사거리는 보지 않는다. 예: `engine/test/fx/skills.test.ts`).
@@ -890,7 +890,7 @@ g.migrations.player.push({
 
 | 스크립트 | 하는 일 | 게임 고르기 |
 |---|---|---|
-| `node scripts/restart.mjs [게임]` | 저장하고 끈 뒤(`stop.flag`) **감시자 아래에서** 다시 띄운다. 운영체제와 무관하다(Node만). 10초 안에 안 꺼지면 감시자 → 서버 차례로 강제로(cloudflared는 이름을 보고 끄지 않는다). 앞 로그는 `server.log.prev`. 포트가 열리면 `/healthz`를 찍는다. `--stop`은 끄기만, `--dry`는 할 일만 | 인자나 `GAME` |
+| `node scripts/restart.mjs [게임]` | 저장하고 끈 뒤(`stop.flag`) **감시자 아래에서** 다시 띄운다. 운영체제와 무관하다(Node만). 10초 안에 안 꺼지면 감시자 → 서버 차례로 강제로(cloudflared는 이름을 보고 끄지 않는다). 앞 로그는 `server.log.prev`. 포트가 열리면 `/healthz`가 `ticking:true`가 될 때까지(20초) 다시 묻고 찍는다(막 뜬 서버는 첫 틱 전에 503일 수 있다. 20초 안에 되지 않으면 그 답과 로그의 끝을 찍고 코드 1). `--stop`은 끄기만, `--dry`는 할 일만 | 인자나 `GAME` |
 | `node scripts/serve.mjs [게임]` | 감시자: 서버를 자식으로 띄우고, 비정상으로 끝나면 1·2·4…60초 간격으로 다시 띄운다. 코드 0(깃발로 끈 것)이면 멈춘다. 로그를 이어 쓴다. 보통은 `restart.mjs`가 뒤에서 띄운다 | 인자나 `GAME` |
 | `bash scripts/restart.sh [로그]` | (예전 것, Windows+Git Bash) 저장하고 끈 뒤(`stop.flag`) 다시 띄운다. 감시자 없이 띄운다. 떠 있지 않으면 그냥 띄운다(처음 띄우는 게임은 저장 폴더를 만든다). 10초 안에 안 꺼지면 강제로. 로그는 저장 파일 옆 `server.log`, 앞 서버의 로그는 `server.log.prev`(저장하고 꺼졌는지 본다). `DRY=1`이면 할 일만 찍는다 | `GAME=sample bash scripts/restart.sh` |
 | `bash scripts/stop.sh` | 저장하고 끄기만 한다(강제로 끄지 않는다) | `GAME=sample bash scripts/stop.sh` |
@@ -954,7 +954,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | 서버가 다른 게임의 몬스터로 뜬다 | `tsx`에 `--tsconfig games/<게임>/tsconfig.json`을 주지 않았다. 그 게임의 스크립트로 띄운다(`npm run start:sample`) |
 | 실행하자마자 `undefined`를 읽는다 (`Cannot read properties of undefined`), 내용의 표가 비어 보인다 | 내용 파일이 틀의 도우미에서 **값**을 가져왔다. `import type`으로 바꾼다. 값은 `@engine/shared/defaults`에서만 |
 | `contract.ts`의 마지막 줄에서 오류 | 계약의 이름이 빠졌거나 모양이 다르다. 오류 글의 끝에 이름이 있다 |
-| `engine/client/hud/notify.ts`나 `hud/menu.ts`에서 "MsgKey로 인덱스할 수 없다", "Property '…' does not exist" | `MsgMap`에 안내문을 더했는데 언어 파일의 `msg`에 문장이 없다(또는 `LocaleExt` 선언을 아직 하지 않았다) |
+| `engine/client/hud/notify.ts`나 `hud/menu/gear.ts`에서 "MsgKey로 인덱스할 수 없다", "Property '…' does not exist" | `MsgMap`에 안내문을 더했는데 언어 파일의 `msg`에 문장이 없다(또는 `LocaleExt` 선언을 아직 하지 않았다) |
 | 틀의 타입이 게임의 칸(`g.bonfire`, `p.fed`, `m.s.bonfire`)을 모른다 | 선언 파일에 `export`가 하나도 없다(`export {};`를 둔다, 6절 (1)). 또는 선언 파일이 그 `tsconfig`의 `include` 안에 없다. 선언 병합은 인터페이스가 선언된 바로 그 파일(`@engine/shared/ext`, `@engine/server/game/ext`, `@engine/client/i18n/ext`)을 가리켜야 한다 |
 | 두 게임의 타입이 섞인다, `@game`이 엉뚱한 곳을 가리킨다 | 한 `tsc` 프로그램에 두 게임을 넣었다. 게임마다 자기 `tsconfig.json`으로만 검사한다. 뿌리의 `tsconfig.json`에 새 게임 폴더를 더하지 않는다 |
 | 화면의 글자가 비어 있다 | 그 키가 언어 묶음에 없다. `setLocales`를 `startClient`보다 늦게 불렀거나, 창을 `startClient` 뒤에 붙였다(그때는 `data-i18n`이 이미 채워진 뒤다) |
