@@ -8,7 +8,7 @@ import { check, failures } from '../harness';
 import { AREAS } from '../../shared/world';
 
 /** 수집형·방치형의 시험 (engine/test/collect/이름.test.ts) */
-export const COLLECT = ['rules', 'saves', 'client', 'net'];
+export const COLLECT = ['rules', 'saves', 'client', 'net', 'sweep', 'offline', 'pickup', 'sweepnet'];
 if (AREAS !== MAP.areas || AREAS[0].id !== 'heath') throw new Error('별칭 @game이 engine/test/collect를 가리키지 않습니다. tsx --tsconfig engine/test/collect/tsconfig.json 으로 실행하세요 (npm test가 그렇게 부른다)');
 
 const loaded: string[] = [];
