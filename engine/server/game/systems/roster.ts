@@ -5,8 +5,9 @@
 // 영웅의 능력치가 바뀌면 사건 heroChanged(p, id)를 낸다: 편성(squad)이 싸우는 영웅의 체력·공격을 맞춘다.
 // 선택 칸 (내용이 적어야 켜진다: engine/shared/defs/herogrow.ts): 기술 레벨(HERO_RULES.skill: 재료로 올리고 기술의 피해·회복이 커진다),
 // 각성(HERO_RULES.awaken: 별이 최대인 영웅이 조각과 재료로 오르고 공격·체력 배율과 패시브를 얻는다). 켠 게임은 저장과 개인 상태의 줄이 [.., 기술 레벨, 각성]까지 길어진다.
+// 재료로 영웅 키우기(HERO_RULES.trade): 재료 아이템을 써서 가진 영웅의 조각을 얻는다 ({ t: 'hero', a: 'trade', id, item, n }).
 // 전투력은 heroFull(장비·각성·기술 레벨까지)의 한 셈이다. 성장이 없는 게임에서는 heroPower(레벨, 별)와 같다.
-import { HERO_RULES as HERO_RULES_IN, awakenMax, awakenOf, gearOn, heroDef, heroFull, heroGrowthOn, isHeroId, rarityDef, skillMax, skillOf, type HeroesMe, type HeroRules, type OwnedHero } from '../../../shared/defs';
+import { HERO_RULES as HERO_RULES_IN, awakenMax, awakenOf, gearOn, heroDef, heroFull, heroGrowthOn, heroTradeShards, isHeroId, isItemId, rarityDef, skillMax, skillOf, type HeroesMe, type HeroRules, type OwnedHero } from '../../../shared/defs';
 import { readInt, type Ent } from '../entity';
 import type { Game } from '../game';
 import { payCost } from './herocost';
@@ -15,7 +16,9 @@ import { payCost } from './herocost';
 const HERO_RULES: HeroRules = HERO_RULES_IN;
 
 /** 지갑에 넘기는 원인의 이름 (장부가 명령에 붙이는 이름과 같다) */
-export const ROSTER_WHY = { level: 'cmd:hero:level', skill: 'cmd:hero:skill', awaken: 'cmd:hero:awaken' } as const;
+export const ROSTER_WHY = { level: 'cmd:hero:level', skill: 'cmd:hero:skill', awaken: 'cmd:hero:awaken', trade: 'cmd:hero:trade' } as const;
+/** 한 번의 교환 명령으로 되풀이할 수 있는 수 */
+export const TRADE_MAX = 99;
 /** 개인 상태와 저장의 한 줄: [레벨, 별, 조각] (기술 레벨·각성을 켰으면 [.., 기술 레벨, 각성]) */
 const line = (h: OwnedHero, long: boolean): HeroesMe[string] => (long ? [h.lv, h.stars, h.shards, skillOf(h), awakenOf(h)] : [h.lv, h.stars, h.shards]);
 
@@ -27,7 +30,13 @@ export class Roster {
       else if (m.a === 'star') this.starUp(p, m.id);
       else if (m.a === 'skill') this.skillUp(p, m.id);
       else if (m.a === 'awaken') this.awakenUp(p, m.id);
+      else if (m.a === 'trade' && HERO_RULES.trade && typeof m.item === 'string') this.trade(p, m.id, m.item, m.n ?? 1);
     });
+    // 재료로 영웅 키우기 (HERO_RULES.trade): 아이템 모듈과 아이템의 표에 있는 id여야 한다 (틀리면 서버를 띄울 때 멈춘다)
+    for (const item of Object.keys(HERO_RULES.trade ?? {})) {
+      if (!g.has('items')) throw new Error(`[roster] HERO_RULES.trade.${item}: 재료 교환은 아이템 모듈(items)이 있어야 합니다`);
+      if (!isItemId(item)) throw new Error(`[roster] HERO_RULES.trade.${item}: ITEMS에 없는 아이템입니다`);
+    }
     g.saves.push({ name: 'roster', save: (p) => this.saveOf(p), load: (p, raw) => this.loadOf(p, raw) });
     const long = heroGrowthOn();
     g.personal.push({ name: 'heroes', state: (p): HeroesMe => Object.fromEntries(Object.entries(p.heroes).map(([id, h]) => [id, line(h, long)])) });
@@ -108,6 +117,25 @@ export class Roster {
     g.notify(p, 'heroAwaken', id, h.awaken);
     g.fire('heroChanged', p, id);
     return true;
+  }
+
+  /**
+   * 재료로 영웅 키우기 (HERO_RULES.trade): 가진 영웅에게 그 아이템 cost(등급) × n개를 쓰고 조각 shards(등급) × n개를 얻는다 (원인 cmd:hero:trade).
+   * 모자라면 itemShort를 알리고 아무것도 바뀌지 않는다. 받은 조각을 돌려준다 (안 되면 0)
+   */
+  trade(p: Ent, id: string, item: string, n: unknown): number {
+    const g = this.g, rule = HERO_RULES.trade?.[item], h = this.owned(p, id);
+    if (!rule || !h || p.bot || !g.has('items') || !isItemId(item)) return 0;
+    if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > TRADE_MAX) return 0;
+    const r = heroDef(id).rarity, per = Math.floor(rule.cost(r)), got = heroTradeShards(rule, r) * n;
+    if (!(per > 0) || !(got > 0)) return 0;
+    const need = per * n, have = g.bag.count(p, item);
+    if (have < need) { g.notify(p, 'itemShort', item, need, have); return 0; }
+    if (!g.bag.takeItem(p, item, need, ROSTER_WHY.trade)) return 0;
+    h.shards = Math.min(1e6, h.shards + got);
+    p.unsaved = true;
+    g.notify(p, 'heroTraded', id, got, item, g.bag.count(p, item));
+    return got;
   }
 
   // ---------- 저장 ----------

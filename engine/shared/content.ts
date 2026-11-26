@@ -27,6 +27,7 @@ export const CHANNEL = get('CHANNEL');
 export const REJOIN_KEEP_S = get('REJOIN_KEEP_S');
 export const CAMERA = get('CAMERA');
 export const HOME_KEY = get('HOME_KEY');
+export const HUD = get('HUD');
 // ---------- 직업과 전투 ----------
 export const CLASSES = get('CLASSES');
 export const DEFAULT_CLASS = get('DEFAULT_CLASS');

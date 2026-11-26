@@ -37,6 +37,16 @@ export interface DungeonDef {
    * 한 번마다 열쇠 하나와 cost(있으면)를 쓴다. 보상은 우편이 아니라 지갑·가방으로 바로 (원인 sweep). 없으면 소탕이 없다
    */
   sweep?: SweepRule;
+  /**
+   * 던전 안의 자동 전투: true면 안에 있는 사람(봇 말고)도 서버가 대신 싸운다 (단계의 STAGE_RULES.leaderAuto와 같은 셈: 가장 가까운 적, 쓸 수 있는 기술 하나.
+   * 손으로 움직이면 1.5초는 맡기지 않는다). 없으면 예전처럼 사람이 싸운다
+   */
+  auto?: boolean;
+  /**
+   * 메뉴에서 바로 들어가기: true면 문까지 걷지 않고 명령 { t: 'dungeonGo', id }로 들어간다 (들판이나 단계 안에서. 단계 안이면 단계에서 나와 들어간다).
+   * 들어가는 조건(레벨, 열쇠·하루 횟수)은 문에서와 같다. 없으면 문에서만 들어간다
+   */
+  fromMenu?: boolean;
 }
 
 /**
@@ -66,3 +76,5 @@ export const hasDungeonKeys = (): boolean => Object.values(DUNGEON_TABLE).some((
 
 /** 소탕할 수 있는 던전인가 (열쇠를 쓰고 sweep이 있는 던전) */
 export const dungeonSweepable = (id: string): boolean => { const d = DUNGEON_TABLE[id]; return !!d?.key && !!d.sweep; };
+/** 메뉴에서 바로 들어갈 수 있는 던전들 (DungeonDef.fromMenu). 없으면 명령 dungeonGo가 생기지 않는다 */
+export const menuDungeons = (): string[] => Object.keys(DUNGEON_TABLE).filter((id) => !!DUNGEON_TABLE[id].fromMenu);

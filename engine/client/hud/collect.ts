@@ -5,7 +5,7 @@
 // 기간이 있는 배너는 서버가 열려 있다고 보낸 것(GachaMe.open)만 보인다. 영웅 선택권(GACHA_RULES.select)이 있으면 뽑기 탭 끝에 고르는 줄이 붙는다.
 // 게임이 더 할 수 있는 것: 뽑기 결과를 받기(onGachaResult: 연출, 소리), 내 영웅·편성 읽기(myHeroes, mySquad).
 import * as THREE from 'three';
-import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, SQUAD_RULES, heroDef, heroRole, pctText, rarityDef, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
+import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, rarityDef, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
 import { teamCss } from '../../shared/defs/teams';
 import { $ } from '../app';
 import { onMsg } from '../bus';
@@ -15,9 +15,9 @@ import { bannerName, heroName, rarityName } from '../i18n/ko';
 import { uiText } from '../i18n/names';
 import { hasModule } from '../mods';
 import { send } from '../net';
-import { makeHumanoid } from '../scene/models';
+import { makeHumanoid, type HumanoidLook, type Model } from '../scene/models';
 import { S } from '../state';
-import { bannerPity, heroRows, openBanners, rateTable, squadToggle, type RateRow } from './collectcalc';
+import { bannerPity, heroRows, openBanners, rateTable, squadToggle, tradeViews, type RateRow } from './collectcalc';
 import { drawFormation, drawHeroDetail, growthSig, heroDetailShown, initHeroGrowth, myHeroGear, openHero } from './herogrow';
 import { addMenuTab } from './menu';
 import { button, el, redraw, row, span } from './menu/parts';
@@ -39,6 +39,15 @@ export const mySquad = (): Readonly<SquadMe> => squad;
 /** 뽑기 결과를 받는다 (결과 창이 뜨는 것과 함께) */
 export function onGachaResult(fn: (banner: string, got: readonly PullGot[]) => void): void { pullFns.push(fn); }
 
+/** 영웅 한 명의 모델을 만드는 데 넘기는 것: 영웅 id, 등급 번호, 틀이 쓰려던 사람형의 겉모습(옷 색, 손 모양, 살갗, 영웅 id·등급) */
+export interface HeroModelInfo { id: string; rarity: number; look: HumanoidLook }
+let heroModel: ((h: HeroModelInfo) => Model | null | undefined) | null = null;
+/**
+ * 편성의 영웅(엔티티 종류 hero)의 모델을 게임이 정한다: 영웅 id와 등급을 받아 모델을 돌려준다. null이나 undefined를 돌려주면 틀의 것(역할의 옷 색·손 모양의 사람)이다.
+ * 발밑의 등급 고리와 크기(사람보다 조금 작게)는 틀이 그 뒤에 얹는다. 사람형 전체를 바꾸는 setHumanoidBody도 영웅이면 look.hero·look.rarity를 받는다
+ */
+export function setHeroModel(fn: (h: HeroModelInfo) => Model | null | undefined): void { heroModel = fn; }
+
 /** 등급의 색을 입힌 요소 */
 function tinted<T extends HTMLElement>(e: T, r: number): T { e.style.setProperty('--rc', teamCss(rarityDef(r).color)); return e; }
 const money = (cur: Coin) => (S.me ? (cur === 'gold' ? S.me.gold : S.me.sparks) : 0);
@@ -50,6 +59,7 @@ function drawHeroes(list: HTMLElement): void {
   if (drawHeroDetail(list, heroes)) return; // 영웅 상세를 펼쳤다 (성장을 켠 게임: hud/herogrow.ts)
   const loc = L(), rows = heroRows(heroes, money(HERO_RULES.levelCur), squad.ids, myHeroGear());
   if (!rows.some((r) => r.owned)) list.append(el('note', t('heroNone')));
+  drawTradeHead(list);
   for (const r of rows) {
     const name = tinted(el('iname', heroName(r.id)), r.rarity);
     name.append(span('hstar', stars(r.stars)));
@@ -59,8 +69,17 @@ function drawHeroes(list: HTMLElement): void {
     note.append(el('', `${loc.fmt.heroRole(roleName(r.id), rarityName(r.rarity))} · ${loc.fmt.heroLv(r.lv, r.maxLv)}`), el('', loc.fmt.heroStats(r.atk, r.hp, r.power)), el('', r.starNeed ? loc.fmt.heroShards(r.shards, r.starNeed) : `${loc.fmt.heroShards(r.shards, 0).split('/')[0]} · ${t('heroMax')}`));
     const lvBtn = button(r.levelCost ? `${t('heroLevelBtn')} · ${loc.fmt.heroCost(r.levelCost, HERO_RULES.levelCur)}` : t('heroMax'), () => send({ t: 'hero', a: 'level', id: r.id }), !r.canLevel);
     const starBtn = button(t('heroStarBtn'), () => send({ t: 'hero', a: 'star', id: r.id }), !r.canStar);
-    list.append(row(name, note, [lvBtn, starBtn, ...(heroDetailShown() ? [button(t('heroDetail'), () => openHero(r.id))] : [])], 'hrow'));
+    // 재료로 조각 얻기 (HERO_RULES.trade): 재료마다 단추 하나
+    const trades = tradeViews(r.id, r.owned, S.me?.items ?? {}).map((x) => button(loc.fmt.heroTradeBtn(x.item, x.cost, x.shards), () => send({ t: 'hero', a: 'trade', id: r.id, item: x.item }), !x.can));
+    list.append(row(name, note, [lvBtn, starBtn, ...trades, ...(heroDetailShown() ? [button(t('heroDetail'), () => openHero(r.id))] : [])], 'hrow'));
   }
+}
+
+/** 재료 교환이 있는 게임: 영웅 탭 위에 가진 재료와 규칙 */
+function drawTradeHead(list: HTMLElement): void {
+  const items = Object.keys(heroTrades());
+  if (!items.length) return;
+  list.append(el('note htrade', L().fmt.heroTradeHave(items.map((id) => [id, S.me?.items[id] ?? 0]))));
 }
 
 // ---------- 뽑기 탭 ----------
@@ -204,8 +223,9 @@ function heroLook(): void {
   registerKind('hero', {
     model: (e) => {
       const d = heroDef(e.type), role = heroRole(e.type);
-      const m = makeHumanoid(d?.cloth ?? role.cloth, role.hand || false, 0xf0c9a0);
-      const r = d?.rarity ?? 0;
+      const r = d?.rarity ?? 0, cloth = d?.cloth ?? role.cloth, hand = role.hand || false;
+      // 게임이 영웅의 모델을 정했으면 그것 (setHeroModel), 아니면 틀의 사람형에 영웅 id와 등급을 넘긴다 (setHumanoidBody가 받는다)
+      const m = heroModel?.({ id: e.type, rarity: r, look: { cloth, hand: hand === false ? '' : hand, skin: 0xf0c9a0, hero: e.type, rarity: r } }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, undefined, { hero: e.type, rarity: r });
       let mat = rings.get(r);
       if (!mat) rings.set(r, mat = new THREE.MeshBasicMaterial({ color: rarityDef(r).color, transparent: true, opacity: 0.85 }));
       const ring = new THREE.Mesh(ringGeo, mat);
@@ -222,7 +242,10 @@ function heroLook(): void {
 }
 
 export function initRoster(): void {
-  addMenuTab({ id: 'heroes', label: () => t('tabHeroes'), draw: drawHeroes, sig: () => [heroes, squad.ids, S.me?.gold, S.me?.sparks, growthSig()], mod: 'roster', dot: () => heroRows(heroes, money(HERO_RULES.levelCur)).some((r) => r.canStar) });
+  // 재료 교환이 있는 게임은 가진 아이템이 바뀔 때도 다시 그린다
+  const trade = Object.keys(heroTrades()).length > 0;
+  addMenuTab({ id: 'heroes', label: () => t('tabHeroes'), draw: drawHeroes, sig: () => (trade ? [heroes, squad.ids, S.me?.gold, S.me?.sparks, growthSig(), S.me?.items] : [heroes, squad.ids, S.me?.gold, S.me?.sparks, growthSig()]), mod: 'roster', dot: () => heroRows(heroes, money(HERO_RULES.levelCur)).some((r) => r.canStar) });
+  if (trade) addNotices({ feed: ['heroTraded', 'itemShort'] });
   onMsg('me', (m) => { if (m.k === 'heroes') { heroes = m.s as HeroesMe; redraw(true); } });
   addNotices({ feed: ['costShort', 'heroUp', 'heroStar', 'heroMaxLv', 'heroShards', 'heroNew'] });
   initHeroGrowth();

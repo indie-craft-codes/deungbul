@@ -214,6 +214,13 @@ export const koBase = (n: ContentNames) => {
       sweepInfo: '이미 깬 곳을 싸우지 않고 바로 끝내 보통 보상을 받습니다 (처음 깬 보상은 없습니다).',
       sweepResult: '소탕 결과',
       sweepDungeons: '던전 소탕',
+      // 단계 밖: 메뉴에서 던전 들어가기, 돌아왔을 때의 창 (hud/stagebar.ts, hud/idleback.ts)
+      dungeonGoHead: '던전',
+      dungeonGoInfo: '문까지 가지 않고 바로 들어갑니다. 단계 안이면 단계에서 나와 들어갑니다.',
+      dungeonGoBtn: '들어가기',
+      idleBackTitle: '쉬는 동안 모인 것',
+      idleBackClaim: '받기',
+      idleBackLater: '나중에 (우편에 남김)',
       gachaPickup: '픽업',
       gachaRatesPickup: '픽업과 반반',
       gachaRatesSure: '확정일 때의 확률 (반반에서 진 다음)',
@@ -579,6 +586,12 @@ export const koBase = (n: ContentNames) => {
       gachaGroup: (names: string) => `천장 공유: ${josa(names, '과', '와')} 천장의 셈과 확정을 함께 씁니다.`,
       gachaEffective: (hero: string, pct: string) => `${hero}의 실효 확률 ${pct}`,
       gachaSelectHave: (item: string, n: number) => `${grantWhat(item)} ${num(n)}개 · 하나를 쓰고 아래 영웅 가운데 하나를 얻습니다 (가진 영웅이면 조각).`,
+      // 단계 밖: 돌아왔을 때의 창, 재료로 영웅 키우기
+      idleBackBody: (min: number) => `자리를 비운 ${min >= 60 ? `${Math.floor(min / 60)}시간 ` : ''}${min % 60}분 동안 모인 것입니다.`,
+      idleBackStage: (from: string, to: string, n: number) => `단계 ${from} → ${to}까지 진행 (${n}단계 깸)`,
+      idleBackLine: (what: string, n: number) => (what === 'gear' ? `장비 ${num(n)}점` : `${grantWhat(what)} +${num(n)}`),
+      heroTradeBtn: (item: string, cost: number, shards: number) => `${grantWhat(item)} ${num(cost)} → 조각 +${num(shards)}`,
+      heroTradeHave: (items: readonly (readonly [string, number])[]) => `재료로 조각 얻기 · 가진 것: ${items.map(([id, n]) => `${grantWhat(id)} ${num(n)}`).join(', ')}`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -743,6 +756,7 @@ export const koBase = (n: ContentNames) => {
       stageAway: (a) => `자리를 비운 동안 ${a[0]} → ${a[1]}까지 진행 (${a[2]}단계 깸)`,
       bannerClosed: (a) => `${josa(bannerName(a[0]), '은', '는')} 지금 열려 있지 않습니다.`,
       heroPicked: (a) => (Number(a[1]) ? `${heroName(a[0])}: 이미 있어 조각 +${num(a[2])}` : `${josa(heroName(a[0]), '을', '를')} 얻었습니다!`),
+      heroTraded: (a) => `${heroName(a[0])}: 조각 +${num(a[1])} (남은 ${grantWhat(a[2])} ${num(a[3])})`,
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

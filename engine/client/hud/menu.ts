@@ -106,6 +106,9 @@ export function openMenu(id: string): void {
   renderMenu();
 }
 
+/** 메뉴를 닫는다 (탭 안의 단추가 다른 곳으로 데려갈 때: 메뉴의 던전 들어가기 같은 것) */
+export function closeMenu(): void { ui.panel.hidden = true; }
+
 export function toggleMenu(): void {
   if (!S.me) return;
   ui.panel.hidden = !ui.panel.hidden;

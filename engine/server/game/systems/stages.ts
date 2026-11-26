@@ -6,14 +6,16 @@
 // 단계 안에서는 사람도 서버가 대신 싸운다 (STAGE_RULES.leaderAuto: 손으로 움직이면 1.5초 동안은 맡기지 않는다).
 // 방치 보상(idle 모듈)은 깬 단계의 수를 받는다 (g.idle.stageOf).
 // 소탕(STAGE_RULES.sweep): 깬 단계를 싸우지 않고 바로 끝내 보통 보상을 받는다 ({ t: 'stage', a: 'sweep', id, n }. 값은 소탕권이나 재화: systems/sweep.ts).
+// 던전 뒤 단계로 돌아가기(STAGE_RULES.returnAfterDungeon): 던전을 끝내거나 스스로 나온 사람을 몇 초 뒤 지금 단계로 들여보낸다 (사건 dungeonExited).
 // 오프라인 단계 진행(STAGE_RULES.offline): 돌아온 사람이 자동 진행을 켜 두었으면 편성의 전투력과 권장 전투력으로 '그동안 깼을 단계'를 셈해 앞으로 옮긴다 (offlinePlan).
 // 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
-import { MONSTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, classOf, isMonsterId, isSkillId, offlinePlan, skillDef, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
+import { MONSTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, instanceLayer, isField } from '../layers';
+import { leaderFight } from './leader';
 import { SWEEP_WHY, costCheck, costPay, costProblem, giveInto, sweepGot } from './sweep';
 import { CURS } from './wallet';
 
@@ -47,6 +49,8 @@ export class Stages {
   private readonly runs = new Map<number, Run>();
   /** 층 → 그 층의 회차 */
   private readonly byLayer = new Map<number, Run>();
+  /** 던전에서 나와 단계로 돌아갈 사람 → 남은 초 (STAGE_RULES.returnAfterDungeon) */
+  private readonly returning = new Map<number, number>();
 
   constructor(private g: Game) {
     if (!STAGES.length && !warned) { warned = true; console.warn('[stages] 모듈 stages를 골랐지만 내용의 CHAPTERS가 비어 있습니다: 단계가 없습니다'); }
@@ -69,6 +73,12 @@ export class Stages {
     const respawn = g.rules.respawn;
     g.rules.respawn = (p) => (this.runs.has(p.id) ? { x: STAGE_RULES.arena.x, z: STAGE_RULES.arena.z, id: 'stage' } : respawn(p));
     if (g.has('idle')) g.idle.stageOf = (p) => this.cleared(p);
+    // 던전 뒤 단계로 돌아가기: 던전을 끝냈거나 스스로 나온 사람 (접속이 끊겨 나온 것은 아니다)
+    const back = STAGE_RULE_VIEW.returnAfterDungeon;
+    if (back !== undefined && g.has('dungeon')) {
+      g.on('dungeonExited', (p, _id, why) => { if (why !== 'drop' && !p.bot && STAGES.length) this.returning.set(p.id, Math.max(0, Number(back) || 0)); });
+      g.on('playerLeft', (id) => { this.returning.delete(id); });
+    }
     const bad = costProblem(g, STAGE_RULE_VIEW.sweep?.cost, '[stages] STAGE_RULES.sweep');
     if (bad) throw new Error(bad);
   }
@@ -296,7 +306,22 @@ export class Stages {
       }
       this.aim(r, dt);
     }
+    if (this.returning.size) this.comeBack(dt);
   }
+
+  /** 던전에서 나온 사람을 때가 되면 지금 단계로 들여보낸다 (그사이 단계나 던전에 들어갔으면 그만둔다) */
+  private comeBack(dt: number): void {
+    const g = this.g;
+    for (const [id, s] of this.returning) {
+      const p = g.ents.get(id);
+      if (!p || this.runs.has(id) || g.dungeon.runOf(p)) { this.returning.delete(id); continue; }
+      if (s - dt > 0) { this.returning.set(id, s - dt); continue; }
+      this.returning.delete(id);
+      this.start(p, this.curIndex(p));
+    }
+  }
+  /** 던전에서 나와 단계로 돌아가기까지 남은 초 (기다리지 않으면 undefined: 시험과 화면의 셈) */
+  returnIn(p: Ent): number | undefined { return this.returning.get(p.id); }
 
   /** 대상이 없는 몬스터는 가장 가까운 사람 편(사람, 영웅)을 노린다. 사람도 맡겼으면 가장 가까운 몬스터를 친다 */
   private aim(r: Run, dt: number): void {
@@ -313,26 +338,7 @@ export class Stages {
     r.think -= dt;
     if (r.think > 0) return;
     r.think = 0.3;
-    if (g.clock - p.lastMove < 1.5) return; // 손으로 움직이는 중
-    let t = g.ents.get(p.targetId);
-    if (!t || t.dead || t.layer !== p.layer) {
-      t = undefined;
-      let bd = Infinity;
-      for (const id of r.mobs) { const m = g.ents.get(id); if (m && !m.dead) { const d = dist(p, m); if (d < bd) { bd = d; t = m; } } }
-      if (t) { p.targetId = t.id; p.stuck = 0; }
-    }
-    if (!t || !g.has('classes')) return;
-    // 기술: 쿨다운이 끝난 것 가운데 쓸 수 있는 것 하나 (회복은 체력이 60% 아래일 때만)
-    const skills = classOf(p.cls).skills, d = dist(p, t);
-    for (let n = 0; n < skills.length; n++) {
-      const id = skills[n];
-      if (!isSkillId(id) || (p.cds[n] ?? 0) > 0) continue;
-      const sd = skillDef(id);
-      if (sd.effect.kind === 'heal' && p.hp > p.maxHp * 0.6) continue;
-      if (sd.range !== undefined && d > sd.range) continue;
-      g.command(p, { t: 'skill', n });
-      break;
-    }
+    leaderFight(g, p, r.mobs);
   }
 
   // ---------- 저장 ----------

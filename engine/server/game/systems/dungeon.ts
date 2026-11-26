@@ -1,12 +1,13 @@
 // 던전: 문에서 들어가면 그 사람(과 파티)만의 인스턴스가 생긴다. 같은 지형을 여러 무리가 동시에 쓰지만
 // 층(Ent.layer)이 달라 서로 보이지 않고 싸우지 않는다. 우두머리를 잡으면 보상을 받고 밖으로 나온다.
 // 제한 시간을 넘기거나 모두 나가면 인스턴스는 사라진다. 내용과 수치는 games/deungbul/shared/content/dungeons.ts에 있다.
-import { DUNGEON_TABLE, ECON_HUNT, PORTAL_REACH, clearRar, dungeonDef, dungeonSweepable, hasDungeonKeys, isDungeonId, runKey, sweepMax, type DungeonDef, type DungeonId, type KeysMe } from '../../../shared/defs';
+import { DUNGEON_TABLE, ECON_HUNT, PORTAL_REACH, clearRar, dungeonDef, dungeonSweepable, hasDungeonKeys, isDungeonId, menuDungeons, runKey, sweepMax, type DungeonDef, type DungeonId, type KeysMe } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { AREAS, areaAt } from '../../../shared/world';
 import { dayOf, dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, instanceLayer, isField } from '../layers';
+import { leaderFight } from './leader';
 import { SWEEP_WHY, costCheck, costPay, costProblem, giveInto, sweepGot } from './sweep';
 
 interface Run {
@@ -20,6 +21,8 @@ interface Run {
   exit: number;
   /** 상태를 마지막으로 알린 뒤 흐른 시간 */
   told: number;
+  /** 자동 전투(DungeonDef.auto)의 생각 간격 */
+  think: number;
 }
 
 /** 던전 안에서 접속이 끊긴 사람의 회차를 남겨 두는 시간(초) */
@@ -52,7 +55,7 @@ export class Dungeon {
     g.on('playerDropped', (p) => {
       const run = this.of.get(p.id);
       if (run && !run.cleared && p.pid) this.held.set(p.pid, { run, home: this.back.get(p.id) ?? fieldLayer(1), until: g.clock + DUNGEON_HOLD_S });
-      this.leave(p, false);
+      this.leave(p, false, 'drop');
     });
     g.on('playerLeft', (id) => { this.back.delete(id); const run = this.of.get(id); if (run) { run.members.delete(id); this.of.delete(id); } });
     // 서버가 꺼졌다 켜진 경우처럼 인스턴스 없이 던전 안에 있으면 문 앞으로 내보낸다
@@ -79,6 +82,23 @@ export class Dungeon {
         g.commands.set('dungeonSweep', (p, m) => { if (isDungeonId(m.id)) this.sweep(p, m.id, m.n); });
       }
     }
+    // 메뉴에서 바로 들어가기 (DungeonDef.fromMenu): 그런 던전이 있는 게임에만 명령이 생긴다
+    if (menuDungeons().length) g.commands.set('dungeonGo', (p, m) => { if (isDungeonId(m.id)) this.go(p, m.id); });
+  }
+
+  /**
+   * 메뉴에서 바로 들어간다 (DungeonDef.fromMenu): 들판이나 단계 안에서. 들어갈 수 있는지(레벨, 열쇠·하루 횟수) 먼저 보고, 안 되면 아무것도 바뀌지 않는다
+   * (단계에서도 나오지 않는다). 되면 단계 안이면 단계에서 나와(들어오기 전의 자리), 그 던전의 문 앞으로 옮겨 문에서처럼 들어간다
+   */
+  go(p: Ent, id: DungeonId): void {
+    const g = this.g, def = dungeonDef(id);
+    if (p.bot || !def.fromMenu || this.of.has(p.id)) return;
+    const staged = g.has('stages') && g.stages.inStage(p);
+    if (!staged && !isField(p.layer)) return;
+    if (!this.allowed(p, id, def)) return;
+    if (staged) g.stages.leave(p, false);
+    this.move(p, def.portal.x + 1.5, def.portal.z + 1.5, p.layer);
+    this.enter(p, id);
   }
 
   // ---------- 입장 열쇠 ----------
@@ -201,17 +221,14 @@ export class Dungeon {
     const g = this.g, def = dungeonDef(id);
     if (this.of.has(p.id) || !isField(p.layer)) return;
     if (dist(p, def.portal) > PORTAL_REACH) { g.notify(p, 'dungeonFar'); return; }
-    if (g.field(p, 'lv') < def.minLv) { g.notify(p, 'dungeonLevel', def.minLv); return; }
+    if (!this.allowed(p, id, def)) return;
     if (def.key) {
       // 열쇠를 쓰는 던전: 하루 횟수 대신 열쇠 하나 (DungeonDef.key)
-      if (this.keyCount(p, id) <= 0) { g.notify(p, 'dungeonNoKeys', id); return; }
       this.keyState(p, id).n--;
       p.unsaved = true;
     } else {
-      g.daily.roll(p); // 날이 바뀌었으면 입장 횟수도 새로 센다
-      const key = runKey(id), used = p.daily.prog[key] ?? 0;
-      if (used >= def.perDay) { g.notify(p, 'dungeonNoRuns'); return; }
-      p.daily.prog[key] = used + 1;
+      const key = runKey(id);
+      p.daily.prog[key] = (p.daily.prog[key] ?? 0) + 1;
       p.metaDirty = true; p.unsaved = true;
     }
 
@@ -230,9 +247,22 @@ export class Dungeon {
     this.tell(run);
   }
 
+  /** 들어갈 수 있는가 (레벨, 열쇠나 오늘의 횟수): 안 되면 까닭을 알리고 false. 아무것도 쓰지 않는다 */
+  private allowed(p: Ent, id: DungeonId, def: DungeonDef): boolean {
+    const g = this.g;
+    if (g.field(p, 'lv') < def.minLv) { g.notify(p, 'dungeonLevel', def.minLv); return false; }
+    if (def.key) {
+      if (this.keyCount(p, id) <= 0) { g.notify(p, 'dungeonNoKeys', id); return false; }
+      return true;
+    }
+    g.daily.roll(p); // 날이 바뀌었으면 입장 횟수도 새로 센다
+    if ((p.daily.prog[runKey(id)] ?? 0) >= def.perDay) { g.notify(p, 'dungeonNoRuns'); return false; }
+    return true;
+  }
+
   private create(id: DungeonId, def: DungeonDef): Run {
     const g = this.g, layer = instanceLayer(g);
-    const run: Run = { id, def, layer, members: new Set(), mobs: new Set(), boss: 0, left: def.timeS, cleared: false, exit: 0, told: 0 };
+    const run: Run = { id, def, layer, members: new Set(), mobs: new Set(), boss: 0, left: def.timeS, cleared: false, exit: 0, told: 0, think: 0 };
     const spawn = (type: string, x: number, z: number) => {
       const m = g.monsters.spawn(type as Parameters<typeof g.monsters.spawn>[0], x, z);
       m.layer = layer;
@@ -283,8 +313,8 @@ export class Dungeon {
     this.tell(run);
   }
 
-  /** 던전에서 나온다. 스스로 나오면(notify) 알려 준다 */
-  leave(p: Ent, notify: boolean): void {
+  /** 던전에서 나온다. 스스로 나오면(notify) 알려 준다. why는 사건 dungeonExited에 넘기는 까닭 (기본: 알리면 self, 아니면 end) */
+  leave(p: Ent, notify: boolean, why: 'self' | 'end' | 'drop' = notify ? 'self' : 'end'): void {
     const run = this.of.get(p.id);
     if (!run) return;
     run.members.delete(p.id);
@@ -294,6 +324,7 @@ export class Dungeon {
     this.move(p, run.def.portal.x + 1.5 + Math.random(), run.def.portal.z + 1.5 + Math.random(), home);
     this.g.out.push({ id: p.id, msg: { t: 'dungeon', id: '', left: 0, foes: 0, cleared: false } });
     if (notify) this.g.notify(p, 'dungeonLeft');
+    this.g.fire('dungeonExited', p, run.id, why);
   }
 
   private destroy(run: Run): void {
@@ -324,7 +355,16 @@ export class Dungeon {
       }
       run.told += dt;
       if (run.told >= 5) this.tell(run); // 시계가 어긋나지 않게 가끔 다시 알린다
+      if (run.def.auto && !run.cleared) this.autoFight(run, dt);
     }
+  }
+
+  /** 자동 전투 던전(DungeonDef.auto): 안에 있는 사람(봇 말고)을 서버가 대신 싸우게 한다 (단계의 leaderAuto와 같은 셈: systems/leader.ts) */
+  private autoFight(run: Run, dt: number): void {
+    run.think -= dt;
+    if (run.think > 0) return;
+    run.think = 0.3;
+    for (const p of this.players(run)) if (!p.bot && p.hp > 0) leaderFight(this.g, p, run.mobs);
   }
 
   /** 끊긴 사람이 돌아오기를 기다리는 회차인가 (기다림이 지난 것은 지운다) */

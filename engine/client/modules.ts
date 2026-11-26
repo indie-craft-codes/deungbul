@@ -15,6 +15,7 @@ import { initDevice } from './hud/device';
 import { initDungeon } from './hud/dungeon';
 import { initForge } from './hud/forge';
 import { initHeroGear } from './hud/herogrow';
+import { initIdleBack } from './hud/idleback';
 import { initMenu } from './hud/menu';
 import { initMinimap } from './hud/minimap';
 import { initNear } from './hud/near';
@@ -53,6 +54,8 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initStages, mod: 'stages' },
   // 영웅 장비 (수집형의 선택 모듈): 그 뒤에
   { init: initHeroGear, mod: 'herogear' },
+  // 돌아왔을 때의 창 (idle 모듈의 선택 칸 IDLE.popup: 켜지 않은 게임은 init이 아무것도 하지 않는다): 맨 뒤에
+  { init: initIdleBack, mod: 'idle' },
 ];
 
 export function initModules(): void {

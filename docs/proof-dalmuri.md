@@ -87,3 +87,24 @@
 4. 영웅 모델에 끼어드는 접점, 영웅을 키우는 재료의 길이 없다는 것('남은 것'에 일부만). → '남은 것'에 둘을 더하고 우회법을 적는다.
 5. 10절 '틀 안의 타입 오류'의 목록에 빈 `CAMPS`와 '무기 + 재료(갑옷 없음)'가 없다.
 6. 의존으로 딸려 오는 모듈(던전 → 장비 → 아이템)의 화면(가방 단추, 대상 공격 단추)을 끄는 법이 없다.
+
+## 메운 것 (2026-11-26, 가지 `feat/idleflow`)
+
+틀에서 메웠다(모두 선택 칸: 달무리는 아직 옛 우회를 쓰고 그대로 돈다. 새 칸으로 옮기는 것은 다음 작업). 쓰는 법은 [making-a-game.md](making-a-game.md) 13절 '단계 밖', 틀 쪽의 자세한 것은 [framework-status.md](framework-status.md)의 같은 이름의 절.
+
+| 항목 | 어떻게 메웠나 | 달무리에서 지울 우회 |
+|---|---|---|
+| 1. 새 게임의 import 줄 | 13절 '본보기'에 새 게임에서 그대로 쓰는 줄(`@engine/shared/defs`, `@engine/server`, `@engine/client`, `@engine/client/i18n/names`) | 없음 |
+| 2. 방치 보상의 화면 | `IDLE.popup: true` → 메시지 `idleBack`과 틀의 창(`hud/idleback.ts`: 받기는 그 우편의 `mailClaim`, 나중에는 우편에 남김). 1절 표 `idle`의 화면 칸. 처리기의 차례(플러그인이 먼저)는 13절 '단계 밖'에 | `g.ready`의 `playerJoined`와 `idleGain`, `#idlePop` |
+| 3. 던전 뒤 단계로 | `STAGE_RULES.returnAfterDungeon: 초`(사건 `dungeonExited`) | 틱의 `returning`·`inside` |
+| 4. 던전 안의 대장 | `DungeonDef.auto: true`(단계와 같은 셈 `leaderFight`) | 틱의 대상 고르기 |
+| 5. 영웅의 겉모습 | `setHeroModel(({ id, rarity, look }) => …)`, 또는 `setHumanoidBody`의 `look.hero`·`look.rarity` | `RARITY_BY_CLOTH`(옷 색 → 등급) |
+| 6. 재료로 키우기 | `HERO_RULES.trade: { essence: { cost: (r) => [3, 6, 15][r] } }`(조각은 그 등급의 한 묶음), 명령 `{ t: 'hero', a: 'trade', id, item }`, 원인 `cmd:hero:trade`, '영웅' 탭의 단추 | 게임 명령 `essence`, 안내문 `essence*`, 원정 탭의 별정수 줄 |
+| 7. 빈 `CAMPS` | 틀이 무리의 종류를 몬스터 id로 넓혀 읽는다(`monsters.ts`). 10절 목록 | `CAMPS`의 타입 적기(적지 않아도 된다) |
+| 8. 무기 + 재료 | 틀이 아이템의 종류를 넓혀 읽는다(`gear.ts`, `shop.ts`). 10절 목록. 시험 `collect/idleflow`가 그런 내용으로 틀을 타입 검사한다 | `kind: 'mat' as ItemDef['kind']` |
+| 9. 메뉴 줄 도우미 | `@engine/client`의 `menuRow`, `menuButton`, `menuEl`, `menuSpan`, `menuChips`, `redrawMenu`, `closeMenu` | 손수 만든 `el`·`btn`·`row`, `#menuClose` 누르기 |
+| 10. 던전의 이름 | 13절 '단계 밖'에 `dungeonLabel(L(), id).name`(`@engine/client/i18n/names`) | 없음 |
+| 11. 사람을 옮기는 법 | 메뉴에서 들어가기(`DungeonDef.fromMenu`, 명령 `dungeonGo`)가 틀 안에서 한다. 손수 할 때의 꼴은 13절 '단계 밖'에 | 게임 명령 `keyrun` |
+| 12. `p.targetId`를 주면 다가가 친다 | 13절 '단계 밖'에 적었다. 틀의 셈은 `leaderFight`(입구 `@engine/server`) | 없음 |
+| 13. 가방 단추 | `HUD: { hide: ['bag'] }` | css `#bagBtn` |
+| 14. 대상 공격 단추 | `HUD: { hide: ['attackNearest'] }` | css `#tabBtn` |

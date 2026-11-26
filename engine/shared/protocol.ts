@@ -1,6 +1,6 @@
 // 서버와 클라이언트가 주고받는 메시지. 지금은 JSON이고, 트래픽이 문제가 되면 이진 형식으로 바꾼다.
 // 화면에 보일 문장은 싣지 않는다: 종류와 값만 보내고 문장은 클라이언트가 언어에 맞게 만든다.
-import type { PullGot, SweepGot } from './defs/collect';
+import type { IdleBack, PullGot, SweepGot } from './defs/collect';
 import type { Gear, Mail, RankRow } from './defs/growth';
 import type { GuildView, MarketItem } from './defs/social';
 import type { TeamBoard } from './defs/teams';
@@ -144,6 +144,8 @@ export type ClientMsg =
   | { t: 'team'; team: number }
   /** 영웅 (roster 모듈): 레벨 업(재화) / 별 올리기(조각) / 기술 레벨·각성 (HERO_RULES.skill·awaken을 켠 게임) */
   | { t: 'hero'; a: 'level' | 'star' | 'skill' | 'awaken'; id: string }
+  /** 재료로 영웅 키우기 (HERO_RULES.trade): 그 아이템을 써서 가진 영웅의 조각을 얻는다. n번 한꺼번에 (기본 1, 99까지) */
+  | { t: 'hero'; a: 'trade'; id: string; item: string; n?: number }
   /** 뽑기 (gacha 모듈): 배너 id와 횟수(1 또는 10) */
   | { t: 'gacha'; id: string; n: number }
   /** 편성 (squad 모듈): 함께 싸울 영웅 (자리의 차례, SQUAD_RULES.size까지) */
@@ -161,6 +163,8 @@ export type ClientMsg =
   | { t: 'dungeonSweep'; id: string; n: number }
   /** 영웅 선택권 (GACHA_RULES.select): 선택권 아이템 하나를 쓰고 그 목록의 영웅 하나를 얻는다 */
   | { t: 'gacha'; a: 'select'; item: string; hero: string }
+  /** 메뉴에서 바로 던전에 들어간다 (DungeonDef.fromMenu인 던전): 들판이나 단계 안에서. 단계 안이면 단계에서 나와 들어간다 */
+  | { t: 'dungeonGo'; id: string }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -242,4 +246,6 @@ export type ServerMsg =
   | { t: 'gacha'; b: string; got: PullGot[] }
   /** 소탕의 결과 (stages·dungeon 모듈): 단계나 던전, 횟수, 받은 것의 합 */
   | { t: 'sweep'; got: SweepGot }
+  /** 돌아왔을 때 받은 방치 보상 (idle 모듈, IDLE.popup을 켠 게임만): 화면이 창으로 알린다. 받기는 그 우편(mail)으로 */
+  | ({ t: 'idleBack' } & IdleBack)
   | Added<ServerMsgs>;

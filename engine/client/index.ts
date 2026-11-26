@@ -21,10 +21,14 @@ export { addMapLabels, addMarks, setMapPaint, MARK, type MapLabel, type Mark, ty
 export { addMapPlaces, closeWorldMap, stopTravel, toggleWorldMap, travelTo, worldMapOpen, type MapPlace, type PlaceKind } from './hud/worldmap';
 export { addNotices, banner } from './hud/notify';
 export { addIconSheet, addItemSheet, gearIcon, hasItemIcon, itemIcon } from './hud/icons';
-export { addMenuTab, MENU_TABS, openMenu, setMenuTabs, type EngineMenuTab, type MenuTab } from './hud/menu';
+export { addMenuTab, closeMenu, MENU_TABS, openMenu, setMenuTabs, type EngineMenuTab, type MenuTab } from './hud/menu';
+// 메뉴 탭의 줄 만들기 (틀의 탭과 같은 모양·class: 한 줄 mrow, 단추 plain, 머리줄 baghead …). 게임의 탭(addMenuTab)이 쓴다
+export { button as menuButton, chips as menuChips, el as menuEl, redraw as redrawMenu, row as menuRow, span as menuSpan } from './hud/menu/parts';
 export { openClasses } from './hud/classes';
 export { myTeam, myTeamScore, onTeamLook, setTeamBoardExtra, teamBoard } from './hud/teams';
-export { myHeroes, mySquad, onGachaResult } from './hud/collect';
+export { myHeroes, mySquad, onGachaResult, setHeroModel, type HeroModelInfo } from './hud/collect';
+export { onIdleBack } from './hud/idleback';
+export { myKeys } from './hud/dungeon';
 export { myHeroGear } from './hud/herogrow';
 export { myStage } from './hud/stagebar';
 export { hudSlow } from './hud/me';

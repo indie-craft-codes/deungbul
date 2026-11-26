@@ -118,7 +118,8 @@ export class GearSys {
 
   /** 무기나 갑옷을 얻어 바로 낀다 (상점, 대장간). 산 것이 사라지지 않게 가방이 가득 차도 들어간다. 장비가 아니면 false. why: 원인의 이름 (systems/bag.ts) */
   acquire(p: Ent, id: ItemId, made = false, why = ''): boolean {
-    const kind = ITEMS[id].kind;
+    // 종류를 넓혀 읽는다: 아이템이 무기와 재료뿐(갑옷 없음)인 게임의 좁은 타입에서도 '갑옷인가'가 컴파일되게
+    const kind: string = ITEMS[id].kind;
     if (kind !== 'weapon' && kind !== 'armor') return false;
     const it = this.plain(id);
     if (made) it.made = true;

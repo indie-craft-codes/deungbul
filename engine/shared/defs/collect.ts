@@ -3,7 +3,7 @@
 // 서버(engine/server/game/systems/roster.ts, gacha.ts, squad.ts, stages.ts)와 화면(engine/client/hud/collect*.ts)이 함께 읽는다:
 // 영웅의 능력치·전투력, 뽑기의 확률(공개하는 확률표와 서버가 뽑는 확률이 이 한 곳의 셈이다), 단계의 목록은 여기의 함수로만 구한다.
 // 줄 위에서 영웅은 HEROES의 id로, 등급은 HERO_RARITIES의 번호(0부터, 클수록 귀하다)로, 단계는 '장-단계'의 id('1-3')로 오간다.
-import { BANNERS, CHAPTERS, GACHA_RULES, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES, STAGE_RULES } from '../content';
+import { BANNERS, CHAPTERS, GACHA_RULES, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES, IDLE, STAGE_RULES } from '../content';
 import type { Reward } from './growth';
 import type { HeroAwakenRules, HeroGearRules, HeroSkillRules, PowerIn, SquadRowRules, SynergyDef, SynergyMe } from './herogrow';
 
@@ -79,7 +79,21 @@ export interface HeroRules {
   gear?: HeroGearRules;
   /** 전투력의 셈 (없으면 defaultPower: 성장이 없으면 heroPower와 같다) */
   power?: (x: PowerIn) => number;
+  /**
+   * 재료로 영웅 키우기: 아이템 id → 교환 (items 모듈이 있어야 한다). 가진 영웅에게 그 아이템 cost(등급)개를 쓰고 조각 shards(등급)개를 얻는다
+   * (명령 { t: 'hero', a: 'trade', id, item, n? }, 원인 cmd:hero:trade). 없으면 교환이 없다
+   */
+  trade?: Readonly<Record<string, HeroTrade>>;
 }
+
+/** 재료 → 영웅 조각의 교환 하나: 한 번에 드는 아이템의 수와 얻는 조각 (영웅의 등급 번호로). shards가 없으면 그 등급의 조각 한 묶음(HeroRarityDef.shards) */
+export interface HeroTrade { cost: (rarity: number) => number; shards?: (rarity: number) => number }
+/** 영웅의 규칙을 넓은 타입으로 본 것 (게임이 적은 HERO_RULES에 선택 칸 trade 같은 것이 없어도 읽힌다) */
+export const HERO_RULE_VIEW: HeroRules = HERO_RULES;
+/** 재료 교환의 표 (HERO_RULES.trade: 아이템 id → 교환. 없으면 빈 표) */
+export const heroTrades = (): Readonly<Record<string, HeroTrade>> => HERO_RULE_VIEW.trade ?? {};
+/** 교환 한 번에 얻는 조각 (shards가 없으면 그 등급의 조각 한 묶음) */
+export const heroTradeShards = (t: HeroTrade, rarity: number): number => Math.max(0, Math.floor(t.shards ? t.shards(rarity) : rarityDef(rarity).shards));
 
 /** 배너 하나의 뽑기 판 한 칸: 이 영웅이 나올 무게 (확률 = 무게 / 그 배너의 무게의 합) */
 export interface BannerSlot { hero: string; w: number }
@@ -191,10 +205,24 @@ export interface StageRules {
   sweep?: SweepRule;
   /** 오프라인 단계 진행. 없으면 하지 않는다 (방치 보상의 수치만 깬 단계로 커진다) */
   offline?: OfflineRules;
+  /**
+   * 던전 뒤 단계로 돌아가기: 던전을 끝내거나 스스로 나온 사람을 이 초 뒤 지금 단계로 들여보낸다 (들판에 남지 않는다).
+   * 접속이 끊겨 나온 것은 세지 않는다. 없으면 예전처럼 문 앞에 남는다
+   */
+  returnAfterDungeon?: number;
 }
 
 /** 방치 보상(idle 모듈)의 셈에 틀이 넘기는 것: 깬 단계의 수 (stages 모듈이 없으면 0) */
 export interface IdleCtx { stage: number }
+/**
+ * 돌아왔을 때의 방치 보상 (메시지 idleBack, IDLE.popup을 켠 게임만): 그 우편의 id, 비운 분, 보상, 오프라인 진행이 있었으면 처음·지금 단계와 깬 수.
+ * 받기는 우편(mailClaim)이 한다: 이 메시지는 알리기만 한다
+ */
+/** 방치 보상의 규칙 (내용의 IDLE, idle 모듈): 셈하는 분의 하한·상한, 보상의 식, 돌아왔을 때의 창 */
+export interface IdleRules { minMin: number; maxMin: number; reward: (minutes: number, lv: number, ctx: IdleCtx) => Reward; popup?: boolean }
+/** 방치 보상의 규칙을 넓은 타입으로 본 것 (게임이 적은 IDLE에 popup이 없어도 읽힌다) */
+export const IDLE_VIEW: IdleRules = IDLE;
+export interface IdleBack { mail: number; min: number; r: Reward; from?: string; to?: string; n?: number }
 
 // ---------- 표를 읽는 도우미 ----------
 /** 영웅의 표를 id가 문자열인 표로 본 것 (영웅이 없는 게임에서도 읽힌다. 없는 id는 undefined) */

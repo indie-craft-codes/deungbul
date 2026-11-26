@@ -14,7 +14,7 @@
 - 코드는 틀(`engine/`)과 게임 일곱(`games/deungbul/` 등불지기, 예제 `games/sample/`, 시제품 `games/cave`·`starmine`·`bastion`, RPG가 아닌 시제품 `games/rollball` 굴림공, 문서만 보고 만든 수집형·방치형 `games/dalmuri` 달무리 원정대: 증명 기록 [proof-dalmuri.md](proof-dalmuri.md))이다. 방향은 게임 → 틀 하나다.
 - **틀은 장르와 무관한 핵심과 선택 모듈 스물둘이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈', 영웅 장비 `herogear`는 아래 '영웅의 성장')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
 - 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
-- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 18개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 일곱의 시험: 검사 2101개, 2026-11-26 `feat/herogrow`·`feat/sweep`·`game/idle`을 합친 뒤) 모두 통과, `npm run build:all` 통과.
+- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 18개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 일곱의 시험: 검사 2159개, 2026-11-26 `feat/idleflow`) 모두 통과, `npm run build:all` 통과.
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
@@ -26,6 +26,7 @@
 - 틀의 남은 한계 메우기(2026-11-26, 가지 `feat/limits`, 아래 같은 이름의 절): 기기 옮기기 코드가 서버를 다시 켜도 남는다(해시만 저장), 파일 모델의 사람에 갑옷(`armor.tint`·`attach`), 팀 모듈 `teams`(굴림공이 쓴다). `npm test` 검사 1687개.
 - 수집형·방치형 모듈(2026-11-26, 가지 `feat/collect`, 아래 같은 이름의 절): 영웅 `roster`, 뽑기 `gacha`(공개 확률표, 천장, 10번 보장, 기록, 게임 안의 재화만), 편성 `squad`(영웅이 함께 싸운다: 전투의 `registerAlly`), 단계 `stages`(장·단계·물결·우두머리, 자동 진행·실패, 방치 보상이 깬 단계로), 던전의 입장 열쇠(`DungeonDef.key`). 본보기 내용 `engine/test/collect/`(영웅 들판). 등불지기는 고르지 않았고 황금 실행이 바이트까지 같다. `npm test` 검사 1813개.
 - 영웅의 성장(2026-11-26, 가지 `feat/herogrow`, 아래 같은 이름의 절): 영웅 장비 `herogear`(세트, 강화, 단계·던전에서 떨어짐), 기술 레벨, 각성, 시너지, 진형(앞줄이 먼저 맞는다), 한 가지 전투력. 모두 내용이 적어야 켜진다: 등불지기·시제품과 이 기능 전의 수집형 내용의 황금 실행이 바탕과 같다. `npm test` 검사 1916개.
+- 단계 밖과 달무리의 빈 곳(2026-11-26, 가지 `feat/idleflow`, 아래 같은 이름의 절): 던전 안의 자동 전투, 던전 뒤 단계로, 메뉴에서 바로 던전, 돌아왔을 때의 창, 재료로 영웅 조각, 영웅 모델에 id·등급, 딸려 온 화면 감추기, 메뉴 줄 도우미의 입구, `CAMPS`를 적지 않은 게임·갑옷 없는 아이템 표의 틀 안 타입 오류. 모두 선택 칸이라 등불지기·시제품·달무리의 황금 실행이 바이트까지 같다.
 - 소탕·오프라인 진행·픽업 배너(2026-11-26, 가지 `feat/sweep`, 아래 같은 이름의 절): 단계·열쇠 던전의 소탕(소탕권·재화·열쇠, 보상은 바로), 접속하지 않은 동안의 단계 진행(편성의 전투력과 권장 전투력, 시간·단계의 상한, 방치 보상을 깬 단계로 토막 내어), 픽업·반반·천장 공유·기간 한정 배너와 영웅 선택권(공개 확률표에 실효 확률까지). 모두 내용의 선택 칸이라 적지 않은 게임은 예전과 같다. 등불지기 황금 실행이 바이트까지 같다. `npm test` 검사 1930개.
 - 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다(장르 중립 틀에서도: 옛 견본 15개와 운영 DB 복사본 캐릭터 59·월드 1을 읽은 결과가 글자까지 같다). 프로토콜은 3이다(2026-11-26: 엔티티 종류를 문자열로, 상태 줄 뒤에 게임의 값, stat·meta의 칸이 모듈마다. 옛 화면은 새로고침을 안내받는다).
 
@@ -121,6 +122,33 @@
 
 남은 것: 하루 소탕 횟수의 한도, 천장에서 고르는 교환 상점, 오프라인 진행의 실제 싸움 흉내(전투력 비교만 한다)는 없다. 소탕으로 받은 아이템이 가방 한도를 넘으면 넘는 몫은 받지 않는다(단계의 보상과 같다).
 
+## 단계 밖과 달무리의 빈 곳 메우기 (2026-11-26, 가지 `feat/idleflow`)
+
+문서만 보고 만든 수집형 게임 달무리 원정대의 증명 기록([proof-dalmuri.md](proof-dalmuri.md))이 찾은 빈 곳을 틀에서 메웠다. 항목마다의 대응은 그 기록 끝의 '메운 것'. 쓰는 법은 [making-a-game.md](making-a-game.md) 13절 '단계 밖'. **모두 더하기만 한 선택 칸**이다: 내용에 적지 않은 게임은 명령·메시지·저장·화면이 예전과 같다(달무리도 고치지 않았고 그대로 돈다: 옮기는 것은 다음 작업).
+
+| 무엇 | 내용 칸 | 서버 | 줄 위·장부 | 화면 | 시험 |
+|---|---|---|---|---|---|
+| 던전 안의 자동 전투 | `DungeonDef.auto` | `dungeon.ts`의 `autoFight`: 회차마다 0.3초에 한 번, 안의 사람(봇 말고)에게 `leaderFight`. 단계의 `leaderAuto`가 쓰던 셈을 `systems/leader.ts`로 옮겨 둘이 함께 쓴다(단계의 셈은 글자 그대로 옮겼다: 황금 실행이 같다). 입구 `@engine/server`에 `leaderFight` | 없음 | 없음 | `collect/idleflow`(대상, 체력이 준다, 손으로 움직인 1.5초, 끄면 예전), `collect/idleflownet`(스냅샷의 대상) |
+| 던전 뒤 단계로 | `STAGE_RULES.returnAfterDungeon`(초) | 던전이 나갈 때 새 사건 `dungeonExited(p, id, 'self' \| 'end' \| 'drop')`을 낸다(`leave`의 셋째 인자, 기본은 예전의 뜻). 단계가 그것을 듣고 끊긴 것(drop)이 아니면 기다렸다가 `start`. `g.stages.returnIn(p)` | 없음 | 없음 | `collect/idleflow`(끝남·스스로·끊김, 그사이 단계에 들어감, 끄면 문 앞), `collect/idleflownet` |
+| 메뉴에서 던전 | `DungeonDef.fromMenu` | 명령 `{ t: 'dungeonGo', id }`(그런 던전이 있는 게임만), `g.dungeon.go`: 입장 조건을 먼저 보고(새 `allowed`: 문의 `enter`가 하던 확인을 그대로 옮김. 차례와 안내문이 같다) 단계에서 나와 문 앞을 거쳐 `enter` | 안내문은 문에서와 같다 | '단계' 탭 끝의 '던전' 줄(열쇠·횟수·레벨·들어가기·소탕), 셈 `dungeonGoView`. 그 던전은 '던전 소탕' 줄에서 빠진다(한 줄에 함께) | `collect/idleflow`(단계 안·들판, 열쇠 없음·레벨·fromMenu 아님·던전 안·봇), `collect/idleflownet` |
+| 돌아왔을 때의 창 | `IDLE.popup`(타입 `IdleRules`, 넓게 읽는 `IDLE_VIEW`) | `idle.ts`가 방치 우편을 보낸 뒤 메시지 `idleBack`(`IdleBack`: 우편 id, 분, 보상, 진행이 있으면 `from`·`to`·`n`) | 받기는 우편(`mailClaim`): 원인 `mail:idle` 그대로. 새 원인 없음 | `hud/idleback.ts`(가운데 창: 받기·나중에), `onIdleBack`, 셈 `idleBackLines`. 화면 모듈 목록의 맨 뒤(`idle`: 켜지 않은 게임은 init이 곧 돌아간다) | `collect/idleflow`(우편과 같은 값, 진행, 짧게 비움, 봇, 끄면 우편만, 받기의 장부), `collect/idleflownet` |
+| 재료로 영웅 키우기 | `HERO_RULES.trade`(아이템 id → `HeroTrade { cost(등급), shards?(등급) }`), 넓게 읽는 `HERO_RULE_VIEW`, `heroTrades()` | `g.roster.trade`, 명령 `{ t: 'hero', a: 'trade', id, item, n? }`(1~99, 가진 영웅만). 아이템 모듈·`ITEMS`의 id가 아니면 서버를 띄울 때 멈춘다 | 원인 `cmd:hero:trade`(가방의 아이템), 안내문 `heroTraded`, 모자라면 `itemShort`. 저장은 영웅의 조각 그대로 | '영웅' 탭 위의 가진 재료, 줄마다 교환 단추, 셈 `tradeViews` | `collect/idleflow`(값, n번, 장부, 모자람, 틀린 입력, 저장, 화면, 끄면 없음), `collect/idleflownet` |
+| 영웅 모델에 id·등급 | (화면) | 없음 | 없음 | `HumanoidLook.hero`·`rarity`(영웅일 때만: `setHumanoidBody`가 받는다), `setHeroModel(({ id, rarity, look }) => 모델 \| null)`. `makeHumanoid`의 다섯째 인자(선택) | 타입 검사, 화면 |
+| 딸려 온 화면 감추기 | `HUD.hide`(`HudRules`, 이름 표 `HUD_PARTS`: bag, attackNearest, auto, worldMap, minimap, hint, skills, channel). 새 계약 이름 `HUD`(핵심의 수치 `CoreTuning`) | 없음 | 없음 | `hud/shell.ts`의 `mountShell`이 요소에 class `hudOff`(감출 뿐: 기능과 단축키 그대로) | `collect/idleflow`(이름 → id, 모르는 이름, id가 뼈대에 있다), 화면 |
+| 메뉴 줄 도우미의 입구 | | | | `@engine/client`에 `menuRow`, `menuButton`, `menuEl`, `menuSpan`, `menuChips`, `redrawMenu`, `closeMenu`, `myKeys` | 타입 검사 |
+| 틀 안의 타입 오류 둘 | (내용) | `monsters.ts`(무리의 종류를 몬스터 id로), `gear.ts`·`shop.ts`(아이템의 종류를 넓혀 읽음): 실행은 그대로 | | | `collect/idleflow`(그렇게 바꾼 시험용 내용으로 틀을 타입 검사: 고치기 전 틀에서는 오류 셋을 확인) |
+
+함께 고친 것: 시험용 내용(영웅 들판)에 위의 칸을 모두 켰다(금광 `auto`·`fromMenu`, 금광의 보상에 별가루, 별가루 → 조각, 2초 뒤 단계로, 돌아왔을 때의 창, 가방·대상 공격 단추 감춤). 틀의 문장(한국어·영어) 11개와 안내문 하나(`heroTraded`). 문서 13절 '단계 밖', 본보기의 새 게임용 import 줄, 1절 `idle`의 화면 칸과 '딸려 온 모듈의 화면 감추기', 10절의 타입 오류 두 경우, 11절.
+
+바뀌지 않았다는 증거(바탕 커밋 `49e015d`의 복제본과 이 가지를 같은 도구로 돌려 바이트를 견줬다. 도구는 `$TEMP/dg-work/idleflow-tools/golden.mts`·`golden.sh`: `feat/sweep`의 황금 실행에 달무리와 그 명령(뽑기, 단계 나오기·들어가기, 자동 진행 끄기, 게임 명령 `keyrun`·`essence`, 영웅 레벨, 편성)을 더한 것):
+
+- 등불지기 황금 실행(시계·난수 고정, 새 사람 9·돌아온 사람 2·봇 6, 4분, 던전 출입 포함): 7,489,205바이트(sha256 `ba83af30…`, 앞 가지와 같은 값)가 같다. 시제품 다섯(모닥불 사냥터·버섯 동굴·별가루 광산·돌담 마을·굴림공)과 **달무리**(2분, 18,080줄 2,415,106바이트, sha256 `c9867afc…`)도 바이트까지 같다.
+- 화면: 영웅 들판을 3015에 띄워 PC 1280×720·폰 390×844 × 한국어·영어로 영웅 탭의 재료 단추, 단계 탭의 '던전' 줄, 메뉴에서 들어간 금광의 자동 전투, 돌아왔을 때의 창(진행 있음·없음)과 받기를 찍었다(`$TEMP/dg-work/idleflow-shots/`, 콘솔 오류 없음, 가방·대상 공격 단추는 `display: none`).
+- 문장 견본(`games/deungbul/test/fixtures/locale-*.json`): 틀의 새 키 12개(한국어·영어 저마다)만 더해졌고 달라진 문장 0.
+- 시험: `npm test` 두 번 모두 통과(검사 2159개, 바탕 2101개에서 collect/idleflow·idleflownet과 경계 검사 몫), `npm run typecheck` 오류 0(설정 18개), `npm run build:all` 통과.
+
+남은 것: 달무리를 새 칸으로 옮기기(게임 명령 `keyrun`·`essence`, 메시지 `idleGain`, 옷 색 → 등급, css로 단추 감추기를 지우고 내용 칸으로: 다음 작업). 재료로 영웅의 레벨·경험치를 올리는 길은 없다(조각만). 감춘 요소의 단축키(B, Tab)는 그대로다.
+
 ## 틀의 남은 한계 메우기 (2026-11-26, 가지 `feat/limits`)
 
 | 무엇 | 틀 쪽 | 게임이 하는 일 | 지키는 것 |
@@ -176,7 +204,7 @@
 
 ## 0. 이어 갈 것
 
-0. **다음: 달무리 원정대가 찾은 빈 곳 메우기**: 문서만 보고 만든 수집형 게임([proof-dalmuri.md](proof-dalmuri.md), 평가 3.5/5, 소스를 14번 읽음). 틀에 없어 게임이 우회한 것: 던전 안의 자동 전투와 던전 뒤 단계로 돌아가기, 메뉴에서 바로 던전 들어가기, 방치 보상을 돌아왔을 때 화면에 보이기, 재료로 영웅 조각 얻기, 영웅 모델에 영웅 id·등급 넘기기, 의존으로 딸려 오는 화면(가방, 가까운 대상 공격) 끄기, 메뉴 줄 도우미의 입구. 문서: 13절의 '단계 밖', 새 게임의 import 줄, 10절의 타입 오류 두 경우. 그 뒤 달무리가 소탕·오프라인 진행·픽업 배너·영웅의 성장을 쓰게 한다.
+0. **달무리 원정대가 찾은 빈 곳 메우기: 끝(2026-11-26, 가지 `feat/idleflow`)**: 위 '단계 밖과 달무리의 빈 곳 메우기'. 던전 안의 자동 전투(`DungeonDef.auto`), 던전 뒤 단계로(`STAGE_RULES.returnAfterDungeon`), 메뉴에서 바로 던전(`DungeonDef.fromMenu`, 명령 `dungeonGo`), 돌아왔을 때의 창(`IDLE.popup`, 메시지 `idleBack`), 재료로 영웅 조각(`HERO_RULES.trade`), 영웅 모델에 id·등급(`setHeroModel`, `HumanoidLook.hero`), 딸려 온 화면 감추기(`HUD.hide`), 메뉴 줄 도우미의 입구(`menuRow` …), 틀 안의 타입 오류 둘, 문서. **다음**: 달무리를 이 칸들로 옮긴다(게임 명령 `keyrun`·`essence`, 메시지 `idleGain`, 옷 색 꼼수, css 감추기를 지운다). 그 뒤 달무리가 소탕·오프라인 진행·픽업 배너·영웅의 성장을 쓰게 한다.
 0. **영웅의 성장: 끝(2026-11-26, 가지 `feat/herogrow`)**: 위 '영웅의 성장'. 같은 때 다른 가지(`sweep`: 소탕권·오프라인 단계 진행·픽업 배너)가 단계·뽑기·방치·던전을 고치고 있다: 합칠 때 `modules.ts`, 언어 파일, 문서의 13절이 겹친다.
 0. **소탕·오프라인 진행·픽업 배너: 끝(2026-11-26, 가지 `feat/sweep`)**: 위 같은 이름의 절. 영웅의 장비·각성·스킬 레벨·시너지·진형은 다른 가지(`herogrow`)가 맡는다.
 0. **수집형·방치형 모듈: 끝(2026-11-26, 가지 `feat/collect`)**: 위 '수집형·방치형 모듈'. 다음은 문서([making-a-game.md](making-a-game.md) 13절)만 보고 이 장르의 게임을 만드는 검증이다(별도 에이전트).

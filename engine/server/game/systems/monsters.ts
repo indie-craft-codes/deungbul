@@ -72,9 +72,10 @@ export class Monsters {
   /** 들판의 한 층(채널)에 빈터의 몬스터를 놓는다. 층마다 따로 살고 따로 되살아난다 */
   populate(layer: number): void {
     for (const camp of CAMPS) {
-      camp.types.forEach((type, i) => {
+      // 몬스터 id로 읽는다: CAMPS를 적지 않은 게임은 틀의 기본(빈 표, types: string[])이라 게임의 몬스터 id와 타입이 맞지 않는다
+      camp.types.forEach((type: string, i) => {
         const a = (i / camp.types.length) * Math.PI * 2 + 0.4, r = 2.5 + (i % 3) * 2;
-        this.spawn(type, camp.x + Math.cos(a) * r, camp.z + Math.sin(a) * r).layer = layer;
+        this.spawn(type as MonsterId, camp.x + Math.cos(a) * r, camp.z + Math.sin(a) * r).layer = layer;
       });
     }
   }

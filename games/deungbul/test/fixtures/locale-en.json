@@ -609,6 +609,19 @@
   "ATK 1 · HP NaN · Power NaN",
   "ATK 2 · HP NaN · Power NaN"
  ],
+ "fmt.heroTradeBtn": [
+  "9ae7f60d38ca6b7b",
+  "Sparks NaN → +NaN shards",
+  "Sparks 0 → +0 shards",
+  "Sparks 1 → +1 shards",
+  "Sparks 3 → +4 shards"
+ ],
+ "fmt.heroTradeHave": [
+  "c2f19b4f0f726831",
+  "(던짐) TypeError",
+  "Shards from materials · you have: Sparks NaN, Sparks NaN",
+  "Shards from materials · you have: "
+ ],
  "fmt.hgChance": [
   "95268bab25de9782",
   "NaN% success",
@@ -664,6 +677,27 @@
   "Attack +1",
   "Attack +2",
   "Attack +5"
+ ],
+ "fmt.idleBackBody": [
+  "29e167c0006338e3",
+  "Gathered during the NaNm you were away.",
+  "Gathered during the 0m you were away.",
+  "Gathered during the 1m you were away.",
+  "Gathered during the 2m you were away."
+ ],
+ "fmt.idleBackLine": [
+  "a0009389bf1366e9",
+  "Sparks +NaN",
+  "Sparks +0",
+  "Sparks +1",
+  "Sparks +3"
+ ],
+ "fmt.idleBackStage": [
+  "04ecd62dd2abd072",
+  "Stage undefined → undefined (undefined cleared)",
+  "Stage 0 → undefined (undefined cleared)",
+  "Stage 1 → undefined (undefined cleared)",
+  "Stage 2 → undefined (undefined cleared)"
  ],
  "fmt.itemDamage": [
   "d0c669482dd42c3c",
@@ -1820,6 +1854,13 @@
   "1 is now 1★!",
   "2 is now 3★!"
  ],
+ "msg.heroTraded": [
+  "5ce2933939ef6aff",
+  "undefined: +NaN shards (Sparks left: NaN)",
+  "0: +0 shards (Sparks left: 0)",
+  "1: +1 shards (Sparks left: 1)",
+  "2: +3 shards (Sparks left: 5)"
+ ],
  "msg.heroUp": [
   "f0f9f3ce22589eda",
   "undefined reached level undefined!",
@@ -2386,6 +2427,9 @@
  "ui.deviceUseLink": "Playing on another device? Continue with a code",
  "ui.disconnected": "Lost connection to the server.",
  "ui.dungeonEnter": "Enter",
+ "ui.dungeonGoBtn": "Enter",
+ "ui.dungeonGoHead": "Dungeons",
+ "ui.dungeonGoInfo": "Enter right away without walking to the gate. If you are in a stage, you leave it first.",
  "ui.dungeonKeyBuy": "Buy key",
  "ui.dungeonLeave": "Leave dungeon",
  "ui.dungeonLeaveConfirm": "[[Click|Tap]] again to leave (today's run is not refunded)",
@@ -2475,6 +2519,9 @@
  "ui.htLevel": "Level",
  "ui.htSkill": "Skill",
  "ui.htStar": "Stars",
+ "ui.idleBackClaim": "Claim",
+ "ui.idleBackLater": "Later (keep in mail)",
+ "ui.idleBackTitle": "While you were away",
  "ui.intro": "In a land lost to mist, you keep the lamp towers lit. Hunt monsters for sparks and offer them at the tower to light the village.",
  "ui.keepersEmpty": "No one yet. Offer sparks or hold off a raid to be listed.",
  "ui.keepersToday": "Today's keepers",

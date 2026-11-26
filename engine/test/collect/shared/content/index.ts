@@ -2,10 +2,13 @@
 // 영웅 여섯(등급 셋, 역할 넷), 상시 배너 하나(천장 50, 10번 뽑기의 희귀 보장)와 기간 한정 픽업 배너 둘(반반, 천장 공유), 영웅 선택권,
 // 장 둘 × 단계 다섯(다섯째마다 우두머리. 소탕권으로 소탕, 오프라인 진행), 열쇠를 쓰는 금광 던전 하나(열쇠로 소탕).
 // 영웅의 성장도 모두 켠다: 기술 레벨, 각성 세 단계, 영웅 장비(칸 넷, 세트 둘, 단계·던전에서 떨어짐), 진영 셋의 시너지, 앞줄·뒷줄 둘씩의 진형.
+// 단계 밖도 켠다: 금광은 메뉴에서 바로 들어가고(fromMenu) 안에서 대장도 대신 싸우며(auto) 끝나면 단계로 돌아간다(returnAfterDungeon),
+// 돌아왔을 때의 창(IDLE.popup), 재료(별가루)로 영웅의 조각 얻기(HERO_RULES.trade), 쓰지 않는 틀의 단추 감추기(HUD.hide).
 // 이 내용 위에서 틀만의 타입 검사(engine/test/collect/tsconfig.json)와 서버·화면 셈의 시험(engine/test/collect/*.test.ts), 그리고 화면(npx vite build -c engine/test/collect/vite.config.ts)이 돈다.
 // 별칭 @game이 이 폴더를 가리키는 것은 engine/test/collect/tsconfig.json과 vite.config.ts뿐이다.
 import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRoleDef, HeroRules, IdleCtx, SquadRules, StageDef, StageRules } from '@engine/shared/defs/collect';
 import type { HeroGearRules } from '@engine/shared/defs/herogrow';
+import type { HudRules } from '@engine/shared/defs/hud';
 import type { ClassDef, ClassId, SkillDef } from '@engine/shared/defs/combat';
 import type { DungeonDef } from '@engine/shared/defs/dungeons';
 import type { CurrencyDef } from '@engine/shared/defs/economy';
@@ -24,6 +27,8 @@ export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>
 /** 집으로(H)는 쓰지 않는다: 단계가 곧 자리다 */
 export const HOME_KEY = false;
 export const CAMERA = { dist: 46, zoom: 1.05, zoomMin: 0.6, zoomMax: 1.3, gate: 1.05 };
+/** 쓰지 않는 틀의 단추: 가방(던전 → 장비 → 아이템의 의존으로 딸려 온다)과 '가까운 대상 공격'(단계와 금광에서 서버가 대신 싸운다). B와 Tab은 그대로 */
+export const HUD: HudRules = { hide: ['bag', 'attackNearest'] };
 
 // ---------- 맵: 들판 하나(가운데가 단계의 자리, 북동쪽에 들판 무리, 남동쪽에 금광 문)와 금광 ----------
 const PORTAL = { x: 26, z: -26 };
@@ -80,7 +85,7 @@ export const RESPAWN_S = 20;
 
 // ---------- 아이템: 무기 하나 (장비는 떨어뜨리지 않는다), 영웅의 성장 재료 셋 (단계를 깨면 생긴다), 소탕권과 영웅 선택권 (지니고만 있는 것: 거래소에 올릴 수 없다) ----------
 /** 종류를 넓혀 적는다 (무기와 재료뿐인 좁은 타입이면 틀의 '갑옷인가' 확인이 컴파일되지 않는다) */
-export const ITEMS: Readonly<Record<'oakblade' | 'skillbook' | 'awakenstone' | 'gearstone' | 'sweepticket' | 'herochoice', ItemDef>> = {
+export const ITEMS: Readonly<Record<'oakblade' | 'skillbook' | 'awakenstone' | 'gearstone' | 'sweepticket' | 'herochoice' | 'stardust', ItemDef>> = {
   oakblade: { kind: 'weapon', price: 0, damage: 1, tier: 1 },
   /** 기술서: 기술 레벨 */
   skillbook: { kind: 'mat', price: 0 },
@@ -92,6 +97,8 @@ export const ITEMS: Readonly<Record<'oakblade' | 'skillbook' | 'awakenstone' | '
   sweepticket: { kind: 'token', price: 0, max: 999 },
   /** 영웅 선택권 */
   herochoice: { kind: 'token', price: 0, max: 99 },
+  /** 별가루: 금광의 보상. 가진 영웅의 조각으로 바꾼다 (HERO_RULES.trade) */
+  stardust: { kind: 'mat', price: 0, max: 999 },
 };
 export const START_WEAPON: ItemId = 'oakblade';
 export const SHOPS: readonly { x: number; z: number }[] = [];
@@ -104,6 +111,8 @@ export const DAILIES = {};
 // ---------- 방치 보상: 깬 단계의 수(ctx.stage)로 커진다 ----------
 export const IDLE = {
   minMin: 10, maxMin: 720,
+  /** 돌아왔을 때 받은 방치 보상(과 오프라인 진행)을 가운데 창으로 알린다 */
+  popup: true,
   reward: (minutes: number, lv: number, ctx: IdleCtx): Reward => ({ gold: Math.round(minutes * (4 + ctx.stage * 3)), exp: Math.round(minutes * (2 + lv + ctx.stage)), sparks: Math.floor((minutes * ctx.stage) / 10) }),
 };
 
@@ -180,6 +189,8 @@ export const HERO_RULES: HeroRules = {
     ],
   },
   gear: HERO_GEAR,
+  /** 재료로 영웅 키우기: 별가루 일반 3 · 희귀 6 · 전설 15개로 그 등급의 조각 한 묶음(5 · 10 · 25) */
+  trade: { stardust: { cost: (r) => [3, 6, 15][r] ?? 15 } },
 };
 /** 한정 배너가 열리는 때 (서버 시계): 별똥별은 11월 20일부터 2주, 폭풍은 그다음 2주 (UTC) */
 const DAY = 86400000, LIMITED_FROM = Date.UTC(2026, 10, 20);
@@ -259,6 +270,8 @@ export const STAGE_RULES: StageRules = {
   arena: { x: 0, z: 10 }, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: true,
   sweep: { cost: { item: 'sweepticket', n: 1 }, max: 10 },
   offline: { perStageS: 600, maxH: 12, maxStages: 20 },
+  /** 금광을 끝내거나 스스로 나오면 2초 뒤 지금 단계로 */
+  returnAfterDungeon: 2,
 };
 
 // ---------- 열쇠 던전: 금광 (열쇠 하루 2개, 2개까지, 보석 50으로 하루 2번 더) ----------
@@ -272,12 +285,15 @@ export const DUNGEONS = {
     exitS: 8,
     packs: [{ type: 'coinbug', x: 216, z: -4, n: 4 }, { type: 'coinbug', x: 226, z: 5, n: 4 }],
     boss: { type: 'hoarder', x: 236, z: 0 },
-    reward: { gold: 600, exp: 120 },
+    reward: { gold: 600, exp: 120, items: { stardust: 4 } },
     dropRar: 0, dropLv: 1,
     gear: false,
     key: { refill: 2, cap: 2, buy: { cur: 'sparks', cost: 50, perDay: 2 } },
     // 한 번이라도 끝냈으면 열쇠 하나로 소탕 (한 번에 다섯까지)
     sweep: { max: 5 },
+    // 메뉴(단계 탭)에서 바로 들어가고, 안에서는 대장도 서버가 대신 싸운다
+    fromMenu: true,
+    auto: true,
   },
 } as const satisfies Record<string, DungeonDef>;
 export const PORTAL_REACH = 5;

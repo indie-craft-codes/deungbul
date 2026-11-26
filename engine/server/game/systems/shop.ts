@@ -70,7 +70,7 @@ export class Shop {
     if (typeof raw !== 'object' || raw === null) return out;
     for (const [id, n] of Object.entries(raw as Record<string, unknown>)) {
       if (!isItemId(id) || typeof n !== 'number' || !(n > 0)) continue;
-      const kind = ITEMS[id].kind;
+      const kind: string = ITEMS[id].kind; // 넓혀 읽는다 (갑옷이 없는 게임의 좁은 타입에서도 컴파일되게)
       if (kind !== 'weapon' && kind !== 'armor') out[id] = Math.min(itemCap(id), Math.floor(n));
     }
     return out;

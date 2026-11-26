@@ -1,8 +1,8 @@
 // 수집형·방치형 화면의 셈 (영웅 탭, 뽑기의 확률표, 편성, 단계 막대, 던전 열쇠): 화면 요소도 three.js도 읽지 않는다 (시험 engine/test/collect/client.test.ts가 그대로 읽는다).
 // 그리는 것은 hud/collect.ts(메뉴 탭과 영웅의 겉모습)와 hud/stagebar.ts(단계 막대). 확률은 서버와 같은 셈(engine/shared/defs/collect.ts)이다.
 import {
-  BANNER_TABLE, HERO_IDS, HERO_RARITIES, HERO_RULES, STAGES, gearOn, growthOf, heroDef, heroFull, rarityDef, rarityOdds, waveCount, BANNER_IDS, effectiveOdds, pityKey, pityMates, pullOdds, stageSweepable, sweepMax,
-  type BannerDef, type HeroGearPiece, type HeroesMe, type Odds, type StageMe, type StageRun, type GachaMe, type SweepRule,
+  BANNER_TABLE, HERO_IDS, HERO_RARITIES, HERO_RULES, STAGES, gearOn, growthOf, heroDef, heroFull, heroTradeShards, heroTrades, rarityDef, rarityOdds, waveCount, BANNER_IDS, effectiveOdds, pityKey, pityMates, pullOdds, stageSweepable, sweepMax,
+  type BannerDef, type HeroGearPiece, type HeroesMe, type Odds, type Reward, type StageMe, type StageRun, type GachaMe, type SweepRule,
 } from '../../shared/defs';
 import type { KeysMe } from '../../shared/defs/collect';
 import type { DungeonDef } from '../../shared/defs/dungeons';
@@ -151,4 +151,39 @@ export function keyView(def: Pick<DungeonDef, 'key'>, id: string, keys: KeysMe |
   if (!k) return null;
   const mine = keys?.[id] ?? { n: Math.min(k.refill, k.cap), bought: 0 };
   return { n: mine.n, cap: k.cap, refill: k.refill, buy: k.buy ? { cur: k.buy.cur, cost: k.buy.cost, left: Math.max(0, k.buy.perDay - mine.bought) } : null };
+}
+
+// ---------- 단계 밖: 메뉴에서 던전 들어가기, 재료로 영웅 키우기, 돌아왔을 때의 창 ----------
+/** 메뉴에서 들어가는 던전의 한 줄: 남은 열쇠(또는 오늘 남은 횟수)와 그 상한, 들어갈 수 있는가와 못 들어가는 까닭 (lv: 레벨이 모자람, none: 열쇠·횟수가 없음, in: 이미 던전 안) */
+export interface DungeonGoView { n: number; cap: number; key: boolean; can: boolean; why: '' | 'lv' | 'none' | 'in' }
+/**
+ * 메뉴의 던전 줄 (DungeonDef.fromMenu): 열쇠 던전은 내 열쇠(keys), 하루 횟수 던전은 오늘 쓴 횟수(used)로 셈한다. lv는 내 레벨, inside는 지금 던전 안인가.
+ * 서버(dungeon.ts의 go)가 막는 것과 같은 조건이다: 레벨, 열쇠나 횟수, 던전 안
+ */
+export function dungeonGoView(def: Pick<DungeonDef, 'key' | 'minLv' | 'perDay'>, id: string, keys: KeysMe | null, used: number, lv: number, inside: boolean): DungeonGoView {
+  const k = keyView(def, id, keys);
+  const n = k ? k.n : Math.max(0, def.perDay - used), cap = k ? k.cap : def.perDay;
+  const why = inside ? 'in' : lv < def.minLv ? 'lv' : n <= 0 ? 'none' : '';
+  return { n, cap, key: !!k, can: why === '', why };
+}
+
+/** 재료 교환의 단추 하나 (HERO_RULES.trade): 아이템, 한 번에 드는 수, 얻는 조각, 가진 수, 지금 할 수 있는가 */
+export interface TradeView { item: string; cost: number; shards: number; have: number; can: boolean }
+/** 그 영웅에게 쓸 수 있는 재료 교환들 (가진 영웅만: 없으면 빈 목록). items는 내 가방의 아이템 수 */
+export function tradeViews(id: string, owned: boolean, items: Readonly<Record<string, number>>): TradeView[] {
+  const d = heroDef(id);
+  if (!owned || !d) return [];
+  return Object.entries(heroTrades()).flatMap(([item, t]) => {
+    const cost = Math.floor(t.cost(d.rarity)), shards = heroTradeShards(t, d.rarity), have = items[item] ?? 0;
+    return cost > 0 && shards > 0 ? [{ item, cost, shards, have, can: have >= cost }] : [];
+  });
+}
+
+/** 돌아왔을 때의 창에 보일 줄: 재화(보상에 적힌 차례)와 아이템, 장비 수 (0인 것은 빼고) */
+export function idleBackLines(r: Reward): { what: string; n: number }[] {
+  const out: { what: string; n: number }[] = [];
+  for (const [k, n] of Object.entries(r)) if (typeof n === 'number' && n > 0) out.push({ what: k, n });
+  for (const [id, n] of Object.entries(r.items ?? {})) if (n > 0) out.push({ what: id, n });
+  if (r.gear?.length) out.push({ what: 'gear', n: r.gear.length });
+  return out;
 }

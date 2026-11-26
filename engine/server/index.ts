@@ -15,6 +15,7 @@ export type { Squad } from './game/systems/squad';
 export type { Stages } from './game/systems/stages';
 export type { AllyKind } from './game/systems/combat';
 export { channelOf, fieldLayer, isField, notifyLayer } from './game/layers';
+export { leaderFight } from './game/systems/leader';
 export { startServer, type Options, type Running } from './net/server';
 export { createAdmin, parseSpan, type Admin, type AdminOptions } from './net/admin';
 export type { RunOptions };
