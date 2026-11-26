@@ -398,7 +398,8 @@ for (const P of PACKS) {
   // 게임이 덮어쓴 틀의 키: 틀에 기본 문장이 있고 이 게임이 자기 말(등불지기의 이름, 브람의 대장간, 잿빛 숲 …)로 바꾼 것. 목록에 없는 겹침은 실수다
   const OVERRIDES = [
     'ui.title', // 게임의 이름
-    'ui.hint', // 조작 안내에 이 게임의 단축키(F: 퀘스트 이동, H: 마을로)가 더 있다
+    'ui.hint', // 조작 안내에 이 게임의 단축키(F: 퀘스트 이동)가 더 있고, H를 '마을로'라고 한다
+    'ui.mapLegend', // 미니맵의 이 게임 표식(등탑, 퀘스트, 상인)을 말한다 (틀의 기본은 틀이 찍는 점만)
     'ui.forge', // 브람의 대장간
     'ui.shop', 'msg.shopFar', // 상인은 '길 상인'이다 (틀의 기본은 그냥 '상인')
     'ui.goingTown', // 돌아가는 곳(첫불 마을)을 말한다
@@ -447,8 +448,8 @@ for (const P of PACKS) {
   const marks = (l: object): string[] => Object.entries(l).filter(([, v]) => typeof v === 'string' && /\[\[[^|\]]*\|[^\]]*\]\]/.test(v)).map(([k]) => k);
   check(marks(koGame.ui).includes('questGo') && marks(enGame.ui).includes('questGo') && marks(base.ko.ui).includes('chatPlaceholder') && LOCALES.every((l) => !/\[\[|\]\]/.test(Object.values(l.ui).join('').replace(/\[\[[^|\]]*\|[^\]]*\]\]/g, ''))),
     '게임의 문장도 [[PC용|터치용]] 표시를 같은 꼴로 쓴다 (짝이 맞지 않는 표시가 없다)');
-  check(ko.ui.hint === keyHints(ko.ui.hint.split(' · ')) && ko.ui.hint.includes(' ') && ko.ui.hint.split(' · ').length === base.ko.ui.hint.split(' · ').length + 2 && ko.msg.tierUp([2, 1234567]).includes('1,234,567') && en.msg.tierUp([2, 1234567]).includes('1,234,567') && ko.fmt.num(1234567) === '1,234,567',
-    '게임의 조작 안내는 틀의 keyHints로 잇고(틀의 안내에 이 게임의 단축키 둘을 더했다), 게임의 안내문도 큰 수에 자릿수 구분을 넣는다');
+  check(ko.ui.hint === keyHints(ko.ui.hint.split(' · ')) && ko.ui.hint.includes(' ') && ko.ui.hint.split(' · ').length === base.ko.ui.hint.split(' · ').length + 1 && ko.msg.tierUp([2, 1234567]).includes('1,234,567') && en.msg.tierUp([2, 1234567]).includes('1,234,567') && ko.fmt.num(1234567) === '1,234,567',
+    '게임의 조작 안내는 틀의 keyHints로 잇고(틀의 안내에 이 게임의 단축키 하나(F)를 더했다. H는 틀의 안내에도 있다), 게임의 안내문도 큰 수에 자릿수 구분을 넣는다');
   // 불씨(두 번째 재화)를 말하는 틀의 문장은 재화의 이름을 이 게임의 이름표에서 읽는다
   check(ko.msg.kill(['slime', 3, 2, 1500]) === '슬라임 처치. 경험치 +3, 불씨 +2, 골드 +1,500' && en.msg.kill(['slime', 3, 1, 1500]) === 'Slime defeated. +3 exp, +1 spark, +1,500 gold'
     && ko.fmt.reward(100, 0, 5) === '골드 100 · 불씨 5' && en.fmt.reward(0, 20, 5) === 'Exp 20 · Sparks 5' && ko.msg.died(['ash']) === '쓰러졌습니다. 잿빛 숲 등탑에서 다시 일어났습니다. 잃은 것은 없습니다.',

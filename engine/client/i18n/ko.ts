@@ -4,7 +4,7 @@
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
+import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
@@ -50,7 +50,8 @@ const modText: Record<StatMod, (v: number) => string> = {
 /** 조작 안내의 항목들을 한 줄로 잇는다. 항목 안의 빈칸은 줄이 바뀌지 않는 빈칸으로 바꿔서, 줄이 넘어갈 때 항목 사이에서만 끊기게 한다 */
 export const keyHints = (items: string[]) => items.map((s) => s.replace(/ /g, ' ')).join(' · ');
 /** 틀의 기본 조작 안내: [글, 모듈] 짝은 그 모듈을 고른 게임에만 넣는다 (그 키를 그 모듈이 달기 때문이다: engine/client/bus.ts의 bindKey) */
-export const moduleHints = (items: (string | [string, string])[]): string => keyHints(items.filter((x) => typeof x === 'string' || anyModule(x[1])).map((x) => (typeof x === 'string' ? x : x[0])));
+/** [글, true/false] 짝은 그 값이 참일 때만 넣는다 (내용의 HOME_KEY처럼 모듈이 아닌 켜고 끄기) */
+export const moduleHints = (items: (string | [string, string | boolean])[]): string => keyHints(items.filter((x) => typeof x === 'string' || (typeof x[1] === 'boolean' ? x[1] : anyModule(x[1]))).map((x) => (typeof x === 'string' ? x : x[0])));
 export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 /** 큰 수에 자릿수 구분을 넣는다 (1,000,000). 골드와 값은 모두 이것을 거친다 */
 export const num = (n: MsgArg) => Number(n).toLocaleString('ko-KR');
@@ -118,7 +119,7 @@ export const koBase = (n: ContentNames) => {
       chatPlaceholder: '[[Enter로 대화|대화 입력]]',
       chatLabel: '대화 입력',
       stickLabel: '이동 조이스틱',
-      hint: moduleHints(['땅 클릭/WASD: 이동', ['몬스터 클릭: 공격', 'combat'], ['1–3: 기술', 'combat'], ['Q: 물약', 'items'], ['R: 자동 사냥', 'away'], ['B: 가방', 'items'], 'M: 메뉴', 'N: 지도', ['Tab: 대상', 'combat'], 'Enter: 대화']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      hint: moduleHints(['땅 클릭/WASD: 이동', ['몬스터 클릭: 공격', 'combat'], ['1–3: 기술', 'combat'], ['Q: 물약', 'items'], ['R: 자동 사냥', 'away'], ['H: 처음 자리로', HOME_KEY], ['B: 가방', 'items'], 'M: 메뉴', 'N: 지도', ['Tab: 대상', 'combat'], 'Enter: 대화']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       attackNearest: '가까운 대상 공격',
       auto: '자동 사냥',
       bag: '가방',
@@ -146,6 +147,8 @@ export const koBase = (n: ContentNames) => {
       kindHunt: '사냥터',
       kindBoss: '우두머리',
       kindOther: '그 밖의 곳',
+      // 미니맵 아래의 범례. 틀이 스스로 찍는 점만 적는다 (게임이 addMarks로 찍는 표식이 있으면 게임이 자기 말로 덮어쓴다)
+      mapLegend: keyHints(['가운데 나', '흰 점 사람', ...(anyModule('combat') ? ['붉은 점 몬스터'] : []), ...(anyModule('party') ? ['하늘색 파티원'] : [])]),
       mapLegendDungeon: '붉은 ○ 우두머리 · 하늘색 파티원',
       bagPotions: '물약',
       bagMats: '제작 재료',

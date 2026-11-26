@@ -26,6 +26,14 @@ export const NET = { tickMs: 50, snapEvery: 2, aoi: 32, aoiLeave: 36 };
 export const CHANNEL = { count: 3, soft: 30, hard: 50, switchCdS: 10, calmS: 5, tellS: 10, tellBusyS: 2 };
 /** 이만큼(초) 안에 다시 들어오면 나갈 때의 몸 상태(체력, 쿨다운)로 시작한다 */
 export const REJOIN_KEEP_S = 300;
+/**
+ * 화면의 카메라 (화면만 읽는다). 각도는 고정이고 비추는 곳에서 dist × zoom(m) 떨어진다.
+ * zoom: 처음 배율, zoomMin·zoomMax: 휠·두 손가락이 바꿀 수 있는 범위(작을수록 가깝다), gate: 접속 전에 처음 자리를 둘러볼 때의 배율.
+ * 비추는 곳(내 캐릭터 대신 공이나 경기장 전체)은 화면에서 setCameraAim으로 정한다 (engine/client/camera.ts)
+ */
+export const CAMERA = { dist: 46, zoom: 1, zoomMin: 0.6, zoomMax: 1.15, gate: 1.05 };
+/** 핵심의 '집으로'(H 키, goToTown): false면 틀이 H를 달지 않고 조작 안내에도 없다 (게임이 onKey('h')로 쓸 수 있다). 가는 곳은 화면의 rules.home */
+export const HOME_KEY: boolean = true;
 
 // ---------- 직업과 전투 (classes, combat) ----------
 export const CLASSES: Readonly<Record<string, ClassDef>> = {};

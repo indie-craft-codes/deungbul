@@ -58,6 +58,7 @@ import { check } from '../harness';
   const all = (m: ModuleId) => ALL_MODULES.includes(m);
   check(keysFor(all, 3).join() === 'm,n,h,1,2,3,tab,q,b,r', `모듈을 다 고른 게임(기술 칸 3): ${keysFor(all, 3).join(' ')}`);
   check(keysFor(() => false, 3).join() === 'm,n,h', '핵심만의 게임: 메뉴(M), 지도(N), 집으로(H)');
+  check(keysFor(() => false, 3, false).join() === 'm,n' && keysFor(all, 3, false).join() === 'm,n,1,2,3,tab,q,b,r', '내용의 HOME_KEY가 false면 H를 달지 않는다 (게임이 onKey로 쓸 수 있다)');
   check(keysFor((m) => m === 'items' || m === 'economy', 3).join() === 'm,n,h,q,b', '아이템만: 물약(Q)과 가방(B)이 더해진다. 숫자·Tab·R은 비어 게임이 쓸 수 있다');
   check(keysFor((m) => m === 'combat' || m === 'classes', 12).filter((k) => /^\d$/.test(k)).join() === '1,2,3,4,5,6,7,8,9' && keysFor(all, 0).every((k) => !/^\d$/.test(k)), '숫자 키는 기술 칸 수만큼, 9개까지 (칸이 없으면 없다)');
   check(JSON.stringify(keyDiff(['m', 'x'], ['m', 'n'])) === '{"missing":["n"],"extra":["x"]}' && keyDiff(['n', 'm'], ['m', 'n']).missing.length === 0, 'keyDiff: 표에만 있는 키와 표에 없는 키 (차례는 보지 않는다)');

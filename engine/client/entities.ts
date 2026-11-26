@@ -22,6 +22,28 @@ const DIE_S = 0.3;
 const DIE_REST_S = 0.5, DIE_MAX_S = 2.5;
 const CLOTH = [0x3f7fbf, 0x8a5ac0, 0x4c9a6a, 0xd08a2e, 0x4a6a8a, 0xc05a8a, 0x6a6ad0, 0x9a7a3a, 0x3fa0a0, 0xa04a4a];
 const MY_CLOTH = 0xc9463d;
+/** 엔티티 상태 줄에 체력 칸이 있는가: 전투를 고른 게임만 (서버의 snapshot.ts Fields와 같은 판정) */
+const HP_SLOT = hasModule('combat');
+
+/** 화면이 아는 그 사람: id, 이름, 나인가, 서버가 실어 보낸 게임의 값(g.playerSync. 없으면 빈 배열) */
+export interface PlayerInfo { id: number; name: string; me: boolean; vals: readonly number[] }
+/**
+ * 게임이 사람(플레이어)의 겉모습을 정한다 (setPlayerLook). 둘 다 선택이다.
+ * - cloth: 옷 색. 사람이 들어올 때와 실려 온 값이 바뀔 때 불린다. undefined면 틀의 색(나는 붉은 옷, 남은 id마다 열 가지 가운데 하나).
+ *   색이 바뀌면 그 사람의 모델을 새로 만든다 (setHumanoidBody·registerHumanoidAsset의 사람이 그 색을 받는다)
+ * - update: 실려 온 값이 처음 오거나 바뀌었을 때 (registerKind의 update와 같은 자리). 모델에 표식을 붙이거나 크기를 바꾼다.
+ *   모델을 새로 만들었으면(옷 색이나 직업이 바뀌었을 때) 새 모델로 다시 불린다
+ */
+export interface PlayerLook {
+  cloth?: (p: PlayerInfo) => number | undefined;
+  update?: (model: Model, p: PlayerInfo) => void;
+}
+let playerLook: PlayerLook = {};
+/** 사람의 겉모습을 게임이 정한다 (화면 모듈의 init에서). 서버의 g.playerSync와 짝이다 */
+export function setPlayerLook(look: PlayerLook): void { playerLook = look; }
+/** 이 사람이 입을 옷 색 */
+const clothOf = (p: PlayerInfo): number => playerLook.cloth?.(p) ?? (p.me ? MY_CLOTH : CLOTH[p.id % CLOTH.length]);
+const sameVals = (a: readonly number[], b: readonly number[]): boolean => a.length === b.length && a.every((v, i) => v === b[i]);
 /** 직업에 맞는 손 장비: 궁수는 활, 마법사는 지팡이, 나머지는 검 */
 /** 직업의 손 모양 (ClassDef.hand: 'sword', 'bow', 'staff' 또는 게임이 registerHand로 등록한 것) */
 const gearOf = (cls: string): string => classOf(cls).hand;
@@ -75,9 +97,12 @@ const monsterName = (type: string, swarm = false): string => {
 
 // ---------- 만들고 지우기 ----------
 export function spawnMe(id: number, name: string, x: number, z: number): Me {
-  const model = makeHumanoid(MY_CLOTH, hasModule('combat')); // 전투가 없는 게임의 사람은 아무것도 들지 않는다
+  const cloth = clothOf({ id, name, me: true, vals: [] });
+  const model = makeHumanoid(cloth, hasModule('combat')); // 전투가 없는 게임의 사람은 아무것도 들지 않는다
   view.scene.add(model.root);
   S.me = newMe(id, name, x, z, model, makeTag(name, 'me', false));
+  S.me.cloth = cloth;
+  playerLook.update?.(model, { id, name, me: true, vals: [] });
   return S.me;
 }
 
@@ -97,7 +122,7 @@ function addThing(e: EnterInfo): void {
   S.others.set(e.id, {
     id: e.id, kind: e.kind, type: e.type, name: e.name, model, tag, h: look.h ?? 1.5,
     buf: [{ t: performance.now(), x: e.x, z: e.z, face: e.face, moving: false }], x: e.x, z: e.z, face: e.face, walking: false, phase: Math.random() * 6,
-    hp: e.hp, maxHp: e.maxHp, swing: 0, weapon: '', armor: '', cls: '', swarm: false, dying: 0, gone: false, vals: [], look,
+    hp: e.hp ?? 0, maxHp: e.maxHp ?? 0, swing: 0, weapon: '', armor: '', cls: '', swarm: false, dying: 0, gone: false, vals: [], look,
   });
 }
 
@@ -106,7 +131,10 @@ function addRemote(e: EnterInfo): void {
   if (old) { if (!old.gone) return; dropRemote(old); }
   if (e.kind !== 'p' && e.kind !== 'm') { addThing(e); return; }
   const monster = e.kind === 'm';
-  const model = monster ? makeMonster(e.type) : makeHumanoid(CLOTH[e.id % CLOTH.length], gearOf(e.c), undefined, e.c);
+  // 칸은 그 모듈을 고른 게임에만 온다 (protocol.ts의 EnterInfo): 없으면 빈 값
+  const cls = e.c ?? '', hp = e.hp ?? 0, maxHp = e.maxHp ?? 0;
+  const cloth = monster ? undefined : clothOf({ id: e.id, name: e.name, me: false, vals: [] });
+  const model = monster ? makeMonster(e.type) : makeHumanoid(cloth!, gearOf(cls), undefined, cls);
   model.root.position.set(e.x, 0, e.z);
   model.root.rotation.y = e.face;
   view.scene.add(model.root);
@@ -114,13 +142,14 @@ function addRemote(e: EnterInfo): void {
   const boss = monster && isMonsterId(e.type) && !!monsterDef(e.type).boss;
   if (!monster && e.g) S.gtags.set(e.id, e.g);
   const tag = makeTag(monster ? name : withGuild(e.id, name), monster ? (boss ? 'mon boss' : e.r === 1 ? 'mon swarm' : 'mon') : '', monster);
-  setTagHp(tag, e.hp, e.maxHp);
-  if (!monster) { setBlade(model, e.w); setArmor(model, e.a ?? ''); tag.el.classList.toggle('ally', S.party.some((m) => m.id === e.id)); }
+  setTagHp(tag, hp, maxHp);
+  if (!monster) { setBlade(model, e.w ?? ''); setArmor(model, e.a ?? ''); tag.el.classList.toggle('ally', S.party.some((m) => m.id === e.id)); }
   S.others.set(e.id, {
     id: e.id, kind: e.kind, type: e.type, name, model, tag, h: monster && isMonsterId(e.type) ? MONSTERS[e.type].h : 2.5,
     buf: [{ t: performance.now(), x: e.x, z: e.z, face: e.face, moving: false }], x: e.x, z: e.z, face: e.face, walking: false, phase: Math.random() * 6,
-    hp: e.hp, maxHp: e.maxHp, swing: 0, weapon: e.w, armor: e.a ?? '', cls: e.c, swarm: e.r === 1, dying: 0, gone: false, vals: [],
+    hp, maxHp, swing: 0, weapon: e.w ?? '', armor: e.a ?? '', cls, swarm: e.r === 1, dying: 0, gone: false, vals: [], cloth,
   });
+  if (!monster) playerLook.update?.(model, { id: e.id, name: e.name, me: false, vals: [] });
 }
 
 function dropRemote(r: Remote): void {
@@ -145,8 +174,8 @@ export function relabel(): void {
   for (const n of npcs) setTagName(n.tag, n.name());
 }
 
-/** 직업이 바뀌면 모델을 새로 만든다 (검을 든 모습과 활을 든 모습이 다르다). */
-function rebuild(holder: { model: Model }, cloth: number, cls: string): void {
+/** 직업이나 옷 색이 바뀌면 모델을 새로 만든다 (검을 든 모습과 활을 든 모습이 다르다). */
+function rebuild(holder: { model: Model; cloth?: number }, cloth: number, cls: string): void {
   const old = holder.model.root;
   const model = makeHumanoid(cloth, gearOf(cls), undefined, cls);
   model.root.position.copy(old.position);
@@ -154,24 +183,42 @@ function rebuild(holder: { model: Model }, cloth: number, cls: string): void {
   view.scene.remove(old);
   view.scene.add(model.root);
   holder.model = model;
+  holder.cloth = cloth;
+}
+
+/** 사람에게 실려 온 값(g.playerSync)이 처음 오거나 바뀌었다: 옷 색과 게임의 꾸밈을 맞춘다 */
+function playerVals(holder: Me | Remote, vals: number[], me: boolean): void {
+  holder.vals = vals;
+  const info: PlayerInfo = { id: holder.id, name: holder.name, me, vals };
+  const cloth = clothOf(info);
+  if (cloth !== holder.cloth) {
+    rebuild(holder, cloth, holder.cls);
+    setBlade(holder.model, holder.weapon);
+    setArmor(holder.model, holder.armor);
+  }
+  playerLook.update?.(holder.model, info);
 }
 
 /** 누군가 무기나 직업을 바꿨다: 모습을 맞춘다. */
 export function setGear(id: number, weapon: string, cls: string, armor: string): void {
   const me = S.me;
   if (me && id === me.id) {
-    if (cls !== me.cls) rebuild(me, MY_CLOTH, cls);
+    const re = cls !== me.cls;
+    if (re) rebuild(me, me.cloth ?? MY_CLOTH, cls);
     me.weapon = weapon; me.cls = cls; me.armor = armor;
     setBlade(me.model, weapon);
     setArmor(me.model, armor);
+    if (re) playerLook.update?.(me.model, { id: me.id, name: me.name, me: true, vals: me.vals });
     return;
   }
   const r = S.others.get(id);
   if (!r || r.kind !== 'p') return;
-  if (cls !== r.cls) rebuild(r, CLOTH[r.id % CLOTH.length], cls);
+  const re = cls !== r.cls;
+  if (re) rebuild(r, r.cloth ?? CLOTH[r.id % CLOTH.length], cls);
   r.weapon = weapon; r.cls = cls; r.armor = armor;
   setBlade(r.model, weapon);
   setArmor(r.model, armor);
+  if (re) playerLook.update?.(r.model, { id: r.id, name: r.name, me: false, vals: r.vals });
 }
 
 export function renameEntity(id: number, name: string): void {
@@ -296,6 +343,8 @@ export function applySnapshot(m: Extract<ServerMsg, { t: 'snap' }>, now: number)
   S.online = m.n;
   if (!me) return;
   me.sx = m.you[0]; me.sz = m.you[1]; me.srvMoving = m.you[2] === 1; me.hp = m.you[3]; me.srvTarget = m.you[4];
+  // 게임이 플레이어에게 실어 보낸 값 (g.playerSync): 처음이거나 바뀌었으면 겉모습을 맞춘다
+  if (m.you.length > 5 || me.vals.length) { const vals = m.you.slice(5); if (!sameVals(vals, me.vals)) playerVals(me, vals, true); }
   for (const e of m.enter ?? []) addRemote(e);
   // 사건을 먼저 처리해야, 죽어서 사라지는 엔티티의 마지막 연출을 볼 수 있다
   for (const e of m.ev ?? []) onEvent(e, me);
@@ -304,17 +353,20 @@ export function applySnapshot(m: Extract<ServerMsg, { t: 'snap' }>, now: number)
     if (!r) continue;
     if (r.dying > 0) r.gone = true; else dropRemote(r);
   }
-  for (const [id, x, z, face, moving, hp, ...vals] of m.ents) {
+  for (const [id, x, z, face, moving, ...rest] of m.ents) {
     const r = S.others.get(id);
     if (!r || r.gone) continue;
     r.buf.push({ t: now, x, z, face, moving: moving === 1 });
     if (r.buf.length > 20) r.buf.shift();
+    // 체력 칸은 전투가 있는 게임에만 있다 (protocol.ts의 EntState). 그 뒤가 게임의 값
+    const hp = HP_SLOT ? rest[0] : 0, vals = HP_SLOT ? rest.slice(1) : rest;
     r.hp = hp;
     if (r.look) {
       // 게임의 종류: 실려 온 값이 처음이거나 바뀌었으면 모습을 맞춘다
-      if (vals.length !== r.vals.length || vals.some((v, i) => v !== r.vals[i])) { r.vals = vals; r.look.update?.(r.model, vals, { id: r.id, type: r.type, name: r.name }); }
+      if (!sameVals(vals, r.vals)) { r.vals = vals; r.look.update?.(r.model, vals, { id: r.id, type: r.type, name: r.name }); }
       continue;
     }
+    if (r.kind === 'p' && !sameVals(vals, r.vals)) playerVals(r, vals, false);
     setTagHp(r.tag, hp, r.maxHp);
   }
 }

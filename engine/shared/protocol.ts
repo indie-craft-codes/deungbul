@@ -21,7 +21,12 @@ export type Kind = string;
  * [id, x, z, 바라보는 방향, 이동 중(1) 여부, 체력, …게임의 값]. 게임의 값은 그 종류가 등록한 sync가 돌려준 수들이다 (없으면 칸이 없다).
  * 체력 칸은 체력이 없는 종류에서 0이다
  */
-export type EntState = [id: number, x: number, z: number, face: number, moving: 0 | 1, hp: number, ...vals: number[]];
+/**
+ * 시야 안 엔티티의 상태 한 줄: [id, x, z, 방향, 이동 중, 체력, …게임의 값]. 체력 칸은 전투(combat)를 고른 게임에만 있다:
+ * 전투가 없는 게임은 [id, x, z, 방향, 이동 중, …게임의 값]이다 (화면은 같은 내용의 MODULES로 안다: engine/client/entities.ts).
+ * 게임의 값은 종류의 KindDef.sync, 플레이어는 g.playerSync
+ */
+export type EntState = [id: number, x: number, z: number, face: number, moving: 0 | 1, ...rest: number[]];
 
 export interface EnterInfo {
   id: number; kind: Kind;
@@ -29,15 +34,17 @@ export interface EnterInfo {
   type: string;
   /** 플레이어 이름. 몬스터는 빈 문자열이고 이름은 클라이언트가 type으로 찾는다 */
   name: string;
-  /** 플레이어가 든 무기 (ITEMS의 키). 몬스터는 빈 문자열 */
-  w: string;
+  /** 플레이어가 든 무기 (ITEMS의 키). 몬스터는 빈 문자열. 아이템(items)을 고르지 않은 게임에는 없다 */
+  w?: string;
   /** 입은 갑옷 (플레이어만, 없으면 생략) */
   a?: string;
   /** 길드 이름 (플레이어만, 없으면 생략) */
   g?: string;
-  /** 플레이어의 직업 (CLASSES의 키). 아직 고르지 않았거나 몬스터면 빈 문자열 */
-  c: string;
-  x: number; z: number; face: number; hp: number; maxHp: number;
+  /** 플레이어의 직업 (CLASSES의 키). 아직 고르지 않았거나 몬스터면 빈 문자열. 직업(classes)을 고르지 않은 게임에는 없다 */
+  c?: string;
+  x: number; z: number; face: number;
+  /** 체력과 최대 체력. 전투(combat)를 고르지 않은 게임에는 없다 */
+  hp?: number; maxHp?: number;
   /** 몰려온 적(게임의 규칙이 부른 적: Ent.swarm)이면 1 */
   r?: 1;
 }
@@ -146,8 +153,8 @@ export type ServerMsg =
       t: 'snap';
       /** 접속자 수 */
       n: number;
-      /** 내 캐릭터의 서버 상태: [x, z, 이동 중, 체력, 공격 대상 id(없으면 0)] */
-      you: [number, number, 0 | 1, number, number];
+      /** 내 캐릭터의 서버 상태: [x, z, 이동 중, 체력, 공격 대상 id(없으면 0), …게임의 값(g.playerSync)] */
+      you: [number, number, 0 | 1, number, number, ...number[]];
       /** 시야에 새로 들어온 엔티티 */
       enter?: EnterInfo[];
       /** 시야에서 빠진 엔티티 */

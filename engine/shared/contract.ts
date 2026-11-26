@@ -40,6 +40,10 @@ export interface CoreTuning {
   CHANNEL: { count: number; soft: number; hard: number; switchCdS: number; calmS: number; tellS: number; tellBusyS: number };
   /** 이만큼(초) 안에 다시 들어오면 나갈 때의 몸 상태로 시작한다 */
   REJOIN_KEEP_S: number;
+  /** 화면의 카메라: 거리(m), 처음 배율, 휠·두 손가락의 배율 범위, 접속 전 배율 */
+  CAMERA: { dist: number; zoom: number; zoomMin: number; zoomMax: number; gate: number };
+  /** 핵심의 '집으로'(H 키)를 두는가 */
+  HOME_KEY: boolean;
 }
 
 /** classes, combat: 직업과 기술, 몬스터 */

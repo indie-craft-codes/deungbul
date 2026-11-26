@@ -1,6 +1,6 @@
 // 클라이언트가 아는 게임 상태. 모듈들은 이것을 읽고, 서버 메시지를 처리하는 쪽만 고친다.
 // 틀의 상태만 둔다: 게임에만 있는 상태(이 게임에서는 등탑·습격의 공유 상태와 내 퀘스트·기여)는 게임의 상태 파일에 있다 (games/deungbul/client/state.ts).
-import { GEAR, SKILL_SLOTS, maxHpFor, needFor, type Gear, type GuildView, type Mail, type RankRow } from '../shared/defs';
+import { CAMERA, GEAR, SKILL_SLOTS, maxHpFor, needFor, type Gear, type GuildView, type Mail, type RankRow } from '../shared/defs';
 import type { Point } from '../shared/nav';
 import type { Kind, PartyMember } from '../shared/protocol';
 import { areaAt } from '../shared/world';
@@ -29,9 +29,11 @@ export interface Remote {
   dieS?: number;
   /** 서버가 시야에서 뺐다: 연출이 끝나면 지운다 */
   gone: boolean;
-  /** 게임의 종류(플레이어·몬스터가 아닌 것)가 실어 보낸 값 (서버 KindDef.sync)과 그 종류의 모습 (kinds.ts) */
+  /** 서버가 실어 보낸 게임의 값(게임의 종류는 KindDef.sync, 플레이어는 g.playerSync)과 게임의 종류의 모습 (kinds.ts) */
   vals: number[];
   look?: KindLook;
+  /** 사람이 입은 옷 색 (setPlayerLook의 cloth, 없으면 틀의 색). 바뀌면 모델을 새로 만든다 */
+  cloth?: number;
 }
 
 /** 내 캐릭터. 위치는 먼저 예측하고 서버 값(sx, sz)으로 보정한다 */
@@ -48,6 +50,10 @@ export interface Me {
   /** 서버에서 내 수치를 한 번이라도 받았다 */
   ready: boolean;
   attackId: number; attackAt: number; swing: number;
+  /** 서버가 나에게 실어 보낸 게임의 값 (g.playerSync: 스냅샷의 you 끝). 없으면 빈 배열 */
+  vals: number[];
+  /** 내가 입은 옷 색 (setPlayerLook의 cloth, 없으면 틀의 붉은 옷) */
+  cloth?: number;
 }
 
 export const S = {
@@ -55,7 +61,8 @@ export const S = {
   others: new Map<number, Remote>(),
   online: 0,
   pingMs: -1,
-  zoom: 1,
+  /** 카메라의 배율 (휠·두 손가락. 범위는 내용의 CAMERA: camera.ts) */
+  zoom: CAMERA.zoom as number,
   /** 내 파티의 구성원 (나 포함). 파티가 없으면 비어 있다 */
   party: [] as PartyMember[],
   /** 기술별 쿨다운이 끝나는 시각과 길이(ms) */
@@ -92,6 +99,6 @@ export function newMe(id: number, name: string, x: number, z: number, model: Mod
   return {
     id, name, model, tag, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, phase: 0, path: null, pgx: x, pgz: z, pat: 0,
     sx: x, sz: z, srvMoving: false, srvTarget: 0, lastCmd: 0,
-    hp: maxHpFor('', 1), maxHp: maxHpFor('', 1), lv: 1, exp: 0, need: needFor(1), sparks: 0, gold: 0, weapon: '', armor: '', items: {}, cls: '', ready: false, attackId: 0, attackAt: 0, swing: 0,
+    hp: maxHpFor('', 1), maxHp: maxHpFor('', 1), lv: 1, exp: 0, need: needFor(1), sparks: 0, gold: 0, weapon: '', armor: '', items: {}, cls: '', ready: false, attackId: 0, attackAt: 0, swing: 0, vals: [],
   };
 }

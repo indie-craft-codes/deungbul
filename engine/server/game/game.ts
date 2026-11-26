@@ -239,6 +239,8 @@ export class Game {
   readonly personal: { name: string; state: (p: Ent) => unknown; dirty?: (p: Ent) => boolean; sent?: (p: Ent) => void }[] = [];
   /** 게임이 등록한 엔티티 종류 (defineKind) */
   readonly kinds = new Map<string, KindDef>();
+  /** 플레이어에게 실어 보낼 게임의 값 (playerSync). 없으면 플레이어의 상태 줄에 칸을 더하지 않는다 */
+  playerVals: ((p: Ent) => readonly number[]) | null = null;
   /** 월드 저장에서 읽었지만 이 게임이 고르지 않은 모듈의 칸 (거래소, 길드 …): 다시 저장할 때 그대로 적는다 (MODULE_SAVES) */
   private keptWorld: WorldSave = {};
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
@@ -354,6 +356,13 @@ export class Game {
       });
     }
   }
+
+  /**
+   * 플레이어(kind 'p')에게 게임의 값을 실어 보낸다: 종류의 KindDef.sync와 같은 모양(수 몇 개, 소수 둘째 자리까지, 바뀌면 다시 간다).
+   * 다른 사람에게는 시야 안 엔티티의 상태 줄 끝에, 본인에게는 스냅샷의 you 끝에 붙는다. 화면은 setPlayerLook의 update로 받는다 (engine/client/entities.ts).
+   * 팀, 역할, 들고 있는 것처럼 남이 보아야 하는 사람마다의 값에 쓴다 (본인만 볼 값은 g.personal). 한 게임에 하나: 다시 부르면 새 것이 이긴다
+   */
+  playerSync(fn: ((p: Ent) => readonly number[]) | null): void { this.playerVals = fn; }
 
   /** 게임이 등록한 종류의 엔티티를 놓는다. 층(layer)을 주지 않으면 1채널의 들판이다 (채널이 여럿이면 채널마다 놓는다: layers.ts의 fieldLayer) */
   place(kind: string, at: { x: number; z: number; type?: string; name?: string; hp?: number; layer?: number; face?: number }): Ent {

@@ -152,14 +152,37 @@ export class View {
     this.camera.updateProjectionMatrix();
   }
 
-  /** 카메라는 각도 고정, 대상만 따라간다. */
-  follow(x: number, z: number, zoom: number): void {
-    const dist = 46 * zoom;
+  /** 카메라는 각도 고정, 대상만 따라간다. dist: 비추는 곳에서 카메라까지(m). 어디를 얼마나 멀리서 비출지는 camera.ts가 정한다 */
+  follow(x: number, z: number, dist: number): void {
     this.camera.position.set(x + CAM_DIR.x * dist, CAM_DIR.y * dist, z + CAM_DIR.z * dist);
     this.camera.lookAt(x, 1, z);
     this.camera.updateMatrixWorld();
     this.sun.position.set(x - 24, 44, z + 16);
     this.sun.target.position.set(x, 0, z);
+  }
+
+  private readonly fitCam = new THREE.PerspectiveCamera();
+  /**
+   * 네모(x0~x1, z0~z1)의 가운데를 비출 때 네 귀퉁이가 화면 안(가장자리 margin 몫을 남기고)에 드는 가장 작은 배율 (거리 = base × 배율).
+   * 지금 카메라의 비율·그리는 범위(폰 세로의 밀린 범위)를 그대로 쓴 복사본으로 나눠 찾는다
+   */
+  fitZoom(x0: number, z0: number, x1: number, z1: number, base: number, margin = 0.08): number {
+    const cam = this.fitCam.copy(this.camera), cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, lim = 1 - margin * 2;
+    const fits = (k: number): boolean => {
+      const d = base * k;
+      cam.position.set(cx + CAM_DIR.x * d, CAM_DIR.y * d, cz + CAM_DIR.z * d);
+      cam.lookAt(cx, 1, cz);
+      cam.updateMatrixWorld();
+      for (const [x, z] of [[x0, z0], [x0, z1], [x1, z0], [x1, z1]]) {
+        const v = this.v.set(x, 0, z).project(cam);
+        if (Math.abs(v.x) > lim || Math.abs(v.y) > lim) return false;
+      }
+      return true;
+    };
+    let lo = 0.05, hi = 6;
+    if (!fits(hi)) return hi;
+    for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (fits(mid)) hi = mid; else lo = mid; }
+    return hi;
   }
 
   /** 월드 좌표를 화면 좌표로. 화면 밖이면 null. */
