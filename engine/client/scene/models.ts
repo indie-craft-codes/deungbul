@@ -106,8 +106,11 @@ registerHand('staff', ({ root, rig, cloth }) => {
   return blade;
 });
 
-/** 사람형의 겉모습을 정하는 값: 옷 색, 손 모양(''이면 빈손), 살갗 색, 직업(아는 때만: 직업별 사람 모델 파일을 고른다) */
-export interface HumanoidLook { cloth: number; hand: string; skin: number; cls?: string }
+/**
+ * 사람형의 겉모습을 정하는 값: 옷 색, 손 모양(''이면 빈손), 살갗 색, 직업(아는 때만: 직업별 사람 모델 파일을 고른다).
+ * 편성의 영웅(엔티티 종류 hero)이면 영웅 id(hero)와 등급 번호(rarity)도 온다: setHumanoidBody가 영웅마다·등급마다 다르게 그릴 수 있다
+ */
+export interface HumanoidLook { cloth: number; hand: string; skin: number; cls?: string; hero?: string; rarity?: number }
 /**
  * 사람형 모델을 통째로 바꾼다 (플레이어, 상인, 게임이 세운 NPC, 사람형 몬스터 모두). 등록하지 않으면 틀의 네모난 사람이다.
  * 걷는 동작은 돌려준 모델의 rig(다리 둘, 팔 둘)로, 무기의 겉모습은 blade로, 갑옷은 rig가 있을 때 틀의 자리에 덧댄다
@@ -142,8 +145,8 @@ export function defaultHumanoid({ cloth, hand, skin }: HumanoidLook): Model {
  * 사람형 캐릭터. armed: true면 검, 손 모양의 id('bow', 'staff', 게임이 등록한 것)면 그것, false면 빈손(마을 주민).
  * cls는 직업 (아는 때만): 그 직업의 사람 모델 파일(registerHumanoidAsset)이 있으면 그것을, 없으면 모두의 것을, 그것도 없으면 코드 모델을 쓴다
  */
-export function makeHumanoid(cloth: number, armed: boolean | string = true, skin = 0xf0c9a0, cls?: string): Model {
-  const look: HumanoidLook = { cloth, hand: armed === true ? 'sword' : armed === false ? '' : armed, skin, cls };
+export function makeHumanoid(cloth: number, armed: boolean | string = true, skin = 0xf0c9a0, cls?: string, hero?: { hero: string; rarity: number }): Model {
+  const look: HumanoidLook = { cloth, hand: armed === true ? 'sword' : armed === false ? '' : armed, skin, cls, ...hero };
   const m = (humanoidBody ?? defaultHumanoid)(look);
   humanoidDeco?.(m.root); // 게임의 꾸밈 (등불지기는 허리춤의 등불)
   m.hand = look.hand;

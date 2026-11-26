@@ -741,3 +741,11 @@ html:lang(en) body { overflow-wrap: break-word; }
   #stageBar .sid { font-size: 17px; }
   .gcard { width: 64px; }
 }
+/* 돌아왔을 때의 창 (hud/idleback.ts, IDLE.popup) */
+#idleBackPop { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(340px, calc(100vw - 32px)); z-index: 41; background: rgba(var(--ink-rgb), .97); display: flex; flex-direction: column; gap: 6px; text-align: center; padding: 14px 16px; }
+#idleBackPop[hidden] { display: none; }
+#idleBackList { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--gold); }
+#idleBackPop .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+#idleBackPop button.on { background: var(--gold); color: var(--on-gold, #1b1b1b); border-color: var(--gold); font-weight: 700; }
+/* 화면의 틀 요소 끄기 (내용의 HUD.hide: hud/shell.ts) */
+.hudOff { display: none !important; }

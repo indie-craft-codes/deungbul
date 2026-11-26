@@ -10,6 +10,7 @@ export * from './defs/dungeons';
 export * from './defs/economy';
 export * from './defs/growth';
 export * from './defs/herogrow';
+export * from './defs/hud';
 export * from './defs/items';
 export * from './defs/monsters';
 export * from './defs/social';
@@ -18,7 +19,7 @@ export * from './defs/teams';
 
 export {
   // 핵심
-  MAP, MODULES, NET, CAMERA, HOME_KEY,
+  MAP, MODULES, NET, CAMERA, HOME_KEY, HUD,
   // 직업과 기술
   CLASSES, DEFAULT_CLASS, SKILL_DEFS, SKILL_SLOTS, HP_PER_LEVEL, ATTACK_CD, COMBAT, SLOW_FACTOR, REJOIN_KEEP_S, GUEST_NAME,
   // 몬스터

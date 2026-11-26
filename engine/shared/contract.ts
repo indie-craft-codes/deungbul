@@ -7,9 +7,10 @@
 // 적은 이름의 모양이 다르면 이 파일의 맨 아래 검사에서 컴파일 오류가 난다 (npm run typecheck).
 // 게임에만 있는 것(등불지기의 등탑, 주민, 습격, 퀘스트)은 계약에 없다: 틀이 읽지 않는다.
 // 계약의 타입들(ClassDef, ItemDef, MapDef 등)과 내용에서 값을 구하는 도우미는 engine/shared/defs/에 있다.
-import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRarityDef, HeroRoleDef, HeroRules, IdleCtx, SquadRules, StageRules } from './defs/collect';
+import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRarityDef, HeroRoleDef, HeroRules, IdleRules, SquadRules, StageRules } from './defs/collect';
 import type { ClassDef, SkillDef } from './defs/combat';
 import type { ForgeDef } from './defs/craft';
+import type { HudRules } from './defs/hud';
 import type { DungeonDef } from './defs/dungeons';
 import type { CurrencyDef } from './defs/economy';
 import type { DailyDef, Reward, StatMod } from './defs/growth';
@@ -46,6 +47,8 @@ export interface CoreTuning {
   CAMERA: { dist: number; zoom: number; zoomMin: number; zoomMax: number; gate: number };
   /** 핵심의 '집으로'(H 키)를 두는가 */
   HOME_KEY: boolean;
+  /** 화면의 틀 요소 끄기: hide에 적은 요소(가방 단추, '가까운 대상 공격' …: engine/shared/defs/hud.ts의 HUD_PARTS)를 감춘다 */
+  HUD: HudRules;
 }
 
 /** classes, combat: 직업과 기술, 몬스터 */
@@ -126,8 +129,11 @@ export interface GrowthContent {
 /** mail, daily, idle: 우편, 일일 임무와 출석, 접속하지 않은 동안의 보상 */
 export interface MailContent {
   MAIL_MAX: number;
-  /** 방치 보상: 비운 분과 레벨, 그리고 틀이 넘기는 것(ctx: 깬 단계의 수. stages 모듈이 없으면 0)으로 셈한다. ctx를 읽지 않는 식도 된다 */
-  IDLE: { minMin: number; maxMin: number; reward: (minutes: number, lv: number, ctx: IdleCtx) => Reward };
+  /**
+   * 방치 보상: 비운 분과 레벨, 그리고 틀이 넘기는 것(ctx: 깬 단계의 수. stages 모듈이 없으면 0)으로 셈한다. ctx를 읽지 않는 식도 된다.
+   * popup이 true면 돌아왔을 때 받은 방치 보상(과 오프라인 진행)을 화면 가운데 창으로 알린다 (메시지 idleBack. 받기는 우편으로)
+   */
+  IDLE: IdleRules;
   DAILIES: Readonly<Record<string, DailyDef>>;
   ATTEND: readonly Reward[];
 }

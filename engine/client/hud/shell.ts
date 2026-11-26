@@ -5,6 +5,7 @@
 // app.ts를 import하고 app.ts는 이 파일을 맨 먼저 import한다: 그래서 게임의 진입점이 무엇을 어떤 순서로 import하든 요소를 잡는 때에는 뼈대가 있다.
 // 게임의 창(mountPanel)은 그 뒤, 게임의 진입점이 startClient를 부르기 전에 붙인다 (게임의 모듈은 init 안에서 요소를 잡는다).
 // 이 파일은 app.ts를 import하지 않는다: app.ts가 이 파일에 기대어 먼저 붙이기 때문이다.
+import { hiddenHudIds } from '../../shared/defs/hud';
 import { anyModule } from '../mods';
 import { SKELETON } from './skeleton';
 
@@ -21,6 +22,8 @@ export function mountShell(): void {
   for (const el of document.querySelectorAll<HTMLElement>('[data-mod]')) {
     if (anyModule(el.dataset.mod ?? '')) el.removeAttribute('data-mod'); else el.remove();
   }
+  // 게임이 끈 틀의 요소 (내용의 HUD.hide: 가방 단추, '가까운 대상 공격' …): 빼지 않고 감춘다 (틀의 코드가 그 요소를 잡으므로). 기능과 단축키는 그대로다
+  for (const id of hiddenHudIds()) document.getElementById(id)?.classList.add('hudOff');
 }
 mountShell();
 

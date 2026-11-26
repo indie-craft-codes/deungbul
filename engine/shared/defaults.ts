@@ -8,6 +8,7 @@
 // 수치는 등불지기에서 쓰던 잠정값이다. 등불지기는 이 파일에 기대지 않고 자기 값을 모두 적는다.
 import type { ClassDef, SkillDef } from './defs/combat';
 import type { ForgeDef, Recipe } from './defs/craft';
+import type { HudRules } from './defs/hud';
 import type { DungeonDef } from './defs/dungeons';
 import type { CurrencyDef } from './defs/economy';
 import type { DailyDef, Reward } from './defs/growth';
@@ -36,6 +37,8 @@ export const REJOIN_KEEP_S = 300;
 export const CAMERA = { dist: 46, zoom: 1, zoomMin: 0.6, zoomMax: 1.15, gate: 1.05 };
 /** 핵심의 '집으로'(H 키, goToTown): false면 틀이 H를 달지 않고 조작 안내에도 없다 (게임이 onKey('h')로 쓸 수 있다). 가는 곳은 화면의 rules.home */
 export const HOME_KEY: boolean = true;
+/** 화면의 틀 요소 끄기 (engine/shared/defs/hud.ts): 기본은 아무것도 감추지 않는다 */
+export const HUD: HudRules = {};
 
 // ---------- 직업과 전투 (classes, combat) ----------
 export const CLASSES: Readonly<Record<string, ClassDef>> = {};

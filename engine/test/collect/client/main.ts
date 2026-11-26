@@ -9,7 +9,7 @@ import { setMenuTabs, startClient } from '@engine/client';
 
 const koNames = withIdNames({
   monsters: { slime: '풀슬라임', wolf: '들늑대', goblin: '고블린', archer: '고블린 궁수', ogre: '들판의 오우거', golem: '능선 골렘', coinbug: '동전벌레', hoarder: '금광 수전노' },
-  items: { oakblade: { name: '참나무 검' }, skillbook: { name: '기술서' }, awakenstone: { name: '각성석' }, gearstone: { name: '강화석' }, sweepticket: { name: '소탕권' }, herochoice: { name: '전설 영웅 선택권' } },
+  items: { oakblade: { name: '참나무 검' }, skillbook: { name: '기술서' }, awakenstone: { name: '각성석' }, gearstone: { name: '강화석' }, sweepticket: { name: '소탕권' }, herochoice: { name: '전설 영웅 선택권' }, stardust: { name: '별가루' } },
   classes: { captain: { name: '대장', info: '영웅들을 이끄는 대장입니다.' } },
   skills: { slash: { name: '베기', info: '' }, sweep: { name: '휩쓸기', info: '' }, rally: { name: '진군의 함성', info: '' }, shieldbash: { name: '방패 치기', info: '' }, volley: { name: '화살 비', info: '' }, blaze: { name: '불꽃', info: '' }, prayer: { name: '기도', info: '' } },
   dungeons: { goldmine: { name: '금광', info: '동전벌레를 잡고 수전노를 쓰러뜨리면 골드를 많이 받습니다.' } },
@@ -19,7 +19,7 @@ const koNames = withIdNames({
 });
 const enNames = withIdNames({
   monsters: { slime: 'Grass Slime', wolf: 'Field Wolf', goblin: 'Goblin', archer: 'Goblin Archer', ogre: 'Meadow Ogre', golem: 'Ridge Golem', coinbug: 'Coin Bug', hoarder: 'Mine Hoarder' },
-  items: { oakblade: { name: 'Oak Blade' }, skillbook: { name: 'Skill Tome' }, awakenstone: { name: 'Awakening Stone' }, gearstone: { name: 'Forge Stone' }, sweepticket: { name: 'Sweep Ticket' }, herochoice: { name: 'Legend Selector' } },
+  items: { oakblade: { name: 'Oak Blade' }, skillbook: { name: 'Skill Tome' }, awakenstone: { name: 'Awakening Stone' }, gearstone: { name: 'Forge Stone' }, sweepticket: { name: 'Sweep Ticket' }, herochoice: { name: 'Legend Selector' }, stardust: { name: 'Stardust' } },
   classes: { captain: { name: 'Captain', info: 'Leads the heroes.' } },
   skills: { slash: { name: 'Slash', info: '' }, sweep: { name: 'Sweep', info: '' }, rally: { name: 'Rally', info: '' }, shieldbash: { name: 'Shield Bash', info: '' }, volley: { name: 'Volley', info: '' }, blaze: { name: 'Blaze', info: '' }, prayer: { name: 'Prayer', info: '' } },
   dungeons: { goldmine: { name: 'Gold Mine', info: 'Beat the coin bugs and the hoarder for lots of gold.' } },

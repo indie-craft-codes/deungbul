@@ -81,6 +81,8 @@ export interface Hooks extends HooksExt {
   playerDropped: (p: Ent) => void;
   /** 던전을 끝냈다: 던전 id와 안에 있던 사람들 */
   dungeonCleared: (id: string, players: Ent[]) => void;
+  /** 던전에서 나왔다: 던전 id와 까닭 (self 스스로 나옴, end 끝냈거나 시간이 다 되어 회차가 닫힘, drop 접속이 끊김) */
+  dungeonExited: (p: Ent, id: string, why: 'self' | 'end' | 'drop') => void;
   /** 장비 강화를 시도했다 (성공이든 실패든) */
   enhanced: (p: Ent) => void;
   /** 사람이 몬스터를 때렸다: 실제로 깎인 체력 (쓰러뜨렸으면 monsterKilled보다 먼저 불린다). 사람 편의 종류(편성의 영웅)가 때린 것은 그 주인이 때린 것으로 불린다 */
