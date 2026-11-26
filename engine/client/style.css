@@ -436,6 +436,9 @@ html:lang(en) body { overflow-wrap: break-word; }
 /* 받을 우편이나 찍을 점수가 있다는 점: 모서리에 얹어서 탭의 너비를 바꾸지 않는다 */
 #menuTabs button.dot::after { content: ''; position: absolute; right: 2px; top: 2px; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
 #menuTabs button.dot.on::after { background: #b3261e; }
+/* 좁은 화면(폰 세로)에서는 넘치는 탭을 다음 줄로 내린다: 옆으로 밀어 넘기는 줄은 스크롤 막대가 없어 끝의 탭(영어의 'Device')이 잘린 채 보였고, 눌러도 제자리로 오지 않았다.
+   한 줄에 다 들어가면(한국어) 전과 같다. 넓은 화면(PC)과 폰 가로는 그대로 한 줄 */
+@media (max-width: 720px) { #menuTabs { flex-wrap: wrap; } }
 #menuList { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; overscroll-behavior: contain; }
 #menuList > * { flex: none; }
 #menuList { padding-right: 3px; } /* 스크롤 막대가 단추에 붙지 않게 */
