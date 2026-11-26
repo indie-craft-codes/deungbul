@@ -43,6 +43,7 @@ const PLUGINS: Record<string, [string, string, boolean]> = {
   starmine: ['games/starmine/server/starmine.ts', 'installStarmine', false],
   bastion: ['games/bastion/server/bastion.ts', 'bastion', true],
   stepstone: ['games/stepstone/server/stepstone.ts', 'installStepstone', false],
+  pond: ['games/pond/server/pond.ts', 'installPond', false],
 };
 const [file, fn, takesCfg] = PLUGINS[cfg.game] ?? (() => { throw new Error(`모르는 게임: ${cfg.game}`); })();
 const mod = await imp(file);
