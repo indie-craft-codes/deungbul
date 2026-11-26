@@ -1,10 +1,10 @@
 // 달무리 원정대의 겉모습: 하늘섬 야영지의 땅, 던전 둘의 바닥, 단계의 자리(달무리 원), 몬스터의 코드 모델(낮은 다각형),
-// 영웅의 등급 꾸밈(희귀: 망토, 전설: 관과 빛고리), 몬스터의 날아가는 것(포자·불씨·얼음 조각), 미니맵의 바탕.
+// 영웅의 등급 꾸밈(희귀: 망토, 전설: 관과 빛고리. 틀이 넘기는 영웅의 등급으로: setHeroModel), 몬스터의 날아가는 것(포자·불씨·얼음 조각), 미니맵의 바탕.
 import * as THREE from 'three';
 import { AREAS } from '@engine/shared/world';
-import { defaultHumanoid, fitZoom, type Look, limb, mat, type Model, myStage, part, registerMonsterModel, registerShot, setCameraAim, setHumanoidBody, setMapPaint, view } from '@engine/client';
+import { defaultHumanoid, fitZoom, type Look, limb, mat, type Model, myStage, part, registerMonsterModel, registerShot, setCameraAim, setHeroModel, setMapPaint, view } from '@engine/client';
 import { CAMERA } from '@engine/shared/defs';
-import { ARENA, GATES, HEROES } from '../shared/content';
+import { ARENA, GATES } from '../shared/content';
 
 const grass = [new THREE.Color(0x6f9a6a), new THREE.Color(0x5e8a62)];
 const stone = new THREE.Color(0x8f8c84), gold = new THREE.Color(0xb59a4a), well = new THREE.Color(0x4a6a9a);
@@ -82,14 +82,11 @@ const MODELS: Record<string, () => Model> = {
 };
 
 // ---------- 영웅의 등급 꾸밈 ----------
-/** 영웅의 옷 색 → 등급 (내용의 HEROES는 영웅마다 옷 색이 다르다: 틀의 영웅 모델은 옷 색과 손 모양만 넘기므로 옷 색으로 알아본다) */
-const RARITY_BY_CLOTH = new Map<number, number>(Object.values(HEROES).filter((h) => h.cloth !== undefined).map((h) => [h.cloth!, h.rarity]));
-
 export function initScene(): void {
   for (const [type, fn] of Object.entries(MODELS)) registerMonsterModel(type, fn);
-  setHumanoidBody((lk) => {
-    const m = defaultHumanoid(lk), r = RARITY_BY_CLOTH.get(lk.cloth);
-    if (r === undefined) return m;
+  // 편성의 영웅만: 틀의 사람형(영웅의 옷 색·손 모양)에 등급의 꾸밈을 얹는다. 발밑의 등급 고리와 크기는 틀이 그 뒤에 얹는다
+  setHeroModel(({ rarity: r, look: lk }) => {
+    const m = defaultHumanoid(lk);
     if (r >= 1) {
       // 희귀 이상: 등의 망토 (옷보다 짙게)
       const cape = part(new THREE.BoxGeometry(0.8, 1.0, 0.08), mat(r >= 2 ? 0x8a1a2a : 0x2a3a5a), 0, 1.2, -0.3);

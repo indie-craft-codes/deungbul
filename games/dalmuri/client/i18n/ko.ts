@@ -1,7 +1,5 @@
 // 한국어: 이 게임의 내용의 이름표(koNames)와 문장(koGame). 기준 언어다: en.ts는 같은 모양을 갖춰야 컴파일된다.
-import type { MsgMap } from '@engine/shared/ext';
-import type { MsgArg, MsgKey } from '@engine/shared';
-import { heroName } from '@engine/client/i18n/ko';
+// 틀의 탭(영웅·뽑기·편성·영웅 장비·단계)·소탕·돌아왔을 때의 창·안내문의 문장은 틀의 것이다. 이 게임은 이름 키와 '원정' 탭의 문장만 적는다.
 import { withIdNames } from '@engine/client/i18n/names';
 
 /** 틀의 문장이 쓰는 내용의 이름표. 쓰지 않는 모듈의 이름(장비 칸·등급·능력치)은 id 그대로 (withIdNames) */
@@ -14,7 +12,12 @@ export const koNames = withIdNames({
   },
   items: {
     moonblade: { name: '달빛 검', info: '원정대장의 검' },
-    essence: { name: '별정수', info: '별의 샘에서 얻습니다. 원정 탭에서 영웅의 조각으로 바꿉니다' },
+    essence: { name: '별정수', info: '별의 샘과 방치 보상에서 얻습니다. 영웅 탭에서 가진 영웅의 조각으로 바꿉니다' },
+    starchart: { name: '별자리 서책', info: '영웅의 기술 레벨을 올립니다' },
+    moonshard: { name: '달 조각', info: '별 6인 영웅을 각성시킵니다' },
+    starsteel: { name: '운철', info: '영웅 장비를 강화합니다' },
+    sweepticket: { name: '소탕권', info: '깬 단계를 싸우지 않고 한 번 끝냅니다' },
+    herochoice: { name: '전설 영웅 선택권', info: '전설 영웅 셋 가운데 하나를 고릅니다' },
   },
   classes: { captain: { name: '원정대장', info: '영웅들을 이끌고 달 조각을 찾아 떠나는 대장입니다.' } },
   skills: {
@@ -38,15 +41,12 @@ export const koNames = withIdNames({
   nameB: ['원정대장', '길잡이', '달지기', '별사냥꾼', '구름발'],
 });
 
-/** 재화의 짧은 글 */
-const rw = (gold: number, sparks: number, ess: number) => [gold ? `금화 ${gold.toLocaleString('ko-KR')}` : '', sparks ? `월석 ${sparks}` : '', ess ? `별정수 ${ess}` : ''].filter(Boolean).join(' · ');
-
 export const koGame = {
   ui: {
     title: '달무리 원정대',
     intro: '떠도는 하늘섬에 흩어진 달 조각을 찾아 영웅들을 이끄세요.',
     classHint: '',
-    hint: '자동으로 싸웁니다 · M: 메뉴(영웅·뽑기·편성·단계·원정) · N: 지도 · Enter: 대화',
+    hint: '자동으로 싸웁니다 · M: 메뉴(영웅·뽑기·편성·영웅 장비·단계·원정) · N: 지도 · Enter: 대화',
     mapLegend: '가운데 나 · 붉은 점 몬스터 · 하늘색 영웅',
     // 영웅·역할·배너·장의 이름 (내용의 name 키)
     heroAnvil: '모루', heroReed: '갈대', heroEmber: '불씨', heroDew: '이슬',
@@ -54,32 +54,28 @@ export const koGame = {
     heroMoonshield: '달방패', heroStarfall: '별비', heroDawnsaint: '새벽 성녀',
     roleGuardian: '수호', roleRanger: '궁수', roleMystic: '술사', roleHealer: '치유',
     bannerHalo: '달무리 소환', bannerFroststar: '서리별 소환',
+    bannerEclipseMoon: '월식 소환: 달방패', bannerEclipseStar: '월식 소환: 별비', bannerEclipseDawn: '월식 소환: 새벽 성녀',
     chapterMoss: '이끼 숲', chapterAsh: '잿빛 협곡', chapterFrost: '서리 첨탑',
-    // 이 게임의 창
+    // 영웅의 성장: 장비의 칸·이름·세트, 진영의 시너지, 각성의 패시브
+    hgSlotWeapon: '무기', hgSlotArmor: '갑옷', hgSlotCharm: '부적',
+    hgIronedge: '무쇠 날', hgQuiltcoat: '누비 외투', hgPebblecharm: '조약돌 부적',
+    hgLunarblade: '달빛 검', hgLunarmail: '달빛 사슬옷', hgLunarcharm: '달빛 방울',
+    hgAstralstaff: '성휘 지팡이', hgAstralrobe: '성휘 로브', hgAstralcharm: '성휘 별자리판',
+    hgEclipseblade: '월식검',
+    setLunar: '달빛', setAstral: '성휘',
+    synSun: '해의 맹세', synMoon: '달의 가호', synStar: '별의 인도',
+    passiveMoonveil: '달빛 장막', passiveFullmoon: '보름달',
+    // 이 게임의 창: 메뉴의 '원정' 탭
     tabExpedition: '원정',
     expDungeons: '열쇠 던전',
-    expDungeonsNote: '열쇠는 날마다 2개씩 찹니다 (2개까지). 월석으로 하루 2개 더 살 수 있습니다. 보상은 우편으로 옵니다.',
+    expDungeonsNote: '열쇠는 날마다 2개씩 찹니다 (2개까지). 월석으로 하루 2개 더 살 수 있습니다. 들어가면 대장도 저절로 싸우고, 끝나면 단계로 돌아옵니다. 보상은 우편으로, 소탕은 단계 탭에서.',
     expGo: '들어가기',
     expBuy: '열쇠 사기',
-    expEssence: '별정수 → 영웅 조각',
-    expEssenceNote: '별정수로 가진 영웅의 조각 한 묶음(일반 5 · 희귀 10 · 전설 25)을 얻습니다. 조각이 모이면 영웅 탭에서 별을 올립니다.',
-    expUse: '바꾸기',
-    idleTitle: '원정대가 쉬는 동안',
-    idleClaim: '받기',
-    idleLater: '나중에 (우편에 남김)',
   },
   fmt: {
     expNeedLv: (lv: number) => `대장 레벨 ${lv}부터`,
     keyLine: (n: number, cap: number, bought: number, buyMax: number, cost: number) => `열쇠 ${n} / ${cap} · 사기 ${cost} 월석 (오늘 ${buyMax - bought}번 남음)`,
-    essenceHave: (n: number) => `가진 별정수 ${n}`,
-    essenceRow: (lv: number, stars: number, shards: number, need: number) => `레벨 ${lv} · 별 ${stars} · 조각 ${shards} — 별정수 ${need}개`,
-    idleBody: (min: number) => `${Math.floor(min / 60) ? `${Math.floor(min / 60)}시간 ` : ''}${min % 60}분 동안 원정대가 모은 것`,
-    idleReward: rw,
   },
-  msg: {
-    essenceUsed: (a) => `${heroName(a[0])}: 조각 ${a[1]}개를 얻었습니다. 남은 별정수 ${a[2]}`,
-    essenceShort: (a) => `별정수가 모자랍니다 (필요 ${a[0]}, 가진 것 ${a[1]}). 별의 샘에서 얻습니다.`,
-    essenceNoHero: () => '가진 영웅에게만 쓸 수 있습니다.',
-  } satisfies Record<keyof MsgMap, (a: MsgArg[]) => string> & Partial<Record<MsgKey, (a: MsgArg[]) => string>>,
+  msg: {},
 };
 export type GameLocale = typeof koGame;
