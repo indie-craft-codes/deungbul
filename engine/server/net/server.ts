@@ -410,6 +410,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       if (!c.key) { send(c, sys('handoffGuest')); return; }
       c.hadSave = true; savePlayer(c); // 옮길 캐릭터가 저장되어 있어야 다른 기기가 이어받는다
       const { code, ms } = handoff.make(c.key);
+      if (game.saveDirty) saveTogether(); // 새 코드(의 해시)가 곧바로 저장되게: 그 사이에 서버를 다시 켜도 코드가 쓰인다
       send(c, { t: 'handoff', code, ms });
       return;
     }

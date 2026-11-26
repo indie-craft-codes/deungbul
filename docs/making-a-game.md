@@ -1011,7 +1011,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 
 ### 기기 옮기기
 
-메뉴의 '기기' 탭(어느 게임에서나 맨 뒤, `MenuTab.always`)에서 일회용 코드(8자, 10분, 한 번)를 받고, 다른 기기의 직업 고르기 창(새 캐릭터의 첫 화면)이나 같은 탭에 넣으면 그 기기가 새 토큰을 받아 이어받는다. 옛 토큰은 그 뒤로 4001로 거절된다. 계정이 아니다: [accounts.md](accounts.md)의 '기기 옮기기'. 서버 `engine/server/net/handoff.ts`, 화면 `engine/client/hud/device.ts`.
+메뉴의 '기기' 탭(어느 게임에서나 맨 뒤, `MenuTab.always`)에서 일회용 코드(8자, 10분, 한 번)를 받고, 다른 기기의 직업 고르기 창(새 캐릭터의 첫 화면)이나 같은 탭에 넣으면 그 기기가 새 토큰을 받아 이어받는다. 옛 토큰은 그 뒤로 4001로 거절된다. 받은 코드는 월드 저장에 해시로만 남아, 그 사이에 서버를 다시 켜도(배포) 10분이 지나기 전이면 그대로 쓰인다. 계정이 아니다: [accounts.md](accounts.md)의 '기기 옮기기'. 서버 `engine/server/net/handoff.ts`, 화면 `engine/client/hud/device.ts`.
 
 ## 10. 자주 걸리는 곳
 

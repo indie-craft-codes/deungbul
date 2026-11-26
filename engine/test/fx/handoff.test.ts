@@ -1,13 +1,18 @@
 // 기기 옮기기 (engine/server/net/handoff.ts): 일회용 코드로 다른 기기가 새 토큰을 받아 같은 캐릭터를 이어받고, 옛 토큰은 쓸 수 없게 된다.
-// 성공, 옛 토큰 무효, 재사용, 만료, 자기 코드, 손님, 틀린 시도의 제한(주소·사람별), 다시 켜도 남는 별칭.
+// 성공, 옛 토큰 무효, 재사용, 만료, 자기 코드, 손님, 틀린 시도의 제한(주소·사람별), 다시 켜도 남는 별칭,
+// 그리고 받은 코드가 실제 서버를 강제로 죽였다 다시 켜도(같은 DB) 쓰이는가 (코드의 해시만 저장, 한 번만, 만료).
+import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { WebSocket } from 'ws';
 import type { ServerMsg } from '../../shared/protocol';
 import { Game } from '../../server/game/game';
-import { CODE_LEN, CODE_MS, Handoff, TRY_MAX, TRY_WINDOW_MS, normCode } from '../../server/net/handoff';
+import { CODE_LEN, CODE_MS, Handoff, TRY_MAX, TRY_WINDOW_MS, hashCode, normCode } from '../../server/net/handoff';
 import { startServer } from '../../server/net/server';
-import { MemoryStore } from '../../server/store';
-import { check, connect, until, type Peer } from '../harness';
+import { MemoryStore, SqliteStore } from '../../server/store';
+import { check, connect, removeTemp, until, type Peer } from '../harness';
 
 const keyOf = (t: string) => createHash('sha256').update(t).digest('hex');
 const OLD = 'handoff-old-device-token-01', NEWDEV = 'handoff-new-device-token-02', OTHER = 'handoff-third-device-token3';
@@ -123,4 +128,94 @@ try {
   const r1 = h.use('AAAAAAAA', ['i:2', 'k:x'], null), r2 = h.use('AAAAAAAA', ['i:1', 'k:y'], null), r3 = h.use('AAAAAAAA', ['i:3', 'k:z'], null);
   check('wait' in r1 && 'wait' in r2 && 'left' in r3 && r3.left === TRY_MAX - 1, '틀린 시도는 주소별로도 사람별로도 막는다 (다른 주소의 같은 사람, 같은 주소의 다른 사람 모두 막히고, 둘 다 다르면 된다)');
   check(normCode(' abcd-efgh ') === 'ABCDEFGH' && normCode(5) === '', '코드는 대소문자와 줄표·칸을 가리지 않는다');
+}
+
+// 저장의 모양: 코드가 없으면 'handoff' 칸은 예전과 같다 (codes 칸 없음), 코드는 해시로만
+{
+  const t = { now: Date.now() };
+  const g = new Game({ now: () => t.now });
+  const h = new Handoff(g);
+  check(g.exportWorld().handoff === undefined, '별칭도 코드도 없으면 handoff 칸을 적지 않는다 (예전과 같다)');
+  const { code } = h.make('a'.repeat(64));
+  const w = JSON.stringify(g.exportWorld().handoff);
+  check(g.saveDirty && w.includes(hashCode(code)) && !w.includes(code), `새 코드는 곧 저장되고(saveDirty), 저장에는 해시만 있다 (${w.slice(0, 60)}…)`);
+  t.now += CODE_MS + 1;
+  check(g.exportWorld().handoff === undefined, '끝난 코드는 저장에 남기지 않는다');
+  // 옛 저장(codes 칸 없음)과 깨진 codes 칸도 읽는다
+  const g2 = new Game({ now: () => t.now }), h2 = new Handoff(g2);
+  g2.importWorld({ handoff: { alias: {}, retired: [], codes: { nothex: ['x', 1], [hashCode('ABCDEFGH')]: ['b'.repeat(64), 'soon'], [hashCode('ZZZZZZZZ')]: ['c'.repeat(64), t.now + CODE_MS * 50] } } });
+  const r = h2.use('ZZZZZZZZ', ['i:9'], null);
+  check('token' in r && r.key === 'c'.repeat(64), '읽은 코드는 쓰인다 (끝나는 시각은 지금부터 10분을 넘지 않게 자른다)');
+  check('left' in h2.use('ABCDEFGH', ['i:9'], null), '깨진 칸의 코드는 버린다');
+}
+
+// 실제 서버를 강제로 죽였다가 같은 DB로 다시 켠다: 받은 코드가 끝날 때까지 쓰이고, 한 번만 쓰인다
+{
+  const root = path.resolve(import.meta.dirname, '..', '..', '..');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fx-handoff-'));
+  const db = path.join(tmp, 'game.db');
+  const A = 'handoff-proc-device-a-0001', B = 'handoff-proc-device-b-0002', C = 'handoff-proc-device-c-0003';
+  { const st = new SqliteStore(db); st.savePlayer(keyOf(A), { name: '다시켜기', lv: 3, exp: 1, need: 100, maxHp: 200, sparks: 0, gold: 12, cls: '' }); st.close(); }
+  const procs: ChildProcess[] = [];
+  /** 서버 프로세스를 띄우고 포트를 받는다 */
+  const boot = (skew = 0) => new Promise<{ p: ChildProcess; port: number }>((done, fail) => {
+    const p = spawn(process.execPath, ['--import', 'tsx', path.join(import.meta.dirname, 'handoff-proc.ts')], {
+      cwd: root, env: { ...process.env, DB: db, PORT: '0', BACKUP: '0', HANDOFF_SKEW_MS: String(skew), TSX_TSCONFIG_PATH: path.join(import.meta.dirname, 'tsconfig.json'), TEST_REPORT: '' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    procs.push(p);
+    let out = '';
+    const timer = setTimeout(() => fail(new Error('서버가 뜨지 않았다: ' + out)), 60_000);
+    p.stdout!.on('data', (d) => { out += d; const m = /PORT (\d+)/.exec(out); if (m) { clearTimeout(timer); done({ p, port: Number(m[1]) }); } });
+    p.stderr!.on('data', (d) => { out += d; });
+    p.on('exit', (code) => { clearTimeout(timer); fail(new Error(`서버가 끝났다 (${code}): ${out}`)); });
+  });
+  /** 강제로 죽인다 (저장할 틈을 주지 않는다: 배포나 정전과 같다) */
+  const kill = (p: ChildProcess) => new Promise<void>((done) => { if (p.exitCode !== null || p.signalCode !== null) { done(); return; } p.once('exit', () => done()); p.kill('SIGKILL'); });
+  try {
+    let s = await boot();
+    const a = await device(s.port, A);
+    a.send({ t: 'handoff', a: 'make' });
+    check(await until(() => a.codes.length === 1), '실제 서버: 코드를 받는다');
+    const code = a.codes[0].code;
+    a.ws.close();
+    await kill(s.p);
+    const raw = fs.readFileSync(db).toString('latin1') + (fs.existsSync(db + '-wal') ? fs.readFileSync(db + '-wal').toString('latin1') : '');
+    check(raw.includes(hashCode(code)) && !raw.includes(code), 'DB에는 코드의 해시가 있고 코드 그 글자는 없다');
+
+    s = await boot();
+    const b = await device(s.port, B);
+    b.send({ t: 'handoff', a: 'use', code });
+    check(await until(() => b.tokens.length === 1), '강제로 죽였다 다시 켠 서버에서 그 전에 받은 코드가 쓰인다');
+    const moved = await device(s.port, b.tokens[0]);
+    check(moved.name === '다시켜기', '이어받은 캐릭터가 같다');
+    check((await tryJoin(s.port, A)).code === 4001, '옛 토큰은 물러난다');
+    const c = await device(s.port, C);
+    c.send({ t: 'handoff', a: 'use', code });
+    check(await until(() => c.sys.some((x) => x.startsWith('handoffBad'))) && c.tokens.length === 0, '같은 서버에서 다시 쓸 수 없다');
+    // 새 코드를 받고 다시 죽였다가 켜서, 쓴 코드가 다시 살아나지 않는지와 새 코드의 만료를 본다
+    moved.send({ t: 'handoff', a: 'make' });
+    check(await until(() => moved.codes.length === 1), '새 코드를 받는다');
+    const late = moved.codes[0].code;
+    moved.ws.close(); c.ws.close(); b.ws.close();
+    await kill(s.p);
+
+    s = await boot();
+    const c2 = await device(s.port, C);
+    c2.send({ t: 'handoff', a: 'use', code });
+    check(await until(() => c2.sys.some((x) => x.startsWith('handoffBad'))) && c2.tokens.length === 0, '다시 켜도 한 번 쓴 코드는 쓸 수 없다');
+    c2.ws.close();
+    await kill(s.p);
+
+    // 11분 뒤의 시계로 다시 켠다: 저장된 코드는 끝났다
+    s = await boot(CODE_MS + 60_000);
+    const c3 = await device(s.port, C);
+    c3.send({ t: 'handoff', a: 'use', code: late });
+    check(await until(() => c3.sys.some((x) => x.startsWith('handoffBad'))) && c3.tokens.length === 0, '다시 켠 뒤에도 10분이 지난 코드는 거절한다');
+    c3.ws.close();
+    await kill(s.p);
+  } finally {
+    for (const p of procs) await kill(p);
+    removeTemp(tmp);
+  }
 }
