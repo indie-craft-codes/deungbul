@@ -32,10 +32,12 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
   check(msg.includes("'economy'") && msg.includes('MODULES'), `고르지 않은 모듈의 시스템을 건드리면 무엇을 고르라는지 알리는 오류가 난다 (${msg.slice(0, 80)}…)`);
   // 틱이 돈다: 사람은 걷고(전투 모듈 없이), 공은 게임의 틱을 받는다
   const p = g.players.spawn('걷는이', false);
-  g.movement.goTo(p, p.x + 6, p.z);
+  // 나는 자리는 처음 서는 곳 둘레의 아무 데나다: 동쪽의 우물(x 10)에 막혀 돌아가면 덜 걷는다. 정해진 자리에서 서쪽으로 걷는다
+  p.x = 0; p.z = 0;
+  g.movement.goTo(p, p.x - 6, p.z);
   const x0 = p.x, b0 = [...g.ents.values()].find((e) => e.kind === 'ball')!;
   for (let i = 0; i < 20; i++) g.tick(0.05);
-  check(p.x > x0 + 4 && Number(b0.data.age) > 0.9, `전투 모듈 없이도 사람이 걷고(${(p.x - x0).toFixed(1)}m), 게임의 종류가 틱을 받는다`);
+  check(x0 - p.x > 4 && Number(b0.data.age) > 0.9, `전투 모듈 없이도 사람이 걷고(${(x0 - p.x).toFixed(1)}m), 게임의 종류가 틱을 받는다`);
   const out = g.players.export(p);
   check(Object.keys(out).sort().join(',') === 'at,ext,name,seen,v' && Object.keys(out.ext ?? {}).length === 0, `핵심만의 캐릭터 저장에는 핵심의 칸만 있다 (${Object.keys(out).join(', ')})`);
 }
