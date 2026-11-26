@@ -156,4 +156,6 @@ export type MsgKey =
   | 'swept' // ['stage' | 'dungeon', id, 횟수] 소탕했다 (받은 것은 메시지 sweep)
   | 'sweepLocked' // ['stage' | 'dungeon', id] 아직 소탕할 수 없다 (깨지 않았거나 소탕할 수 없는 곳)
   | 'itemShort' // [재화나 아이템 id, 드는 수, 가진 수] 값(소탕권, 선택권, 재화)이 모자란다
-  | 'stageAway'; // [처음 단계 id, 지금 단계 id, 깬 단계의 수] 자리를 비운 동안 단계가 앞으로 나아갔다
+  | 'stageAway' // [처음 단계 id, 지금 단계 id, 깬 단계의 수] 자리를 비운 동안 단계가 앞으로 나아갔다
+  | 'bannerClosed' // [배너 id] 지금 열려 있지 않은 배너다 (기간이 아니다)
+  | 'heroPicked'; // [영웅 id, 이미 가졌으면 1, 받은 조각] 선택권으로 영웅을 골랐다

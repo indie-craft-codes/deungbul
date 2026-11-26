@@ -156,6 +156,8 @@ export type ClientMsg =
   | { t: 'dungeonKey'; id: string }
   /** 열쇠 던전의 소탕 (DungeonDef.sweep): 끝낸 적이 있는 던전을 n번, 열쇠 n개 */
   | { t: 'dungeonSweep'; id: string; n: number }
+  /** 영웅 선택권 (GACHA_RULES.select): 선택권 아이템 하나를 쓰고 그 목록의 영웅 하나를 얻는다 */
+  | { t: 'gacha'; a: 'select'; item: string; hero: string }
   | Added<ClientMsgs>;
 
 export type ServerMsg =

@@ -708,6 +708,12 @@ html:lang(en) body { overflow-wrap: break-word; }
 #sweepPop { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100vw - 32px)); z-index: 40; display: flex; flex-direction: column; gap: 6px; text-align: center; cursor: pointer; }
 #sweepPop[hidden] { display: none; }
 #sweepList { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+/* 픽업 배너 */
+.gbanner.pick { border-color: var(--gold); }
+.gpick { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.gpick span:last-child { color: var(--rc, inherit); }
+.gtag { font-size: 10.5px; border: 1px solid var(--gold); color: var(--gold); border-radius: 3px; padding: 0 4px; }
+.gleft { color: var(--gold); }
 @media (max-width: 720px) {
   #stageBar { min-width: 0; width: calc(100vw - 32px - 170px); max-width: 230px; padding: 5px 8px; }
   #stageBar .sid { font-size: 17px; }

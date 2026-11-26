@@ -5,7 +5,7 @@ import { BUILD, ENHANCE, GUILD, HOME_KEY, MARKET, PARTY, pctText } from '../../s
 import type { BuildStat, ClassId, GearSlot, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
-import { heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
+import { bannerName, heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
 import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
@@ -130,6 +130,14 @@ export const enBase = (n: ContentNames): EngineLocale => {
       sweepInfo: 'Finish a place you already cleared instantly, without fighting, for its normal reward (not the first-clear reward).',
       sweepResult: 'Sweep result',
       sweepDungeons: 'Dungeon sweep',
+      gachaPickup: 'Rate-up',
+      gachaRatesPickup: 'Rate-up and 50/50',
+      gachaRatesSure: 'Rates while guaranteed (after losing a 50/50)',
+      gachaRatesEffective: 'Effective rates (long-run average of single summons, including pity and 50/50)',
+      gachaAlways: 'Permanent',
+      gachaSelectHead: 'Hero selector',
+      gachaSelectBtn: 'Pick',
+      gachaNoOpen: 'No banner is open right now.',
       tabDevice: 'Device',
       deviceMoveHead: 'Move to another device',
       deviceMoveInfo: 'Get a code and enter it in the game on your other device to move this character there. Afterwards, this device can no longer open this character. A code works once, for 10 minutes. Anyone you share it with can take your character, so keep it to yourself.',
@@ -450,6 +458,13 @@ export const enBase = (n: ContentNames): EngineLocale => {
       sweepGot: (what, n) => `${grantWhat(what)} +${num(n)}`,
       sweepGear: (n) => count(n, 'gear piece'),
       sweepKeyCost: () => 'One key each',
+      gachaLeft: (min) => (min < 0 ? 'Permanent' : `${min >= 1440 ? `${Math.floor(min / 1440)}d ` : ''}${min >= 60 ? `${Math.floor((min % 1440) / 60)}h ` : ''}${min % 60}m left`),
+      gachaPickupRule: (hero, rarity, share) => `Rate-up: when a ${rarity} hero comes, it is ${hero} with ${share} probability (the ${rarity} rate itself is unchanged).`,
+      gachaFiftyRule: (hero, rarity) => `50/50: if a ${rarity} hero comes and it is not ${hero}, the next ${rarity} hero is guaranteed to be ${hero}. Getting ${hero} turns the guarantee off again.`,
+      gachaSureNow: (on, hero) => (on ? `Now: guaranteed (next rate-up rarity is ${hero})` : 'Now: not guaranteed (50/50)'),
+      gachaGroup: (names) => `Shared pity: pity count and guarantee are shared with ${names}.`,
+      gachaEffective: (hero, pct) => `${hero} effective rate ${pct}`,
+      gachaSelectHave: (item, n) => `${grantWhat(item)} ×${num(n)} · use one to get a hero of your choice below (shards if you already have it).`,
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -600,6 +615,8 @@ export const enBase = (n: ContentNames): EngineLocale => {
       sweepLocked: (a) => `${a[0] === 'stage' ? `Stage ${a[1]}` : dungeonName(a[1])} can't be swept yet. Clear it first.`,
       itemShort: (a) => `Not enough ${grantWhat(a[0])} (need ${num(a[1])}, have ${num(a[2])}).`,
       stageAway: (a) => `While you were away: ${a[0]} → ${a[1]} (${count(a[2], 'stage')} cleared)`,
+      bannerClosed: (a) => `${bannerName(a[0])} is not open right now.`,
+      heroPicked: (a) => (Number(a[1]) ? `${heroName(a[0])}: already owned, +${num(a[2])} shards` : `You got ${heroName(a[0])}!`),
     },
     nameA: n.nameA,
     nameB: n.nameB,

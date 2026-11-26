@@ -3,7 +3,7 @@
 // 서버(engine/server/game/systems/roster.ts, gacha.ts, squad.ts, stages.ts)와 화면(engine/client/hud/collect*.ts)이 함께 읽는다:
 // 영웅의 능력치·전투력, 뽑기의 확률(공개하는 확률표와 서버가 뽑는 확률이 이 한 곳의 셈이다), 단계의 목록은 여기의 함수로만 구한다.
 // 줄 위에서 영웅은 HEROES의 id로, 등급은 HERO_RARITIES의 번호(0부터, 클수록 귀하다)로, 단계는 '장-단계'의 id('1-3')로 오간다.
-import { BANNERS, CHAPTERS, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES, STAGE_RULES } from '../content';
+import { BANNERS, CHAPTERS, GACHA_RULES, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES, STAGE_RULES } from '../content';
 import type { Reward } from './growth';
 
 /** 뽑기와 영웅 레벨 업에 치르는 재화: 지갑이 다루는 것 가운데 사고팔 수 없는 경험치를 뺀 둘 (현금은 없다: 틀에 결제가 없다) */
@@ -88,12 +88,25 @@ export interface BannerDef {
   pity?: { after: number; rarity: number };
   /** 10번 뽑기의 보장: 앞의 아홉에 이 등급 이상이 없으면 열째는 이 등급 이상의 칸에서만 뽑는다 */
   tenAtLeast?: number;
+  /**
+   * 픽업(확률 업): 이 영웅이 자기 등급의 확률 가운데 share(0~1)만큼을 갖는다. 그 등급의 나머지 영웅은 남은 몫을 자기 무게의 비율로 나눈다.
+   * 등급의 확률(그 등급 영웅들의 무게의 합)은 그대로다. 없으면 무게 그대로 (예전과 같다)
+   */
+  pickup?: { hero: string; share: number };
+  /** 반반(50/50): 픽업의 등급이 나왔는데 픽업이 아니면, 다음에 그 등급이 나올 때는 픽업이 확정이다 (확정은 천장 무리 pityGroup과 함께 이어진다) */
+  fiftyFifty?: boolean;
+  /** 천장을 함께 세는 무리: 같은 이름의 배너들이 천장의 셈과 반반의 확정을 함께 쓴다 (기간 한정 배너가 바뀌어도 이어진다). 무리의 배너들은 pity가 같아야 한다 */
+  pityGroup?: string;
+  /** 열리는 때와 닫히는 때 (서버 시계의 ms, Date.getTime()). 이 사이에만 화면에 보이고 뽑을 수 있다. 없으면 늘 열려 있다 */
+  start?: number; end?: number;
 }
 
 /** 뽑기의 규칙 */
 export interface GachaRules {
   /** 사람마다 남기는 뽑기 기록의 수 (최근 것부터) */
   history: number;
+  /** 영웅 선택권: 아이템 id(가방의 'token' 같은 것) → 고를 수 있는 영웅들. 선택권 하나를 쓰고 그 가운데 하나를 얻는다 (items 모듈이 있어야 한다). 없으면 선택권이 없다 */
+  select?: Readonly<Record<string, readonly string[]>>;
 }
 
 /** 소탕의 값: 게임 안의 재화(cur) 또는 가방의 아이템(item, 소탕권) n개. 한 번 소탕할 때마다 */
@@ -181,6 +194,10 @@ export const rarityDef = (r: number): HeroRarityDef => HERO_RARITIES[r] ?? HERO_
 export const BANNER_TABLE: Readonly<Record<string, BannerDef>> = BANNERS;
 export const BANNER_IDS: readonly string[] = Object.keys(BANNERS);
 export const isBannerId = (v: unknown): v is string => typeof v === 'string' && Object.hasOwn(BANNERS, v);
+/** 뽑기의 규칙을 넓은 타입으로 본 것 (게임이 적은 GACHA_RULES에 선택 칸 select가 없어도 읽힌다) */
+export const GACHA_RULE_VIEW: GachaRules = GACHA_RULES;
+/** 선택권의 표: 아이템 id → 고를 수 있는 영웅들 (없는 영웅은 뺀다) */
+export const SELECT_TICKETS: Readonly<Record<string, readonly string[]>> = Object.fromEntries(Object.entries(GACHA_RULE_VIEW.select ?? {}).map(([k, v]) => [k, v.filter((h) => isHeroId(h))]));
 
 /** 영웅 하나의 지금 능력치: 레벨과 별로 (서버의 영웅 엔티티와 화면의 카드가 같은 셈을 쓴다) */
 export function heroStats(id: string, lv: number, stars: number): { atk: number; hp: number } {
@@ -220,6 +237,75 @@ export function pickOdds(odds: readonly Odds[], r: number): Odds | undefined {
   for (const o of odds) { acc += o.p; if (r < acc) return o; }
   return odds[odds.length - 1];
 }
+// ---------- 픽업·반반·천장 무리·기간 (공개 확률표와 서버가 같은 셈) ----------
+/**
+ * 한 번 뽑을 때의 확률표: 이 함수 하나가 서버의 뽑기와 화면의 공개 확률표를 함께 만든다 (둘이 어긋날 수 없다).
+ * floor: 이 등급 이상의 칸에서만 (천장·10번 보장. -1이면 모두). sure: 반반의 확정 (픽업의 등급이 나오면 픽업).
+ * 픽업이 있으면 픽업의 등급의 확률(합)은 그대로 두고, 그 안에서 픽업이 share(확정이면 전부)를, 나머지 영웅이 남은 몫을 무게의 비율로 나눈다.
+ * 픽업이 없는 배너는 poolOdds와 같다 (예전과 글자까지 같은 확률)
+ */
+export function pullOdds(b: BannerDef, floor = -1, sure = false): Odds[] {
+  const base = poolOdds(b.pool, floor), pk = b.pickup;
+  const me = pk ? base.find((o) => o.hero === pk.hero) : undefined;
+  if (!pk || !me) return base;
+  const same = base.filter((o) => o.rarity === me.rarity);
+  const mass = same.reduce((s, o) => s + o.p, 0), others = mass - me.p;
+  const share = sure || others <= 0 ? 1 : Math.max(0, Math.min(1, pk.share));
+  return base.map((o) => (o.rarity !== me.rarity ? o : o === me ? { ...o, p: mass * share } : { ...o, p: others > 0 ? (o.p / others) * mass * (1 - share) : 0 }));
+}
+/** 배너가 천장을 세는 열쇠: 무리(pityGroup)가 있으면 'group:이름', 없으면 배너 id (예전 저장과 같은 열쇠) */
+export const pityKey = (id: string): string => { const g = BANNER_TABLE[id]?.pityGroup; return g ? `group:${g}` : id; };
+/** 같은 천장 무리의 배너들 (무리가 없으면 자기 하나) */
+export const pityMates = (id: string): string[] => { const k = pityKey(id); return BANNER_IDS.filter((x) => pityKey(x) === k); };
+/** 그 시각(서버 시계의 ms)에 열려 있는 배너인가 */
+export const bannerOpen = (b: BannerDef, now: number): boolean => (b.start === undefined || now >= b.start) && (b.end === undefined || now < b.end);
+/** 기간이 있는 배너가 하나라도 있는가 (없으면 개인 상태에 열린 배너의 칸이 생기지 않는다) */
+export const hasTimedBanners = (): boolean => Object.values(BANNER_TABLE).some((b) => b.start !== undefined || b.end !== undefined);
+/** 반반을 쓰는 배너가 하나라도 있는가 (없으면 확정의 칸이 생기지 않는다) */
+export const hasFiftyFifty = (): boolean => Object.values(BANNER_TABLE).some((b) => !!b.fiftyFifty && !!b.pickup);
+/** 한 번 뽑은 뒤의 반반 확정: 픽업의 등급이 나왔으면 픽업이 아니었을 때 확정이 되고 픽업이면 풀린다. 다른 등급이면 그대로 */
+export function nextSure(b: BannerDef, got: { hero: string; rarity: number }, sure: boolean): boolean {
+  if (!b.fiftyFifty || !b.pickup || !isHeroId(b.pickup.hero)) return sure;
+  return got.rarity === heroDef(b.pickup.hero).rarity ? got.hero !== b.pickup.hero : sure;
+}
+/**
+ * 1번 뽑기를 오래 되풀이할 때 영웅마다 실제로 나오는 비율 (천장과 반반까지 넣은 '실효 확률'): 천장의 셈과 확정을 상태로 한 마르코프 사슬의 정상 분포로 셈한다.
+ * 이 셈도 pullOdds만 쓴다. 천장도 반반도 없는 배너는 평소의 확률과 같다
+ */
+export function effectiveOdds(b: BannerDef): Odds[] {
+  const after = b.pity ? Math.max(1, b.pity.after) : 1, fifty = !!b.fiftyFifty && !!b.pickup;
+  const S = after * (fifty ? 2 : 1), idx = (c: number, s: boolean) => c * (fifty ? 2 : 1) + (s ? 1 : 0);
+  const tables: Odds[][] = [];
+  for (let c = 0; c < after; c++) for (const s of fifty ? [false, true] : [false]) tables[idx(c, s)] = pullOdds(b, b.pity && c + 1 >= b.pity.after ? b.pity.rarity : -1, s);
+  // 정상 분포 π: π(P − I) = 0, Σπ = 1. 상태가 많아야 천장 × 2개라 가우스 소거로 바로 푼다 (A πᵀ = e, A = (P − I)ᵀ의 마지막 줄을 1로)
+  const A = Array.from({ length: S }, () => new Float64Array(S + 1));
+  for (let c = 0; c < after; c++) for (const s of fifty ? [false, true] : [false]) {
+    const i = idx(c, s);
+    A[i][i] -= 1;
+    for (const o of tables[i]) {
+      const c2 = b.pity && o.rarity >= b.pity.rarity ? 0 : Math.min(after - 1, c + 1);
+      A[idx(c2, fifty ? nextSure(b, o, s) : false)][i] += o.p;
+    }
+  }
+  for (let j = 0; j <= S; j++) A[S - 1][j] = 1;
+  for (let col = 0; col < S; col++) {
+    let piv = col;
+    for (let r = col + 1; r < S; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
+    [A[col], A[piv]] = [A[piv], A[col]];
+    const d = A[col][col];
+    if (Math.abs(d) < 1e-300) continue;
+    for (let r = 0; r < S; r++) {
+      if (r === col || !A[r][col]) continue;
+      const f = A[r][col] / d;
+      for (let j = col; j <= S; j++) A[r][j] -= f * A[col][j];
+    }
+  }
+  const pi = A.map((r, i) => (Math.abs(r[i]) < 1e-300 ? 0 : Math.max(0, r[S] / r[i])));
+  const out = new Map<string, Odds>();
+  for (let i = 0; i < S; i++) for (const o of tables[i] ?? []) { const x = out.get(o.hero) ?? { ...o, p: 0 }; x.p += pi[i] * o.p; out.set(o.hero, x); }
+  return [...out.values()];
+}
+
 /** 확률을 백분율 글로: 소수 넷째 자리까지, 끝의 0은 지운다 (0.7500% → 0.75%) */
 export const pctText = (p: number): string => `${(Math.round(p * 1e6) / 1e4).toFixed(4).replace(/\.?0+$/, '')}%`;
 
@@ -281,7 +367,13 @@ export type HeroesMe = Record<string, [lv: number, stars: number, shards: number
 /** 뽑기 기록 한 줄: 시각(ms), 배너, 영웅, 등급, 천장·10번 보장으로 나온 것인가 */
 export interface PullLog { at: number; b: string; h: string; r: number; pity: boolean }
 /** 개인 상태 'gacha': 배너마다 천장의 셈(그 등급 이상이 나오지 않은 뽑기의 수)과 최근 기록 (새 것이 앞) */
-export interface GachaMe { pity: Record<string, number>; log: PullLog[] }
+export interface GachaMe {
+  pity: Record<string, number>; log: PullLog[];
+  /** 기간이 있는 배너가 있는 게임만: 지금 열린 배너 → 닫히기까지 남은 분(끝이 없으면 -1). 여기에 없는 배너는 닫혀 있다 */
+  open?: Record<string, number>;
+  /** 반반을 쓰는 게임만: 천장의 열쇠(pityKey) → 1이면 다음 픽업 등급은 픽업 확정 */
+  sure?: Record<string, 1>;
+}
 /** 뽑기의 결과 하나 (메시지 gacha): 영웅, 등급, 이미 가진 것이라 조각이 되었나와 받은 조각, 천장·보장으로 나왔나 */
 export interface PullGot { h: string; r: number; dup: boolean; n: number; pity: boolean }
 /** 개인 상태 'squad': 편성한 영웅(자리의 차례)과 그 전투력의 합 */

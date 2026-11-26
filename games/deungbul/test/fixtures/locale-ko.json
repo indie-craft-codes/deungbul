@@ -356,7 +356,42 @@
   "조각 +1",
   "조각 +2"
  ],
+ "fmt.gachaEffective": [
+  "1942e0e24b35b8ec",
+  "undefined의 실효 확률 undefined",
+  "0의 실효 확률 undefined",
+  "1의 실효 확률 undefined",
+  "2의 실효 확률 undefined"
+ ],
+ "fmt.gachaFiftyRule": [
+  "13f0457f805c35c1",
+  "반반: undefined 영웅이 나왔는데 undefined이(가) 아니면, 다음에 나오는 undefined 영웅은 undefined 확정입니다. undefined이(가) 나오면 확정은 다시 꺼집니다.",
+  "반반: undefined 영웅이 나왔는데 0이(가) 아니면, 다음에 나오는 undefined 영웅은 0 확정입니다. 0이(가) 나오면 확정은 다시 꺼집니다.",
+  "반반: undefined 영웅이 나왔는데 1이(가) 아니면, 다음에 나오는 undefined 영웅은 1 확정입니다. 1이(가) 나오면 확정은 다시 꺼집니다.",
+  "반반: undefined 영웅이 나왔는데 2이(가) 아니면, 다음에 나오는 undefined 영웅은 2 확정입니다. 2이(가) 나오면 확정은 다시 꺼집니다."
+ ],
+ "fmt.gachaGroup": [
+  "49277d5989c35ebc",
+  "천장 공유: undefined와(과) 천장의 셈과 확정을 함께 씁니다.",
+  "천장 공유: 0와(과) 천장의 셈과 확정을 함께 씁니다.",
+  "천장 공유: 1와(과) 천장의 셈과 확정을 함께 씁니다.",
+  "천장 공유: 2와(과) 천장의 셈과 확정을 함께 씁니다."
+ ],
+ "fmt.gachaLeft": [
+  "2406f66e718eca16",
+  "남은 시간 NaN분",
+  "남은 시간 0분",
+  "남은 시간 1분",
+  "남은 시간 2분"
+ ],
  "fmt.gachaNew": "새 영웅!",
+ "fmt.gachaPickupRule": [
+  "9f44ad7cc61ee5d7",
+  "픽업: undefined 영웅이 나오면 undefined의 확률로 undefined입니다 (undefined의 확률은 그대로).",
+  "픽업: undefined 영웅이 나오면 undefined의 확률로 0입니다 (undefined의 확률은 그대로).",
+  "픽업: undefined 영웅이 나오면 undefined의 확률로 1입니다 (undefined의 확률은 그대로).",
+  "픽업: undefined 영웅이 나오면 undefined의 확률로 2입니다 (undefined의 확률은 그대로)."
+ ],
  "fmt.gachaPity": [
   "5e859576053de137",
   "천장: undefined 이상이 NaN번 이어서 나오지 않으면 undefined번째 뽑기는 undefined 이상에서만 나옵니다. 지금 undefined번 이어서 나오지 않음 (천장까지 NaN번).",
@@ -370,6 +405,20 @@
   "0 이상의 영웅끼리의 비율은 평소와 같습니다.",
   "1 이상의 영웅끼리의 비율은 평소와 같습니다.",
   "2 이상의 영웅끼리의 비율은 평소와 같습니다."
+ ],
+ "fmt.gachaSelectHave": [
+  "b35ef3c9f224461a",
+  "불씨 NaN개 · 하나를 쓰고 아래 영웅 가운데 하나를 얻습니다 (가진 영웅이면 조각).",
+  "불씨 0개 · 하나를 쓰고 아래 영웅 가운데 하나를 얻습니다 (가진 영웅이면 조각).",
+  "불씨 1개 · 하나를 쓰고 아래 영웅 가운데 하나를 얻습니다 (가진 영웅이면 조각).",
+  "불씨 3개 · 하나를 쓰고 아래 영웅 가운데 하나를 얻습니다 (가진 영웅이면 조각)."
+ ],
+ "fmt.gachaSureNow": [
+  "1575a62d94442a0b",
+  "지금: 확정 꺼짐 (반반)",
+  "지금: 확정 켜짐 (다음 픽업 등급은 undefined)",
+  "지금: 확정 켜짐 (다음 픽업 등급은 1)",
+  "지금: 확정 켜짐 (다음 픽업 등급은 3)"
  ],
  "fmt.gachaTenRule": [
   "8c0b06c681094d38",
@@ -1310,6 +1359,13 @@
   "접속이 막혀 있습니다. 2분 뒤에 풀립니다.",
   "접속이 막혀 있습니다. 858일 뒤에 풀립니다."
  ],
+ "msg.bannerClosed": [
+  "9aa1ef7a26e201d5",
+  "undefined은(는) 지금 열려 있지 않습니다.",
+  "0은(는) 지금 열려 있지 않습니다.",
+  "1은(는) 지금 열려 있지 않습니다.",
+  "2은(는) 지금 열려 있지 않습니다."
+ ],
  "msg.bossDown": [
   "85e546b8c2e84e0c",
   "undefined이(가) 쓰러졌습니다.",
@@ -1574,6 +1630,13 @@
   "새 영웅 0!",
   "새 영웅 1!",
   "새 영웅 2!"
+ ],
+ "msg.heroPicked": [
+  "e65012a70d8a7cdc",
+  "undefined을(를) 얻었습니다!",
+  "0을(를) 얻었습니다!",
+  "1: 이미 있어 조각 +1",
+  "2: 이미 있어 조각 +4"
  ],
  "msg.heroShards": [
   "f34fc80b9914277c",
@@ -2129,19 +2192,27 @@
  "ui.equip": "끼기",
  "ui.forge": "브람의 대장간",
  "ui.full": "서버가 가득 찼습니다. 잠시 뒤에 다시 시도해 주세요.",
+ "ui.gachaAlways": "상시",
  "ui.gachaHistory": "최근 뽑기 기록",
  "ui.gachaNoCash": "모든 뽑기는 게임 안에서 얻는 재화로만 합니다. 현금 결제는 없습니다.",
  "ui.gachaNoHistory": "아직 뽑은 적이 없습니다.",
+ "ui.gachaNoOpen": "지금 열린 배너가 없습니다.",
  "ui.gachaOne": "1번 뽑기",
+ "ui.gachaPickup": "픽업",
  "ui.gachaPityMark": "천장",
  "ui.gachaRates": "확률 보기",
+ "ui.gachaRatesEffective": "실효 확률 (1번 뽑기를 오래 되풀이할 때의 평균: 천장과 반반을 넣은 것)",
  "ui.gachaRatesHead": "확률 공개",
  "ui.gachaRatesHero": "영웅별 확률",
  "ui.gachaRatesHide": "확률 닫기",
+ "ui.gachaRatesPickup": "픽업과 반반",
  "ui.gachaRatesPity": "천장에 닿은 뽑기의 확률",
  "ui.gachaRatesRarity": "등급별 확률",
+ "ui.gachaRatesSure": "확정일 때의 확률 (반반에서 진 다음)",
  "ui.gachaRatesTen": "10번 뽑기의 열째(보장)의 확률",
  "ui.gachaResult": "뽑기 결과",
+ "ui.gachaSelectBtn": "고르기",
+ "ui.gachaSelectHead": "영웅 선택권",
  "ui.gachaTen": "10번 뽑기",
  "ui.gateBanned": "이 캐릭터나 주소는 접속이 막혀 있습니다.",
  "ui.gateHandedOff": "이 캐릭터는 다른 기기로 옮겨 갔습니다. 다시 접속하면 이 기기에서는 새 캐릭터로 시작합니다.",
