@@ -40,6 +40,8 @@ export class Pitch {
     g.shared.push({ name: 'pitch', state: (): PitchState => this.state() });
     g.personal.push({ name: 'side', state: (p): MeState['side'] => this.side.get(p.id) ?? -1 });
     g.personal.push({ name: 'goals', state: (p): MeState['goals'] => this.goals.get(p.id) ?? 0 });
+    // 사람마다의 팀(-1: 아직 없음)을 그 사람의 엔티티에 실어 보낸다: 화면이 옷을 팀 색으로 칠한다 (client/pitch.ts의 setPlayerLook)
+    g.playerSync((p) => [this.side.get(p.id) ?? -1]);
     g.commands.set('team', (p, m) => this.join(p, m.side));
     g.commands.set('kick', (p) => this.kick(p));
     g.ticks.push((dt) => this.clock(dt));

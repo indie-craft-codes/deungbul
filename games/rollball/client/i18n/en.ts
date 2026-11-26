@@ -9,13 +9,15 @@ const team = (s: MsgArg) => TEAM[Number(s)] ?? '';
 export const enGame: GameLocale = {
   ui: {
     title: 'Rollball',
-    hint: keyHints(['Click ground/WASD: move', 'Run into the ball to push it', 'F: kick', 'H: back to our half', 'M: menu', 'N: map', 'Enter: chat']),
+    hint: keyHints(['Click ground/WASD: move', 'Run into the ball to push it', 'F: kick', 'V: whole pitch', 'H: back to our half', 'Wheel: zoom', 'M: menu', 'N: map', 'Enter: chat']),
+    mapLegend: '■ goals · white: ball and people',
     goingTown: 'Walking back to our half.',
     pickTitle: 'Pick a team',
     pickInfo: 'Push the ball with your body or kick it into the other goal. You cannot join the team with more players.',
     teamA: 'Ember',
     teamB: 'Tide',
     kick: 'Kick[[ (F)|]]',
+    overview: 'Pitch[[ (V)|]]',
     switchTeam: 'Switch team',
     phaseGoal: 'Goal!',
     ballArrow: 'Ball direction',

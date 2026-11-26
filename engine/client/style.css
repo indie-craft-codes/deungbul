@@ -438,7 +438,13 @@ html:lang(en) body { overflow-wrap: break-word; }
 #menuTabs button.dot.on::after { background: #b3261e; }
 /* 좁은 화면(폰 세로)에서는 넘치는 탭을 다음 줄로 내린다: 옆으로 밀어 넘기는 줄은 스크롤 막대가 없어 끝의 탭(영어의 'Device')이 잘린 채 보였고, 눌러도 제자리로 오지 않았다.
    한 줄에 다 들어가면(한국어) 전과 같다. 넓은 화면(PC)과 폰 가로는 그대로 한 줄 */
-@media (max-width: 720px) { #menuTabs { flex-wrap: wrap; } }
+@media (max-width: 720px) {
+  #menuTabs { flex-wrap: wrap; }
+  /* 줄이 넘쳐 마지막 탭('기기')만 다음 줄에 홀로 남으면 그 줄을 다 차지해 길게 늘어났다 (390px 폰의 영어 메뉴).
+     탭이 다섯 이상인(넘칠 수 있는) 메뉴에서는 탭이 6em보다 늘어나지 않는다: 홀로 남은 탭은 제 너비 남짓으로 서고,
+     한 줄에 다 드는 메뉴(한국어: 탭마다 3em 안팎)는 그 한도에 닿지 않아 그대로다. 글이 6em보다 긴 탭은 글의 너비를 지킨다(min-width) */
+  #menuTabs:has(> button:nth-child(5)) > button { min-width: max-content; max-width: 6em; }
+}
 #menuList { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; overscroll-behavior: contain; }
 #menuList > * { flex: none; }
 #menuList { padding-right: 3px; } /* 스크롤 막대가 단추에 붙지 않게 */

@@ -12,5 +12,5 @@ export default defineConfig({
   publicDir: false,
   define: { 'import.meta.env.VITE_DEV_PORT': JSON.stringify(process.env.PORT ?? '3007') },
   build: { outDir: resolve(repo, 'dist-rollball'), emptyOutDir: true },
-  server: { host: true, port: 5180, fs: { allow: [repo] } },
+  server: { host: true, port: 5192, fs: { allow: [repo] } },
 });

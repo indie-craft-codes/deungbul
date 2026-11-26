@@ -1,11 +1,12 @@
 // English, the engine's share. Must have the same shape as ko.ts (the EngineLocale type enforces it).
 // 이 게임의 문장과 내용의 이름은 games/deungbul/client/i18n/en.ts에 있다. 이 파일은 게임의 파일을 import하지 않고 게임의 낱말을 적지 않는다.
 import { AWAY } from '../../shared/auto';
-import { BUILD, ENHANCE, GUILD, MARKET, PARTY } from '../../shared/defs';
+import { BUILD, ENHANCE, GUILD, HOME_KEY, MARKET, PARTY } from '../../shared/defs';
 import type { BuildStat, ClassId, GearSlot, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
-import { moduleHints, type EngineLocale } from './ko';
+import { keyHints, moduleHints, type EngineLocale } from './ko';
+import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
 
@@ -87,7 +88,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       chatPlaceholder: '[[Press Enter to chat|Message]]',
       chatLabel: 'Chat message',
       stickLabel: 'Movement joystick',
-      hint: moduleHints(['Click or WASD: move', ['Click a monster: attack', 'combat'], ['1–3: skills', 'combat'], ['Q: potion', 'items'], ['R: auto-hunt', 'away'], ['B: bag', 'items'], 'M: menu', 'N: map', ['Tab: target', 'combat'], 'Enter: chat']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      hint: moduleHints(['Click or WASD: move', ['Click a monster: attack', 'combat'], ['1–3: skills', 'combat'], ['Q: potion', 'items'], ['R: auto-hunt', 'away'], ['H: back to start', HOME_KEY], ['B: bag', 'items'], 'M: menu', 'N: map', ['Tab: target', 'combat'], 'Enter: chat']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       attackNearest: 'Attack nearest',
       auto: 'Auto-hunt',
       bag: 'Bag',
@@ -115,6 +116,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       kindHunt: 'Hunting grounds',
       kindBoss: 'Bosses',
       kindOther: 'Other places',
+      mapLegend: keyHints(['centre: you', 'white: people', ...(anyModule('combat') ? ['red: monsters'] : []), ...(anyModule('party') ? ['blue: party'] : [])]),
       mapLegendDungeon: 'red ○ boss · blue party',
       bagPotions: 'Potions',
       bagMats: 'Crafting materials',

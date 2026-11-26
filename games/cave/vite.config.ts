@@ -12,7 +12,7 @@ export default defineConfig({
   base: './',
   publicDir: false,
   // 개발 서버의 화면이 붙을 게임 서버의 포트: server/main.ts의 기본 포트와 같아야 한다 (PORT를 주면 서버와 함께 따라간다)
-  define: { 'import.meta.env.VITE_DEV_PORT': JSON.stringify(process.env.PORT ?? '3017') },
+  define: { 'import.meta.env.VITE_DEV_PORT': JSON.stringify(process.env.PORT ?? '3003') },
   build: { outDir: resolve(repo, 'dist-cave'), emptyOutDir: true },
   // 틀의 코드가 뿌리(client/) 밖에 있으므로 저장소 뿌리까지 읽게 한다
   server: { host: true, port: 5180, fs: { allow: [repo] } },

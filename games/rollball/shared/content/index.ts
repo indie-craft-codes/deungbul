@@ -9,6 +9,10 @@ export const MODULES: readonly ModuleId[] = [];
 export const GUEST_NAME = 'Roller';
 /** 경기장 전체(48m)가 한 화면의 시야에 들어오게 넓히고, 공이 부드럽게 보이게 틱마다 보낸다 */
 export const NET = { tickMs: 50, snapEvery: 1, aoi: 60, aoiLeave: 64 };
+/**
+ * 카메라: 48m 경기장을 넓게 보게 틀의 기본(배율 1, 0.6~1.15)보다 멀리. 비추는 곳(나와 공 사이, 경기장 전체)은 화면이 정한다 (client/pitch.ts의 setCameraAim)
+ */
+export const CAMERA = { dist: 46, zoom: 1.5, zoomMin: 0.8, zoomMax: 2.4, gate: 1.6 };
 /** 경기장은 하나: 채널(층)을 나누지 않는다 */
 export const CHANNEL = { count: 1, soft: 30, hard: 50, switchCdS: 10, calmS: 5, tellS: 10, tellBusyS: 2 };
 

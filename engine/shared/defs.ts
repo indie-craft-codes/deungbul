@@ -15,7 +15,7 @@ export * from './defs/social';
 
 export {
   // 핵심
-  MAP, MODULES, NET,
+  MAP, MODULES, NET, CAMERA, HOME_KEY,
   // 직업과 기술
   CLASSES, DEFAULT_CLASS, SKILL_DEFS, SKILL_SLOTS, HP_PER_LEVEL, ATTACK_CD, COMBAT, SLOW_FACTOR, REJOIN_KEEP_S, GUEST_NAME,
   // 몬스터

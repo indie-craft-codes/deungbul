@@ -40,7 +40,8 @@ export const look: Look = {
 };
 
 export function initScene(): void {
-  view.setMood({ sky: 0xbfe3f5, hemi: 2.0, sun: 2.3, fogNear: 60, fogFar: 140 });
+  // 안개는 카메라가 멀어도(배율 2.4면 약 110m) 경기장이 흐려지지 않게 멀리
+  view.setMood({ sky: 0xbfe3f5, hemi: 2.0, sun: 2.3, fogNear: 120, fogFar: 240 });
   setMapPaint((b) => {
     b.quad(-W - 4, -H - 4, W + 4, H + 4, '#3f6a34');
     b.quad(-W, -H, W, H, '#5fa64e');

@@ -82,7 +82,8 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
   const stateOf = (id: number) => states.filter((st) => st[0] === id).at(-1);
   const inSight = BALL_SPOTS.filter((b) => Math.hypot(b.x - MAP.spawn.x, b.z - MAP.spawn.z) < AOI - 6).length;
   check(welcome.id > 0 && seenBalls.length === inSight && seenBalls.every((b) => b.type === 'gold'), `접속하면 시야(${AOI}m) 안의 공 ${inSight}개만 종류 'ball'로 들어온다 (먼 공은 오지 않는다)`);
-  check(seenBalls.every((b) => { const st = stateOf(b.id); return st?.length === 8 && st[6] === 1 && st[7] === 0; }), '공의 상태에는 게임이 정한 값 둘(빛남 1, 주운 사람 0)이 붙어 온다');
+  check(seenBalls.every((b) => { const st = stateOf(b.id); return st?.length === 7 && st[5] === 1 && st[6] === 0; }), '공의 상태에는 게임이 정한 값 둘(빛남 1, 주운 사람 0)이 붙어 온다 (전투가 없어 체력 칸 없이 [id, x, z, 방향, 이동, …값])');
+  check(entered.every((e) => !('hp' in e) && !('maxHp' in e) && !('w' in e) && !('c' in e)), '전투·아이템·직업이 없는 게임: 들어오는 엔티티에 체력·무기·직업 칸이 없다');
   check(!got.some((m) => m.t === 'stat' || m.t === 'meta'), '핵심만의 서버는 성장 수치(stat)와 장비·우편(meta) 메시지를 보내지 않는다');
 
   // 움직인다: 첫 공 곁으로
@@ -96,7 +97,7 @@ const keyOf = (token: string) => createHash('sha256').update(token).digest('hex'
   const ball = seenBalls.find((b) => Math.hypot(b.x - target.x, b.z - target.z) < 0.5)!;
   const before = got.length;
   send({ t: 'pick' });
-  const picked = await until(() => got.slice(before).some((m) => m.t === 'snap' && m.ents.some((st) => st[0] === ball.id && st[7] === welcome.id && st[6] === 0)));
+  const picked = await until(() => got.slice(before).some((m) => m.t === 'snap' && m.ents.some((st) => st[0] === ball.id && st[6] === welcome.id && st[5] === 0)));
   check(picked, '공을 주우면 그 공의 값(빛남 0, 주운 사람 = 나)이 바뀌어 다시 온다');
 
   // 고르지 않은 모듈의 명령: 무엇을 보내도 응답도 상태 변화도 없다

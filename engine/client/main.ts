@@ -8,8 +8,8 @@
 // 틀의 스타일: 게임의 index.html이 틀의 폴더를 가리키지 않아도 되게 여기서 읽는다. 맨 먼저 읽어야 게임의 스타일(틀의 것을 덮어쓴다)보다 앞에 놓인다
 import './style.css';
 import { PROTOCOL } from '../shared/protocol';
-import { SKILL_SLOTS } from '../shared/defs';
-import { MAP } from '../shared/world';
+import { HOME_KEY, SKILL_SLOTS } from '../shared/defs';
+import { bindCameraView, cameraAim } from './camera';
 import { boundKeys, dispatch, onMsg, runFrame, runSlow } from './bus';
 import { initModules } from './modules';
 import { steer } from './actions';
@@ -116,6 +116,7 @@ function resize(): void {
   view.resize(w, h);
 }
 
+const NO_SHAKE = { x: 0, z: 0 };
 let last = performance.now();
 function frame(now: number): void {
   requestAnimationFrame(frame);
@@ -126,9 +127,9 @@ function frame(now: number): void {
   steer(a.x, a.z, now);
   updateEntities(dt, now);
 
-  // 카메라: 접속 전에는 처음 서는 곳(MAP.spawn)의 둘레를 천천히 둘러본다
-  if (S.me) { const sh = shakeOffset(); view.follow(S.me.x + sh.x, S.me.z + sh.z, S.zoom); }
-  else view.follow(MAP.spawn.x + Math.cos(now / 9000) * 6, MAP.spawn.z + Math.sin(now / 9000) * 6, 1.05);
+  // 카메라: 접속 전에는 처음 서는 곳(MAP.spawn)의 둘레를 천천히 둘러보고, 들어온 뒤에는 나를 (게임이 setCameraAim으로 정했으면 그곳을) 비춘다
+  const cam = cameraAim(now, S.me ? shakeOffset() : NO_SHAKE);
+  view.follow(cam.x, cam.z, cam.dist);
 
   placeTags(now);
   runFrame(now, dt); // 내 정보 창의 막대, 물약 대기 표시, 게임의 모듈 (등록한 차례대로)
@@ -151,6 +152,7 @@ export interface ClientOptions {
  */
 export function startClient(opts: ClientOptions = {}): void {
   startApp(opts.look);
+  bindCameraView(view);
   applyDom();
   onLangChange(relabel);
   initMe();
@@ -164,7 +166,7 @@ export function startClient(opts: ClientOptions = {}): void {
   spawnMerchant();
   initInput();
   // 틀이 단 단축키가 표(keys.ts)와 같은가: 다르면 표를 고치라고 알린다 (화면은 그대로 돈다)
-  const keyGap = keyDiff(boundKeys(), keysFor(hasModule, SKILL_SLOTS));
+  const keyGap = keyDiff(boundKeys(), keysFor(hasModule, SKILL_SLOTS, HOME_KEY));
   if (keyGap.missing.length || keyGap.extra.length) console.warn(`[keys] 틀의 단축키가 engine/client/keys.ts의 표와 다릅니다: 표에만 있는 것 ${keyGap.missing.join(',') || '없음'}, 표에 없는 것 ${keyGap.extra.join(',') || '없음'}`);
 
   initNet({

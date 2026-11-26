@@ -18,22 +18,33 @@ const lastState = new WeakMap<Ent, string>();
 export interface Frame {
   /** 가까운 칸만 훑어서 주변 엔티티를 찾기 위한 격자 */
   grid: Map<number, Ent[]>;
-  /** EntState를 JSON으로 만든 것: [id, x, z, 방향, 이동 중, 체력, …게임의 값] */
+  /** EntState를 JSON으로 만든 것: [id, x, z, 방향, 이동 중, 체력(전투가 있는 게임만), …게임의 값] */
   state: Map<number, string>;
+  /** 엔티티마다 게임의 값만 (',값,값' 꼴): 본인에게 보내는 you의 끝에 붙인다 (플레이어의 playerSync) */
+  more: Map<number, string>;
   changed: Set<number>;
+  fields: Fields;
 }
 
-/** syncOf: 그 엔티티의 종류가 실어 보내는 게임의 값 (게임이 등록한 종류의 sync: engine/server/game/game.ts의 KindDef). 없으면 칸을 더하지 않는다 */
-export function buildFrame(ents: Iterable<Ent>, syncOf: (e: Ent) => readonly number[] | undefined = () => undefined): Frame {
-  const frame: Frame = { grid: new Map(), state: new Map(), changed: new Set() };
+/**
+ * 고르지 않은 모듈의 칸을 줄 위에서 뺀다 (모두 켜진 게임은 예전과 바이트까지 같다).
+ * hp: 엔티티 상태 줄의 체력 칸과 EnterInfo의 hp·maxHp (combat). weapon: EnterInfo의 w (items). cls: EnterInfo의 c (classes)
+ */
+export interface Fields { hp: boolean; weapon: boolean; cls: boolean }
+const ALL: Fields = { hp: true, weapon: true, cls: true };
+
+/** syncOf: 그 엔티티가 실어 보내는 게임의 값 (게임이 등록한 종류의 sync, 플레이어는 g.playerSync: engine/server/game/game.ts). 없으면 칸을 더하지 않는다 */
+export function buildFrame(ents: Iterable<Ent>, syncOf: (e: Ent) => readonly number[] | null | undefined = () => undefined, fields: Fields = ALL): Frame {
+  const frame: Frame = { grid: new Map(), state: new Map(), more: new Map(), changed: new Set(), fields };
   for (const e of ents) {
     if (e.dead) continue;
     const vals = syncOf(e);
     let more = '';
     if (vals) for (const v of vals) more += ',' + (typeof v === 'number' && Number.isFinite(v) ? r2(v) : 0);
-    const s = `[${e.id},${r2(e.x)},${r2(e.z)},${r2(e.face)},${e.moving ? 1 : 0},${Math.ceil(e.hp)}${more}]`;
+    const s = `[${e.id},${r2(e.x)},${r2(e.z)},${r2(e.face)},${e.moving ? 1 : 0}${fields.hp ? `,${Math.ceil(e.hp)}` : ''}${more}]`;
     if (lastState.get(e) !== s) { frame.changed.add(e.id); lastState.set(e, s); }
     frame.state.set(e.id, s);
+    if (more) frame.more.set(e.id, more);
     const k = cellKey(cellOf(e.x), cellOf(e.z));
     const list = frame.grid.get(k);
     if (list) list.push(e); else frame.grid.set(k, [e]);
@@ -62,7 +73,9 @@ export function snapshotFor(me: Ent, known: Set<number>, frame: Frame, events: r
         if (d > (was ? AOI_LEAVE : AOI)) continue;
         seen.add(e.id);
         if (!was) {
-          const info: EnterInfo = { id: e.id, kind: e.kind, type: e.type, name: e.name, w: e.weapon, a: e.armor || undefined, c: e.cls, x: r2(e.x), z: r2(e.z), face: r2(e.face), hp: Math.ceil(e.hp), maxHp: e.maxHp };
+          // 칸의 차례가 줄 위의 차례다 (undefined인 칸은 JSON에서 빠진다): 모듈을 다 고른 게임은 예전과 같은 글자
+          const f = frame.fields;
+          const info: EnterInfo = { id: e.id, kind: e.kind, type: e.type, name: e.name, w: f.weapon ? e.weapon : undefined, a: e.armor || undefined, c: f.cls ? e.cls : undefined, x: r2(e.x), z: r2(e.z), face: r2(e.face), hp: f.hp ? Math.ceil(e.hp) : undefined, maxHp: f.hp ? e.maxHp : undefined };
           if (e.swarm) info.r = 1; // 줄 위의 칸 이름은 그대로 r (몰려온 적)
           if (e.guild) info.g = e.guild;
           enter.push(info);
@@ -78,7 +91,8 @@ export function snapshotFor(me: Ent, known: Set<number>, frame: Frame, events: r
   const sees = (id: number) => id === me.id || seen.has(id) || known.has(id);
   const ev = events.length ? events.filter((e) => (e[0] === 'h' ? sees(e[1]) || sees(e[2]) : sees(e[1]))) : [];
 
-  let json = `{"t":"snap","n":${online},"you":[${r2(me.x)},${r2(me.z)},${me.moving ? 1 : 0},${Math.ceil(me.hp)},${me.targetId}]`;
+  // you: 내 상태. 게임이 플레이어에게 실어 보내는 값(playerSync)이 있으면 끝에 붙는다
+  let json = `{"t":"snap","n":${online},"you":[${r2(me.x)},${r2(me.z)},${me.moving ? 1 : 0},${Math.ceil(me.hp)},${me.targetId}${frame.more.get(me.id) ?? ''}]`;
   if (enter.length) json += `,"enter":${JSON.stringify(enter)}`;
   if (leave.length) json += `,"leave":[${leave.join(',')}]`;
   json += `,"ents":[${ents.join(',')}]`;

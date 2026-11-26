@@ -8,6 +8,10 @@ import type { ClientMsg, ServerMsg } from '../shared/protocol';
 export interface Peer {
   ws: WebSocket; id: number; you: [number, number, 0 | 1];
   seen: Map<number, { name: string; x: number; z: number }>;
+  /** 마지막 스냅샷의 you 전체 ([x, z, 이동 중, 체력, 대상, …g.playerSync의 값]) */
+  youRaw: number[];
+  /** 시야 안 엔티티마다 마지막으로 받은 상태 줄 (EntState: 전투가 있는 게임은 [id, x, z, 방향, 이동, 체력, …값], 없으면 체력 칸이 없다) */
+  lines: Map<number, number[]>;
   mons: Map<number, string>; hits: number; sparks: number; cds: number[];
   name: string; lv: number;
   sys: string[]; chat: string[];
@@ -19,13 +23,20 @@ export interface Peer {
 }
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-let failed = 0;
+let failed = 0, passed = 0;
 /** 지금까지 실패한 검사의 수 */
 export const failures = (): number => failed;
+/** 지금까지 통과한 검사의 수 */
+export const passes = (): number => passed;
 export function check(ok: boolean, what: string): void {
   console.log(`${ok ? '통과' : '실패'}  ${what}`);
-  if (!ok) failed++;
+  if (ok) passed++; else failed++;
 }
+// npm test(test/all.ts)가 따로 된 프로세스로 돌릴 때: 끝날 때 검사의 수를 그 파일에 적어 모은 쪽이 합친다.
+// 이 프로세스가 다시 띄우는 자식(fx/crash.ts 같은 것)이 같은 파일을 덮지 않게 환경 변수는 읽자마자 지운다
+const reportTo = process.env.TEST_REPORT;
+delete process.env.TEST_REPORT;
+if (reportTo) process.on('exit', () => { try { fs.writeFileSync(reportTo, JSON.stringify({ pass: passed, fail: failed })); } catch { /* 모으는 쪽이 '결과 없음'으로 센다 */ } });
 /**
  * cond가 참이 될 때까지 기다린다 (25ms마다 본다). 참이 되면 곧바로 끝나므로 기한은 넉넉하게: 기본 10초.
  * 기한은 '이보다 오래 걸리면 고장'의 뜻이지 기다리는 시간이 아니다. 컴퓨터가 바쁠 때(시험을 여럿 함께 돌릴 때)에도 넘지 않을 만큼 준다
@@ -64,7 +75,7 @@ export function connect(port: number, name?: string, token?: string, onMsg?: (m:
   return new Promise((done, fail) => {
     const ws = new WebSocket(`ws://127.0.0.1:${port}`);
     const p: Peer = {
-      ws, id: 0, you: [0, 0, 0], seen: new Map(), mons: new Map(), hits: 0, sparks: -1, cds: [], sys: [], chat: [], snaps: 0, pongs: new Set(),
+      ws, id: 0, you: [0, 0, 0], youRaw: [], lines: new Map(), seen: new Map(), mons: new Map(), hits: 0, sparks: -1, cds: [], sys: [], chat: [], snaps: 0, pongs: new Set(),
       name: '', lv: 0, send: (m) => ws.send(JSON.stringify(m)),
     };
     ws.on('error', fail);
@@ -76,9 +87,10 @@ export function connect(port: number, name?: string, token?: string, onMsg?: (m:
       else if (m.t === 'snap') {
         p.snaps++;
         p.you = [m.you[0], m.you[1], m.you[2]];
+        p.youRaw = [...m.you];
         for (const e of m.enter ?? []) { p.seen.set(e.id, { name: e.name, x: e.x, z: e.z }); if (e.kind === 'm') p.mons.set(e.id, e.type); }
-        for (const id of m.leave ?? []) { p.seen.delete(id); p.mons.delete(id); }
-        for (const [id, x, z] of m.ents) { const s = p.seen.get(id); if (s) { s.x = x; s.z = z; } }
+        for (const id of m.leave ?? []) { p.seen.delete(id); p.mons.delete(id); p.lines.delete(id); }
+        for (const st of m.ents) { const [id, x, z] = st; p.lines.set(id, st); const s = p.seen.get(id); if (s) { s.x = x; s.z = z; } }
         for (const e of m.ev ?? []) if (e[0] === 'h' && e[1] === p.id) p.hits++;
       } else if (m.t === 'stat') { p.sparks = m.sparks ?? p.sparks; p.lv = m.lv ?? p.lv; }
       else if (m.t === 'cd') p.cds.push(m.n);

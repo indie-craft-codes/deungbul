@@ -4,7 +4,9 @@ import { closeWorldMap, worldMapOpen } from './hud/worldmap';
 import { goToTown } from './actions';
 import { skillQueueTick, stop, tapAt } from './actions';
 import { hasModule } from './mods';
-import { $, clamp, view } from './app';
+import { $, view } from './app';
+import { clampZoom } from './camera';
+import { HOME_KEY } from '../shared/defs';
 import { blurChat, focusChat } from './hud/chat';
 import { S } from './state';
 
@@ -41,7 +43,7 @@ function initPointer(canvas: HTMLCanvasElement): void {
     const p = touches.get(ev.pointerId);
     if (!p) return;
     p.x = ev.clientX; p.y = ev.clientY;
-    if (pinch && touches.size >= 2) S.zoom = clamp((pinch.z * pinch.d) / pinchDist(), 0.6, 1.15);
+    if (pinch && touches.size >= 2) S.zoom = clampZoom((pinch.z * pinch.d) / pinchDist());
   });
   const end = (ev: PointerEvent) => {
     const p = touches.get(ev.pointerId);
@@ -53,7 +55,7 @@ function initPointer(canvas: HTMLCanvasElement): void {
   };
   canvas.addEventListener('pointerup', end);
   canvas.addEventListener('pointercancel', end);
-  canvas.addEventListener('wheel', (ev) => { ev.preventDefault(); S.zoom = clamp(S.zoom + (ev.deltaY > 0 ? 0.08 : -0.08), 0.6, 1.15); }, { passive: false });
+  canvas.addEventListener('wheel', (ev) => { ev.preventDefault(); S.zoom = clampZoom(S.zoom + (ev.deltaY > 0 ? 0.08 : -0.08)); }, { passive: false });
 }
 
 function initJoystick(): void {
@@ -93,7 +95,8 @@ function initKeyboard(): void {
 
 export function initInput(): void {
   if (hasModule('combat')) onFrame(skillQueueTick); // 사거리 밖이라 다가가며 기다리는 기술
-  bindKey('h', goToTown); // 집(rules.home, 없으면 처음 서는 곳)으로 걸어간다: 핵심
+  // 집(rules.home, 없으면 처음 서는 곳)으로 걸어간다: 핵심. 내용의 HOME_KEY가 false인 게임은 달지 않는다 (H가 비어 게임이 onKey로 쓸 수 있다)
+  if (HOME_KEY) bindKey('h', goToTown);
   initPointer(view.renderer.domElement);
   initJoystick();
   initKeyboard();

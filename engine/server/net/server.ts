@@ -528,9 +528,11 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     ws.on('error', () => ws.terminate());
   });
 
+  // 줄 위의 칸 가운데 고르지 않은 모듈의 것은 뺀다 (snapshot.ts의 Fields). 서버가 도는 동안 모듈은 바뀌지 않는다
+  const fields = { hp: game.has('combat'), weapon: game.has('items'), cls: game.has('classes') };
   /** 게임이 쌓아 둔 것을 클라이언트에 내보낸다. */
   function flush(): void {
-    const frame = buildFrame(game.ents.values(), (e) => game.kinds.get(e.kind)?.sync?.(e));
+    const frame = buildFrame(game.ents.values(), (e) => (e.kind === 'p' ? game.playerVals?.(e) : game.kinds.get(e.kind)?.sync?.(e)), fields);
     const events = game.events;
     game.events = [];
     let online = 0;
