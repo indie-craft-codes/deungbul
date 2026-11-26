@@ -50,6 +50,8 @@ export interface EnterInfo {
   hp?: number; maxHp?: number;
   /** 몰려온 적(게임의 규칙이 부른 적: Ent.swarm)이면 1 */
   r?: 1;
+  /** 부품으로 된 겉모습의 글자 (engine/shared/defs/look.ts의 encodeLook: 변신한 사람 같은 것). 없으면 예전 그림 */
+  l?: string;
 }
 
 /** 스냅샷 사이에 일어난 일 */
@@ -169,6 +171,8 @@ export type ClientMsg =
   | { t: 'dungeonGo'; id: string }
   /** 판 (rooms 모듈): quick 빠른 대국, host 판 만들기, cpu 컴퓨터와 두기, join 들어가기(id: 판), leave 대기실로(두는 중이면 기권), pass 차례 넘기기, resign 기권, again 다시 하기 */
   | { t: 'room'; a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again'; id?: number }
+  /** 변신 (morph 모듈): on 가진 캐릭터 정의(id)로 변신, off 풀기 */
+  | { t: 'morph'; a: 'on' | 'off'; id?: string }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -252,4 +256,6 @@ export type ServerMsg =
   | { t: 'sweep'; got: SweepGot }
   /** 돌아왔을 때 받은 방치 보상 (idle 모듈, IDLE.popup을 켠 게임만): 화면이 창으로 알린다. 받기는 그 우편(mail)으로 */
   | ({ t: 'idleBack' } & IdleBack)
+  /** 누군가의 부품 겉모습이 바뀌었다 (g.setLook: 변신과 풀기). l이 빈 문자열이면 예전 그림으로 */
+  | { t: 'look'; id: number; l: string }
   | Added<ServerMsgs>;

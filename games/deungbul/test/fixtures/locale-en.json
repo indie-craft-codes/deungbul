@@ -104,6 +104,7 @@
   "Ch 1",
   "Ch 2"
  ],
+ "fmt.charErr": "The definition is malformed.",
  "fmt.cmpArrow": [
   "f627618c9243d2de",
   "If you swap now: undefined",
@@ -908,6 +909,21 @@
   "Iron Scrap: dropped by Goblin",
   "idle: dropped by 35"
  ],
+ "fmt.morphBonus": "",
+ "fmt.morphCd": [
+  "94720af76e14a565",
+  "Morph again in undefineds",
+  "Morph again in 0s",
+  "Morph again in 1s",
+  "Morph again in 2s"
+ ],
+ "fmt.morphLeft": [
+  "e79fa7b416052ecc",
+  "NaNs left",
+  "0s left",
+  "1s left",
+  "2s left"
+ ],
  "fmt.needsResident": [
   "11cb893c029e2abb",
   "In stock once undefined returns",
@@ -1620,6 +1636,14 @@
   "You can change channels again in 1s.",
   "You can change channels again in 2s."
  ],
+ "msg.charBad": "Character rejected: The definition is malformed.",
+ "msg.charNew": [
+  "41534f5a18b6eaeb",
+  "New character: undefined!",
+  "New character: 0!",
+  "New character: 1!",
+  "New character: 2!"
+ ],
  "msg.chatWait": "Chat is too busy, so your last message was not sent. Try again in a moment.",
  "msg.classChanged": [
   "45aca5b9a8cc44e5",
@@ -2054,6 +2078,25 @@
   "The price must be a whole number from 2 to 1 gold.",
   "The price must be a whole number from 2 to 2 gold."
  ],
+ "msg.morphEnd": "Your morph wore off.",
+ "msg.morphFight": "You cannot morph during a fight.",
+ "msg.morphGone": "That character is gone, so your morph ended.",
+ "msg.morphNone": "You do not own that character.",
+ "msg.morphOff": "You changed back.",
+ "msg.morphOn": [
+  "abdcd7523ac873ee",
+  "You morphed into undefined.",
+  "You morphed into 0.",
+  "You morphed into 1.",
+  "You morphed into 2."
+ ],
+ "msg.morphWait": [
+  "353169d4688cfae6",
+  "You can morph again in undefineds.",
+  "You can morph again in 0s.",
+  "You can morph again in 1s.",
+  "You can morph again in 2s."
+ ],
  "msg.muted": [
   "25ae95353081a966",
   "You are muted and cannot send messages.",
@@ -2483,6 +2526,8 @@
  "ui.buffs": "Active buffs",
  "ui.changeClass": "Change class",
  "ui.channel": "Channel",
+ "ui.charAtk": "Attack",
+ "ui.charHp": "Health",
  "ui.charmOff": "Use ward stones: off",
  "ui.charmOn": "Use ward stones: on",
  "ui.chatLabel": "Chat message",
@@ -2664,6 +2709,11 @@
  "ui.marketSortNew": "Newest",
  "ui.menu": "Menu",
  "ui.minimap": "Minimap",
+ "ui.morphLookOnly": "Looks only",
+ "ui.morphNone": "You have no characters yet.",
+ "ui.morphNow": "Morphed",
+ "ui.morphOffBtn": "Change back",
+ "ui.morphOnBtn": "Morph",
  "ui.noTargetNearby": "No targets nearby.",
  "ui.none": "None",
  "ui.offerNote": "Lights the tower. A brighter tower holds out longer in a raid.",
@@ -2765,6 +2815,7 @@
  "ui.tabHeroes": "Heroes",
  "ui.tabMail": "Mail",
  "ui.tabMarket": "Market",
+ "ui.tabMorph": "Morph",
  "ui.tabRank": "Rank",
  "ui.tabSquad": "Squad",
  "ui.tabStages": "Stages",

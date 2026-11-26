@@ -789,3 +789,10 @@ body.room-still #stick { display: none; }
   #topmid #roomBar { position: fixed; left: 12px; right: 12px; bottom: 108px; width: auto; min-width: 0; max-width: none; z-index: 12; }
   #roomEnd .rbig { font-size: 26px; }
 }
+
+/* ---------- 변신 (morph 모듈: hud/morph.ts). 등급의 색은 --rc ---------- */
+.morphRow .iname { color: var(--rc, inherit); display: flex; align-items: center; gap: 8px; }
+.morphPic { width: 48px; height: 56px; flex: none; border-radius: 6px; background: rgba(255, 255, 255, .06); }
+.morphRow.on { outline: 1px solid var(--gold); border-radius: 6px; }
+.morphBio { font-style: italic; opacity: .85; margin-top: 2px; }
+.morphHead .mtag { font-size: 11px; border: 1px solid var(--gold); color: var(--gold); border-radius: 3px; padding: 0 5px; }

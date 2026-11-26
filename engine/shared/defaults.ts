@@ -16,6 +16,9 @@ import type { ItemDef } from './defs/items';
 import type { MonsterDef } from './defs/monsters';
 import type { TeamDef, TeamRules } from './defs/teams';
 import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRarityDef, HeroRoleDef, HeroRules, SquadRules, StageRules } from './defs/collect';
+import type { LookRules } from './defs/look';
+import type { CharRules } from './defs/chardef';
+import type { MorphRules } from './defs/morph';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -204,3 +207,11 @@ export const SQUAD_RULES: SquadRules = { size: 4, seek: 12, leash: 20, reviveS: 
 /** 장: 없다 (stages를 고른 게임이 적는다) */
 export const CHAPTERS: readonly ChapterDef[] = [];
 export const STAGE_RULES: StageRules = { arena: { x: 0, z: 0 }, radius: 8, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: false };
+
+// ---------- 겉모습의 부품, 캐릭터 정의(chars), 변신(morph) ----------
+/** 틀의 부품 묶음을 그대로 쓴다 (키 배율 0.85~1.15, 너비 배율 0.85~1.2) */
+export const LOOK_RULES: LookRules = {};
+/** 능력치 atk·hp(무게 4, 0.5), 예산은 내용의 영웅에서, 역할·기술은 내용의 것 전부, 기술 하나, 이름 16자·소개 120자 */
+export const CHAR_RULES: CharRules = {};
+/** 스스로 풀 때까지, 다시 변신까지 10초, 맞은 지 5초 안에는 못 한다, 보정 없음(겉모습만), 서른까지 가진다 */
+export const MORPH_RULES: MorphRules = { durationS: 0, cooldownS: 10, noFightS: 5, maxOwn: 30 };

@@ -14,6 +14,8 @@ import { S, newMe, type Me, type Remote } from './state';
 import { kindLook, type KindInfo, type KindLook } from './kinds';
 import { hasModule } from './mods';
 import { makeBox } from './scene/models';
+import { decodeLook, type Look } from '../shared/defs/look';
+import './scene/look'; // 부품으로 된 사람형을 그리는 법 (models.ts의 defaultHumanoid가 겉모습이 있을 때 부른다)
 
 const INTERP_MS = 150; // 다른 엔티티는 이만큼 과거 시점을 그려서 스냅샷 사이를 부드럽게 잇는다
 const SWING_S = 0.3;
@@ -44,6 +46,10 @@ export function setPlayerLook(look: PlayerLook): void { playerLook = look; }
 /** 이 사람이 입을 옷 색 */
 const clothOf = (p: PlayerInfo): number => playerLook.cloth?.(p) ?? (p.me ? MY_CLOTH : CLOTH[p.id % CLOTH.length]);
 const sameVals = (a: readonly number[], b: readonly number[]): boolean => a.length === b.length && a.every((v, i) => v === b[i]);
+/** 부품 겉모습의 글자를 겉모습으로 (없거나 읽을 수 없으면 undefined: 예전 그림) */
+const partsOf = (code: string | undefined): Look | undefined => (code ? decodeLook(code) ?? undefined : undefined);
+/** 내가 아직 없을 때(접속 직후) 온 겉모습: 나를 만들 때 쓴다 */
+const earlyLooks = new Map<number, string>();
 /** 직업에 맞는 손 장비: 궁수는 활, 마법사는 지팡이, 나머지는 검 */
 /** 직업의 손 모양 (ClassDef.hand: 'sword', 'bow', 'staff' 또는 게임이 registerHand로 등록한 것) */
 const gearOf = (cls: string): string => classOf(cls).hand;
@@ -98,10 +104,13 @@ const monsterName = (type: string, swarm = false): string => {
 // ---------- 만들고 지우기 ----------
 export function spawnMe(id: number, name: string, x: number, z: number): Me {
   const cloth = clothOf({ id, name, me: true, vals: [] });
-  const model = makeHumanoid(cloth, hasModule('combat')); // 전투가 없는 게임의 사람은 아무것도 들지 않는다
+  const code = earlyLooks.get(id);
+  earlyLooks.clear();
+  const model = makeHumanoid(cloth, hasModule('combat'), undefined, undefined, undefined, partsOf(code)); // 전투가 없는 게임의 사람은 아무것도 들지 않는다
   view.scene.add(model.root);
   S.me = newMe(id, name, x, z, model, makeTag(name, 'me', false));
   S.me.cloth = cloth;
+  if (code) S.me.lookCode = code;
   playerLook.update?.(model, { id, name, me: true, vals: [] });
   return S.me;
 }
@@ -134,7 +143,7 @@ function addRemote(e: EnterInfo): void {
   // 칸은 그 모듈을 고른 게임에만 온다 (protocol.ts의 EnterInfo): 없으면 빈 값
   const cls = e.c ?? '', hp = e.hp ?? 0, maxHp = e.maxHp ?? 0;
   const cloth = monster ? undefined : clothOf({ id: e.id, name: e.name, me: false, vals: [] });
-  const model = monster ? makeMonster(e.type) : makeHumanoid(cloth!, gearOf(cls), undefined, cls);
+  const model = monster ? makeMonster(e.type) : makeHumanoid(cloth!, gearOf(cls), undefined, cls, undefined, partsOf(e.l));
   model.root.position.set(e.x, 0, e.z);
   model.root.rotation.y = e.face;
   view.scene.add(model.root);
@@ -147,7 +156,7 @@ function addRemote(e: EnterInfo): void {
   S.others.set(e.id, {
     id: e.id, kind: e.kind, type: e.type, name, model, tag, h: monster && isMonsterId(e.type) ? MONSTERS[e.type].h : 2.5,
     buf: [{ t: performance.now(), x: e.x, z: e.z, face: e.face, moving: false }], x: e.x, z: e.z, face: e.face, walking: false, phase: Math.random() * 6,
-    hp, maxHp, swing: 0, weapon: e.w ?? '', armor: e.a ?? '', cls, swarm: e.r === 1, dying: 0, gone: false, vals: [], cloth,
+    hp, maxHp, swing: 0, weapon: e.w ?? '', armor: e.a ?? '', cls, swarm: e.r === 1, dying: 0, gone: false, vals: [], cloth, ...(e.l ? { lookCode: e.l } : {}),
   });
   if (!monster) playerLook.update?.(model, { id: e.id, name: e.name, me: false, vals: [] });
 }
@@ -162,6 +171,7 @@ function dropRemote(r: Remote): void {
 export function clearEntities(): void {
   for (const r of [...S.others.values()]) dropRemote(r);
   if (S.me) { view.scene.remove(S.me.model.root); S.me.tag.el.remove(); S.me = null; }
+  earlyLooks.clear();
   view.targetRing.visible = false;
 }
 
@@ -175,9 +185,9 @@ export function relabel(): void {
 }
 
 /** 직업이나 옷 색이 바뀌면 모델을 새로 만든다 (검을 든 모습과 활을 든 모습이 다르다). */
-function rebuild(holder: { model: Model; cloth?: number }, cloth: number, cls: string): void {
+function rebuild(holder: { model: Model; cloth?: number; lookCode?: string }, cloth: number, cls: string): void {
   const old = holder.model.root;
-  const model = makeHumanoid(cloth, gearOf(cls), undefined, cls);
+  const model = makeHumanoid(cloth, gearOf(cls), undefined, cls, undefined, partsOf(holder.lookCode));
   model.root.position.copy(old.position);
   model.root.rotation.y = old.rotation.y;
   view.scene.remove(old);
@@ -219,6 +229,22 @@ export function setGear(id: number, weapon: string, cls: string, armor: string):
   setBlade(r.model, weapon);
   setArmor(r.model, armor);
   if (re) playerLook.update?.(r.model, { id: r.id, name: r.name, me: false, vals: r.vals });
+}
+
+/**
+ * 누군가의 부품 겉모습이 바뀌었다 (메시지 look: 서버의 g.setLook). 모델을 새로 만들고 무기·갑옷·게임의 꾸밈을 다시 입힌다.
+ * code가 빈 문자열이면 예전 그림으로 돌아간다
+ */
+export function setLookOf(id: number, code: string): void {
+  const me = S.me, mine = !!me && id === me.id;
+  if (!me) { if (code) earlyLooks.set(id, code); else earlyLooks.delete(id); return; }
+  const h: Me | Remote | undefined = mine ? me : S.others.get(id);
+  if (!h || (!mine && (h as Remote).kind !== 'p') || (h.lookCode ?? '') === code) return;
+  if (code) h.lookCode = code; else delete h.lookCode;
+  rebuild(h, h.cloth ?? (mine ? MY_CLOTH : CLOTH[id % CLOTH.length]), h.cls);
+  setBlade(h.model, h.weapon);
+  setArmor(h.model, h.armor);
+  playerLook.update?.(h.model, { id, name: h.name, me: mine, vals: h.vals });
 }
 
 export function renameEntity(id: number, name: string): void {

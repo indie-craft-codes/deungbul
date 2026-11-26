@@ -9,6 +9,26 @@ import { bannerName, heroGearName, heroName, keyHints, moduleHints, teamName, ty
 import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
+import { charName, type CharErr } from '../../shared/defs/chardef';
+import type { MorphMods } from '../../shared/defs/morph';
+
+/** Field names of a character definition (ko.ts의 charField와 같다) */
+const charField = (path: string): string => {
+  const [a, b, c] = path.split('.');
+  const top: Record<string, string> = { id: 'id', name: 'name', bio: 'bio', look: 'look', role: 'role', rarity: 'rarity', stats: 'stats', skills: 'skills', v: 'version' };
+  return [top[a] ?? a, b, c].filter(Boolean).join(' ');
+};
+/** Why a character definition was rejected (CharErr) */
+const charErrEn: Record<CharErr, (f: string, a: string) => string> = {
+  shape: () => 'The definition is malformed.', extra: (f) => `Unknown field: ${f}`, missing: (f) => `Missing field: ${f}`, type: (f) => `${f} has the wrong type.`,
+  version: (_f, a) => `Wrong format version (must be ${a}).`, id: () => 'The id must be 3-32 characters starting with a lowercase letter.', idTaken: () => 'That id is already in use.',
+  length: (f, a) => `${f} has the wrong length (${a} characters).`, control: (f) => `${f} contains invisible characters.`, charset: (f) => `${f} contains characters that are not allowed.`,
+  space: (f) => `${f} has extra spaces.`, banned: (f) => `${f} contains a word that is not allowed.`, role: (_f, a) => `Unknown role: ${a}`, rarity: () => 'Unknown rarity.',
+  stat: (f) => `Unknown stat: ${f}`, statMin: (f, a) => `${f} is too low (at least ${a}).`, statCap: (f, a) => `${f} exceeds this rarity's cap of ${a}.`,
+  budget: (_f, a) => `The stats exceed this rarity's budget of ${a}.`, skill: (_f, a) => `That skill cannot be chosen: ${a}`, skillCount: (_f, a) => `At most ${a} skill${a === '1' ? '' : 's'}.`, skillDup: (_f, a) => `The same skill appears twice: ${a}`,
+  part: (f, a) => `Unknown part: ${f} ${a}`.trim(), slotOff: (f) => `This game does not use that slot: ${f}`, color: (f) => `Bad color: ${f}`, pattern: (_f, a) => `Unknown pattern: ${a}`, size: (f) => `Size is out of range: ${f}`,
+};
+const morphModsEn = (m: MorphMods): string => [m.damage ? `Damage +${pct100(m.damage)}%` : '', m.guard ? `Damage taken −${pct100(m.guard)}%` : '', m.crit ? `Crit +${pct100(m.crit)}%p` : '', m.regen ? `Regen +${pct100(m.regen)}%` : ''].filter(Boolean).join(', ');
 
 /** 1 item, 2 items */
 export const count = (n: MsgArg, word: string) => `${n} ${word}${Number(n) === 1 ? '' : 's'}`;
@@ -366,6 +386,14 @@ export const enBase = (n: ContentNames): EngineLocale => {
       roomToLobby: 'To the lobby',
       roomAgainWaitNote: 'Starts when the other player presses Play again.',
       roomFoeGoneNote: 'The other player left the table.',
+      tabMorph: 'Morph',
+      morphNone: 'You have no characters yet.',
+      morphOnBtn: 'Morph',
+      morphOffBtn: 'Change back',
+      morphNow: 'Morphed',
+      morphLookOnly: 'Looks only',
+      charAtk: 'Attack',
+      charHp: 'Health',
     },
     monsters,
     dungeons,
@@ -567,6 +595,10 @@ export const enBase = (n: ContentNames): EngineLocale => {
       roomWaiting: (seated, size, cpuIn) => `Waiting for players… (${seated}/${size})${cpuIn > 0 ? ` The computer sits in after ${cpuIn}s.` : ''}`,
       roomTheirTurn: (name) => `${name}'s turn`,
       roomWhy: (why) => ({ resign: 'Ended by resignation.', left: 'A player disconnected and did not return.', rounds: 'All rounds were used.' } as Record<string, string>)[why] ?? '',
+      charErr: (code, path, arg) => (charErrEn[code as CharErr] ?? charErrEn.shape)(charField(String(path ?? '')), arg === undefined ? '' : String(arg)),
+      morphLeft: (s) => (s < 0 ? 'Until you change back' : `${s >= 60 ? `${Math.floor(s / 60)}m ` : ''}${s % 60}s left`),
+      morphCd: (s) => `Morph again in ${s}s`,
+      morphBonus: (m) => morphModsEn(m ?? {}),
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -743,6 +775,15 @@ export const enBase = (n: ContentNames): EngineLocale => {
       roomResult: (a) => (Number(a[0]) === 0 ? 'You won!' : Number(a[0]) === 1 ? 'You lost.' : 'Draw.'),
       roomAgainWait: () => 'Waiting for the other player to press Play again.',
       roomFoeGone: (a) => `${a[0]} left the table.`,
+      charBad: (a) => `Character rejected: ${(charErrEn[a[0] as CharErr] ?? charErrEn.shape)(charField(String(a[1] ?? '')), a[2] === undefined ? '' : String(a[2]))}`,
+      charNew: (a) => `New character: ${charName(a[0])}!`,
+      morphOn: (a) => `You morphed into ${charName(a[0])}.`,
+      morphOff: () => 'You changed back.',
+      morphEnd: () => 'Your morph wore off.',
+      morphGone: () => 'That character is gone, so your morph ended.',
+      morphWait: (a) => `You can morph again in ${a[0]}s.`,
+      morphFight: () => 'You cannot morph during a fight.',
+      morphNone: () => 'You do not own that character.',
     },
     nameA: n.nameA,
     nameB: n.nameB,

@@ -18,6 +18,9 @@ import type { ItemDef } from './defs/items';
 import type { MapDef } from './defs/map';
 import type { MonsterDef } from './defs/monsters';
 import type { TeamDef, TeamRules } from './defs/teams';
+import type { LookRules } from './defs/look';
+import type { CharRules } from './defs/chardef';
+import type { MorphRules } from './defs/morph';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
 import * as content from '@game/shared/content';
@@ -198,8 +201,18 @@ export interface CollectContent {
   STAGE_RULES: StageRules;
 }
 
+/** 겉모습의 부품, 캐릭터 정의(chars), 변신(morph): engine/shared/defs/look.ts, chardef.ts, morph.ts */
+export interface CharsContent {
+  /** 겉모습의 부품을 더하고 빼고 칸을 끄는 규칙, 크기 배율의 범위 (모듈과 상관없이 사람형의 겉모습을 쓰는 곳 모두) */
+  LOOK_RULES: LookRules;
+  /** 캐릭터 정의의 규칙: 능력치의 칸과 무게, 등급마다의 예산, 역할·기술의 목록, 글자 수, 금칙어 */
+  CHAR_RULES: CharRules;
+  /** 변신의 규칙: 지속 시간, 재사용 대기, 전투 중 금지, 보정과 상한, 가질 수 있는 수 */
+  MORPH_RULES: MorphRules;
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

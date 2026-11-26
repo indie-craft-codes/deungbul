@@ -104,6 +104,7 @@
   "1채널",
   "2채널"
  ],
+ "fmt.charErr": "정의의 모양이 틀렸습니다.",
  "fmt.cmpArrow": [
   "2ef3c19e51ae3ac9",
   "지금 바꾸면: undefined",
@@ -908,6 +909,21 @@
   "Iron Scrap 얻는 곳: Goblin",
   "idle 얻는 곳: 35"
  ],
+ "fmt.morphBonus": "",
+ "fmt.morphCd": [
+  "62c22b3edb001f1d",
+  "다시 변신까지 undefined초",
+  "다시 변신까지 0초",
+  "다시 변신까지 1초",
+  "다시 변신까지 2초"
+ ],
+ "fmt.morphLeft": [
+  "ac3d7be60975a7e0",
+  "남은 시간 NaN초",
+  "남은 시간 0초",
+  "남은 시간 1초",
+  "남은 시간 2초"
+ ],
  "fmt.needsResident": [
   "86a09c433c7eda75",
   "(던짐) TypeError",
@@ -1620,6 +1636,14 @@
   "채널은 1초 뒤에 다시 바꿀 수 있습니다.",
   "채널은 2초 뒤에 다시 바꿀 수 있습니다."
  ],
+ "msg.charBad": "캐릭터를 만들 수 없습니다: 정의의 모양이 틀렸습니다.",
+ "msg.charNew": [
+  "68ba74f6bf27b198",
+  "새 캐릭터 undefined을(를) 얻었습니다!",
+  "새 캐릭터 0을(를) 얻었습니다!",
+  "새 캐릭터 1을(를) 얻었습니다!",
+  "새 캐릭터 2을(를) 얻었습니다!"
+ ],
  "msg.chatWait": "대화가 너무 몰려 방금 한 말이 전해지지 않았습니다. 잠시 뒤에 다시 말해 주세요.",
  "msg.classChanged": [
   "397661100f24019c",
@@ -2054,6 +2078,25 @@
   "값은 2골드 이상 1골드 이하의 정수여야 합니다.",
   "값은 2골드 이상 2골드 이하의 정수여야 합니다."
  ],
+ "msg.morphEnd": "변신의 시간이 다 되어 풀렸습니다.",
+ "msg.morphFight": "싸우는 중에는 변신할 수 없습니다.",
+ "msg.morphGone": "캐릭터가 사라져 변신이 풀렸습니다.",
+ "msg.morphNone": "가지지 않은 캐릭터입니다.",
+ "msg.morphOff": "변신을 풀었습니다.",
+ "msg.morphOn": [
+  "66d53a7143bd2393",
+  "undefined(으)로 변신했습니다.",
+  "0(으)로 변신했습니다.",
+  "1(으)로 변신했습니다.",
+  "2(으)로 변신했습니다."
+ ],
+ "msg.morphWait": [
+  "b64cfd2fc77beaf9",
+  "undefined초 뒤에 다시 변신할 수 있습니다.",
+  "0초 뒤에 다시 변신할 수 있습니다.",
+  "1초 뒤에 다시 변신할 수 있습니다.",
+  "2초 뒤에 다시 변신할 수 있습니다."
+ ],
  "msg.muted": [
   "5f750e0bf1e0f1c8",
   "대화가 막혀 있어 말을 보낼 수 없습니다.",
@@ -2483,6 +2526,8 @@
  "ui.buffs": "걸려 있는 강화",
  "ui.changeClass": "직업 바꾸기",
  "ui.channel": "채널",
+ "ui.charAtk": "공격",
+ "ui.charHp": "체력",
  "ui.charmOff": "보호석 쓰기: 끔",
  "ui.charmOn": "보호석 쓰기: 켬",
  "ui.chatLabel": "대화 입력",
@@ -2664,6 +2709,11 @@
  "ui.marketSortNew": "최신순",
  "ui.menu": "메뉴",
  "ui.minimap": "미니맵",
+ "ui.morphLookOnly": "겉모습만 바뀝니다",
+ "ui.morphNone": "가진 캐릭터가 없습니다.",
+ "ui.morphNow": "변신 중",
+ "ui.morphOffBtn": "변신 풀기",
+ "ui.morphOnBtn": "변신",
  "ui.noTargetNearby": "주변에 대상이 없습니다.",
  "ui.none": "없음",
  "ui.offerNote": "등탑을 밝힙니다. 밝을수록 습격을 오래 버팁니다.",
@@ -2765,6 +2815,7 @@
  "ui.tabHeroes": "영웅",
  "ui.tabMail": "우편",
  "ui.tabMarket": "거래소",
+ "ui.tabMorph": "변신",
  "ui.tabRank": "순위",
  "ui.tabSquad": "편성",
  "ui.tabStages": "단계",

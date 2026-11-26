@@ -4,13 +4,15 @@
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, HeroBonus, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BANNER_TABLE, BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, HERO_TABLE, heroGearDef, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
+import { BANNER_TABLE, BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, heroDef, heroGearDef, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { LocaleExt } from './ext';
 import { dungeonLabel, itemNameOf, uiText, type ContentNames } from './names';
 import { anyModule } from '../../shared/picked';
+import { charName, type CharErr } from '../../shared/defs/chardef';
+import type { MorphMods } from '../../shared/defs/morph';
 
 /** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
 export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
@@ -52,6 +54,24 @@ const modText: Record<StatMod, (v: number) => string> = {
   crit: (v) => `치명타 +${v}%`,
   hp: (v) => `체력 +${v}`,
 };
+/** 캐릭터 정의의 칸 이름 (거절 까닭의 자리: 'stats.atk' → '능력치 atk') */
+const charField = (path: string): string => {
+  const [a, b, c] = path.split('.');
+  const top: Record<string, string> = { id: 'id', name: '이름', bio: '소개', look: '겉모습', role: '역할', rarity: '등급', stats: '능력치', skills: '기술', v: '버전' };
+  return [top[a] ?? a, b, c].filter(Boolean).join(' ');
+};
+/** 캐릭터 정의의 거절 까닭 (engine/shared/defs/chardef.ts의 CharErr): 자리와 값을 받아 문장으로 */
+const charErrKo: Record<CharErr, (f: string, a: string) => string> = {
+  shape: () => '정의의 모양이 틀렸습니다.', extra: (f) => `모르는 칸이 있습니다: ${f}`, missing: (f) => `빠진 칸이 있습니다: ${f}`, type: (f) => `${f}의 값의 종류가 틀렸습니다.`,
+  version: (_f, a) => `형식의 버전이 다릅니다 (${a}이어야 합니다).`, id: () => 'id는 영문 소문자로 시작하는 3~32자여야 합니다.', idTaken: () => '이미 있는 id입니다.',
+  length: (f, a) => `${f}의 글자 수가 맞지 않습니다 (${a}자).`, control: (f) => `${f}에 보이지 않는 글자가 있습니다.`, charset: (f) => `${f}에 쓸 수 없는 글자가 있습니다.`,
+  space: (f) => `${f}의 앞뒤나 사이에 빈칸이 너무 많습니다.`, banned: (f) => `${f}에 쓸 수 없는 말이 있습니다.`, role: (_f, a) => `없는 역할입니다: ${a}`, rarity: () => '없는 등급입니다.',
+  stat: (f) => `모르는 능력치입니다: ${f}`, statMin: (f, a) => `${f}가 너무 작습니다 (${a} 이상).`, statCap: (f, a) => `${f}가 이 등급의 상한 ${a}를 넘습니다.`,
+  budget: (_f, a) => `능력치의 합이 이 등급의 예산 ${a}를 넘습니다.`, skill: (_f, a) => `고를 수 없는 기술입니다: ${a}`, skillCount: (_f, a) => `기술은 ${a}개까지입니다.`, skillDup: (_f, a) => `같은 기술이 두 번 있습니다: ${a}`,
+  part: (f, a) => `없는 부품입니다: ${f} ${a}`.trim(), slotOff: (f) => `이 게임에서 쓰지 않는 칸입니다: ${f}`, color: (f) => `색이 틀렸습니다: ${f}`, pattern: (_f, a) => `없는 무늬입니다: ${a}`, size: (f) => `크기 배율이 범위 밖입니다: ${f}`,
+};
+/** 변신의 보정을 한 줄로 */
+const morphModsKo = (m: MorphMods): string => [m.damage ? `주는 피해 +${pct100(m.damage)}%` : '', m.guard ? `받는 피해 −${pct100(m.guard)}%` : '', m.crit ? `치명타 +${pct100(m.crit)}%p` : '', m.regen ? `회복 +${pct100(m.regen)}%` : ''].filter(Boolean).join(', ');
 /** 조작 안내의 항목들을 한 줄로 잇는다. 항목 안의 빈칸은 줄이 바뀌지 않는 빈칸으로 바꿔서, 줄이 넘어갈 때 항목 사이에서만 끊기게 한다 */
 export const keyHints = (items: string[]) => items.map((s) => s.replace(/ /g, ' ')).join(' · ');
 /** 틀의 기본 조작 안내: [글, 모듈] 짝은 그 모듈을 고른 게임에만 넣는다 (그 키를 그 모듈이 달기 때문이다: engine/client/bus.ts의 bindKey) */
@@ -61,7 +81,7 @@ export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 /** 팀의 이름 (teams 모듈): 팀 번호 → 게임이 언어 파일의 ui에 적은 이름 (TEAMS의 name 키). 없는 번호는 빈 문자열 */
 export const teamName = (i: MsgArg): string => { const d = TEAMS[Number(i)]; return d ? uiText.get(d.name) : ''; };
 /** 영웅의 이름 (roster 모듈): 영웅 id → 게임이 언어 파일의 ui에 적은 이름 (HeroDef.name 키). 없는 영웅은 id 그대로 */
-export const heroName = (id: MsgArg): string => { const d = HERO_TABLE[String(id)]; return d ? uiText.get(d.name) : String(id); };
+export const heroName = (id: MsgArg): string => { const d = heroDef(String(id)); return d ? d.label ?? uiText.get(d.name) : String(id); };
 /** 영웅 장비의 이름 (herogear 모듈: HeroGearDef.name 키). 없는 장비는 id 그대로 */
 export const heroGearName = (id: MsgArg): string => { const d = heroGearDef(String(id)); return d ? uiText.get(d.name) : String(id); };
 /** 등급의 이름 (HeroRarityDef.name 키: 틀의 기본 등급은 heroRarity0~2) */
@@ -415,6 +435,15 @@ export const koBase = (n: ContentNames) => {
       roomToLobby: '대기실로',
       roomAgainWaitNote: '다른 사람이 다시 하기를 누르면 시작합니다.',
       roomFoeGoneNote: '함께 두던 사람이 판을 떠났습니다.',
+      // 캐릭터 정의와 변신 (chars, morph 모듈)
+      tabMorph: '변신',
+      morphNone: '가진 캐릭터가 없습니다.',
+      morphOnBtn: '변신',
+      morphOffBtn: '변신 풀기',
+      morphNow: '변신 중',
+      morphLookOnly: '겉모습만 바뀝니다',
+      charAtk: '공격',
+      charHp: '체력',
     },
     monsters,
     dungeons,
@@ -627,6 +656,11 @@ export const koBase = (n: ContentNames) => {
       roomTheirTurn: (name: string) => `${name}의 차례`,
       /** 판이 끝난 까닭 (게임이 finish에 준 것은 게임의 언어 파일이 덮어써 문장으로) */
       roomWhy: (why: string) => ({ resign: '기권으로 끝났습니다.', left: '연결이 끊긴 채 돌아오지 않았습니다.', rounds: '바퀴를 다 썼습니다.' } as Record<string, string>)[why] ?? '',
+      // 캐릭터 정의와 변신
+      charErr: (code: string, path: string, arg?: MsgArg) => (charErrKo[code as CharErr] ?? charErrKo.shape)(charField(String(path ?? '')), arg === undefined ? '' : String(arg)),
+      morphLeft: (s: number) => (s < 0 ? '스스로 풀 때까지' : `남은 시간 ${s >= 60 ? `${Math.floor(s / 60)}분 ` : ''}${s % 60}초`),
+      morphCd: (s: number) => `다시 변신까지 ${s}초`,
+      morphBonus: (m: MorphMods) => morphModsKo(m ?? {}),
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -805,6 +839,15 @@ export const koBase = (n: ContentNames) => {
       roomResult: (a) => `${Number(a[0]) === 0 ? '이겼습니다!' : Number(a[0]) === 1 ? '졌습니다.' : '비겼습니다.'}`,
       roomAgainWait: () => '다른 사람이 다시 하기를 누르기를 기다립니다.',
       roomFoeGone: (a) => `${a[0]} 님이 판을 떠났습니다.`,
+      charBad: (a) => `캐릭터를 만들 수 없습니다: ${(charErrKo[a[0] as CharErr] ?? charErrKo.shape)(charField(String(a[1] ?? '')), a[2] === undefined ? '' : String(a[2]))}`,
+      charNew: (a) => `새 캐릭터 ${josa(charName(a[0]), '을', '를')} 얻었습니다!`,
+      morphOn: (a) => `${ro(charName(a[0]))} 변신했습니다.`,
+      morphOff: () => '변신을 풀었습니다.',
+      morphEnd: () => '변신의 시간이 다 되어 풀렸습니다.',
+      morphGone: () => '캐릭터가 사라져 변신이 풀렸습니다.',
+      morphWait: (a) => `${a[0]}초 뒤에 다시 변신할 수 있습니다.`,
+      morphFight: () => '싸우는 중에는 변신할 수 없습니다.',
+      morphNone: () => '가지지 않은 캐릭터입니다.',
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

@@ -185,4 +185,14 @@ export type MsgKey =
   | 'roomBack' // [] 끊겼던 내가 두던 판으로 돌아왔다
   | 'roomResult' // [0 이김 1 짐 2 비김, 까닭] 판이 끝났다
   | 'roomAgainWait' // [] 다시 하기: 다른 사람을 기다린다
-  | 'roomFoeGone'; // [이름] 함께 앉은 사람이 판을 떠나 다시 할 수 없다
+  | 'roomFoeGone' // [이름] 함께 앉은 사람이 판을 떠나 다시 할 수 없다
+  // ---- 캐릭터 정의와 변신 (chars, morph 모듈: engine/server/game/systems/chars.ts, morph.ts) ----
+  | 'charBad' // [거절 코드(CharErr), 자리, 값] 캐릭터 정의가 거절됐다 (engine/shared/defs/chardef.ts의 validateCharDef)
+  | 'charNew' // [캐릭터 id] 새 캐릭터를 얻었다 (변신에 쓴다)
+  | 'morphOn' // [캐릭터 id] 변신했다
+  | 'morphOff' // [] 변신을 풀었다
+  | 'morphEnd' // [] 변신의 시간이 다 되어 풀렸다
+  | 'morphGone' // [] 그 캐릭터의 정의가 빠져 변신이 풀렸다
+  | 'morphWait' // [남은 초] 아직 다시 변신할 수 없다
+  | 'morphFight' // [] 싸우는 중이라 변신할 수 없다
+  | 'morphNone'; // [] 가지지 않았거나 없는 캐릭터다

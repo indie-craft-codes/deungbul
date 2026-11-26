@@ -42,6 +42,8 @@ export interface Ent extends EntExt, EntParts {
   metaDirty: boolean;
   /** 이번 접속 전에 비운 시간(ms). 방치 보상과 게임의 규칙(휴식)이 쓴다 */
   offMs: number;
+  /** 부품으로 된 겉모습의 글자 (engine/shared/defs/look.ts). 바꾸는 것은 g.setLook 하나다 (변신 모듈). 없으면 화면의 예전 그림 */
+  look?: string;
 }
 
 /** 틀의 핵심 칸만 (Game.create가 채우는 것): 모듈의 칸과 게임의 칸을 뺀 Ent */

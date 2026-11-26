@@ -67,9 +67,9 @@ import { check } from '../harness';
 {
   const src = fs.readFileSync(path.join(import.meta.dirname, '../../client/modules.ts'), 'utf8');
   const order = [...src.matchAll(/\{ init: (\w+)(?:, mod: '(\w+)')? \}/g)].map((m) => `${m[1]}${m[2] ? ':' + m[2] : ''}`);
-  const tail = order.slice(-6).join();
-  check(tail === 'initRoster:roster,initGacha:gacha,initSquad:squad,initStages:stages,initHeroGear:herogear,initIdleBack:idle' && order.indexOf('initRoster:roster') > order.indexOf('initAutoName'),
-    `수집형의 화면 모듈(과 영웅 장비, 돌아왔을 때의 창)은 목록의 맨 뒤에, 저마다 자기 모듈을 고른 게임에서만 (${tail})`);
+  const tail = order.slice(-8).join();
+  check(tail === 'initRoster:roster,initGacha:gacha,initSquad:squad,initStages:stages,initHeroGear:herogear,initIdleBack:idle,initChars:chars,initMorph:morph' && order.indexOf('initRoster:roster') > order.indexOf('initAutoName'),
+    `수집형의 화면 모듈(과 영웅 장비, 돌아왔을 때의 창, 캐릭터 정의·변신)은 목록의 맨 뒤에, 저마다 자기 모듈을 고른 게임에서만 (${tail})`);
   const hud = fs.readFileSync(path.join(import.meta.dirname, '../../client/hud/collect.ts'), 'utf8') + fs.readFileSync(path.join(import.meta.dirname, '../../client/hud/stagebar.ts'), 'utf8');
   check(['heroes', 'gacha', 'squad', 'stages'].every((id) => hud.includes(`addMenuTab({ id: '${id}'`)) && !/\b(pay|purchase|checkout|iap|billing)\b/i.test(hud), '탭 넷은 addMenuTab으로 붙고, 결제·구매의 낱말이 화면 코드에 없다');
 }

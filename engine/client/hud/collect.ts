@@ -225,7 +225,9 @@ function heroLook(): void {
       const d = heroDef(e.type), role = heroRole(e.type);
       const r = d?.rarity ?? 0, cloth = d?.cloth ?? role.cloth, hand = role.hand || false;
       // 게임이 영웅의 모델을 정했으면 그것 (setHeroModel), 아니면 틀의 사람형에 영웅 id와 등급을 넘긴다 (setHumanoidBody가 받는다)
-      const m = heroModel?.({ id: e.type, rarity: r, look: { cloth, hand: hand === false ? '' : hand, skin: 0xf0c9a0, hero: e.type, rarity: r } }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, undefined, { hero: e.type, rarity: r });
+      // 캐릭터 정의에서 온 영웅(HeroDef.look)은 그 부품으로 그린다 (engine/shared/defs/chardef.ts의 charHero)
+      const parts = d?.look, hl: HumanoidLook = { cloth: parts?.colors.cloth ?? cloth, hand: hand === false ? '' : hand, skin: parts?.colors.skin ?? 0xf0c9a0, hero: e.type, rarity: r, ...(parts ? { look: parts } : {}) };
+      const m = heroModel?.({ id: e.type, rarity: r, look: hl }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, undefined, { hero: e.type, rarity: r }, parts);
       let mat = rings.get(r);
       if (!mat) rings.set(r, mat = new THREE.MeshBasicMaterial({ color: rarityDef(r).color, transparent: true, opacity: 0.85 }));
       const ring = new THREE.Mesh(ringGeo, mat);

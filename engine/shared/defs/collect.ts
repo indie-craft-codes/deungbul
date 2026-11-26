@@ -6,6 +6,7 @@
 import { BANNERS, CHAPTERS, GACHA_RULES, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES, IDLE, STAGE_RULES } from '../content';
 import type { Reward } from './growth';
 import type { HeroAwakenRules, HeroGearRules, HeroSkillRules, PowerIn, SquadRowRules, SynergyDef, SynergyMe } from './herogrow';
+import type { Look } from './look';
 
 /** 뽑기와 영웅 레벨 업에 치르는 재화: 지갑이 다루는 것 가운데 사고팔 수 없는 경험치를 뺀 둘 (현금은 없다: 틀에 결제가 없다) */
 export type Coin = 'gold' | 'sparks';
@@ -54,6 +55,12 @@ export interface HeroDef {
   cloth?: number;
   /** 진영·속성의 태그: SQUAD_RULES.synergy의 키 (없으면 시너지에 들지 않는다) */
   tag?: string;
+  /** 이름을 문장 키 대신 글 그대로 (캐릭터 정의에서 온 영웅: engine/shared/defs/chardef.ts의 charHero. 번역하지 않는다) */
+  label?: string;
+  /** 겉모습 (engine/shared/defs/look.ts). 있으면 화면이 그 부품으로 그린다 (없으면 역할의 옷 색) */
+  look?: Look;
+  /** 역할의 기술 대신 쓰는 기술 (SKILL_DEFS의 id) */
+  skill?: string;
 }
 
 /** 영웅을 키우는 규칙 */
@@ -227,12 +234,39 @@ export interface IdleBack { mail: number; min: number; r: Reward; from?: string;
 // ---------- 표를 읽는 도우미 ----------
 /** 영웅의 표를 id가 문자열인 표로 본 것 (영웅이 없는 게임에서도 읽힌다. 없는 id는 undefined) */
 export const HERO_TABLE: Readonly<Record<string, HeroDef>> = HEROES;
+/** 내용의 영웅 id (내용의 차례). 실행 중에 더한 영웅(addHeroDef)까지는 heroIds() */
 export const HERO_IDS: readonly string[] = Object.keys(HEROES);
-export const isHeroId = (v: unknown): v is string => typeof v === 'string' && Object.hasOwn(HEROES, v);
-export const heroDef = (id: string): HeroDef => HERO_TABLE[id];
+/** 실행 중에 더한 영웅 (캐릭터 정의: engine/shared/defs/chardef.ts). 내용의 영웅과 id가 겹치지 않는다 */
+const LIVE_HEROES = new Map<string, HeroDef>();
+/** 실행 중에 더한 영웅의 역할 (기술을 바꾼 것) */
+const LIVE_ROLES = new Map<string, HeroRoleDef>();
+let liveIds: readonly string[] = HERO_IDS;
+export const isHeroId = (v: unknown): v is string => typeof v === 'string' && (Object.hasOwn(HEROES, v) || LIVE_HEROES.has(v));
+export const heroDef = (id: string): HeroDef => HERO_TABLE[id] ?? LIVE_HEROES.get(id);
+/** 영웅 id 전부: 내용의 차례, 그 뒤에 실행 중에 더한 차례 (더한 것이 없으면 HERO_IDS 그대로) */
+export const heroIds = (): readonly string[] => liveIds;
 const ROLE_TABLE: Readonly<Record<string, HeroRoleDef>> = HERO_ROLES;
+const NO_ROLE: HeroRoleDef = { name: '', hand: 'sword', range: 2, atkCd: 1.2, speed: 4.5, cloth: 0x8a8a8a };
 /** 그 영웅의 역할 (없는 역할이면 붙어서 치는 기본) */
-export const heroRole = (id: string): HeroRoleDef => ROLE_TABLE[heroDef(id)?.role ?? ''] ?? { name: '', hand: 'sword', range: 2, atkCd: 1.2, speed: 4.5, cloth: 0x8a8a8a };
+export const heroRole = (id: string): HeroRoleDef => LIVE_ROLES.get(id) ?? ROLE_TABLE[heroDef(id)?.role ?? ''] ?? NO_ROLE;
+/**
+ * 실행 중에 영웅을 더하거나 바꾼다 (캐릭터 정의의 다리: 서버의 chars 모듈과 화면이 부른다). 내용의 영웅과 같은 id는 더하지 않는다(false).
+ * 영웅 표를 읽는 모든 곳(isHeroId, heroDef, heroRole, heroIds)이 곧바로 본다
+ */
+export function addHeroDef(id: string, def: HeroDef): boolean {
+  if (Object.hasOwn(HEROES, id)) return false;
+  LIVE_HEROES.set(id, def);
+  const base = ROLE_TABLE[def.role] ?? NO_ROLE;
+  if (def.skill !== undefined) LIVE_ROLES.set(id, { ...base, skill: def.skill }); else LIVE_ROLES.delete(id);
+  liveIds = [...HERO_IDS, ...LIVE_HEROES.keys()];
+  return true;
+}
+/** 실행 중에 더한 영웅을 뺀다 (내용의 영웅은 빼지 않는다) */
+export function dropHeroDef(id: string): void {
+  if (!LIVE_HEROES.delete(id)) return;
+  LIVE_ROLES.delete(id);
+  liveIds = LIVE_HEROES.size ? [...HERO_IDS, ...LIVE_HEROES.keys()] : HERO_IDS;
+}
 export const rarityDef = (r: number): HeroRarityDef => HERO_RARITIES[r] ?? HERO_RARITIES[0] ?? { id: 'none', name: '', color: 0x9a9a9a, stars: 1, shards: 1 };
 export const BANNER_TABLE: Readonly<Record<string, BannerDef>> = BANNERS;
 export const BANNER_IDS: readonly string[] = Object.keys(BANNERS);
