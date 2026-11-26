@@ -24,6 +24,8 @@ export { addIconSheet, addItemSheet, gearIcon, hasItemIcon, itemIcon } from './h
 export { addMenuTab, MENU_TABS, openMenu, setMenuTabs, type EngineMenuTab, type MenuTab } from './hud/menu';
 export { openClasses } from './hud/classes';
 export { myTeam, myTeamScore, onTeamLook, setTeamBoardExtra, teamBoard } from './hud/teams';
+export { myHeroes, mySquad, onGachaResult } from './hud/collect';
+export { myStage } from './hud/stagebar';
 export { hudSlow } from './hud/me';
 export type { Look, Mood } from './scene/view';
 export { attachHand, cueAnim, defaultHumanoid, limb, makeBall, makeBlob, makeBox, makeHumanoid, mat, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setHumanoidBody, setHumanoidDeco, type ArmorLook, type BladeLook, type HandBuilder, type HumanoidLook, type Model, type MonsterBuilder, type Rig } from './scene/models';

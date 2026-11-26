@@ -3,7 +3,8 @@
 //   node scripts/typecheck.mjs <게임>…    그 게임의 설정만 (예: sample. 'engine'은 틀의 설정 넷)
 // 모으는 것:
 //   틀       tsconfig.json(편집기와 scripts·test, 등불지기를 가리킨다), tsconfig.engine.json(틀만을 등불지기의 내용으로),
-//            engine/test/fx/tsconfig.json(틀만을 시험용 내용으로), engine/test/core/tsconfig.json(틀만을 핵심만 쓰는 최소 내용으로)
+//            engine/test/fx/tsconfig.json(틀만을 시험용 내용으로), engine/test/core/tsconfig.json(틀만을 핵심만 쓰는 최소 내용으로),
+//            engine/test/collect/tsconfig.json(틀만을 수집형·방치형 내용으로)
 //   게임마다  games/<게임>/tsconfig.json(게임 전체), games/<게임>/tsconfig.engine.json(있으면: 틀만을 그 게임의 내용으로)
 // 게임의 목록은 scripts/deploy.mjs의 listGames(games/ 아래에서 deploy.json이나 server/main.ts가 있는 폴더)다.
 // 한꺼번에 넷까지 함께 돌리고, 끝나면 실패한 설정과 그 출력을 모아 찍는다.
@@ -15,7 +16,7 @@ import { listGames } from './deploy.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const tsc = path.join(root, 'node_modules', 'typescript', 'bin', 'tsc');
-const ENGINE = ['tsconfig.json', 'tsconfig.engine.json', 'engine/test/fx/tsconfig.json', 'engine/test/core/tsconfig.json'];
+const ENGINE = ['tsconfig.json', 'tsconfig.engine.json', 'engine/test/fx/tsconfig.json', 'engine/test/core/tsconfig.json', 'engine/test/collect/tsconfig.json'];
 const pick = process.argv.slice(2);
 const games = listGames();
 for (const g of pick) if (g !== 'engine' && !games.includes(g)) { console.error(`모르는 이름입니다: ${g} (engine, ${games.join(', ')})`); process.exit(1); }

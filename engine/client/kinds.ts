@@ -21,6 +21,10 @@ export interface KindLook {
   h?: number;
   /** 미니맵과 전체 지도에 찍을 점의 색 (css 색). 없으면 찍지 않는다 */
   dot?: string;
+  /** 이름표 아래에 체력 막대를 단다 (전투 모듈의 체력 칸: 사람 편에서 싸우는 종류 같은 것). 기본은 달지 않는다 */
+  hp?: boolean;
+  /** 이 종류가 때리면 날아가는 것의 모양 (registerShot의 id: 틀에는 arrow, bolt). 없으면 붙어서 친다 */
+  shot?: (e: KindInfo) => string | undefined;
 }
 
 const KINDS = new Map<string, KindLook>();

@@ -10,6 +10,7 @@ import { initBag } from './hud/bag';
 import { initBuffs } from './hud/buffs';
 import { initChannel } from './hud/channel';
 import { initClasses } from './hud/classes';
+import { initGacha, initRoster, initSquad } from './hud/collect';
 import { initDevice } from './hud/device';
 import { initDungeon } from './hud/dungeon';
 import { initForge } from './hud/forge';
@@ -18,6 +19,7 @@ import { initMinimap } from './hud/minimap';
 import { initNear } from './hud/near';
 import { initCard, initParty } from './hud/party';
 import { initShop } from './hud/shop';
+import { initStages } from './hud/stagebar';
 import { initTeams } from './hud/teams';
 import { initWorldMap } from './hud/worldmap';
 import { hasModule } from './mods';
@@ -43,6 +45,11 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initNear },
   { init: initSound },
   { init: initAutoName },
+  // 수집형·방치형: 맨 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)
+  { init: initRoster, mod: 'roster' },
+  { init: initGacha, mod: 'gacha' },
+  { init: initSquad, mod: 'squad' },
+  { init: initStages, mod: 'stages' },
 ];
 
 export function initModules(): void {

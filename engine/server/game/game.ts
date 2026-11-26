@@ -53,6 +53,10 @@ import { Players } from './systems/players';
 import { Shop } from './systems/shop';
 import { Status } from './systems/status';
 import { Teams } from './systems/teams';
+import { Roster } from './systems/roster';
+import { Gacha } from './systems/gacha';
+import { Squad } from './systems/squad';
+import { Stages } from './systems/stages';
 import { Wallet } from './systems/wallet';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
@@ -78,8 +82,12 @@ export interface Hooks extends HooksExt {
   dungeonCleared: (id: string, players: Ent[]) => void;
   /** 장비 강화를 시도했다 (성공이든 실패든) */
   enhanced: (p: Ent) => void;
-  /** 사람이 몬스터를 때렸다: 실제로 깎인 체력 (쓰러뜨렸으면 monsterKilled보다 먼저 불린다) */
+  /** 사람이 몬스터를 때렸다: 실제로 깎인 체력 (쓰러뜨렸으면 monsterKilled보다 먼저 불린다). 사람 편의 종류(편성의 영웅)가 때린 것은 그 주인이 때린 것으로 불린다 */
   hit: (p: Ent, m: Ent, amount: number) => void;
+  /** [roster] 영웅을 얻었거나 레벨·별이 바뀌었다 */
+  heroChanged: (p: Ent, id: string) => void;
+  /** [stages] 단계를 깼다: 단계 id와 처음 깼는가 */
+  stageCleared: (p: Ent, id: string, first: boolean) => void;
 }
 
 /**
@@ -284,6 +292,10 @@ export class Game {
   /** [build] */ readonly build: Build;
   /** [market] */ readonly market: Market;
   /** [guild] */ readonly guild: Guild;
+  /** [roster] 영웅(동료) */ readonly roster: Roster;
+  /** [gacha] 뽑기 */ readonly gacha: Gacha;
+  /** [squad] 편성: 함께 싸우는 영웅 */ readonly squad: Squad;
+  /** [stages] 장과 단계 */ readonly stages: Stages;
   /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
   readonly sanctions: Sanctions;
 
@@ -328,6 +340,11 @@ export class Game {
     this.build = has('build') ? new Build(this) : off('build', 'build');
     this.market = has('market') ? new Market(this) : off('market', 'market');
     this.guild = has('guild') ? new Guild(this) : off('guild', 'guild');
+    // 수집형·방치형의 넷: 맨 뒤에 만든다 (앞의 시스템의 등록 차례가 이것들을 고르지 않은 게임과 같게)
+    this.roster = has('roster') ? new Roster(this) : off('roster', 'roster');
+    this.gacha = has('gacha') ? new Gacha(this) : off('gacha', 'gacha');
+    this.squad = has('squad') ? new Squad(this) : off('squad', 'squad');
+    this.stages = has('stages') ? new Stages(this) : off('stages', 'stages');
     this.sanctions = new Sanctions(this);
     new Status(this); // 본인에게 보내는 성장 수치(stat)와 장비·우편(meta): 그 칸의 모듈을 고른 게임만
     for (const fn of this.ready) fn();

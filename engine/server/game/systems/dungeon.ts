@@ -1,12 +1,12 @@
 // 던전: 문에서 들어가면 그 사람(과 파티)만의 인스턴스가 생긴다. 같은 지형을 여러 무리가 동시에 쓰지만
 // 층(Ent.layer)이 달라 서로 보이지 않고 싸우지 않는다. 우두머리를 잡으면 보상을 받고 밖으로 나온다.
 // 제한 시간을 넘기거나 모두 나가면 인스턴스는 사라진다. 내용과 수치는 games/deungbul/shared/content/dungeons.ts에 있다.
-import { DUNGEON_TABLE, ECON_HUNT, PORTAL_REACH, clearRar, dungeonDef, isDungeonId, runKey, type DungeonDef, type DungeonId } from '../../../shared/defs';
+import { DUNGEON_TABLE, ECON_HUNT, PORTAL_REACH, clearRar, dungeonDef, hasDungeonKeys, isDungeonId, runKey, type DungeonDef, type DungeonId, type KeysMe } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { AREAS, areaAt } from '../../../shared/world';
-import { dist, type Ent } from '../entity';
+import { dayOf, dist, type Ent } from '../entity';
 import type { Game } from '../game';
-import { DUNGEON_LAYER, fieldLayer, isField } from '../layers';
+import { fieldLayer, instanceLayer, isField } from '../layers';
 
 interface Run {
   id: DungeonId; def: DungeonDef; layer: number;
@@ -31,7 +31,6 @@ export class Dungeon {
   private held = new Map<string, { run: Run; home: number; until: number }>();
   /** 안에 있는 사람이 들어오기 전에 있던 들판의 층(채널). 나갈 때 그곳으로 돌려보낸다 */
   private back = new Map<number, number>();
-  private nextLayer = DUNGEON_LAYER;
 
   constructor(private g: Game) {
     g.ticks.push((dt) => this.tick(dt));
@@ -66,6 +65,75 @@ export class Dungeon {
     // 던전 안에서 쓰러지면 던전 입구에서 다시 일어난다
     const respawn = g.rules.respawn;
     g.rules.respawn = (p) => { const run = this.of.get(p.id); return run ? { x: run.def.entry.x, z: run.def.entry.z, id: run.id } : respawn(p); };
+
+    // 입장 열쇠 (DungeonDef.key): 열쇠를 쓰는 던전이 있는 게임에만 저장 칸·개인 상태·명령이 생긴다 (하루 횟수만 쓰는 게임은 예전과 글자까지 같다)
+    if (hasDungeonKeys()) {
+      g.commands.set('dungeonKey', (p, m) => { if (isDungeonId(m.id)) this.buyKey(p, m.id); });
+      g.saves.push({ name: 'keys', save: (p) => this.keysOf(p), load: (p, raw) => this.loadKeys(p, raw) });
+      g.personal.push({ name: 'keys', state: (p): KeysMe => { this.refill(p); return Object.fromEntries([...this.keyIds].map((id) => [id, { n: this.keyState(p, id).n, bought: this.keyState(p, id).bought }])); } });
+      g.on('playerLeft', (id) => { this.keys.delete(id); });
+    }
+  }
+
+  // ---------- 입장 열쇠 ----------
+  /** 열쇠를 쓰는 던전들 */
+  private readonly keyIds = new Set(Object.entries(DUNGEON_TABLE).filter(([, d]) => !!d.key).map(([id]) => id));
+  /** 사람(엔티티 id) → 던전마다의 열쇠: 가진 수, 오늘 산 수, 마지막으로 채운 날 */
+  private readonly keys = new Map<number, Record<string, { n: number; bought: number; day: string }>>();
+  /** 그 사람의 그 던전의 열쇠 (처음이면 만든다: 그날 처음 채울 때 min(refill, cap)) */
+  private keyState(p: Ent, id: string): { n: number; bought: number; day: string } {
+    let all = this.keys.get(p.id);
+    if (!all) this.keys.set(p.id, all = {});
+    return all[id] ??= { n: 0, bought: 0, day: '' };
+  }
+  /** 날이 바뀌었으면 열쇠를 채운다: 하루가 지날 때마다 refill개, cap을 넘지 않게 (산 것으로 cap 위에 있으면 그대로). 산 수는 새로 센다 */
+  private refill(p: Ent): void {
+    const today = dayOf(this.g.now());
+    for (const id of this.keyIds) {
+      const k = this.keyState(p, id), def = dungeonDef(id).key!;
+      if (k.day === today) continue;
+      const days = k.day ? Math.max(1, Math.round((Date.parse(today) - Date.parse(k.day)) / 86400000)) : 1;
+      if (k.n < def.cap) k.n = Math.min(def.cap, k.n + def.refill * days);
+      k.day = today; k.bought = 0;
+      p.unsaved = true;
+    }
+  }
+  /** 가진 열쇠 (날이 바뀌었으면 채운 뒤) */
+  keyCount(p: Ent, id: string): number { if (!this.keyIds.has(id)) return 0; this.refill(p); return this.keyState(p, id).n; }
+  /** 열쇠를 더한다 (보상·운영으로 주는 것). cap을 넘어도 된다 */
+  giveKeys(p: Ent, id: string, n: number): void {
+    if (!this.keyIds.has(id) || !(n > 0)) return;
+    this.refill(p);
+    this.keyState(p, id).n += Math.floor(n);
+    p.unsaved = true;
+  }
+  /** 재화를 내고 열쇠 하나를 산다 (DungeonDef.key.buy) */
+  private buyKey(p: Ent, id: DungeonId): void {
+    const g = this.g, def = dungeonDef(id).key, buy = def?.buy;
+    if (!def || !buy) return;
+    this.refill(p);
+    const k = this.keyState(p, id);
+    if (k.bought >= buy.perDay) { g.notify(p, 'dungeonKeyLimit', id); return; }
+    if (!g.wallet.take(p, buy.cur, buy.cost, 'cmd:dungeonKey')) { g.notify(p, 'costShort', buy.cur); return; }
+    k.n++; k.bought++;
+    p.unsaved = true;
+    g.notify(p, 'dungeonKeyBought', id, k.n);
+  }
+  private keysOf(p: Ent): Record<string, [number, number, string]> | undefined {
+    const all = this.keys.get(p.id);
+    if (!all) return undefined;
+    const out: Record<string, [number, number, string]> = {};
+    for (const [id, k] of Object.entries(all)) if (this.keyIds.has(id)) out[id] = [k.n, k.bought, k.day];
+    return Object.keys(out).length ? out : undefined;
+  }
+  private loadKeys(p: Ent, raw: unknown): void {
+    if (typeof raw !== 'object' || raw === null) return;
+    for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (!this.keyIds.has(id) || !Array.isArray(v)) continue;
+      const int = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? Math.max(0, Math.min(9999, Math.floor(x))) : 0);
+      const k = this.keyState(p, id);
+      k.n = int(v[0]); k.bought = int(v[1]); k.day = typeof v[2] === 'string' ? v[2].slice(0, 10) : '';
+    }
   }
 
   /** 그 사람이 들어가 있는 던전 (없으면 undefined) */
@@ -100,27 +168,36 @@ export class Dungeon {
     if (this.of.has(p.id) || !isField(p.layer)) return;
     if (dist(p, def.portal) > PORTAL_REACH) { g.notify(p, 'dungeonFar'); return; }
     if (g.field(p, 'lv') < def.minLv) { g.notify(p, 'dungeonLevel', def.minLv); return; }
-    g.daily.roll(p); // 날이 바뀌었으면 입장 횟수도 새로 센다
-    const key = runKey(id), used = p.daily.prog[key] ?? 0;
-    if (used >= def.perDay) { g.notify(p, 'dungeonNoRuns'); return; }
+    if (def.key) {
+      // 열쇠를 쓰는 던전: 하루 횟수 대신 열쇠 하나 (DungeonDef.key)
+      if (this.keyCount(p, id) <= 0) { g.notify(p, 'dungeonNoKeys', id); return; }
+      this.keyState(p, id).n--;
+      p.unsaved = true;
+    } else {
+      g.daily.roll(p); // 날이 바뀌었으면 입장 횟수도 새로 센다
+      const key = runKey(id), used = p.daily.prog[key] ?? 0;
+      if (used >= def.perDay) { g.notify(p, 'dungeonNoRuns'); return; }
+      p.daily.prog[key] = used + 1;
+      p.metaDirty = true; p.unsaved = true;
+    }
 
     // 파티원이 이미 들어가 있는 인스턴스가 있으면 거기로 합류한다
-    let run = g.party.mates(p).map((m) => this.of.get(m.id)).find((r) => r && r.id === id && !r.cleared);
+    // (파티 모듈이 없는 게임에는 파티원이 없다)
+    const mates = g.has('party') ? g.party.mates(p) : [];
+    let run = mates.map((m) => this.of.get(m.id)).find((r) => r && r.id === id && !r.cleared);
     if (!run) run = this.create(id, def);
-    p.daily.prog[key] = used + 1;
-    p.metaDirty = true; p.unsaved = true;
     run.members.add(p.id);
     this.of.set(p.id, run);
     this.back.set(p.id, p.layer);
     this.move(p, def.entry.x + (Math.random() - 0.5) * 2, def.entry.z + (Math.random() - 0.5) * 2, run.layer);
     g.notify(p, 'dungeonEnter', id);
     // 아직 같은 인스턴스에 없는 파티원에게 알린다: 모르고 밖에 남거나 따로 들어가지 않게 (문에서 들어가면 여기로 합류한다)
-    for (const m of g.party.mates(p)) if (this.of.get(m.id) !== run) g.notify(m, 'dungeonMate', p.name, id);
+    for (const m of mates) if (this.of.get(m.id) !== run) g.notify(m, 'dungeonMate', p.name, id);
     this.tell(run);
   }
 
   private create(id: DungeonId, def: DungeonDef): Run {
-    const g = this.g, layer = this.nextLayer++;
+    const g = this.g, layer = instanceLayer(g);
     const run: Run = { id, def, layer, members: new Set(), mobs: new Set(), boss: 0, left: def.timeS, cleared: false, exit: 0, told: 0 };
     const spawn = (type: string, x: number, z: number) => {
       const m = g.monsters.spawn(type as Parameters<typeof g.monsters.spawn>[0], x, z);
@@ -151,8 +228,10 @@ export class Dungeon {
     run.cleared = true; run.exit = run.def.exitS;
     for (const p of this.players(run)) {
       g.mail.send(p, 'dungeon', [run.id], run.def.reward);
-      const rar = clearRar(run.def, g.gear.roll(run.def.dropLv).rar);
-      g.gear.give(p, g.gear.roll(run.def.dropLv, rar), ECON_HUNT.inst);
+      if (run.def.gear !== false) {
+        const rar = clearRar(run.def, g.gear.roll(run.def.dropLv).rar);
+        g.gear.give(p, g.gear.roll(run.def.dropLv, rar), ECON_HUNT.inst);
+      }
       g.notify(p, 'dungeonClear', run.id, run.def.exitS);
     }
     g.fire('dungeonCleared', run.id, this.players(run));

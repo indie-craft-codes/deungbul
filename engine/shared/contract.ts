@@ -7,6 +7,7 @@
 // 적은 이름의 모양이 다르면 이 파일의 맨 아래 검사에서 컴파일 오류가 난다 (npm run typecheck).
 // 게임에만 있는 것(등불지기의 등탑, 주민, 습격, 퀘스트)은 계약에 없다: 틀이 읽지 않는다.
 // 계약의 타입들(ClassDef, ItemDef, MapDef 등)과 내용에서 값을 구하는 도우미는 engine/shared/defs/에 있다.
+import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRarityDef, HeroRoleDef, HeroRules, IdleCtx, SquadRules, StageRules } from './defs/collect';
 import type { ClassDef, SkillDef } from './defs/combat';
 import type { ForgeDef } from './defs/craft';
 import type { DungeonDef } from './defs/dungeons';
@@ -125,7 +126,8 @@ export interface GrowthContent {
 /** mail, daily, idle: 우편, 일일 임무와 출석, 접속하지 않은 동안의 보상 */
 export interface MailContent {
   MAIL_MAX: number;
-  IDLE: { minMin: number; maxMin: number; reward: (minutes: number, lv: number) => Reward };
+  /** 방치 보상: 비운 분과 레벨, 그리고 틀이 넘기는 것(ctx: 깬 단계의 수. stages 모듈이 없으면 0)으로 셈한다. ctx를 읽지 않는 식도 된다 */
+  IDLE: { minMin: number; maxMin: number; reward: (minutes: number, lv: number, ctx: IdleCtx) => Reward };
   DAILIES: Readonly<Record<string, DailyDef>>;
   ATTEND: readonly Reward[];
 }
@@ -169,8 +171,29 @@ export interface TeamsContent {
   TEAM_RULES: TeamRules;
 }
 
+/** roster, gacha, squad, stages: 수집형·방치형 RPG (engine/shared/defs/collect.ts) */
+export interface CollectContent {
+  /** 영웅(동료)의 표: id → 이름의 문장 키, 등급, 역할, 1레벨의 공격·체력 */
+  HEROES: Readonly<Record<string, HeroDef>>;
+  /** 등급들 (차례가 번호: 0이 가장 흔하다) */
+  HERO_RARITIES: readonly HeroRarityDef[];
+  /** 역할들: 싸우는 법과 겉모습 */
+  HERO_ROLES: Readonly<Record<string, HeroRoleDef>>;
+  /** 레벨·별의 상한과 값, 자라는 비율 */
+  HERO_RULES: HeroRules;
+  /** 뽑기의 배너들: 값, 영웅마다의 무게, 천장, 10번 뽑기의 보장 */
+  BANNERS: Readonly<Record<string, BannerDef>>;
+  GACHA_RULES: GachaRules;
+  /** 편성: 함께 싸우는 수, 노리는 거리, 다시 일어나기 */
+  SQUAD_RULES: SquadRules;
+  /** 장과 단계 (단계의 id는 '장-단계': 1-1, 1-2 …) */
+  CHAPTERS: readonly ChapterDef[];
+  /** 단계가 벌어지는 곳과 시간 */
+  STAGE_RULES: StageRules;
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

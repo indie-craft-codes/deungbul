@@ -75,8 +75,8 @@ function resolveSpec(root: URL, file: string, spec: string): string | null {
     `이 게임에만 있는 이름(SMITHY, RESIDENTS, TOWER, POND …)은 틀의 통로에 없고 게임의 통로에만 있다${leaked.length ? ': ' + leaked.join(', ') : ''}`);
 
   // 4
-  // engine/test/fx/와 engine/test/core/ 안에서 @game은 게임이 아니라 시험용 내용(그 폴더)을 가리킨다: 이 검사의 대상이 아니다
-  const testGame = engineFiles.filter((f) => isTest(f) && !f.startsWith('engine/test/fx/') && !f.startsWith('engine/test/core/')).flatMap((f) => specsOf(f).filter((s) => s.spec.startsWith('@game')).map((s) => ({ f, spec: s.spec })));
+  // engine/test/fx/, engine/test/core/, engine/test/collect/ 안에서 @game은 게임이 아니라 시험용 내용(그 폴더)을 가리킨다: 이 검사의 대상이 아니다
+  const testGame = engineFiles.filter((f) => isTest(f) && !f.startsWith('engine/test/fx/') && !f.startsWith('engine/test/core/') && !f.startsWith('engine/test/collect/')).flatMap((f) => specsOf(f).filter((s) => s.spec.startsWith('@game')).map((s) => ({ f, spec: s.spec })));
   const testBad = testGame.filter((x) => x.spec !== '@game/shared/defs' && x.spec !== '@game/shared/world');
   for (const x of testBad) console.log(`  ${x.f} -> ${x.spec}`);
   check(testBad.length === 0, `틀의 시험이 @game으로 읽는 것은 게임의 내용 통로(@game/shared/defs, @game/shared/world)뿐이다 (${testGame.length}곳, 시험 파일 ${new Set(testGame.map((x) => x.f)).size}개: 13단계에서 0으로 줄인다)`);

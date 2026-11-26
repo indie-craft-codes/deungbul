@@ -35,7 +35,7 @@ check(SRC.length >= 90 && CSS.length >= 1, `틀의 소스를 읽었다 (ts ${SRC
    */
   type Content = Record<string, unknown> & { MAP: { areas: readonly { id: string }[] }; RARITIES: readonly { id: string }[]; GEAR_SLOTS: readonly string[] };
   const gameDirs = fs.existsSync(path.join(root, 'games')) ? fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }) : []; // 게임이 하나도 없는 저장소에서도 돈다
-  const CONTENTS = [...gameDirs.filter((e) => e.isDirectory()).map((e) => `games/${e.name}/shared/content/index.ts`), 'engine/test/fx/shared/content/index.ts', 'engine/test/core/shared/content/index.ts']
+  const CONTENTS = [...gameDirs.filter((e) => e.isDirectory()).map((e) => `games/${e.name}/shared/content/index.ts`), 'engine/test/fx/shared/content/index.ts', 'engine/test/core/shared/content/index.ts', 'engine/test/collect/shared/content/index.ts']
     .filter((f) => fs.existsSync(path.join(root, f)));
   const keys = (o: unknown): string[] => (o && typeof o === 'object' ? Object.keys(o) : []);
   const ids = new Set<string>();
@@ -96,7 +96,7 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
    */
   const KNOWN: Record<string, string[]> = {
     crypto: ['engine/server/net/admin.ts', 'engine/server/net/handoff.ts'], // node:crypto (관리자 토큰, 기기 옮기기의 코드와 토큰)
-    sparks: ['engine/shared/defaults.ts', 'engine/server/game/systems/ledger.ts', 'engine/server/game/systems/mail.ts', 'engine/server/game/systems/players.ts', 'engine/server/game/systems/wallet.ts'],
+    sparks: ['engine/shared/defaults.ts', 'engine/server/game/systems/ledger.ts', 'engine/server/game/systems/mail.ts', 'engine/server/game/systems/players.ts', 'engine/server/game/systems/wallet.ts', 'engine/shared/defs/collect.ts'],
     sparkBonus: ['engine/server/game/game.ts', 'engine/server/game/systems/players.ts'],
   };
   const used = new Set<string>();

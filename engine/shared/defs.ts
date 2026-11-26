@@ -3,6 +3,7 @@
 //   - 내용 계약(contract.ts)의 이름: content.ts가 게임의 내용(@game/shared/content)에서 꺼내고, 게임이 적지 않은 이름은 기본값(defaults.ts)으로 채운 것
 // 계약에 없는 이름은 여기로 나오지 않으므로 틀의 코드가 쓸 수 없다 (그 게임에만 있는 것은 그 게임의 통로가 따로 내보낸다: games/deungbul/shared/defs.ts).
 // 틀이 게임의 내용을 새로 읽어야 하면 계약에 이름과 모양을, defaults.ts에 기본값을, content.ts와 아래 목록에 이름을 더한다 (목록들이 같은지 engine/test/boundary.test.ts가 견준다).
+export * from './defs/collect';
 export * from './defs/combat';
 export * from './defs/craft';
 export * from './defs/dungeons';
@@ -31,6 +32,8 @@ export {
   PARTY, CHANNEL, GUILD, MARKET,
   // 팀
   TEAMS, TEAM_RULES,
+  // 수집형·방치형
+  HEROES, HERO_RARITIES, HERO_ROLES, HERO_RULES, BANNERS, GACHA_RULES, SQUAD_RULES, CHAPTERS, STAGE_RULES,
   // 재화
   CURRENCIES,
   // 재화 흐름 지표

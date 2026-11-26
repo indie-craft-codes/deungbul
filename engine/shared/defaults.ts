@@ -14,6 +14,7 @@ import type { DailyDef, Reward } from './defs/growth';
 import type { ItemDef } from './defs/items';
 import type { MonsterDef } from './defs/monsters';
 import type { TeamDef, TeamRules } from './defs/teams';
+import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRarityDef, HeroRoleDef, HeroRules, SquadRules, StageRules } from './defs/collect';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -176,3 +177,27 @@ export const ECON_WATCH = {
 export const TEAMS: readonly TeamDef[] = [];
 /** 사람이 더 많은 팀으로는 못 간다, 옮길 수 있다, 저장하지 않는다 */
 export const TEAM_RULES: TeamRules = { balance: true, switch: true, persist: false };
+
+// ---------- 수집형·방치형 (roster, gacha, squad, stages) ----------
+/** 영웅의 표: 비어 있다 (roster를 고른 게임이 적는다) */
+export const HEROES: Readonly<Record<string, HeroDef>> = {};
+/** 등급 셋: 흔함(별 1, 조각 5), 귀함(별 2, 조각 10), 전설(별 3, 조각 25). 이름은 틀의 문장 키 */
+export const HERO_RARITIES: readonly HeroRarityDef[] = [
+  { id: 'common', name: 'heroRarity0', color: 0x9aa4ad, stars: 1, shards: 5 },
+  { id: 'rare', name: 'heroRarity1', color: 0x4f8fe0, stars: 2, shards: 10 },
+  { id: 'legend', name: 'heroRarity2', color: 0xe0a030, stars: 3, shards: 25 },
+];
+/** 역할의 표: 비어 있다 (없는 역할의 영웅은 붙어서 친다) */
+export const HERO_ROLES: Readonly<Record<string, HeroRoleDef>> = {};
+/** 별은 6까지, 별마다 레벨 상한 +10 (별 1이면 20), 레벨 값은 골드 (레벨 × 20 × (등급 + 1)), 별 값은 조각 (별 × 10), 레벨마다 +10%, 별마다 +25% */
+export const HERO_RULES: HeroRules = {
+  maxStars: 6, maxLv: (stars) => 10 + stars * 10, levelCur: 'gold', levelCost: (lv, rarity) => lv * 20 * (rarity + 1), starCost: (stars) => stars * 10, grow: 0.1, starMul: 0.25,
+};
+/** 배너: 없다 (gacha를 고른 게임이 적는다) */
+export const BANNERS: Readonly<Record<string, BannerDef>> = {};
+export const GACHA_RULES: GachaRules = { history: 50 };
+/** 넷이 함께 싸우고, 주인 둘레 12m를 노리고, 20m 밖이면 돌아오고, 10초 뒤 다시 일어난다 */
+export const SQUAD_RULES: SquadRules = { size: 4, seek: 12, leash: 20, reviveS: 10, regen: 0.05, autoFill: true };
+/** 장: 없다 (stages를 고른 게임이 적는다) */
+export const CHAPTERS: readonly ChapterDef[] = [];
+export const STAGE_RULES: StageRules = { arena: { x: 0, z: 0 }, radius: 8, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: false };

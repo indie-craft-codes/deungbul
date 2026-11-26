@@ -216,6 +216,27 @@
   "undefined 제한 시간 1분.",
   "undefined 제한 시간 2분."
  ],
+ "fmt.dungeonKeyInfo": [
+  "203e2798ecde78f1",
+  "열쇠 하나로 한 번 들어갑니다. 날마다 undefined개씩 채워집니다 (undefined개까지).",
+  "열쇠 하나로 한 번 들어갑니다. 날마다 0개씩 채워집니다 (undefined개까지).",
+  "열쇠 하나로 한 번 들어갑니다. 날마다 1개씩 채워집니다 (undefined개까지).",
+  "열쇠 하나로 한 번 들어갑니다. 날마다 2개씩 채워집니다 (undefined개까지)."
+ ],
+ "fmt.dungeonKeyPrice": [
+  "a2523f69ea676578",
+  "불씨 NaN · 오늘 undefined번 더",
+  "불씨 0 · 오늘 undefined번 더",
+  "불씨 1 · 오늘 undefined번 더",
+  "불씨 2 · 오늘 undefined번 더"
+ ],
+ "fmt.dungeonKeys": [
+  "dd8b5a3568ae0dbb",
+  "열쇠 undefined / undefined",
+  "열쇠 0 / undefined",
+  "열쇠 1 / undefined",
+  "열쇠 2 / undefined"
+ ],
  "fmt.dungeonMateIn": [
   "6dfb8f4515a75451",
   "파티원(undefined)이 안에 있습니다. 들어가면 같은 곳으로 갑니다.",
@@ -321,6 +342,42 @@
   "1초 기절",
   "2초 기절"
  ],
+ "fmt.gachaCost": [
+  "efe882c1c513e571",
+  "불씨 NaN",
+  "불씨 0",
+  "불씨 1",
+  "불씨 2"
+ ],
+ "fmt.gachaDup": [
+  "5af1e9d36d6cb06f",
+  "조각 +NaN",
+  "조각 +0",
+  "조각 +1",
+  "조각 +2"
+ ],
+ "fmt.gachaNew": "새 영웅!",
+ "fmt.gachaPity": [
+  "5e859576053de137",
+  "천장: undefined 이상이 NaN번 이어서 나오지 않으면 undefined번째 뽑기는 undefined 이상에서만 나옵니다. 지금 undefined번 이어서 나오지 않음 (천장까지 NaN번).",
+  "천장: 0 이상이 NaN번 이어서 나오지 않으면 undefined번째 뽑기는 0 이상에서만 나옵니다. 지금 undefined번 이어서 나오지 않음 (천장까지 NaN번).",
+  "천장: 1 이상이 NaN번 이어서 나오지 않으면 undefined번째 뽑기는 1 이상에서만 나옵니다. 지금 undefined번 이어서 나오지 않음 (천장까지 NaN번).",
+  "천장: 2 이상이 NaN번 이어서 나오지 않으면 undefined번째 뽑기는 2 이상에서만 나옵니다. 지금 undefined번 이어서 나오지 않음 (천장까지 NaN번)."
+ ],
+ "fmt.gachaSameRatio": [
+  "81b7b0e2d94770ad",
+  "undefined 이상의 영웅끼리의 비율은 평소와 같습니다.",
+  "0 이상의 영웅끼리의 비율은 평소와 같습니다.",
+  "1 이상의 영웅끼리의 비율은 평소와 같습니다.",
+  "2 이상의 영웅끼리의 비율은 평소와 같습니다."
+ ],
+ "fmt.gachaTenRule": [
+  "8c0b06c681094d38",
+  "10번 뽑기: 앞의 아홉에 undefined 이상이 없으면 열째는 undefined 이상에서만 나옵니다.",
+  "10번 뽑기: 앞의 아홉에 0 이상이 없으면 열째는 0 이상에서만 나옵니다.",
+  "10번 뽑기: 앞의 아홉에 1 이상이 없으면 열째는 1 이상에서만 나옵니다.",
+  "10번 뽑기: 앞의 아홉에 2 이상이 없으면 열째는 2 이상에서만 나옵니다."
+ ],
  "fmt.gearHint": [
   "d94419077bbec568",
   "강화: 보급형(상점에서 산 것)은 +undefined까지, 만들거나 주운 장비는 +undefined까지. 실패해도 장비는 그대로이고 골드만 듭니다.",
@@ -411,6 +468,41 @@
   "0 / NaN",
   "1 / NaN",
   "2 / NaN"
+ ],
+ "fmt.heroCost": [
+  "efe882c1c513e571",
+  "불씨 NaN",
+  "불씨 0",
+  "불씨 1",
+  "불씨 2"
+ ],
+ "fmt.heroLv": [
+  "1d9947959c57dac1",
+  "Lv undefined/undefined",
+  "Lv 0/undefined",
+  "Lv 1/undefined",
+  "Lv 2/undefined"
+ ],
+ "fmt.heroRole": [
+  "b8ed4584d57f985e",
+  "undefined · undefined",
+  "undefined · 0",
+  "undefined · 1",
+  "undefined · 2"
+ ],
+ "fmt.heroShards": [
+  "039a18bdc8081457",
+  "조각 NaN/NaN",
+  "조각 0/NaN",
+  "조각 1/NaN",
+  "조각 2/NaN"
+ ],
+ "fmt.heroStats": [
+  "bb88f0b62ce03517",
+  "공격 NaN · 체력 NaN · 전투력 NaN",
+  "공격 0 · 체력 NaN · 전투력 NaN",
+  "공격 1 · 체력 NaN · 전투력 NaN",
+  "공격 2 · 체력 NaN · 전투력 NaN"
  ],
  "fmt.itemDamage": [
   "4d4bff0baaef82e2",
@@ -705,6 +797,13 @@
   "1 장비까지",
   "2 장비까지"
  ],
+ "fmt.ratePct": [
+  "18b43715942eb454",
+  "NaN%",
+  "0%",
+  "100%",
+  "200%"
+ ],
  "fmt.reforgeConfirm": [
   "d1a42e9b0482b62c",
   "확인 · undefined 다시 뽑기",
@@ -846,12 +945,82 @@
   "불씨 1",
   "불씨 2"
  ],
+ "fmt.squadCount": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.squadPower": [
+  "bdd571c736fb21b8",
+  "편성 전투력 NaN",
+  "편성 전투력 0",
+  "편성 전투력 1",
+  "편성 전투력 2"
+ ],
+ "fmt.stageBest": [
+  "94672b41ea9446bf",
+  "아직 깬 단계가 없습니다",
+  "가장 멀리 깬 단계 1",
+  "가장 멀리 깬 단계 2",
+  "가장 멀리 깬 단계 5"
+ ],
+ "fmt.stageFoes": [
+  "5d4da2b9928560cc",
+  "남은 적 undefined/undefined",
+  "남은 적 0/undefined",
+  "남은 적 1/undefined",
+  "남은 적 2/undefined"
+ ],
+ "fmt.stageLeft": [
+  "3640b00ea6a25e54",
+  "NaN:NaN",
+  "0:00",
+  "0:01",
+  "0:02"
+ ],
+ "fmt.stageNext": [
+  "965079cc7a030ac3",
+  "undefined초 뒤 다음 단계",
+  "0초 뒤 다음 단계",
+  "1초 뒤 다음 단계",
+  "2초 뒤 다음 단계"
+ ],
  "fmt.stageNote": [
   "1f729b252c72ff31",
   "undefined",
   "빛이 약합니다. 혜택이 없습니다.",
   "undefined 이상이면 환해집니다: 이동 속도 +undefined%, 회복 undefined배",
   "환합니다: 이동 속도 +undefined%, 회복 undefined배"
+ ],
+ "fmt.stageRec": [
+  "45d728142d982acf",
+  "권장 전투력 NaN · 내 편성 NaN",
+  "권장 전투력 0 · 내 편성 NaN",
+  "권장 전투력 1 · 내 편성 NaN",
+  "권장 전투력 2 · 내 편성 NaN"
+ ],
+ "fmt.stageRetry": [
+  "447db65b7d230cbb",
+  "undefined초 뒤 다시",
+  "0초 뒤 다시",
+  "1초 뒤 다시",
+  "2초 뒤 다시"
+ ],
+ "fmt.stageTitle": [
+  "3e6317dd52d169b3",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.stageWave": [
+  "4403bc4816750b47",
+  "물결 undefined/undefined",
+  "물결 0/undefined",
+  "물결 1/undefined",
+  "물결 2/undefined"
  ],
  "fmt.statLeft": [
   "277c21348274a558",
@@ -1158,6 +1327,7 @@
   "직업이 2(으)로 정해졌습니다."
  ],
  "msg.classFar": "직업은 등탑 가까이에서 바꿀 수 있습니다.",
+ "msg.costShort": "불씨가 모자랍니다.",
  "msg.crafted": [
   "6392ca0c56c07af8",
   "undefined을(를) 만들었습니다.",
@@ -1195,6 +1365,20 @@
  ],
  "msg.dungeonFail": "제한 시간이 지나 밖으로 나왔습니다.",
  "msg.dungeonFar": "문에 더 가까이 가세요.",
+ "msg.dungeonKeyBought": [
+  "69ba0179af33e5c7",
+  "undefined의 열쇠를 샀습니다 (undefined개).",
+  "0의 열쇠를 샀습니다 (0개).",
+  "1의 열쇠를 샀습니다 (1개).",
+  "2의 열쇠를 샀습니다 (3개)."
+ ],
+ "msg.dungeonKeyLimit": [
+  "6535a779dc266254",
+  "undefined의 열쇠는 오늘 더 살 수 없습니다.",
+  "0의 열쇠는 오늘 더 살 수 없습니다.",
+  "1의 열쇠는 오늘 더 살 수 없습니다.",
+  "2의 열쇠는 오늘 더 살 수 없습니다."
+ ],
  "msg.dungeonLeft": "던전에서 나왔습니다.",
  "msg.dungeonLevel": [
   "912828b3b77b72d7",
@@ -1209,6 +1393,13 @@
   "0 님이 0에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다.",
   "1 님이 1에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다.",
   "2 님이 3에 들어갔습니다. 문에서 들어가면 같은 곳으로 갑니다."
+ ],
+ "msg.dungeonNoKeys": [
+  "e31178b1183d66f1",
+  "undefined의 열쇠가 없습니다. 날이 바뀌면 채워집니다.",
+  "0의 열쇠가 없습니다. 날이 바뀌면 채워집니다.",
+  "1의 열쇠가 없습니다. 날이 바뀌면 채워집니다.",
+  "2의 열쇠가 없습니다. 날이 바뀌면 채워집니다."
  ],
  "msg.dungeonNoRuns": "오늘은 더 들어갈 수 없습니다. 자정에 다시 열립니다.",
  "msg.enhanceDown": [
@@ -1333,6 +1524,41 @@
   "코드를 너무 많이 틀렸습니다. 0분 뒤에 다시 해 주세요.",
   "코드를 너무 많이 틀렸습니다. 1분 뒤에 다시 해 주세요.",
   "코드를 너무 많이 틀렸습니다. 2분 뒤에 다시 해 주세요."
+ ],
+ "msg.heroMaxLv": [
+  "6136d697a2ec1465",
+  "undefined: 별을 올려야 레벨이 더 오릅니다.",
+  "0: 별을 올려야 레벨이 더 오릅니다.",
+  "1: 별을 올려야 레벨이 더 오릅니다.",
+  "2: 별을 올려야 레벨이 더 오릅니다."
+ ],
+ "msg.heroNew": [
+  "9d617bcfe8ab96b0",
+  "새 영웅 undefined!",
+  "새 영웅 0!",
+  "새 영웅 1!",
+  "새 영웅 2!"
+ ],
+ "msg.heroShards": [
+  "f34fc80b9914277c",
+  "undefined: 조각이 undefined개 모자랍니다.",
+  "0: 조각이 0개 모자랍니다.",
+  "1: 조각이 1개 모자랍니다.",
+  "2: 조각이 3개 모자랍니다."
+ ],
+ "msg.heroStar": [
+  "ce63cef4ec2053e5",
+  "undefined 별 undefined개!",
+  "0 별 0개!",
+  "1 별 1개!",
+  "2 별 3개!"
+ ],
+ "msg.heroUp": [
+  "cfdb271ad0878055",
+  "undefined 레벨 undefined!",
+  "0 레벨 0!",
+  "1 레벨 1!",
+  "2 레벨 3!"
  ],
  "msg.hpFull": "체력이 가득합니다.",
  "msg.joined": [
@@ -1645,6 +1871,28 @@
   "1의 밝기가 바뀌었습니다: 보통",
   "3의 밝기가 바뀌었습니다: 환함"
  ],
+ "msg.stageClear": [
+  "f15d5d11c1210b25",
+  "undefined 깸!",
+  "0 깸!",
+  "1 깸! 처음 깬 보상을 받았습니다.",
+  "2 깸! 처음 깬 보상을 받았습니다."
+ ],
+ "msg.stageFail": [
+  "ee68619963b97e12",
+  "undefined을(를) 깨지 못했습니다 (쓰러짐). 깬 단계로 돌아가고 자동 진행을 끕니다.",
+  "0을(를) 깨지 못했습니다 (쓰러짐). 깬 단계로 돌아가고 자동 진행을 끕니다.",
+  "1을(를) 깨지 못했습니다 (시간 초과). 깬 단계로 돌아가고 자동 진행을 끕니다.",
+  "2을(를) 깨지 못했습니다 (시간 초과). 깬 단계로 돌아가고 자동 진행을 끕니다."
+ ],
+ "msg.stageLast": "마지막 단계까지 깼습니다. 같은 단계를 되풀이합니다.",
+ "msg.stageLocked": [
+  "c310842d2481be2b",
+  "undefined은(는) 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요.",
+  "0은(는) 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요.",
+  "1은(는) 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요.",
+  "2은(는) 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요."
+ ],
  "msg.statNone": "찍을 능력치 점수가 없습니다. 레벨이 오르면 3점씩 받습니다.",
  "msg.statReset": "능력치를 모두 돌려받았습니다. 다시 찍을 수 있습니다.",
  "msg.teamFull": " 팀에 사람이 더 많습니다. 다른 팀을 고르세요.",
@@ -1808,6 +2056,7 @@
  "ui.deviceUseLink": "다른 기기에서 하던 캐릭터가 있나요? 코드로 이어받기",
  "ui.disconnected": "서버와 연결이 끊어졌습니다.",
  "ui.dungeonEnter": "들어가기",
+ "ui.dungeonKeyBuy": "열쇠 사기",
  "ui.dungeonLeave": "던전 나가기",
  "ui.dungeonLeaveConfirm": "한 번 더 누르면 나갑니다 (오늘 횟수는 돌아오지 않습니다)",
  "ui.dungeonNoRuns": "오늘은 더 들어갈 수 없습니다. 자정에 다시 열립니다.",
@@ -1816,6 +2065,20 @@
  "ui.equip": "끼기",
  "ui.forge": "브람의 대장간",
  "ui.full": "서버가 가득 찼습니다. 잠시 뒤에 다시 시도해 주세요.",
+ "ui.gachaHistory": "최근 뽑기 기록",
+ "ui.gachaNoCash": "모든 뽑기는 게임 안에서 얻는 재화로만 합니다. 현금 결제는 없습니다.",
+ "ui.gachaNoHistory": "아직 뽑은 적이 없습니다.",
+ "ui.gachaOne": "1번 뽑기",
+ "ui.gachaPityMark": "천장",
+ "ui.gachaRates": "확률 보기",
+ "ui.gachaRatesHead": "확률 공개",
+ "ui.gachaRatesHero": "영웅별 확률",
+ "ui.gachaRatesHide": "확률 닫기",
+ "ui.gachaRatesPity": "천장에 닿은 뽑기의 확률",
+ "ui.gachaRatesRarity": "등급별 확률",
+ "ui.gachaRatesTen": "10번 뽑기의 열째(보장)의 확률",
+ "ui.gachaResult": "뽑기 결과",
+ "ui.gachaTen": "10번 뽑기",
  "ui.gateBanned": "이 캐릭터나 주소는 접속이 막혀 있습니다.",
  "ui.gateHandedOff": "이 캐릭터는 다른 기기로 옮겨 갔습니다. 다시 접속하면 이 기기에서는 새 캐릭터로 시작합니다.",
  "ui.gateHandoffDone": "캐릭터를 이어받았습니다. 다시 접속하는 중입니다…",
@@ -1840,6 +2103,14 @@
  "ui.guildNoticeHint": "길드 공지",
  "ui.guildNoticeSet": "공지 올리기",
  "ui.helpVerb": "보태기",
+ "ui.heroLevelBtn": "레벨 업",
+ "ui.heroMax": "최대",
+ "ui.heroNone": "아직 영웅이 없습니다. 뽑기에서 영웅을 얻으세요.",
+ "ui.heroNotOwned": "아직 없음",
+ "ui.heroRarity0": "일반",
+ "ui.heroRarity1": "희귀",
+ "ui.heroRarity2": "전설",
+ "ui.heroStarBtn": "별 올리기",
  "ui.hint": "땅 클릭/WASD: 이동 · 몬스터 클릭: 공격 · 1–3: 기술 · Q: 물약 · F: 퀘스트 이동 · R: 자동 사냥 · H: 마을로 · B: 가방 · M: 메뉴 · N: 지도 · Tab: 대상 · Enter: 대화",
  "ui.intro": "안개에 잠긴 땅에서 등탑의 빛을 지키는 등불지기가 됩니다. 몬스터를 잡아 불씨를 모으고, 등탑에 바쳐 마을을 밝히세요.",
  "ui.keepersEmpty": "아직 아무도 없습니다. 불씨를 바치거나 습격을 막으면 이름이 오릅니다.",
@@ -1927,17 +2198,37 @@
  "ui.skillUpHead": "기술 강화",
  "ui.soundOff": "소리 끔",
  "ui.soundOn": "소리 켬",
+ "ui.squadAdd": "넣기",
+ "ui.squadEmpty": "빈 자리",
+ "ui.squadHead": "함께 싸울 영웅",
+ "ui.squadNone": "편성할 영웅이 없습니다. 뽑기에서 영웅을 얻으세요.",
+ "ui.squadRemove": "빼기",
+ "ui.stageAuto": "자동 진행",
+ "ui.stageBoss": "우두머리",
+ "ui.stageClearBig": "단계 깸!",
+ "ui.stageCleared": "깸",
+ "ui.stageFailBig": "실패: 깬 단계로 돌아갑니다",
+ "ui.stageGo": "가기",
+ "ui.stageLeave": "나가기",
+ "ui.stageLockedMark": "잠김",
+ "ui.stageNow": "지금",
+ "ui.stageStart": "도전",
+ "ui.stageWaveClear": "물결을 막았습니다",
  "ui.stale": "새 버전이 나왔습니다. 새로고침해 주세요.",
  "ui.stickLabel": "이동 조이스틱",
  "ui.stunned": "기절",
  "ui.tabBuild": "성장",
  "ui.tabDaily": "일일",
  "ui.tabDevice": "기기",
+ "ui.tabGacha": "뽑기",
  "ui.tabGear": "장비",
  "ui.tabGuild": "길드",
+ "ui.tabHeroes": "영웅",
  "ui.tabMail": "우편",
  "ui.tabMarket": "거래소",
  "ui.tabRank": "순위",
+ "ui.tabSquad": "편성",
+ "ui.tabStages": "단계",
  "ui.teamBoard": "점수판",
  "ui.teamMore": "사람이 더 많음",
  "ui.teamPickBalance": "사람이 더 많은 팀으로는 갈 수 없습니다.",

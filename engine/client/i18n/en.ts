@@ -1,11 +1,11 @@
 // English, the engine's share. Must have the same shape as ko.ts (the EngineLocale type enforces it).
 // 이 게임의 문장과 내용의 이름은 games/deungbul/client/i18n/en.ts에 있다. 이 파일은 게임의 파일을 import하지 않고 게임의 낱말을 적지 않는다.
 import { AWAY } from '../../shared/auto';
-import { BUILD, ENHANCE, GUILD, HOME_KEY, MARKET, PARTY } from '../../shared/defs';
+import { BUILD, ENHANCE, GUILD, HOME_KEY, MARKET, PARTY, pctText } from '../../shared/defs';
 import type { BuildStat, ClassId, GearSlot, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
-import { keyHints, moduleHints, teamName, type EngineLocale } from './ko';
+import { heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
 import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
@@ -42,6 +42,10 @@ export const enBase = (n: ContentNames): EngineLocale => {
   const G = n.currency1 ?? { name: 'Gold', unit: 'gold' };
   const itemName = itemNameOf(items);
   const dungeonName = (id: MsgArg) => dungeonLabel(n, id).name;
+  /** 치르는 재화의 이름 (뽑기·영웅·열쇠) */
+  const curName = (c: MsgArg) => (c === 'gold' ? G.name : coin?.name ?? 'currency');
+  /** 1st, 2nd, 3rd, 4th … */
+  const ordinal = (k: number) => `${k}${k % 100 >= 11 && k % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][k % 10] ?? 'th'}`;
   /** The name of the place you rise at after falling */
   const place = (id: MsgArg) => n.places[String(id)] ?? (String(id) || 'the starting point');
   /** Item name for market mail titles: [item id or gear slot, count] */
@@ -79,6 +83,49 @@ export const enBase = (n: ContentNames): EngineLocale => {
       teamMore: 'More players',
       teamSwitch: 'Switch team',
       teamBoard: 'Scoreboard',
+      tabHeroes: 'Heroes',
+      tabGacha: 'Summon',
+      tabSquad: 'Squad',
+      tabStages: 'Stages',
+      heroRarity0: 'Common',
+      heroRarity1: 'Rare',
+      heroRarity2: 'Legendary',
+      heroNone: 'No heroes yet. Summon some first.',
+      heroLevelBtn: 'Level up',
+      heroStarBtn: 'Star up',
+      heroMax: 'Max',
+      heroNotOwned: 'Not owned',
+      gachaOne: 'Summon ×1',
+      gachaTen: 'Summon ×10',
+      gachaRates: 'Show rates',
+      gachaRatesHide: 'Hide rates',
+      gachaRatesHead: 'Published rates',
+      gachaRatesRarity: 'Rates by rarity',
+      gachaRatesHero: 'Rates by hero',
+      gachaRatesPity: 'Rates on a pity summon',
+      gachaRatesTen: 'Rates on the guaranteed 10th summon',
+      gachaNoCash: 'Every summon uses currency earned in the game. There is no real-money payment.',
+      gachaHistory: 'Recent summons',
+      gachaNoHistory: 'You have not summoned yet.',
+      gachaResult: 'Summon result',
+      gachaPityMark: 'Pity',
+      squadHead: 'Heroes fighting with you',
+      squadEmpty: 'Empty',
+      squadAdd: 'Add',
+      squadRemove: 'Remove',
+      squadNone: 'No heroes to place. Summon some first.',
+      stageAuto: 'Auto advance',
+      stageStart: 'Challenge',
+      stageLeave: 'Leave',
+      stageBoss: 'Boss',
+      stageGo: 'Go',
+      stageNow: 'Now',
+      stageCleared: 'Cleared',
+      stageLockedMark: 'Locked',
+      stageWaveClear: 'Wave cleared',
+      stageClearBig: 'Stage clear!',
+      stageFailBig: 'Failed: back to your cleared stage',
+      dungeonKeyBuy: 'Buy key',
       tabDevice: 'Device',
       deviceMoveHead: 'Move to another device',
       deviceMoveInfo: 'Get a code and enter it in the game on your other device to move this character there. Afterwards, this device can no longer open this character. A code works once, for 10 minutes. Anyone you share it with can take your character, so keep it to yourself.',
@@ -368,6 +415,31 @@ export const enBase = (n: ContentNames): EngineLocale => {
       deviceCode: (minutes) => `Enter this code on your other device within ${minutes} minute${minutes === 1 ? '' : 's'}. It works only once.`,
       teamCount: (n) => (n === 1 ? '1 player' : `${n} players`),
       teamMine: (team, score) => `Team ${team} · score ${num(score)}`,
+      heroLv: (lv, max) => `Lv ${lv}/${max}`,
+      heroStats: (atk, hp, power) => `ATK ${num(atk)} · HP ${num(hp)} · Power ${num(power)}`,
+      heroShards: (have, need) => `Shards ${num(have)}/${num(need)}`,
+      heroCost: (n, cur) => `${num(n)} ${curName(cur)}`,
+      heroRole: (role, rarity) => `${rarity} · ${role}`,
+      gachaCost: (n, cur) => `${num(n)} ${curName(cur)}`,
+      gachaPity: (rarity, after, now) => `Pity: after ${after - 1} summons in a row without ${rarity} or better, the ${ordinal(after)} is drawn only from ${rarity} or better. ${now} in a row so far (pity in ${Math.max(1, after - now)}).`,
+      gachaTenRule: (rarity) => `Summon ×10: if none of the first nine is ${rarity} or better, the tenth is drawn only from ${rarity} or better.`,
+      gachaSameRatio: (rarity) => `Among ${rarity}-or-better heroes, the ratio stays the same as usual.`,
+      ratePct: (p) => pctText(p),
+      gachaDup: (n) => `+${num(n)} shards`,
+      gachaNew: () => 'New hero!',
+      squadCount: (n, max) => `${n} / ${max}`,
+      squadPower: (n) => `Squad power ${num(n)}`,
+      stageTitle: (id, chapter) => (chapter ? `${id} ${chapter}` : id),
+      stageWave: (wave, waves) => `Wave ${wave}/${waves}`,
+      stageFoes: (n, total) => `${n}/${total} foes left`,
+      stageLeft: (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
+      stageRec: (rec, mine) => `Recommended ${num(rec)} · your squad ${num(mine)}`,
+      stageBest: (id) => (id ? `Furthest clear: ${id}` : 'No stage cleared yet'),
+      stageNext: (s) => `Next stage in ${s}s`,
+      stageRetry: (s) => `Retry in ${s}s`,
+      dungeonKeys: (n, cap) => `Keys ${n} / ${cap}`,
+      dungeonKeyInfo: (refill, cap) => `One key per run. ${refill} key${refill === 1 ? '' : 's'} refill each day (up to ${cap}).`,
+      dungeonKeyPrice: (cost, cur, left) => `${num(cost)} ${curName(cur)} · ${left} more today`,
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -378,7 +450,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       noTarget: () => 'No target.',
       tooFar: () => 'Target is too far away.',
       kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} defeated. +${a[1]} exp${coin && Number(a[2]) > 0 ? `, +${count(a[2], coin.one)}` : ''}, +${num(a[3])} ${G.unit}`,
-      levelUp: (a) => `Level up! Lv ${a[0]} · +${BUILD.pointsPerLevel} attribute points (Menu > Growth)`,
+      levelUp: (a) => (anyModule('build') ? `Level up! Lv ${a[0]} · +${BUILD.pointsPerLevel} attribute points (Menu > Growth)` : `Level up! Lv ${a[0]}`),
       died: (a) => `You fell. You rose again at ${place(a[0])}. Nothing was lost.`,
       bought: (a) => `Bought ${itemName(a[0], a[1])}.`,
       classChanged: (a) => `You are now ${withArticle(classes[a[0] as ClassId]?.name ?? String(a[0]))}.`,
@@ -501,6 +573,19 @@ export const enBase = (n: ContentNames): EngineLocale => {
       teamJoined: (a) => `You joined ${teamName(a[0])}.`,
       teamFull: (a) => `${teamName(a[0])} has more players. Pick another team.`,
       teamStay: () => 'You cannot switch teams in this game.',
+      costShort: (a) => `Not enough ${curName(a[0])}.`,
+      heroUp: (a) => `${heroName(a[0])} reached level ${a[1]}!`,
+      heroStar: (a) => `${heroName(a[0])} is now ${a[1]}★!`,
+      heroMaxLv: (a) => `${heroName(a[0])}: raise the stars to level further.`,
+      heroShards: (a) => `${heroName(a[0])}: ${a[1]} more shard${Number(a[1]) === 1 ? '' : 's'} needed.`,
+      heroNew: (a) => `New hero: ${heroName(a[0])}!`,
+      stageClear: (a) => `Stage ${a[0]} cleared!${Number(a[1]) ? ' First-clear reward received.' : ''}`,
+      stageFail: (a) => `Stage ${a[0]} failed (${Number(a[1]) ? 'time ran out' : 'you fell'}). Back to your cleared stage; auto advance is off.`,
+      stageLocked: (a) => `Stage ${a[0]} is locked. Clear the stage before it first.`,
+      stageLast: () => 'You cleared the last stage. It will repeat.',
+      dungeonNoKeys: (a) => `No keys for ${dungeonName(a[0])}. They refill when the day changes.`,
+      dungeonKeyBought: (a) => `Bought a key for ${dungeonName(a[0])} (${a[1]} now).`,
+      dungeonKeyLimit: (a) => `No more keys for ${dungeonName(a[0])} can be bought today.`,
     },
     nameA: n.nameA,
     nameB: n.nameB,

@@ -97,3 +97,13 @@ export const ECON_WATCH = get('ECON_WATCH');
 // ---------- 팀 ----------
 export const TEAMS = get('TEAMS');
 export const TEAM_RULES = get('TEAM_RULES');
+// ---------- 수집형·방치형 ----------
+export const HEROES = get('HEROES');
+export const HERO_RARITIES = get('HERO_RARITIES');
+export const HERO_ROLES = get('HERO_ROLES');
+export const HERO_RULES = get('HERO_RULES');
+export const BANNERS = get('BANNERS');
+export const GACHA_RULES = get('GACHA_RULES');
+export const SQUAD_RULES = get('SQUAD_RULES');
+export const CHAPTERS = get('CHAPTERS');
+export const STAGE_RULES = get('STAGE_RULES');

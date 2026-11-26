@@ -137,4 +137,18 @@ export type MsgKey =
   // ---- 팀 (engine/server/game/systems/teams.ts) ----
   | 'teamJoined' // [팀 번호] 그 팀에 들어갔다
   | 'teamFull' // [팀 번호] 그 팀은 사람이 더 많아 들어갈 수 없다
-  | 'teamStay'; // [팀 번호(지금 팀)] 이 게임은 팀을 옮길 수 없다
+  | 'teamStay' // [팀 번호(지금 팀)] 이 게임은 팀을 옮길 수 없다
+  // ---- 수집형·방치형 (engine/server/game/systems/roster.ts, gacha.ts, stages.ts, dungeon.ts의 열쇠) ----
+  | 'costShort' // [재화 'gold' | 'sparks'] 값을 치를 재화가 모자란다
+  | 'heroUp' // [영웅 id, 레벨] 영웅의 레벨이 올랐다
+  | 'heroStar' // [영웅 id, 별] 영웅의 별이 올랐다
+  | 'heroMaxLv' // [영웅 id] 이 별에서는 더 오르지 않는다 (별을 올려야 한다)
+  | 'heroShards' // [영웅 id, 모자란 조각] 별을 올릴 조각이 모자란다
+  | 'heroNew' // [영웅 id] 새 영웅을 얻었다
+  | 'stageClear' // [단계 id, 처음 깼으면 1] 단계를 깼다
+  | 'stageFail' // [단계 id, 까닭 0 쓰러짐 1 시간] 단계를 깨지 못했다 (깬 단계로 돌아간다)
+  | 'stageLocked' // [단계 id] 아직 갈 수 없는 단계다 (앞 단계를 먼저 깬다)
+  | 'stageLast' // [] 마지막 단계까지 깼다: 같은 단계를 되풀이한다
+  | 'dungeonNoKeys' // [던전 id] 열쇠가 없다
+  | 'dungeonKeyBought' // [던전 id, 가진 열쇠] 열쇠를 샀다
+  | 'dungeonKeyLimit'; // [던전 id] 오늘은 더 살 수 없다

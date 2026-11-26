@@ -1,5 +1,5 @@
 // 던전 창: 문 가까이에서는 들어가는 조건과 입장 단추를, 안에서는 남은 시간과 적의 수, 나가기 단추를 보여 준다.
-import { DUNGEON_IDS, PORTAL_REACH, dungeonDef, runKey, type DungeonId } from '../../shared/defs';
+import { DUNGEON_IDS, PORTAL_REACH, dungeonDef, hasDungeonKeys, runKey, type DungeonId, type KeysMe } from '../../shared/defs';
 import { $ } from '../app';
 import { onFrame, onMsg, onSlow } from '../bus';
 import { AREAS, areaAt } from '../../shared/world';
@@ -7,7 +7,8 @@ import { L, forInput, onLangChange, t } from '../i18n';
 import { dungeonLabel } from '../i18n/names';
 import { send } from '../net';
 import { S } from '../state';
-import { banner } from './notify';
+import { keyView } from './collectcalc';
+import { addNotices, banner } from './notify';
 import { makeTag, placeTag, setTagName, type Tag } from './tags';
 
 const ui = { panel: $('dungeon'), name: $('dgName'), runs: $('dgRuns'), info: $('dgInfo'), mates: $('dgMates'), btn: $<HTMLButtonElement>('dgBtn') };
@@ -17,6 +18,9 @@ let near: DungeonId | null = null;
 let armedUntil = 0;
 /** 문 위에 띄우는 이름표 */
 const gates: { id: DungeonId; tag: Tag }[] = [];
+/** 열쇠를 쓰는 던전이 있는 게임: 서버가 보낸 내 열쇠 (개인 상태 'keys')와 열쇠 줄 (하루 횟수만 쓰는 게임에는 없다) */
+let keys: KeysMe | null = null;
+let keyRow: { box: HTMLElement; text: HTMLElement; buy: HTMLButtonElement } | null = null;
 
 const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -29,6 +33,7 @@ function render(now: number): void {
     const left = Math.ceil(Math.max(0, d.left - (now - d.at) / 1000));
     ui.panel.hidden = false;
     ui.mates.hidden = true;
+    if (keyRow) keyRow.box.hidden = true;
     ui.name.textContent = dungeonLabel(loc, d.id).name;
     ui.runs.textContent = clock(left);
     ui.info.textContent = d.cleared ? loc.fmt.dungeonExit(left) : loc.fmt.dungeonFoes(d.foes);
@@ -39,7 +44,10 @@ function render(now: number): void {
   near = DUNGEON_IDS.find((id) => Math.hypot(me.x - dungeonDef(id).portal.x, me.z - dungeonDef(id).portal.z) <= PORTAL_REACH) ?? null;
   ui.panel.hidden = !near;
   if (!near) return;
-  const def = dungeonDef(near), used = S.meta.daily.prog[runKey(near)] ?? 0;
+  const def = dungeonDef(near);
+  if (def.key) { renderKeys(near); return; }
+  if (keyRow) keyRow.box.hidden = true;
+  const used = S.meta.daily.prog[runKey(near)] ?? 0;
   ui.name.textContent = dungeonLabel(loc, near).name;
   ui.runs.textContent = loc.fmt.dungeonRuns(def.perDay - used, def.perDay);
   const low = me.lv < def.minLv, none = used >= def.perDay;
@@ -52,7 +60,38 @@ function render(now: number): void {
   ui.btn.disabled = low || none;
 }
 
+/** 열쇠를 쓰는 던전의 문 앞: 가진 열쇠와 상한, 채워지는 규칙, 사기 단추 */
+function renderKeys(id: DungeonId): void {
+  const me = S.me!, loc = L(), def = dungeonDef(id), k = keyView(def, id, keys)!;
+  ui.name.textContent = dungeonLabel(loc, id).name;
+  ui.runs.textContent = loc.fmt.dungeonKeys(k.n, k.cap);
+  const low = me.lv < def.minLv, none = k.n <= 0;
+  ui.info.textContent = low ? loc.fmt.dungeonNeedLv(def.minLv) : `${loc.fmt.dungeonKeyInfo(k.refill, k.cap)} ${loc.fmt.dungeonInfo(Math.round(def.timeS / 60), dungeonLabel(loc, id).info)}`;
+  ui.mates.hidden = true;
+  ui.btn.textContent = loc.ui.dungeonEnter;
+  ui.btn.disabled = low || none;
+  if (keyRow) {
+    keyRow.box.hidden = !k.buy;
+    if (k.buy) {
+      keyRow.text.textContent = loc.fmt.dungeonKeyPrice(k.buy.cost, k.buy.cur, k.buy.left);
+      keyRow.buy.textContent = t('dungeonKeyBuy');
+      keyRow.buy.disabled = k.buy.left <= 0 || (k.buy.cur === 'gold' ? me.gold : me.sparks) < k.buy.cost;
+    }
+  }
+}
+
 export function initDungeon(): void {
+  if (hasDungeonKeys()) {
+    // 열쇠 줄: 입장 단추 위에 (하루 횟수만 쓰는 게임의 창에는 붙지 않는다)
+    const box = document.createElement('div'), text = document.createElement('span'), buy = document.createElement('button');
+    box.id = 'dgKeys'; box.hidden = true; buy.type = 'button'; buy.className = 'plain';
+    box.append(text, buy);
+    ui.btn.before(box);
+    keyRow = { box, text, buy };
+    buy.addEventListener('click', () => { if (near) send({ t: 'dungeonKey', id: near }); buy.blur(); });
+    onMsg('me', (m) => { if (m.k === 'keys') { keys = m.s as KeysMe; render(performance.now()); } });
+    addNotices({ feed: ['dungeonNoKeys', 'dungeonKeyBought', 'dungeonKeyLimit'] });
+  }
   ui.btn.addEventListener('click', () => {
     if (S.dungeon.id) {
       // 실수로 나가면 그날 횟수만 잃으므로 한 번 더 확인한다. 끝낸 뒤에는 바로 나간다
