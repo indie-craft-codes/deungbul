@@ -14,7 +14,7 @@
 - 코드는 틀(`engine/`)과 게임 여덟(`games/deungbul/` 등불지기, 예제 `games/sample/`, 시제품 `games/cave`·`starmine`·`bastion`, RPG가 아닌 시제품 `games/rollball` 굴림공, 문서만 보고 만든 수집형·방치형 `games/dalmuri` 달무리 원정대: 증명 기록 [proof-dalmuri.md](proof-dalmuri.md), 문서만 보고 만든 턴제 전술 `games/stepstone` 징검돌 전술: [proof-stepstone.md](proof-stepstone.md))이다. 방향은 게임 → 틀 하나다.
 - **틀은 장르와 무관한 핵심과 선택 모듈 스물둘이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈', 영웅 장비 `herogear`는 아래 '영웅의 성장')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
 - 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
-- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 18개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 일곱의 시험: 검사 2159개, 2026-11-26 `feat/idleflow`) 모두 통과, `npm run build:all` 통과.
+- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 20개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 여덟의 시험: 검사 2239개, 2026-11-26 `feat/idleflow`·`game/turn`을 합친 뒤) 모두 통과, `npm run build:all` 통과.
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
