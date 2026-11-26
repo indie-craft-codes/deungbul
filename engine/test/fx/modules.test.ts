@@ -1,6 +1,7 @@
 // 모듈 고르기 (engine/shared/modules.ts): 같은 시험용 내용(모듈 전부를 적었다)으로 모듈을 줄여 띄우면, 뺀 모듈의 명령은 웹소켓으로 보내도 거절되고
 // 그 모듈의 칸은 저장되지도 보내지지도 않는가. 모듈을 다 쓰는 서버(대조군)에서는 같은 명령에 응답이 온다.
 import { ALL_MODULES, type ModuleId } from '../../shared/modules';
+import { hasDungeonKeys } from '../../shared/defs';
 import type { ServerMsg } from '../../shared/protocol';
 import { Game } from '../../server/game/game';
 import { startServer } from '../../server/net/server';
@@ -61,7 +62,12 @@ async function probe(modules: readonly ModuleId[]): Promise<{ types: string[]; m
   const full = new Game();
   const playerNames = full.saves.map((s) => s.name), worldNames = full.worldSaves.map((s) => s.name).filter((n) => n !== 'sanctions');
   // 표의 칸 가운데 이 게임이 고른 모듈의 것 (팀은 RPG_MODULES에 없고, 골라도 TEAM_RULES.persist일 때만 저장한다: teams.test가 본다)
-  const pickedSaves = Object.values(MODULE_SAVES.player).filter((m) => full.has(m));
+  // 던전의 열쇠(keys)는 열쇠를 쓰는 던전이 있는 게임만 저장한다 (시험용 내용의 던전은 하루 횟수만 쓴다)
+  const pickedSaves = Object.entries(MODULE_SAVES.player).filter(([n, m]) => full.has(m) && (n !== 'keys' || hasDungeonKeys()));
+  check(!hasDungeonKeys() && !full.saves.some((s) => s.name === 'keys') && !full.personal.some((x) => x.name === 'keys') && !full.commands.has('dungeonKey'),
+    '열쇠를 쓰는 던전이 없는 게임(하루 횟수만)에는 열쇠의 저장 칸·개인 상태·명령이 없다 (등불지기의 던전과 같다)');
+  check(['hero', 'gacha', 'squad', 'stage'].every((c) => !full.commands.has(c)) && !full.kinds.has('hero') && !full.saves.some((s) => ['roster', 'gacha', 'squad', 'stages'].includes(s.name)),
+    'RPG_MODULES의 게임에는 수집형 모듈의 명령·영웅 종류·저장 칸이 없다');
   check(playerNames.every((n) => n in MODULE_SAVES.player) && worldNames.every((n) => n in MODULE_SAVES.world) && playerNames.length === pickedSaves.length,
     `모듈의 저장 칸 표(MODULE_SAVES)가 실제로 등록되는 칸과 같다 (캐릭터 ${playerNames.join(', ')} / 월드 ${worldNames.join(', ')})`);
   const p = full.players.spawn('맡김', false, null, 'kept-key');

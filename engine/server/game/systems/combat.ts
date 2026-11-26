@@ -7,7 +7,27 @@ import type { Game } from '../game';
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
+/**
+ * 사람 편에서 싸우는 엔티티 종류 (편성 모듈의 영웅 'hero'처럼 g.defineKind로 놓은 것): 몬스터를 때리고 몬스터에게 맞는다.
+ * 등록하지 않은 종류는 예전처럼 다룬다 (등록한 것이 없으면 전투의 셈은 예전과 같다)
+ */
+export interface AllyKind {
+  /** 그 엔티티의 주인 (처치 보상과 '때렸다' 사건은 주인의 것으로 친다). 없으면 undefined */
+  owner: (e: Ent) => Ent | undefined;
+  /** 체력이 0이 되었다 (쓰러뜨린 것은 by). 엔티티를 치우거나 쉬게 하는 것은 등록한 쪽의 일이다 */
+  down: (e: Ent, by: Ent) => void;
+  /** 그 엔티티가 쓰는 기술의 피해·회복에 곱하는 값 (없으면 1) */
+  skillScale?: (e: Ent) => number;
+}
+
 export class Combat {
+  /** 사람 편에서 싸우는 종류: 종류 id → AllyKind (registerAlly) */
+  readonly allies = new Map<string, AllyKind>();
+  /** 사람 편에서 싸우는 종류를 등록한다: 그 종류가 몬스터에게 준 피해는 주인의 것으로 치고, 체력이 0이 되면 down을 부른다 */
+  registerAlly(kind: string, def: AllyKind): void { this.allies.set(kind, def); }
+  /** 사람이거나 사람 편의 엔티티인가 (몬스터가 노리고, 아군 회복·강화를 받는다) */
+  friendly(e: Ent): boolean { return e.kind === 'p' || this.allies.has(e.kind); }
+
   constructor(private g: Game) {
     g.commands.set('attack', (p, m) => {
       if (!num(m.id)) return;
@@ -48,10 +68,11 @@ export class Combat {
    * 쿨다운과 사거리는 부른 쪽(useSkill)이 본다. 시험과 게임의 규칙도 이것으로 효과만 낼 수 있다
    */
   cast(p: Ent, id: SkillId, target?: Ent): void {
-    const g = this.g, def = skillDef(id), fx = def.effect, up = g.has('build') ? g.build.skillScale(p, id) : 1; // 강화한 기술은 피해와 회복이 커진다
+    const ally = this.allies.get(p.kind);
+    const g = this.g, def = skillDef(id), fx = def.effect, up = ally ? ally.skillScale?.(p) ?? 1 : g.has('build') ? g.build.skillScale(p, id) : 1; // 강화한 기술은 피해와 회복이 커진다 (사람 편의 종류는 그 종류가 정한 배율)
     const stun = (m: Ent, s: number | undefined) => { if (s && !m.dead && m.kind === 'm') { m.stunUntil = g.clock + s; m.moving = false; g.emit(['stun', m.id, s]); } };
     /** 나와(allies면 범위 안의 사람들도) 같은 층의 사람들 */
-    const friends = (allies: boolean | undefined): Ent[] => (allies ? [...g.ents.values()] : [p]).filter((e) => e.kind === 'p' && !e.dead && e.layer === p.layer && (e === p || dist(p, e) <= (def.radius ?? 0)));
+    const friends = (allies: boolean | undefined): Ent[] => (allies ? [...g.ents.values()] : [p]).filter((e) => (e.kind === 'p' || (this.allies.size > 0 && this.allies.has(e.kind))) && !e.dead && e.layer === p.layer && (e === p || dist(p, e) <= (def.radius ?? 0)));
     switch (fx.kind) {
       case 'hit':
         if (!target) break;
@@ -149,9 +170,17 @@ export class Combat {
     this.g.emit(['h', src.id, dst.id, amount, crit ? 1 : 0]);
     if (dst.kind === 'm') {
       if (src.kind === 'p') { dst.hitters.add(src.id); src.lastAct = this.g.clock; this.g.fire('hit', src, dst, Math.max(0, Math.min(amount, before))); }
+      else if (this.allies.size > 0) {
+        // 사람 편의 종류가 때렸다: 주인이 때린 것으로 친다 (처치 보상, 일일 임무)
+        const owner = this.allies.get(src.kind)?.owner(src);
+        if (owner && owner.kind === 'p') { dst.hitters.add(owner.id); this.g.fire('hit', owner, dst, Math.max(0, Math.min(amount, before))); }
+      }
       if (!dst.targetId) dst.targetId = src.id;
       if (dst.hp <= 0) this.killMonster(dst);
-    } else if (dst.hp <= 0) this.killPlayer(dst);
+    } else if (dst.hp <= 0) {
+      const ally = this.allies.size > 0 ? this.allies.get(dst.kind) : undefined;
+      if (ally) { dst.hp = 0; ally.down(dst, src); } else this.killPlayer(dst);
+    }
   }
 
   private killMonster(m: Ent): void {

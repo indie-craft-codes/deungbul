@@ -1,5 +1,6 @@
 // 서버와 클라이언트가 주고받는 메시지. 지금은 JSON이고, 트래픽이 문제가 되면 이진 형식으로 바꾼다.
 // 화면에 보일 문장은 싣지 않는다: 종류와 값만 보내고 문장은 클라이언트가 언어에 맞게 만든다.
+import type { PullGot } from './defs/collect';
 import type { Gear, Mail, RankRow } from './defs/growth';
 import type { GuildView, MarketItem } from './defs/social';
 import type { TeamBoard } from './defs/teams';
@@ -141,6 +142,16 @@ export type ClientMsg =
   | { t: 'handoff'; a: 'use'; code: string }
   /** 팀 고르기·옮기기 (teams 모듈): team은 TEAMS의 번호 */
   | { t: 'team'; team: number }
+  /** 영웅 (roster 모듈): 레벨 업(재화) / 별 올리기(조각) */
+  | { t: 'hero'; a: 'level' | 'star'; id: string }
+  /** 뽑기 (gacha 모듈): 배너 id와 횟수(1 또는 10) */
+  | { t: 'gacha'; id: string; n: number }
+  /** 편성 (squad 모듈): 함께 싸울 영웅 (자리의 차례, SQUAD_RULES.size까지) */
+  | { t: 'squad'; ids: string[] }
+  /** 단계 (stages 모듈): start 지금 단계로 들어간다, leave 나온다, auto 자동 진행 켜고 끄기(on), go 그 단계로(id: 깬 단계나 그다음) */
+  | { t: 'stage'; a: 'start' | 'leave' | 'auto' | 'go'; on?: boolean; id?: string }
+  /** 던전의 열쇠를 산다 (DungeonDef.key.buy가 있는 던전) */
+  | { t: 'dungeonKey'; id: string }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -218,4 +229,6 @@ export type ServerMsg =
   /** 기기 옮기기: 만든 코드와 남은 시간(ms), 또는 이어받은 기기에 주는 새 토큰 (받은 기기는 그것을 간직하고 다시 접속한다) */
   | { t: 'handoff'; code: string; ms: number }
   | { t: 'handoff'; token: string }
+  /** 뽑기의 결과 (gacha 모듈): 배너와 나온 것들 (뽑은 차례) */
+  | { t: 'gacha'; b: string; got: PullGot[] }
   | Added<ServerMsgs>;

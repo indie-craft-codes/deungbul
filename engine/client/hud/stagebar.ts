@@ -1,0 +1,84 @@
+// 단계의 화면 (stages 모듈): 가운데 위의 단계 막대('1-3', 장의 이름, 물결마다의 칸과 우두머리 칸, 남은 적과 시간, 자동 진행 단추, 도전·나가기)와
+// 메뉴의 '단계' 탭(장마다 단계의 목록: 깸·지금·잠김, 권장 전투력, 가기). 서버의 짝은 engine/server/game/systems/stages.ts.
+// 셈(막대의 칸, 단계의 줄)은 hud/collectcalc.ts. 게임이 더 할 수 있는 것: 내 단계 읽기(myStage).
+import { STAGES, type StageMe } from '../../shared/defs';
+import { $ } from '../app';
+import { onMsg, onSlow } from '../bus';
+import { L, onLangChange, t } from '../i18n';
+import { chapterName } from '../i18n/ko';
+import { hasModule } from '../mods';
+import { send } from '../net';
+import { S } from '../state';
+import { mySquad } from './collect';
+import { stageBar, stageRows, stageSegments } from './collectcalc';
+import { addMenuTab } from './menu';
+import { button, el, redraw, row } from './menu/parts';
+import { addNotices } from './notify';
+import { mountPanel } from './shell';
+
+let stage: StageMe | null = null;
+/** 내 단계 (서버의 개인 상태 'stage'. 아직 받지 않았으면 null) */
+export const myStage = (): StageMe | null => stage;
+
+const power = (): number => (hasModule('squad') ? mySquad().power : 0);
+
+function drawStages(list: HTMLElement): void {
+  const loc = L(), rows = stageRows(stage);
+  list.append(el('note', loc.fmt.stageBest(stage?.best ?? '')));
+  let ch = -1;
+  for (const r of rows) {
+    if (r.ch !== ch) { ch = r.ch; list.append(el('baghead', `${ch + 1}. ${chapterName(ch)}`)); }
+    const mark = r.now ? t('stageNow') : r.cleared ? t('stageCleared') : r.open ? '' : t('stageLockedMark');
+    const name = `${r.id}${r.boss ? ` · ${t('stageBoss')}` : ''}${mark ? ` · ${mark}` : ''}`;
+    list.append(row(name, loc.fmt.stageRec(r.rec, power()), [button(t('stageGo'), () => send({ t: 'stage', a: 'go', id: r.id }), !r.open)], 'srow' + (r.now ? ' now' : '') + (r.open ? '' : ' locked')));
+  }
+}
+
+function render(): void {
+  const ui = { bar: $('stageBar') };
+  const b = stageBar(stage);
+  ui.bar.hidden = !S.me || !b || !!S.dungeon.id; // 던전 안에서는 단계 막대를 숨긴다 (던전 창이 그 자리의 일을 보인다)
+  if (!b || !stage) return;
+  const loc = L();
+  $('stageId').textContent = b.id;
+  $('stageName').textContent = chapterName(b.ch);
+  const segs = stageSegments(b), box = $('stageSegs');
+  if (box.childElementCount !== segs.length) { box.textContent = ''; for (let i = 0; i < segs.length; i++) box.append(document.createElement('i')); }
+  segs.forEach((s, i) => {
+    const cell = box.children[i] as HTMLElement;
+    cell.className = s.boss ? 'boss' : '';
+    if (!cell.firstElementChild) cell.append(document.createElement('b'));
+    (cell.firstElementChild as HTMLElement).style.transform = `scaleX(${s.fill})`;
+  });
+  const run = stage.run;
+  $('stageTime').textContent = run && (run.state === 'fight' || run.state === 'gap') ? loc.fmt.stageLeft(run.left) : '';
+  $('stageWave').textContent = b.state === 'out' ? loc.fmt.stageRec(STAGES.find((s) => s.id === b.id)?.def.rec ?? 0, power()) : b.boss ? t('stageBoss') : loc.fmt.stageWave(b.wave, b.waves);
+  $('stageFoes').textContent = run && run.state === 'fight' ? loc.fmt.stageFoes(run.foes, run.total) : run?.state === 'gap' ? t('stageWaveClear') : '';
+  const big = $('stageBig');
+  big.textContent = run?.state === 'clear' ? `${t('stageClearBig')} ${loc.fmt.stageNext(run.left)}` : run?.state === 'fail' ? `${t('stageFailBig')} · ${loc.fmt.stageRetry(run.left)}` : '';
+  big.className = 'sbig' + (run?.state === 'fail' ? ' bad' : '');
+  const auto = $('stageAuto');
+  auto.textContent = t('stageAuto');
+  auto.classList.toggle('on', stage.auto);
+  auto.setAttribute('aria-pressed', String(stage.auto));
+  const go = $('stageGoBtn') as HTMLButtonElement;
+  go.textContent = run ? t('stageLeave') : t('stageStart');
+}
+
+export function initStages(): void {
+  mountPanel('topmid', `
+    <div class="panel" id="stageBar" hidden>
+      <div class="shead"><span class="sid" id="stageId"></span><span class="sname" id="stageName"></span><span class="stime" id="stageTime"></span></div>
+      <div id="stageSegs"></div>
+      <div class="sinfo"><span id="stageWave"></span><span id="stageFoes"></span></div>
+      <div class="sbig" id="stageBig" role="status"></div>
+      <div class="sbtns"><button type="button" class="plain" id="stageAuto" aria-pressed="true"></button><button type="button" class="plain" id="stageGoBtn"></button></div>
+    </div>`);
+  $('stageAuto').addEventListener('click', (e) => { send({ t: 'stage', a: 'auto', on: !(stage?.auto ?? true) }); (e.currentTarget as HTMLElement).blur(); });
+  $('stageGoBtn').addEventListener('click', (e) => { send({ t: 'stage', a: stage?.run ? 'leave' : 'start' }); (e.currentTarget as HTMLElement).blur(); });
+  addMenuTab({ id: 'stages', label: () => t('tabStages'), draw: drawStages, sig: () => [stage?.cur, stage?.best, stage?.run?.id, power()], mod: 'stages' });
+  onMsg('me', (m) => { if (m.k === 'stage') { stage = m.s as StageMe; render(); redraw(true); } });
+  addNotices({ banner: { stageFail: 'bad', stageLast: 'good' }, feed: ['stageClear', 'stageLocked'] });
+  onSlow(render);
+  onLangChange(render);
+}

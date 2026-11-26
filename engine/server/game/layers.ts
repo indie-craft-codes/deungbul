@@ -8,6 +8,15 @@ import type { Game } from './game';
 /** 던전 인스턴스의 층은 이 수부터 센다. 채널 수가 이보다 많아질 일은 없다 */
 export const DUNGEON_LAYER = 1000;
 
+/** 게임마다 다음에 줄 인스턴스 층 (던전과 단계가 함께 쓴다: 둘이 같은 층을 받지 않게) */
+const nextLayer = new WeakMap<object, number>();
+/** 새 인스턴스 층 하나 (DUNGEON_LAYER부터 하나씩 올라간다. 던전의 회차와 단계의 회차가 이것을 받는다) */
+export function instanceLayer(g: object): number {
+  const n = nextLayer.get(g) ?? DUNGEON_LAYER;
+  nextLayer.set(g, n + 1);
+  return n;
+}
+
 /** 들판(모두가 오가는 월드)의 층인가. 아니면 인스턴스다 */
 export const isField = (layer: number): boolean => layer >= 0 && layer < DUNGEON_LAYER;
 /** 들판 층의 채널 번호 (1부터). 화면과 명령은 이 번호를 쓴다 */

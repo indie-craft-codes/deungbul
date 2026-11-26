@@ -42,6 +42,14 @@ export const MODULE_TABLE = {
   away: { needs: ['combat'] },
   /** 팀: 고르기·바꾸기(사람 수 균형), 팀과 사람마다의 점수, 점수판, 팀 색 옷. 기본은 저장하지 않는다 (TEAM_RULES.persist) */
   teams: { needs: [] },
+  /** 동료(영웅): 가진 영웅의 레벨·별·조각, 레벨 업(재화)과 별 올리기(조각). 수집형 RPG의 바탕 */
+  roster: { needs: ['economy'] },
+  /** 뽑기: 배너, 1번·10번 뽑기(게임 안의 재화만), 천장, 공개 확률표, 뽑기 기록 */
+  gacha: { needs: ['roster', 'economy'] },
+  /** 편성: 가진 영웅 몇을 골라 함께 싸운다 (주인을 따라다니며 몬스터를 친다) */
+  squad: { needs: ['roster', 'combat'] },
+  /** 단계: 장과 단계(1-1, 1-2 …), 물결과 우두머리, 깨면 다음 단계로, 실패하면 깬 단계로. 방치 보상이 깬 단계로 커진다 */
+  stages: { needs: ['combat'] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
@@ -52,17 +60,20 @@ export type ModuleId = keyof typeof MODULE_TABLE;
  * 틀에 저장 칸을 가진 모듈을 더하면 여기에도 적는다 (engine/test/fx/modules.test.ts가 등록된 칸과 견준다)
  */
 export const MODULE_SAVES: { player: Readonly<Record<string, ModuleId>>; top: Readonly<Record<string, ModuleId>>; world: Readonly<Record<string, ModuleId>> } = {
-  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams' },
+  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams', keys: 'dungeon', roster: 'roster', gacha: 'gacha', squad: 'squad', stages: 'stages' },
   top: { lv: 'growth', exp: 'growth', need: 'growth', maxHp: 'combat', sparks: 'economy', gold: 'economy', weapon: 'items', armor: 'items', items: 'items', cls: 'classes', auto: 'away' },
   world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams' },
 };
 /** 모든 모듈 (표의 차례) */
 export const ALL_MODULES = Object.keys(MODULE_TABLE) as ModuleId[];
+/** 수집형·방치형 RPG의 모듈 넷 (영웅, 뽑기, 편성, 단계). 고르는 게임은 그 의존(재화, 전투 …)과 함께 적는다 */
+export const COLLECT_MODULES: readonly ModuleId[] = ['roster', 'gacha', 'squad', 'stages'];
 /**
  * 전통적인 탭 타깃 MMORPG가 쓰는 모듈 전부. 등불지기처럼 다 쓰는 게임은 `MODULES = RPG_MODULES`로 적어도 된다.
- * 팀(teams)은 들지 않는다: RPG가 아닌 놀이(공놀이, 깃발 뺏기)의 모듈이고, 이 목록을 쓰는 게임이 저절로 팀을 갖지 않게 한다
+ * 팀(teams)은 들지 않는다: RPG가 아닌 놀이(공놀이, 깃발 뺏기)의 모듈이고, 이 목록을 쓰는 게임이 저절로 팀을 갖지 않게 한다.
+ * 수집형의 넷(COLLECT_MODULES)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 뽑기와 단계를 갖지 않게 한다
  */
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams');
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m));
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).

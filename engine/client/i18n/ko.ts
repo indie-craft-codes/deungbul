@@ -4,7 +4,7 @@
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BUILD, BUILD_STAT_IDS, ENHANCE, GUILD, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, statMod } from '../../shared/defs';
+import { BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, HERO_TABLE, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
@@ -55,6 +55,12 @@ export const moduleHints = (items: (string | [string, string | boolean])[]): str
 export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 /** 팀의 이름 (teams 모듈): 팀 번호 → 게임이 언어 파일의 ui에 적은 이름 (TEAMS의 name 키). 없는 번호는 빈 문자열 */
 export const teamName = (i: MsgArg): string => { const d = TEAMS[Number(i)]; return d ? uiText.get(d.name) : ''; };
+/** 영웅의 이름 (roster 모듈): 영웅 id → 게임이 언어 파일의 ui에 적은 이름 (HeroDef.name 키). 없는 영웅은 id 그대로 */
+export const heroName = (id: MsgArg): string => { const d = HERO_TABLE[String(id)]; return d ? uiText.get(d.name) : String(id); };
+/** 등급의 이름 (HeroRarityDef.name 키: 틀의 기본 등급은 heroRarity0~2) */
+export const rarityName = (r: MsgArg): string => uiText.get(rarityDef(Number(r)).name);
+/** 장의 이름 (ChapterDef.name 키). 없는 장은 빈 문자열 */
+export const chapterName = (ch: number): string => { const c = CHAPTERS[ch]; return c ? uiText.get(c.name) : ''; };
 /** 큰 수에 자릿수 구분을 넣는다 (1,000,000). 골드와 값은 모두 이것을 거친다 */
 export const num = (n: MsgArg) => Number(n).toLocaleString('ko-KR');
 
@@ -82,6 +88,8 @@ export const koBase = (n: ContentNames) => {
   const grantWhat = (id: MsgArg) => (id === 'gold' ? G.name : id === 'exp' ? '경험치' : items[id as ItemId] ? itemName(id) : coin?.name ?? String(id));
   /** 남은 분을 읽기 좋게: 분, 시간, 일 */
   const span = (m: MsgArg) => { const v = Number(m); return v < 60 ? `${v}분` : v < 1440 ? `${Math.ceil(v / 60)}시간` : `${Math.ceil(v / 1440)}일`; };
+  /** 치르는 재화의 이름 (뽑기·영웅·열쇠): 'gold'면 첫 재화, 그 밖에는 두 번째 재화 */
+  const curName = (c: MsgArg) => (c === 'gold' ? G.name : coin?.name ?? '재화');
   return {
     code: 'ko',
     label: '한국어',
@@ -113,6 +121,50 @@ export const koBase = (n: ContentNames) => {
       teamMore: '사람이 더 많음',
       teamSwitch: '팀 바꾸기',
       teamBoard: '점수판',
+      // 수집형·방치형 (roster, gacha, squad, stages 모듈: hud/collect.ts, hud/stagebar.ts). 영웅·배너·장·역할의 이름은 게임이 그 name 키로 적는다
+      tabHeroes: '영웅',
+      tabGacha: '뽑기',
+      tabSquad: '편성',
+      tabStages: '단계',
+      heroRarity0: '일반',
+      heroRarity1: '희귀',
+      heroRarity2: '전설',
+      heroNone: '아직 영웅이 없습니다. 뽑기에서 영웅을 얻으세요.',
+      heroLevelBtn: '레벨 업',
+      heroStarBtn: '별 올리기',
+      heroMax: '최대',
+      heroNotOwned: '아직 없음',
+      gachaOne: '1번 뽑기',
+      gachaTen: '10번 뽑기',
+      gachaRates: '확률 보기',
+      gachaRatesHide: '확률 닫기',
+      gachaRatesHead: '확률 공개',
+      gachaRatesRarity: '등급별 확률',
+      gachaRatesHero: '영웅별 확률',
+      gachaRatesPity: '천장에 닿은 뽑기의 확률',
+      gachaRatesTen: '10번 뽑기의 열째(보장)의 확률',
+      gachaNoCash: '모든 뽑기는 게임 안에서 얻는 재화로만 합니다. 현금 결제는 없습니다.',
+      gachaHistory: '최근 뽑기 기록',
+      gachaNoHistory: '아직 뽑은 적이 없습니다.',
+      gachaResult: '뽑기 결과',
+      gachaPityMark: '천장',
+      squadHead: '함께 싸울 영웅',
+      squadEmpty: '빈 자리',
+      squadAdd: '넣기',
+      squadRemove: '빼기',
+      squadNone: '편성할 영웅이 없습니다. 뽑기에서 영웅을 얻으세요.',
+      stageAuto: '자동 진행',
+      stageStart: '도전',
+      stageLeave: '나가기',
+      stageBoss: '우두머리',
+      stageGo: '가기',
+      stageNow: '지금',
+      stageCleared: '깸',
+      stageLockedMark: '잠김',
+      stageWaveClear: '물결을 막았습니다',
+      stageClearBig: '단계 깸!',
+      stageFailBig: '실패: 깬 단계로 돌아갑니다',
+      dungeonKeyBuy: '열쇠 사기',
       tabDevice: '기기',
       deviceMoveHead: '다른 기기로 옮기기',
       deviceMoveInfo: '코드를 받아 다른 기기의 게임에 넣으면 이 캐릭터가 그 기기로 옮겨 갑니다. 옮긴 뒤에는 이 기기에서 이 캐릭터로 들어올 수 없습니다. 코드는 10분 동안 한 번만 쓸 수 있습니다. 남에게 알려 주면 그 사람이 캐릭터를 가져가니 조심하세요.',
@@ -412,6 +464,31 @@ export const koBase = (n: ContentNames) => {
       deviceCode: (minutes: number) => `${minutes}분 안에 다른 기기에서 이 코드를 넣으세요. 한 번 쓰면 사라집니다.`,
       teamCount: (n: number) => `${n}명`,
       teamMine: (team: string, score: number) => `내 팀 ${team} · 점수 ${num(score)}`,
+      heroLv: (lv: number, max: number) => `Lv ${lv}/${max}`,
+      heroStats: (atk: number, hp: number, power: number) => `공격 ${num(atk)} · 체력 ${num(hp)} · 전투력 ${num(power)}`,
+      heroShards: (have: number, need: number) => `조각 ${num(have)}/${num(need)}`,
+      heroCost: (n: number, cur: string) => `${curName(cur)} ${num(n)}`,
+      heroRole: (role: string, rarity: string) => `${rarity} · ${role}`,
+      gachaCost: (n: number, cur: string) => `${curName(cur)} ${num(n)}`,
+      gachaPity: (rarity: string, after: number, now: number) => `천장: ${rarity} 이상이 ${after - 1}번 이어서 나오지 않으면 ${after}번째 뽑기는 ${rarity} 이상에서만 나옵니다. 지금 ${now}번 이어서 나오지 않음 (천장까지 ${Math.max(1, after - now)}번).`,
+      gachaTenRule: (rarity: string) => `10번 뽑기: 앞의 아홉에 ${rarity} 이상이 없으면 열째는 ${rarity} 이상에서만 나옵니다.`,
+      gachaSameRatio: (rarity: string) => `${rarity} 이상의 영웅끼리의 비율은 평소와 같습니다.`,
+      ratePct: (p: number) => pctText(p),
+      gachaDup: (n: number) => `조각 +${num(n)}`,
+      gachaNew: () => '새 영웅!',
+      squadCount: (n: number, max: number) => `${n} / ${max}`,
+      squadPower: (n: number) => `편성 전투력 ${num(n)}`,
+      stageTitle: (id: string, chapter: string) => (chapter ? `${id} ${chapter}` : id),
+      stageWave: (wave: number, waves: number) => `물결 ${wave}/${waves}`,
+      stageFoes: (n: number, total: number) => `남은 적 ${n}/${total}`,
+      stageLeft: (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`,
+      stageRec: (rec: number, mine: number) => `권장 전투력 ${num(rec)} · 내 편성 ${num(mine)}`,
+      stageBest: (id: string) => (id ? `가장 멀리 깬 단계 ${id}` : '아직 깬 단계가 없습니다'),
+      stageNext: (s: number) => `${s}초 뒤 다음 단계`,
+      stageRetry: (s: number) => `${s}초 뒤 다시`,
+      dungeonKeys: (n: number, cap: number) => `열쇠 ${n} / ${cap}`,
+      dungeonKeyInfo: (refill: number, cap: number) => `열쇠 하나로 한 번 들어갑니다. 날마다 ${refill}개씩 채워집니다 (${cap}개까지).`,
+      dungeonKeyPrice: (cost: number, cur: string, left: number) => `${curName(cur)} ${num(cost)} · 오늘 ${left}번 더`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -423,7 +500,8 @@ export const koBase = (n: ContentNames) => {
       noTarget: () => '대상이 없습니다.',
       tooFar: () => '대상이 너무 멉니다.',
       kill: (a) => `${monsters[a[0] as MonsterId] ?? a[0]} 처치. 경험치 +${a[1]}${coin && Number(a[2]) > 0 ? `, ${coin.name} +${a[2]}` : ''}, ${G.name} +${num(a[3])}`,
-      levelUp: (a) => `레벨이 올랐습니다. Lv ${a[0]} · 능력치 ${BUILD.pointsPerLevel}점 (메뉴의 성장)`,
+      // 능력치 점수는 능력치 모듈(build)을 고른 게임에만 있다
+      levelUp: (a) => (anyModule('build') ? `레벨이 올랐습니다. Lv ${a[0]} · 능력치 ${BUILD.pointsPerLevel}점 (메뉴의 성장)` : `레벨이 올랐습니다. Lv ${a[0]}`),
       died: (a) => `쓰러졌습니다. ${place(a[0])}에서 다시 일어났습니다. 잃은 것은 없습니다.`,
       bought: (a) => `${josa(itemName(a[0], a[1]), '을', '를')} 샀습니다.`,
       classChanged: (a) => `직업이 ${ro(classes[a[0] as ClassId]?.name ?? String(a[0]))} 정해졌습니다.`,
@@ -546,6 +624,19 @@ export const koBase = (n: ContentNames) => {
       teamJoined: (a) => `${teamName(a[0])} 팀에 들어갔습니다.`,
       teamFull: (a) => `${teamName(a[0])} 팀에 사람이 더 많습니다. 다른 팀을 고르세요.`,
       teamStay: () => '이 게임에서는 팀을 바꿀 수 없습니다.',
+      costShort: (a) => `${josa(curName(a[0]), '이', '가')} 모자랍니다.`,
+      heroUp: (a) => `${heroName(a[0])} 레벨 ${a[1]}!`,
+      heroStar: (a) => `${heroName(a[0])} 별 ${a[1]}개!`,
+      heroMaxLv: (a) => `${heroName(a[0])}: 별을 올려야 레벨이 더 오릅니다.`,
+      heroShards: (a) => `${heroName(a[0])}: 조각이 ${a[1]}개 모자랍니다.`,
+      heroNew: (a) => `새 영웅 ${heroName(a[0])}!`,
+      stageClear: (a) => `${a[0]} 깸!${Number(a[1]) ? ' 처음 깬 보상을 받았습니다.' : ''}`,
+      stageFail: (a) => `${a[0]}을(를) 깨지 못했습니다 (${Number(a[1]) ? '시간 초과' : '쓰러짐'}). 깬 단계로 돌아가고 자동 진행을 끕니다.`,
+      stageLocked: (a) => `${a[0]}은(는) 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요.`,
+      stageLast: () => '마지막 단계까지 깼습니다. 같은 단계를 되풀이합니다.',
+      dungeonNoKeys: (a) => `${dungeonName(a[0])}의 열쇠가 없습니다. 날이 바뀌면 채워집니다.`,
+      dungeonKeyBought: (a) => `${dungeonName(a[0])}의 열쇠를 샀습니다 (${a[1]}개).`,
+      dungeonKeyLimit: (a) => `${dungeonName(a[0])}의 열쇠는 오늘 더 살 수 없습니다.`,
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

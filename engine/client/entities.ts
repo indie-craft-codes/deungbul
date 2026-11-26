@@ -117,7 +117,7 @@ function addThing(e: EnterInfo): void {
   model.root.rotation.y = e.face;
   view.scene.add(model.root);
   const label = look.label?.(info) ?? '';
-  const tag = makeTag(label, 'thing', false);
+  const tag = makeTag(label, look.hp ? 'thing ally' : 'thing', !!look.hp);
   tag.el.hidden = !look.label;
   S.others.set(e.id, {
     id: e.id, kind: e.kind, type: e.type, name: e.name, model, tag, h: look.h ?? 1.5,
@@ -262,7 +262,9 @@ function onEvent(e: Ev, me: Me): void {
       const look = src === me.id || srcR?.kind === 'p' ? classOf(src === me.id ? me.cls : srcR!.cls) : null;
       // 몬스터는 정의의 shot (떨어져서 때리는 몬스터: MonsterDef.behavior 'ranged')
       const mShot = srcR?.kind === 'm' && isMonsterId(srcR.type) ? monsterDef(srcR.type).shot : undefined;
-      const shot = look?.shot ?? mShot;
+      // 게임의 종류가 정한 것 (사람 편에서 싸우는 종류: KindLook.shot)
+      const kShot = srcR?.look?.shot?.({ id: srcR.id, type: srcR.type, name: srcR.name });
+      const shot = look?.shot ?? mShot ?? kShot;
       const ranged = !!shot && !!from && !!p;
       if (ranged) arrow(from!.x, from!.z, p!.x, p!.z, shot!);
       // 타격감: 내가 때리거나 맞을 때는 크게(화면도 흔들린다), 남의 싸움은 작게
@@ -364,6 +366,7 @@ export function applySnapshot(m: Extract<ServerMsg, { t: 'snap' }>, now: number)
     if (r.look) {
       // 게임의 종류: 실려 온 값이 처음이거나 바뀌었으면 모습을 맞춘다
       if (!sameVals(vals, r.vals)) { r.vals = vals; r.look.update?.(r.model, vals, { id: r.id, type: r.type, name: r.name }); }
+      if (r.look.hp) setTagHp(r.tag, hp, r.maxHp);
       continue;
     }
     if (r.kind === 'p' && !sameVals(vals, r.vals)) playerVals(r, vals, false);

@@ -1,5 +1,6 @@
 // 던전의 모양과 도우미. 던전의 표는 게임의 내용에 있다 (@game/shared/content). 규칙은 engine/server/game/systems/dungeon.ts가 맡는다.
 import { DUNGEONS } from '../content';
+import type { Coin } from './collect';
 import type { Reward } from './growth';
 import type { MonsterId } from './monsters';
 
@@ -24,7 +25,20 @@ export interface DungeonDef {
   reward: Reward;
   /** 끝냈을 때 각자 받는 장비의 가장 낮은 등급과 장비 레벨 */
   dropRar: number; dropLv: number;
+  /** 끝냈을 때 장비를 주는가 (기본 true). false면 reward만 준다 (골드 던전, 재료 던전) */
+  gear?: boolean;
+  /**
+   * 입장 열쇠: 있으면 하루 횟수(perDay) 대신 열쇠 하나를 쓰고 들어간다 (DungeonKey). 없으면 예전처럼 하루 perDay번.
+   * perDay만 적은 던전은 예전과 글자까지 같다: 열쇠의 저장 칸도 개인 상태도 생기지 않는다
+   */
+  key?: DungeonKey;
 }
+
+/**
+ * 던전의 입장 열쇠: 날이 바뀌면 refill개가 더해지되 cap을 넘지 않는다 (cap 위로는 사서만 갖는다). 처음 온 사람은 min(refill, cap)개로 시작한다.
+ * buy가 있으면 그 재화로 하나씩 산다 (하루 perDay번까지). 하루 3번인 던전(perDay 3)은 refill 3·cap 3의 열쇠와 같다 (쓰지 않은 것이 쌓이지 않는다)
+ */
+export interface DungeonKey { refill: number; cap: number; buy?: { cur: Coin; cost: number; perDay: number } }
 
 export type DungeonId = keyof typeof DUNGEONS;
 export const DUNGEON_IDS = Object.keys(DUNGEONS) as DungeonId[];
@@ -42,3 +56,5 @@ export const dungeonDef = (id: string): DungeonDef => DUNGEON_TABLE[id];
 export const clearRar = (def: Pick<DungeonDef, 'dropRar'>, rolled: number): number => Math.max(def.dropRar, rolled);
 /** 하루 입장 횟수를 일일 진행(DailyState.prog)에 적는 이름 */
 export const runKey = (id: string): string => `run_${id}`;
+/** 열쇠를 쓰는 던전이 하나라도 있는가 (없으면 열쇠의 저장 칸·개인 상태·명령이 생기지 않는다) */
+export const hasDungeonKeys = (): boolean => Object.values(DUNGEON_TABLE).some((d) => !!d.key);

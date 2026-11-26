@@ -15,13 +15,16 @@ const CORE = ['id', 'kind', 'type', 'name', 'x', 'z', 'face', 'tx', 'tz', 'movin
 const BEFORE = [...CORE, 'hp', 'maxHp', 'targetId', 'atkCd', 'lastHurt', 'guild', 'auto', 'lv', 'exp', 'need', 'sparks', 'cds', 'cls', 'gold', 'weapon', 'armor', 'items', 'itemCd',
   'gear', 'worn', 'gearSeq', 'bagUp', 'lostFull', 'autoSalvage', 'mail', 'mailSeq', 'daily', 'away', 'stats', 'skillLv',
   'def', 'hx', 'hz', 'respawn', 'hitters', 'swarm', 'scale', 'cast', 'windup', 'slowUntil', 'stunUntil', 'buffs', 'dots', 'homing'];
+/** 그 뒤에 더한 모듈의 칸: 수집형·방치형 (roster의 heroes, gacha의 pity·pulls, squad의 squad, stages의 stage). 예전의 게임은 이 모듈을 고르지 않으므로 엔티티에 없다 */
+const ADDED = ['heroes', 'pity', 'pulls', 'squad', 'stage'];
 const same = (a: readonly string[], b: readonly string[]) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
 /** 그 모듈과 그 모듈이 기대는 모듈 전부 */
 const closure = (m: ModuleId): ModuleId[] => { const out = new Set<ModuleId>([m]); const q = [m]; while (q.length) for (const n of MODULE_TABLE[q.pop()!].needs as readonly ModuleId[]) if (!out.has(n)) { out.add(n); q.push(n); } return ALL_MODULES.filter((x) => out.has(x)); };
 const owned = partKeys();
 const allPart = [...owned.values()].flat();
 
-check(same([...CORE, ...allPart], BEFORE) && allPart.every((k) => !CORE.includes(k)), `모듈의 칸(${allPart.length}개)과 핵심의 칸(${CORE.length}개)을 합치면 예전의 엔티티 칸(${BEFORE.length}개)과 같고, 겹치지 않는다`);
+check(same([...CORE, ...allPart], [...BEFORE, ...ADDED]) && allPart.every((k) => !CORE.includes(k)), `모듈의 칸(${allPart.length}개)과 핵심의 칸(${CORE.length}개)을 합치면 예전의 엔티티 칸(${BEFORE.length}개)과 수집형의 칸(${ADDED.length}개)이고, 겹치지 않는다`);
+check(ADDED.every((k) => ['roster', 'gacha', 'squad', 'stages'].includes(partOwner(k) ?? '')), '수집형의 칸은 수집형의 모듈 넷의 것이다');
 check([...owned.keys()].every((m) => ALL_MODULES.includes(m)) && partOwner('hp') === 'combat' && partOwner('gold') === 'economy' && partOwner('lv') === 'growth' && partOwner('x') === undefined,
   `칸마다 둔 모듈이 하나다 (${[...owned].map(([m, ks]) => `${m} ${ks.length}`).join(', ')})`);
 
@@ -82,6 +85,7 @@ check([...owned.keys()].every((m) => ALL_MODULES.includes(m)) && partOwner('hp')
     { t: 'move', x: p.x + 4, z: p.z + 2 }, { t: 'stop' }, { t: 'class', id: CLASS_IDS[0] ?? 'x' }, { t: 'attack', id: other.id }, { t: 'skill', n: 0 },
     { t: 'buy', id: potion ?? 'x' }, { t: 'use', id: potion ?? 'x' }, { t: 'auto', on: true }, { t: 'mailClaim', id: 0 }, { t: 'stat', k: 'pow' },
     { t: 'party', a: 'invite', id: other.id }, { t: 'guild', a: 'create', name: '칸길드' }, { t: 'rank' }, { t: 'market', a: 'list' }, { t: 'bagUp' }, { t: 'channel', n: 2 },
+    { t: 'hero', a: 'level', id: 'x' }, { t: 'gacha', id: 'x', n: 1 }, { t: 'squad', ids: [] }, { t: 'stage', a: 'start' }, { t: 'stage', a: 'auto', on: false }, { t: 'dungeonKey', id: 'x' },
   ];
   const bad: string[] = [];
   for (const m of ALL_MODULES) {
