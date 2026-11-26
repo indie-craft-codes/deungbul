@@ -469,6 +469,28 @@
   "1 / NaN",
   "2 / NaN"
  ],
+ "fmt.heroAwakenMul": [
+  "01c6d9d5ef354ccb",
+  "Attack and health ×NaN",
+  "Attack and health ×0",
+  "Attack and health ×1",
+  "Attack and health ×2"
+ ],
+ "fmt.heroAwakenNeed": [
+  "d35f5e954f9fb6c4",
+  "Needs undefined stars to awaken.",
+  "Needs 0 stars to awaken.",
+  "Needs 1 stars to awaken.",
+  "Needs 2 stars to awaken."
+ ],
+ "fmt.heroAwakenStep": [
+  "818f017fa58499ff",
+  "Awakening undefined/undefined",
+  "Awakening 0/undefined",
+  "Awakening 1/undefined",
+  "Awakening 2/undefined"
+ ],
+ "fmt.heroBonus": "(던짐) TypeError",
  "fmt.heroCost": [
   "0b3c0d0688e359fa",
   "NaN Sparks",
@@ -476,12 +498,32 @@
   "1 Sparks",
   "2 Sparks"
  ],
+ "fmt.heroCostLine": [
+  "624b6e169faa76c8",
+  "(던짐) TypeError",
+  "Cost: 슬라임 · 위습",
+  "Cost: "
+ ],
+ "fmt.heroHave": [
+  "83eb421add606fe1",
+  "undefined NaN/NaN",
+  "0 NaN/NaN",
+  "1 NaN/NaN",
+  "2 NaN/NaN"
+ ],
  "fmt.heroLv": [
   "1d9947959c57dac1",
   "Lv undefined/undefined",
   "Lv 0/undefined",
   "Lv 1/undefined",
   "Lv 2/undefined"
+ ],
+ "fmt.heroPower": [
+  "67007927271277c6",
+  "Power NaN",
+  "Power 0",
+  "Power 1",
+  "Power 2"
  ],
  "fmt.heroRole": [
   "b8ed4584d57f985e",
@@ -497,12 +539,82 @@
   "Shards 1/NaN",
   "Shards 2/NaN"
  ],
+ "fmt.heroSkillEffect": [
+  "f4e0d13e6fa2e053",
+  "Skill damage and healing +undefined%",
+  "Skill damage and healing +0%",
+  "Skill damage and healing +1%",
+  "Skill damage and healing +2%"
+ ],
+ "fmt.heroSkillLv": [
+  "4be25c5baf5d03e7",
+  "Skill Lv undefined/undefined",
+  "Skill Lv 0/undefined",
+  "Skill Lv 1/undefined",
+  "Skill Lv 2/undefined"
+ ],
  "fmt.heroStats": [
   "38876b6c323519bc",
   "ATK NaN · HP NaN · Power NaN",
   "ATK 0 · HP NaN · Power NaN",
   "ATK 1 · HP NaN · Power NaN",
   "ATK 2 · HP NaN · Power NaN"
+ ],
+ "fmt.hgChance": [
+  "95268bab25de9782",
+  "NaN% success",
+  "0% success",
+  "100% success",
+  "200% success"
+ ],
+ "fmt.hgCount": [
+  "de289be7dfa5c404",
+  "NaN / NaN",
+  "0 / NaN",
+  "1 / NaN",
+  "2 / NaN"
+ ],
+ "fmt.hgName": [
+  "6b1b1e036528d74f",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.hgNext": [
+  "7b6d11a83b59fd38",
+  "After enhancing: undefined",
+  "After enhancing: 0",
+  "After enhancing: 1",
+  "After enhancing: 2"
+ ],
+ "fmt.hgOn": [
+  "3377aae931ce4368",
+  "On undefined",
+  "On 0",
+  "On 1",
+  "On 2"
+ ],
+ "fmt.hgSetCount": [
+  "b3334441462040e1",
+  "undefined (undefined)",
+  "0 (undefined)",
+  "1 (undefined)",
+  "2 (undefined)"
+ ],
+ "fmt.hgSetTier": [
+  "ae5d7b845994c66f",
+  "undefined-piece",
+  "0-piece",
+  "1-piece",
+  "2-piece"
+ ],
+ "fmt.hgStats": [
+  "db18fb02de4129da",
+  "",
+  "Attack +1",
+  "Attack +2",
+  "Attack +5"
  ],
  "fmt.itemDamage": [
   "d0c669482dd42c3c",
@@ -847,6 +959,13 @@
   "Gold 2",
   "Gold 5"
  ],
+ "fmt.rowCount": [
+  "cec5533bc8f79032",
+  "undefined/undefined",
+  "0/undefined",
+  "1/undefined",
+  "2/undefined"
+ ],
  "fmt.salvageAllGo": [
   "c0b571e85909b704",
   "Salvage undefined",
@@ -1056,6 +1175,20 @@
   "Mist 0",
   "Mist 1",
   "Mist 2"
+ ],
+ "fmt.synCount": [
+  "ea6ab0cb2b2ddb92",
+  "undefined undefined",
+  "0 undefined",
+  "1 undefined",
+  "2 undefined"
+ ],
+ "fmt.synTier": [
+  "eee1b672787a3170",
+  "undefined heroes",
+  "0 heroes",
+  "1 heroes",
+  "2 heroes"
  ],
  "fmt.teamCount": [
   "1ff6c2d9ad194869",
@@ -1525,6 +1658,27 @@
   "Too many wrong codes. Try again in 1 min.",
   "Too many wrong codes. Try again in 2 min."
  ],
+ "msg.heroAwaken": [
+  "2a541af60c7c9d27",
+  "undefined awakened to step undefined!",
+  "0 awakened to step 0!",
+  "1 awakened to step 1!",
+  "2 awakened to step 3!"
+ ],
+ "msg.heroAwakenMax": [
+  "2a3d82afdda1785d",
+  "undefined cannot awaken any further.",
+  "0 cannot awaken any further.",
+  "1 cannot awaken any further.",
+  "2 cannot awaken any further."
+ ],
+ "msg.heroAwakenStars": [
+  "8876a355d9b4b448",
+  "undefined needs undefined stars to awaken.",
+  "0 needs 0 stars to awaken.",
+  "1 needs 1 stars to awaken.",
+  "2 needs 3 stars to awaken."
+ ],
  "msg.heroMaxLv": [
   "2fe5d7ae5cec7a2f",
   "undefined: raise the stars to level further.",
@@ -1546,6 +1700,20 @@
   "1: 1 more shard needed.",
   "2: 3 more shards needed."
  ],
+ "msg.heroSkillMax": [
+  "46e1da1f1c24909d",
+  "undefined: raise stars or awakening to level the skill further.",
+  "0: raise stars or awakening to level the skill further.",
+  "1: raise stars or awakening to level the skill further.",
+  "2: raise stars or awakening to level the skill further."
+ ],
+ "msg.heroSkillUp": [
+  "973f9c389de3e168",
+  "undefined skill level undefined!",
+  "0 skill level 0!",
+  "1 skill level 1!",
+  "2 skill level 3!"
+ ],
  "msg.heroStar": [
   "4f3ca392a5982c6f",
   "undefined is now undefined★!",
@@ -1560,7 +1728,49 @@
   "1 reached level 1!",
   "2 reached level 3!"
  ],
+ "msg.hgDrop": [
+  "cbaddc39d7b6b238",
+  "Hero gear found: undefined.",
+  "Hero gear found: 0.",
+  "Hero gear found: 1.",
+  "Hero gear found: 2."
+ ],
+ "msg.hgEnhance": [
+  "7c43ff0dd80f0b4e",
+  "undefined enhance failed (stays at +undefined).",
+  "0 enhance failed (stays at +0).",
+  "1 enhanced to +1!",
+  "2 enhanced to +3!"
+ ],
+ "msg.hgEnhanceMax": [
+  "c6c4b587f61a4700",
+  "undefined cannot be enhanced further.",
+  "0 cannot be enhanced further.",
+  "1 cannot be enhanced further.",
+  "2 cannot be enhanced further."
+ ],
+ "msg.hgFull": [
+  "83a3550036e0be45",
+  "Hero gear is full, so undefined was left behind. Salvage some to make room.",
+  "Hero gear is full, so 0 was left behind. Salvage some to make room.",
+  "Hero gear is full, so 1 was left behind. Salvage some to make room.",
+  "Hero gear is full, so 2 was left behind. Salvage some to make room."
+ ],
+ "msg.hgSalvaged": [
+  "84944ea4d6a8216e",
+  "Salvaged undefined pieces of hero gear.",
+  "Salvaged 0 pieces of hero gear.",
+  "Salvaged 1 piece of hero gear.",
+  "Salvaged 2 pieces of hero gear."
+ ],
  "msg.hpFull": "Your health is full.",
+ "msg.itemShort": [
+  "70d78fdde9c648fd",
+  "Not enough undefined (NaN more needed).",
+  "Not enough 0 (0 more needed).",
+  "Not enough 1 (1 more needed).",
+  "Not enough 2 (3 more needed)."
+ ],
  "msg.joined": [
   "9d24bb15d0f91008",
   "undefined joined.",
@@ -2103,15 +2313,40 @@
  "ui.guildNoticeHint": "Guild notice",
  "ui.guildNoticeSet": "Post notice",
  "ui.helpVerb": "Give",
+ "ui.heroAwakenBtn": "Awaken",
+ "ui.heroAwakenDone": "Fully awakened.",
+ "ui.heroBack": "← Heroes",
+ "ui.heroDetail": "Details",
  "ui.heroLevelBtn": "Level up",
  "ui.heroMax": "Max",
+ "ui.heroNext": "Next step",
+ "ui.heroNoSkill": "This hero's role has no skill.",
  "ui.heroNone": "No heroes yet. Summon some first.",
  "ui.heroNotOwned": "Not owned",
+ "ui.heroPassives": "Unlocked passives",
  "ui.heroRarity0": "Common",
  "ui.heroRarity1": "Rare",
  "ui.heroRarity2": "Legendary",
+ "ui.heroSkillBtn": "Level up skill",
+ "ui.heroSkillDone": "Skill level is at its cap.",
  "ui.heroStarBtn": "Star up",
+ "ui.hgClose": "Close",
+ "ui.hgEmptySlot": "Empty",
+ "ui.hgEnhance": "Enhance",
+ "ui.hgEquip": "Equip",
+ "ui.hgMaxed": "Max enhance",
+ "ui.hgNone": "No hero gear yet. Clear stages and dungeons to find some.",
+ "ui.hgPick": "Gear for this slot",
+ "ui.hgPickNone": "No gear for this slot.",
+ "ui.hgSalvage": "Salvage",
+ "ui.hgSets": "Sets",
+ "ui.hgUnequip": "Remove",
  "ui.hint": "Click or WASD: move · Click a monster: attack · 1–3: skills · Q: potion · F: quest · R: auto-hunt · H: town · B: bag · M: menu · N: map · Tab: target · Enter: chat",
+ "ui.htAwaken": "Awaken",
+ "ui.htGear": "Gear",
+ "ui.htLevel": "Level",
+ "ui.htSkill": "Skill",
+ "ui.htStar": "Stars",
  "ui.intro": "In a land lost to mist, you keep the lamp towers lit. Hunt monsters for sparks and offer them at the tower to light the village.",
  "ui.keepersEmpty": "No one yet. Offer sparks or hold off a raid to be listed.",
  "ui.keepersToday": "Today's keepers",
@@ -2190,6 +2425,12 @@
  "ui.report": "Report",
  "ui.reportConfirm": "[[Click|Tap]] again to report",
  "ui.residents": "Residents",
+ "ui.rowBack": "Back row",
+ "ui.rowBackInfo": "The back row fights safely behind you.",
+ "ui.rowFront": "Front row",
+ "ui.rowFrontInfo": "The front row stands ahead of you and takes the hits first.",
+ "ui.rowToBack": "To back",
+ "ui.rowToFront": "To front",
  "ui.salvageAll": "Salvage many…",
  "ui.salvageCancel": "Cancel",
  "ui.salvageSource": "From salvaging gear",
@@ -2217,12 +2458,15 @@
  "ui.stale": "A new version is available. Please refresh the page.",
  "ui.stickLabel": "Movement joystick",
  "ui.stunned": "Stunned",
+ "ui.synHead": "Synergy",
+ "ui.synNone": "Field heroes of the same faction together to turn on a synergy.",
  "ui.tabBuild": "Growth",
  "ui.tabDaily": "Daily",
  "ui.tabDevice": "Device",
  "ui.tabGacha": "Summon",
  "ui.tabGear": "Gear",
  "ui.tabGuild": "Guild",
+ "ui.tabHGear": "Hero gear",
  "ui.tabHeroes": "Heroes",
  "ui.tabMail": "Mail",
  "ui.tabMarket": "Market",

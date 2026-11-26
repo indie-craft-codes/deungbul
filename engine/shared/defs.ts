@@ -9,6 +9,7 @@ export * from './defs/craft';
 export * from './defs/dungeons';
 export * from './defs/economy';
 export * from './defs/growth';
+export * from './defs/herogrow';
 export * from './defs/items';
 export * from './defs/monsters';
 export * from './defs/social';

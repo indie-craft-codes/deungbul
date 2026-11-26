@@ -12,9 +12,9 @@
 ## 요약
 
 - 코드는 틀(`engine/`)과 게임 여섯(`games/deungbul/` 등불지기, 예제 `games/sample/`, 시제품 `games/cave`·`starmine`·`bastion`, RPG가 아닌 시제품 `games/rollball` 굴림공)이다. 방향은 게임 → 틀 하나다.
-- **틀은 장르와 무관한 핵심과 선택 모듈 스물하나다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
+- **틀은 장르와 무관한 핵심과 선택 모듈 스물둘이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈', 영웅 장비 `herogear`는 아래 '영웅의 성장')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
 - 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
-- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 16개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 여섯의 시험: 검사 1813개, 2026-11-26 `feat/collect`) 모두 통과, `npm run build:all` 통과.
+- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 16개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 여섯의 시험: 검사 1916개, 2026-11-26 `feat/herogrow`) 모두 통과, `npm run build:all` 통과.
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
@@ -25,6 +25,7 @@
 - 엔티티의 모듈 몫(2026-11-26, 가지 `feat/entcore`, 아래 '엔티티의 모듈 몫'): 핵심 엔티티(`Ent`)에는 핵심의 칸 27개만 적고, 모듈의 칸 44개(골드, 레벨, 체력, 장비 …)는 모듈마다 `engine/server/game/parts.ts`에 두어 그 모듈을 고른 게임의 엔티티에만 만든다. 등불지기는 줄 위의 글자·저장·난수의 차례가 그대로다(황금 실행과 운영 DB 복사본 비교). `npm test` 검사 1624개.
 - 틀의 남은 한계 메우기(2026-11-26, 가지 `feat/limits`, 아래 같은 이름의 절): 기기 옮기기 코드가 서버를 다시 켜도 남는다(해시만 저장), 파일 모델의 사람에 갑옷(`armor.tint`·`attach`), 팀 모듈 `teams`(굴림공이 쓴다). `npm test` 검사 1687개.
 - 수집형·방치형 모듈(2026-11-26, 가지 `feat/collect`, 아래 같은 이름의 절): 영웅 `roster`, 뽑기 `gacha`(공개 확률표, 천장, 10번 보장, 기록, 게임 안의 재화만), 편성 `squad`(영웅이 함께 싸운다: 전투의 `registerAlly`), 단계 `stages`(장·단계·물결·우두머리, 자동 진행·실패, 방치 보상이 깬 단계로), 던전의 입장 열쇠(`DungeonDef.key`). 본보기 내용 `engine/test/collect/`(영웅 들판). 등불지기는 고르지 않았고 황금 실행이 바이트까지 같다. `npm test` 검사 1813개.
+- 영웅의 성장(2026-11-26, 가지 `feat/herogrow`, 아래 같은 이름의 절): 영웅 장비 `herogear`(세트, 강화, 단계·던전에서 떨어짐), 기술 레벨, 각성, 시너지, 진형(앞줄이 먼저 맞는다), 한 가지 전투력. 모두 내용이 적어야 켜진다: 등불지기·시제품과 이 기능 전의 수집형 내용의 황금 실행이 바탕과 같다. `npm test` 검사 1916개.
 - 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다(장르 중립 틀에서도: 옛 견본 15개와 운영 DB 복사본 캐릭터 59·월드 1을 읽은 결과가 글자까지 같다). 프로토콜은 3이다(2026-11-26: 엔티티 종류를 문자열로, 상태 줄 뒤에 게임의 값, stat·meta의 칸이 모듈마다. 옛 화면은 새로고침을 안내받는다).
 
 ## 장르 중립 틀 (2026-11-26, 가지 `feat/neutral`)
@@ -75,7 +76,29 @@
 - 시험: `fx/wire`(예전 스냅샷과 글자 비교), `deungbul/saves`(옛 견본과 운영 DB 견본의 읽기 결과), 문장 견본(`games/deungbul/test/fixtures/locale-*.json`: 틀의 새 키만 더해졌고 달라진 문장 0).
 - 화면: 바탕과 이 가지의 등불지기 서버(3016, 3015)를 같은 자리(`DEV_SPAWN`)에서 띄워 PC 1280×720·폰 390×844에서 접속 → 직업 고르기 → 메뉴를 열고, 모든 id 요소의 숨김·class를 견줬다: 같다(무작위 이름만 다르다). 빌드(`dist/`)는 다르다: 화면 모듈 목록에 수집형의 화면 코드와 css가 더해졌다(고르지 않아 init되지 않는다).
 
-남은 것과 주의: [making-a-game.md](making-a-game.md) 13절 '남은 것'(영웅의 장비·시너지·진형, 영웅만 싸우는 모드, 픽업·선택권, 파티 단계, 소탕권 없음). 단계의 몬스터는 몰려온 적(`swarm`)이라 게임의 `g.rules.siege`가 있으면 그곳으로 가려 한다(단계의 대상 고르기가 먼저 대상을 준다). 단계 안의 사람은 서버가 움직이므로 화면의 예측과 잠깐 어긋날 수 있다(위치 보정으로 따라간다).
+남은 것과 주의: [making-a-game.md](making-a-game.md) 13절 '남은 것'(영웅의 장비·시너지·진형은 뒤의 '영웅의 성장'에서 더했다, 영웅만 싸우는 모드, 픽업·선택권, 파티 단계, 소탕권 없음). 단계의 몬스터는 몰려온 적(`swarm`)이라 게임의 `g.rules.siege`가 있으면 그곳으로 가려 한다(단계의 대상 고르기가 먼저 대상을 준다). 단계 안의 사람은 서버가 움직이므로 화면의 예측과 잠깐 어긋날 수 있다(위치 보정으로 따라간다).
+
+## 영웅의 성장 (2026-11-26, 가지 `feat/herogrow`)
+
+수집형 모듈 위에 "키우기"의 깊이를 더했다: 영웅 장비, 기술 레벨, 각성, 시너지, 진형(앞줄·뒷줄), 그리고 그것을 모두 넣은 한 가지 전투력. **모두 내용이 적어야 켜진다**(새 모듈 `herogear`와 `HERO_RULES.skill`·`awaken`·`gear`·`power`, `HeroDef.tag`, `SQUAD_RULES.synergy`·`rows`): 적지 않은 게임은 저장·줄 위의 글자·싸움이 예전과 같다. 쓰는 법은 [making-a-game.md](making-a-game.md) 13절 '영웅의 성장'.
+
+| 무엇 | 틀 쪽 | 지키는 것 |
+|---|---|---|
+| 셈 | `engine/shared/defs/herogrow.ts`(서버와 화면이 함께): `heroFull`(최종 공격·체력·덤·전투력), `squadView`(시너지까지, 편성의 전투력), `setBonuses`, `synergyOf`, `arrangeRows`, `gearStats`, `defaultPower`. 덤은 한 모양 `HeroBonus`, 값은 `HeroCost`. 게임의 내용은 자기 타입 그대로 오므로 선택 칸은 틀의 타입(`HeroRules`, `SquadRules`)으로 넓혀 읽는다(옛 게임의 좁은 타입도 컴파일된다) | `collect/growth`(성장이 없으면 `heroStats`·`heroPower`와 같다, 세트 2·4, 각성, 시너지의 단, 진형) |
+| 영웅 장비 | 모듈 `herogear`(의존 roster, items, economy: `COLLECT_MODULES`·`RPG_MODULES` 어디에도 들지 않는다), `systems/herogear.ts`(`g.herogear`): 칸, 끼기·바꾸기·옮기기·빼기, 강화(지갑·가방, `cmd:hgear:enhance`, 확률, 상한), 분해(`cmd:hgear:salvage`), 세트, 단계·던전에서 떨어짐(사건 `stageCleared`·`dungeonCleared`를 들을 뿐 두 시스템은 고치지 않았다), 가득 참. 엔티티 칸 `hgear`·`hgSeq`, 개인 상태 `hgear`, 저장 `ext.herogear`, 명령 `hgear` | `collect/growth`, `collect/growthsaves`, `collect/growthnet` |
+| 기술 레벨·각성 | `systems/roster.ts`의 선택 칸: 명령 `hero`의 `a: 'skill' \| 'awaken'`, 값은 `systems/herocost.ts`의 `payCost`(재화·재료를 모두 보고 치른다: `costShort`·`itemShort`), 원인 `cmd:hero:skill`·`cmd:hero:awaken`. 기술 레벨은 전투의 `skillScale`에 곱한다. 저장 `ext.roster`의 줄은 오른 영웅만 다섯 칸(나머지는 예전의 셋: 이전 없음) | `collect/growth`, `collect/growthsaves`(성장 전의 저장이 글자까지 같게 다시 적힌다) |
+| 시너지·진형 | `systems/squad.ts`의 선택 칸: 앞줄은 주인 앞, 뒷줄은 뒤. 앞줄 영웅이 둘레에서 주인·뒷줄을 노리는 몬스터를 자기에게 돌린다(몬스터 시스템과 단계는 고치지 않았다). 줄의 덤과 받는 피해는 전투의 새 접점 `registerAlly`의 `guard?`(등록한 것이 없거나 1이면 셈이 그대로). 엔티티 칸 `squadBack`, 저장 `ext.formation`, 개인 상태 `squad`의 `back`·`syn`, 명령 `squad`의 `back` | `collect/growth`(단계의 싸움에서 앞줄이 먼저 맞는다, 앞줄은 40을 30만 받는다, 도발), `collect/growthnet` |
+| 전투력 | `HERO_RULES.power?`(없으면 `defaultPower`). `g.roster.power`, `g.squad.power`, 개인 상태 `squad.power`가 이 셈이고, 화면(영웅 탭·상세·편성·단계 탭의 '내 편성')이 같은 셈을 쓴다. 단계의 권장 전투력과 견주는 화면은 `squad.power`를 그대로 읽으므로 단계 모듈은 고치지 않았다 | `collect/growth`·`collect/growthnet`(서버 = 개인 상태 = 화면의 셈) |
+| 화면 | `hud/herogrow.ts`(영웅 상세: 레벨·별·각성·기술·장비 탭, 메뉴의 '영웅 장비' 탭과 강화 창, 편성 탭의 앞줄·뒷줄과 시너지), 셈 `hud/herogrowcalc.ts`. `hud/collect.ts`에는 걸쇠만(상세 열기, 진형 그리기). 화면 모듈 목록의 맨 뒤에 `initHeroGear`. 문장은 한국어·영어(새 키 65: 등불지기의 문장 견본은 새 키만 더해졌고 달라진 문장 0) | `collect/growthclient`, `collect/client`, 화면(PC·폰, 한국어·영어) |
+| 본보기 | 영웅 들판에 재료 셋(기술서·각성석·강화석: 단계의 보상), 영웅 장비 열셋(칸 넷, 세트 둘), 기술 레벨, 각성 세 단계(패시브 둘), 진영 셋, 앞줄·뒷줄 둘씩 | `npm test`의 `collect/growth`·`growthsaves`·`growthnet`·`growthclient` |
+
+바뀌지 않았다는 증거(바탕 커밋 `2dc943b`의 작업 트리와 이 가지를 같은 도구로 돌려 바이트를 견줬다. 도구는 `$TEMP/dg-work/herogrow-tools/golden.mts`(앞 가지의 것 그대로)와 `golden2.mts`):
+
+- 등불지기 황금 실행(시계·난수 고정, 새 사람 9·봇 6, 4분, 던전 포함): 27,240줄 5,214,110바이트가 같다. 시제품 다섯(모닥불 사냥터·버섯 동굴·별가루 광산·돌담 마을·굴림공)도 바이트까지 같다.
+- **이 기능 전의 수집형 게임**: 바탕의 영웅 들판 내용(성장을 적지 않은 것)을 두 틀에서 같은 실행(뽑기·레벨 업·별·편성 바꾸기·단계 나오기·다시 들어가기·고르기를 더한 2분)으로 돌렸다: 스냅샷·개인 상태·안내문·저장 16,378줄이 같고, 엔티티를 통째로 적은 줄에 빈 칸 `squadBack: []`이 더해진 것만 다르다(그 칸을 지우면 바이트까지 같다). 지금의 API로 만들고 있는 게임은 이 기능을 적지 않는 한 그대로다.
+- 시험: `fx/wire`, `deungbul/saves`, 문장 견본(새 키만), `fx/parts`(칸 셋 `squadBack`·`hgear`·`hgSeq`는 그 모듈을 고른 게임에만).
+
+남은 것과 주의: 전용 무기·장비의 무작위 옵션·장비 뽑기 없음, 영웅 장비는 거래소에 올릴 수 없다(장부에는 재화·재료만), 진형의 도발은 앞줄 영웅의 둘레(`taunt`) 안만 본다(멀리서 쏘는 몬스터는 거리가 멀면 그대로 주인을 노릴 수 있다). 시너지·줄의 덤과 각성의 패시브는 공격·체력·주는 피해·받는 피해만 다룬다(치명타·속도 같은 덤은 없다).
 
 ## 틀의 남은 한계 메우기 (2026-11-26, 가지 `feat/limits`)
 
@@ -132,6 +155,7 @@
 
 ## 0. 이어 갈 것
 
+0. **영웅의 성장: 끝(2026-11-26, 가지 `feat/herogrow`)**: 위 '영웅의 성장'. 같은 때 다른 가지(`sweep`: 소탕권·오프라인 단계 진행·픽업 배너)가 단계·뽑기·방치·던전을 고치고 있다: 합칠 때 `modules.ts`, 언어 파일, 문서의 13절이 겹친다.
 0. **수집형·방치형 모듈: 끝(2026-11-26, 가지 `feat/collect`)**: 위 '수집형·방치형 모듈'. 다음은 문서([making-a-game.md](making-a-game.md) 13절)만 보고 이 장르의 게임을 만드는 검증이다(별도 에이전트).
 0. **틀의 남은 한계 메우기: 끝(2026-11-26)**. 엔티티에서 RPG 칸 떼기(가지 `feat/entcore`: 위 '엔티티의 모듈 몫'), 기기 옮기기 코드를 재시작에도 남기기·파일 모델의 갑옷·팀 모듈 `teams`(가지 `feat/limits`: 위 '틀의 남은 한계 메우기'). 그 전에 끝남: 장르 중립 틀의 검증(굴림공 `games/rollball`, [proof-rollball.md](proof-rollball.md)).
 

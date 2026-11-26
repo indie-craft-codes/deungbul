@@ -130,7 +130,7 @@ const quiet = (now?: () => number) => new Game({ now, plugins: [] });
   const h = g.squad.heroes(p)[1];
   const ogre = g.monsters.spawn('ogre', h.x + 2, h.z);
   ogre.layer = p.layer; ogre.targetId = h.id;
-  g.combat.damage(ogre, h, h.hp + 5, false);
+  g.combat.damage(ogre, h, h.hp * 2 + 5, false); // 앞줄은 받는 피해가 준다 (진형): 넉넉히
   check(h.dead && h.hp === 0 && !p.dead && p.hp === p.maxHp && ogre.targetId === 0, '영웅이 쓰러지면 쉬게 되고(주인은 쓰러지지 않는다) 몬스터는 그 영웅을 놓는다');
   g.remove(ogre.id);
   run(g, SQUAD_RULES.reviveS + 0.5);

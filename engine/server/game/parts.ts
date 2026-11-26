@@ -5,7 +5,7 @@
 // 고르지 않았을 수 있는 모듈의 칸은 그 모듈을 골랐는지 묻고 읽는다: g.has(모듈) 뒤에 쓰거나, 읽기만 하면 g.field(e, 칸)
 // (고르지 않았으면 그 칸의 처음 값을 돌려준다: 모듈을 끈 게임이 예전에 읽던 값과 같다). 쓰는 곳은 늘 g.has로 막는다: 칸이 없는 엔티티에 칸이 새로 생기면 안 된다.
 // 틀에 칸을 가진 모듈을 더하면 여기에 인터페이스 하나와 PARTS 한 줄을 더한다. 게임이 더하는 칸은 여기가 아니라 EntExt(./ext.ts)와 g.entInit이다.
-import { LEVEL, type BuffMod, type DailyState, type Gear, type Mail, type MonsterDef, type OwnedHero, type PullLog } from '../../shared/defs';
+import { LEVEL, type BuffMod, type DailyState, type Gear, type HeroGearPiece, type Mail, type MonsterDef, type OwnedHero, type PullLog } from '../../shared/defs';
 import type { ModuleId } from '../../shared/modules';
 import type { Ent } from './entity';
 
@@ -83,14 +83,17 @@ export interface RosterPart { heroes: Record<string, OwnedHero> }
 /** [gacha] 배너마다 천장의 셈과 최근 뽑기 기록 (새 것이 앞. systems/gacha.ts) */
 export interface GachaPart { pity: Record<string, number>; pulls: PullLog[] }
 
-/** [squad] 편성한 영웅 id (자리의 차례. systems/squad.ts) */
-export interface SquadPart { squad: string[] }
+/** [squad] 편성한 영웅 id (자리의 차례)와 그 가운데 뒷줄에 둔 영웅 (진형 SQUAD_RULES.rows를 켠 게임만 쓴다. systems/squad.ts) */
+export interface SquadPart { squad: string[]; squadBack: string[] }
 
 /** [stages] 지금 단계와 가장 멀리 깬 단계(없으면 ''), 자동 진행 (systems/stages.ts) */
 export interface StagesPart { stage: { cur: string; best: string; auto: boolean } }
 
+/** [herogear] 가진 영웅 장비(낀 것 포함)와 다음 번호를 정하는 수 (systems/herogear.ts) */
+export interface HeroGearPart { hgear: HeroGearPiece[]; hgSeq: number }
+
 /** 모듈의 칸 전부: Ent(./entity.ts)가 이어받는다. 칸은 그 모듈을 고른 게임의 엔티티에만 값이 있다 */
-export interface EntParts extends EconomyPart, GrowthPart, ClassesPart, CombatPart, ItemsPart, GearPart, MailPart, DailyPart, BuildPart, AwayPart, GuildPart, RosterPart, GachaPart, SquadPart, StagesPart {}
+export interface EntParts extends EconomyPart, GrowthPart, ClassesPart, CombatPart, ItemsPart, GearPart, MailPart, DailyPart, BuildPart, AwayPart, GuildPart, RosterPart, GachaPart, SquadPart, StagesPart, HeroGearPart {}
 
 /** 모듈의 칸 하나의 처음 값 채우기. hp는 Game.create가 받은 체력 */
 export interface Part {
@@ -122,8 +125,9 @@ export const PARTS: { readonly [M in ModuleId]?: Part } = {
   guild: { init: (e) => { e.guild = ''; } },
   roster: { init: (e) => { e.heroes = {}; } },
   gacha: { init: (e) => { e.pity = {}; e.pulls = []; } },
-  squad: { init: (e) => { e.squad = []; } },
+  squad: { init: (e) => { e.squad = []; e.squadBack = []; } },
   stages: { init: (e) => { e.stage = { cur: '', best: '', auto: true }; } },
+  herogear: { init: (e) => { e.hgear = []; e.hgSeq = 0; } },
 };
 
 export type PartKey = keyof EntParts;

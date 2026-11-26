@@ -142,12 +142,15 @@ export type ClientMsg =
   | { t: 'handoff'; a: 'use'; code: string }
   /** 팀 고르기·옮기기 (teams 모듈): team은 TEAMS의 번호 */
   | { t: 'team'; team: number }
-  /** 영웅 (roster 모듈): 레벨 업(재화) / 별 올리기(조각) */
-  | { t: 'hero'; a: 'level' | 'star'; id: string }
+  /** 영웅 (roster 모듈): 레벨 업(재화) / 별 올리기(조각) / 기술 레벨·각성 (HERO_RULES.skill·awaken을 켠 게임) */
+  | { t: 'hero'; a: 'level' | 'star' | 'skill' | 'awaken'; id: string }
   /** 뽑기 (gacha 모듈): 배너 id와 횟수(1 또는 10) */
   | { t: 'gacha'; id: string; n: number }
   /** 편성 (squad 모듈): 함께 싸울 영웅 (자리의 차례, SQUAD_RULES.size까지) */
-  | { t: 'squad'; ids: string[] }
+  | { t: 'squad'; ids: string[]; back?: string[] }
+  /** 영웅 장비 (herogear 모듈): 끼기(hero에게), 빼기, 강화, 분해(uids: 끼지 않은 것만) */
+  | { t: 'hgear'; a: 'equip' | 'unequip' | 'enhance'; uid: number; hero?: string }
+  | { t: 'hgear'; a: 'salvage'; uids: number[] }
   /** 단계 (stages 모듈): start 지금 단계로 들어간다, leave 나온다, auto 자동 진행 켜고 끄기(on), go 그 단계로(id: 깬 단계나 그다음) */
   | { t: 'stage'; a: 'start' | 'leave' | 'auto' | 'go'; on?: boolean; id?: string }
   /** 던전의 열쇠를 산다 (DungeonDef.key.buy가 있는 던전) */

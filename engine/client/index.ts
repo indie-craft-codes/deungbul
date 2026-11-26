@@ -25,6 +25,7 @@ export { addMenuTab, MENU_TABS, openMenu, setMenuTabs, type EngineMenuTab, type 
 export { openClasses } from './hud/classes';
 export { myTeam, myTeamScore, onTeamLook, setTeamBoardExtra, teamBoard } from './hud/teams';
 export { myHeroes, mySquad, onGachaResult } from './hud/collect';
+export { myHeroGear } from './hud/herogrow';
 export { myStage } from './hud/stagebar';
 export { hudSlow } from './hud/me';
 export type { Look, Mood } from './scene/view';

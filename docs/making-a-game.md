@@ -1335,10 +1335,7 @@ startClient({});
 | `squad` | 가진 영웅 몇을 골라 함께 싸운다: 주인을 따라다니며 몬스터를 친다 | roster, combat | `g.squad`, 엔티티 종류 `hero` | 메뉴의 '편성' 탭, 영웅의 겉모습 |
 | `stages` | 장과 단계(1-1, 1-2 …), 물결과 우두머리, 깨면 다음 단계로, 실패하면 깬 단계로. 방치 보상이 깬 단계로 커진다 | combat | `g.stages` | 가운데 위의 단계 막대, 메뉴의 '단계' 탭 |
 | (던전의 열쇠) | 던전마다 입장 열쇠: 날마다 채움, 상한, 재화로 사기 | (`dungeon`) | `g.dungeon` | 던전 창의 열쇠 줄 |
-
-```ts engine/test/collect/shared/content/index.ts
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'dungeon', 'roster', 'gacha', 'squad', 'stages'];
-```
+| `herogear` | 영웅 장비: 칸, 끼기·강화·분해, 세트, 단계·던전에서 떨어짐 (아래 '영웅의 성장') | roster, items, economy | `g.herogear` | 메뉴의 '영웅 장비' 탭, 영웅 상세의 장비 탭 |
 
 - 넷은 `RPG_MODULES`에 들지 않는다(`COLLECT_MODULES`로 따로 있다): `MODULES = RPG_MODULES`인 게임(등불지기)은 저절로 뽑기나 단계를 갖지 않는다. 고르지 않으면 서버의 시스템·명령·저장 칸·개인 상태, 엔티티의 칸(`heroes`, `pity`, `pulls`, `squad`, `stage`), 엔티티 종류 `hero`, 화면의 탭·막대가 모두 없다.
 - 이끄는 사람(플레이어)은 그대로 직업 하나를 가진 캐릭터다(`classes`·`combat`). 단계 안에서는 서버가 사람도 대신 싸운다(`STAGE_RULES.leaderAuto`). 사람을 숨기고 영웅만 싸우게 하는 길은 없다(아래 '남은 것').
@@ -1352,17 +1349,17 @@ export const HERO_ROLES: Readonly<Record<string, HeroRoleDef>> = {
   guard: { name: 'roleGuard', hand: 'sword', range: 2.2, atkCd: 1.2, speed: 4.6, skill: 'shieldbash', cloth: 0x5b7fb0 },
   …
 export const HEROES: Readonly<Record<string, HeroDef>> = {
-  ironwall: { name: 'heroIronwall', rarity: 0, role: 'guard', atk: 9, hp: 220 },
+  ironwall: { name: 'heroIronwall', rarity: 0, role: 'guard', atk: 9, hp: 220, tag: 'grove' },
 ```
 
 | 이름 | 모양 (타입은 `@engine/shared/defs/collect`) | 기본값 |
 |---|---|---|
-| `HEROES` | id → `{ name: 문장 키, rarity: 등급 번호, role: 역할 id, atk: 1레벨의 한 번 피해, hp: 1레벨의 체력, cloth?: 옷 색 }` | 비어 있다 |
+| `HEROES` | id → `{ name: 문장 키, rarity: 등급 번호, role: 역할 id, atk: 1레벨의 한 번 피해, hp: 1레벨의 체력, cloth?: 옷 색, tag?: 진영(시너지) }` | 비어 있다 |
 | `HERO_RARITIES` | 차례가 번호(0이 가장 흔함): `{ id, name: 문장 키, color, stars: 처음 얻을 때의 별, shards: 또 얻었을 때 받는 조각 }` | 일반(별 1, 조각 5) · 희귀(별 2, 10) · 전설(별 3, 25) |
 | `HERO_ROLES` | id → `{ name, hand: 손 모양(sword·bow·staff·게임의 것), shot?: 날아가는 것(arrow·bolt), range, atkCd, speed, skill?: SKILL_DEFS의 id, cloth }` | 비어 있다 (없는 역할은 붙어서 친다) |
-| `HERO_RULES` | `{ maxStars, maxLv(별), levelCur: 'gold' 또는 'sparks', levelCost(레벨, 등급), starCost(별), grow, starMul }` | 별 6까지, 레벨 상한 10 + 별 × 10, 레벨 값 레벨 × 20 × (등급 + 1) 골드, 별 값 별 × 10 조각, 레벨마다 +10%, 별마다 +25% |
+| `HERO_RULES` | `{ maxStars, maxLv(별), levelCur: 'gold' 또는 'sparks', levelCost(레벨, 등급), starCost(별), grow, starMul, skill?, awaken?, gear?, power? }` (뒤의 넷은 아래 '영웅의 성장') | 별 6까지, 레벨 상한 10 + 별 × 10, 레벨 값 레벨 × 20 × (등급 + 1) 골드, 별 값 별 × 10 조각, 레벨마다 +10%, 별마다 +25% |
 
-- 능력치: `heroStats(id, 레벨, 별)` = 처음 값 × (1 + grow × (레벨 − 1)) × (1 + starMul × (별 − 등급의 처음 별)). 전투력은 `heroPower` = 공격 × 4 + 체력 ÷ 2. 서버의 영웅 엔티티와 화면의 카드가 같은 함수를 쓴다.
+- 능력치: `heroStats(id, 레벨, 별)` = 처음 값 × (1 + grow × (레벨 − 1)) × (1 + starMul × (별 − 등급의 처음 별)). 전투력은 `heroPower` = 공격 × 4 + 체력 ÷ 2. 성장(장비·각성·기술 레벨·시너지)을 켠 게임은 그것까지 넣은 `heroFull`의 한 셈을 쓴다(아래 '영웅의 성장': 성장이 없으면 이 둘과 같다). 서버의 영웅 엔티티와 화면의 카드가 같은 함수를 쓴다.
 - 얻기: `g.roster.grant(p, id)` 하나뿐이다(뽑기와 게임의 보상이 부른다). 처음이면 1레벨·처음 별, 이미 가졌으면 그 등급의 조각. 돌려주는 값 `{ dup, shards }`.
 - 명령: `{ t: 'hero', a: 'level', id }`(그 별의 상한 아래에서 `levelCur`로 `levelCost`를 치른다, 원인 `cmd:hero:level`), `{ t: 'hero', a: 'star', id }`(조각 `starCost`). 안 되면 안내문 `costShort`·`heroMaxLv`·`heroShards`, 되면 `heroUp`·`heroStar`, 새 영웅은 `heroNew`.
 - 서버에서 읽기: `g.roster.owned(p, id)`(`{ lv, stars, shards }` 또는 `undefined`), `g.roster.power(p, id)`. 바뀌면 사건 `heroChanged(p, id)`가 난다.
@@ -1396,13 +1393,14 @@ export const BANNERS: Readonly<Record<string, BannerDef>> = {
 ### 편성 (`squad`)
 
 ```ts engine/test/collect/shared/content/index.ts
-export const SQUAD_RULES = { size: 4, seek: 13, leash: 22, reviveS: 8, regen: 0.06, autoFill: true };
+export const SQUAD_RULES: SquadRules = {
+  size: 4, seek: 13, leash: 22, reviveS: 8, regen: 0.06, autoFill: true,
 ```
 
-- `SQUAD_RULES`: 함께 싸우는 수(`size`), 주인 둘레 몇 m의 몬스터를 노리는가(`seek`), 주인에게서 이만큼 멀어지면 돌아온다(`leash`. 두 배를 넘으면 주인 곁으로 바로 옮긴다), 쓰러진 뒤 다시 일어나기까지(`reviveS`), 싸우지 않을 때 초마다 회복하는 비율(`regen`), 처음 얻은 영웅을 빈 자리에 저절로 넣기(`autoFill`). 기본은 `{ size: 4, seek: 12, leash: 20, reviveS: 10, regen: 0.05, autoFill: true }`.
+- `SQUAD_RULES`: 함께 싸우는 수(`size`), 주인 둘레 몇 m의 몬스터를 노리는가(`seek`), 주인에게서 이만큼 멀어지면 돌아온다(`leash`. 두 배를 넘으면 주인 곁으로 바로 옮긴다), 쓰러진 뒤 다시 일어나기까지(`reviveS`), 싸우지 않을 때 초마다 회복하는 비율(`regen`), 처음 얻은 영웅을 빈 자리에 저절로 넣기(`autoFill`). 기본은 `{ size: 4, seek: 12, leash: 20, reviveS: 10, regen: 0.05, autoFill: true }`. 진형(`rows?`)과 시너지(`synergy?`)는 아래 '영웅의 성장'.
 - 편성한 영웅은 월드의 엔티티(종류 `hero`, `type`이 영웅 id)로 주인 뒤에 선다. 주인의 대상이나 주인 둘레의 가장 가까운 몬스터를 노려, 역할의 기본 공격(`atkCd`마다, 공격 ±10%)과 기술(쿨다운마다 `g.combat.cast`: 틀의 기술 효과 여섯을 그대로 쓴다. 피해·회복은 공격 ÷ 10 배)을 쓴다. 주인이 층(채널, 던전, 단계)을 옮기면 따라 옮기고, 주인이 나가면 사라진다. 봇에게는 영웅이 없다.
 - 영웅이 준 피해는 **주인이 준 것**으로 친다: 처치 보상·일일 임무·`hit` 사건이 주인의 것이 된다. 몬스터는 자기를 때린 영웅을 노리고, 영웅의 체력이 0이 되면 쓰러졌다가 `reviveS` 뒤 주인 곁에서 일어난다(주인은 쓰러지지 않는다).
-- 사람 편의 엔티티는 전투 모듈의 접점 `g.combat.registerAlly(종류, { owner, down, skillScale? })`로 만든다. 편성 모듈이 `hero`를 이것으로 등록한다. 게임이 소환수·용병 같은 자기 종류를 만들 때도 같은 것을 쓴다(등록한 것이 없는 게임의 전투 셈은 예전과 같다). 아군 회복·강화(`allies`)도 등록한 종류에 닿는다.
+- 사람 편의 엔티티는 전투 모듈의 접점 `g.combat.registerAlly(종류, { owner, down, skillScale?, guard? })`로 만든다(`guard`는 받는 피해에 곱하는 값). 편성 모듈이 `hero`를 이것으로 등록한다. 게임이 소환수·용병 같은 자기 종류를 만들 때도 같은 것을 쓴다(등록한 것이 없는 게임의 전투 셈은 예전과 같다). 아군 회복·강화(`allies`)도 등록한 종류에 닿는다.
 - 명령 `{ t: 'squad', ids: [영웅 id, …] }`: 가진 영웅만, 겹치지 않게, `size`까지. 틀린 것이 하나라도 있으면 아무것도 바꾸지 않는다. 개인 상태 `squad`(`{ ids, power }`), 저장 `ext.squad`. 서버: `g.squad.set(p, ids)`, `g.squad.heroes(p)`(싸우는 영웅들), `g.squad.power(p)`.
 - 화면: 종류 `hero`를 역할의 옷 색·손 모양의 사람(조금 작게)으로, 발밑에 등급 색 고리, 이름표에 영웅 이름과 체력 막대로 그린다. 쏘는 역할은 화살·불꽃이 날아간다. 게임의 종류도 같은 칸을 쓸 수 있다: `registerKind`의 `hp: true`(이름표의 체력 막대), `shot: (e) => 'arrow'`(때릴 때 날아가는 것).
 
@@ -1415,8 +1413,8 @@ const stage = (ch: number, n: number): StageDef => {
     waves,
     ...(n === 4 ? { boss: { type: ch === 0 ? 'ogre' : 'golem' } } : {}),
     scale,
-    reward: { gold: 40 + k * 20, exp: 30 + k * 15, sparks: 30 + k * 5 },
-    first: { sparks: 100 },
+    reward: { gold: 40 + k * 20, exp: 30 + k * 15, sparks: 30 + k * 5, items: { gearstone: 2 + ch, skillbook: 1 } },
+    first: { sparks: 100, ...(n === 4 ? { items: { awakenstone: 1 } } : {}) },
     rec: Math.round(250 * scale * (n === 4 ? 1.6 : 1)),
   };
 };
@@ -1459,17 +1457,131 @@ export const IDLE = {
 - 줄 위: 개인 상태 `keys`(`{ 던전: { n, bought } }`), 저장 `ext.keys`(`{ 던전: [가진 수, 오늘 산 수, 날] }`). 화면: 문 앞의 던전 창이 '열쇠 n / cap', 채워지는 규칙, 값과 오늘 남은 사기 수, '열쇠 사기' 단추를 보인다.
 - 던전 모듈은 파티 모듈 없이도 돈다(파티가 없으면 파티원도 없다).
 
+### 영웅의 성장 (장비·기술 레벨·각성·시너지·진형·전투력)
+
+"키우기"의 깊이: 영웅마다 장비를 끼고 강화하고, 기술 레벨을 올리고, 별이 최대가 된 뒤에는 각성하고, 같은 진영끼리 모아 시너지를 켜고, 앞줄·뒷줄로 세운다. **모두 내용이 적어야 켜진다**: 적지 않은 게임(등불지기, 이 기능 전에 만든 수집형 게임)은 저장·줄 위의 글자·싸움이 예전과 같다. 셈은 한 곳(`engine/shared/defs/herogrow.ts`)에만 있고 서버와 화면이 함께 쓴다.
+
+| 무엇 | 켜는 곳 | 서버 | 저장 | 줄 위 |
+|---|---|---|---|---|
+| 영웅 장비 | 모듈 `herogear`(의존 roster, items, economy) + `HERO_RULES.gear` | `g.herogear` | `ext.herogear` | 개인 상태 `hgear`, 명령 `hgear` |
+| 기술 레벨 | `HERO_RULES.skill` | `g.roster.skillUp` | `ext.roster`의 넷째 칸 | `heroes`의 넷째 칸, 명령 `hero` `a: 'skill'` |
+| 각성 | `HERO_RULES.awaken` | `g.roster.awakenUp` | `ext.roster`의 다섯째 칸 | `heroes`의 다섯째 칸, 명령 `hero` `a: 'awaken'` |
+| 시너지 | `HeroDef.tag` + `SQUAD_RULES.synergy` | `g.squad.view(p).syn` | (없음: 편성에서 셈) | `squad`의 `syn` |
+| 진형 | `SQUAD_RULES.rows` | `g.squad.isBack(p, id)` | `ext.formation` | `squad`의 `back`, 명령 `squad`의 `back` |
+| 전투력 | `HERO_RULES.power`(없으면 기본 셈) | `g.roster.power`, `g.squad.power` | — | `squad`의 `power` |
+
+```ts engine/test/collect/shared/content/index.ts
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'dungeon', 'roster', 'gacha', 'squad', 'stages', 'herogear'];
+```
+
+- `herogear`는 `COLLECT_MODULES`에도 `RPG_MODULES`에도 들지 않는다: 고르는 게임이 따로 적는다(재료의 가방이 아이템 모듈에 있어서 `items`가 함께 필요하다).
+- 값은 `HeroCost` = `{ cur?: 'gold' | 'sparks', n?, items?: { 아이템 id: 수 } }`이고 지갑(`g.wallet`)과 가방(`g.bag`)을 지난다. 하나라도 모자라면 아무것도 치르지 않고 `costShort`(재화)나 `itemShort`(재료, 모자란 수)를 알린다. 장부의 원인은 `cmd:hero:skill`, `cmd:hero:awaken`, `cmd:hgear:enhance`, `cmd:hgear:salvage`.
+- 덤은 `HeroBonus` = `{ atk?, hp?, atkPct?, hpPct?, dmg?, guard? }`(더하는 수, 비율, 주는 피해 +, 받는 피해 −). 세트·각성의 패시브·시너지·줄이 모두 이 모양이다. 받는 피해의 덤은 곱으로 합친다(0.2와 0.2 → 0.36).
+
+#### 영웅 장비 (`herogear`)
+
+```ts engine/test/collect/shared/content/index.ts
+export const HERO_GEAR: HeroGearRules = {
+  slots: [{ id: 'weapon', name: 'hgSlotWeapon' }, { id: 'armor', name: 'hgSlotArmor' }, { id: 'helm', name: 'hgSlotHelm' }, { id: 'charm', name: 'hgSlotCharm' }],
+  items: {
+    bronzeblade: { name: 'hgBronzeblade', slot: 'weapon', rarity: 0, atk: 6 },
+    …
+  sets: {
+    vanguard: { name: 'setVanguard', tiers: [{ n: 2, bonus: { hpPct: 0.15 } }, { n: 4, bonus: { guard: 0.15 } }] },
+    arcane: { name: 'setArcane', tiers: [{ n: 2, bonus: { atkPct: 0.12 } }, { n: 4, bonus: { dmg: 0.2 } }] },
+  },
+  enhance: {
+    max: (r) => 5 + r * 5,
+    cost: (lv, r) => ({ cur: 'gold', n: 80 * (lv + 1) * (r + 1), items: { gearstone: 1 + Math.floor(lv / 3) } }),
+    per: 0.15,
+    chance: (lv) => (lv < 3 ? 1 : Math.max(0.4, 1 - (lv - 2) * 0.1)),
+  },
+  salvage: (r, lv) => ({ items: { gearstone: 1 + r * 2 + Math.floor(lv / 2) } }),
+  bag: 60,
+  drops: {
+    stage: {
+      '*': { chance: 0.6, pool: [...gearPool(COMMON_GEAR, 10), ...gearPool(RARE_GEAR, 2)] },
+      '1-5': { chance: 1, n: 2, pool: [...gearPool(RARE_GEAR, 5), { id: 'dawnedge', w: 1 }] },
+      …
+    dungeon: { goldmine: { chance: 1, pool: gearPool(RARE_GEAR, 1) } },
+```
+
+- 표 `HERO_RULES.gear`(`HeroGearRules`): 칸(`slots`: id와 이름 키), 장비(`items`: 이름 키, 칸, 등급 번호(`HERO_RARITIES`의 색·이름을 같이 쓴다), 강화 0의 `atk`·`hp`, `set?`), 세트(`sets`: 단마다 `n`과 덤. 여러 단이 함께 켜진다), 강화(`max(등급)`, `cost(강화, 등급)`, 강화마다 바탕이 늘어나는 비율 `per`, 성공 확률 `chance?`), 분해(`salvage?(등급, 강화)` → `Reward`), 가질 수 있는 수(`bag`), 떨어지는 표(`drops`: 단계 id나 던전 id, 없으면 `'*'`). 칸·세트·표의 id가 틀리면 서버를 띄울 때 멈춘다.
+- 떨어지기: 단계를 깨면(사건 `stageCleared`), 던전을 끝내면(`dungeonCleared`) 그 표대로 `chance`의 확률로 `n`번(기본 1) 무게대로 하나씩. 게임의 보상은 `g.herogear.give(p, id)`(가득 차면 `null`과 `hgFull`). 난수는 `g.herogear.rng`(시험은 정해진 난수로).
+- 명령 `{ t: 'hgear', a: 'equip', uid, hero }`(그 칸에 낀 것과 바꾸고, 다른 영웅이 끼던 것이면 그 영웅에게서 뺀다), `{ a: 'unequip', uid }`, `{ a: 'enhance', uid }`(값을 치르고 확률로 +1. 실패해도 값은 든다. 상한은 `hgEnhanceMax`), `{ a: 'salvage', uids }`(끼지 않은 것만, 하나라도 틀리면 아무것도). 안내문 `hgDrop`·`hgFull`·`hgEnhance`(장비, 강화, 성공 1/0)·`hgSalvaged`.
+- 능력치: 장비 한 점 = 바탕 × (1 + `per` × 강화). 낀 장비의 공격·체력과 켜진 세트의 덤이 영웅의 최종 값(`heroFull`)에 들어가 싸우는 영웅의 체력·공격과 전투력에 함께 쓰인다. 끼거나 강화하면 `heroChanged`가 난다.
+- 줄 위: 개인 상태 `hgear`(`{ items: [[번호, id, 강화, 낀 영웅]], cap }`), 저장 `ext.herogear`(`{ seq, items }` 같은 모양). 읽을 때 없는 장비·깨진 줄은 버리고, 가지지 않은 영웅이나 한 칸에 둘째로 낀 것은 빼고, 겹친 번호는 새로 붙인다.
+
+#### 기술 레벨과 각성 (`roster`의 선택 칸)
+
+```ts engine/test/collect/shared/content/index.ts
+export const HERO_RULES: HeroRules = {
+  ...BASE_HERO_RULES,
+  /** 기술 레벨: 상한은 1 + 별 + 각성 × 2, 값은 골드와 기술서, 레벨마다 기술의 피해·회복 +12% */
+  skill: { maxLv: (stars, aw) => 1 + stars + aw * 2, cost: (lv, r) => ({ cur: 'gold', n: 150 * lv * (r + 1), items: { skillbook: lv } }), per: 0.12 },
+  /** 각성: 별 6에서 조각과 각성석으로. 1단계에 '강철 피부'(받는 피해 −10%), 3단계에 '분노'(주는 피해 +15%) */
+  awaken: {
+    steps: [
+      { shards: 20, cost: { cur: 'gold', n: 3000, items: { awakenstone: 1 } }, mul: 1.15, passive: { name: 'passiveSteel', bonus: { guard: 0.1 } } },
+      { shards: 40, cost: { cur: 'gold', n: 6000, items: { awakenstone: 2 } }, mul: 1.3 },
+      { shards: 80, cost: { cur: 'gold', n: 12000, items: { awakenstone: 4 } }, mul: 1.5, passive: { name: 'passiveFury', bonus: { dmg: 0.15 } } },
+    ],
+  },
+  gear: HERO_GEAR,
+};
+```
+
+- 기술 레벨 `HERO_RULES.skill`: 역할의 기술(`HeroRoleDef.skill`)을 `cost(지금 레벨, 등급)`으로 하나씩, `maxLv(별, 각성)`까지. 레벨마다 기술의 피해·회복이 `per`만큼 커진다: 편성이 전투 모듈의 기술 배율 접점(`registerAlly`의 `skillScale`)에 곱한다. 명령 `{ t: 'hero', a: 'skill', id }`, 안내문 `heroSkillUp`·`heroSkillMax`.
+- 각성 `HERO_RULES.awaken.steps`: 별이 `maxStars`인 영웅이 그 단계의 조각(`shards`)과 값(`cost`)으로 오른다. 단계의 `mul`은 그 단계에서의 공격·체력 배율(누적이 아니다), `passive`는 그 단계에서 열리고 뒤에도 남는다. 명령 `{ t: 'hero', a: 'awaken', id }`, 안내문 `heroAwaken`(가운데 알림)·`heroAwakenStars`·`heroAwakenMax`, 조각이 모자라면 `heroShards`.
+- 저장: `ext.roster`의 줄은 기술 레벨이나 각성이 **오른 영웅만** `[레벨, 별, 조각, 기술 레벨, 각성]`으로 길어진다(나머지는 예전의 셋). 개인 상태 `heroes`는 둘 중 하나라도 켠 게임에서 늘 다섯 칸. 규칙을 내용에서 빼도 값은 지켜 둔다(다시 켜면 이어진다). 칸을 더하기만 했으므로 이전(`g.migrations`)은 없고, 옛 서버가 새 저장을 읽어도 앞의 셋만 읽는다.
+
+#### 시너지와 진형 (`squad`의 선택 칸)
+
+```ts engine/test/collect/shared/content/index.ts
+export const SQUAD_RULES: SquadRules = {
+  size: 4, seek: 13, leash: 22, reviveS: 8, regen: 0.06, autoFill: true,
+  rows: { front: 2, back: 2, taunt: 9, frontBonus: { guard: 0.25 }, backBonus: { dmg: 0.1 } },
+  synergy: {
+    grove: { name: 'synGrove', tiers: [{ n: 2, bonus: { atkPct: 0.1 } }, { n: 3, bonus: { atkPct: 0.15, hpPct: 0.1 } }] },
+    ember: { name: 'synEmber', tiers: [{ n: 2, bonus: { dmg: 0.12 } }] },
+    tide: { name: 'synTide', tiers: [{ n: 2, bonus: { guard: 0.1 } }], all: true },
+  },
+};
+```
+
+- 시너지: 영웅의 태그(`HeroDef.tag`, 진영·속성)마다 `SQUAD_RULES.synergy[태그]`. 편성에 그 태그가 `n` 이상이면 그 단(가장 높은 하나)의 덤을 그 태그의 영웅이(`all`이면 편성 모두가) 받는다. 개인 상태 `squad`의 `syn`(`[{ tag, n, tier }]`, `tier`가 −1이면 아직).
+- 진형 `SQUAD_RULES.rows`: 앞줄·뒷줄의 자리 수, 앞줄이 몬스터를 끄는 거리(`taunt`), 줄의 덤(`frontBonus`·`backBonus`: 싸움에만, 전투력에는 넣지 않는다). 앞줄은 주인의 앞에, 뒷줄은 뒤에 서고, 앞줄 영웅은 `taunt` 안에서 주인이나 뒷줄을 노리는 몬스터를 자기에게 돌린다(몬스터의 대상만 바꾼다: 단계의 '가장 가까운 사람 편' 고르기와 전투의 '때린 쪽을 노린다'는 그대로). 받는 피해의 덤은 전투 모듈의 접점 `registerAlly`의 `guard?`로 들어간다(등록한 것이 없거나 1이면 셈이 그대로).
+- 명령 `{ t: 'squad', ids, back? }`: `back`은 뒷줄에 둘 영웅. 주지 않으면 지금의 뒷줄을 지킨다. 한 줄이 넘치면 넘친 영웅(그 줄의 뒤쪽)이 다른 줄로(`arrangeRows`). 처음 얻은 영웅이 저절로 들 때도 같다. 저장 `ext.formation`(`{ back }`, 뒷줄이 있을 때만), 개인 상태 `squad`의 `back`.
+- **진형을 적지 않은 게임은 예전과 같다**: 자리(주인 뒤의 여덟 칸), 대상 고르기, 받는 피해 모두. 이 기능 전의 영웅 들판 내용으로 이 가지의 틀을 돌린 황금 실행이 바탕 커밋과 줄 위의 글자·저장까지 같다(엔티티에 빈 칸 `squadBack`이 생긴 것만 다르다).
+
+#### 전투력 (한 셈)
+
+- 영웅 하나: `heroFull(id, 성장, 낀 장비, 덤)` → 공격 = (바탕 × 각성 배율 + 장비의 공격 + 덤의 공격) × (1 + 덤의 공격 비율), 체력도 같다(바탕은 `heroStats`). 전투력은 `HERO_RULES.power?(x)`(`PowerIn`: 최종 공격·체력·주는 피해·받는 피해, 레벨, 별, 각성, 기술 레벨, 등급, 낀 장비 수)이고, 없으면 `defaultPower` = (공격 × 4 × (1 + 주는 피해) + 체력 ÷ 2 ÷ (1 − 받는 피해)) × (1 + 기술 레벨 덤의 반). 성장이 하나도 없으면 예전의 `heroPower`와 같다.
+- 편성: `squadView(ids, back, 영웅들, 장비)`의 `power` = 영웅마다(시너지까지)의 합. 서버의 `g.squad.power(p)`와 개인 상태 `squad.power`, 화면의 영웅 탭·상세·편성 탭·단계 탭의 '내 편성'이 모두 이 셈이다(단계의 권장 전투력과 견주는 것은 `squad.power`를 그대로 쓴다: 단계 모듈은 고치지 않았다).
+
+#### 화면
+
+- 영웅 탭의 줄에 **'자세히'**(성장을 하나라도 켠 게임만) → 영웅 상세: 최종 공격·체력·전투력과 **레벨·별·각성·기술·장비** 탭. 탭마다 지금 단계, 다음 단계와 그 값(가진 수/필요한 수, 모자란 칸은 붉게), 단추. 장비 탭은 칸마다 낀 것(빼기·강화·바꾸기 ⇄)과 고를 장비(다른 영웅이 낀 것도), 세트의 단.
+- 메뉴의 **'영웅 장비'** 탭(`herogear`, id `hgear`: `setMenuTabs`에 넣어야 보인다): 가진 장비(칸의 차례, 등급·전투력이 높은 것부터, 낀 영웅), 강화 창(지금 → 다음의 능력치, 값, 성공 확률), 분해.
+- **편성** 탭: 진형을 켠 게임은 앞줄·뒷줄(줄마다 자리 수, '앞으로'·'뒤로'), 시너지를 켠 게임은 시너지마다 편성의 수와 단(켜진 단은 금색). 셈은 `engine/client/hud/herogrowcalc.ts`(시험이 node에서 그대로 읽는다), 그리는 것은 `hud/herogrow.ts`.
+- 문장: 틀의 문장(한국어·영어)에 탭·단추·값·안내문이 다 있다. 게임은 **이름 키만** 적는다: 장비(`HeroGearDef.name`), 칸, 세트, 시너지(`SynergyDef.name`), 각성의 패시브, 그리고 재료 아이템의 이름.
+
+```ts engine/test/collect/client/main.ts
+  // 영웅의 성장: 장비의 칸·이름·세트, 진영의 시너지, 각성의 패시브
+  hgSlotWeapon: '무기', hgSlotArmor: '갑옷', hgSlotHelm: '투구', hgSlotCharm: '장신구',
+```
+
 ### 화면과 문장
 
 - 탭 넷(`heroes`, `gacha`, `squad`, `stages`)은 그 모듈의 화면이 `addMenuTab`으로 붙인다. 차례와 보일 탭은 게임이 `setMenuTabs([...])`로 고른다(아래 본보기). 단계 막대와 뽑기 결과 창도 그 모듈을 고른 게임에만 붙는다.
-- 게임이 읽을 수 있는 것(`@engine/client`): `myHeroes()`, `mySquad()`, `myStage()`, `onGachaResult((배너, 결과) => …)`(연출·소리).
+- 게임이 읽을 수 있는 것(`@engine/client`): `myHeroes()`, `mySquad()`, `myStage()`, `onGachaResult((배너, 결과) => …)`(연출·소리). 영웅의 성장을 켠 게임은 `myHeroGear()`(내 영웅 장비)도.
 - 틀의 문장(한국어·영어)이 탭·단추·확률표·단계 막대·안내문을 다 갖고 있다. 게임은 **이름 키만** 적는다: 영웅(`HeroDef.name`), 역할(`HeroRoleDef.name`), 배너(`BannerDef.name`), 장(`ChapterDef.name`), 등급을 바꿨으면 그 이름. 두 번째 재화의 이름은 이름표의 `currency2`(뽑기·열쇠의 값에 쓰인다). 쓰러진 뒤 일어나는 곳의 이름표는 `places.stage`.
 
 ### 본보기: 영웅 들판
 
 파일:
 
-- 내용 `engine/test/collect/shared/content/index.ts`: 위의 조각 전부(맵, 직업 하나 '대장', 몬스터, 영웅·역할·배너·편성·장·단계, 열쇠 던전, 방치 보상).
+- 내용 `engine/test/collect/shared/content/index.ts`: 위의 조각 전부(맵, 직업 하나 '대장', 몬스터, 영웅·역할·배너·편성·장·단계, 열쇠 던전, 방치 보상, 영웅의 성장: 재료 셋, 영웅 장비 열셋(세트 둘), 기술 레벨, 각성 세 단계, 진영 셋의 시너지, 앞줄·뒷줄 둘씩).
 - 서버의 규칙 플러그인 `engine/test/collect/server/heath.ts`: 처음 온 사람에게 직업, 처음 보석·골드, 처음 영웅 둘. 나머지는 틀의 모듈이다.
 
 ```ts engine/test/collect/server/heath.ts
@@ -1490,18 +1602,18 @@ export const heath: Plugin = (g) => {
 
 ```ts engine/test/collect/client/main.ts
 setLocales([mergeLocale(koBase(koNames), { ui: koUi }), mergeLocale(enBase(enNames), { ui: enUi })]);
-// 메뉴의 탭: 수집형의 넷을 앞에, 우편(방치 보상과 던전 보상) 뒤에
-setMenuTabs(['heroes', 'gacha', 'squad', 'stages', 'mail']);
+// 메뉴의 탭: 수집형의 넷과 영웅 장비를 앞에, 우편(방치 보상과 던전 보상) 뒤에
+setMenuTabs(['heroes', 'gacha', 'squad', 'hgear', 'stages', 'mail']);
 startClient({});
 ```
 
-- 시험 `engine/test/collect/`(`npm test`의 `collect/…`): `rules`(영웅·뽑기의 확률과 천장·편성의 싸움·단계의 깸과 실패·열쇠·방치 보상), `saves`(왕복, 깨진 값, 모듈을 끈 게임, 버전 없는 저장), `client`(화면의 셈), `net`(실제 서버와 접속 둘).
+- 시험 `engine/test/collect/`(`npm test`의 `collect/…`): `rules`(영웅·뽑기의 확률과 천장·편성의 싸움·단계의 깸과 실패·열쇠·방치 보상), `saves`(왕복, 깨진 값, 모듈을 끈 게임, 버전 없는 저장), `client`(화면의 셈), `net`(실제 서버와 접속 둘), 영웅의 성장 `growth`(셈·값·장부의 원인·떨어지기·세트·시너지·앞줄이 먼저 맞기·전투력이 한 셈인가), `growthsaves`(왕복, 성장 전의 저장이 글자까지 같게, 깨진 값, 모듈을 끈 게임), `growthnet`(실제 서버로 끼기·강화·기술·진형, 화면의 셈 = 서버), `growthclient`(상세·장비 창·진형·시너지의 셈, 두 언어의 문장).
 - 띄우기: `npx vite build -c engine/test/collect/vite.config.ts`(→ `dist-collect/`) 뒤에 `PORT=3015 DB=memory npx tsx --tsconfig engine/test/collect/tsconfig.json engine/test/collect/server/main.ts`. 접속하면 1-1이 바로 시작되고, 메뉴(M)의 '뽑기'에서 보석으로 뽑는다. 금광의 문은 들판의 남동쪽(26, −26)이다(`DEV_SPAWN=26,-26`으로 그 곁에서 시작하면 단계에서 '나가기'한 뒤가 문 앞이다).
 - 새 게임으로 만들 때는 이 파일들을 `games/<게임>/`의 같은 자리에 옮기고 2절의 설정을 둔다(12절의 공 마당과 같다). 틀의 파일은 입구(`@engine/server`, `@engine/client`, 타입은 `@engine/shared/defs/collect`)로 가져온다.
 
 ### 남은 것 (틀에 없는 것)
 
-- 영웅의 장비·스킬 레벨·각성·전용 무기, 영웅끼리의 시너지(같은 진영 보너스), 진형(앞줄·뒷줄)의 효과는 없다. 전투력은 공격과 체력만으로 셈한다.
+- 영웅의 전용 무기(그 영웅만 끼는 장비), 장비의 무작위 옵션·재련, 장비 뽑기는 없다. 영웅 장비는 거래소에 올릴 수 없다(장부에는 재화·재료의 흐름만 적힌다).
 - 이끄는 사람 없이 영웅만 싸우는 모드, 영웅을 직접 조작하기, 영웅의 궁극기 연출은 없다.
 - 뽑기는 영웅만 준다(장비·재료 뽑기 없음). 픽업(배너 기간, 확률 업)과 천장의 '선택권', 배너 사이에 이어지는 천장은 없다. 배너의 기간은 게임이 `BANNERS`를 바꿔 배포해야 한다.
 - 단계는 한 사람씩이다(파티로 함께 깨기 없음). 단계의 순위표, 스킵·소탕권, 오프라인 동안의 단계 진행(지금은 방치 보상의 수치만 커진다)은 없다.

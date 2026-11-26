@@ -469,6 +469,28 @@
   "1 / NaN",
   "2 / NaN"
  ],
+ "fmt.heroAwakenMul": [
+  "6edebaba200a455e",
+  "공격·체력 ×NaN",
+  "공격·체력 ×0",
+  "공격·체력 ×1",
+  "공격·체력 ×2"
+ ],
+ "fmt.heroAwakenNeed": [
+  "10d0c38d6fb69327",
+  "별 undefined개가 되어야 각성할 수 있습니다.",
+  "별 0개가 되어야 각성할 수 있습니다.",
+  "별 1개가 되어야 각성할 수 있습니다.",
+  "별 2개가 되어야 각성할 수 있습니다."
+ ],
+ "fmt.heroAwakenStep": [
+  "8e0dc4c55c964e6f",
+  "각성 undefined/undefined",
+  "각성 0/undefined",
+  "각성 1/undefined",
+  "각성 2/undefined"
+ ],
+ "fmt.heroBonus": "(던짐) TypeError",
  "fmt.heroCost": [
   "efe882c1c513e571",
   "불씨 NaN",
@@ -476,12 +498,32 @@
   "불씨 1",
   "불씨 2"
  ],
+ "fmt.heroCostLine": [
+  "2a224b833b327270",
+  "(던짐) TypeError",
+  "값: 슬라임 · 위습",
+  "값: "
+ ],
+ "fmt.heroHave": [
+  "83eb421add606fe1",
+  "undefined NaN/NaN",
+  "0 NaN/NaN",
+  "1 NaN/NaN",
+  "2 NaN/NaN"
+ ],
  "fmt.heroLv": [
   "1d9947959c57dac1",
   "Lv undefined/undefined",
   "Lv 0/undefined",
   "Lv 1/undefined",
   "Lv 2/undefined"
+ ],
+ "fmt.heroPower": [
+  "64264cc173513add",
+  "전투력 NaN",
+  "전투력 0",
+  "전투력 1",
+  "전투력 2"
  ],
  "fmt.heroRole": [
   "b8ed4584d57f985e",
@@ -497,12 +539,82 @@
   "조각 1/NaN",
   "조각 2/NaN"
  ],
+ "fmt.heroSkillEffect": [
+  "dfa3b6e26b2999e7",
+  "기술의 피해·회복 +undefined%",
+  "기술의 피해·회복 +0%",
+  "기술의 피해·회복 +1%",
+  "기술의 피해·회복 +2%"
+ ],
+ "fmt.heroSkillLv": [
+  "6bbff3b4235e01ea",
+  "기술 Lv undefined/undefined",
+  "기술 Lv 0/undefined",
+  "기술 Lv 1/undefined",
+  "기술 Lv 2/undefined"
+ ],
  "fmt.heroStats": [
   "bb88f0b62ce03517",
   "공격 NaN · 체력 NaN · 전투력 NaN",
   "공격 0 · 체력 NaN · 전투력 NaN",
   "공격 1 · 체력 NaN · 전투력 NaN",
   "공격 2 · 체력 NaN · 전투력 NaN"
+ ],
+ "fmt.hgChance": [
+  "43d8d76724880d69",
+  "성공 NaN%",
+  "성공 0%",
+  "성공 100%",
+  "성공 200%"
+ ],
+ "fmt.hgCount": [
+  "de289be7dfa5c404",
+  "NaN / NaN",
+  "0 / NaN",
+  "1 / NaN",
+  "2 / NaN"
+ ],
+ "fmt.hgName": [
+  "6b1b1e036528d74f",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.hgNext": [
+  "b0f598d7d54f9d26",
+  "강화하면 undefined",
+  "강화하면 0",
+  "강화하면 1",
+  "강화하면 2"
+ ],
+ "fmt.hgOn": [
+  "eb74aca0588a6130",
+  "undefined 착용",
+  "0 착용",
+  "1 착용",
+  "2 착용"
+ ],
+ "fmt.hgSetCount": [
+  "b3334441462040e1",
+  "undefined (undefined)",
+  "0 (undefined)",
+  "1 (undefined)",
+  "2 (undefined)"
+ ],
+ "fmt.hgSetTier": [
+  "87c12bb7fd06cb6a",
+  "undefined세트",
+  "0세트",
+  "1세트",
+  "2세트"
+ ],
+ "fmt.hgStats": [
+  "bda82f9799dc1234",
+  "",
+  "공격 +1",
+  "공격 +2",
+  "공격 +5"
  ],
  "fmt.itemDamage": [
   "4d4bff0baaef82e2",
@@ -847,6 +959,13 @@
   "골드 2",
   "골드 5"
  ],
+ "fmt.rowCount": [
+  "cec5533bc8f79032",
+  "undefined/undefined",
+  "0/undefined",
+  "1/undefined",
+  "2/undefined"
+ ],
  "fmt.salvageAllGo": [
   "e7dee98573ad1a65",
   "undefined점 분해",
@@ -1056,6 +1175,20 @@
   "안개 0",
   "안개 1",
   "안개 2"
+ ],
+ "fmt.synCount": [
+  "ea6ab0cb2b2ddb92",
+  "undefined undefined",
+  "0 undefined",
+  "1 undefined",
+  "2 undefined"
+ ],
+ "fmt.synTier": [
+  "ad612eb330df57ad",
+  "undefined명",
+  "0명",
+  "1명",
+  "2명"
  ],
  "fmt.teamCount": [
   "ad612eb330df57ad",
@@ -1525,6 +1658,27 @@
   "코드를 너무 많이 틀렸습니다. 1분 뒤에 다시 해 주세요.",
   "코드를 너무 많이 틀렸습니다. 2분 뒤에 다시 해 주세요."
  ],
+ "msg.heroAwaken": [
+  "7f9f24b0b43a954d",
+  "undefined 각성 undefined단계!",
+  "0 각성 0단계!",
+  "1 각성 1단계!",
+  "2 각성 3단계!"
+ ],
+ "msg.heroAwakenMax": [
+  "37a5400ff72f555f",
+  "undefined: 더 각성할 수 없습니다.",
+  "0: 더 각성할 수 없습니다.",
+  "1: 더 각성할 수 없습니다.",
+  "2: 더 각성할 수 없습니다."
+ ],
+ "msg.heroAwakenStars": [
+  "215aa693c4d0913e",
+  "undefined: 별 undefined개가 되어야 각성합니다.",
+  "0: 별 0개가 되어야 각성합니다.",
+  "1: 별 1개가 되어야 각성합니다.",
+  "2: 별 3개가 되어야 각성합니다."
+ ],
  "msg.heroMaxLv": [
   "6136d697a2ec1465",
   "undefined: 별을 올려야 레벨이 더 오릅니다.",
@@ -1546,6 +1700,20 @@
   "1: 조각이 1개 모자랍니다.",
   "2: 조각이 3개 모자랍니다."
  ],
+ "msg.heroSkillMax": [
+  "3a5fe72480682378",
+  "undefined: 별이나 각성을 올려야 기술 레벨이 더 오릅니다.",
+  "0: 별이나 각성을 올려야 기술 레벨이 더 오릅니다.",
+  "1: 별이나 각성을 올려야 기술 레벨이 더 오릅니다.",
+  "2: 별이나 각성을 올려야 기술 레벨이 더 오릅니다."
+ ],
+ "msg.heroSkillUp": [
+  "dc315e736275802c",
+  "undefined 기술 레벨 undefined!",
+  "0 기술 레벨 0!",
+  "1 기술 레벨 1!",
+  "2 기술 레벨 3!"
+ ],
  "msg.heroStar": [
   "ce63cef4ec2053e5",
   "undefined 별 undefined개!",
@@ -1560,7 +1728,49 @@
   "1 레벨 1!",
   "2 레벨 3!"
  ],
+ "msg.hgDrop": [
+  "1cd01d72f2225af3",
+  "영웅 장비 undefined을(를) 얻었습니다.",
+  "영웅 장비 0을(를) 얻었습니다.",
+  "영웅 장비 1을(를) 얻었습니다.",
+  "영웅 장비 2을(를) 얻었습니다."
+ ],
+ "msg.hgEnhance": [
+  "3d5533accd2fdb20",
+  "undefined 강화 실패 (+undefined 그대로)",
+  "0 강화 실패 (+0 그대로)",
+  "1 +1 강화 성공!",
+  "2 +3 강화 성공!"
+ ],
+ "msg.hgEnhanceMax": [
+  "66d1530323642e5c",
+  "undefined: 더 강화할 수 없습니다.",
+  "0: 더 강화할 수 없습니다.",
+  "1: 더 강화할 수 없습니다.",
+  "2: 더 강화할 수 없습니다."
+ ],
+ "msg.hgFull": [
+  "f40de4a52489c477",
+  "영웅 장비가 가득 차 undefined을(를) 줍지 못했습니다. 분해해서 자리를 비우세요.",
+  "영웅 장비가 가득 차 0을(를) 줍지 못했습니다. 분해해서 자리를 비우세요.",
+  "영웅 장비가 가득 차 1을(를) 줍지 못했습니다. 분해해서 자리를 비우세요.",
+  "영웅 장비가 가득 차 2을(를) 줍지 못했습니다. 분해해서 자리를 비우세요."
+ ],
+ "msg.hgSalvaged": [
+  "0be2456053c92480",
+  "영웅 장비 undefined점을 분해했습니다.",
+  "영웅 장비 0점을 분해했습니다.",
+  "영웅 장비 1점을 분해했습니다.",
+  "영웅 장비 2점을 분해했습니다."
+ ],
  "msg.hpFull": "체력이 가득합니다.",
+ "msg.itemShort": [
+  "1d6c33a5314e230b",
+  "undefined이(가) NaN개 모자랍니다.",
+  "0이(가) 0개 모자랍니다.",
+  "1이(가) 1개 모자랍니다.",
+  "2이(가) 3개 모자랍니다."
+ ],
  "msg.joined": [
   "c2558c8334016647",
   "undefined 님이 들어왔습니다.",
@@ -2103,15 +2313,40 @@
  "ui.guildNoticeHint": "길드 공지",
  "ui.guildNoticeSet": "공지 올리기",
  "ui.helpVerb": "보태기",
+ "ui.heroAwakenBtn": "각성하기",
+ "ui.heroAwakenDone": "모든 각성을 마쳤습니다.",
+ "ui.heroBack": "← 영웅 목록",
+ "ui.heroDetail": "자세히",
  "ui.heroLevelBtn": "레벨 업",
  "ui.heroMax": "최대",
+ "ui.heroNext": "다음 단계",
+ "ui.heroNoSkill": "이 영웅의 역할에는 기술이 없습니다.",
  "ui.heroNone": "아직 영웅이 없습니다. 뽑기에서 영웅을 얻으세요.",
  "ui.heroNotOwned": "아직 없음",
+ "ui.heroPassives": "열린 패시브",
  "ui.heroRarity0": "일반",
  "ui.heroRarity1": "희귀",
  "ui.heroRarity2": "전설",
+ "ui.heroSkillBtn": "기술 올리기",
+ "ui.heroSkillDone": "기술 레벨이 최대입니다.",
  "ui.heroStarBtn": "별 올리기",
+ "ui.hgClose": "닫기",
+ "ui.hgEmptySlot": "비어 있음",
+ "ui.hgEnhance": "강화",
+ "ui.hgEquip": "끼기",
+ "ui.hgMaxed": "최대 강화",
+ "ui.hgNone": "영웅 장비가 없습니다. 단계와 던전을 깨면 얻습니다.",
+ "ui.hgPick": "이 칸에 낄 수 있는 장비",
+ "ui.hgPickNone": "이 칸에 낄 장비가 없습니다.",
+ "ui.hgSalvage": "분해",
+ "ui.hgSets": "세트",
+ "ui.hgUnequip": "빼기",
  "ui.hint": "땅 클릭/WASD: 이동 · 몬스터 클릭: 공격 · 1–3: 기술 · Q: 물약 · F: 퀘스트 이동 · R: 자동 사냥 · H: 마을로 · B: 가방 · M: 메뉴 · N: 지도 · Tab: 대상 · Enter: 대화",
+ "ui.htAwaken": "각성",
+ "ui.htGear": "장비",
+ "ui.htLevel": "레벨",
+ "ui.htSkill": "기술",
+ "ui.htStar": "별",
  "ui.intro": "안개에 잠긴 땅에서 등탑의 빛을 지키는 등불지기가 됩니다. 몬스터를 잡아 불씨를 모으고, 등탑에 바쳐 마을을 밝히세요.",
  "ui.keepersEmpty": "아직 아무도 없습니다. 불씨를 바치거나 습격을 막으면 이름이 오릅니다.",
  "ui.keepersToday": "오늘의 등탑지기",
@@ -2190,6 +2425,12 @@
  "ui.report": "신고",
  "ui.reportConfirm": "한 번 더 누르면 신고",
  "ui.residents": "주민",
+ "ui.rowBack": "뒷줄",
+ "ui.rowBackInfo": "뒷줄은 주인 뒤에서 안전하게 싸웁니다.",
+ "ui.rowFront": "앞줄",
+ "ui.rowFrontInfo": "앞줄은 주인 앞에 서서 몬스터의 공격을 먼저 받습니다.",
+ "ui.rowToBack": "뒤로",
+ "ui.rowToFront": "앞으로",
  "ui.salvageAll": "일괄 분해…",
  "ui.salvageCancel": "취소",
  "ui.salvageSource": "장비를 분해하면 나옵니다",
@@ -2217,12 +2458,15 @@
  "ui.stale": "새 버전이 나왔습니다. 새로고침해 주세요.",
  "ui.stickLabel": "이동 조이스틱",
  "ui.stunned": "기절",
+ "ui.synHead": "시너지",
+ "ui.synNone": "같은 진영의 영웅을 함께 넣으면 시너지가 켜집니다.",
  "ui.tabBuild": "성장",
  "ui.tabDaily": "일일",
  "ui.tabDevice": "기기",
  "ui.tabGacha": "뽑기",
  "ui.tabGear": "장비",
  "ui.tabGuild": "길드",
+ "ui.tabHGear": "영웅 장비",
  "ui.tabHeroes": "영웅",
  "ui.tabMail": "우편",
  "ui.tabMarket": "거래소",
