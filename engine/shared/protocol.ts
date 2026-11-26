@@ -9,17 +9,23 @@ import type { MsgArg, MsgKey } from './messages';
  * 프로토콜 번호. 서버가 welcome에 실어 보내고, 클라이언트는 자기 빌드의 번호와 다르면 새로고침을 권한다
  * (서버만 새로 올라가고 화면은 옛 빌드가 남아 있는 때). 메시지의 모양이나 뜻을 바꾸면 올린다. 칸을 덧붙이기만 한 것은 올리지 않는다.
  */
-export const PROTOCOL = 2;
+export const PROTOCOL = 3;
 
-/** 'p' 플레이어, 'm' 몬스터 */
-export type Kind = 'p' | 'm';
+/**
+ * 엔티티의 종류: 'p' 플레이어(핵심), 'm' 몬스터(전투 모듈), 그 밖의 것은 게임이 등록한 종류 (서버 g.defineKind, 화면 registerKind):
+ * 구조물, 떨어진 물건, 공, 탈것 같은 것. 이름은 영문 소문자로 시작하는 16자 이내
+ */
+export type Kind = string;
 
-/** [id, x, z, 바라보는 방향, 이동 중(1) 여부, 체력] */
-export type EntState = [id: number, x: number, z: number, face: number, moving: 0 | 1, hp: number];
+/**
+ * [id, x, z, 바라보는 방향, 이동 중(1) 여부, 체력, …게임의 값]. 게임의 값은 그 종류가 등록한 sync가 돌려준 수들이다 (없으면 칸이 없다).
+ * 체력 칸은 체력이 없는 종류에서 0이다
+ */
+export type EntState = [id: number, x: number, z: number, face: number, moving: 0 | 1, hp: number, ...vals: number[]];
 
 export interface EnterInfo {
   id: number; kind: Kind;
-  /** 몬스터 종류 (MONSTERS의 키). 플레이어는 빈 문자열 */
+  /** 몬스터 종류 (MONSTERS의 키), 게임의 종류는 놓을 때 준 type. 플레이어는 빈 문자열 */
   type: string;
   /** 플레이어 이름. 몬스터는 빈 문자열이고 이름은 클라이언트가 type으로 찾는다 */
   name: string;

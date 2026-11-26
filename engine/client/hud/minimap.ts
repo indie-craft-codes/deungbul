@@ -3,6 +3,7 @@
 import { AREAS } from '../../shared/world';
 import { $ } from '../app';
 import { onSlow } from '../bus';
+import { kindLook } from '../kinds';
 import { S } from '../state';
 
 const canvas = $('minimap') as HTMLCanvasElement;
@@ -87,6 +88,7 @@ function draw(): void {
     const p = at(r.x, r.z);
     if (r.kind === 'm') dot(c, p.x, p.y, 1.8, COLOR.foe);
     else if (r.kind === 'p') dot(c, p.x, p.y, 2.2, COLOR.other);
+    else { const col = kindLook(r.kind)?.dot; if (col) dot(c, p.x, p.y, 1.8, col); } // 게임의 종류 (registerKind의 dot)
   }
   // 표식: 등탑, 상인, 퀘스트 목적지처럼 게임마다 다른 것은 밖에서 등록한다 (addMarks)
   for (const fn of markers) {

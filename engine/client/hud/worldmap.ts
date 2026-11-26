@@ -21,6 +21,7 @@ import { onFrame, onSlow } from '../bus';
 import { L, onLangChange, t } from '../i18n';
 import { dungeonLabel } from '../i18n/names';
 import { rules } from '../rules';
+import { kindLook } from '../kinds';
 import { S } from '../state';
 import { feed } from './notify';
 import { allLabels, allMarks, cssVar, paintWith } from './minimap';
@@ -295,6 +296,7 @@ function draw(): void {
     const p = toMap(r.x, r.z);
     if (r.kind === 'm') dot(c, p.x, p.y, 2.4, COLOR.foe);
     else if (r.kind === 'p') dot(c, p.x, p.y, 2.8, COLOR.other);
+    else { const col = kindLook(r.kind)?.dot; if (col) dot(c, p.x, p.y, 2.4, col); } // 게임의 종류 (registerKind의 dot)
   }
   // 장소의 표식
   for (const p of ps) { const q = toMap(p.x, p.z); icon(c, p, q.x, q.y, p === selected || p === hover); }

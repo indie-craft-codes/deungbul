@@ -127,6 +127,21 @@ export class Modifiers {
  */
 export type Plugin = (g: Game) => void;
 
+/**
+ * 게임이 등록하는 엔티티 종류 (g.defineKind): 구조물, 떨어진 물건, 발사체, 탈것, 공 같은 것. 놓는 것은 g.place.
+ * 위치·이동·층·이름은 틀이 다루고(시야에 들어오면 화면에 보낸다), 그 밖의 값은 아래 함수로 게임이 정한다
+ */
+export interface KindDef {
+  /** 틱마다 그 종류의 엔티티 하나마다 (움직이게 하려면 g.movement.goTo와 g.movement.walk를 쓰거나 x, z를 직접 바꾼다) */
+  tick?: (e: Ent, dt: number) => void;
+  /** 시야 안의 화면에 실어 보낼 값: 수 몇 개 (소수 둘째 자리까지). 바뀌면 다시 간다. 화면은 registerKind의 update로 받는다 */
+  sync?: (e: Ent) => readonly number[];
+  /** 월드와 함께 저장한다: 하나를 저장할 값으로. 주면 월드 저장의 'kind.<종류>' 칸에 그 종류의 엔티티가 모두 적힌다 */
+  save?: (e: Ent) => unknown;
+  /** 저장한 값 하나로 엔티티를 되살린다 (g.place를 부른다). 저장에 그 칸이 있으면 먼저 지금 있는 그 종류의 엔티티를 모두 지운 뒤 하나씩 부른다 */
+  load?: (raw: unknown) => void;
+}
+
 export interface GameOptions {
   /** 쓸 모듈. 주지 않으면 내용의 MODULES (시험이 같은 내용으로 모듈을 줄여 보려고 준다) */
   modules?: readonly ModuleId[];
@@ -222,6 +237,8 @@ export class Game {
    * dirty를 주지 않으면 마지막으로 보낸 값과 달라졌을 때 보낸다 (수 하나처럼 값이 작을 때). dirty를 주면 그것이 참일 때 보내고, 보낸 뒤에 sent가 불린다 (표시를 지우는 자리)
    */
   readonly personal: { name: string; state: (p: Ent) => unknown; dirty?: (p: Ent) => boolean; sent?: (p: Ent) => void }[] = [];
+  /** 게임이 등록한 엔티티 종류 (defineKind) */
+  readonly kinds = new Map<string, KindDef>();
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
   private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;
@@ -314,12 +331,43 @@ export class Game {
   notify(p: Ent, k: MsgKey, ...a: MsgArg[]): void { if (!p.bot) this.notices.push({ id: p.id, k, a }); }
   announce(k: MsgKey, ...a: MsgArg[]): void { this.announces.push({ k, a }); }
 
-  /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. */
+  /**
+   * 게임의 엔티티 종류를 등록한다 (KindDef). id는 영문 소문자로 시작하는 16자 이내이고, 'p'(플레이어)와 'm'(몬스터)는 틀의 것이다.
+   * 화면에는 같은 id로 registerKind(engine/client)를 해 둔다: 하지 않으면 작은 상자로 그린다
+   */
+  defineKind(id: string, def: KindDef): void {
+    if (!/^[a-z][a-z0-9_]{0,15}$/.test(id) || id === 'p' || id === 'm') throw new Error(`엔티티 종류의 이름이 이상합니다: '${id}' (영문 소문자로 시작하는 16자 이내, 'p'와 'm'은 틀의 것)`);
+    if (this.kinds.has(id)) throw new Error(`엔티티 종류 '${id}'가 이미 등록되어 있습니다`);
+    this.kinds.set(id, def);
+    const { save, load } = def;
+    if (save) {
+      this.worldSaves.push({
+        name: `kind.${id}`,
+        save: () => [...this.ents.values()].filter((e) => e.kind === id && !e.dead).map((e) => save(e)),
+        load: (raw) => {
+          if (!Array.isArray(raw) || !load) return;
+          for (const e of [...this.ents.values()]) if (e.kind === id) this.remove(e.id);
+          for (const one of raw) { try { load(one); } catch (err) { console.error(`[game] 저장된 '${id}' 하나를 되살리지 못했습니다:`, err); } }
+        },
+      });
+    }
+  }
+
+  /** 게임이 등록한 종류의 엔티티를 놓는다. 층(layer)을 주지 않으면 1채널의 들판이다 (채널이 여럿이면 채널마다 놓는다: layers.ts의 fieldLayer) */
+  place(kind: string, at: { x: number; z: number; type?: string; name?: string; hp?: number; layer?: number; face?: number }): Ent {
+    if (!this.kinds.has(kind)) throw new Error(`엔티티 종류 '${kind}'가 등록되지 않았습니다: 먼저 g.defineKind('${kind}', …)`);
+    const e = this.create(kind, at.type ?? '', at.name ?? '', at.x, at.z, at.hp ?? 0);
+    if (at.layer !== undefined) e.layer = at.layer;
+    if (at.face !== undefined) e.face = at.face;
+    return e;
+  }
+
+  /** 엔티티를 만들어 월드에 넣는다. 세부 값은 부른 쪽이 채운다. 게임의 종류는 place로 놓는다 */
   create(kind: Kind, type: string, name: string, x: number, z: number, hp: number): Ent {
     // 틀은 자기 칸만 채운다: 게임이 더한 칸(EntExt)은 여기 적을 수 없고(적으면 컴파일 오류), entInit이 채운다
     const base: Omit<Ent, keyof EntExt> = {
       id: this.nextId++, kind, type, name, x, z, face: 0, tx: x, tz: z, moving: false, stuck: 0, lastMove: -99, lastAct: -99, path: null, pgx: x, pgz: z, pat: 0,
-      hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0,
+      hp, maxHp: hp, dead: false, layer: fieldLayer(1), targetId: 0, atkCd: 0, lastHurt: -99, wait: 0, data: {},
       bot: false, pid: '', guild: '', auto: false, lv: 1, exp: 0, need: LEVEL.firstNeed, sparks: 0, cds: [], dirty: false, unsaved: false, cls: '', gold: 0, weapon: '', armor: '', items: {}, itemCd: 0,
       gear: [], worn: {}, gearSeq: 0, bagUp: 0, lostFull: 0, autoSalvage: -1, mail: [], mailSeq: 0, daily: { day: '', prog: {}, got: [], streak: 0, last: '' }, away: { day: '', used: 0 }, offMs: 0, metaDirty: false, stats: {}, skillLv: {},
       def: null, hx: x, hz: z, respawn: 0, hitters: new Set(), swarm: false, scale: 0, cast: 0, windup: 0, slowUntil: 0, stunUntil: 0, buffs: [], dots: [], homing: false,
@@ -358,6 +406,7 @@ export class Game {
         if (e.bot) this.bots.think(e, dt); else if (away) this.away.think(e, dt);
         if (fight) this.combat.tickPlayer(e, dt); else this.movement.step(e, dt); // 전투가 없으면 걷기만 한다
       } else if (e.kind === 'm') { if (fight) this.monsters.tick(e, dt); }
+      else this.kinds.get(e.kind)?.tick?.(e, dt); // 게임이 등록한 종류
       if (fight) this.combat.tickEffects(e, dt); // 강화와 지속 피해의 시간
     }
     for (const fn of this.ticks) fn(dt);

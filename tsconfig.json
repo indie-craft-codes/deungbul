@@ -16,5 +16,5 @@
     }
   },
   "include": ["engine", "games/deungbul", "test", "scripts"],
-  "exclude": ["engine/test/fx"]
+  "exclude": ["engine/test/fx", "engine/test/core"]
 }

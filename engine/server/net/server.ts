@@ -525,7 +525,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
 
   /** 게임이 쌓아 둔 것을 클라이언트에 내보낸다. */
   function flush(): void {
-    const frame = buildFrame(game.ents.values());
+    const frame = buildFrame(game.ents.values(), (e) => game.kinds.get(e.kind)?.sync?.(e));
     const events = game.events;
     game.events = [];
     let online = 0;

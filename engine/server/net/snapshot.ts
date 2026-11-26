@@ -18,16 +18,20 @@ const lastState = new WeakMap<Ent, string>();
 export interface Frame {
   /** 가까운 칸만 훑어서 주변 엔티티를 찾기 위한 격자 */
   grid: Map<number, Ent[]>;
-  /** EntState를 JSON으로 만든 것: [id, x, z, 방향, 이동 중, 체력] */
+  /** EntState를 JSON으로 만든 것: [id, x, z, 방향, 이동 중, 체력, …게임의 값] */
   state: Map<number, string>;
   changed: Set<number>;
 }
 
-export function buildFrame(ents: Iterable<Ent>): Frame {
+/** syncOf: 그 엔티티의 종류가 실어 보내는 게임의 값 (게임이 등록한 종류의 sync: engine/server/game/game.ts의 KindDef). 없으면 칸을 더하지 않는다 */
+export function buildFrame(ents: Iterable<Ent>, syncOf: (e: Ent) => readonly number[] | undefined = () => undefined): Frame {
   const frame: Frame = { grid: new Map(), state: new Map(), changed: new Set() };
   for (const e of ents) {
     if (e.dead) continue;
-    const s = `[${e.id},${r2(e.x)},${r2(e.z)},${r2(e.face)},${e.moving ? 1 : 0},${Math.ceil(e.hp)}]`;
+    const vals = syncOf(e);
+    let more = '';
+    if (vals) for (const v of vals) more += ',' + (typeof v === 'number' && Number.isFinite(v) ? r2(v) : 0);
+    const s = `[${e.id},${r2(e.x)},${r2(e.z)},${r2(e.face)},${e.moving ? 1 : 0},${Math.ceil(e.hp)}${more}]`;
     if (lastState.get(e) !== s) { frame.changed.add(e.id); lastState.set(e, s); }
     frame.state.set(e.id, s);
     const k = cellKey(cellOf(e.x), cellOf(e.z));

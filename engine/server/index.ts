@@ -4,8 +4,8 @@ import path from 'node:path';
 import { setAdminDir } from './net/admin';
 import { runServer as runWith, type RunOptions } from './run';
 
-export { Game, Modifiers, type GameOptions, type ModName, type Plugin, type Saver } from './game/game';
-export { clamp, dist, readInt, type Ent } from './game/entity';
+export { Game, Modifiers, type GameOptions, type KindDef, type ModName, type Plugin, type Saver } from './game/game';
+export { clamp, dayOf, dist, readInt, type Ent } from './game/entity';
 export type { MonsterAct, MonsterBehavior } from './game/systems/monsters';
 export { channelOf, fieldLayer, isField, notifyLayer } from './game/layers';
 export { startServer, type Options, type Running } from './net/server';
