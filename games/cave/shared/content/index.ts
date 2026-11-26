@@ -10,6 +10,7 @@ import { GEAR_BASE } from '@engine/shared/defaults';
 
 
 // ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
+// 협동 던전: 틀의 모듈을 모두 쓴다 (거래소·길드도 메뉴에 그대로 있다)
 import { RPG_MODULES } from '@engine/shared/modules';
 export const MODULES = RPG_MODULES;
 export const GUEST_NAME = 'Caver';

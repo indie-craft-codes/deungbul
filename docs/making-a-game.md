@@ -143,9 +143,8 @@ if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키�
 이름은 61개지만 대부분은 수치라서 틀의 기본값(`engine/shared/defaults.ts`)을 한 줄로 받는다. 같은 이름을 직접 내보내면 그것이 기본값을 가린다.
 
 ```ts games/sample/shared/content/index.ts
-import { RPG_MODULES } from '@engine/shared/modules';
-export const MODULES = RPG_MODULES;
-export const GUEST_NAME = 'Camper';
+import type { ModuleId } from '@engine/shared/modules';
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
 ```
 
 **규칙 하나**: 내용 파일은 틀에서 **타입만** 가져온다(`import type`). 값을 가져와도 되는 곳은 `@engine/shared/defaults` 하나다. 틀의 도우미(`engine/shared/defs/*.ts`)는 게임의 내용을 읽으므로, 내용 파일이 그 도우미의 값을 읽으면 서로 물려 초기화 순서가 꼬인다(실행할 때 `undefined`로 드러난다).

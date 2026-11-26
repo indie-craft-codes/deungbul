@@ -12,8 +12,9 @@ import { DRILL } from './drill';
 
 
 // ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
-import { RPG_MODULES } from '@engine/shared/modules';
-export const MODULES = RPG_MODULES;
+// 방치형: 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다
+import type { ModuleId } from '@engine/shared/modules';
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
 export const GUEST_NAME = 'Digger';
 
 // ---------- 맵: 광산 앞 골짜기 하나 ----------

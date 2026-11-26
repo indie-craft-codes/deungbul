@@ -12,8 +12,9 @@ import { WALL, WELL } from './waves';
 
 
 // ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
-import { RPG_MODULES } from '@engine/shared/modules';
-export const MODULES = RPG_MODULES;
+// 마을 방어: 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다
+import type { ModuleId } from '@engine/shared/modules';
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
 export const GUEST_NAME = 'Villager';
 /** 채널은 하나: 마을과 우물은 하나뿐이고 모두가 같은 물결을 함께 막는다 */
 export const CHANNEL = { ...CHANNEL_BASE, count: 1 };
