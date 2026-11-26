@@ -116,7 +116,8 @@ export function initOps(): void {
     for (const k of m.reset ?? []) applyLive(k, undefined);
     for (const fn of liveFns) fn(changed);
   });
-  onMsg('welcome', () => { clearTimeout(retry); closedBy = 0; renderGate(); });
+  // 새로 들어오면 공지·점검은 서버가 지금의 것을 다시 보낸다 (없으면 보내지 않는다): 끊기기 전의 것을 버린다
+  onMsg('welcome', () => { clearTimeout(retry); closedBy = 0; notices = []; maint = null; renderBand(); renderGate(); });
   onSlow(() => { renderBand(); renderGate(); }); // 카운트다운과 공지의 시작·끝 (글이 바뀔 때만 다시 쓴다)
   onLangChange(() => { renderPopup(); renderBand(); renderGate(); });
 }

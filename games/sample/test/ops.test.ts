@@ -59,7 +59,7 @@ import { check } from '@engine/testing';
   check('err' in g.live.set('bonfireHeat', 99, '시험') && 'err' in g.live.set('DAILIES.kill20.n', 0, '시험'), '범위를 넘는 값은 거절');
   g.live.set('DAILIES.kill20.n', 3, '시험');
   g.daily.add(p, 'kill', 3);
-  check(DAILIES.kill20.n === 3 && p.daily.got.includes('kill20'), '일일 임무의 마릿수를 3으로: 내용의 칸이 바뀌고 서버의 셈이 따른다');
+  check((DAILIES.kill20.n as number) === 3 && p.daily.got.includes('kill20'), '일일 임무의 마릿수를 3으로: 내용의 칸이 바뀌고 서버의 셈이 따른다');
   g.live.reset('DAILIES.kill20.n', '시험');
   check(DAILIES.kill20.n === 20, '되돌리면 소스의 20');
   g.live.setFlag('bonfire', false, '시험');

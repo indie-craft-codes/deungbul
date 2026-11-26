@@ -36,7 +36,14 @@ export function startStatus(opts: StatusOptions, info: () => { players: number; 
   const every = Math.max(5, opts.everyS ?? 30);
   const jsonFile = path.join(opts.dir, 'status.json'), htmlFile = path.join(opts.dir, 'status.html');
   let failed = false;
+  const html = statusHtml();
+  /** status.html이 없거나 다르면 쓴다 (화면을 다시 빌드하면 폴더가 비워진다: 다음 쓰기 때 다시 둔다) */
+  const page = (): void => {
+    try { if (!fs.existsSync(htmlFile) || fs.readFileSync(htmlFile, 'utf8') !== html) { fs.mkdirSync(opts.dir, { recursive: true }); fs.writeFileSync(htmlFile, html); } }
+    catch (err) { if (!failed) log.warn('[status] status.html을 쓰지 못했습니다:', err); }
+  };
   const write = (state?: StatusFile['state']): void => {
+    page();
     try {
       const x = info();
       const body: StatusFile = { state: state ?? (x.maint?.on ? 'maint' : 'ok'), at: Date.now(), players: roughCount(x.players), ...(x.maint ? { maint: x.maint } : {}), every };
@@ -48,10 +55,6 @@ export function startStatus(opts: StatusOptions, info: () => { players: number; 
       failed = false;
     } catch (err) { if (!failed) log.warn('[status] status.json을 쓰지 못했습니다:', err); failed = true; }
   };
-  try {
-    const html = statusHtml();
-    if (!fs.existsSync(htmlFile) || fs.readFileSync(htmlFile, 'utf8') !== html) { fs.mkdirSync(opts.dir, { recursive: true }); fs.writeFileSync(htmlFile, html); }
-  } catch (err) { log.warn('[status] status.html을 쓰지 못했습니다:', err); }
   write();
   const timer = setInterval(() => write(), every * 1000);
   timer.unref();
