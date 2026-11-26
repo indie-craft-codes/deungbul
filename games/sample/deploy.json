@@ -2,5 +2,6 @@
   "port": 3002,
   "db": "data/sample/game.db",
   "dist": "dist-sample",
-  "bots": 0
+  "bots": 0,
+  "offlineCache": true
 }

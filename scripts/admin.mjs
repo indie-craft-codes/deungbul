@@ -26,7 +26,15 @@ const HELP = `쓰는 법: npm run admin -- [게임] <명령> [인자 …]
   take 이름 무엇 수             회수 (가진 만큼만)
   reports [수] [--all]         신고 목록 (기본: 처리하지 않은 것 20건)
   resolve 신고id [메모]         신고를 처리했다고 표시
-  audit [수]                   최근 관리자 행동 기록`;
+  audit [수]                   최근 관리자 행동 기록
+  errors [수] [--all]          화면 오류 묶음 (같은 오류는 한 줄, 최근 순. --all이면 스택 전부)
+  errors clear 서명|all         화면 오류 묶음을 지운다 (고친 뒤)
+  erase [list]                 기다리는 내 데이터 삭제 요청
+  erase log [수]               삭제 기록 (요청·취소·실행)
+  erase ask 이름 [일수]         대신 삭제 요청을 받는다 (메일 등으로 요청한 사람). 일수를 주지 않으면 게임의 PRIVACY.eraseDays
+  erase cancel 이름             삭제 요청을 거둔다
+  erase now 이름|키앞           유예 없이 곧바로 지운다
+  erase sweep                  때가 된 요청을 지금 실행한다 (서버가 1분마다 한다)`;
 
 const root = path.resolve(import.meta.dirname, '..');
 const argv = process.argv.slice(2);

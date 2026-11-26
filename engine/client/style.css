@@ -803,3 +803,30 @@ body.room-still #stick { display: none; }
 .morphRow.on { outline: 1px solid var(--gold); border-radius: 6px; }
 .morphBio { font-style: italic; opacity: .85; margin-top: 2px; }
 .morphHead .mtag { font-size: 11px; border: 1px solid var(--gold); color: var(--gold); border-radius: 3px; padding: 0 5px; }
+
+/* ---------- 웹 출시의 바탕 ---------- */
+/* 자리 비움(탭을 숨긴 사람): 이름표가 흐려지고 아래에 '자리 비움' (lifecycle.ts) */
+.tag.afk { opacity: .55; }
+.tag.afk::after { content: attr(data-afk); display: block; text-align: center; font-size: 10px; color: var(--dim); }
+/* 약관 동의 창·문서 보기 (hud/legal.ts): 화면 전체를 덮는다 */
+.modal {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(var(--cover-rgb), .6); z-index: 20;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
+}
+.modal[hidden] { display: none; }
+.modal .card { width: 420px; max-height: 100%; overflow-y: auto; }
+.modal h2 { margin: 0; font-size: 18px; color: var(--gold); }
+#legalDocBody { white-space: pre-wrap; font-size: 13px; line-height: 1.5; max-height: 60vh; overflow-y: auto; color: var(--dim); }
+.legalLinks { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; }
+.legalLinks a { color: var(--gold); }
+#menuList .legalLinks { padding-left: 10px; }
+/* 튜토리얼 카드와 강조 (hud/tutorial.ts) */
+#tut { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); width: min(360px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 6px; z-index: 9; border-color: var(--gold); }
+#tut[hidden] { display: none; }
+#tutText { font-size: 14px; }
+.tutHi { outline: 2px solid var(--gold) !important; outline-offset: 2px; animation: tutPulse 1.2s ease-in-out infinite; }
+@keyframes tutPulse { 50% { outline-color: transparent; } }
+/* 손님 진행 보호 (hud/keepsafe.ts) */
+#keepSafe { position: fixed; left: 50%; top: 80px; transform: translateX(-50%); width: min(380px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 8px; z-index: 9; font-size: 13px; }
+#keepSafe[hidden] { display: none; }
+#menuList button.bad { background: var(--hp); color: #fff; }

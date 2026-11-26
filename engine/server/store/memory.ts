@@ -1,7 +1,8 @@
-import type { EconRow, EconStore, PlayerSave, ReportSave, Store, WorldSave } from './types';
+import { anonymize } from './sqlite';
+import type { ClientErrorRow, EconRow, EconStore, EraseRow, PlayerSave, ReportSave, Store, WebStore, WorldSave } from './types';
 
 /** 시험용 저장소: 프로세스가 끝나면 사라진다. */
-export class MemoryStore implements Store, EconStore {
+export class MemoryStore implements Store, EconStore, WebStore {
   private world: WorldSave | null = null;
   private players = new Map<string, PlayerSave>();
   loadWorld(): WorldSave | null { return this.world && structuredClone(this.world); }
@@ -29,8 +30,38 @@ export class MemoryStore implements Store, EconStore {
   }
   transaction<T>(fn: () => T): T {
     // 들어갈 때의 모든 것을 떠 두고, 예외가 나면 그것으로 되돌린다 (시험용이라 통째로 떠도 된다). 안에서 다시 불러도 같다
-    const before = { world: this.world, players: new Map(this.players), reportList: [...this.reportList], econRows: new Map([...this.econRows].map(([k, r]) => [k, { ...r }])), snapshots: new Map(this.snapshots) };
+    const before = { world: this.world, players: new Map(this.players), reportList: [...this.reportList], econRows: new Map([...this.econRows].map(([k, r]) => [k, { ...r }])), snapshots: new Map(this.snapshots), consents: new Map(this.consents), erasures: new Map(this.erasures), errors: new Map(this.errors) };
     try { return fn(); } catch (err) { Object.assign(this, before); throw err; }
+  }
+  // ---- 웹 출시의 바탕 ----
+  private consents = new Map<string, { v: string; at: number }>();
+  private erasures = new Map<string, EraseRow>();
+  private errors = new Map<string, ClientErrorRow>();
+  consent(key: string): { v: string; at: number } | null { const c = this.consents.get(key); return c ? { ...c } : null; }
+  setConsent(key: string, v: string, at: number): void { this.consents.set(key, { v, at }); }
+  deletePlayer(key: string): void { this.players.delete(key); this.consents.delete(key); }
+  anonymizeReports(key: string): number {
+    let n = 0;
+    this.reportList = this.reportList.map((r) => { if (r.byKey !== key && r.targetKey !== key) return r; n++; return anonymize(r, key); });
+    return n;
+  }
+  reportsOf(key: string): ReportSave[] { return this.reportList.filter((r) => r.byKey === key || r.targetKey === key).map((r) => structuredClone(r)); }
+  eraseOf(key: string): EraseRow | null { const r = this.erasures.get(key); return r ? { ...r } : null; }
+  erasePending(): EraseRow[] { return [...this.erasures.values()].filter((r) => r.state === 'wait').sort((a, b) => a.due - b.due).map((r) => ({ ...r })); }
+  putErase(r: EraseRow): void { this.erasures.set(r.key, { ...r }); }
+  eraseLog(limit: number): EraseRow[] { return [...this.erasures.values()].sort((a, b) => Math.max(b.asked, b.done) - Math.max(a.asked, a.done)).slice(0, limit).map((r) => ({ ...r })); }
+  addClientError(r: ClientErrorRow, max: number): void {
+    const old = this.errors.get(r.sig);
+    if (old) Object.assign(old, { n: old.n + r.n, last: r.last, build: r.build, ua: r.ua }); else this.errors.set(r.sig, { ...r });
+    const list = [...this.errors.values()].sort((a, b) => b.last - a.last);
+    for (const x of list.slice(max)) this.errors.delete(x.sig);
+  }
+  clientErrors(limit: number): ClientErrorRow[] { return [...this.errors.values()].sort((a, b) => b.last - a.last).slice(0, limit).map((r) => ({ ...r })); }
+  clearClientErrors(sig: string): number {
+    if (sig === 'all') { const n = this.errors.size; this.errors.clear(); return n; }
+    let n = 0;
+    for (const k of [...this.errors.keys()]) if (k.startsWith(sig)) { this.errors.delete(k); n++; }
+    return n;
   }
   close(): void { /* 할 일 없음 */ }
 }

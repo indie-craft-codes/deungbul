@@ -5,6 +5,7 @@
 import { MAIL_MAX, isItemId, itemCap, mailKept, type Gear, type ItemId, type Mail, type MailKind, type Reward } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
+import { personalData } from '../personal';
 import { GearSys } from './gear';
 import { mailWhy } from './wallet';
 
@@ -78,6 +79,12 @@ export class MailSys {
           if (list.length) this.waiting.set(w.pid, [...(this.waiting.get(w.pid) ?? []), ...list]);
         }
       },
+    });
+    // 내 데이터 (engine/server/game/personal.ts): 접속하지 않은 동안 맡아 둔 우편. 삭제하면 버린다 (내가 남에게 보낸 것은 받은 사람의 것)
+    personalData(g).push({
+      name: 'mailbox',
+      get: (pid) => this.waiting.get(pid),
+      erase: (pid) => { if (this.waiting.delete(pid)) g.saveDirty = true; },
     });
   }
 

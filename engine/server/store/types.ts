@@ -89,3 +89,43 @@ export interface Store {
   readonly file?: string;
   close(): void;
 }
+
+// ---------- 웹 출시의 바탕: 약관 동의, 내 데이터 삭제, 화면 오류 (engine/server/net/web.ts) ----------
+/** 삭제 요청 한 건. 실행하면 state가 done이 되고 이름은 지운다 (저장 키의 해시와 시각만 남는 기록) */
+export interface EraseRow { key: string; name: string; asked: number; due: number; state: 'wait' | 'done' | 'cancel'; done: number }
+/** 화면 오류 한 묶음: 같은 서명(sig)의 오류를 모아 센다 */
+export interface ClientErrorRow {
+  sig: string;
+  /** error(처리되지 않은 오류), rejection(처리되지 않은 Promise 거절), webgl(그리기 장치 잃음), report(게임이 알린 것) */
+  kind: string;
+  msg: string; stack: string;
+  /** 페이지(주소의 경로만), 빌드(진입 스크립트의 파일 이름), 브라우저(이름과 큰 버전, 기기 종류) */
+  where: string; build: string; ua: string;
+  n: number; first: number; last: number;
+}
+/**
+ * 웹 출시의 바탕이 쓰는 저장 (틀의 저장소 둘이 갖는다). 이것이 없는 저장소면 동의는 기록되지 않고(화면은 그래도 동의를 받는다), 삭제와 오류 수집은 꺼진다
+ */
+export interface WebStore {
+  /** 그 저장 키가 동의한 약관 버전 (없으면 null) */
+  consent(key: string): { v: string; at: number } | null;
+  setConsent(key: string, v: string, at: number): void;
+  /** 캐릭터 저장 한 줄을 지운다 */
+  deletePlayer(key: string): void;
+  /** 신고 기록에서 그 저장 키의 이름과 키를 지운다 (신고한 사람이든 당한 사람이든). 줄(대화)은 제재 근거로 남는다 */
+  anonymizeReports(key: string): number;
+  /** 그 저장 키가 한 신고와 당한 신고 (내보내기: 남의 대화 줄은 빼고) */
+  reportsOf(key: string): ReportSave[];
+  /** 삭제 요청: 그 키의 마지막 요청, 기다리는 요청 모두, 한 줄 적기(같은 키는 덮어쓴다), 기록(최근부터) */
+  eraseOf(key: string): EraseRow | null;
+  erasePending(): EraseRow[];
+  putErase(r: EraseRow): void;
+  eraseLog(limit: number): EraseRow[];
+  /** 화면 오류: 같은 서명이면 수와 마지막 시각을 올리고 아니면 새 줄. 줄이 max를 넘으면 마지막 시각이 가장 오래된 것부터 지운다 */
+  addClientError(r: ClientErrorRow, max: number): void;
+  clientErrors(limit: number): ClientErrorRow[];
+  /** 그 서명(앞부분이어도 된다)의 묶음을 지운다. 'all'이면 모두. 지운 수 */
+  clearClientErrors(sig: string): number;
+}
+/** 그 저장소가 웹 출시의 바탕의 저장도 갖는가 */
+export const hasWeb = (s: Store): s is Store & WebStore => typeof (s as Partial<WebStore>).setConsent === 'function';

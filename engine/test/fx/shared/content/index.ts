@@ -182,3 +182,6 @@ export const TEAMS: readonly TeamDef[] = [
 ];
 /** 시험이 규칙을 바꿔 가며 본다 (teams.test가 고쳤다가 되돌린다) */
 export const TEAM_RULES: TeamRules = { balance: true, switch: true, persist: false };
+
+// ---------- 약관·처리방침 (웹 출시의 바탕: engine/test/fx/web.test.ts가 동의를 시험한다) ----------
+export const LEGAL = { terms: 'https://example.invalid/terms', privacy: 'fxPrivacyText', version: 'fx-2' };

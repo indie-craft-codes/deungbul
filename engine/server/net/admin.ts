@@ -17,6 +17,7 @@
 // 명령 (CLI의 도움말과 docs/making-a-game.md의 운영 절에 같은 목록이 있다):
 //   who | find 이름 | ban 이름 기간 [사유] | unban 이름 | banip 주소 기간 [사유] | unbanip 주소 | mute 이름 기간 [사유] | unmute 이름
 //   kick 이름 [사유] | announce [--chat] 글 | give 이름 무엇 수 | take 이름 무엇 수 | reports [수] [--all] | resolve 신고id [메모] | audit [수]
+//   (웹 출시의 바탕, net/web.ts) errors [수] [--all] | errors clear 서명|all | erase [list|log [수]|ask 이름 [일수]|cancel 이름|now 이름|sweep]
 //   기간: 숫자(시간), 30m·12h·7d처럼 단위를 붙인 것, 또는 perm(영구)
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
@@ -66,6 +67,8 @@ export interface AdminHost {
   broadcast(msg: ServerMsg): void;
   /** 월드와 바뀐 캐릭터를 지금 저장한다 */
   save(): void;
+  /** 다른 쪽이 더하는 명령 (웹 출시의 바탕: errors, erase — net/web.ts). 틀의 명령과 같은 이름은 무시한다 */
+  extra?: () => Record<string, (a: string[], by: string) => string>;
 }
 
 /** 연결을 끊는 이유 (클라이언트가 이것을 보고 다시 붙을지 정한다: engine/client/main.ts) */
@@ -244,6 +247,9 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
       return S.log.slice(-n).map((r) => `${when(r.at)}  ${r.by}@${r.from}  ${r.cmd} ${r.args.join(' ')}  → ${r.ok ? '' : '[실패] '}${r.out.split('\n')[0]}`).join('\n') || '기록이 없습니다.';
     },
   };
+
+  // 다른 쪽이 더한 명령 (명령표의 끝에)
+  for (const [k, fn] of Object.entries(host.extra?.() ?? {})) if (!Object.hasOwn(COMMANDS, k)) COMMANDS[k] = fn;
 
   function grant(a: string[], by: string, sign: 1 | -1): string {
     need(a.length >= 3, `${sign > 0 ? 'give' : 'take'} 이름 무엇(${CURS.join(', ')}, 아이템 id) 수`);

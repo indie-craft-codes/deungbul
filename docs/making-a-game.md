@@ -450,7 +450,7 @@ mountBonfire();
 startClient({
   look,
   // 이 게임의 모듈: 적은 차례대로 init되고, 틀의 덧붙는 모듈(상점, 가방, 메뉴 …)보다 먼저다
-  modules: [initBonfire, initScene, initCharStands],
+  modules: [initBonfire, initScene, initCharStands, initTutorial],
 });
 ```
 
@@ -1093,6 +1093,8 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `give 이름 무엇 수` / `take 이름 무엇 수` | 지급·회수. 무엇: `gold`, `sparks`, `exp` 또는 아이템 id. 지갑·가방을 지나 장부에 원인 `admin`으로 적힌다(`WHY.admin`). 접속해 있지 않으면 다음 접속 때 적용한다. 회수는 가진 만큼만 |
 | `reports [수] [--all]` / `resolve 신고id [메모]` | 신고 목록(처리하지 않은 것, `--all`이면 모두)과 처리 표시 |
 | `audit [수]` | 최근 관리자 행동 기록 |
+| `errors [수] [--all]` / `errors clear 서명\|all` | 화면 오류 묶음(같은 오류는 한 줄, 최근 순)과 고친 뒤 지우기 (16절 '화면 오류 수집') |
+| `erase [list\|log [수]\|ask 이름 [일수]\|cancel 이름\|now 이름\|sweep]` | 내 데이터 삭제 요청: 기다리는 것, 기록, 대신 받기, 거두기, 곧바로 지우기, 때가 된 것 실행 (16절 '약관·처리방침·동의와 내 데이터') |
 
 - 기간: 숫자(시간), `30m`·`12h`·`7d`, `perm`(영구).
 - 게임은 첫 인자(게임 폴더 이름) 또는 `GAME`, 포트는 `PORT` 또는 `deploy.json`의 `port`. 토큰은 저장 파일 옆의 `admin.token`(저장 파일은 `DB` 또는 `deploy.json`의 `db`). 다른 곳이면 `ADMIN_TOKEN_FILE`. 기록에 남는 이름은 `ADMIN_BY`, 없으면 PC의 사용자 이름.
@@ -2042,3 +2044,131 @@ placed = true;
 
 - 시험: `engine/test/collect/chardef.test.ts`(검증기의 규칙마다의 거절 코드, 금칙어 고리, 겉모습 글자, **퍼징**: 무작위·악의적인 정의 6000개가 예외 없이 거절·통과하고 통과한 것은 모두 예산 안, 예산을 넘긴 것은 언제나 거절, 영웅의 다리와 저장, 저장소 바꿔 끼우기), `engine/test/collect/morph.test.ts`(변신·풀기·대기·전투 중 금지, `EnterInfo.l`과 `look`, 저장, 회수), `games/sample/test/morph.test.ts`(예제의 정의와 세기, 실제 서버에서 남의 화면).
 - 남은 것(틀 밖, 사용자 결정이 필요한 것): AI 생성기(프롬프트 → 이 형식의 JSON: 결과는 `g.chars.add`로만 넣는다), 계정과 계정 공용 저장소(`useStore`에 꽂는다), 소유의 싱크(`morph.grant`·`take`), 거래와 수익 분배, 주간 한도, 요청 검사·신고·회수(회수는 `g.chars.remove`).
+
+## 16. 웹 출시의 바탕: 설정 창, 탭 숨김, 로딩 예산, 오류 수집, 약관·데이터 권리, 튜토리얼, 인증·플랫폼 접점
+
+공개 웹(포털·직접 서비스)에 내려면 어느 장르든 필요한 것들이다([genre-features.md](genre-features.md) 5.2절·6절). 모두 틀에 있고, **게임이 아무것도 적지 않으면 지금과 같다**. 등불지기에 새로 보이는 것은 편의 화면뿐이다: 메뉴의 '설정' 탭, 다른 사람의 이름표에 붙는 '자리 비움', 30분을 논 뒤 한 번 뜨는 손님 진행 보호 안내. 게임 내용·경제·서버의 줄 위 글자(황금 실행)는 같다.
+
+### 플랫폼 접점 (`engine/client/platform/`)
+
+브라우저에 기대는 일(저장소, 보임·숨김, 오류 받기, 파일 내려받기, 주소 열기, 클립보드, 전체 화면, 서비스 워커, 광고, 서버 주소)은 **접점 `Platform`을 거쳐** 부른다(설계: [platforms.md](platforms.md) 3.1). 기본 구현은 `web`(`platform/web.ts`: 지금 동작 그대로, 저장 키 이름도 같다), 시험은 `memory`(`platform/memory.ts`). 데스크톱(Electron/Tauri)·모바일(Capacitor)·포털 구현은 같은 모양으로 더하고, 게임의 진입점이 `startClient`보다 먼저 `setPlatform(구현)`을 부른다. 없을 수 있는 기능은 `platform().has('files.save')`처럼 먼저 묻는다(동기). 읽기 저장은 동기(`storage.get`)이고 앱은 시작 때 `storage.ready()`로 메모리에 채운다. 비동기 칸은 실패해도 던지지 않고 `false`·`null`을 돌려준다. **이번에 새로 쓰거나 고친 코드만 이 접점을 쓴다**: 나머지 옛 호출(언어 고르기, 차단 목록, 도감 링크 …)을 옮기는 것은 다음 작업이다.
+
+| 칸 | 하는 일 | web |
+|---|---|---|
+| `id`, `has(기능)` | 플랫폼 이름, 기능이 있는가 (`storage.durable`, `files.save`, `link.external`, `display.fullscreen`, `offline.cache`, `ads` …) | |
+| `storage` (`ready`·`get`·`set`·`remove`, `secret`) | 키-값 저장. 비밀 값(기기 토큰)은 `secret`(앱: Keychain/Keystore) | `localStorage` + try/catch |
+| `lifecycle` (`visible`, `on('hide'·'show'·'pause'·'resume'·'quit')`) | 보임·숨김, 앱의 멈춤·재개 | `visibilitychange`, `pagehide` |
+| `audio` (`onUnlock`, `onInterrupt`) | 소리를 깨워도 되는 때, 바깥 까닭의 소리 멈춤 | 첫 입력 |
+| `display` (`fullscreen`, `orientation`, `safeArea`, `pixelRatioCap`, `pixelRatio`) | 전체 화면, 방향, 안전 영역, 그리기 배율의 상한(설정 창의 기본) | 상한 2 |
+| `openUrl`, `share`, `copy`, `saveFile` | 주소 열기(약관), 공유, 클립보드, 파일로 저장(내 데이터) | `window.open`, `navigator.share`, `clipboard`, `<a download>` |
+| `errors` (`listen`, `report`) | 처리되지 않은 오류 받기, 오류 묶음 보내기 | `error`·`unhandledrejection`, `fetch(keepalive)` |
+| `offlineCache(주소)` | 재방문 캐시 | 서비스 워커 등록 |
+| `auth` (`providers`, `proof`) | 플랫폼이 주는 증명(나중: Steam·Apple·포털). 지금은 `['guest']` | |
+| `ads` (`gameplayStart`·`gameplayStop`·`adBreak`·`rewarded`), `invite(room)` | 포털 광고·게임 구간·초대 단추 | 아무것도 하지 않는다 |
+| `server()`, `app` (`version`, `build`, `page`, `requireUpdate`) | 서버 주소, 빌드 표시, 오래된 화면일 때 | `VITE_SERVER_URL` → `server.json` → 같은 출처, 새로고침 |
+
+틀이 접점 위에 얹은 것(`@engine/client`에서 읽는다):
+
+- **광고 지점**: 틀은 광고 SDK를 부르지 않고 '띄워도 되는 자리'를 사건으로만 알린다. `onBreakPoint((where) => …)`: `'roundEnd'`(판 모듈의 결과), `'respawn'`(쓰러져 다시 일어남). 띄울지는 게임이 정해 `adBreak(where)`를 부른다. `rewarded(why)`는 끝까지 봤으면 `true`, 실패·없음·차단이면 `false`(보상을 주지 않는다). 그동안 틀이 소리를 멈추고(`onAd`) 게임 구간을 닫았다 다시 연다. 기본 구현은 곧바로 끝난다: 광고 차단기가 있어도 진행된다.
+- **게임 구간**: `gameplayStart`는 들어와서 첫 입력 때(Poki 규칙), `gameplayStop`은 탭을 숨길 때와 광고 동안. 같은 사건을 잇달아 두 번 보내지 않는다.
+- **인증 접점** `AuthProvider`(`platform/auth.ts`): 접속할 때 낼 증표. 지금은 손님뿐이다(`guestAuth()`: 비밀 저장의 `token` 칸 = 예전의 `localStorage.token`). 포털 토큰·자체 계정은 같은 모양으로 `setAuth(구현)`에 꽂는다. 서버 쪽 짝은 `ServerAuth`이고 `startServer({ auth })`로 꽂는다(주지 않으면 손님: 토큰의 해시가 저장 키, 기기 옮기기의 별칭을 거친다). 계정·로그인 자체는 만들지 않는다([accounts.md](accounts.md)).
+
+```ts engine/server/net/auth.ts
+export interface ServerAuth {
+readonly kind: string;
+…
+keyOf(m: Record<string, unknown>): string | null | undefined;
+}
+```
+
+### 설정 창
+
+메뉴의 '설정' 탭(어느 게임에나 맨 뒤: `MenuTab.always`, `engine/client/hud/settings.ts`). 소리 켜고 끄기·효과음·배경음, 그래픽 품질(높음·보통·낮음 = 음영(해의 그림자), 해상도 상한 ×2·×1.5·×1, 그리는 거리 320·200·130m. 하나씩 고쳐도 된다), 화면 흔들림 끄기(처음은 기기의 '동작 줄이기'), 글자·창 크기(90~130%), 전체 화면(되는 곳만), 단축키 재설정(키보드 기기만: 기능의 키를 누르고 새 키. 이동·Enter·Esc는 못 바꾼다), 게임의 칸, 튜토리얼 다시 보기, 약관, 내 데이터. 값은 기기에 둔다(플랫폼 저장소의 `settings` 칸, 셈은 `engine/client/hud/settingscalc.ts`). **처음 값은 이 창이 생기기 전과 같다**(높음, 배율 1, 키 그대로). 소리는 예전 칸(`sound`, `soundMix`)을 그대로 쓰고 메뉴 머리의 단추와 같은 값이다.
+
+게임의 칸은 `addSetting`으로 더한다(더할 때 저장된 값으로 `on`이 한 번 불린다). 단축키에 이름을 붙이려면 `onKey(키, 할 일, () => 이름)`.
+
+```ts games/sample/client/tutorial.ts
+// 이 게임의 설정 칸: 이름표 보이기
+addSetting({ id: 'tags', label: () => t('setTags'), kind: 'toggle', value: true, on: (v) => document.body.classList.toggle('noTags', !v) });
+```
+
+칸의 종류는 `toggle`, `select`(`options`), `range`(`min`·`max`·`step`). 지금 값은 `settingValue(id)`.
+
+### 탭 숨김·백그라운드
+
+크롬은 숨긴 탭의 타이머를 1초에 한 번(5분 넘게 숨기면 1분에 한 번)으로 줄이고 `requestAnimationFrame`을 멈춘다. WebSocket은 그 제한의 면제가 아니지만, 서버의 프로토콜 ping에는 브라우저가 스스로 답하고 받은 메시지는 그대로 처리된다. 틀이 하는 일(`engine/client/lifecycle.ts`):
+
+- 숨기면: 서버에 `{ t: 'vis', on: false }` → 다른 사람의 화면에서 그 이름표가 흐려지고 '자리 비움'이 붙는다(나중에 들어온 사람도 안다). 소리를 멈추고, 게임 구간을 닫고, 숨긴 동안에는 타격 연출을 쌓지 않는다.
+- 돌아오면: 서버에 알리고, 남은 연출(불티·번쩍임·떠오르는 숫자)을 버리고 지금 상태부터 그린다(스냅샷은 숨긴 동안에도 적용되어 위치는 이미 최신이다). 게임은 `onReturn((ms) => …)`으로 할 일을 단다. 끊겼으면 보일 때 다시 접속한다(예전과 같다).
+- 서버는 게임에 사건 `playerVisible(p, on)`을 낸다. 실시간 판에서 숨긴 사람의 처리(일정 시간 뒤 퇴장 같은 것)는 게임이 이 사건으로 건다. 화면에서 누가 자리 비움인지는 `isAfk(id)`.
+
+### 자원 로딩 예산
+
+`npm run build`(와 `npm run build:all`)이 끝나면 `scripts/budget.mjs`가 묶음별 크기를 보이고 기준을 넘으면 경고한다(빌드를 실패시키지는 않는다): 첫 묶음(index.html과 곧바로 읽는 코드, gzip 크기도), 자원(`client/public/`의 모델·소리), 나중(도감 같은 다른 페이지). 첫 다운로드 8MB(Poki 목표)·20MB(CrazyGames 모바일 홈) 기준은 `deploy.json`의 `"budget": { "firstMB": 8, "mobileMB": 20 }`로 바꾼다. 첫 장면에 필요 없는 파일은 `preloadLater`로 미룬다: 접속 화면에서 기다리지 않고 들어간 뒤 뒤에서 받아, 다 받으면 코드 모델·합성음 자리에 바꿔 끼운다.
+
+```ts games/sample/client/tutorial.ts
+// 배경음(모닥불 소리)은 흘려 받고, 줍는 소리는 첫 장면에 기다리지 않는다 (자원 로딩 예산)
+preloadLater('./sounds/pickup.wav');
+// 재방문 캐시 (빌드가 sw.js를 쓰게 deploy.json에 offlineCache: true)
+enableOfflineCache();
+```
+
+**재방문 캐시(서비스 워커)는 기본 끔**이다. 켜려면 `deploy.json`에 `"offlineCache": true`(빌드가 `sw.js`를 쓴다)와 화면의 `enableOfflineCache()` 둘 다. 끔이 기본인 까닭: 서버 권위 게임이라 오프라인 플레이가 없고, 지금 빌드가 작아(등불지기 약 1.5MB) 얻는 것이 적은데, 잘못된 캐시는 '옛 화면이 남는' 고장을 부른다(화면(HTML)은 늘 서버에서 먼저 받고 이름에 해시가 든 빌드 파일만 캐시에서 주게 짰지만, 운영 중인 등불지기에 오래 시험하지 않고 넣지 않는다). 모델·소리가 큰 게임과 웹 푸시(서비스 워커가 바탕)를 쓸 때 켠다.
+
+### 화면 오류 수집
+
+외부 서비스 없이: 화면의 처리되지 않은 오류, Promise 거절, 그리기 장치(WebGL)를 잃은 것을 게임 서버의 `POST /client-error`로 보낸다(`engine/client/errors.ts` → `engine/server/net/web.ts`). 화면은 같은 오류를 처음 한 번 보내고 되풀이는 30초마다 수만, 한 페이지에서 40번까지 보낸다. 서버는 8KB를 넘는 본문을 받지 않고(413), 주소마다 10건 뒤로는 10초에 1건·서버 전체 초당 1건으로 막고(429), 주소의 호스트·쿼리, 긴 16진(토큰), 이메일, IP, 긴 숫자를 빼고, 브라우저는 이름·큰 버전·기기 종류로만 줄인다. 같은 오류(종류 + 숫자를 지운 문장 + 첫 스택 줄의 파일·함수: 빌드의 해시와 줄 번호는 빼고)는 한 줄로 센다(500줄까지). 게임이 잡은 오류는 `reportError(err, '무엇을 하다')`. 보는 법은 [infra.md](infra.md) '화면 오류와 내 데이터 삭제'. **기본 켬**이다(화면에 보이는 것이 없고, 보내는 곳은 게임 서버 자신이다).
+
+### 약관·처리방침·동의와 내 데이터
+
+내용 칸 `LEGAL: { terms, privacy, version }`(값은 주소나 게임의 문장 키). **적지 않으면 화면에 링크가 없다(지금과 같다).** 적으면 접속 화면 아래와 설정 창에 두 문서의 링크가 생기고, 들어온 뒤 그 버전에 동의하지 않은 저장 키에는 고지·동의 창이 뜬다(동의할 때까지 화면을 덮고 단축키를 막는다). 동의한 버전은 서버가 저장 키마다 적고(`consents` 표), 버전을 올리면 모두에게 다시 묻는다. 손님(저장 키 없음)은 기기에만 적는다.
+
+```ts games/sample/shared/content/index.ts
+export const LEGAL: LegalDef = { terms: 'legalTermsText', privacy: 'legalPrivacyText', version: '2026-11-27' };
+```
+
+내 데이터(설정 창, 어느 게임에나): **내려받기**는 저장 키의 것을 모두 JSON 파일로 준다(캐릭터 저장(접속 중이면 지금 값), 동의, 삭제 요청, 월드에 둔 몫(길드·거래소·맡아 둔 우편), 제재, 신고(내가 당한 신고의 내 말만, 남의 이름과 말은 빼고)). 30초에 한 번. **삭제**는 요청 → 유예(`PRIVACY.eraseDays`, 기본 7일. 그동안 설정에서 거둘 수 있다) → 실행(서버가 1분마다 살핀다) → 기록(`erasures` 표: 저장 키의 해시와 시각만)이다. 실행하면 접속을 끊고(닫힘 4010: 화면은 토큰을 지우고 첫 화면으로) 캐릭터 저장과 동의를 지운다. **다른 사람과 얽힌 데이터의 규칙**:
+
+| 데이터 | 처리 | 까닭 |
+|---|---|---|
+| 캐릭터 저장, 동의 기록 | 지운다 (이름도 풀린다) | 그 사람만의 것 |
+| 길드 구성원 | 명단에서 뺀다. 길드장이면 가장 많이 기부한 사람이 잇고, 혼자였으면 길드가 사라진다. 길드의 경험치(기부 누적)는 남는다 | 길드는 다른 구성원의 것 |
+| 거래소에 올린 물건 | 내린다(물건도 없어진다). 이미 팔린 것은 산 사람의 것 | 주인이 사라진다 |
+| 맡아 둔 우편 | 버린다. 내가 남에게 보낸 것(판매 대금 등)은 받은 사람의 것 | |
+| 기기 옮기기 | 별칭과 살아 있는 코드를 지운다 | |
+| 신고 기록 | 그 사람의 이름과 키를 지우고 대화 줄은 남긴다 | 제재 다툼의 근거. 보관 기간은 정할 것 |
+| 차단·말 막기 | 저장 키의 해시로 남기되 이름을 지운다. 미뤄 둔 지급은 지운다 | 지우고 다시 만들어 제재를 피하지 못하게 |
+| 관리자 감사 기록, 경제 장부 | 그대로 | 법적 감사 기록 / 사람 구분 없는 합계 |
+
+게임이 월드 저장에 한 사람의 것을 두면 같은 규칙을 등록한다: `personalData(g).push({ name, get(pid), erase(pid) })`(`engine/server/game/personal.ts`).
+
+### 튜토리얼 (선택)
+
+`addTutorial`을 부른 게임에만 있다. 단계마다 안내 한 줄과 끝나는 조건(`cmd` 내가 보낸 명령, `msg` 서버 메시지·`'sys:안내문'`, `key` 단축키의 기능, `test` 0.25초마다의 물음. 조건이 없으면 '다음' 단추), 강조할 요소(`target`: id), 건너뛰기, 설정 창의 다시 보기가 있다. 진행은 기기에 둔다(`tut:<id>`). 단계마다 `onTutorial((ev, id, step, i) => …)`에 사건(`start`, `step`, `done`, `skip`)이 간다: 분석을 받는 곳이 생기면 거기에 잇는다.
+
+```ts games/sample/client/tutorial.ts
+addTutorial({
+id: 'basics',
+label: () => t('tutBasics'),
+start: () => !!S.me && S.me.cls !== '',
+steps: [
+{ id: 'move', text: 'tutMove', until: { cmd: 'move' } },
+{ id: 'attack', text: 'tutAttack', until: { cmd: 'attack' } },
+{ id: 'menu', text: 'tutMenu', target: 'menuBtn', until: { key: 'm', test: () => !document.getElementById('menu')?.hidden } },
+{ id: 'fire', text: 'tutFire', target: 'bonfire' },
+],
+});
+```
+
+### 손님 진행 보호
+
+진행이 이 기기의 저장에만 묶여 있으면(`auth().deviceBound()`: 웹의 손님) 브라우저 데이터를 지우면 캐릭터를 잃는다는 것을 한 번 알리고 기기 옮기기 코드를 권한다(창의 단추가 메뉴의 '기기' 탭을 연다). **틀의 기본은 이 기기에서 30분을 논 뒤 한 번**(보이고 접속해 있던 시간)이다. 기본을 켬으로 둔 까닭: 사파리는 7일 오지 않은 사이트의 저장을 지울 수 있고, 손님만 있는 지금은 모든 게임에 해당하며, 게임 내용을 바꾸지 않는 안내 한 번이다. 게임은 시간을 바꾸거나 끄고(`setGuestReminder({ afterMin: 0 })`), 자기가 고른 순간(레벨 n, 첫 구매)에 `remindGuestSave()`를 부른다.
+
+```ts games/sample/client/tutorial.ts
+// 손님 진행 보호: 이 게임은 20분을 논 뒤에 알린다
+setGuestReminder({ afterMin: 20 });
+```
+
+### 시험
+
+`engine/test/fx/web.test.ts`: 오류의 개인정보 빼기·묶기·끝점의 제한, 자리 비움, 동의, 내보내기·삭제의 흐름과 얽힌 데이터, SQLite 스키마 2, 설정·튜토리얼·키 재설정의 셈, 플랫폼 접점(memory)·인증 접점. 화면은 실제 브라우저로 확인했다([framework-status.md](framework-status.md) '웹 출시의 바탕').

@@ -2,6 +2,7 @@
 // 전부 연출일 뿐이다. 피해와 위치는 서버가 이미 정했다.
 import * as THREE from 'three';
 import { clamp, view } from './app';
+import { platform } from './platform';
 import type { Ring } from './scene/view';
 
 interface Burst { mesh: Ring; t: number; radius: number; life: number }
@@ -10,6 +11,7 @@ let markT = 0;
 
 /** 그 자리에서 radius까지 퍼지며 사라지는 고리. life가 길면 천천히 퍼진다 (예고용) */
 export function burst(x: number, z: number, radius: number, color: number, life = 0.45): void {
+  if (!platform().lifecycle.visible()) return; // 숨긴 동안에는 그리지 않으므로 쌓지 않는다 (돌아왔을 때 밀린 연출을 한꺼번에 보이지 않게)
   const mesh = view.ring(0.8, 1, color);
   mesh.position.set(x, 0.1, z);
   mesh.visible = true;
@@ -50,7 +52,11 @@ export function markMove(x: number, z: number): void {
 }
 
 // ---------- 타격감 ----------
-const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** 화면 흔들림을 끈다 (설정 창의 '흔들림 끄기'. 처음 값은 기기의 '동작 줄이기' 설정) */
+export function setCalm(v: boolean): void { calm = v; if (v) { shakeAmt = 0; shakeAt.x = 0; shakeAt.z = 0; } }
+/** 흔들림이 꺼져 있는가 */
+export const isCalm = (): boolean => calm;
 const FLASH_S = 0.07; // 맞은 쪽이 하얗게 번쩍이는 시간
 const RECOIL_S = 0.2; // 움찔했다 돌아오는 시간
 const MAX_SPARKS = 140;
@@ -96,7 +102,7 @@ const shakeAt = { x: 0, z: 0 };
 
 /** 타격 연출을 건다. delay가 있으면 그만큼 뒤에 터진다. */
 export function hit(fx: HitFx): void {
-  if (pending.length > 80) return;
+  if (pending.length > 80 || !platform().lifecycle.visible()) return;
   if (fx.delay > 0) pending.push({ ...fx }); else fire(fx);
 }
 
@@ -205,3 +211,6 @@ export function updateFx(dt: number): void {
     shakeAmt *= Math.exp(-dt * 14);
   } else { shakeAmt = 0; shakeAt.x = 0; shakeAt.z = 0; }
 }
+
+/** 남은 연출을 모두 끝낸다 (탭을 숨겼다 돌아왔을 때: 밀린 것을 버리고 지금 상태부터 그린다. engine/client/lifecycle.ts) */
+export function dropFx(): void { updateFx(60); }

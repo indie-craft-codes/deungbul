@@ -112,3 +112,6 @@ export const STAGE_RULES = get('STAGE_RULES');
 export const LOOK_RULES = get('LOOK_RULES');
 export const CHAR_RULES = get('CHAR_RULES');
 export const MORPH_RULES = get('MORPH_RULES');
+// ---------- 웹 출시의 바탕 ----------
+export const LEGAL = get('LEGAL');
+export const PRIVACY = get('PRIVACY');

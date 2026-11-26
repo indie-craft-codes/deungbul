@@ -196,4 +196,10 @@ export type MsgKey =
   | 'morphGone' // [] 그 캐릭터의 정의가 빠져 변신이 풀렸다
   | 'morphWait' // [남은 초] 아직 다시 변신할 수 없다
   | 'morphFight' // [] 싸우는 중이라 변신할 수 없다
-  | 'morphNone'; // [] 가지지 않았거나 없는 캐릭터다
+  | 'morphNone' // [] 가지지 않았거나 없는 캐릭터다
+  // ---- 웹 출시의 바탕: 내 데이터 (engine/server/net/web.ts) ----
+  | 'eraseAsked' // [유예 일수] 삭제를 요청했다: 그 뒤에 지운다 (그동안 취소할 수 있다)
+  | 'eraseCanceled' // [] 삭제 요청을 거뒀다
+  | 'erased' // [] 요청한 대로 이 캐릭터의 데이터를 지웠다 (연결을 끊는다)
+  | 'mydataGuest' // [] 저장되지 않는 손님이라 내보내거나 지울 것이 없다
+  | 'mydataWait'; // [초] 너무 잦다: 그만큼 뒤에 다시

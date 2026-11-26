@@ -19,6 +19,7 @@ export * from './defs/rooms';
 export * from './defs/look';
 export * from './defs/chardef';
 export * from './defs/morph';
+export * from './defs/legal';
 // 맵 정의의 모양과 MAP에서 꺼낸 것(AREAS, GRID 등)은 world.ts가 다시 내보낸다. 여기서는 MAP만 내보낸다
 
 export {
@@ -46,4 +47,6 @@ export {
   LOOK_RULES, CHAR_RULES, MORPH_RULES,
   // 재화 흐름 지표
   ECON_CURS, ECON_MOVES, ECON_MOVE_PREFIXES, ECON_UNKNOWN, ECON_LOST_FULL, ECON_HUNT, ECON_LEVEL_MARKS, ECON_FRESH_DAYS, ECON_WATCH,
+  // 웹 출시의 바탕: 약관·처리방침, 개인정보 권리
+  LEGAL, PRIVACY,
 } from './content';

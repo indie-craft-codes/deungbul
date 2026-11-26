@@ -19,6 +19,7 @@ import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRarityDef, HeroRol
 import type { LookRules } from './defs/look';
 import type { CharRules } from './defs/chardef';
 import type { MorphRules } from './defs/morph';
+import type { LegalDef, PrivacyRules } from './defs/legal';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -215,3 +216,9 @@ export const LOOK_RULES: LookRules = {};
 export const CHAR_RULES: CharRules = {};
 /** 스스로 풀 때까지, 다시 변신까지 10초, 맞은 지 5초 안에는 못 한다, 보정 없음(겉모습만), 서른까지 가진다 */
 export const MORPH_RULES: MorphRules = { durationS: 0, cooldownS: 10, noFightS: 5, maxOwn: 30 };
+
+// ---------- 웹 출시의 바탕: 약관·처리방침, 개인정보 권리 (engine/shared/defs/legal.ts) ----------
+/** 약관·처리방침: 없다 (화면에 링크도 첫 접속 고지도 없다) */
+export const LEGAL: LegalDef | null = null;
+/** 내 데이터 삭제: 요청하고 7일 뒤에 지운다 (그동안 취소할 수 있다) */
+export const PRIVACY: PrivacyRules = { eraseDays: 7 };

@@ -21,6 +21,7 @@ import type { TeamDef, TeamRules } from './defs/teams';
 import type { LookRules } from './defs/look';
 import type { CharRules } from './defs/chardef';
 import type { MorphRules } from './defs/morph';
+import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
 import * as content from '@game/shared/content';
@@ -211,8 +212,16 @@ export interface CharsContent {
   MORPH_RULES: MorphRules;
 }
 
+/** 웹 출시의 바탕: 약관·처리방침과 개인정보 권리 (engine/shared/defs/legal.ts). 모듈과 상관없이 어느 게임에나 */
+export interface WebContent {
+  /** 약관·처리방침 문서와 버전. null(기본)이면 화면에 링크도 고지도 없다 */
+  LEGAL: LegalDef | null;
+  /** 내 데이터 삭제의 유예(일) */
+  PRIVACY: PrivacyRules;
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & WebContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

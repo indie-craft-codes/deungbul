@@ -65,7 +65,7 @@ check(SRC.length >= 90 && CSS.length >= 1, `틀의 소스를 읽었다 (ts ${SRC
    * bolt: ClassDef.shot(날아가는 것의 모양) / dust: 자리 비움 동안 센 것의 칸 이름(away.tally) / log: 화면 요소의 id(대화 기록 창)
    * sweep: 소탕의 명령(stage의 a)·메시지·장부의 원인 이름 (몇몇 게임의 기술 id와 글자만 같다)
    */
-  const ENGINE_WORDS: Record<string, string> = { weapon: '아이템 종류·칸', armor: '아이템 종류·칸', potion: '아이템 종류', guard: '효과 이름', crit: '효과 이름', hp: '효과 이름', ring: '미니맵 모양', bolt: '쏘는 것의 모양', dust: '자리 비움의 셈 칸', log: '대화 기록 창의 id', sweep: '소탕의 명령·메시지·원인 이름' };
+  const ENGINE_WORDS: Record<string, string> = { weapon: '아이템 종류·칸', armor: '아이템 종류·칸', potion: '아이템 종류', guard: '효과 이름', crit: '효과 이름', hp: '효과 이름', ring: '미니맵 모양', bolt: '쏘는 것의 모양', dust: '자리 비움의 셈 칸', log: '대화 기록 창의 id', sweep: '소탕의 명령·메시지·원인 이름', hide: '플랫폼 생명주기의 사건 이름(숨김: engine/client/platform/)' };
   /** 기본값 묶음은 내용 그 자체다 (게임이 받아 쓰는 기본 칸·등급 id): 검사하지 않는다 */
   const CONTENT_FILES = ['engine/shared/defaults.ts'];
   const all = SRC.filter((f) => !CONTENT_FILES.includes(f)).flatMap((f) => strings(body(f)).filter((s) => ids.has(s) && !(s in ENGINE_WORDS)).map((s) => ({ f, s })));
@@ -96,7 +96,7 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
    * sparks, sparkBonus: 두 번째 재화의 칸 이름. 재화를 일반화하지 않기로 했다 (계획 7절, 점검 11번). 저장·지갑·장부·우편의 칸 이름으로 남는다 /
    */
   const KNOWN: Record<string, string[]> = {
-    crypto: ['engine/server/net/admin.ts', 'engine/server/net/handoff.ts'], // node:crypto (관리자 토큰, 기기 옮기기의 코드와 토큰)
+    crypto: ['engine/server/net/admin.ts', 'engine/server/net/handoff.ts', 'engine/server/net/web.ts'], // node:crypto (관리자 토큰, 기기 옮기기의 코드와 토큰, 화면 오류의 서명)
     sparks: ['engine/shared/defaults.ts', 'engine/server/game/systems/ledger.ts', 'engine/server/game/systems/mail.ts', 'engine/server/game/systems/players.ts', 'engine/server/game/systems/wallet.ts', 'engine/shared/defs/collect.ts'],
     sparkBonus: ['engine/server/game/game.ts', 'engine/server/game/systems/players.ts'],
   };

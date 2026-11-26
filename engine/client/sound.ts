@@ -4,10 +4,11 @@
 // 브라우저는 사용자가 화면을 한 번 누르기 전에는 소리를 내지 못한다: 첫 입력 전에는 소리 장치를 만들지도 틀지도 않는다.
 // 음량은 효과음·배경음 따로 (메뉴의 '음량'. 소리 파일이 있는 게임이나 enableVolume을 부른 게임만 단추가 보인다), 소리 켜고 끄기(soundBtn)와 함께 이 기기에 저장한다.
 import { $ } from './app';
-import { hasAudioFiles, hasMusic, musicFile, preloadList, readMix, soundFile, soundSource, writeMix, type LoadState, type Mix } from './assets';
+import { hasAudioFiles, hasMusic, laterList, musicFile, preloadList, readMix, soundFile, soundSource, writeMix, type LoadState, type Mix } from './assets';
 import { onMsg, onSlow } from './bus';
 import { onLangChange, t, type UiKey } from './i18n';
 import type { MsgKey } from '../shared/messages';
+import { onAd, platform } from './platform';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -73,8 +74,17 @@ function playFile(key: string): boolean {
   return true;
 }
 
+/** 소리를 잠시 멈춘 까닭: 탭·앱을 숨김(hidden), 광고 중(ad). 하나라도 있으면 소리 장치를 멈추고 새 소리를 내지 않는다 */
+const held = new Set<'hidden' | 'ad'>();
+function hold(why: 'hidden' | 'ad', v: boolean): void {
+  if (v) held.add(why); else held.delete(why);
+  if (!ctx) return;
+  if (held.size) void ctx.suspend().catch(() => {});
+  else if (on && unlocked) ready();
+}
+
 function ready(): boolean {
-  if (!on || !unlocked) return false;
+  if (!on || !unlocked || held.size) return false;
   if (!ctx) {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return false;
@@ -91,7 +101,7 @@ function ready(): boolean {
     const d = noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     // 받아 둔 파일을 푼다. 아직 받지 않은 것(미리 불러오기가 없던 때)은 받는다
-    for (const url of preloadList().sounds) void (status.has(url) ? decode(url) : fetchSound(url));
+    for (const url of [...preloadList().sounds, ...laterList().sounds]) void (status.has(url) ? decode(url) : fetchSound(url));
   }
   if (ctx.state === 'suspended') void ctx.resume();
   return ctx.state === 'running';
@@ -235,7 +245,7 @@ function music(id: string): void {
 /** 0.25초마다: 소리가 꺼졌거나 첫 입력 전이면 조용히, 아니면 게임이 고른 배경음 */
 function pickMusic(): void {
   if (!picker || !ctx) return;
-  const want = on && unlocked ? picker() : '';
+  const want = on && unlocked && !held.size ? picker() : '';
   if (want !== playing) music(want);
 }
 
@@ -271,7 +281,7 @@ function mountMix(): void {
   const bind = (id: string, set: (v: number) => void) => {
     const input = $<HTMLInputElement>(id);
     input.addEventListener('input', () => { set(Number(input.value) / 100); applyMix(); });
-    input.addEventListener('change', () => { try { localStorage.setItem(MIX_KEY, writeMix(mix)); } catch { /* 저장하지 못해도 이번에는 그대로 */ } });
+    input.addEventListener('change', () => { platform().storage.set(MIX_KEY, writeMix(mix)); });
   };
   bind('mixSfx', (v) => { mix.sfx = v; });
   bind('mixMusic', (v) => { mix.music = v; });
@@ -285,19 +295,46 @@ function label(): void {
   b.setAttribute('aria-pressed', String(on));
 }
 
+// ---------- 설정 창이 쓰는 것 (hud/settings.ts) ----------
+const listeners: (() => void)[] = [];
+/** 소리가 켜져 있는가 */
+export const soundOn = (): boolean => on;
+/** 소리를 켜고 끈다 (메뉴 머리의 단추와 설정 창이 같은 값을 쓴다). 이 기기에 저장한다 */
+export function setSoundOn(v: boolean): void {
+  if (on === v) return;
+  on = v;
+  platform().storage.set('sound', on ? 'on' : 'off');
+  label();
+  if (on) sfx.pickup();
+  pickMusic(); // 끄면 배경음도 바로 줄어든다
+  for (const fn of listeners) fn();
+}
+/** 지금의 음량 (효과음·배경음, 0~1) */
+export const soundMix = (): Readonly<Mix> => mix;
+/** 음량을 바꾼다. save면 이 기기에 저장한다 (막대를 놓을 때) */
+export function setSoundMix(m: Partial<Mix>, save = true): void {
+  mix = readMix(writeMix({ ...mix, ...m }));
+  applyMix();
+  for (const id of ['mixSfx', 'mixMusic'] as const) { const el = $<HTMLInputElement>(id) as HTMLInputElement | null; if (el) el.value = String(Math.round((id === 'mixSfx' ? mix.sfx : mix.music) * 100)); }
+  if (save) platform().storage.set(MIX_KEY, writeMix(mix));
+}
+/** 소리 켜짐·음량이 바뀌면 부른다 (설정 창이 다시 그린다) */
+export function onSoundChange(fn: () => void): void { listeners.push(fn); }
+
 export function initSound(): void {
-  try { on = localStorage.getItem('sound') !== 'off'; } catch { /* 저장소를 못 쓰면 켠 채로 둔다 */ }
-  try { mix = readMix(localStorage.getItem(MIX_KEY)); } catch { /* 저장소를 못 쓰면 기본 음량 */ }
+  on = platform().storage.get('sound') !== 'off'; // 저장소를 못 쓰면 켠 채로 둔다
+  mix = readMix(platform().storage.get(MIX_KEY)); // 없거나 못 읽으면 기본 음량
   label();
   if (volumeUi || hasAudioFiles()) mountMix();
   $('soundBtn').addEventListener('click', (e) => {
-    on = !on;
-    try { localStorage.setItem('sound', on ? 'on' : 'off'); } catch { /* 다음에 다시 물어도 된다 */ }
-    label();
-    if (on) sfx.pickup();
-    pickMusic(); // 끄면 배경음도 바로 줄어든다
+    setSoundOn(!on);
     (e.currentTarget as HTMLElement).blur();
   });
+  // 탭·앱을 숨기면 소리를 멈추고 돌아오면 다시 (숨긴 동안 밀린 소리를 한꺼번에 내지 않는다). 광고 중에도 멈춘다
+  platform().lifecycle.on('hide', () => hold('hidden', true));
+  platform().lifecycle.on('show', () => hold('hidden', false));
+  onAd((v) => hold('ad', v));
+  platform().audio.onInterrupt((v) => hold('ad', v));
   // 첫 입력에서 소리 장치를 깨운다 (자동 재생 정책: 그 전에는 만들지도 틀지도 않는다)
   const wake = () => { unlocked = true; ready(); pickMusic(); };
   window.addEventListener('pointerdown', wake, { passive: true });

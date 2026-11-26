@@ -50,6 +50,16 @@ export const enGame: GameLocale = {
     bonfireWarm: 'Health recovers faster while you stay by the fire.',
     feedOne: 'Feed firewood[[ (F)|]]',
     feedAll: 'Feed all',
+    // Tutorial and settings (client/tutorial.ts)
+    tutBasics: 'Basics',
+    tutMove: '[[Click the ground (or use WASD)|Tap the ground]] to walk.',
+    tutAttack: 'Tap a beast to attack it.',
+    tutMenu: 'Open the menu[[ (M)|]]. The Settings tab has sound and graphics options.',
+    tutFire: 'Gather firewood and feed the bonfire: everyone beside it heals faster. Happy hunting!',
+    setTags: 'Show name tags',
+    // Terms and privacy (texts that LEGAL in shared/content points to. Examples only)
+    legalTermsText: 'Terms of Service (example)\n\n1. This game is an example for the framework. Progress may be reset without notice.\n2. Offensive names and chat may be restricted.\n3. Do not play with automation programs.',
+    legalPrivacyText: 'Privacy Policy (example)\n\nWhat we collect: a hash of a random token in this browser (save key), your character name and progress, your IP address (only for connection limits and bans, not stored), screen errors (with addresses and tokens removed).\nWhy: saving your progress, preventing abuse, fixing errors.\nYour rights: in Settings > My data you can download your data or request deletion. Deletion runs 7 days after the request.',
   },
   fmt: {
     heat: (heat, max) => `Warmth ${heat} / ${max}`,

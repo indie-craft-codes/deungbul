@@ -101,6 +101,8 @@ export interface Hooks extends HooksExt {
   charRemoved: (id: string) => void;
   /** [morph] 변신했다 (id) / 풀렸다 (id는 ''): 까닭 on, off 스스로, end 시간이 다 됨, gone 정의가 빠짐 */
   morphed: (p: Ent, id: string, why: 'on' | 'off' | 'end' | 'gone') => void;
+  /** 탭·앱을 숨겼다(false) / 다시 보였다(true) (engine/server/net/web.ts). 실시간 판의 '숨긴 사람' 처리 같은 것을 게임이 건다 */
+  playerVisible: (p: Ent, on: boolean) => void;
 }
 
 /**
