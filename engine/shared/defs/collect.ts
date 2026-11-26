@@ -5,6 +5,7 @@
 // 줄 위에서 영웅은 HEROES의 id로, 등급은 HERO_RARITIES의 번호(0부터, 클수록 귀하다)로, 단계는 '장-단계'의 id('1-3')로 오간다.
 import { BANNERS, CHAPTERS, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES } from '../content';
 import type { Reward } from './growth';
+import type { HeroAwakenRules, HeroGearRules, HeroSkillRules, PowerIn, SquadRowRules, SynergyDef, SynergyMe } from './herogrow';
 
 /** 뽑기와 영웅 레벨 업에 치르는 재화: 지갑이 다루는 것 가운데 사고팔 수 없는 경험치를 뺀 둘 (현금은 없다: 틀에 결제가 없다) */
 export type Coin = 'gold' | 'sparks';
@@ -51,6 +52,8 @@ export interface HeroDef {
   atk: number; hp: number;
   /** 옷 색을 역할의 것 대신 (없으면 역할의 색) */
   cloth?: number;
+  /** 진영·속성의 태그: SQUAD_RULES.synergy의 키 (없으면 시너지에 들지 않는다) */
+  tag?: string;
 }
 
 /** 영웅을 키우는 규칙 */
@@ -68,6 +71,14 @@ export interface HeroRules {
   grow: number;
   /** 별 하나마다 곱해지는 비율 (0.25면 별마다 +25%, 처음 별이 기준) */
   starMul: number;
+  /** 기술 레벨 (없으면 기술 레벨이 없다: engine/shared/defs/herogrow.ts) */
+  skill?: HeroSkillRules;
+  /** 각성: 별이 최대인 영웅의 다음 단계 (없으면 각성이 없다) */
+  awaken?: HeroAwakenRules;
+  /** 영웅 장비의 표 (herogear 모듈이 읽는다. 없으면 그 모듈이 아무것도 하지 않는다) */
+  gear?: HeroGearRules;
+  /** 전투력의 셈 (없으면 defaultPower: 성장이 없으면 heroPower와 같다) */
+  power?: (x: PowerIn) => number;
 }
 
 /** 배너 하나의 뽑기 판 한 칸: 이 영웅이 나올 무게 (확률 = 무게 / 그 배너의 무게의 합) */
@@ -110,6 +121,10 @@ export interface SquadRules {
   regen: number;
   /** 영웅을 처음 얻으면 빈 자리에 저절로 넣는다 */
   autoFill: boolean;
+  /** 진형: 앞줄·뒷줄 (없으면 줄이 없다: 예전처럼 모두 주인 뒤에) */
+  rows?: SquadRowRules;
+  /** 시너지: HeroDef.tag → 단마다의 덤 (없으면 시너지가 없다) */
+  synergy?: Readonly<Record<string, SynergyDef>>;
 }
 
 /** 단계 하나의 물결: 몬스터의 종류와 수 */
@@ -175,8 +190,8 @@ export function heroStats(id: string, lv: number, stars: number): { atk: number;
 /** 전투력: 공격 × 4 + 체력 ÷ 2 (단계의 권장 전투력과 견준다) */
 export const heroPower = (id: string, lv: number, stars: number): number => { const s = heroStats(id, lv, stars); return Math.round(s.atk * 4 + s.hp / 2); };
 
-/** 가진 영웅 하나: 레벨, 별, 모아 둔 조각 */
-export interface OwnedHero { lv: number; stars: number; shards: number }
+/** 가진 영웅 하나: 레벨, 별, 모아 둔 조각. 기술 레벨(없으면 1)과 각성(없으면 0)은 HERO_RULES.skill·awaken을 켠 게임만 */
+export interface OwnedHero { lv: number; stars: number; shards: number; skill?: number; awaken?: number }
 
 // ---------- 뽑기의 확률 (공개 확률표와 서버가 같은 셈) ----------
 /** 확률표의 한 줄: 영웅, 등급, 확률(0~1) */
@@ -222,16 +237,16 @@ export const stageIndex = (id: string): number => STAGES.findIndex((s) => s.id =
 export const waveCount = (d: StageDef): number => d.waves.length + (d.boss ? 1 : 0);
 
 // ---------- 줄 위의 모양 (개인 상태와 메시지) ----------
-/** 개인 상태 'heroes': 가진 영웅마다 [레벨, 별, 조각] */
-export type HeroesMe = Record<string, [lv: number, stars: number, shards: number]>;
+/** 개인 상태 'heroes': 가진 영웅마다 [레벨, 별, 조각]. 기술 레벨·각성을 켠 게임은 [.., 기술 레벨, 각성]까지 */
+export type HeroesMe = Record<string, [lv: number, stars: number, shards: number, skill?: number, awaken?: number]>;
 /** 뽑기 기록 한 줄: 시각(ms), 배너, 영웅, 등급, 천장·10번 보장으로 나온 것인가 */
 export interface PullLog { at: number; b: string; h: string; r: number; pity: boolean }
 /** 개인 상태 'gacha': 배너마다 천장의 셈(그 등급 이상이 나오지 않은 뽑기의 수)과 최근 기록 (새 것이 앞) */
 export interface GachaMe { pity: Record<string, number>; log: PullLog[] }
 /** 뽑기의 결과 하나 (메시지 gacha): 영웅, 등급, 이미 가진 것이라 조각이 되었나와 받은 조각, 천장·보장으로 나왔나 */
 export interface PullGot { h: string; r: number; dup: boolean; n: number; pity: boolean }
-/** 개인 상태 'squad': 편성한 영웅(자리의 차례)과 그 전투력의 합 */
-export interface SquadMe { ids: string[]; power: number }
+/** 개인 상태 'squad': 편성한 영웅(자리의 차례)과 그 전투력의 합. 진형을 켠 게임은 뒷줄(back), 시너지를 켠 게임은 켜진 시너지(syn)도 */
+export interface SquadMe { ids: string[]; power: number; back?: string[]; syn?: SynergyMe[] }
 /** 단계 안의 진행 (개인 상태 'stage'의 run): 단계 id, 지금 물결(0부터, 우두머리는 마지막), 물결 수, 남은 적, 이 물결의 적, 남은 시간(초), 상태 */
 export interface StageRun { id: string; wave: number; waves: number; foes: number; total: number; left: number; state: 'fight' | 'gap' | 'clear' | 'fail'; boss: boolean }
 /** 개인 상태 'stage': 지금 단계, 가장 멀리 깬 단계(없으면 ''), 자동 진행, 안에 있으면 그 진행 */
