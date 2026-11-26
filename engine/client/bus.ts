@@ -28,14 +28,22 @@ export function onSlow(fn: (now: number) => void): void { slows.push(fn); }
 export function runSlow(now: number): void { for (const fn of slows) fn(now); }
 
 /**
- * 단축키 (글자 키 하나). 글자를 입력하는 중이나 접속 전에는 불리지 않는다 (input.ts가 거른다).
- * 틀이 이미 쓰는 키(숫자, Q, R, H, B, M, Tab, Enter, Esc)는 틀이 먼저 받으므로 등록해도 불리지 않고, 이동 키(W, A, S, D)는 등록하면 이동에 쓰이지 않는다.
+ * 단축키 (글자 키 하나, 또는 'Tab'처럼 키의 이름). 글자를 입력하는 중이나 접속 전에는 불리지 않는다 (input.ts가 거른다).
+ * 틀의 키는 그 기능을 가진 모듈이 init에서 bindKey로 단다: 핵심은 M(메뉴), N(지도), H(집으로), Enter(대화), Esc. 전투는 숫자(기술)와 Tab(대상),
+ * 아이템은 Q(물약)와 B(가방), 자동 사냥(away)은 R. 고르지 않은 모듈의 키는 비어 있어 게임이 onKey로 쓸 수 있다.
+ * 틀의 키와 같은 키를 onKey로 등록하면 틀의 것이 먼저다(불리지 않는다). 이동 키(W, A, S, D, 방향키)는 등록하면 이동에 쓰이지 않는다.
  */
+const engineKeys = new Map<string, () => void>();
 const hotkeys = new Map<string, () => void>();
+/** 틀의 모듈이 단축키를 단다 (게임은 onKey) */
+export function bindKey(key: string, fn: () => void): void { engineKeys.set(key.toLowerCase(), fn); }
+/** 게임의 단축키 */
 export function onKey(key: string, fn: () => void): void { hotkeys.set(key.toLowerCase(), fn); }
-/** 그 키에 등록된 것이 있으면 부르고 참을 돌려준다 */
+/** 지금 틀이 쓰는 키 (시험과 안내에) */
+export const boundKeys = (): string[] => [...engineKeys.keys()];
+/** 그 키에 등록된 것이 있으면 부르고 참을 돌려준다 (틀의 것 먼저) */
 export function runKey(key: string): boolean {
-  const fn = hotkeys.get(key.toLowerCase());
+  const fn = engineKeys.get(key.toLowerCase()) ?? hotkeys.get(key.toLowerCase());
   if (fn) fn();
   return !!fn;
 }

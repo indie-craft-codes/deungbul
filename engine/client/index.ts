@@ -9,6 +9,7 @@ export { send } from './net';
 export { goToTown, moveTo } from './actions';
 export { addNpc, setMerchant } from './entities';
 export { registerKind, type KindInfo, type KindLook } from './kinds';
+export { anyModule, hasModule } from './mods';
 export type { MerchantLook } from './entities';
 export { addMsgSounds, enableVolume, playSound, setMusicPicker, sfx } from './sound';
 export { registerHumanoidAsset, registerMonsterAsset, registerWeaponAsset } from './scene/gltf';

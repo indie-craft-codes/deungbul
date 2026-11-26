@@ -5,7 +5,7 @@ import { BUILD, ENHANCE, GUILD, MARKET, PARTY } from '../../shared/defs';
 import type { BuildStat, ClassId, GearSlot, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
-import { keyHints, type EngineLocale } from './ko';
+import { moduleHints, type EngineLocale } from './ko';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
 
@@ -87,7 +87,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       chatPlaceholder: '[[Press Enter to chat|Message]]',
       chatLabel: 'Chat message',
       stickLabel: 'Movement joystick',
-      hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'R: auto-hunt', 'B: bag', 'M: menu', 'N: map', 'Tab: target', 'Enter: chat']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      hint: moduleHints(['Click or WASD: move', ['Click a monster: attack', 'combat'], ['1–3: skills', 'combat'], ['Q: potion', 'items'], ['R: auto-hunt', 'away'], ['B: bag', 'items'], 'M: menu', 'N: map', ['Tab: target', 'combat'], 'Enter: chat']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       attackNearest: 'Attack nearest',
       auto: 'Auto-hunt',
       bag: 'Bag',

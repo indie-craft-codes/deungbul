@@ -12,6 +12,7 @@ import { sfx } from './sound';
 import { animate, cueAnim, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
 import { S, newMe, type Me, type Remote } from './state';
 import { kindLook, type KindInfo, type KindLook } from './kinds';
+import { hasModule } from './mods';
 import { makeBox } from './scene/models';
 
 const INTERP_MS = 150; // 다른 엔티티는 이만큼 과거 시점을 그려서 스냅샷 사이를 부드럽게 잇는다
@@ -74,7 +75,7 @@ const monsterName = (type: string, swarm = false): string => {
 
 // ---------- 만들고 지우기 ----------
 export function spawnMe(id: number, name: string, x: number, z: number): Me {
-  const model = makeHumanoid(MY_CLOTH);
+  const model = makeHumanoid(MY_CLOTH, hasModule('combat')); // 전투가 없는 게임의 사람은 아무것도 들지 않는다
   view.scene.add(model.root);
   S.me = newMe(id, name, x, z, model, makeTag(name, 'me', false));
   return S.me;

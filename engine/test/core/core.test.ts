@@ -7,30 +7,14 @@ import { CLASSES, ITEMS, MONSTERS, MODULES } from '../../shared/defs';
 import { ALL_MODULES, checkModules } from '../../shared/modules';
 import type { EnterInfo, ServerMsg } from '../../shared/protocol';
 import { AOI, AOI_LEAVE, SNAP_EVERY, TICK_MS } from '../../shared/world';
-import { dist } from '../../server/game/entity';
-import { Game, type Plugin } from '../../server/game/game';
+import { Game } from '../../server/game/game';
 import { startServer } from '../../server/net/server';
 import { MemoryStore } from '../../server/store';
 import { check, sleep, until } from '../harness';
+import { balls } from './server/balls';
 
 const keyOf = (token: string) => createHash('sha256').update(token).digest('hex');
 
-/** 이 '게임'의 규칙: 공을 놓고, 가까운 공을 줍는 명령 하나. 공은 빛남(glow)과 주운 사람(owner)을 화면에 실어 보내고, 월드와 함께 저장된다 */
-const balls: Plugin = (g) => {
-  g.defineKind('ball', {
-    tick: (e, dt) => { e.data.age = Number(e.data.age ?? 0) + dt; },
-    sync: (e) => [Number(e.data.glow ?? 0), Number(e.data.owner ?? 0)],
-    save: (e) => ({ x: e.x, z: e.z, glow: Number(e.data.glow ?? 0) }),
-    load: (raw) => {
-      const r = raw as { x: number; z: number; glow: number };
-      g.place('ball', { x: r.x, z: r.z, type: 'gold' }).data.glow = r.glow;
-    },
-  });
-  for (const s of BALL_SPOTS) g.place('ball', { x: s.x, z: s.z, type: 'gold' }).data.glow = 1;
-  g.commands.set('pick', (p) => {
-    for (const b of g.ents.values()) if (b.kind === 'ball' && !b.data.owner && dist(p, b) < 2.5) { b.data.owner = p.id; b.data.glow = 0; g.saveDirty = true; }
-  });
-};
 
 // ---------- 내용과 모듈 ----------
 {
@@ -141,4 +125,17 @@ const balls: Plugin = (g) => {
   const g = new Game();
   const bad = (f: () => void): boolean => { try { f(); return false; } catch { return true; } };
   check(bad(() => g.defineKind('p', {})) && bad(() => g.defineKind('Ball', {})) && bad(() => g.place('nope', { x: 0, z: 0 })), "틀의 종류('p', 'm'), 이상한 이름, 등록하지 않은 종류는 오류로 알린다");
+}
+
+// ---------- 화면의 뼈대: 모듈의 요소 ----------
+{
+  const { SKELETON } = await import('../../client/hud/skeleton');
+  const marks = [...SKELETON.matchAll(/data-mod="([^"]*)"/g)].map((m) => m[1]);
+  const bad = marks.flatMap((m) => m.split(/\s+/)).filter((m) => !(ALL_MODULES as readonly string[]).includes(m));
+  // 핵심만의 게임에서 빠지는 요소: 체력·경험치 막대, 재화, 가방, 기술 단추, 대상 창, 상점, 직업 고르기 …
+  const ids = (re: RegExp) => [...SKELETON.matchAll(re)].map((m) => m[1]);
+  const modIds = ids(/id="(\w+)"[^>]*data-mod=/g);
+  check(marks.length >= 18 && bad.length === 0 && ['bagBtn', 'skills', 'tgt', 'shop', 'classPick', 'autoBtn', 'tabBtn', 'party', 'bag'].every((id) => modIds.includes(id)),
+    `뼈대의 모듈 요소(data-mod ${marks.length}곳)는 아는 모듈 이름만 적고, 가방·기술·대상·상점·직업 고르기·자동 사냥이 모듈의 것으로 표시되어 있다${bad.length ? ': 모르는 ' + bad.join(', ') : ''}`);
+  check(['myName', 'menuBtn', 'lang', 'chat', 'minimap', 'mapBtn', 'wmap', 'menu', 'gate', 'pcard'].every((id) => SKELETON.includes(`id="${id}"`) && !modIds.includes(id)), '이름·메뉴·언어·대화·지도·접속 화면·사람 카드는 핵심이다 (모든 게임에 있다)');
 }

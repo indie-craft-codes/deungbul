@@ -10,6 +10,7 @@ import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { LocaleExt } from './ext';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
+import { anyModule } from '../../shared/picked';
 
 /** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
 export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
@@ -48,6 +49,8 @@ const modText: Record<StatMod, (v: number) => string> = {
 };
 /** 조작 안내의 항목들을 한 줄로 잇는다. 항목 안의 빈칸은 줄이 바뀌지 않는 빈칸으로 바꿔서, 줄이 넘어갈 때 항목 사이에서만 끊기게 한다 */
 export const keyHints = (items: string[]) => items.map((s) => s.replace(/ /g, ' ')).join(' · ');
+/** 틀의 기본 조작 안내: [글, 모듈] 짝은 그 모듈을 고른 게임에만 넣는다 (그 키를 그 모듈이 달기 때문이다: engine/client/bus.ts의 bindKey) */
+export const moduleHints = (items: (string | [string, string])[]): string => keyHints(items.filter((x) => typeof x === 'string' || anyModule(x[1])).map((x) => (typeof x === 'string' ? x : x[0])));
 export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 /** 큰 수에 자릿수 구분을 넣는다 (1,000,000). 골드와 값은 모두 이것을 거친다 */
 export const num = (n: MsgArg) => Number(n).toLocaleString('ko-KR');
@@ -115,7 +118,7 @@ export const koBase = (n: ContentNames) => {
       chatPlaceholder: '[[Enter로 대화|대화 입력]]',
       chatLabel: '대화 입력',
       stickLabel: '이동 조이스틱',
-      hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 물약', 'R: 자동 사냥', 'B: 가방', 'M: 메뉴', 'N: 지도', 'Tab: 대상', 'Enter: 대화']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
+      hint: moduleHints(['땅 클릭/WASD: 이동', ['몬스터 클릭: 공격', 'combat'], ['1–3: 기술', 'combat'], ['Q: 물약', 'items'], ['R: 자동 사냥', 'away'], ['B: 가방', 'items'], 'M: 메뉴', 'N: 지도', ['Tab: 대상', 'combat'], 'Enter: 대화']), // 틀의 기본 문장 (이 게임은 자기 말로 덮어쓴다)
       attackNearest: '가까운 대상 공격',
       auto: '자동 사냥',
       bag: '가방',

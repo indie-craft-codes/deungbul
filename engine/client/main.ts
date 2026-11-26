@@ -18,7 +18,8 @@ import { shakeOffset, updateFx } from './fx';
 import { initChat, logChat } from './hud/chat';
 import { hideGate, initMe, renderTexts, setMyName, showGate } from './hud/me';
 import { notifySys } from './hud/notify';
-import { setParty, showInvite } from './hud/party';
+import { setParty } from './hud/party';
+import { anyModule } from './mods';
 import { speak, updateFloats } from './hud/tags';
 import { applyDom, onLangChange, t } from './i18n';
 import { axis, initInput } from './input';
@@ -30,7 +31,11 @@ import { S } from './state';
 
 // ---------- 서버 메시지: 바탕이 되는 처리. 덧붙는 기능은 각 모듈이 bus.onMsg로 스스로 등록한다 ----------
 // 접속 화면은 등록한 에셋을 다 읽은 뒤에 걷는다 (에셋이 없는 게임은 바로: preload.ts). 그새 끊겼으면 걷지 않는다
-onMsg('welcome', (m) => { spawnMe(m.id, m.name, m.x, m.z); setMyName(m.name); afterPreload(() => { if (S.me) hideGate(); }); });
+onMsg('welcome', (m) => {
+  spawnMe(m.id, m.name, m.x, m.z); setMyName(m.name); afterPreload(() => { if (S.me) hideGate(); });
+  // 성장 수치(stat)를 보내는 모듈이 하나도 없는 게임: 받을 수치가 없으니 들어온 때가 곧 준비된 때다
+  if (S.me && !anyModule(['combat', 'growth', 'economy', 'items', 'classes'])) S.me.ready = true;
+});
 onMsg('snap', (m, now) => applySnapshot(m, now));
 onMsg('stat', (m) => {
   const me = S.me;
@@ -56,8 +61,6 @@ onMsg('chat', (m) => {
   if (tag) speak(tag, m.text);
 });
 onMsg('sys', (m) => notifySys(m.k, m.a));
-onMsg('party', (m) => setParty(m.m));
-onMsg('pinv', (m) => showInvite(m.name, m.s));
 onMsg('pong', (m, now) => { S.pingMs = Math.round(now - m.c); });
 onMsg('full', () => showGate('full', true));
 

@@ -4,7 +4,7 @@
 // 장비 가방의 칸 수와 분해 설정(서버의 개인 상태 bag, salvage)도 여기서 받아 넣고, 가방이 가득 찼으면 가방 단추에 표시한다.
 import { GEAR, ITEMS, SALVAGE, itemCap, itemDef, type ItemId } from '../../shared/defs';
 import { $ } from '../app';
-import { onMsg } from '../bus';
+import { bindKey, onMsg } from '../bus';
 import { L, itemInfo, onLangChange, t } from '../i18n';
 import { S } from '../state';
 import { itemIcon } from './icons';
@@ -113,6 +113,7 @@ export function toggleBag(): void {
 }
 
 export function initBag(): void {
+  bindKey('b', toggleBag);
   $('bagBtn').addEventListener('click', (e) => { toggleBag(); (e.currentTarget as HTMLElement).blur(); });
   $('bagClose').addEventListener('click', () => { ui.panel.hidden = true; });
   onMsg('stat', renderBag);
