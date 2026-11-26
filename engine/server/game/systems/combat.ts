@@ -18,6 +18,8 @@ export interface AllyKind {
   down: (e: Ent, by: Ent) => void;
   /** 그 엔티티가 쓰는 기술의 피해·회복에 곱하는 값 (없으면 1) */
   skillScale?: (e: Ent) => number;
+  /** 그 엔티티가 받는 피해에 곱하는 값 (없거나 1이면 그대로: 편성의 진형·장비가 쓴다) */
+  guard?: (e: Ent) => number;
 }
 
 export class Combat {
@@ -164,6 +166,7 @@ export class Combat {
     if (dst.dead || src.layer !== dst.layer) return;
     if (src.kind === 'p') amount = Math.round(amount * this.g.mods.product('damage', src));
     if (dst.kind === 'p') amount = Math.max(1, Math.round(amount * this.g.mods.product('guard', dst)));
+    else if (this.allies.size > 0) { const k = this.allies.get(dst.kind)?.guard?.(dst); if (k !== undefined && k !== 1) amount = Math.max(1, Math.round(amount * k)); }
     const before = dst.hp;
     dst.hp -= amount;
     dst.lastHurt = this.g.clock;

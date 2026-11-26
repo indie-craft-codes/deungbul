@@ -16,10 +16,10 @@ const BEFORE = [...CORE, 'hp', 'maxHp', 'targetId', 'atkCd', 'lastHurt', 'guild'
   'gear', 'worn', 'gearSeq', 'bagUp', 'lostFull', 'autoSalvage', 'mail', 'mailSeq', 'daily', 'away', 'stats', 'skillLv',
   'def', 'hx', 'hz', 'respawn', 'hitters', 'swarm', 'scale', 'cast', 'windup', 'slowUntil', 'stunUntil', 'buffs', 'dots', 'homing'];
 /**
- * 그 뒤에 더한 모듈의 칸: 수집형·방치형 (roster의 heroes, gacha의 pity·pulls, squad의 squad, stages의 stage, herogear의 hgear·hgSeq).
+ * 그 뒤에 더한 모듈의 칸: 수집형·방치형 (roster의 heroes, gacha의 pity·pulls, squad의 squad·squadBack(진형의 뒷줄), stages의 stage, herogear의 hgear·hgSeq).
  * 예전의 게임은 이 모듈을 고르지 않으므로 엔티티에 없다
  */
-const ADDED = ['heroes', 'pity', 'pulls', 'squad', 'stage', 'hgear', 'hgSeq'];
+const ADDED = ['heroes', 'pity', 'pulls', 'squad', 'squadBack', 'stage', 'hgear', 'hgSeq'];
 const same = (a: readonly string[], b: readonly string[]) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
 /** 그 모듈과 그 모듈이 기대는 모듈 전부 */
 const closure = (m: ModuleId): ModuleId[] => { const out = new Set<ModuleId>([m]); const q = [m]; while (q.length) for (const n of MODULE_TABLE[q.pop()!].needs as readonly ModuleId[]) if (!out.has(n)) { out.add(n); q.push(n); } return ALL_MODULES.filter((x) => out.has(x)); };

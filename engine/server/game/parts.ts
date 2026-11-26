@@ -83,8 +83,8 @@ export interface RosterPart { heroes: Record<string, OwnedHero> }
 /** [gacha] 배너마다 천장의 셈과 최근 뽑기 기록 (새 것이 앞. systems/gacha.ts) */
 export interface GachaPart { pity: Record<string, number>; pulls: PullLog[] }
 
-/** [squad] 편성한 영웅 id (자리의 차례. systems/squad.ts) */
-export interface SquadPart { squad: string[] }
+/** [squad] 편성한 영웅 id (자리의 차례)와 그 가운데 뒷줄에 둔 영웅 (진형 SQUAD_RULES.rows를 켠 게임만 쓴다. systems/squad.ts) */
+export interface SquadPart { squad: string[]; squadBack: string[] }
 
 /** [stages] 지금 단계와 가장 멀리 깬 단계(없으면 ''), 자동 진행 (systems/stages.ts) */
 export interface StagesPart { stage: { cur: string; best: string; auto: boolean } }
@@ -125,7 +125,7 @@ export const PARTS: { readonly [M in ModuleId]?: Part } = {
   guild: { init: (e) => { e.guild = ''; } },
   roster: { init: (e) => { e.heroes = {}; } },
   gacha: { init: (e) => { e.pity = {}; e.pulls = []; } },
-  squad: { init: (e) => { e.squad = []; } },
+  squad: { init: (e) => { e.squad = []; e.squadBack = []; } },
   stages: { init: (e) => { e.stage = { cur: '', best: '', auto: true }; } },
   herogear: { init: (e) => { e.hgear = []; e.hgSeq = 0; } },
 };

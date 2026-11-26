@@ -147,7 +147,7 @@ export type ClientMsg =
   /** 뽑기 (gacha 모듈): 배너 id와 횟수(1 또는 10) */
   | { t: 'gacha'; id: string; n: number }
   /** 편성 (squad 모듈): 함께 싸울 영웅 (자리의 차례, SQUAD_RULES.size까지) */
-  | { t: 'squad'; ids: string[] }
+  | { t: 'squad'; ids: string[]; back?: string[] }
   /** 영웅 장비 (herogear 모듈): 끼기(hero에게), 빼기, 강화, 분해(uids: 끼지 않은 것만) */
   | { t: 'hgear'; a: 'equip' | 'unequip' | 'enhance'; uid: number; hero?: string }
   | { t: 'hgear'; a: 'salvage'; uids: number[] }

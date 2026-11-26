@@ -5,7 +5,12 @@
 // 영웅의 공격·체력은 영웅 모듈(roster)의 레벨과 별로 정해진다 (heroStats). 주인이 층(채널, 던전, 단계)을 옮기면 영웅도 따라 옮긴다.
 // 저장: 캐릭터의 ext 'squad' (영웅 id의 목록). 본인에게는 개인 상태 'squad' ({ ids, power }).
 // 화면은 종류 'hero'를 역할의 겉모습으로 그린다 (engine/client/hud/collect.ts의 registerKind). 상태 줄의 값은 [별, 레벨].
-import { SQUAD_RULES, heroDef, heroRole, heroStats, isHeroId, isSkillId, skillDef, type SquadMe } from '../../../shared/defs';
+// 선택 칸 (내용이 적어야 켜진다: engine/shared/defs/herogrow.ts):
+//   진형 SQUAD_RULES.rows  앞줄은 주인 앞에, 뒷줄은 뒤에 선다. 앞줄 영웅은 둘레(taunt)에서 주인이나 뒷줄을 노리는 몬스터를 자기에게 돌리고, 줄마다의 덤(받는 피해·주는 피해)을 받는다.
+//                          뒷줄은 저장의 'formation' ({ back: [영웅 id] }), 개인 상태 squad의 back. 명령 { t: 'squad', ids, back? }
+//   시너지 SQUAD_RULES.synergy  편성에 같은 태그(HeroDef.tag)의 영웅이 n 이상이면 그 단의 덤. 개인 상태 squad의 syn
+// 영웅의 공격·체력과 편성의 전투력은 squadView(장비·각성·기술 레벨·시너지까지)의 한 셈이다. 성장이 없는 게임에서는 예전(heroStats, heroPower의 합)과 같다.
+import { SQUAD_RULES as SQUAD_RULES_IN, arrangeRows, heroDef, heroRole, isHeroId, isSkillId, skillDef, squadView, type SquadMe, type SquadRules, type SquadView } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -13,6 +18,14 @@ import type { Game } from '../game';
 
 /** 영웅이 서는 자리: 주인의 뒤쪽 (주인이 바라보는 쪽을 앞으로). [옆, 앞뒤] (m) */
 const SLOTS: readonly [number, number][] = [[-1.7, -1.3], [1.7, -1.3], [-2.8, -2.9], [2.8, -2.9], [0, -3.6], [-4, -1.2], [4, -1.2], [0, -5]];
+/** 진형을 켠 게임: 앞줄은 주인 앞에, 뒷줄은 주인 뒤에 */
+const FRONT: readonly [number, number][] = [[-1.5, 1.8], [1.5, 1.8], [0, 2.6], [-3, 1.4], [3, 1.4], [-4.4, 1], [4.4, 1]];
+const BACK: readonly [number, number][] = [[-1.6, -1.8], [1.6, -1.8], [0, -2.8], [-3, -2.4], [3, -2.4], [-4.4, -2], [4.4, -2]];
+/** 앞줄이 몬스터를 끄는 것을 살피는 주기(초) */
+const TAUNT_S = 0.25;
+/** 내용의 편성 규칙 (게임이 적은 타입 그대로 오므로 선택 칸을 읽으려고 틀의 타입으로 넓힌다) */
+const SQUAD_RULES: SquadRules = SQUAD_RULES_IN;
+const ROWS = SQUAD_RULES.rows;
 /** 영웅의 생각 주기(초): 대상을 다시 고르는 간격 */
 const THINK_S = 0.25;
 
@@ -28,34 +41,61 @@ export class Squad {
     g.combat.registerAlly('hero', {
       owner: (e) => this.ownerOf(e),
       down: (e) => this.down(e),
-      // 영웅의 기술은 공격의 크기에 따라 커진다: 공격 10을 1배로
-      skillScale: (e) => Math.max(0.1, Number(e.data.atk ?? 10) / 10),
+      // 영웅의 기술은 공격의 크기에 따라 커진다: 공격 10을 1배로. 기술 레벨과 주는 피해의 덤(sk)이 있으면 곱한다
+      skillScale: (e) => { const base = Math.max(0.1, Number(e.data.atk ?? 10) / 10), k = Number(e.data.sk ?? 1); return k === 1 ? base : base * k; },
+      // 받는 피해: 진형·장비·시너지의 덤 (없으면 1: 전투가 그대로 둔다)
+      guard: (e) => Number(e.data.gd ?? 1),
     });
-    g.commands.set('squad', (p, m) => { if (Array.isArray(m.ids)) this.set(p, m.ids); });
+    g.commands.set('squad', (p, m) => { if (Array.isArray(m.ids)) this.set(p, m.ids, Array.isArray(m.back) ? m.back : undefined); });
     g.saves.push({ name: 'squad', save: (p) => (p.squad.length ? [...p.squad] : undefined), load: (p, raw) => this.loadOf(p, raw) });
-    g.personal.push({ name: 'squad', state: (p): SquadMe => ({ ids: [...p.squad], power: this.power(p) }) });
+    // 뒷줄 (진형을 켠 게임에서 뒷줄에 둔 영웅이 있을 때만)
+    g.saves.push({ name: 'formation', save: (p) => (p.squadBack.length ? { back: [...p.squadBack] } : undefined), load: (p, raw) => this.loadRows(p, raw) });
+    const syn = !!SQUAD_RULES.synergy;
+    g.personal.push({
+      name: 'squad',
+      state: (p): SquadMe => {
+        const v = this.view(p);
+        return { ids: [...p.squad], power: v.power, ...(ROWS ? { back: [...p.squadBack] } : {}), ...(syn ? { syn: v.syn } : {}) };
+      },
+    });
     g.on('playerJoined', (p) => this.field(p));
     g.on('playerLeft', (id) => this.clear(id));
     g.on('heroChanged', (p, id) => {
       // 처음 얻은 영웅은 빈 자리에 저절로 (SQUAD_RULES.autoFill)
-      if (SQUAD_RULES.autoFill && !p.squad.includes(id) && p.squad.length < SQUAD_RULES.size && g.roster.owned(p, id)) { p.squad.push(id); p.unsaved = true; this.field(p); return; }
+      if (SQUAD_RULES.autoFill && !p.squad.includes(id) && p.squad.length < SQUAD_RULES.size && g.roster.owned(p, id)) { p.squad.push(id); p.squadBack = arrangeRows(p.squad, p.squadBack); p.unsaved = true; this.field(p); this.refit(p); return; }
       for (const e of this.out.get(p.id) ?? []) if (e.type === id) this.apply(e, p, false);
     });
   }
 
-  /** 편성한 영웅의 전투력의 합 */
-  power(p: Ent): number { return p.squad.reduce((s, id) => s + this.g.roster.power(p, id), 0); }
+  /** 편성의 모습: 영웅마다의 최종 값(장비·각성·기술 레벨·시너지), 켜진 시너지, 전투력 (engine/shared/defs/herogrow.ts의 squadView) */
+  view(p: Ent): SquadView { return squadView(p.squad, p.squadBack, p.heroes, this.g.field(p, 'hgear')); }
+  /** 편성한 영웅의 전투력의 합 (시너지까지. 성장이 없으면 영웅의 전투력의 합) */
+  power(p: Ent): number { return this.view(p).power; }
+  /** 뒷줄인가 (진형이 없으면 늘 아니다) */
+  isBack(p: Ent, id: string): boolean { return !!ROWS && p.squadBack.includes(id); }
   /** 그 사람의 싸우는 영웅들 (월드의 엔티티) */
   heroes(p: Ent): readonly Ent[] { return this.out.get(p.id) ?? []; }
 
-  /** 편성을 바꾼다: 가진 영웅만, 겹치지 않게, SQUAD_RULES.size까지. 틀린 것이 있으면 아무것도 바꾸지 않는다 */
-  set(p: Ent, raw: readonly unknown[]): boolean {
+  /**
+   * 편성을 바꾼다: 가진 영웅만, 겹치지 않게, SQUAD_RULES.size까지. 틀린 것이 있으면 아무것도 바꾸지 않는다.
+   * back(진형을 켠 게임): 뒷줄에 둘 영웅. 주지 않으면 지금의 뒷줄을 지킨다. 한 줄이 넘치면 넘친 영웅을 다른 줄로 (arrangeRows)
+   */
+  set(p: Ent, raw: readonly unknown[], back?: readonly unknown[]): boolean {
     const ids = raw.filter((x): x is string => isHeroId(x));
     if (ids.length !== raw.length || ids.length > SQUAD_RULES.size || new Set(ids).size !== ids.length || ids.some((id) => !this.g.roster.owned(p, id))) return false;
     p.squad = ids;
+    if (ROWS) p.squadBack = arrangeRows(ids, back ? back.filter((x): x is string => typeof x === 'string') : p.squadBack);
     p.unsaved = true;
     this.field(p);
+    this.refit(p);
     return true;
+  }
+
+  /** 편성이 바뀐 뒤: 남아 있던 영웅의 값을 다시 맞춘다 (시너지와 줄의 덤은 편성 전체에 달렸다). 시너지도 진형도 없으면 할 일이 없다 */
+  private refit(p: Ent): void {
+    if (!ROWS && !SQUAD_RULES.synergy) return;
+    const v = this.view(p);
+    for (const e of this.out.get(p.id) ?? []) this.apply(e, p, false, v);
   }
 
   /** 편성대로 영웅을 세운다: 빠진 영웅은 치우고, 새로 든 영웅은 주인 곁에 놓는다 (봇에게는 영웅이 없다) */
@@ -67,7 +107,7 @@ export class Squad {
     for (const e of now) if (!keep.includes(e)) g.remove(e.id);
     for (const id of p.squad) {
       if (keep.some((e) => e.type === id) || !g.roster.owned(p, id)) continue;
-      const at = this.spot(p, p.squad.indexOf(id));
+      const at = this.spot(p, id);
       const e = g.place('hero', { x: at.x, z: at.z, type: id, name: '', layer: p.layer, face: p.face });
       e.data.owner = p.id;
       this.apply(e, p, true);
@@ -83,12 +123,17 @@ export class Squad {
     this.out.delete(id);
   }
 
-  /** 영웅의 공격·체력을 레벨과 별에 맞춘다. full이면 체력을 가득 (아니면 비율을 지킨다) */
-  private apply(e: Ent, p: Ent, full: boolean): void {
-    const h = this.g.roster.owned(p, e.type);
-    if (!h) return;
-    const s = heroStats(e.type, h.lv, h.stars), ratio = e.maxHp > 0 ? e.hp / e.maxHp : 1;
+  /** 영웅의 공격·체력을 맞춘다 (레벨과 별, 그리고 켠 게임은 장비·각성·기술 레벨·시너지·줄). full이면 체력을 가득 (아니면 비율을 지킨다) */
+  private apply(e: Ent, p: Ent, full: boolean, v: SquadView = this.view(p)): void {
+    const h = this.g.roster.owned(p, e.type), s = v.heroes[e.type];
+    if (!h || !s) return;
+    const ratio = e.maxHp > 0 ? e.hp / e.maxHp : 1;
     e.data.atk = s.atk; e.data.lv = h.lv; e.data.stars = h.stars;
+    // 싸움의 배율: 기본 공격(dm), 기술(sk), 받는 피해(gd). 1이면 적지 않는다 (예전과 같은 셈)
+    const dm = 1 + s.fight.dmg, sk = s.skillMul * dm, gd = 1 - s.fight.guard;
+    if (dm !== 1) e.data.dm = dm; else delete e.data.dm;
+    if (sk !== 1) e.data.sk = sk; else delete e.data.sk;
+    if (gd !== 1) e.data.gd = gd; else delete e.data.gd;
     e.maxHp = Math.max(1, s.hp);
     e.hp = full ? e.maxHp : Math.max(1, Math.round(e.maxHp * ratio));
     this.g.emit(['mh', e.id, e.maxHp]);
@@ -98,9 +143,13 @@ export class Squad {
   private lv(e: Ent): number { return Number(e.data.lv ?? 1); }
   private ownerOf(e: Ent): Ent | undefined { const o = this.g.ents.get(Number(e.data.owner ?? 0)); return o && o.kind === 'p' ? o : undefined; }
 
-  /** 주인 곁에서 그 자리(편성의 몇째)의 서는 곳 */
-  private spot(p: Ent, slot: number): { x: number; z: number } {
-    const [sx, sz] = SLOTS[Math.max(0, slot) % SLOTS.length];
+  /** 주인 곁에서 그 영웅의 서는 곳: 편성의 몇째 (진형을 켠 게임은 그 줄의 몇째로 앞줄은 앞, 뒷줄은 뒤) */
+  private spot(p: Ent, id: string): { x: number; z: number } {
+    let sx: number, sz: number;
+    if (ROWS) {
+      const back = p.squadBack.includes(id), row = p.squad.filter((x) => p.squadBack.includes(x) === back), list = back ? BACK : FRONT;
+      [sx, sz] = list[Math.max(0, row.indexOf(id)) % list.length];
+    } else [sx, sz] = SLOTS[Math.max(0, p.squad.indexOf(id)) % SLOTS.length];
     const c = Math.cos(p.face), s = Math.sin(p.face);
     // 앞 = (sin face, cos face), 옆 = (cos face, -sin face)
     return { x: p.x + sx * c + sz * s, z: p.z - sx * s + sz * c };
@@ -108,7 +157,7 @@ export class Squad {
 
   /** 주인 곁으로 바로 옮긴다 (층을 옮겼거나 너무 멀어졌다) */
   private jump(e: Ent, p: Ent): void {
-    const at = this.spot(p, p.squad.indexOf(e.type));
+    const at = this.spot(p, e.type);
     e.layer = p.layer; e.x = at.x; e.z = at.z; e.tx = e.x; e.tz = e.z; e.moving = false; e.path = null; e.targetId = 0;
     clampInto(e); resolve(e, this.g.world.obstacles);
     this.g.emit(['r', e.id]);
@@ -138,6 +187,8 @@ export class Squad {
     if (e.cds[0] > 0) e.cds[0] = Math.max(0, e.cds[0] - dt);
     // 싸우지 않은 지 4초가 지나면 회복한다
     if (e.hp < e.maxHp && g.clock - e.lastHurt > 4) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * SQUAD_RULES.regen * dt);
+    // 앞줄: 주인이나 뒷줄을 노리는 몬스터를 자기에게 돌린다
+    if (ROWS && ROWS.taunt > 0 && !o.squadBack.includes(e.type)) this.taunt(e, o, dt);
 
     // 대상: 지금 대상이 살아 있고 주인 곁(leash)이면 그대로. 아니면 생각할 때마다 주인의 대상이나 주인 둘레(seek)에서 가장 가까운 몬스터
     let t = g.ents.get(e.targetId);
@@ -161,7 +212,7 @@ export class Squad {
 
     if (!t) {
       // 따라가기: 주인 뒤쪽의 내 자리로
-      const at = this.spot(o, o.squad.indexOf(e.type));
+      const at = this.spot(o, e.type);
       if (dist(e, at) > 1.2) { g.movement.goTo(e, at.x, at.z); g.movement.walk(e, role.speed * (dist(e, o) > 8 ? 1.4 : 1), dt); }
       else { e.moving = false; e.face = o.face; }
       return;
@@ -182,8 +233,21 @@ export class Squad {
     }
     if (e.atkCd <= 0) {
       e.atkCd = role.atkCd;
-      const atk = Number(e.data.atk ?? heroDef(e.type).atk);
-      g.combat.damage(e, t, Math.max(1, Math.round(atk * (0.9 + Math.random() * 0.2))), false);
+      const atk = Number(e.data.atk ?? heroDef(e.type).atk), dm = Number(e.data.dm ?? 1);
+      g.combat.damage(e, t, Math.max(1, Math.round((dm === 1 ? atk : atk * dm) * (0.9 + Math.random() * 0.2))), false);
+    }
+  }
+
+  /** 앞줄 영웅의 도발: 둘레(ROWS.taunt) 안에서 주인이나 같은 주인의 뒷줄 영웅을 노리는 몬스터를 자기에게 돌린다 (진형을 켠 게임만) */
+  private taunt(e: Ent, o: Ent, dt: number): void {
+    const t = (Number(e.data.tt ?? 0) || 0) - dt;
+    if (t > 0) { e.data.tt = t; return; }
+    e.data.tt = TAUNT_S;
+    const g = this.g, reach = ROWS!.taunt, mine = new Set<number>([o.id]);
+    for (const h of this.out.get(o.id) ?? []) if (h !== e && o.squadBack.includes(h.type)) mine.add(h.id);
+    for (const m of g.ents.values()) {
+      if (m.kind !== 'm' || m.dead || m.layer !== e.layer || !mine.has(m.targetId) || dist(m, e) > reach) continue;
+      m.targetId = e.id;
     }
   }
 
@@ -192,5 +256,13 @@ export class Squad {
     if (!Array.isArray(raw)) return;
     const ids = raw.filter((x): x is string => isHeroId(x));
     p.squad = [...new Set(ids)].slice(0, SQUAD_RULES.size);
+    if (ROWS) p.squadBack = arrangeRows(p.squad, p.squadBack);
+  }
+  /** 뒷줄: 편성에 든 영웅만 (편성은 먼저 읽힌다). 진형을 끈 게임은 그대로 지켜 둔다 (다시 켜면 이어진다) */
+  private loadRows(p: Ent, raw: unknown): void {
+    const back = (raw as { back?: unknown } | null)?.back;
+    if (!Array.isArray(back)) return;
+    const ids = [...new Set(back.filter((x): x is string => isHeroId(x) && p.squad.includes(x)))];
+    p.squadBack = ROWS ? arrangeRows(p.squad, ids) : ids;
   }
 }
