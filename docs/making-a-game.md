@@ -9,10 +9,11 @@
 3. **모듈별 내용**: 고른 모듈의 표(직업, 몬스터, 아이템 …)와 수치를 채운다(3절). 고르지 않은 모듈의 이름은 적지 않는다.
 4. **이 게임만의 규칙과 엔티티**: 서버 시스템, 게임이 등록하는 엔티티 종류(공, 구조물, 떨어진 물건 …)와 그 화면(6절, 12절).
 
-본보기는 셋이다.
+본보기는 넷이다.
 
 - **전투가 없는 게임**: 12절의 "공 마당"(`engine/test/core/`). 모듈을 하나도 고르지 않고, 게임이 등록한 엔티티(공)를 줍는다. 약 80줄. **RPG가 아닌 게임을 만든다면 12절부터 읽는다.**
 - **수집형·방치형 RPG**(영웅 뽑기, 편성, 단계, 방치 보상, 열쇠 던전): 13절의 "영웅 들판"(`engine/test/collect/`).
+- **판으로 나뉘는 턴제·보드 게임**(대기실, 짝짓기, 차례와 기한, 컴퓨터 상대): 14절의 판 모듈(`rooms`)과 "징검돌 전술"(`games/stepstone`).
 - **RPG 모듈을 쓰는 게임**: 작은 예제 `games/sample`("모닥불 사냥터", 약 580줄. 시험 빼고). 2절부터 이 문서의 차례대로 빈 폴더에서 채운 것이다. 큰 본보기는 `games/deungbul`(등불지기: 모듈 전부).
 
 - 문서의 코드는 본보기에서 그대로 따온 것이다. 코드 울타리의 머리에 적힌 경로가 그 출처다. `npm run test:sample`이 문서의 조각과 그 파일이 같은지 검사한다.
@@ -32,12 +33,13 @@
 | 전투 없는 월드: 모으기·줍기, 술래잡기, 꾸미기·농장, 산책·대화 공간, 보물찾기, 가벼운 파티 게임 | 핵심만 + 게임이 등록하는 엔티티 종류(12절)와 명령 |
 | 재화·아이템은 있고 전투는 없는 게임 (가게 놀이, 채집과 거래) | `economy`, `items`, `mail` … 만 고른다 (전투·직업 없이) |
 | 액션성이 있는 게임 (공·발사체를 다루는 놀이) | 핵심 + 게임의 엔티티 종류. 틱마다 서버가 움직이고 시야 안의 화면에 값을 실어 보낸다 |
+| 판으로 나뉘는 턴제 전술·보드·카드 게임 (`games/stepstone`) | `rooms` 모듈(14절): 판마다의 층, 대기실·짝짓기·컴퓨터 상대, 차례와 기한·초읽기, 끊긴 사람의 자리, 판의 저장. 판 위의 규칙과 그림은 게임이 |
 
 | 안 되는 것 (틀을 고쳐야 한다) | 까닭 |
 |---|---|
 | 1인칭·옆 스크롤·위에서 곧장 내려다보는 시점, 높낮이가 있는 지형 | 카메라와 장면(`engine/client/scene/view.ts`)이 쿼터뷰의 평평한 땅을 전제한다(각도는 고정이다. 거리·배율의 범위와 비추는 곳은 게임이 정한다: 5절 '카메라'). 땅은 지역(네모)들이고 장애물은 둥근 기둥이다 |
 | 빠른 반응이 승패를 가르는 액션(격투, 슈팅의 정밀 판정) | 서버는 20Hz로 돌고 화면에 10Hz로 보낸다(`NET`으로 바꿀 수는 있다). 지연 보정·되감기 판정이 없다 |
-| 턴제, 카드, 보드 게임처럼 월드가 없는 게임 | 핵심이 '월드 안의 사람'(이동, 시야, 채널)이다. 쓸 수는 있지만 거의 다 게임이 만든다 |
+| 3D 월드를 아예 쓰지 않는 게임(화면 전체가 카드 탁자) | 핵심이 '월드 안의 사람'(이동, 시야, 채널)이다. 판·차례·대기실은 `rooms` 모듈(14절)이 주지만, 장면은 늘 쿼터뷰 3D다 |
 | 한 서버에 수천 명이 한 화면에 | 측정된 상한은 접속 300(`docs/infra.md`). 시야(AOI)로 나누지만 샤딩은 없다 |
 | 플레이어가 아닌 사람끼리의 물리(밀기, 충돌하는 공) | 길찾기와 장애물 피하기만 있다. 엔티티끼리 부딪히는 물리는 게임이 틱에서 셈한다 |
 
@@ -81,6 +83,7 @@
 | `gacha` | 뽑기: 배너, 1번·10번, 천장, 10번 보장, 공개 확률표, 기록. 게임 안의 재화만 (13절) | roster, economy | 메뉴의 뽑기 탭(확률 보기), 결과 창 | |
 | `squad` | 편성: 영웅이 주인을 따라다니며 함께 싸운다 (13절) | roster, combat | 메뉴의 편성 탭, 영웅(종류 `hero`)의 겉모습 | |
 | `stages` | 장과 단계(1-1 …), 물결과 우두머리, 자동 진행과 실패, 방치 보상이 깬 단계로 커진다 (13절) | combat | 가운데 위 단계 막대, 메뉴의 단계 탭 | |
+| `rooms` | 판: 판마다의 인스턴스 층, 대기실·짝짓기(컴퓨터 상대), 차례와 기한, 끊긴 사람의 자리, 판의 저장 (14절) | | 대기실 창(오른쪽 위), 판의 막대와 초읽기(가운데 위), 결과 창 | |
 
 ```ts engine/test/core/shared/content/index.ts
 /** 쓸 모듈: 없다 (핵심만) */
@@ -92,7 +95,7 @@ import type { ModuleId } from '@engine/shared/modules';
 export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
 ```
 
-모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다. `RPG_MODULES`에는 `teams`와 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`)이 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
+모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
 **의존으로 딸려 온 모듈의 화면 감추기**: 쓰려는 모듈의 의존 때문에 고른 모듈의 단추가 필요 없으면(예: 던전 → 장비 → 아이템이라 생기는 가방 단추, 서버가 대신 싸우는 게임의 '가까운 대상 공격') 내용에 `export const HUD: HudRules = { hide: ['bag', 'attackNearest'] };`(타입은 `@engine/shared/defs/hud`)를 적는다. 감출 뿐이라 기능과 단축키는 그대로다. 이름의 목록은 13절 '단계 밖'의 표.
 
@@ -421,6 +424,8 @@ runServer({ port: 3002, db: path.join(root, 'data', 'sample', 'game.db'), dist: 
 | 3004 | 별가루 광산 `games/starmine` | 5191 |
 | 3005 | 돌담 마을 `games/bastion` | 5190 |
 | 3007 | 굴림공 `games/rollball` | 5192 |
+| 3008 | 달무리 원정대 `games/dalmuri` | 5193 |
+| 3009 | 징검돌 전술 `games/stepstone` | 5196 |
 | 3015~3017 | 확인용으로 잠깐 띄우는 서버(공 마당 `engine/test/core`의 기본 3015, 검증 작업). 오래 쓰지 않는다 | |
 | 0 | 시험(`startServer(0)`: 빈 포트를 고른다) | |
 - 서버는 `dist` 폴더의 화면을 같은 포트로 내보낸다. 화면을 빌드하지 않았으면 접속만 되지 않을 뿐 서버는 돈다.
@@ -589,6 +594,9 @@ export function initScene(): void {
 - **네모 하나가 다 보이게**: `fitZoom(x0, z0, x1, z1, margin?)`이 그 네모가 화면에 드는 가장 작은 배율을 준다(화면의 비율을 따른다: 폰 세로는 훨씬 크다). 너무 멀면 안개(`view.setMood`의 `fogFar`)와 카메라의 그리는 거리(320m)에 걸리므로 `Math.min(CAMERA.zoomMax, fitZoom(…))`처럼 자른다.
 - 예(굴림공 `games/rollball/client/pitch.ts`): 팀을 고르기 전과 V 키를 누른 동안은 경기장 전체(`fitZoom`), 그 밖에는 나와 공 사이(공 쪽으로 40%)를 비추고, 바뀔 때는 게임이 값을 조금씩 옮겨 부드럽게 한다. 내용은 `CAMERA = { dist: 46, zoom: 1.5, zoomMin: 0.8, zoomMax: 2.4, gate: 1.6 }`, 안개는 멀리(`fogNear: 120, fogFar: 240`).
 - 그림자는 비추는 곳 둘레 ±36m에만 진다.
+- **폰 세로의 밀린 화면**: 폰 세로(높이 > 너비 × 1.3, 너비 < 600)에서 틀은 그리는 범위를 너비의 12%만큼 밀어 둔다(오른쪽에 쌓이는 창과 조이스틱 자리): 비추는 곳이 화면 가운데보다 조금 왼쪽에 그려진다. 판·경기장 전체를 한가운데 두려면 `{ x, z, zoom, center: true }`를 돌려준다(`fitZoom`은 밀린 범위를 이미 따른다).
+- **카메라 돌리기**: `setCameraYaw(라디안)`(`@engine/client`, 0이 틀의 쿼터뷰, π면 반대편에서 본다). 내려다보는 각도는 그대로다. 방향키·조이스틱의 걷는 방향, `view.pick`, `fitZoom`이 함께 따른다. 지금 각은 `cameraYaw()`(`view.yaw`). 화면을 늘 보는 것(머리 위 표식)은 `π/4 + view.yaw`를 기준으로 돌린다.
+- **방향의 규약**: 엔티티의 `face`는 `atan2(dx, dz)`(모델은 +Z를 바라본다: 화면이 `rotation.y = face`).
 
 ### 단축키 (`onKey`)
 
@@ -683,6 +691,7 @@ declare module '@engine/shared/ext' {
 - `MsgMap`에 안내문을 더하면 **모든 언어 파일의 `msg`에 그 문장이 있어야** 컴파일된다. 언어 파일을 아직 만들지 않았으면 틀의 `engine/client/hud/notify.ts`와 `hud/menu/gear.ts`에서 오류가 난다("Property '…' does not exist on type …": 문장이 없는 안내문의 이름이 '…'에 나온다). 언어 파일의 `msg`에 그 문장을 채우면 사라진다.
 - 서버는 문장을 보내지 않는다. 종류와 값만 보낸다.
 - 인자가 없는 명령은 빈 칸으로 적는다: `interface ClientMsgs { restore: Record<never, never> }` (화면은 `send({ t: 'restore' })`).
+- **명령의 칸 이름에 `t`를 쓰지 않는다**: `t`는 메시지의 종류 칸이라 `{ t: 'duel' } & { t?: number }`가 `never`가 되고, 화면의 `send`에서 "'duel'은 … 넣을 수 없다"는 알아보기 어려운 타입 오류가 난다(징검돌은 친 대상의 칸을 `to`로 했다).
 
 ### (2) 서버 쪽 선언과 플러그인
 
@@ -797,6 +806,8 @@ export function mountBonfire(): void {
 ```
 
 - 틀의 class를 그대로 쓴다: `panel`, `row`, `ttitle`, `num`, `note`, `bar`(안의 `<i>`를 `scaleX`로 늘린다), `btns`, `plain`, `gold`.
+- **자리 안의 창은 틀이 쌓는다**: `rightTop`·`rightBottom`(`#rightcol`)과 `topmid`(`#topmid`)의 창은 틀의 css(`#rightcol .panel`, `#topmid .panel`: 아이디 하나 + class)가 `position: static`(오른쪽은 `width: auto`도)으로 쌓는다. 게임의 `#내창 { position: fixed; … }`는 이 규칙보다 약해 먹지 않는다. 창을 자리에서 떼어 띄우려면 마크업에 `class="panel free"`를 준다(틀의 쌓기 규칙을 받지 않는다). 자리 안에 두고 몇 칸만 바꾸려면 `#rightcol #내창`처럼 아이디 둘로 고른다. 좁은 화면(너비 720 이하)에서 오른쪽 칸은 160px, 가운데 위는 내 정보 창 아래로 내려간다(대화창이 그 곁을 덮는다).
+- 폰의 조이스틱은 `#stick`이다(감추려면 `body.내클래스 #stick { display: none; }`. 판 모듈은 앉은 동안 스스로 감춘다).
 - 직업 고르기 창은 틀의 것이고, 다시 여는 단추는 게임이 둔다(`openClasses`).
 
 나머지는 init 안에서 등록한다.
@@ -863,6 +874,11 @@ export function initBonfire(): void {
 | 서버 전체의 값을 저장 | `g.worldSaves.push` + `g.saveDirty` | |
 | 시간이 흐르면 | `g.ticks.push((dt) => …)`. 한 틱의 차례: 엔티티마다(사람의 걷기·전투, 몬스터, 게임의 종류의 `tick`) → `g.ticks`(등록한 차례) | `onFrame`, `onSlow` |
 | 사람이 들어오고 나가면 | `g.on('playerJoined', (p) => …)`(봇은 빼고), `g.on('playerLeft', (id) => …)`(월드에서 빠진 뒤: 엔티티 대신 id), `g.on('playerDropped', (p) => …)`(연결이 끊겨 저장하기 직전) | |
+| 끊겼다 돌아온 사람을 알아본다 | 끊기면 사람의 엔티티는 **바로** 월드에서 빠지고(`playerLeft`), 다시 들어오면 **새 엔티티 id**다. 같은 사람은 `p.pid`(브라우저의 토큰에서 나온 저장 키. 손님과 봇은 빈 문자열)로 알아본다: 자리·판을 `pid`로 기억했다가 `playerJoined`에서 찾는다(판 모듈이 이렇게 한다: 14절). 내용의 `REJOIN_KEEP_S`는 전투 모듈의 것으로, 그 초 안에 다시 들어오면 나갈 때의 체력·쿨다운으로 시작하고(끊고 붙어 회복하지 못하게) 넘으면 가득 찬 채로 시작한다. 엔티티를 남겨 두지는 않는다 | |
+| 순간 이동 | `g.movement.teleport(e, x, z, face?)`: 자리·걷던 목표를 바꾸고 걷기를 멈춘 뒤 화면에 '바로 옮김'(사건 `r`)을 알린다. 층은 바꾸지 않으니 다른 층(채널·판)으로 옮기려면 먼저 `e.layer`를 정한다. 장애물 검사는 하지 않는다 | |
+| 엔티티를 없앤다 | `g.remove(id)`: 월드에서 빼고 다른 엔티티가 붙들던 참조(노리던 대상 …)를 정리한다. 사람은 `g.remove`가 아니라 연결이 끊길 때 틀이 뺀다 | |
+| 한 번의 연출을 보낸다 (날아가는 돌, 피해 숫자) | `g.effect(엔티티 id, 이름, 수…)` (14절 '연출 사건') | `onEffect(이름, (id, vals) => …)` |
+| 판·방으로 나뉘는 게임 (턴제·보드) | `rooms` 모듈: `g.rooms.define({ … })` (14절) | 틀의 판 화면, `myRoom`, `onRoomChange`, `setTapHandler` |
 | 사람들을 훑는다 | `for (const e of g.ents.values()) if (e.kind === 'p' && !e.bot) …`: 플레이어의 종류는 `'p'`, 몬스터는 `'m'`, 게임의 종류는 `g.defineKind`의 이름. 따로 된 사람 목록은 없다. 층(채널)이 여럿이면 `e.layer`도 본다 | `S.me`, `S.others`(`r.kind === 'p'`) |
 | 사람마다 남이 보는 값(팀, 역할)과 그 겉모습 | `g.playerSync((p) => [수, …])` (아래 '사람마다의 값과 겉모습') | `setPlayerLook({ cloth, update })` |
 | 몬스터를 잡으면, 샀으면 … | `g.on('monsterKilled', (m, hitters) => …)`: `hitters`는 그 몬스터를 때린 사람들. `g.on('hit', (p, m, amount) => …)`: 사람이 몬스터를 때려 실제로 깎은 체력(쓰러뜨렸으면 `monsterKilled`보다 먼저). 사건의 목록과 인자: `engine/server/game/game.ts`의 `Hooks` | |
@@ -1001,6 +1017,7 @@ g.migrations.player.push({
 
 - `startServer(port, …)`는 `{ port, game, close() }`를 돌려준다(포트 0이면 `port`가 고른 포트). 시험의 끝에 `await server.close()`.
 - 가짜 클라이언트 `connect(port, 이름, 토큰, onMsg?)`(`@engine/testing`)는 접속한 피어를 돌려준다. 토큰은 영문·숫자·`-`로 16~64자여야 저장된 캐릭터로 이어진다(아니면 손님으로 들어가 저장되지 않는다). 피어는 `id`, `name`, `lv`, 받은 안내문 `sys`(이름의 목록), `send(메시지)`, 그리고 `ws`(끊을 때 `ws.close()`). 기다릴 때는 `until(() => 조건)`(기본 기한 10초. 참이 되면 바로 끝난다). '아무 일도 없어야 한다'를 볼 때는 `sleep`으로 자지 말고 `settle(피어, 스냅샷 수?)`로: ping을 보내 서버가 앞의 메시지를 다 처리했는지(pong) 보고, 스냅샷 수를 주면 틱이 그만큼 더 돈 뒤에 끝난다. 벽시계로 자는 시험은 바쁜 컴퓨터에서 가끔 실패한다. 대화·이름 바꾸기·신고의 간격은 `startServer(0, { now: () => t })`로 시험의 시계를 주고 `t`를 옮겨 넘긴다. 임시 폴더는 `removeTemp(폴더)`로 지운다(Windows에서 막 닫은 DB가 잠깐 잠겨도 실패하지 않는다). 모양은 `engine/test/harness.ts`의 `Peer`.
+- 피어의 `sys`는 `'종류:값:…'`의 목록이다(값이 없으면 종류만): `'duelStart:Ann:0'`. 종류만 보려면 `p.sys.some((s) => s.split(':')[0] === '종류')`.
 - 틀의 가짜 클라이언트는 틀의 메시지만 읽는다. 게임의 메시지(`world`, `me`)는 `connect`의 넷째 인자로 받는다. 스냅샷의 날것은 피어의 `youRaw`(내 상태 전체: `g.playerSync`의 값이 끝에)와 `lines`(엔티티 id → 마지막 상태 줄)에 있다.
 - **가짜 클라이언트 여럿의 명령은 차례가 정해지지 않는다**: 두 연결이 보낸 명령 가운데 어느 것이 먼저 처리될지 모른다(둘이 같은 팀을 고르면 누가 먼저인지 모른다). 차례가 중요하면 하나를 보내고 그 결과(안내문, 개인 상태)를 `until`로 기다린 뒤 다음을 보낸다. `npm test`는 여러 시험을 함께 돌려 컴퓨터가 바쁘므로 `until`의 기한은 기본(10초)보다 줄이지 않는다.
 - 시험에서 플레이어의 행동은 명령으로 낸다: `g.command(p, { t: '명령', … })`. 틀의 명령은 `engine/shared/protocol.ts`의 `ClientMsg`에 모두 있다(예: `{ t: 'attack', id }`, `{ t: 'skill', n }`, `{ t: 'class', id }`, `{ t: 'dungeon', id }`, `{ t: 'craft', id }`, `{ t: 'buy', id }`).
@@ -1147,6 +1164,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `ext.ts`의 `ClientMsgs` / `ServerMsgs` | 화면 → 서버 / 서버 → 화면 메시지 | `shared/sample.ts` (`ServerMsgs`는 쓰지 않는다) |
 | `ext.ts`의 `WorldState` | 공유 상태의 칸 | `shared/sample.ts` |
 | `protocol.ts`의 `PROTOCOL` | 프로토콜 번호 | |
+| `defs/rooms.ts`의 `RoomView`, `RoomLobby`, `RoomRow`, `RoomSeatView`, `RoomPhase` | 판 모듈이 보내는 상태의 모양 (14절) | `games/stepstone/client/duel.ts` |
 
 ### 서버 (`engine/server/`)
 
@@ -1185,7 +1203,9 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `g.migrations.player` / `world` (`Migration`) | 게임의 저장 형식 이전 (7절 '저장 형식을 바꿀 때') | |
 | `Store.transaction` | 저장소의 쓰기를 한 묶음으로 | |
 | `log.info` / `warn` / `error` | 시각과 수준이 붙는 로그 | |
-| `game/entity.ts`의 `dist`, `readInt`, `clamp`, `ri` | 작은 도우미 | `server/bonfire.ts` |
+| `game/entity.ts`의 `dist`, `readInt`, `clamp`, `ri` | 작은 도우미 (`readInt(v, 아래, 위, 기본)`은 범위를 벗어난 수를 **자르고**, 기본값은 수가 아닐 때만 쓴다) | `server/bonfire.ts` |
+| `g.movement.teleport`, `g.remove`, `g.effect` | 순간 이동, 엔티티 없애기, 연출 사건 (6절 요약표, 14절) | `games/stepstone/server/duels.ts` |
+| `g.rooms` (`rooms` 모듈: `define`, `of`, `myTurn`, `place`, `unplace`, `pass`, `finish`, `touch`, `playerAt`, `players`, `all`, `count` …), `Room`, `RoomDef`, `RoomSeat` | 판: 14절 | `games/stepstone/server/duels.ts` |
 
 ### 화면 (`engine/client/`)
 
@@ -1206,21 +1226,24 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `net.ts`의 `send` | 서버로 명령 | `client/bonfire.ts` |
 | `state.ts`의 `S` | 틀의 상태. `S.me`: 내 캐릭터(`Me`: `id`, `name`, `x`, `z`, `model`(`model.root`가 three.js 묶음), `vals`(`g.playerSync`의 값), 모듈의 수치 `hp`·`lv`·`gold`·`items` …. 접속 전이면 `null`). `S.others`: 시야 안의 다른 엔티티(`Map<id, Remote>`: `kind`(`'p'` 사람, `'m'` 몬스터, 게임의 종류), `type`, `name`, `x`, `z`, `model`, `vals`). `S.online`(접속자 수), `S.zoom`(카메라 배율), `S.party`. 그 밖의 칸은 모듈의 것(`engine/client/state.ts`) | `client/bonfire.ts` |
 | `rules.ts`의 `rules` | 화면 쪽 규칙 | `client/bonfire.ts` (`home`) |
-| `camera.ts`의 `setCameraAim`, `fitZoom`, `CameraAim` | 카메라가 비출 곳과 배율, 네모가 다 보이는 배율 (5절 '카메라') | `games/rollball/client/pitch.ts` |
+| `camera.ts`의 `setCameraAim`, `fitZoom`, `CameraAim`(`center`), `setCameraYaw`, `cameraYaw` | 카메라가 비출 곳과 배율, 네모가 다 보이는 배율, 폰 세로에서도 한가운데, 카메라 돌리기 (5절 '카메라') | `games/rollball/client/pitch.ts`, `games/stepstone/client/duel.ts` |
+| `actions.ts`의 `setTapHandler`, `scene/view.ts`의 `view.pick`, `view.project` | 땅 누르기를 게임이 받기, 화면 점 → 땅의 점, 월드 → 화면 (14절) | `games/stepstone/client/duel.ts` |
+| `entities.ts`의 `onEffect` | 서버의 연출 사건 받기 (14절) | `games/stepstone/client/duel.ts` |
+| `hud/rooms.ts`의 `myRoom`, `myRoomTurn`, `onRoomChange`, `roomLeftMs`, `roomSeatName`, `roomSend`, `setRoomLook` | 판 모듈의 화면에 게임이 더하는 것 (14절) | `games/stepstone/client/duel.ts` |
 | `entities.ts`의 `setPlayerLook`, `PlayerLook`, `PlayerInfo` | 사람의 옷 색과 꾸밈을 게임의 값으로 (6절). `teams` 모듈을 고른 게임은 그 모듈이 쓴다 | `engine/client/hud/teams.ts` |
 | `hud/teams.ts`의 `setTeamBoardExtra`, `onTeamLook`, `myTeam`, `myTeamScore`, `teamBoard` | 팀 모듈의 화면에 게임이 더하는 것 (6절 '팀과 점수판') | `games/rollball/client/pitch.ts` |
-| `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳 | `client/bonfire.ts` |
+| `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳: `banner`(가운데, 색조 `'' \| 'good' \| 'bad'`), `feed`(흘러가는 알림), `quiet`(대화창에 남기지 않는다: 차례마다 오는 알림처럼 대화를 밀어내는 것). 어디에도 적지 않은 안내문은 대화창에 남는다 | `client/bonfire.ts`, `games/stepstone/client/duel.ts`(`quiet`) |
 | `hud/icons.ts`의 `addIconSheet`(`addItemSheet`), `itemIcon`, `gearIcon`, `hasItemIcon` | 그림 시트를 등록하고(열쇠: 아이템 id, `slot:칸`, `cur:gold`, `cur:second`, `ui:mail`), 그림 하나의 요소를 만든다(게임의 창에서도 쓸 수 있다) | |
 | `hud/menu.ts`의 `setMenuTabs`, `addMenuTab`, `openMenu`, `MENU_TABS` | 메뉴에 보일 탭과 차례(틀의 탭은 그 모듈을 고른 게임에만 있다), 게임의 탭, 탭을 골라 열기 | `client/bonfire.ts` |
 | `hud/near.ts`의 `addPlace` | 가까이 가면 열리는 창: id는 **화면에 있는 그 창의 요소 id**(mountPanel로 붙인 것). 창이 없는 곳(지도의 거점)은 부르지 않는다(지도는 `addMapPlaces`) | `client/bonfire.ts` |
-| (미니맵에는 틀이 스스로 찍는 표식이 없다: 몬스터·사람·파티원·나만 찍고, 상인·거점·목적지 같은 표식은 게임이 `addMarks`로 찍는다. 색은 `MARK`의 `lit`, `dark`, `shop`, `quest`, `portal`을 쓰거나 아무 색이나 준다) `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels`. `hud/worldmap.ts`의 `addMapPlaces`, `travelTo`, `stopTravel` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도의 큰 이름(구역)과 장소. 전체 지도(N 키·미니맵·`지도` 단추)는 틀이 그린다: 상점·대장간·던전의 문·사냥터(`CAMPS`)·우두머리는 틀이 내용에서 스스로 장소로 찍고, 게임은 자기 장소(거점, 목적지 …)를 `addMapPlaces`로 더한다(갈래 `PlaceKind`: goal, town, shop, forge, dungeon, hunt, boss, other). 장소를 누르면 정보 카드, 목록에서 '자동 이동'과 '가서 자동 사냥'(`hunt: true`). 모양: `addMapLabels(() => [{ x, z, text, big: true }])`, `addMapPlaces(() => [{ x, z, name, kind: 'town', info?, locked?, hunt? }])`. 함수는 그릴 때마다 불리므로 안에서 `t()`·지금 상태를 읽으면 언어와 상태를 따라간다. 게임이 `travelTo({ x, z, name }, hunt?)`를 직접 불러 다른 지역(던전 안)의 자리를 주면, 들판에서는 그 던전의 문까지 데려가 멈추고(들어가는 것은 사람이: 하루 횟수를 쓴다) 던전 안에서는 먼저 나가라고 알린다 | `client/bonfire.ts`, `client/scene.ts` |
+| (미니맵에는 틀이 스스로 찍는 표식이 없다: 몬스터·사람·파티원·나만 찍고, 상인·거점·목적지 같은 표식은 게임이 `addMarks`로 찍는다. 색은 `MARK`의 `lit`, `dark`, `shop`, `quest`, `portal`을 쓰거나 아무 색이나 준다. 표식 하나는 `{ x, z, color, shape }`이고 `shape`(`'dot' \| 'square' \| 'ring'`)는 빠뜨리면 안 된다) `hud/minimap.ts`의 `addMarks`, `setMapPaint`, `MARK`, `addMapLabels`. `hud/worldmap.ts`의 `addMapPlaces`, `travelTo`, `stopTravel` | 미니맵과 전체 지도의 표식과 바탕, 전체 지도의 큰 이름(구역)과 장소. 전체 지도(N 키·미니맵·`지도` 단추)는 틀이 그린다: 상점·대장간·던전의 문·사냥터(`CAMPS`)·우두머리는 틀이 내용에서 스스로 장소로 찍고, 게임은 자기 장소(거점, 목적지 …)를 `addMapPlaces`로 더한다(갈래 `PlaceKind`: goal, town, shop, forge, dungeon, hunt, boss, other). 장소를 누르면 정보 카드, 목록에서 '자동 이동'과 '가서 자동 사냥'(`hunt: true`). 모양: `addMapLabels(() => [{ x, z, text, big: true }])`, `addMapPlaces(() => [{ x, z, name, kind: 'town', info?, locked?, hunt? }])`. 함수는 그릴 때마다 불리므로 안에서 `t()`·지금 상태를 읽으면 언어와 상태를 따라간다. 게임이 `travelTo({ x, z, name }, hunt?)`를 직접 불러 다른 지역(던전 안)의 자리를 주면, 들판에서는 그 던전의 문까지 데려가 멈추고(들어가는 것은 사람이: 하루 횟수를 쓴다) 던전 안에서는 먼저 나가라고 알린다 | `client/bonfire.ts`, `client/scene.ts` |
 | `hud/classes.ts`의 `openClasses` | 직업 고르기 창 열기 | `client/bonfire.ts` |
 | `scene/view.ts`의 `Look` | 땅, 잎, 건물 | `client/scene.ts` |
 | `scene/models.ts`의 `registerMonsterModel`, `registerBlade`, `registerArmor`, `mat`, `part`, `limb` | 모델 | `client/scene.ts` |
 | `scene/models.ts`의 `setHumanoidDeco`, `setHumanoidBody`, `makeHumanoid`, `registerHand`. `fx.ts`의 `registerShot` | 사람 모델의 꾸밈과 통째로 바꾸기, 사람형 NPC, 손 모양, 날아가는 것 | `client/scene.ts`(`registerHand('axe', …)`) |
 | `entities.ts`의 `addNpc`, `setMerchant` | 화면에만 서 있는 사람, 상점 자리마다 세울 상인(모델·이름·바라볼 곳, `null`이면 세우지 않는다) | |
 | `scene/gltf.ts`의 `registerMonsterAsset`, `registerHumanoidAsset`, `registerWeaponAsset`. `assets.ts`의 `setClipNames`, `DEFAULT_CLIPS`, 타입 `ModelAsset`·`HumanoidAsset`·`WeaponAsset`·`ModelFit`·`AnimState`. `scene/models.ts`의 `cueAnim` | 모델 파일(glTF/GLB)과 클립 이름, 한 번 도는 동작을 틀기 | `client/scene.ts` |
-| `sound.ts`의 `addMsgSounds`, `sfx`, `playSound`, `setMusicPicker`, `enableVolume`. `assets.ts`의 `registerSound`, `registerMusic` | 안내문의 소리, 효과음 파일(키마다, 없으면 합성음), 배경음과 고르기, 음량 단추 | `client/scene.ts` |
+| `sound.ts`의 `addMsgSounds`, `sfx`, `playSound`, `setMusicPicker`, `enableVolume`. `assets.ts`의 `registerSound`, `registerMusic` | 안내문의 소리, 효과음 파일(키마다, 없으면 합성음), 배경음과 고르기, 음량 단추. `sfx`는 인자 없는 함수들이다(`sfx.hit(crit?)`, `sfx.hurt()`, `sfx.kill()`, `sfx.skill()`, `sfx.fanfare()`, `sfx.bad()`, `sfx.pickup()` …: `engine/client/sound.ts`) | `client/scene.ts` |
 | `actions.ts`의 `goToTown`, `autoWalk` | 걸어가게 하기 | |
 | `style.css`의 색 변수와 class | 창의 모양 | `client/sample.css` |
 
@@ -1763,3 +1786,102 @@ import { STARTER } from '../shared/content';
 - 재료로 키우는 길은 영웅의 조각(`HERO_RULES.trade`)뿐이다(재료로 영웅의 경험치·레벨을 올리는 길은 없다: 레벨은 `levelCur`의 재화로).
 - 단계는 한 사람씩이다(파티로 함께 깨기 없음). 단계의 순위표, 하루 소탕 횟수의 한도는 없다. 오프라인 진행은 전투력과 권장 전투력만 본다(실제 싸움을 흉내 내지 않는다).
 - 열쇠는 던전 모듈의 것이라 그 의존(`combat`, `mail`, `daily`, `gear`)을 함께 고른다.
+
+## 14. 판으로 나뉘는 게임 (턴제·보드·카드): `rooms` 모듈
+
+사람(과 컴퓨터) 몇이 **한 판에 앉아 차례대로 두는** 게임의 바탕이다. 판마다 따로 된 층(인스턴스)이 열리므로 판들이 같은 자리(대국판 하나)를 써도 서로 보이지 않고, 판의 수가 맵의 자리 수에 묶이지 않는다. 본보기는 징검돌 전술(`games/stepstone`, 7×7 칸의 말 셋 대 셋)이다. 내용에 `MODULES = ['rooms']`(다른 모듈과 함께 골라도 된다)를 적는다.
+
+| 틀이 맡는 것 | 게임이 맡는 것 |
+|---|---|
+| 판마다의 층(사람·`g.rooms.place`로 놓은 엔티티·스냅샷이 판마다 나뉜다), 판이 닫히면 엔티티를 치우고 사람을 들판(앉기 전의 채널)으로 | 판을 차리기(`start`: 판 상태 `room.data`와 말) |
+| 대기실과 짝짓기: 빠른 대국(기다리는 판에 들어가거나 판을 열고 기다림), 판 만들기, 목록에서 들어가기, 컴퓨터와 두기, 기다리다 컴퓨터로 채우기(`cpuAfterS`: 혼자면 컴퓨터, 둘이면 서로) | 게임의 수(걷기·치기 …)의 명령과 검사: `g.rooms.myTurn(p)` |
+| 차례의 순서·바퀴·바퀴의 상한, 한 수의 제한 시간과 시간 넘김(기본: 넘기기, `timeout`으로 바꾼다), 컴퓨터의 차례(간격 `cpuStepMs`마다 `cpu`를 부른다) | 컴퓨터의 한 수(`cpu`), 차례의 앞뒤(`turnStart`, `turnEnd`), 판의 끝을 정하기(`g.rooms.finish`, 바퀴를 다 쓰면 `outOfRounds`) |
+| 끊긴 사람: 자리를 저장 키(`p.pid`)로 기억해 `graceS` 안에 다시 들어오면 그 자리·층으로, 지나면 몰수(까닭 `'left'`). 기권(`'resign'`), 대기실로(두는 중이면 기권), 다시 하기(자리를 한 칸씩 돌려 먼저 두는 사람이 바뀐다) | 전적 같은 끝의 기록(`finished`) |
+| 판의 저장(게임이 `save`/`load`를 주면 두던 판이 서버를 다시 켜도 이어진다) | 판 상태를 저장할 값으로, 그 값으로 말을 되살리기 |
+| 화면: 대기실 창(오른쪽 위), 판의 막대(가운데 위: 자리들, 차례, 매끄러운 초읽기, 바퀴, 차례 넘기기·기권), 결과 창(다시 하기·대기실로), 기다리는 동안의 글, 좁은 화면 배치, 앉은 동안 걷기 멈춤과 조이스틱 감추기 | 판 위의 그림(칸 표시, 말), 칸 누르기(`setTapHandler`), 연출(`onEffect`), 카메라 |
+
+### 서버: 판의 규칙 주기
+
+플러그인에서 `g.rooms.define(def)`를 한 번 부른다(`RoomDef`: `engine/server/game/systems/rooms.ts`). `start`만 꼭 주고 나머지는 선택이다. 자리 번호(0부터)가 곧 편이고, 자리 0이 먼저 둔다.
+
+```ts games/stepstone/server/duels.ts
+    g.rooms.define<Board>({
+      seats: 2, turnS: TURN.turnS, rounds: TURN.rounds, graceS: TURN.graceS, cpuStepMs: TURN.cpuStepMs, cpuAfterS: TURN.cpuAfterS,
+      seatAt: (_room, side) => { const at = seatPos(AT, side as 0 | 1); return { ...at, face: faceTo(at, BOARDS[AT]) }; },
+      exitAt: (p) => this.lobbySpot(p),
+      start: (room) => this.setup(room),
+      turnStart: (room, side) => { for (const u of room.data.units) if (u.side === side) { u.moved = false; u.acted = false; } },
+      // 차례를 마칠 때 등불돌 위의 말이 체력을 되찾는다
+      turnEnd: (room, side) => { for (const u of alive(room.data.units)) if (u.side === side && isLamp(u.c, u.r)) u.hp = Math.min(UNITS[u.type].hp, u.hp + TURN.lampHeal); },
+      cpu: (room, side) => this.cpuStep(room, side as 0 | 1),
+      outOfRounds: (room) => g.rooms.finish(room, this.winByHp(room), 'rounds'),
+      finished: (room) => this.record(room),
+      save: (room) => ({ units: room.data.units.filter((u) => u.hp > 0).map((u) => [typeIndex(u.type), u.side, u.c, u.r, u.hp, (u.moved ? 1 : 0) + (u.acted ? 2 : 0)]) }),
+      load: (room, raw) => this.restore(room, raw),
+    });
+```
+
+| `RoomDef` 칸 | 기본 | 뜻 |
+|---|---|---|
+| `seats` | 2 | 자리 수 (1~16) |
+| `turnS` | 30 | 한 차례의 제한 시간(초). 0이면 기한이 없다 |
+| `rounds` | 0 | 바퀴(모든 자리가 한 번씩 두면 한 바퀴)의 상한. 넘으면 `outOfRounds`(없으면 비김, 까닭 `'rounds'`) |
+| `graceS` | 60 | 끊긴 사람을 기다리는 초 |
+| `max` | 200 | 동시에 열 수 있는 판의 수 (넘으면 안내문 `roomFull`) |
+| `cpuAfterS` | 0 | 판을 열고 이만큼 아무도 오지 않으면 빈 자리를 컴퓨터로 채운다 (`cpu`가 있어야 한다) |
+| `cpuStepMs` | 700 | 컴퓨터가 한 수를 두는 간격 |
+| `walk` | false | 앉은 동안 걸을 수 있는가 (false면 서버의 `g.rules.speed`가 0, 화면의 `rules.speed`도 0, 조이스틱이 숨는다) |
+| `pass` | true | 사람이 '차례 넘기기'(명령 `room` `a: 'pass'`)를 할 수 있는가 |
+| `againSwap` | true | 다시 하기에서 자리를 한 칸 돌린다 |
+| `seatAt(room, i)`, `exitAt(p)` | 제자리 | 앉는 자리와 판 밖의 자리(`{ x, z, face? }`). `exitAt`은 판 없이 접속한 사람에게도 쓰인다(판이 끝났거나 서버를 다시 켰다) |
+| `start`, `turnStart`, `turnEnd`, `timeout`, `cpu`, `outOfRounds`, `finished`, `save`, `load` | | 위의 표 |
+
+게임의 수는 게임의 명령으로 받고, 차례인지는 틀에 묻는다(차례가 아니면 틀이 `roomNotTurn`을 알린다):
+
+```ts games/stepstone/server/duels.ts
+    const t = this.g.rooms.myTurn<Board>(p);
+```
+
+`g.rooms`의 나머지: `of(p)`(앉은 판), `get(id)`, `all()`, `count`, `seatOf(room, p)`, `playerAt(room, i)`(접속해 있는 그 자리의 사람), `players(room)`, `place(room, 종류, 자리)`·`unplace(room, id)`(판의 층에 엔티티를 놓고 치운다), `pass(room)`(차례 넘기기: 할 일이 남지 않으면 게임이 부른다), `finish(room, 이긴 자리 | -2 비김, 까닭)`, `touch(room)`(틀이 모르는 바뀜을 화면에 다시 보낼 때), 그리고 명령과 같은 이름의 `quick`·`host`·`withCpu`·`join`·`leave`·`resign`·`again`(시험·봇에서). `Room`의 칸: `id`, `layer`, `st`(`'wait' | 'play' | 'over'`), `seats`(`RoomSeat`: `key`, `ent`, `name`, `cpu`, `goneAt`, `out`, `again`), `turn`, `first`, `round`, `deadline`, `win`, `why`, `data`, `ents`.
+
+- **명령**(화면 → 서버, 틀의 것): `{ t: 'room', a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again', id? }`. 화면에서는 `roomSend(a, id?)`.
+- **안내문**(틀의 것, 문장은 틀의 언어 파일): `roomWait`, `roomStart`(먼저 두면 1, 상대 이름), `roomFull`, `roomBusy`, `roomGone`, `roomNotTurn`, `roomTimeout`(이름), `roomFoeLeft`(이름, 기다리는 초), `roomFoeBack`, `roomBack`, `roomResult`(0 이김 1 짐 2 비김, 까닭), `roomAgainWait`, `roomFoeGone`.
+- **보내는 상태**: 개인 상태 `room`(`RoomView`: 내 자리, 자리들, 차례, 바퀴, 남은 시간(ms, 보낸 때 기준), 결과 …: 차례·판이 바뀔 때만 간다)과 공유 상태 `rooms`(`RoomLobby`: 대기실의 판 목록). 모양은 `engine/shared/defs/rooms.ts`. 판 위의 게임 상태(말의 칸 …)는 게임이 자기 개인 상태로 보낸다(징검돌의 `duel`).
+- **판의 저장**: `save`와 `load`를 주면 두는 중인 판(기다리는 판과 끝난 판은 빼고)이 월드 저장의 `rooms` 칸에 적힌다. 판이 바뀔 때마다 `g.saveDirty`가 서고, 사람의 연결이 끊길 때와 주기 저장(60초)·끄기에 적힌다. 다시 켜면 사람의 자리는 모두 '끊긴 채'로 `graceS`를 기다리고, 같은 저장 키로 들어오면 그 자리로 돌아간다. 두던 차례는 처음부터 다시 준다(다시 켠 것은 누구의 탓도 아니다). 손님(저장 키 없음)의 자리는 돌아올 수 없어 빠진 것으로 친다. 주지 않으면 판은 서버를 다시 켜면 없어지고 사람은 `exitAt`의 자리로 들어온다.
+
+### 화면
+
+틀의 판 화면(대기실 창·판의 막대·결과 창)은 모듈을 고르면 저절로 붙는다. 문장은 틀의 언어 파일의 `ui.room…`·`fmt.room…`이고, 게임은 같은 키를 자기 언어 파일에 적어 자기 말로 덮어쓴다(징검돌: `roomLobby: '대국장'`, `roomCpu: '돌부처(컴퓨터)'`, `fmt.roomRound`의 '차례', 끝난 까닭 `fmt.roomWhy(why)`). 게임이 더하는 것:
+
+- 내 판과 그 바뀜: `myRoom()`, `myRoomTurn()`, `onRoomChange((before, now) => …)`, 매끄러운 남은 시간 `roomLeftMs()`, 자리의 이름 `roomSeatName(view, i)`.
+- 판 화면에 게임의 것: `setRoomLook({ seatColor: (i) => css 색, note: () => 막대 아래 줄, title: () => 결과 창의 큰 글, lobby: () => 대기실 창 제목 옆 글 })`.
+- 칸 누르기: 판에 앉은 동안 땅 누르기를 게임이 받는다(아래 '땅 누르기를 게임이 받기').
+
+```ts games/stepstone/client/duel.ts
+  setTapHandler((sx, sy) => { if (!myRoom()) return false; tap(sx, sy); return true; });
+```
+
+- 카메라: 판 전체를 비추고(`setCameraAim`의 `center: true`로 폰 세로에서도 한가운데), 오른쪽 자리면 카메라를 반대편으로 돌린다(`setCameraYaw`): 누구나 자기 진영을 같은 쪽에 본다.
+
+```ts games/stepstone/client/duel.ts
+  onRoomChange((before, r) => {
+    setCameraYaw(r && r.me === 1 ? Math.PI : 0);
+```
+
+- 연출: 서버의 `g.effect(엔티티 id, 이름, 수…)`를 화면의 `onEffect(이름, (id, vals) => …)`가 받는다(아래 '연출 사건').
+
+```ts games/stepstone/server/duels.ts
+    this.g.effect(u.id, 'hit', foe.id, d, killed ? 1 : 0);
+```
+
+### 땅 누르기를 게임이 받기 (`setTapHandler`, 모듈과 상관없이)
+
+`setTapHandler((sx, sy, touch) => boolean)`(`@engine/client`): 3D 화면(땅·엔티티)의 누르기를 게임이 먼저 받는다. 마우스는 누를 때, 터치는 손가락을 거의 움직이지 않고 뗄 때 불린다(두 손가락 확대와 창의 단추는 그대로 틀의 것). 참을 돌려주면 틀은 아무것도 하지 않는다(몬스터 공격, 사람 카드, 그 자리로 걷기). 누른 땅의 월드 점은 `view.pick(sx, sy)`, 월드 → 화면은 `view.project(x, y, z)`. 되돌리려면 `setTapHandler(null)`.
+
+### 연출 사건 (`g.effect` / `onEffect`, 모듈과 상관없이)
+
+서버의 `g.effect(id, name, ...vals)`는 다음 스냅샷의 사건(`ev`)에 `['fx', id, name, …vals]`를 싣는다. 그 엔티티(`id`)가 보이는 화면에만 간다. 상태가 아니라 한 번의 연출이므로 늦게 들어온 사람은 받지 않는다(남아야 하는 것은 상태로 보낸다). `name`은 영문 소문자로 시작하는 24자 이내, 수는 소수 둘째 자리까지. 화면은 `onEffect(name, (id, vals) => …)`로 받는다: 스냅샷과 같은 때라 그 엔티티의 자리는 `S.others.get(id)`에 있다.
+
+### 차례·기한을 직접 짤 때 (판 모듈 없이)
+
+판 모듈을 쓰지 않고 틱 위에 차례를 올리려면 `g.now()`(벽시계, 시험은 정해진 시계 `new Game({ now })`)로 기한을 재고 `g.ticks`에서 매 틱 본다(해상도는 틱 50ms). 화면의 초읽기는 남은 시간(ms)을 보낸 때 기준으로 실어 보내고 화면이 받은 때 + 남은 시간을 기한으로 삼는다(판 모듈의 `RoomView.left`가 그렇게 한다: 차례가 바뀔 때만 보내도 매끄럽다).
