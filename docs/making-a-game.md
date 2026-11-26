@@ -426,6 +426,7 @@ runServer({ port: 3002, db: path.join(root, 'data', 'sample', 'game.db'), dist: 
 | 3007 | 굴림공 `games/rollball` | 5192 |
 | 3008 | 달무리 원정대 `games/dalmuri` | 5193 |
 | 3009 | 징검돌 전술 `games/stepstone` | 5196 |
+| 3010 | 반딧불 연못 `games/pond` | 5197 |
 | 3015~3017 | 확인용으로 잠깐 띄우는 서버(공 마당 `engine/test/core`의 기본 3015, 검증 작업). 오래 쓰지 않는다 | |
 | 0 | 시험(`startServer(0)`: 빈 포트를 고른다) | |
 - 서버는 `dist` 폴더의 화면을 같은 포트로 내보낸다. 화면을 빌드하지 않았으면 접속만 되지 않을 뿐 서버는 돈다.
