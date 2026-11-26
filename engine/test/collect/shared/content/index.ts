@@ -1,8 +1,10 @@
 // 수집형·방치형 모듈의 시험용 내용("영웅 들판"): 틀의 roster, gacha, squad, stages와 던전 열쇠를 쓰는 가장 작은 내용. 운영하는 게임이 아니다.
 // 영웅 여섯(등급 셋, 역할 넷), 배너 하나(천장 50, 10번 뽑기의 희귀 보장), 장 둘 × 단계 다섯(다섯째마다 우두머리), 열쇠를 쓰는 금광 던전 하나.
+// 영웅의 성장도 모두 켠다: 기술 레벨, 각성 세 단계, 영웅 장비(칸 넷, 세트 둘, 단계·던전에서 떨어짐), 진영 셋의 시너지, 앞줄·뒷줄 둘씩의 진형.
 // 이 내용 위에서 틀만의 타입 검사(engine/test/collect/tsconfig.json)와 서버·화면 셈의 시험(engine/test/collect/*.test.ts), 그리고 화면(npx vite build -c engine/test/collect/vite.config.ts)이 돈다.
 // 별칭 @game이 이 폴더를 가리키는 것은 engine/test/collect/tsconfig.json과 vite.config.ts뿐이다.
-import type { BannerDef, ChapterDef, HeroDef, HeroRoleDef, IdleCtx, StageDef } from '@engine/shared/defs/collect';
+import type { BannerDef, ChapterDef, HeroDef, HeroRoleDef, HeroRules, IdleCtx, SquadRules, StageDef } from '@engine/shared/defs/collect';
+import type { HeroGearRules } from '@engine/shared/defs/herogrow';
 import type { ClassDef, ClassId, SkillDef } from '@engine/shared/defs/combat';
 import type { DungeonDef } from '@engine/shared/defs/dungeons';
 import type { CurrencyDef } from '@engine/shared/defs/economy';
@@ -10,11 +12,11 @@ import type { Reward } from '@engine/shared/defs/growth';
 import type { ItemDef, ItemId } from '@engine/shared/defs/items';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
-import { GEAR_BASE } from '@engine/shared/defaults';
+import { GEAR_BASE, HERO_RULES as BASE_HERO_RULES } from '@engine/shared/defaults';
 import type { ModuleId } from '@engine/shared/modules';
 
-/** 쓸 모듈: 수집형의 넷과 그 의존, 방치 보상(우편), 열쇠 던전(던전은 일일·장비에 기댄다) */
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'dungeon', 'roster', 'gacha', 'squad', 'stages'];
+/** 쓸 모듈: 수집형의 넷과 그 의존, 방치 보상(우편), 열쇠 던전(던전은 일일·장비에 기댄다), 영웅 장비 */
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'dungeon', 'roster', 'gacha', 'squad', 'stages', 'herogear'];
 export const GUEST_NAME = 'Captain';
 /** 두 번째 재화(sparks)는 이 게임의 '보석': 뽑기와 열쇠를 산다. 단계를 깨면 생긴다 */
 export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: false }, sparks: { tradable: false }, exp: { tradable: false } };
@@ -75,10 +77,17 @@ export const MONSTERS = {
 } as const satisfies Record<string, MonsterDef>;
 export const RESPAWN_S = 20;
 
-// ---------- 아이템: 무기 하나 (장비는 떨어뜨리지 않는다) ----------
-export const ITEMS = {
+// ---------- 아이템: 무기 하나 (장비는 떨어뜨리지 않는다), 영웅의 성장 재료 셋 (단계를 깨면 생긴다) ----------
+/** 종류를 넓혀 적는다 (무기와 재료뿐인 좁은 타입이면 틀의 '갑옷인가' 확인이 컴파일되지 않는다) */
+export const ITEMS: Readonly<Record<'oakblade' | 'skillbook' | 'awakenstone' | 'gearstone', ItemDef>> = {
   oakblade: { kind: 'weapon', price: 0, damage: 1, tier: 1 },
-} as const satisfies Record<string, ItemDef>;
+  /** 기술서: 기술 레벨 */
+  skillbook: { kind: 'mat', price: 0 },
+  /** 각성석: 각성 */
+  awakenstone: { kind: 'mat', price: 0 },
+  /** 강화석: 영웅 장비의 강화 (분해하면 돌아온다) */
+  gearstone: { kind: 'mat', price: 0, max: 999 },
+};
 export const START_WEAPON: ItemId = 'oakblade';
 export const SHOPS: readonly { x: number; z: number }[] = [];
 export const SHOP_STOCK: readonly ItemId[] = [];
@@ -101,14 +110,71 @@ export const HERO_ROLES: Readonly<Record<string, HeroRoleDef>> = {
   pyro: { name: 'rolePyro', hand: 'staff', shot: 'bolt', range: 8, atkCd: 1.6, speed: 4.4, skill: 'blaze', cloth: 0xc0503a },
   cleric: { name: 'roleCleric', hand: 'staff', shot: 'bolt', range: 7, atkCd: 1.6, speed: 4.4, skill: 'prayer', cloth: 0xe8e0c8 },
 };
-/** 영웅 여섯: 일반 둘, 희귀 둘, 전설 둘 (등급은 틀의 기본 HERO_RARITIES: 0 일반, 1 희귀, 2 전설) */
+/** 영웅 여섯: 일반 둘, 희귀 둘, 전설 둘 (등급은 틀의 기본 HERO_RARITIES: 0 일반, 1 희귀, 2 전설). 진영(tag) 셋: 숲 둘, 불씨 둘, 물결 둘 */
 export const HEROES: Readonly<Record<string, HeroDef>> = {
-  ironwall: { name: 'heroIronwall', rarity: 0, role: 'guard', atk: 9, hp: 220 },
-  swiftarrow: { name: 'heroSwiftarrow', rarity: 0, role: 'bowman', atk: 11, hp: 130 },
-  cinderwitch: { name: 'heroCinderwitch', rarity: 1, role: 'pyro', atk: 15, hp: 140 },
-  dawnpriest: { name: 'heroDawnpriest', rarity: 1, role: 'cleric', atk: 8, hp: 170 },
-  stormblade: { name: 'heroStormblade', rarity: 2, role: 'guard', atk: 20, hp: 320, cloth: 0x3a3a7a },
-  starseer: { name: 'heroStarseer', rarity: 2, role: 'pyro', atk: 24, hp: 180, cloth: 0x7a3aa0 },
+  ironwall: { name: 'heroIronwall', rarity: 0, role: 'guard', atk: 9, hp: 220, tag: 'grove' },
+  swiftarrow: { name: 'heroSwiftarrow', rarity: 0, role: 'bowman', atk: 11, hp: 130, tag: 'grove' },
+  cinderwitch: { name: 'heroCinderwitch', rarity: 1, role: 'pyro', atk: 15, hp: 140, tag: 'ember' },
+  dawnpriest: { name: 'heroDawnpriest', rarity: 1, role: 'cleric', atk: 8, hp: 170, tag: 'tide' },
+  stormblade: { name: 'heroStormblade', rarity: 2, role: 'guard', atk: 20, hp: 320, cloth: 0x3a3a7a, tag: 'tide' },
+  starseer: { name: 'heroStarseer', rarity: 2, role: 'pyro', atk: 24, hp: 180, cloth: 0x7a3aa0, tag: 'ember' },
+};
+
+// ---------- 영웅 장비 (herogear): 칸 넷, 일반 넷, 세트 둘(선봉·비전, 넷씩), 전설 무기 하나 ----------
+const gearPool = (ids: readonly string[], w: number) => ids.map((id) => ({ id, w }));
+const COMMON_GEAR = ['bronzeblade', 'leathercoat', 'leathercap', 'woodcharm'], RARE_GEAR = ['vgblade', 'vgplate', 'vghelm', 'vgcharm', 'arwand', 'arrobe', 'arhood', 'archarm'];
+export const HERO_GEAR: HeroGearRules = {
+  slots: [{ id: 'weapon', name: 'hgSlotWeapon' }, { id: 'armor', name: 'hgSlotArmor' }, { id: 'helm', name: 'hgSlotHelm' }, { id: 'charm', name: 'hgSlotCharm' }],
+  items: {
+    bronzeblade: { name: 'hgBronzeblade', slot: 'weapon', rarity: 0, atk: 6 },
+    leathercoat: { name: 'hgLeathercoat', slot: 'armor', rarity: 0, hp: 60 },
+    leathercap: { name: 'hgLeathercap', slot: 'helm', rarity: 0, atk: 1, hp: 30 },
+    woodcharm: { name: 'hgWoodcharm', slot: 'charm', rarity: 0, atk: 2, hp: 20 },
+    vgblade: { name: 'hgVgblade', slot: 'weapon', rarity: 1, atk: 10, hp: 20, set: 'vanguard' },
+    vgplate: { name: 'hgVgplate', slot: 'armor', rarity: 1, hp: 120, set: 'vanguard' },
+    vghelm: { name: 'hgVghelm', slot: 'helm', rarity: 1, atk: 2, hp: 60, set: 'vanguard' },
+    vgcharm: { name: 'hgVgcharm', slot: 'charm', rarity: 1, atk: 4, hp: 40, set: 'vanguard' },
+    arwand: { name: 'hgArwand', slot: 'weapon', rarity: 1, atk: 14, set: 'arcane' },
+    arrobe: { name: 'hgArrobe', slot: 'armor', rarity: 1, atk: 3, hp: 70, set: 'arcane' },
+    arhood: { name: 'hgArhood', slot: 'helm', rarity: 1, atk: 4, hp: 30, set: 'arcane' },
+    archarm: { name: 'hgArcharm', slot: 'charm', rarity: 1, atk: 6, set: 'arcane' },
+    dawnedge: { name: 'hgDawnedge', slot: 'weapon', rarity: 2, atk: 24, hp: 40 },
+  },
+  sets: {
+    vanguard: { name: 'setVanguard', tiers: [{ n: 2, bonus: { hpPct: 0.15 } }, { n: 4, bonus: { guard: 0.15 } }] },
+    arcane: { name: 'setArcane', tiers: [{ n: 2, bonus: { atkPct: 0.12 } }, { n: 4, bonus: { dmg: 0.2 } }] },
+  },
+  enhance: {
+    max: (r) => 5 + r * 5,
+    cost: (lv, r) => ({ cur: 'gold', n: 80 * (lv + 1) * (r + 1), items: { gearstone: 1 + Math.floor(lv / 3) } }),
+    per: 0.15,
+    chance: (lv) => (lv < 3 ? 1 : Math.max(0.4, 1 - (lv - 2) * 0.1)),
+  },
+  salvage: (r, lv) => ({ items: { gearstone: 1 + r * 2 + Math.floor(lv / 2) } }),
+  bag: 60,
+  drops: {
+    stage: {
+      '*': { chance: 0.6, pool: [...gearPool(COMMON_GEAR, 10), ...gearPool(RARE_GEAR, 2)] },
+      '1-5': { chance: 1, n: 2, pool: [...gearPool(RARE_GEAR, 5), { id: 'dawnedge', w: 1 }] },
+      '2-5': { chance: 1, n: 3, pool: [...gearPool(RARE_GEAR, 5), { id: 'dawnedge', w: 2 }] },
+    },
+    dungeon: { goldmine: { chance: 1, pool: gearPool(RARE_GEAR, 1) } },
+  },
+};
+/** 영웅의 성장: 틀의 기본(별 6, 레벨 상한 10 + 별 × 10 …)에 기술 레벨, 각성 세 단계, 영웅 장비를 더한다 */
+export const HERO_RULES: HeroRules = {
+  ...BASE_HERO_RULES,
+  /** 기술 레벨: 상한은 1 + 별 + 각성 × 2, 값은 골드와 기술서, 레벨마다 기술의 피해·회복 +12% */
+  skill: { maxLv: (stars, aw) => 1 + stars + aw * 2, cost: (lv, r) => ({ cur: 'gold', n: 150 * lv * (r + 1), items: { skillbook: lv } }), per: 0.12 },
+  /** 각성: 별 6에서 조각과 각성석으로. 1단계에 '강철 피부'(받는 피해 −10%), 3단계에 '분노'(주는 피해 +15%) */
+  awaken: {
+    steps: [
+      { shards: 20, cost: { cur: 'gold', n: 3000, items: { awakenstone: 1 } }, mul: 1.15, passive: { name: 'passiveSteel', bonus: { guard: 0.1 } } },
+      { shards: 40, cost: { cur: 'gold', n: 6000, items: { awakenstone: 2 } }, mul: 1.3 },
+      { shards: 80, cost: { cur: 'gold', n: 12000, items: { awakenstone: 4 } }, mul: 1.5, passive: { name: 'passiveFury', bonus: { dmg: 0.15 } } },
+    ],
+  },
+  gear: HERO_GEAR,
 };
 /** 배너 하나: 보석 100 / 10번 900. 일반 75%, 희귀 22%, 전설 3%. 전설이 50번째까지 나오지 않으면 50번째는 전설, 10번 뽑기의 열째는 희귀 이상 보장 */
 export const BANNERS: Readonly<Record<string, BannerDef>> = {
@@ -123,7 +189,16 @@ export const BANNERS: Readonly<Record<string, BannerDef>> = {
     tenAtLeast: 1,
   },
 };
-export const SQUAD_RULES = { size: 4, seek: 13, leash: 22, reviveS: 8, regen: 0.06, autoFill: true };
+/** 넷이 싸운다: 앞줄 둘(받는 피해 −25%, 둘레 9m의 적을 끈다), 뒷줄 둘(주는 피해 +10%). 진영 셋의 시너지 (물결은 편성 모두가 받는다) */
+export const SQUAD_RULES: SquadRules = {
+  size: 4, seek: 13, leash: 22, reviveS: 8, regen: 0.06, autoFill: true,
+  rows: { front: 2, back: 2, taunt: 9, frontBonus: { guard: 0.25 }, backBonus: { dmg: 0.1 } },
+  synergy: {
+    grove: { name: 'synGrove', tiers: [{ n: 2, bonus: { atkPct: 0.1 } }, { n: 3, bonus: { atkPct: 0.15, hpPct: 0.1 } }] },
+    ember: { name: 'synEmber', tiers: [{ n: 2, bonus: { dmg: 0.12 } }] },
+    tide: { name: 'synTide', tiers: [{ n: 2, bonus: { guard: 0.1 } }], all: true },
+  },
+};
 
 // ---------- 장과 단계: 장 둘 × 다섯. 다섯째는 우두머리 ----------
 const stage = (ch: number, n: number): StageDef => {
@@ -135,8 +210,8 @@ const stage = (ch: number, n: number): StageDef => {
     waves,
     ...(n === 4 ? { boss: { type: ch === 0 ? 'ogre' : 'golem' } } : {}),
     scale,
-    reward: { gold: 40 + k * 20, exp: 30 + k * 15, sparks: 30 + k * 5 },
-    first: { sparks: 100 },
+    reward: { gold: 40 + k * 20, exp: 30 + k * 15, sparks: 30 + k * 5, items: { gearstone: 2 + ch, skillbook: 1 } },
+    first: { sparks: 100, ...(n === 4 ? { items: { awakenstone: 1 } } : {}) },
     rec: Math.round(250 * scale * (n === 4 ? 1.6 : 1)),
   };
 };
