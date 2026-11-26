@@ -263,3 +263,12 @@ const mobsIn = (g: Game, p: Ent) => [...g.ents.values()].filter((e) => e.kind ==
   check(tsc.status === 0 && errors.length === 0, `CAMPS를 적지 않고 아이템이 무기와 재료뿐(as const)인 내용으로도 틀이 컴파일된다${errors.length ? `: 오류 ${errors.length}개` : ''}`);
   removeTemp(dir);
 }
+
+// ---------- 돌아왔을 때의 창의 바탕: 불투명 (폰에서 뒤의 글자가 비치지 않게. 메뉴·가방·지도와 같은 --ink) ----------
+{
+  const css = (await import('node:fs')).readFileSync(new URL('../../client/style.css', import.meta.url), 'utf8');
+  const rule = /#idleBackPop\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const bg = /background:\s*([^;]+);/.exec(rule)?.[1]?.trim() ?? '';
+  const menuBg = /#menu\s*\{[^}]*background:\s*([^;]+);/.exec(css)?.[1]?.trim() ?? '';
+  check(bg === 'var(--ink)' && bg === menuBg, `창의 바탕이 메뉴와 같은 불투명한 토큰 (${bg}, 메뉴 ${menuBg})`);
+}

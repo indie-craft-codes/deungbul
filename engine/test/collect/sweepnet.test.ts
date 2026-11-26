@@ -1,7 +1,7 @@
 // 소탕·픽업 배너·선택권·오프라인 진행을 실제 서버와 접속으로 (정해진 서버 시계: 별똥별 배너가 열린 때):
 //   열린 배너(개인 상태 gacha.open)에 한정 배너가 있고 다음 배너는 없다, 닫힌 배너는 bannerClosed, 픽업 배너의 10번 뽑기,
 //   깨지 않은 단계는 sweepLocked, 깬 단계의 소탕 결과(메시지 sweep)와 소탕권, 열쇠 던전을 끝낸 뒤의 소탕, 선택권,
-//   나갔다가 서버 시계로 한 시간 뒤에 들어오면 단계가 나아가 있고(stageAway) 방치 우편의 제목 값에 진행이 적힌다.
+//   나갔다가 서버 시계로 한 시간 뒤에 들어오면 단계가 나아가 있고(돌아왔을 때의 창 idleBack 하나로만 알린다: 안내문 stageAway는 없다) 방치 우편의 제목 값에 진행이 적힌다.
 import { seededRng, type GachaMe, type HeroesMe, type KeysMe, type StageMe, type SweepGot } from '../../shared/defs';
 import type { ServerMsg } from '../../shared/protocol';
 import { startServer } from '../../server/net/server';
@@ -9,8 +9,8 @@ import { MemoryStore } from '../../server/store';
 import { check, connect, settle, until, type Peer } from '../harness';
 import { heath } from './server/heath';
 
-interface Seen { heroes?: HeroesMe; gacha?: GachaMe; stage?: StageMe; keys?: KeysMe; sweeps: SweepGot[]; pulls: number; mail: { k: string; a: (string | number)[] }[] }
-const fresh = (): Seen => ({ sweeps: [], pulls: 0, mail: [] });
+interface Seen { heroes?: HeroesMe; gacha?: GachaMe; stage?: StageMe; keys?: KeysMe; sweeps: SweepGot[]; pulls: number; mail: { k: string; a: (string | number)[] }[]; backs: { from?: string; to?: string; n?: number }[] }
+const fresh = (): Seen => ({ sweeps: [], pulls: 0, mail: [], backs: [] });
 const listen = (s: Seen) => (m: ServerMsg) => {
   if (m.t === 'me') {
     if (m.k === 'heroes') s.heroes = m.s as HeroesMe;
@@ -20,6 +20,7 @@ const listen = (s: Seen) => (m: ServerMsg) => {
   } else if (m.t === 'sweep') s.sweeps.push(m.got);
   else if (m.t === 'gacha') s.pulls++;
   else if (m.t === 'meta' && m.mail) s.mail = m.mail;
+  else if (m.t === 'idleBack') s.backs.push({ from: m.from, to: m.to, n: m.n });
 };
 
 let T = Date.UTC(2026, 10, 22, 9, 0, 0); // 별똥별(11월 20일부터 2주)이 열린 때
@@ -80,9 +81,11 @@ try {
   T += 60 * 60000;
   const sb = fresh();
   const b = await connect(server.port, 'Sweeper', 'collect-sweep-token-a-01', listen(sb));
-  await until(() => !!sb.stage && b.sys.some((x) => x.startsWith('stageAway')) && sb.mail.some((m) => m.k === 'idle'));
-  const away = b.sys.find((x) => x.startsWith('stageAway')), idle = sb.mail.find((m) => m.k === 'idle');
-  check(!!away && sb.stage?.best === '1-4' && away === 'stageAway:1-3:1-5:2', `편성의 전투력 ${power}로 한 시간 동안 1-3, 1-4(권장 340, 385)를 깨고 1-5(권장 688)에서 멈춘다 (${away}, 가장 멀리 ${sb.stage?.best})`);
+  await until(() => !!sb.stage && sb.backs.length > 0 && sb.mail.some((m) => m.k === 'idle'));
+  await settle(b, 1);
+  const back = sb.backs[0], idle = sb.mail.find((m) => m.k === 'idle'), away = `${back?.from}:${back?.to}:${back?.n}`;
+  check(sb.backs.length === 1 && sb.stage?.best === '1-4' && away === '1-3:1-5:2', `편성의 전투력 ${power}로 한 시간 동안 1-3, 1-4(권장 340, 385)를 깨고 1-5(권장 688)에서 멈춘다 (창 ${away}, 가장 멀리 ${sb.stage?.best})`);
+  check(!b.sys.some((x) => x.startsWith('stageAway')), `같은 진행을 안내문 stageAway로 또 알리지 않는다 (창 하나로만: ${b.sys.filter((x) => x.startsWith('stage')).join(', ') || '안내문 없음'})`);
   check(!!idle && idle.a.join() === '60,1-3,1-5', `방치 우편의 제목 값에 진행이 적힌다 (${idle?.a.join()})`);
   b.ws.close();
 } finally {

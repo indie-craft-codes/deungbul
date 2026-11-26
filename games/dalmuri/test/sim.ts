@@ -1,8 +1,9 @@
 // 처음 30분의 흐름을 서버 없이 틀의 게임 그대로 돌린다: 실제 전투(대장·영웅·몬스터)와 단계, 뽑기(정해진 난수), 영웅 키우기.
-// 사람의 몫은 '보통의 손님'처럼 몇 초마다 한 번: 우편 받기, 월석이 900이면 10번 뽑기, 별 올리기, 편성을 가장 센 넷으로, 남는 금화로 편성의 약한 영웅부터 레벨 업,
-// 실패해 자동 진행이 꺼졌으면 다시 켜기, 열쇠가 있으면 열쇠 던전(대장 레벨 3부터).
+// 사람의 몫은 '보통의 손님'처럼 몇 초마다 한 번: 우편 받기, 월석이 900이면 10번 뽑기, 별정수 → 조각, 별 올리기, 편성을 가장 센 넷으로,
+// 영웅 장비를 칸마다 더 센 것으로 끼기, 남는 금화로 편성의 약한 영웅부터 레벨 업, 실패해 자동 진행이 꺼졌으면 다시 켜기,
+// 열쇠가 있으면 메뉴에서 열쇠 던전으로(dungeonGo: 안에서는 대장도 대신 싸우고 끝나면 단계로 돌아온다).
 // 시험(pacing.test.ts)과 손으로 숫자를 볼 때(npx tsx --tsconfig games/dalmuri/tsconfig.json games/dalmuri/test/sim.ts) 함께 쓴다.
-import { HERO_RULES, HEROES, seededRng, stageIndex, STAGES } from '@engine/shared/defs';
+import { HERO_RULES, HEROES, heroGearDef, heroGearPower, heroGearRules, seededRng, stageIndex, STAGES } from '@engine/shared/defs';
 import { Game, type Ent } from '@engine/server';
 import { installDalmuri } from '../server/dalmuri';
 
@@ -25,6 +26,7 @@ function run(minutes: number, seed: number, opts: { dungeons?: boolean }): SimRe
   let clock = Date.parse('2026-11-26T09:00:00Z');
   const g = new Game({ plugins: [installDalmuri], now: () => clock });
   g.gacha.rng = seededRng(seed);
+  g.herogear.rng = seededRng(seed + 100);
   const p: Ent = g.players.spawn('시험대장', false, null, 'sim-' + seed);
   const res: SimResult = { firstTen: -1, firstBoss: -1, chapter2: -1, firstDungeon: -1, best: '', draws: 0, squad: [], power: 0, leaderLv: 1, fails: 0, events: [] };
   let t = 0;
@@ -47,13 +49,22 @@ function run(minutes: number, seed: number, opts: { dungeons?: boolean }): SimRe
       if (res.firstTen < 0) res.firstTen = t;
       ev(`10번 뽑기 → ${Object.keys(p.heroes).length}명`);
     }
-    // 별정수는 편성의 가장 높은 등급 영웅에게
-    for (const id of [...p.squad].sort((a, b) => HEROES[b].rarity - HEROES[a].rarity)) for (let i = 0; i < 5; i++) g.command(p, { t: 'essence', id });
+    // 별정수는 편성의 가장 높은 등급 영웅에게 (틀의 교환: HERO_RULES.trade)
+    for (const id of [...p.squad].sort((a, b) => HEROES[b].rarity - HEROES[a].rarity)) for (let i = 0; i < 5; i++) g.command(p, { t: 'hero', a: 'trade', id, item: 'essence' });
     // 별 올리기
     for (const id of Object.keys(p.heroes)) while (g.roster.starUp(p, id));
     // 편성: 전투력이 가장 높은 넷
     const best4 = Object.keys(p.heroes).sort((a, b) => g.roster.power(p, b) - g.roster.power(p, a)).slice(0, 4);
     if ([...best4].sort().join() !== [...p.squad].sort().join()) g.squad.set(p, best4);
+    // 영웅 장비: 편성의 센 영웅부터, 칸마다 끼지 않은 것 가운데 지금 것보다 센 것을 낀다
+    for (const hero of [...p.squad].sort((a, b) => g.roster.power(p, b) - g.roster.power(p, a))) {
+      for (const slot of heroGearRules()?.slots ?? []) {
+        const worth = (x: { id: string; lv: number }) => heroGearPower(x.id, x.lv);
+        const cur = p.hgear.find((x) => x.hero === hero && heroGearDef(x.id)?.slot === slot.id);
+        const pick = p.hgear.filter((x) => !x.hero && heroGearDef(x.id)?.slot === slot.id).sort((a, b) => worth(b) - worth(a))[0];
+        if (pick && (!cur || worth(pick) > worth(cur))) g.command(p, { t: 'hgear', a: 'equip', uid: pick.uid, hero });
+      }
+    }
     // 레벨 업: 편성의 가장 약한 영웅부터, 금화가 바닥날 때까지
     for (let guard = 0; guard < 200; guard++) {
       const weak = [...p.squad].filter((id) => p.heroes[id].lv < HERO_RULES.maxLv(p.heroes[id].stars)).sort((a, b) => g.roster.power(p, a) - g.roster.power(p, b))[0];
@@ -69,7 +80,7 @@ function run(minutes: number, seed: number, opts: { dungeons?: boolean }): SimRe
     }
     // 열쇠 던전
     if (opts.dungeons !== false && !g.dungeon.runOf(p) && p.lv >= 3) {
-      for (const id of ['goldvein', 'starwell']) if (g.dungeon.keyCount(p, id) > 0) { g.command(p, { t: 'keyrun', id }); if (g.dungeon.runOf(p)) { if (!said.has(id)) { said.add(id); ev(`열쇠 던전 ${id} 들어감`); } break; } }
+      for (const id of ['goldvein', 'starwell']) if (g.dungeon.keyCount(p, id) > 0) { g.command(p, { t: 'dungeonGo', id }); if (g.dungeon.runOf(p)) { if (!said.has(id)) { said.add(id); ev(`열쇠 던전 ${id} 들어감`); } break; } }
     }
   };
   const dt = 0.05;

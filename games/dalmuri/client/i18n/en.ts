@@ -1,5 +1,4 @@
 // English: the same shape as ko.ts (the reference language).
-import { heroName } from '@engine/client/i18n/ko';
 import { withIdNames } from '@engine/client/i18n/names';
 import type { GameLocale } from './ko';
 
@@ -12,7 +11,12 @@ export const enNames = withIdNames({
   },
   items: {
     moonblade: { name: 'Moon Blade', info: "The captain's blade" },
-    essence: { name: 'Star Essence', info: 'From the Star Well. Trade it for hero shards in the Expedition tab' },
+    essence: { name: 'Star Essence', info: 'From the Star Well and idle rewards. Trade it for shards of a hero you own in the Heroes tab' },
+    starchart: { name: 'Star Chart', info: "Raises a hero's skill level" },
+    moonshard: { name: 'Moon Shard', info: 'Awakens a 6★ hero' },
+    starsteel: { name: 'Starsteel', info: 'Enhances hero gear' },
+    sweepticket: { name: 'Sweep Ticket', info: 'Clears a beaten stage once without fighting' },
+    herochoice: { name: 'Legend Selector', info: 'Pick one of the three legendary heroes' },
   },
   classes: { captain: { name: 'Captain', info: 'Leads the heroes in search of the fallen moon shards.' } },
   skills: {
@@ -36,14 +40,12 @@ export const enNames = withIdNames({
   nameB: ['Captain', 'Pathfinder', 'Moonkeeper', 'Starhunter', 'Cloudstep'],
 });
 
-const rw = (gold: number, sparks: number, ess: number) => [gold ? `Gold ${gold.toLocaleString('en-US')}` : '', sparks ? `Moonstones ${sparks}` : '', ess ? `Star Essence ${ess}` : ''].filter(Boolean).join(' · ');
-
 export const enGame: GameLocale = {
   ui: {
     title: 'Moonhalo Vanguard',
     intro: 'Lead your heroes across the drifting sky isles to gather the fallen moon shards.',
     classHint: '',
-    hint: 'Battles are automatic · M: Menu (Heroes, Summon, Squad, Stages, Expedition) · N: Map · Enter: Chat',
+    hint: 'Battles are automatic · M: Menu (heroes, summons, stages …) · N: Map · Enter: Chat',
     mapLegend: 'Center: you · red: monsters · light blue: heroes',
     heroAnvil: 'Anvil', heroReed: 'Reed', heroEmber: 'Ember', heroDew: 'Dew',
     heroStoneheart: 'Stoneheart', heroHawkeye: 'Hawkeye', heroFrostshot: 'Frostshot', heroSparkhand: 'Sparkhand', heroWillow: 'Willow',
@@ -51,29 +53,24 @@ export const enGame: GameLocale = {
     roleGuardian: 'Guardian', roleRanger: 'Ranger', roleMystic: 'Mystic', roleHealer: 'Healer',
     bannerHalo: 'Moonhalo Summon', bannerFroststar: 'Froststar Summon',
     chapterMoss: 'Mosswood', chapterAsh: 'Ashen Gorge', chapterFrost: 'Frost Spire',
+    bannerEclipseMoon: 'Eclipse Summon: Moonshield', bannerEclipseStar: 'Eclipse Summon: Starfall', bannerEclipseDawn: 'Eclipse Summon: Dawn Saint',
+    hgSlotWeapon: 'Weapon', hgSlotArmor: 'Armor', hgSlotCharm: 'Charm',
+    hgIronedge: 'Iron Edge', hgQuiltcoat: 'Quilted Coat', hgPebblecharm: 'Pebble Charm',
+    hgLunarblade: 'Lunar Blade', hgLunarmail: 'Lunar Mail', hgLunarcharm: 'Lunar Bell',
+    hgAstralstaff: 'Astral Staff', hgAstralrobe: 'Astral Robe', hgAstralcharm: 'Astral Astrolabe',
+    hgEclipseblade: 'Eclipse Blade',
+    setLunar: 'Lunar', setAstral: 'Astral',
+    synSun: 'Oath of the Sun', synMoon: 'Moon Ward', synStar: 'Star Guidance',
+    passiveMoonveil: 'Moonveil', passiveFullmoon: 'Full Moon',
     tabExpedition: 'Expedition',
     expDungeons: 'Key dungeons',
-    expDungeonsNote: 'Keys refill by 2 each day (up to 2). Buy 2 more per day with moonstones. Rewards arrive by mail.',
+    expDungeonsNote: 'Keys refill by 2 each day (up to 2). Buy 2 more per day with moonstones. Inside, your captain fights automatically and returns to the stage afterwards. Rewards arrive by mail; sweep them in the Stages tab.',
     expGo: 'Enter',
     expBuy: 'Buy key',
-    expEssence: 'Star Essence → hero shards',
-    expEssenceNote: 'Trade Star Essence for one bundle of shards of a hero you own (common 5 · rare 10 · legendary 25). Raise stars in the Heroes tab.',
-    expUse: 'Trade',
-    idleTitle: 'While your vanguard rested',
-    idleClaim: 'Claim',
-    idleLater: 'Later (keep in mail)',
   },
   fmt: {
     expNeedLv: (lv) => `from captain Lv ${lv}`,
     keyLine: (n, cap, bought, buyMax, cost) => `Keys ${n} / ${cap} · buy for ${cost} moonstones (${buyMax - bought} left today)`,
-    essenceHave: (n) => `Star Essence: ${n}`,
-    essenceRow: (lv, stars, shards, need) => `Lv ${lv} · ${stars}★ · shards ${shards} — ${need} essence`,
-    idleBody: (min) => `Gathered by your vanguard over ${Math.floor(min / 60) ? `${Math.floor(min / 60)} h ` : ''}${min % 60} min`,
-    idleReward: rw,
   },
-  msg: {
-    essenceUsed: (a) => `${heroName(a[0])}: +${a[1]} shards. Star Essence left: ${a[2]}`,
-    essenceShort: (a) => `Not enough Star Essence (need ${a[0]}, have ${a[1]}). Get it in the Star Well.`,
-    essenceNoHero: () => 'You can only use it on a hero you own.',
-  },
+  msg: {},
 };
