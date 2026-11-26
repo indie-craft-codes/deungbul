@@ -35,10 +35,12 @@ onMsg('snap', (m, now) => applySnapshot(m, now));
 onMsg('stat', (m) => {
   const me = S.me;
   if (!me) return;
-  me.maxHp = m.maxHp; me.lv = m.lv; me.exp = m.exp; me.need = m.need; me.sparks = m.sparks;
-  me.gold = m.gold; me.items = m.items;
-  const classChanged = me.cls !== m.cls;
-  if (me.weapon !== m.weapon || me.armor !== m.armor || classChanged) setGear(me.id, m.weapon, m.cls, m.armor);
+  // 칸은 그 모듈을 고른 게임에만 온다 (engine/server/game/systems/status.ts): 오지 않은 칸은 그대로 둔다
+  me.maxHp = m.maxHp ?? me.maxHp; me.lv = m.lv ?? me.lv; me.exp = m.exp ?? me.exp; me.need = m.need ?? me.need; me.sparks = m.sparks ?? me.sparks;
+  me.gold = m.gold ?? me.gold; me.items = m.items ?? me.items;
+  const cls = m.cls ?? me.cls, weapon = m.weapon ?? me.weapon, armor = m.armor ?? me.armor;
+  const classChanged = me.cls !== cls;
+  if (me.weapon !== weapon || me.armor !== armor || classChanged) setGear(me.id, weapon, cls, armor);
   me.ready = true;
   if (classChanged) renderTexts(); // 기술 버튼의 이름이 직업을 따라 바뀐다
 });

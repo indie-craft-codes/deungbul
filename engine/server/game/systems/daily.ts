@@ -1,7 +1,7 @@
 // 일일 임무와 출석: 날마다 새로 시작하는 임무의 진행을 세고, 채우면 보상을 우편으로 보낸다.
 // 그날 처음 접속하면 출석 보상이 온다. 임무와 보상은 games/deungbul/shared/content/growth.ts의 DAILIES, ATTEND에 있다.
 import { ATTEND, DAILY_IDS, type DailyKind, dailyDef } from '../../../shared/defs';
-import type { Ent } from '../entity';
+import { dayOf, type Ent } from '../entity';
 import type { Game } from '../game';
 
 const DAY_MS = 24 * 3600000;
@@ -27,10 +27,7 @@ export class Daily {
   }
 
   /** 그 시각의 날짜 (서버 현지 시간, 자정에 바뀐다). 하루 단위로 세는 다른 시스템도 이것을 쓴다 */
-  dayOf(ms: number): string {
-    const d = new Date(ms);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
+  dayOf(ms: number): string { return dayOf(ms); }
 
   /** 날이 바뀌었으면 임무를 비우고, 그날 첫 접속이면 출석 보상을 보낸다 */
   roll(p: Ent): void {

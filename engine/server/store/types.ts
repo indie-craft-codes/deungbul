@@ -2,19 +2,27 @@
 // 실시간 상태(체력, 몬스터)는 저장하지 않는다. 재시작을 넘어 남아야 하는 것만 적는다.
 
 /**
- * 캐릭터 저장의 틀의 칸. 게임의 시스템은 자기 몫을 ext의 자기 이름 칸에 적는다 (engine/server/game/game.ts의 Saver).
+ * 캐릭터 저장의 틀의 칸. 핵심의 칸은 v·gv·name·seen·ext·at이고, 나머지는 [ ]의 모듈을 고른 게임만 적는다 (engine/server/game/systems/players.ts의 export). 게임의 시스템은 자기 몫을 ext의 자기 이름 칸에 적는다 (engine/server/game/game.ts의 Saver).
  * 옛 형식의 저장에는 게임의 칸이 최상위에 있을 수 있다: 그것은 이 타입에 없고, 읽는 길(Saver.legacy)이 저장 전체를 이름-값 묶음으로 받아 스스로 찾는다.
  * (interface가 아니라 type인 까닭: 이름-값 묶음(Record<string, unknown>)으로 넘길 수 있게)
  */
 export type PlayerSave = {
   /** 저장 형식의 버전: v는 틀의 것, gv는 게임의 것 (engine/server/game/migrate.ts). 없으면 0(버전 칸이 생기기 전의 저장) */
   v?: number; gv?: number;
-  name: string; lv: number; exp: number; need: number; maxHp: number; sparks: number;
+  name: string;
+  /** 레벨, 경험치, 다음 레벨까지 [growth] */
+  lv?: number; exp?: number; need?: number;
+  /** 최대 체력 [combat] (읽을 때는 쓰지 않는다: 직업과 레벨로 다시 구한다) */
+  maxHp?: number;
+  /** 두 번째 재화 [economy] */
+  sparks?: number;
   /** 마지막으로 저장된 시각(ms). 접속하지 않은 시간을 계산할 때 쓴다 */
   seen?: number;
-  /** 직업. 아직 고르지 않았으면 빈 문자열 */
+  /** 직업. 아직 고르지 않았으면 빈 문자열 [classes] */
   cls?: string;
+  /** [economy] */
   gold?: number;
+  /** 든 무기, 입은 갑옷, 소지품 [items] */
   weapon?: string;
   armor?: string;
   items?: Record<string, number>;
@@ -22,7 +30,7 @@ export type PlayerSave = {
   ext?: Record<string, unknown>;
   /** 마지막으로 있던 자리 [x, z]. 다시 접속하면 여기서 시작한다 */
   at?: [number, number];
-  /** 자동 사냥을 켠 채로 나갔다. 다시 접속하면 켜진 채로 시작한다 */
+  /** 자동 사냥을 켠 채로 나갔다. 다시 접속하면 켜진 채로 시작한다 [away] */
   auto?: boolean;
 };
 

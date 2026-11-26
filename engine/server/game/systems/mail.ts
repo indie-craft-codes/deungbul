@@ -151,7 +151,7 @@ export class MailSys {
       paid.push({ why, r: m.r });
       const restGear: Gear[] = [], restItems: Record<string, number> = {};
       // 가방에는 베낀 것을 넣는다: 같은 보상 값을 여러 우편이 함께 쓰더라도 한 장비가 두 가방에 들어가지 않게
-      for (const it of m.r.gear ?? []) { if (g.gear.put(p, { ...it, opts: it.opts.map(([k, v]): [typeof k, number] => [k, v]) }, why)) gears++; else restGear.push(it); }
+      for (const it of m.r.gear ?? []) { if (g.has('gear') && g.gear.put(p, { ...it, opts: it.opts.map(([k, v]): [typeof k, number] => [k, v]) }, why)) gears++; else restGear.push(it); }
       for (const [item, n] of Object.entries(m.r.items ?? {})) {
         if (!isItemId(item) || !(n >= 1)) continue;
         const got = g.bag.putItem(p, item, Math.floor(n), why);

@@ -30,7 +30,7 @@
 // 캐릭터별 기록(플레이 시간, 레벨 도달, 오늘 번·쓴 골드)은 g.saves로 캐릭터와 함께 저장된다(PlayerSave.ext.stats).
 import { ECON_CURS, ECON_FRESH_DAYS, ECON_LEVEL_MARKS, ECON_LOST_FULL, ECON_MOVES, ECON_UNKNOWN, GEAR_SLOTS, RARITIES, isEconMove, type Gear } from '../../../shared/defs';
 import type { EconRow, PlayerSave } from '../../store';
-import type { Ent } from '../entity';
+import { dayOf, type Ent } from '../entity';
 import type { Game } from '../game';
 import { isField } from '../layers';
 import { gearCur } from './bag';
@@ -237,7 +237,7 @@ export class Ledger {
           const slot = this.tickNo++ % AUDIT_TICKS;
           for (const t of this.tracks.values()) {
             this.settle(t, ECON_UNKNOWN[1], t.p.id % AUDIT_TICKS === slot);
-            if (g.away.active(t.p)) t.rec.away += dt; else t.rec.play += dt;
+            if (g.has('away') && g.away.active(t.p)) t.rec.away += dt; else t.rec.play += dt;
           }
         } catch (err) { this.oops(err); }
         this.base = ECON_UNKNOWN[0];
@@ -396,8 +396,8 @@ export class Ledger {
       const d = new Date(now);
       this.dayFrom = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       this.dayTo = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
-      const before = this.day, keep = this.g.daily.dayOf(now - DAY_MS);
-      this.day = this.g.daily.dayOf(now);
+      const before = this.day, keep = dayOf(now - DAY_MS);
+      this.day = dayOf(now);
       // 켜진 뒤의 합계는 오늘과 어제 것만 남긴다 (오래 켜 둔 서버에서 끝없이 늘지 않게)
       if (before) for (const k of this.all.keys()) { const day = k.slice(0, k.indexOf('|')); if (day !== this.day && day !== keep) this.all.delete(k); }
     }
@@ -463,7 +463,7 @@ export class Ledger {
    * 접속 중인 사람은 마지막으로 저장된 값으로 들어간다. 진행이 없는 캐릭터(레벨 1, 골드 0)는 분포에서 빼고 수만 센다.
    */
   snapshot(each: (fn: (s: PlayerSave) => void) => void): EconSnapshot {
-    const now = this.g.now(), day = this.today(), yesterday = this.g.daily.dayOf(now - DAY_MS);
+    const now = this.g.now(), day = this.today(), yesterday = dayOf(now - DAY_MS);
     const golds: number[] = [], incomes: number[] = [], levels: Record<string, number> = {}, rar: Record<string, number> = {};
     const plus: number[] = [], active = { d1: 0, d7: 0, d30: 0 };
     const reach: Record<string, { play: number[]; total: number[] }> = {};
@@ -504,7 +504,7 @@ export class Ledger {
     });
     const sum = golds.reduce((a, b) => a + b, 0), top = [...golds].sort((a, b) => b - a).slice(0, 10).reduce((a, b) => a + b, 0);
     const kinds: Record<string, number[]> = {};
-    const listed = this.g.market.listed();
+    const listed = this.g.has('market') ? this.g.market.listed() : [];
     for (const l of listed) (kinds[l.kind] ??= []).push(l.price);
     return {
       day, at: now, chars: golds.length, blank, active, levels,

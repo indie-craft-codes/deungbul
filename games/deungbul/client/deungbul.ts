@@ -75,7 +75,7 @@ function initPersonal(): void {
   // 등탑 창이 접속한 자리의 구역으로 맞춰져 그 구역을 구역 알림으로 알리지 않는다.
   let cls = '';
   onMsg('welcome', () => { cls = ''; });
-  onMsg('stat', (m, now) => { if (!S.me || m.cls === cls) return; cls = m.cls; renderWorld(); gameHud(now); });
+  onMsg('stat', (m, now) => { if (!S.me || m.cls === undefined || m.cls === cls) return; cls = m.cls; renderWorld(); gameHud(now); });
 }
 
 /** 돌아온 주민을 세우는 일을 등록한다. 이 게임의 창들(hud/) 뒤에 둔다: 공유 상태가 오면 창을 먼저 고치고 주민을 세우던 차례 그대로다 */

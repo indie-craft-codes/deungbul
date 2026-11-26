@@ -46,7 +46,7 @@ export function connect(port: number, name?: string, token?: string, onMsg?: (m:
         for (const id of m.leave ?? []) { p.seen.delete(id); p.mons.delete(id); }
         for (const [id, x, z] of m.ents) { const s = p.seen.get(id); if (s) { s.x = x; s.z = z; } }
         for (const e of m.ev ?? []) if (e[0] === 'h' && e[1] === p.id) p.hits++;
-      } else if (m.t === 'stat') { p.sparks = m.sparks; p.lv = m.lv; }
+      } else if (m.t === 'stat') { p.sparks = m.sparks ?? p.sparks; p.lv = m.lv ?? p.lv; }
       else if (m.t === 'cd') p.cds.push(m.n);
       else if (m.t === 'sys') p.sys.push([m.k, ...(m.a ?? [])].join(':'));
       else if (m.t === 'chat') p.chat.push(`${m.name}: ${m.text}`);

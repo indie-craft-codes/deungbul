@@ -91,3 +91,8 @@ export const readInt = (v: unknown, min: number, max: number, def: number): numb
 /** a 이상 b 이하의 정수 */
 export const ri = (a: number, b: number) => a + Math.floor(Math.random() * (b - a + 1));
 export const dist = (a: { x: number; z: number }, b: { x: number; z: number }) => Math.hypot(a.x - b.x, a.z - b.z);
+/** 그 시각의 날짜 'YYYY-MM-DD' (서버 현지 시간, 자정에 바뀐다). 하루 단위로 세는 시스템(일일 임무, 자리 비움 사냥의 하루 몫, 경제 장부)이 함께 쓴다 */
+export function dayOf(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}

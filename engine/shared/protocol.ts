@@ -150,19 +150,22 @@ export type ServerMsg =
       ents: EntState[];
       ev?: Ev[];
     }
-  /** 내 성장 수치. 바뀔 때만 온다 */
+  /**
+   * 내 성장 수치. 바뀔 때만 온다. 칸은 그 모듈을 고른 게임에만 있다 (engine/server/game/systems/status.ts):
+   * maxHp[combat], lv·exp·need[growth], sparks·gold[economy], weapon·armor·items[items], cls[classes]. 그 모듈이 하나도 없으면 오지 않는다
+   */
   | {
-      t: 'stat'; maxHp: number; lv: number; exp: number; need: number; sparks: number;
-      gold: number; weapon: string;
+      t: 'stat'; maxHp?: number; lv?: number; exp?: number; need?: number; sparks?: number;
+      gold?: number; weapon?: string;
       /** 입은 갑옷. 없으면 빈 문자열 */
-      armor: string;
+      armor?: string;
       /** 직업. 아직 고르지 않았으면 빈 문자열 */
-      cls: string;
+      cls?: string;
       /** 가진 물약: 아이템 id별 개수 */
-      items: Record<string, number>;
+      items?: Record<string, number>;
     }
-  /** 내 장비·우편·일일 임무. 바뀔 때만 온다 */
-  | { t: 'meta'; gear: Gear[]; worn: Record<string, number>; mail: Mail[]; daily: { prog: Record<string, number>; got: string[]; streak: number }; power: number; build: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
+  /** 내 장비·우편·일일 임무. 바뀔 때만 온다. 칸은 그 모듈을 고른 게임에만 있다: gear·worn[gear], mail[mail], daily[daily], power[rank], build[build] */
+  | { t: 'meta'; gear?: Gear[]; worn?: Record<string, number>; mail?: Mail[]; daily?: { prog: Record<string, number>; got: string[]; streak: number }; power?: number; build?: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
   /** 내가 들어가 있는 던전의 상태. id가 빈 문자열이면 밖이다. left는 남은 시간(초, 끝낸 뒤에는 나가기까지), foes는 남은 적 */
   | { t: 'dungeon'; id: string; left: number; foes: number; cleared: boolean }
   /** 채널: me는 내 채널 번호(1부터), list는 채널별 인원. foes는 습격 중일 때만 오는 채널별 남은 적의 수 */

@@ -60,7 +60,7 @@ export class Shop {
 
   /** 무기나 갑옷이면 기본 장비로 가방에 넣고 바로 갈아 낀다 (systems/gear.ts). 장비가 아니면 false. why: 원인의 이름 (가방 통로가 장부에 알린다) */
   static wear(g: Game, p: Ent, id: ItemId, made = false, why = ''): boolean {
-    return g.gear.acquire(p, id, made, why);
+    return g.has('gear') && g.gear.acquire(p, id, made, why);
   }
 
   /** 저장된 소지품을 읽는다. 없어진 아이템이나 이상한 수는 버린다. */

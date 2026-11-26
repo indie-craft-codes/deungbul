@@ -48,7 +48,7 @@ export class Combat {
    * 쿨다운과 사거리는 부른 쪽(useSkill)이 본다. 시험과 게임의 규칙도 이것으로 효과만 낼 수 있다
    */
   cast(p: Ent, id: SkillId, target?: Ent): void {
-    const g = this.g, def = skillDef(id), fx = def.effect, up = g.build.skillScale(p, id); // 강화한 기술은 피해와 회복이 커진다
+    const g = this.g, def = skillDef(id), fx = def.effect, up = g.has('build') ? g.build.skillScale(p, id) : 1; // 강화한 기술은 피해와 회복이 커진다
     const stun = (m: Ent, s: number | undefined) => { if (s && !m.dead && m.kind === 'm') { m.stunUntil = g.clock + s; m.moving = false; g.emit(['stun', m.id, s]); } };
     /** 나와(allies면 범위 안의 사람들도) 같은 층의 사람들 */
     const friends = (allies: boolean | undefined): Ent[] => (allies ? [...g.ents.values()] : [p]).filter((e) => e.kind === 'p' && !e.dead && e.layer === p.layer && (e === p || dist(p, e) <= (def.radius ?? 0)));
@@ -166,7 +166,7 @@ export class Combat {
     m.hitters.clear();
     for (const e of g.ents.values()) if (e.targetId === m.id) e.targetId = 0;
     // 곁에 있던 파티원도 함께 잡은 것으로 친다
-    g.fire('monsterKilled', m, g.party.share(hitters, m));
+    g.fire('monsterKilled', m, g.has('party') ? g.party.share(hitters, m) : hitters);
   }
 
   private killPlayer(p: Ent): void {

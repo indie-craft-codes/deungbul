@@ -249,6 +249,7 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
     need(a.length >= 3, `${sign > 0 ? 'give' : 'take'} 이름 무엇(${CURS.join(', ')}, 아이템 id) 수`);
     const what = a[1], n = Number(a[2]);
     need(Sanctions.canGrant(what), `모르는 것입니다: ${what} (${CURS.join(', ')} 또는 아이템 id)`);
+    need(S.grantable(what), `이 게임은 ${what}을(를) 쓰지 않습니다 (재화는 economy, 아이템은 items 모듈을 고른 게임만)`);
     need(Number.isInteger(n) && n > 0 && n <= 1e9, `수는 1 이상의 정수여야 합니다: ${a[2]}`);
     const t = find(a[0]);
     if (!t) return `'${a[0]}' 이름의 캐릭터가 없습니다.`;

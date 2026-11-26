@@ -721,7 +721,8 @@ export function initMenu(): void {
   // 가방 칸 수와 분해 설정(개인 상태)이 바뀌면 다시 그린다. 값은 가방 창(hud/bag.ts)이 먼저 받아 넣는다
   onMsg('me', (m) => { if (m.k === 'bag' || m.k === 'salvage') renderMenu(true); });
   $('menuClose').addEventListener('click', () => { ui.panel.hidden = true; });
-  onMsg('meta', (m) => { S.meta = { gear: m.gear, worn: m.worn, mail: m.mail, daily: m.daily, power: m.power, build: m.build }; renderMenu(true); });
+  // 칸은 그 모듈을 고른 게임에만 온다: 오지 않은 칸은 그대로 둔다
+  onMsg('meta', (m) => { const o = S.meta; S.meta = { gear: m.gear ?? o.gear, worn: m.worn ?? o.worn, mail: m.mail ?? o.mail, daily: m.daily ?? o.daily, power: m.power ?? o.power, build: m.build ?? o.build }; renderMenu(true); });
   onMsg('guild', (m) => { S.guild = m.g; S.guildInvite = m.invite ?? null; renderMenu(); });
   onMsg('gtag', (m) => setGuildTag(m.id, m.g));
   onMsg('market', (m) => {
