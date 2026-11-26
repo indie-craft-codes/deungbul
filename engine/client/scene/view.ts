@@ -6,6 +6,7 @@ import { mat } from './models';
 
 const SKY = 0xa9cdd0;
 const CAM_DIR = new THREE.Vector3(1, 1.25, 1).normalize();
+const UP = new THREE.Vector3(0, 1, 0);
 export type Ring = THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
 
 /** 장면의 분위기: 하늘빛(안개도 같은 색), 두 빛의 세기, 안개가 끼기 시작하는 거리와 다 덮는 거리 */
@@ -38,6 +39,11 @@ export class View {
   private readonly ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private readonly v = new THREE.Vector3();
   width = 1; height = 1;
+  /** 카메라를 세로축으로 돌린 각(라디안, 0이 틀의 쿼터뷰). camera.ts의 setCameraYaw가 정한다 */
+  yaw = 0;
+  private readonly dir = CAM_DIR.clone();
+  /** 지금 각도의 카메라 방향 (비추는 곳 → 카메라) */
+  private camDir(): THREE.Vector3 { return this.yaw ? this.dir.copy(CAM_DIR).applyAxisAngle(UP, this.yaw) : CAM_DIR; }
 
   constructor(canvas: HTMLCanvasElement, world: World, look: Look = {}) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -154,7 +160,8 @@ export class View {
 
   /** 카메라는 각도 고정, 대상만 따라간다. dist: 비추는 곳에서 카메라까지(m). 어디를 얼마나 멀리서 비출지는 camera.ts가 정한다 */
   follow(x: number, z: number, dist: number): void {
-    this.camera.position.set(x + CAM_DIR.x * dist, CAM_DIR.y * dist, z + CAM_DIR.z * dist);
+    const dir = this.camDir();
+    this.camera.position.set(x + dir.x * dist, dir.y * dist, z + dir.z * dist);
     this.camera.lookAt(x, 1, z);
     this.camera.updateMatrixWorld();
     this.sun.position.set(x - 24, 44, z + 16);
@@ -167,10 +174,10 @@ export class View {
    * 지금 카메라의 비율·그리는 범위(폰 세로의 밀린 범위)를 그대로 쓴 복사본으로 나눠 찾는다
    */
   fitZoom(x0: number, z0: number, x1: number, z1: number, base: number, margin = 0.08): number {
-    const cam = this.fitCam.copy(this.camera), cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, lim = 1 - margin * 2;
+    const cam = this.fitCam.copy(this.camera), cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, lim = 1 - margin * 2, dir = this.camDir();
     const fits = (k: number): boolean => {
       const d = base * k;
-      cam.position.set(cx + CAM_DIR.x * d, CAM_DIR.y * d, cz + CAM_DIR.z * d);
+      cam.position.set(cx + dir.x * d, dir.y * d, cz + dir.z * d);
       cam.lookAt(cx, 1, cz);
       cam.updateMatrixWorld();
       for (const [x, z] of [[x0, z0], [x0, z1], [x1, z0], [x1, z1]]) {
@@ -184,6 +191,19 @@ export class View {
     for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (fits(mid)) hi = mid; else lo = mid; }
     return hi;
   }
+
+  /**
+   * 폰 세로의 밀린 그리기 범위(resize: 너비의 12%)를 되돌리려면 비추는 곳을 화면의 왼쪽으로 몇 m 옮겨야 하나 (dist: 비추는 곳에서 카메라까지).
+   * 밀지 않은 화면이면 0. 옮기는 쪽은 rightDir의 반대 (camera.ts의 CameraAim.center가 쓴다)
+   */
+  offsetMeters(dist: number): number {
+    const off = this.camera.view?.enabled ? this.camera.view.offsetX : 0;
+    if (!off || !this.height) return 0;
+    const dir = this.camDir(), d = Math.hypot(dir.x * dist, dir.y * dist - 1, dir.z * dist);
+    return (off * 2 * d * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))) / this.height;
+  }
+  /** 화면의 오른쪽을 가리키는 땅 위의 방향 (지금 각도) */
+  rightDir(): { x: number; z: number } { const d = this.camDir(), l = Math.hypot(d.x, d.z) || 1; return { x: d.z / l, z: -d.x / l }; }
 
   /** 월드 좌표를 화면 좌표로. 화면 밖이면 null. */
   project(x: number, y: number, z: number): { x: number; y: number } | null {

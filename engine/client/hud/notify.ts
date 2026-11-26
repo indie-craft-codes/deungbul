@@ -22,17 +22,24 @@ const FEED = new Set<MsgKey>([
   'noTarget', 'tooFar', 'shopFar', 'notStocked', 'alreadyBest',
   'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'nameTaken', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
 ]);
+/** 대화창에 남기지 않는 안내문 (차례마다 오는 알림처럼 대화를 밀어내는 것). 게임이 addNotices의 quiet로 더한다 */
+const QUIET = new Set<MsgKey>();
 
 /**
  * 안내문의 분류를 더한다: 게임이 자기 안내문을 어디에 띄울지 등록한다. 어디에도 적지 않은 안내문은 대화창에만 남는다.
- * banner: 가운데 알림으로 띄울 것과 그 색조. 덧붙는 줄이 있으면 { tone, sub }로 준다. feed: 흘러가는 알림으로 띄울 것
+ * banner: 가운데 알림으로 띄울 것과 그 색조. 덧붙는 줄이 있으면 { tone, sub }로 준다. feed: 흘러가는 알림으로 띄울 것.
+ * quiet: 대화창에 남기지 않을 것 (banner에도 적었으면 가운데 알림으로만 뜨고, 어디에도 적지 않았으면 아무 데도 뜨지 않는다: 소리·화면은 게임이 따로)
  */
-export function addNotices(more: { banner?: Partial<Record<MsgKey, Tone | { tone: Tone; sub: Sub }>>; feed?: readonly MsgKey[] }): void {
+export function addNotices(more: { banner?: Partial<Record<MsgKey, Tone | { tone: Tone; sub: Sub }>>; feed?: readonly MsgKey[]; quiet?: readonly MsgKey[] }, keep = false): void {
+  // keep: 이미 분류된 안내문은 그대로 둔다 (틀의 모듈이 게임의 모듈보다 늦게 init되면서 기본 분류를 줄 때: 게임이 먼저 정한 것이 이긴다)
+  const known = (k: MsgKey) => keep && (k in BANNER || FEED.has(k) || QUIET.has(k));
   for (const [k, v] of Object.entries(more.banner ?? {}) as [MsgKey, Tone | { tone: Tone; sub: Sub }][]) {
+    if (known(k)) continue;
     if (typeof v === 'string') BANNER[k] = v;
     else { BANNER[k] = v.tone; BANNER_SUB[k] = v.sub; }
   }
-  for (const k of more.feed ?? []) FEED.add(k);
+  for (const k of more.feed ?? []) if (!known(k)) FEED.add(k);
+  for (const k of more.quiet ?? []) QUIET.add(k);
 }
 
 const ui = { banner: $('banner'), bannerText: $('bannerText'), bannerSub: $('bannerSub'), feed: $('feed'), flash: $('flash') };
@@ -89,7 +96,7 @@ export function notifySys(k: MsgKey, a: MsgArg[] = []): void {
   const text = make ? forInput(make(a)) : k;
   if (k === 'joined' || k === 'left') return; // 드나드는 소식이 대화와 큰 소식을 밀어낸다
   if (FEED.has(k)) { feed(text); return; }
-  logText(text);
+  if (!QUIET.has(k)) logText(text);
   const tone = BANNER[k];
   if (tone !== undefined) banner(text, tone, BANNER_SUB[k]?.(a) ?? '');
   if (k === 'died') flash();

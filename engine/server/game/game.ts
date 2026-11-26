@@ -54,6 +54,7 @@ import { Shop } from './systems/shop';
 import { Status } from './systems/status';
 import { Teams } from './systems/teams';
 import { Roster } from './systems/roster';
+import { Rooms } from './systems/rooms';
 import { Gacha } from './systems/gacha';
 import { Squad } from './systems/squad';
 import { Stages } from './systems/stages';
@@ -285,6 +286,7 @@ export class Game {
   readonly bots: Bots;
   /** [away] */ readonly away: Away;
   /** [teams] 팀과 점수 (규칙 플러그인보다 먼저 만든다: 게임이 플러그인에서 쓴다) */ readonly teams: Teams;
+  /** [rooms] 판: 인스턴스 층의 판, 대기실·짝짓기, 차례와 기한, 끊긴 사람의 자리 (규칙 플러그인보다 먼저 만든다: 게임이 플러그인에서 g.rooms.define을 부른다) */ readonly rooms: Rooms;
   /** [items] */ readonly shop: Shop;
   /** [classes] */ readonly classes: Classes;
   /** [combat] */ readonly boss: Boss;
@@ -328,6 +330,7 @@ export class Game {
     this.bots = new Bots(this);
     this.away = has('away') ? new Away(this) : off('away', 'away');
     this.teams = has('teams') ? new Teams(this) : off('teams', 'teams');
+    this.rooms = has('rooms') ? new Rooms(this) : off('rooms', 'rooms');
     // 게임의 규칙이 깔리는 자리 (Plugin의 설명)
     for (const install of opts.plugins ?? []) install(this);
     // 몬스터가 적은 싸우는 법이 등록되어 있는가 (없으면 기본대로 싸운다: 이름을 잘못 적은 것을 서버를 띄울 때 알린다)
@@ -381,6 +384,15 @@ export class Game {
     for (const fn of this.hooks[name] ?? []) (fn as (...a: Parameters<Hooks[K]>) => void)(...args);
   }
   emit(ev: Ev): void { this.events.push(ev); }
+  /**
+   * 게임의 연출 사건: 엔티티 id(그 사건이 일어난 곳: 그것이 보이는 화면에만 간다)와 이름, 수 몇 개를 다음 스냅샷의 사건(ev)에 싣는다.
+   * 화면은 onEffect(name, (id, vals) => …)로 받아 그린다 (날아가는 돌, 내딛기, 피해 숫자 …). 상태가 아니라 한 번의 연출이라 늦게 들어온 사람은 받지 않는다.
+   * name은 영문 소문자로 시작하는 24자 이내 (틀의 사건 이름과 겹치지 않게 게임이 고른다). 수는 소수 둘째 자리까지
+   */
+  effect(id: number, name: string, ...vals: number[]): void {
+    if (!/^[a-z][a-zA-Z0-9_]{0,23}$/.test(name)) throw new Error(`연출 사건의 이름이 이상합니다: '${name}' (영문 소문자로 시작하는 24자 이내)`);
+    this.events.push(['fx', id, name, ...vals.map((v) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : 0))]);
+  }
   notify(p: Ent, k: MsgKey, ...a: MsgArg[]): void { if (!p.bot) this.notices.push({ id: p.id, k, a }); }
   announce(k: MsgKey, ...a: MsgArg[]): void { this.announces.push({ k, a }); }
 

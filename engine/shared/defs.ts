@@ -15,6 +15,7 @@ export * from './defs/items';
 export * from './defs/monsters';
 export * from './defs/social';
 export * from './defs/teams';
+export * from './defs/rooms';
 // 맵 정의의 모양과 MAP에서 꺼낸 것(AREAS, GRID 등)은 world.ts가 다시 내보낸다. 여기서는 MAP만 내보낸다
 
 export {

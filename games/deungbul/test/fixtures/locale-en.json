@@ -1042,6 +1042,49 @@
   "Gold 2",
   "Gold 5"
  ],
+ "fmt.roomClock": [
+  "92c98844180fa028",
+  "undefineds",
+  "0s",
+  "1s",
+  "2s"
+ ],
+ "fmt.roomHostWaits": [
+  "a6bc7d3244bd4669",
+  "undefined is waiting",
+  "0 is waiting",
+  "1 is waiting",
+  "2 is waiting"
+ ],
+ "fmt.roomPlaying": [
+  "0f64262b0511e509",
+  "",
+  "1 match in play",
+  "2 matchs in play",
+  "5 matchs in play"
+ ],
+ "fmt.roomRound": [
+  "2635a24c72b8116c",
+  "Round undefined / undefined",
+  "Round 0 / undefined",
+  "Round 1 / undefined",
+  "Round 2 / undefined"
+ ],
+ "fmt.roomTheirTurn": [
+  "a26d3407684ac900",
+  "undefined's turn",
+  "0's turn",
+  "1's turn",
+  "2's turn"
+ ],
+ "fmt.roomWaiting": [
+  "aefd6a74932754bd",
+  "Waiting for players… (undefined/undefined)",
+  "Waiting for players… (0/undefined)",
+  "Waiting for players… (1/undefined)",
+  "Waiting for players… (2/undefined)"
+ ],
+ "fmt.roomWhy": "",
  "fmt.rowCount": [
   "cec5533bc8f79032",
   "undefined/undefined",
@@ -2183,6 +2226,54 @@
   "Your lamp gathered light at the tower while you were away. Rested bonus 1 (double exp from kills)",
   "Your lamp gathered light at the tower while you were away. Rested bonus 2 (double exp from kills)"
  ],
+ "msg.roomAgainWait": "Waiting for the other player to press Play again.",
+ "msg.roomBack": "You are back at your table.",
+ "msg.roomBusy": "You are already at a table.",
+ "msg.roomFoeBack": [
+  "15e62e73f2fa85d8",
+  "undefined is back.",
+  "0 is back.",
+  "1 is back.",
+  "2 is back."
+ ],
+ "msg.roomFoeGone": [
+  "65d8233425583664",
+  "undefined left the table.",
+  "0 left the table.",
+  "1 left the table.",
+  "2 left the table."
+ ],
+ "msg.roomFoeLeft": [
+  "8d1f0d6a0965b01a",
+  "undefined disconnected. Waiting undefineds.",
+  "0 disconnected. Waiting 0s.",
+  "1 disconnected. Waiting 1s.",
+  "2 disconnected. Waiting 3s."
+ ],
+ "msg.roomFull": "No more tables can open right now. Try again shortly.",
+ "msg.roomGone": "You cannot join that table.",
+ "msg.roomNotTurn": "It is not your turn.",
+ "msg.roomResult": [
+  "9832bfc2246999ba",
+  "Draw.",
+  "You won!",
+  "You lost."
+ ],
+ "msg.roomStart": [
+  "191ae2585a543f61",
+  "Match started against the computer. Your opponent moves first.",
+  "Match started against 1. You move first.",
+  "Match started against 3. You move first.",
+  "Match started against 1234567. You move first."
+ ],
+ "msg.roomTimeout": [
+  "258a908b7c663d17",
+  "Time ran out: the computer's turn passed.",
+  "Time ran out: 1's turn passed.",
+  "Time ran out: 2's turn passed.",
+  "Time ran out: 1234567's turn passed."
+ ],
+ "msg.roomWait": "Table opened. Waiting for another player.",
  "msg.salvageCant": "Some of that gear cannot be salvaged. Equipped, Standard and locked gear cannot be salvaged.",
  "msg.salvageFull": [
   "9ee2ca13c6d983d2",
@@ -2600,6 +2691,31 @@
  "ui.report": "Report",
  "ui.reportConfirm": "[[Click|Tap]] again to report",
  "ui.residents": "Residents",
+ "ui.roomAgain": "Play again",
+ "ui.roomAgainWaitNote": "Starts when the other player presses Play again.",
+ "ui.roomAway": "disconnected",
+ "ui.roomCancel": "Cancel",
+ "ui.roomCpu": "Computer",
+ "ui.roomCpuTurn": "Computer is thinking",
+ "ui.roomDraw": "Draw",
+ "ui.roomEmpty": "Empty seat",
+ "ui.roomFoeGoneNote": "The other player left the table.",
+ "ui.roomHost": "Open a table",
+ "ui.roomJoin": "Join",
+ "ui.roomLeft": "left",
+ "ui.roomLobby": "Lobby",
+ "ui.roomLobbyInfo": "Play a match against someone. Alone? Play the computer.",
+ "ui.roomLose": "You lost",
+ "ui.roomMyTurn": "Your turn",
+ "ui.roomNone": "No table is waiting. Open one and wait.",
+ "ui.roomNoneCpu": "No table is waiting. Open one or play the computer.",
+ "ui.roomOpen": "Tables waiting for players",
+ "ui.roomPass": "End turn",
+ "ui.roomQuick": "Quick match",
+ "ui.roomResign": "Resign",
+ "ui.roomToLobby": "To the lobby",
+ "ui.roomWin": "You won!",
+ "ui.roomWithCpu": "Play the computer",
  "ui.rowBack": "Back row",
  "ui.rowBackInfo": "The back row fights safely behind you.",
  "ui.rowFront": "Front row",

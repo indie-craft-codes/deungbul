@@ -1042,6 +1042,49 @@
   "골드 2",
   "골드 5"
  ],
+ "fmt.roomClock": [
+  "c3644b71b79ffa81",
+  "undefined초",
+  "0초",
+  "1초",
+  "2초"
+ ],
+ "fmt.roomHostWaits": [
+  "24b09c2ed6ca45d5",
+  "undefined 님이 기다립니다",
+  "0 님이 기다립니다",
+  "1 님이 기다립니다",
+  "2 님이 기다립니다"
+ ],
+ "fmt.roomPlaying": [
+  "c376ed6db8a43855",
+  "",
+  "두는 중인 판 1",
+  "두는 중인 판 2",
+  "두는 중인 판 5"
+ ],
+ "fmt.roomRound": [
+  "15fb16ec6fed3ced",
+  "undefined / undefined 바퀴",
+  "0 / undefined 바퀴",
+  "1 / undefined 바퀴",
+  "2 / undefined 바퀴"
+ ],
+ "fmt.roomTheirTurn": [
+  "db86b004fe8746c5",
+  "undefined의 차례",
+  "0의 차례",
+  "1의 차례",
+  "2의 차례"
+ ],
+ "fmt.roomWaiting": [
+  "13193181f6459d09",
+  "사람을 기다리는 중… (undefined/undefined)",
+  "사람을 기다리는 중… (0/undefined)",
+  "사람을 기다리는 중… (1/undefined)",
+  "사람을 기다리는 중… (2/undefined)"
+ ],
+ "fmt.roomWhy": "",
  "fmt.rowCount": [
   "cec5533bc8f79032",
   "undefined/undefined",
@@ -2183,6 +2226,54 @@
   "등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 1 (처치 경험치 2배)",
   "등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 2 (처치 경험치 2배)"
  ],
+ "msg.roomAgainWait": "다른 사람이 다시 하기를 누르기를 기다립니다.",
+ "msg.roomBack": "두던 판으로 돌아왔습니다.",
+ "msg.roomBusy": "이미 판에 앉아 있습니다.",
+ "msg.roomFoeBack": [
+  "a9c443c757bde543",
+  "undefined 님이 돌아왔습니다.",
+  "0 님이 돌아왔습니다.",
+  "1 님이 돌아왔습니다.",
+  "2 님이 돌아왔습니다."
+ ],
+ "msg.roomFoeGone": [
+  "9556c2c373b29896",
+  "undefined 님이 판을 떠났습니다.",
+  "0 님이 판을 떠났습니다.",
+  "1 님이 판을 떠났습니다.",
+  "2 님이 판을 떠났습니다."
+ ],
+ "msg.roomFoeLeft": [
+  "1d67501fc24ae1bf",
+  "undefined 님의 연결이 끊겼습니다. undefined초 동안 기다립니다.",
+  "0 님의 연결이 끊겼습니다. 0초 동안 기다립니다.",
+  "1 님의 연결이 끊겼습니다. 1초 동안 기다립니다.",
+  "2 님의 연결이 끊겼습니다. 3초 동안 기다립니다."
+ ],
+ "msg.roomFull": "지금은 판을 더 열 수 없습니다. 잠시 뒤에 다시 해 보세요.",
+ "msg.roomGone": "그 판에는 들어갈 수 없습니다.",
+ "msg.roomNotTurn": "내 차례가 아닙니다.",
+ "msg.roomResult": [
+  "80b8f6cc7855be39",
+  "비겼습니다.",
+  "이겼습니다!",
+  "졌습니다."
+ ],
+ "msg.roomStart": [
+  "18d7b685699ae328",
+  "판이 시작됐습니다. 상대: 컴퓨터. 상대가 먼저 둡니다.",
+  "판이 시작됐습니다. 상대: 1. 먼저 둡니다.",
+  "판이 시작됐습니다. 상대: 3. 먼저 둡니다.",
+  "판이 시작됐습니다. 상대: 1234567. 먼저 둡니다."
+ ],
+ "msg.roomTimeout": [
+  "51a10a618ce52880",
+  "시간이 다 되어 컴퓨터의 차례가 넘어갔습니다.",
+  "시간이 다 되어 1의 차례가 넘어갔습니다.",
+  "시간이 다 되어 2의 차례가 넘어갔습니다.",
+  "시간이 다 되어 1234567의 차례가 넘어갔습니다."
+ ],
+ "msg.roomWait": "판을 열었습니다. 다른 사람을 기다립니다.",
  "msg.salvageCant": "분해할 수 없는 장비가 섞여 있습니다. 낀 장비, 보급형, 잠근 장비는 분해할 수 없습니다.",
  "msg.salvageFull": [
   "3b38ecd066c0fb48",
@@ -2600,6 +2691,31 @@
  "ui.report": "신고",
  "ui.reportConfirm": "한 번 더 누르면 신고",
  "ui.residents": "주민",
+ "ui.roomAgain": "다시 하기",
+ "ui.roomAgainWaitNote": "다른 사람이 다시 하기를 누르면 시작합니다.",
+ "ui.roomAway": "끊김",
+ "ui.roomCancel": "그만두기",
+ "ui.roomCpu": "컴퓨터",
+ "ui.roomCpuTurn": "컴퓨터가 두는 중",
+ "ui.roomDraw": "비겼습니다",
+ "ui.roomEmpty": "빈 자리",
+ "ui.roomFoeGoneNote": "함께 두던 사람이 판을 떠났습니다.",
+ "ui.roomHost": "판 만들기",
+ "ui.roomJoin": "들어가기",
+ "ui.roomLeft": "떠남",
+ "ui.roomLobby": "대기실",
+ "ui.roomLobbyInfo": "다른 사람과 한 판을 둡니다. 혼자면 컴퓨터와 둘 수 있습니다.",
+ "ui.roomLose": "졌습니다",
+ "ui.roomMyTurn": "내 차례",
+ "ui.roomNone": "기다리는 판이 없습니다. 판을 만들어 기다리세요.",
+ "ui.roomNoneCpu": "기다리는 판이 없습니다. 판을 만들거나 컴퓨터와 두세요.",
+ "ui.roomOpen": "사람을 기다리는 판",
+ "ui.roomPass": "차례 넘기기",
+ "ui.roomQuick": "빠른 대국",
+ "ui.roomResign": "기권",
+ "ui.roomToLobby": "대기실로",
+ "ui.roomWin": "이겼습니다!",
+ "ui.roomWithCpu": "컴퓨터와 두기",
  "ui.rowBack": "뒷줄",
  "ui.rowBackInfo": "뒷줄은 주인 뒤에서 안전하게 싸웁니다.",
  "ui.rowFront": "앞줄",

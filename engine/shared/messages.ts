@@ -171,4 +171,18 @@ export type MsgKey =
   | 'bannerClosed' // [배너 id] 지금 열려 있지 않은 배너다 (기간이 아니다)
   | 'heroPicked' // [영웅 id, 이미 가졌으면 1, 받은 조각] 선택권으로 영웅을 골랐다
   // ---- 단계 밖 (roster.ts의 재료 교환) ----
-  | 'heroTraded'; // [영웅 id, 받은 조각, 쓴 아이템 id, 남은 아이템 수] 재료로 영웅의 조각을 얻었다 (HERO_RULES.trade)
+  | 'heroTraded' // [영웅 id, 받은 조각, 쓴 아이템 id, 남은 아이템 수] 재료로 영웅의 조각을 얻었다 (HERO_RULES.trade)
+  // ---- 판 (rooms 모듈: engine/server/game/systems/rooms.ts) ----
+  | 'roomWait' // [] 판을 열고 다른 사람을 기다린다
+  | 'roomStart' // [먼저 두면 1, 상대의 이름(컴퓨터는 빈 문자열)] 판이 시작됐다
+  | 'roomFull' // [] 더 열 수 있는 판이 없다
+  | 'roomBusy' // [] 이미 판에 앉아 있다
+  | 'roomGone' // [] 들어갈 수 없는 판이다 (찼거나 없어졌다, 또는 컴퓨터와 둘 수 없는 판)
+  | 'roomNotTurn' // [] 내 차례가 아니다
+  | 'roomTimeout' // [이름(컴퓨터는 빈 문자열)] 시간이 다 되어 그 사람의 차례를 게임이 정한 대로 처리했다 (기본: 넘김)
+  | 'roomFoeLeft' // [이름, 기다리는 초] 함께 앉은 사람의 연결이 끊겼다
+  | 'roomFoeBack' // [이름] 끊겼던 사람이 돌아왔다
+  | 'roomBack' // [] 끊겼던 내가 두던 판으로 돌아왔다
+  | 'roomResult' // [0 이김 1 짐 2 비김, 까닭] 판이 끝났다
+  | 'roomAgainWait' // [] 다시 하기: 다른 사람을 기다린다
+  | 'roomFoeGone'; // [이름] 함께 앉은 사람이 판을 떠나 다시 할 수 없다

@@ -37,7 +37,8 @@ export class Channels {
 
     g.commands.set('channel', (p, m) => { if (typeof m.n === 'number') this.move(p, m.n); });
     // 던전의 하던 회차로 돌아간 사람(dungeon.ts의 rejoin)은 그 회차의 층에 둔다: 채널은 나올 때 돌아갈 층으로 이미 정해 두었다
-    g.on('playerJoined', (p) => { if (!g.has('dungeon') || !g.dungeon.runOf(p)) this.seat(p); });
+    // 판(rooms 모듈)에 다시 앉은 사람도 그 판의 층에 둔다 (판을 떠나면 앉기 전의 층으로 돌아간다)
+    g.on('playerJoined', (p) => { if ((!g.has('dungeon') || !g.dungeon.runOf(p)) && (!g.has('rooms') || !g.rooms.holds(p))) this.seat(p); });
     g.on('playerLeft', () => { this.hereAt = -1; });
     g.on('playerDropped', (p) => { if (this.fighting(p)) this.fled.set(Channels.key(p), g.clock); });
     g.on('monsterKilled', (_m, hitters) => { for (const p of hitters) this.killed.set(Channels.key(p), g.clock); });
