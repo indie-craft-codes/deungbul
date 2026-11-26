@@ -3,8 +3,8 @@
 // 이 게임의 문장(등탑, 퀘스트 등)과 내용의 이름(몬스터, 아이템, 직업 …)은 여기 없다: 게임의 언어 파일(games/deungbul/client/i18n/)에 있고 mergeLocale로 합친다.
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
-import type { BuildStat, ClassId, DailyId, GearSlot, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, HERO_TABLE, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
+import type { BuildStat, ClassId, DailyId, GearSlot, HeroBonus, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
+import { BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, HERO_TABLE, heroGearDef, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
@@ -33,6 +33,11 @@ export function ro(word: string): string {
   return word + (jong === 0 || jong === 8 ? '로' : '으로');
 }
 
+/** 영웅의 성장의 덤 한 칸의 문장 (engine/shared/defs/herogrow.ts의 HeroBonus) */
+const pct100 = (v: number) => Math.round(v * 100);
+const bonusKo: Record<keyof HeroBonus, (v: number) => string> = {
+  atk: (v) => `공격 +${v}`, hp: (v) => `체력 +${v}`, atkPct: (v) => `공격 +${pct100(v)}%`, hpPct: (v) => `체력 +${pct100(v)}%`, dmg: (v) => `주는 피해 +${pct100(v)}%`, guard: (v) => `받는 피해 −${pct100(v)}%`,
+};
 /** 장비 옵션이 드는 효과마다의 문장 (옵션과 능력치의 id는 게임이 짓고, 문장은 그것이 드는 효과로 정해진다) */
 /** 능력치가 주는 것의 문장 (체력은 '최대 체력'으로) */
 const buildMod: Record<StatMod, (v: number) => string> = {
@@ -57,6 +62,8 @@ export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 export const teamName = (i: MsgArg): string => { const d = TEAMS[Number(i)]; return d ? uiText.get(d.name) : ''; };
 /** 영웅의 이름 (roster 모듈): 영웅 id → 게임이 언어 파일의 ui에 적은 이름 (HeroDef.name 키). 없는 영웅은 id 그대로 */
 export const heroName = (id: MsgArg): string => { const d = HERO_TABLE[String(id)]; return d ? uiText.get(d.name) : String(id); };
+/** 영웅 장비의 이름 (herogear 모듈: HeroGearDef.name 키). 없는 장비는 id 그대로 */
+export const heroGearName = (id: MsgArg): string => { const d = heroGearDef(String(id)); return d ? uiText.get(d.name) : String(id); };
 /** 등급의 이름 (HeroRarityDef.name 키: 틀의 기본 등급은 heroRarity0~2) */
 export const rarityName = (r: MsgArg): string => uiText.get(rarityDef(Number(r)).name);
 /** 장의 이름 (ChapterDef.name 키). 없는 장은 빈 문자열 */
@@ -153,6 +160,41 @@ export const koBase = (n: ContentNames) => {
       squadAdd: '넣기',
       squadRemove: '빼기',
       squadNone: '편성할 영웅이 없습니다. 뽑기에서 영웅을 얻으세요.',
+      // 영웅의 성장 (기술 레벨·각성·영웅 장비·시너지·진형: hud/herogrow.ts). 장비·세트·칸·시너지·패시브의 이름은 게임이 그 name 키로 적는다
+      heroDetail: '자세히',
+      heroBack: '← 영웅 목록',
+      htLevel: '레벨',
+      htStar: '별',
+      htAwaken: '각성',
+      htSkill: '기술',
+      htGear: '장비',
+      heroAwakenBtn: '각성하기',
+      heroAwakenDone: '모든 각성을 마쳤습니다.',
+      heroSkillBtn: '기술 올리기',
+      heroSkillDone: '기술 레벨이 최대입니다.',
+      heroNoSkill: '이 영웅의 역할에는 기술이 없습니다.',
+      heroPassives: '열린 패시브',
+      heroNext: '다음 단계',
+      tabHGear: '영웅 장비',
+      hgEquip: '끼기',
+      hgUnequip: '빼기',
+      hgEnhance: '강화',
+      hgSalvage: '분해',
+      hgEmptySlot: '비어 있음',
+      hgNone: '영웅 장비가 없습니다. 단계와 던전을 깨면 얻습니다.',
+      hgPick: '이 칸에 낄 수 있는 장비',
+      hgPickNone: '이 칸에 낄 장비가 없습니다.',
+      hgSets: '세트',
+      hgClose: '닫기',
+      hgMaxed: '최대 강화',
+      rowFront: '앞줄',
+      rowBack: '뒷줄',
+      rowToFront: '앞으로',
+      rowToBack: '뒤로',
+      rowFrontInfo: '앞줄은 주인 앞에 서서 몬스터의 공격을 먼저 받습니다.',
+      rowBackInfo: '뒷줄은 주인 뒤에서 안전하게 싸웁니다.',
+      synHead: '시너지',
+      synNone: '같은 진영의 영웅을 함께 넣으면 시너지가 켜집니다.',
       stageAuto: '자동 진행',
       stageStart: '도전',
       stageLeave: '나가기',
@@ -478,6 +520,26 @@ export const koBase = (n: ContentNames) => {
       gachaNew: () => '새 영웅!',
       squadCount: (n: number, max: number) => `${n} / ${max}`,
       squadPower: (n: number) => `편성 전투력 ${num(n)}`,
+      heroPower: (n: number) => `전투력 ${num(n)}`,
+      heroAwakenStep: (n: number, max: number) => `각성 ${n}/${max}`,
+      heroAwakenNeed: (stars: number) => `별 ${stars}개가 되어야 각성할 수 있습니다.`,
+      heroAwakenMul: (mul: number) => `공격·체력 ×${Math.round(mul * 100) / 100}`,
+      heroSkillLv: (lv: number, max: number) => `기술 Lv ${lv}/${max}`,
+      heroSkillEffect: (pct: number) => `기술의 피해·회복 +${pct}%`,
+      heroCostLine: (parts: string[]) => `값: ${parts.join(' · ')}`,
+      heroHave: (name: string, have: number, need: number) => `${name} ${num(have)}/${num(need)}`,
+      heroBonus: (k: keyof HeroBonus, v: number) => bonusKo[k](v),
+      hgName: (name: string, lv: number) => (lv > 0 ? `${name} +${lv}` : name),
+      hgStats: (atk: number, hp: number) => [atk ? `공격 +${num(atk)}` : '', hp ? `체력 +${num(hp)}` : ''].filter(Boolean).join(' · '),
+      hgCount: (n: number, cap: number) => `${num(n)} / ${num(cap)}`,
+      hgOn: (hero: string) => `${hero} 착용`,
+      hgChance: (p: number) => `성공 ${Math.round(p * 100)}%`,
+      hgNext: (stats: string) => `강화하면 ${stats}`,
+      hgSetTier: (n: number, on: boolean) => `${n}세트${on ? ' ✓' : ''}`,
+      hgSetCount: (name: string, n: number) => `${name} (${n})`,
+      synTier: (n: number) => `${n}명`,
+      synCount: (name: string, n: number) => `${name} ${n}`,
+      rowCount: (n: number, max: number) => `${n}/${max}`,
       stageTitle: (id: string, chapter: string) => (chapter ? `${id} ${chapter}` : id),
       stageWave: (wave: number, waves: number) => `물결 ${wave}/${waves}`,
       stageFoes: (n: number, total: number) => `남은 적 ${n}/${total}`,
@@ -630,6 +692,17 @@ export const koBase = (n: ContentNames) => {
       heroMaxLv: (a) => `${heroName(a[0])}: 별을 올려야 레벨이 더 오릅니다.`,
       heroShards: (a) => `${heroName(a[0])}: 조각이 ${a[1]}개 모자랍니다.`,
       heroNew: (a) => `새 영웅 ${heroName(a[0])}!`,
+      heroSkillUp: (a) => `${heroName(a[0])} 기술 레벨 ${a[1]}!`,
+      heroSkillMax: (a) => `${heroName(a[0])}: 별이나 각성을 올려야 기술 레벨이 더 오릅니다.`,
+      heroAwaken: (a) => `${heroName(a[0])} 각성 ${a[1]}단계!`,
+      heroAwakenMax: (a) => `${heroName(a[0])}: 더 각성할 수 없습니다.`,
+      heroAwakenStars: (a) => `${heroName(a[0])}: 별 ${a[1]}개가 되어야 각성합니다.`,
+      itemShort: (a) => `${josa(itemName(a[0]), '이', '가')} ${num(a[1])}개 모자랍니다.`,
+      hgDrop: (a) => `영웅 장비 ${josa(heroGearName(a[0]), '을', '를')} 얻었습니다.`,
+      hgFull: (a) => `영웅 장비가 가득 차 ${josa(heroGearName(a[0]), '을', '를')} 줍지 못했습니다. 분해해서 자리를 비우세요.`,
+      hgEnhance: (a) => (Number(a[2]) ? `${heroGearName(a[0])} +${a[1]} 강화 성공!` : `${heroGearName(a[0])} 강화 실패 (+${a[1]} 그대로)`),
+      hgEnhanceMax: (a) => `${heroGearName(a[0])}: 더 강화할 수 없습니다.`,
+      hgSalvaged: (a) => `영웅 장비 ${a[0]}점을 분해했습니다.`,
       stageClear: (a) => `${a[0]} 깸!${Number(a[1]) ? ' 처음 깬 보상을 받았습니다.' : ''}`,
       stageFail: (a) => `${a[0]}을(를) 깨지 못했습니다 (${Number(a[1]) ? '시간 초과' : '쓰러짐'}). 깬 단계로 돌아가고 자동 진행을 끕니다.`,
       stageLocked: (a) => `${a[0]}은(는) 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요.`,

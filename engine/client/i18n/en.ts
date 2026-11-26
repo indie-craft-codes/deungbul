@@ -2,10 +2,10 @@
 // 이 게임의 문장과 내용의 이름은 games/deungbul/client/i18n/en.ts에 있다. 이 파일은 게임의 파일을 import하지 않고 게임의 낱말을 적지 않는다.
 import { AWAY } from '../../shared/auto';
 import { BUILD, ENHANCE, GUILD, HOME_KEY, MARKET, PARTY, pctText } from '../../shared/defs';
-import type { BuildStat, ClassId, GearSlot, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
+import type { BuildStat, ClassId, GearSlot, HeroBonus, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
-import { heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
+import { heroGearName, heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
 import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
@@ -28,6 +28,11 @@ const modText: Record<StatMod, (v: number) => string> = {
   hp: (v) => `Health +${v}`,
 };
 export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
+/** One hero-growth bonus field (ko.ts의 bonusKo와 같다) */
+const pct100 = (v: number) => Math.round(v * 100);
+const bonusEn: Record<keyof HeroBonus, (v: number) => string> = {
+  atk: (v) => `Attack +${v}`, hp: (v) => `Health +${v}`, atkPct: (v) => `Attack +${pct100(v)}%`, hpPct: (v) => `Health +${pct100(v)}%`, dmg: (v) => `Damage +${pct100(v)}%`, guard: (v) => `Damage taken −${pct100(v)}%`,
+};
 /** Thousands separators (1,000,000). Every gold amount and price goes through this */
 export const num = (n: MsgArg) => Number(n).toLocaleString('en-US');
 
@@ -114,6 +119,40 @@ export const enBase = (n: ContentNames): EngineLocale => {
       squadAdd: 'Add',
       squadRemove: 'Remove',
       squadNone: 'No heroes to place. Summon some first.',
+      heroDetail: 'Details',
+      heroBack: '← Heroes',
+      htLevel: 'Level',
+      htStar: 'Stars',
+      htAwaken: 'Awaken',
+      htSkill: 'Skill',
+      htGear: 'Gear',
+      heroAwakenBtn: 'Awaken',
+      heroAwakenDone: 'Fully awakened.',
+      heroSkillBtn: 'Level up skill',
+      heroSkillDone: 'Skill level is at its cap.',
+      heroNoSkill: "This hero's role has no skill.",
+      heroPassives: 'Unlocked passives',
+      heroNext: 'Next step',
+      tabHGear: 'Hero gear',
+      hgEquip: 'Equip',
+      hgUnequip: 'Remove',
+      hgEnhance: 'Enhance',
+      hgSalvage: 'Salvage',
+      hgEmptySlot: 'Empty',
+      hgNone: 'No hero gear yet. Clear stages and dungeons to find some.',
+      hgPick: 'Gear for this slot',
+      hgPickNone: 'No gear for this slot.',
+      hgSets: 'Sets',
+      hgClose: 'Close',
+      hgMaxed: 'Max enhance',
+      rowFront: 'Front row',
+      rowBack: 'Back row',
+      rowToFront: 'To front',
+      rowToBack: 'To back',
+      rowFrontInfo: 'The front row stands ahead of you and takes the hits first.',
+      rowBackInfo: 'The back row fights safely behind you.',
+      synHead: 'Synergy',
+      synNone: 'Field heroes of the same faction together to turn on a synergy.',
       stageAuto: 'Auto advance',
       stageStart: 'Challenge',
       stageLeave: 'Leave',
@@ -429,6 +468,26 @@ export const enBase = (n: ContentNames): EngineLocale => {
       gachaNew: () => 'New hero!',
       squadCount: (n, max) => `${n} / ${max}`,
       squadPower: (n) => `Squad power ${num(n)}`,
+      heroPower: (n) => `Power ${num(n)}`,
+      heroAwakenStep: (n, max) => `Awakening ${n}/${max}`,
+      heroAwakenNeed: (stars) => `Needs ${stars} stars to awaken.`,
+      heroAwakenMul: (mul) => `Attack and health ×${Math.round(mul * 100) / 100}`,
+      heroSkillLv: (lv, max) => `Skill Lv ${lv}/${max}`,
+      heroSkillEffect: (pct) => `Skill damage and healing +${pct}%`,
+      heroCostLine: (parts) => `Cost: ${parts.join(' · ')}`,
+      heroHave: (name, have, need) => `${name} ${num(have)}/${num(need)}`,
+      heroBonus: (k, v) => bonusEn[k](v),
+      hgName: (name, lv) => (lv > 0 ? `${name} +${lv}` : name),
+      hgStats: (atk, hp) => [atk ? `Attack +${num(atk)}` : '', hp ? `Health +${num(hp)}` : ''].filter(Boolean).join(' · '),
+      hgCount: (n, cap) => `${num(n)} / ${num(cap)}`,
+      hgOn: (hero) => `On ${hero}`,
+      hgChance: (p) => `${Math.round(p * 100)}% success`,
+      hgNext: (stats) => `After enhancing: ${stats}`,
+      hgSetTier: (n, on) => `${n}-piece${on ? ' ✓' : ''}`,
+      hgSetCount: (name, n) => `${name} (${n})`,
+      synTier: (n) => `${n} heroes`,
+      synCount: (name, n) => `${name} ${n}`,
+      rowCount: (n, max) => `${n}/${max}`,
       stageTitle: (id, chapter) => (chapter ? `${id} ${chapter}` : id),
       stageWave: (wave, waves) => `Wave ${wave}/${waves}`,
       stageFoes: (n, total) => `${n}/${total} foes left`,
@@ -579,6 +638,17 @@ export const enBase = (n: ContentNames): EngineLocale => {
       heroMaxLv: (a) => `${heroName(a[0])}: raise the stars to level further.`,
       heroShards: (a) => `${heroName(a[0])}: ${a[1]} more shard${Number(a[1]) === 1 ? '' : 's'} needed.`,
       heroNew: (a) => `New hero: ${heroName(a[0])}!`,
+      heroSkillUp: (a) => `${heroName(a[0])} skill level ${a[1]}!`,
+      heroSkillMax: (a) => `${heroName(a[0])}: raise stars or awakening to level the skill further.`,
+      heroAwaken: (a) => `${heroName(a[0])} awakened to step ${a[1]}!`,
+      heroAwakenMax: (a) => `${heroName(a[0])} cannot awaken any further.`,
+      heroAwakenStars: (a) => `${heroName(a[0])} needs ${a[1]} stars to awaken.`,
+      itemShort: (a) => `Not enough ${itemName(a[0])} (${num(a[1])} more needed).`,
+      hgDrop: (a) => `Hero gear found: ${heroGearName(a[0])}.`,
+      hgFull: (a) => `Hero gear is full, so ${heroGearName(a[0])} was left behind. Salvage some to make room.`,
+      hgEnhance: (a) => (Number(a[2]) ? `${heroGearName(a[0])} enhanced to +${a[1]}!` : `${heroGearName(a[0])} enhance failed (stays at +${a[1]}).`),
+      hgEnhanceMax: (a) => `${heroGearName(a[0])} cannot be enhanced further.`,
+      hgSalvaged: (a) => `Salvaged ${count(a[0], 'piece')} of hero gear.`,
       stageClear: (a) => `Stage ${a[0]} cleared!${Number(a[1]) ? ' First-clear reward received.' : ''}`,
       stageFail: (a) => `Stage ${a[0]} failed (${Number(a[1]) ? 'time ran out' : 'you fell'}). Back to your cleared stage; auto advance is off.`,
       stageLocked: (a) => `Stage ${a[0]} is locked. Clear the stage before it first.`,

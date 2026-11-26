@@ -145,6 +145,18 @@ export type MsgKey =
   | 'heroMaxLv' // [영웅 id] 이 별에서는 더 오르지 않는다 (별을 올려야 한다)
   | 'heroShards' // [영웅 id, 모자란 조각] 별을 올릴 조각이 모자란다
   | 'heroNew' // [영웅 id] 새 영웅을 얻었다
+  // 영웅의 성장 (HERO_RULES.skill·awaken, herogear 모듈: engine/shared/defs/herogrow.ts)
+  | 'heroSkillUp' // [영웅 id, 기술 레벨] 기술 레벨이 올랐다
+  | 'heroSkillMax' // [영웅 id] 이 별·각성에서는 기술 레벨이 더 오르지 않는다
+  | 'heroAwaken' // [영웅 id, 각성 단계] 각성했다
+  | 'heroAwakenMax' // [영웅 id] 더 각성할 수 없다
+  | 'heroAwakenStars' // [영웅 id, 필요한 별] 별이 최대여야 각성한다
+  | 'itemShort' // [아이템 id, 모자란 수] 값을 치를 재료가 모자란다
+  | 'hgDrop' // [영웅 장비 id] 영웅 장비를 얻었다
+  | 'hgFull' // [영웅 장비 id] 영웅 장비가 가득 차 줍지 못했다
+  | 'hgEnhance' // [영웅 장비 id, 강화, 성공 1 실패 0] 영웅 장비를 강화했다
+  | 'hgEnhanceMax' // [영웅 장비 id] 더 강화할 수 없다
+  | 'hgSalvaged' // [분해한 수] 영웅 장비를 분해했다
   | 'stageClear' // [단계 id, 처음 깼으면 1] 단계를 깼다
   | 'stageFail' // [단계 id, 까닭 0 쓰러짐 1 시간] 단계를 깨지 못했다 (깬 단계로 돌아간다)
   | 'stageLocked' // [단계 id] 아직 갈 수 없는 단계다 (앞 단계를 먼저 깬다)
