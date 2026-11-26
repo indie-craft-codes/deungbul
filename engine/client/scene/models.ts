@@ -3,7 +3,7 @@
 // 코드 모델을 먼저 세우고, 파일이 다 읽히면 그 모델의 안을 파일의 것으로 바꿔 끼운다 (swapIn). 읽지 못하면 코드 모델이 그대로 남는다. 읽고 복제하는 일은 scene/gltf.ts.
 // 약속: 발이 원점, +Z를 바라본다. 사람형 키는 약 2.1.
 import * as THREE from 'three';
-import { humanoidAsset, monsterAsset, weaponAsset, type AnimState, type ModelAsset } from '../assets';
+import { armorHit, humanoidAsset, monsterAsset, nameList, pickClip, weaponAsset, type AnimState, type HumanoidArmor, type ModelAsset } from '../assets';
 import type { Animator, Instance, Source } from './gltf';
 
 export interface Rig { ll: THREE.Group; rl: THREE.Group; la: THREE.Group; ra: THREE.Group }
@@ -15,7 +15,13 @@ export interface Rig { ll: THREE.Group; rl: THREE.Group; la: THREE.Group; ra: TH
 export interface Model {
   root: THREE.Group; rig?: Rig; blob?: THREE.Mesh; legs?: THREE.Group[]; float?: number; blade?: THREE.Mesh; armor?: THREE.Group; flashing?: boolean; head?: THREE.Mesh;
   asset?: boolean; anim?: Animator; hand?: string; weapon?: string; gear?: THREE.Object3D;
+  /** 입은 갑옷 id (setArmor가 적는다: 모델 파일로 바꿔 끼운 뒤 다시 입힌다) */
+  armorId?: string;
+  /** 모델 파일의 사람에서 갑옷을 보일 곳 (HumanoidAsset.armor로 찾은 것) */
+  fileArmor?: FileArmor;
 }
+/** 파일의 사람에서 갑옷을 칠할 메시들(본래 재질과 칠할 칸)과 덧대기를 붙일 노드(쉬는 자세의 자리를 되돌리는 행렬) */
+interface FileArmor { meshes: { mesh: THREE.Mesh; base: THREE.Material | THREE.Material[]; slots: boolean[] }[]; node?: THREE.Object3D; rest?: THREE.Matrix4 }
 
 const mats = new Map<number, THREE.MeshStandardMaterial>();
 const WHITE = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -144,8 +150,8 @@ export function makeHumanoid(cloth: number, armed: boolean | string = true, skin
   const asset = humanoidAsset(cls);
   if (!asset) return m;
   const colors: Record<string, number> = {};
-  if (asset.paint?.cloth) colors[asset.paint.cloth] = cloth;
-  if (asset.paint?.skin) colors[asset.paint.skin] = skin;
+  for (const n of nameList(asset.paint?.cloth)) colors[n] = cloth;
+  for (const n of nameList(asset.paint?.skin)) colors[n] = skin;
   return swapIn(m, asset, colors, (inst) => {
     // 손 모양을 팔 뼈에 붙인다: 뼈 아래에 틀의 팔과 같은 묶음을 두고 그것을 rig로 넘긴다 (다리는 쓰지 않으므로 빈 묶음)
     const anchor = new THREE.Group();
@@ -159,7 +165,57 @@ export function makeHumanoid(cloth: number, armed: boolean | string = true, skin
     }
     humanoidDeco?.(anchor);
     setBlade(m, m.weapon ?? '');
+    if (asset.armor) m.fileArmor = findArmor(m.root, inst.model, asset.armor, asset.url);
+    setArmor(m, m.armorId ?? '');
   });
+}
+
+/** 파일의 사람에서 갑옷을 보일 곳을 찾는다 (쉬는 자세일 때: 바꿔 끼운 바로 뒤) */
+function findArmor(root: THREE.Group, model: THREE.Object3D, spec: HumanoidArmor, url: string): FileArmor {
+  const out: FileArmor = { meshes: [] };
+  const tint = spec.tint ?? [];
+  if (tint.length) {
+    model.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const nodes: string[] = [];
+      for (let p: THREE.Object3D | null = mesh; p && p !== model.parent; p = p.parent) if (p.name) nodes.push(p.name);
+      const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const slots = list.map((mt) => armorHit(tint, nodes, mt.name) !== null);
+      if (slots.some(Boolean)) out.meshes.push({ mesh, base: mesh.material, slots });
+    });
+    if (!out.meshes.length) console.warn(`[에셋] 사람 모델 ${url}에 갑옷을 칠할 메시·재질(${tint.join(', ')})이 없습니다`);
+  }
+  if (spec.attach) {
+    const names: string[] = [];
+    model.traverse((o) => { if (o.name) names.push(o.name); });
+    const name = pickClip(spec.attach, names);
+    const node = name ? model.getObjectByName(name) : undefined;
+    if (!node) console.warn(`[에셋] 사람 모델 ${url}에 갑옷을 붙일 뼈·노드(${spec.attach})가 없습니다`);
+    else {
+      // 노드의 쉬는 자세에서 모델 원점(root)까지 되돌리는 행렬: 덧대기를 코드 사람과 같은 자리에 두고 노드를 따라 움직이게
+      root.updateMatrixWorld(true);
+      const rel = new THREE.Matrix4().copy(root.matrixWorld).invert().multiply(node.matrixWorld);
+      out.node = node;
+      out.rest = rel.invert();
+    }
+  }
+  return out;
+}
+
+/** 재질 하나를 갑옷 색으로 (본래 재질과 색마다 하나를 나눠 쓴다) */
+const armorMats = new Map<string, THREE.Material>();
+function armorMat(base: THREE.Material, color: number): THREE.Material {
+  if (!(base as THREE.MeshStandardMaterial).color) return base;
+  const key = `${base.uuid}:${color}`;
+  let t = armorMats.get(key);
+  if (!t) { t = base.clone(); (t as THREE.MeshStandardMaterial).color.setHex(color); armorMats.set(key, t); }
+  return t;
+}
+/** 메시의 재질을 바꾼다: 번쩍이는 중(setFlash)이면 되돌릴 재질을 바꾼다 */
+function putMat(mesh: THREE.Mesh, mt: THREE.Material | THREE.Material[]): void {
+  if (mesh.userData.mat) mesh.userData.mat = mt;
+  else mesh.material = mt;
 }
 
 /** 뼈대의 맨 위 뼈 (쓰러지는 클립이 돌리는 것). 뼈가 없으면 모델 자신 */
@@ -183,7 +239,7 @@ function swapIn(m: Model, asset: ModelAsset, colors: Record<string, number>, dre
     setFlash(m, false);
     m.root.clear();
     m.root.add(inst.object);
-    m.rig = undefined; m.legs = undefined; m.blob = undefined; m.float = undefined; m.head = undefined; m.armor = undefined; m.blade = undefined; m.gear = undefined;
+    m.rig = undefined; m.legs = undefined; m.blob = undefined; m.float = undefined; m.head = undefined; m.armor = undefined; m.blade = undefined; m.gear = undefined; m.fileArmor = undefined;
     m.asset = true;
     m.anim = inst.anim;
     dress?.(inst);
@@ -253,14 +309,38 @@ export interface ArmorLook { color: number; pads: boolean }
 // 갑옷별 모습은 게임이 등록한다. 등록되지 않은 갑옷은 덧대지 않는다
 const ARMORS = new Map<string, ArmorLook>();
 export function registerArmor(id: string, look: ArmorLook): void { ARMORS.set(id, look); }
-/** 입은 갑옷에 맞춰 몸에 덧댄다. 빈 문자열이면 벗긴다. */
-export function setArmor(m: Model, armor: string): void {
-  if (m.armor) { m.root.remove(m.armor); m.armor = undefined; }
-  const a = ARMORS.get(armor);
-  if (!a || !m.rig) return;
+/** 틀의 갑옷 덧대기: 가슴받이와 허리띠, pads면 어깨받이 (코드 사람의 자리) */
+function armorGroup(a: ArmorLook): THREE.Group {
   const g = new THREE.Group(), am = mat(a.color);
   g.add(part(G.plate, am, 0, 1.2, 0), part(G.belt, mat(0x3b2a1a), 0, 0.78, 0));
   if (a.pads) g.add(part(G.pad, am, -0.56, 1.56, 0), part(G.pad, am, 0.56, 1.56, 0));
+  return g;
+}
+/**
+ * 입은 갑옷에 맞춰 몸에 덧댄다. 빈 문자열이면 벗긴다.
+ * 코드 사람(rig가 있는 것)은 틀의 자리에 덧댄다. 모델 파일의 사람은 그 모델의 armor(HumanoidAsset.armor)대로 칠하고 덧댄다: 없으면 아무것도 하지 않는다
+ */
+export function setArmor(m: Model, armor: string): void {
+  m.armorId = armor;
+  if (m.armor) { m.armor.removeFromParent(); m.armor = undefined; }
+  const a = ARMORS.get(armor);
+  const fa = m.fileArmor;
+  if (fa) {
+    for (const t of fa.meshes) {
+      if (!a) { putMat(t.mesh, t.base); continue; }
+      putMat(t.mesh, Array.isArray(t.base) ? t.base.map((b, i) => (t.slots[i] ? armorMat(b, a.color) : b)) : armorMat(t.base, a.color));
+    }
+    if (a && fa.node && fa.rest) {
+      const holder = new THREE.Group();
+      fa.rest.decompose(holder.position, holder.quaternion, holder.scale);
+      holder.add(armorGroup(a));
+      fa.node.add(holder);
+      m.armor = holder;
+    }
+    return;
+  }
+  if (!a || !m.rig) return;
+  const g = armorGroup(a);
   m.root.add(g);
   m.armor = g;
 }

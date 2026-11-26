@@ -25,7 +25,7 @@ const VARIANTS: Record<string, [RegExp, string][]> = {
   ],
   // 아이템이 처음 무기 하나뿐인 게임 (물약, 갑옷, 재료가 없다)
   weaponOnly: [
-    [/  axe2: [^\n]*\n  coat: [^\n]*\n  stew: [^\n]*\n[\s\S]*?  log: [^\n]*\n/, ''],
+    [/  axe2: [^\n]*\n  coat: [^\n]*\n  scale: [^\n]*\n  stew: [^\n]*\n[\s\S]*?  log: [^\n]*\n/, ''],
     NO_STOCK, NO_DROPS,
     [/export const GEAR = [^\n]*\n/, "export const GEAR = { ...GEAR_BASE, weaponFor: (): ItemId => 'axe1', armorFor: (): ItemId => 'axe1' };\n"],
   ],

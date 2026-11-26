@@ -4,6 +4,7 @@ import {
   clipTable, clipsFor, cuts, DEFAULT_CLIPS, DEFAULT_MIX, fitLift, fitScale, hasAudioFiles, hasMusic, humanoidAsset, mixerEvery, monsterAsset, musicFile, pickClip,
   preloadList, readMix, registerHumanoidAsset, registerMonsterAsset, registerMusic, registerSound, registerWeaponAsset, setClipNames, soundFile, soundSource, weaponAsset, writeMix, type LoadState,
 } from '../../client/assets';
+import type * as T3 from 'three';
 import { check } from '../harness';
 
 // ---------- 처음: 아무것도 등록하지 않은 게임 ----------
@@ -97,4 +98,79 @@ check(odd.sfx === 1 && odd.music === DEFAULT_MIX.music, '범위 밖의 값은 0~
   a.cue('die'); run(1.2);
   a.cue('attack'); a.walk(false); run(0.3);
   check(a.down && x() === 3, `쓰러지면 마지막 자세로 남고, 공격·걷기가 와도 끊기지 않는다 x=${x()}`);
+}
+
+// ---------- 파일의 사람에 갑옷 (HumanoidAsset.armor): 이름 맞추기, 칠하기와 덧대기, 벗기, 이름이 없을 때 ----------
+{
+  const { armorHit, nameList } = await import('../../client/assets');
+  check(armorHit(['torso'], ['body_2', 'body'], 'torso') === 'material' && armorHit(['Torso'], ['torso', 'Scene'], 'cloth') === 'node' && armorHit(['torso'], ['Armature|torso'], '') === 'node',
+    '갑옷을 칠할 곳: 재질 이름이나 위로 가는 노드 이름, 대소문자와 앞머리(Armature|)는 가리지 않는다');
+  check(armorHit(['torso'], ['body'], 'cloth') === null && armorHit([], ['torso'], 'torso') === null, '맞는 이름이 없으면 칠하지 않는다');
+  check(nameList(undefined).length === 0 && nameList('cloth').join() === 'cloth' && nameList(['cloth', 'torso']).join() === 'cloth,torso', 'paint의 이름은 하나나 목록');
+
+  const THREE = await import('three');
+  const { instantiate, instantiateWeapon } = await import('../../client/scene/gltf');
+  const { makeHumanoid, registerArmor, setArmor, setFileTools, setFlash } = await import('../../client/scene/models');
+  const { registerHumanoidAsset: addHuman } = await import('../../client/assets');
+  // 파일 흉내: 등뼈(spine, 높이 0.9) 아래 몸통(재질 torso)과 팔(재질 cloth)
+  const scene = new THREE.Group(), spine = new THREE.Object3D();
+  spine.name = 'spine'; spine.position.set(0, 0.9, 0);
+  const torsoMat = new THREE.MeshStandardMaterial({ color: 0x111111 }); torsoMat.name = 'torso';
+  const armMat = new THREE.MeshStandardMaterial({ color: 0x222222 }); armMat.name = 'cloth';
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.45), torsoMat), arm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.6, 0.2), armMat);
+  torso.position.y = 0.2; arm.position.set(0.5, 0, 0);
+  spine.add(torso, arm);
+  const feet = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.3), armMat); // 바닥을 0에 (경계 상자: 0~2.1)
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), armMat); top.position.y = 2.05;
+  feet.position.y = 0.05;
+  scene.add(spine, feet, top);
+  scene.updateMatrixWorld(true);
+  const src = { scene, clips: [], skinned: false, box: new THREE.Box3().setFromObject(scene) };
+  const srcs: Record<string, typeof src> = { './models/armored.glb': src, './models/plain.glb': src, './models/odd.glb': src };
+  setFileTools({ load: async (u) => srcs[u] ?? null, now: (u) => srcs[u], make: instantiate, weapon: instantiateWeapon });
+  addHuman({ url: './models/armored.glb', paint: { cloth: ['cloth', 'torso'] }, armor: { tint: ['torso'], attach: 'spine' } }, 'armored');
+  addHuman({ url: './models/plain.glb', paint: { cloth: 'cloth' } }, 'plain');
+  addHuman({ url: './models/odd.glb', armor: { tint: ['chest'], attach: 'ribs' } }, 'odd');
+  registerArmor('mail', { color: 0x8f969e, pads: true });
+  registerArmor('coat', { color: 0x8a6a48, pads: false });
+  const colorOf = (o: T3.Object3D | undefined) => ((o as T3.Mesh | undefined)?.material as T3.MeshStandardMaterial | undefined)?.color.getHex();
+  const meshBy = (root: T3.Object3D, name: string) => { let f: T3.Mesh | undefined; root.traverse((o) => { const mm = (o as T3.Mesh); if (!f && mm.isMesh && (mm.material as T3.Material).name === name && (mm.geometry as T3.BoxGeometry).parameters.width === (name === 'torso' ? 0.8 : 0.2)) f = mm; }); return f; };
+
+  const m = makeHumanoid(0x3f7fbf, 'sword', 0xf0c9a0, 'armored');
+  const mt = meshBy(m.root, 'torso'), ma = meshBy(m.root, 'cloth');
+  check(m.asset === true && colorOf(mt) === 0x3f7fbf && colorOf(ma) === 0x3f7fbf, '갑옷 없이: 몸통과 팔은 옷 색 (paint.cloth의 목록)');
+  setArmor(m, 'mail');
+  check(colorOf(mt) === 0x8f969e && colorOf(ma) === 0x3f7fbf, '갑옷을 입으면 몸통(재질 torso)만 갑옷 색');
+  const holder = m.armor!;
+  check(!!holder && holder.parent?.name === 'spine' && holder.children[0].children.length === 4, '덧대기(가슴받이·허리띠·어깨받이 둘)가 등뼈에 붙는다');
+  m.root.updateMatrixWorld(true);
+  const plate = holder.children[0].children[0], at = plate.getWorldPosition(new THREE.Vector3()).sub(m.root.getWorldPosition(new THREE.Vector3()));
+  check(Math.abs(at.x) < 1e-6 && Math.abs(at.y - 1.2) < 1e-6 && Math.abs(at.z) < 1e-6, `쉬는 자세에서 가슴받이는 코드 사람과 같은 자리 (높이 1.2: ${at.y.toFixed(3)})`);
+  const spineNow = m.root.getObjectByName('spine')!;
+  spineNow.rotation.x = 0.5; m.root.updateMatrixWorld(true);
+  const moved = plate.getWorldPosition(new THREE.Vector3()).sub(m.root.getWorldPosition(new THREE.Vector3()));
+  check(Math.abs(moved.z) > 0.05, `등뼈가 움직이면 덧대기도 따라 움직인다 (z ${moved.z.toFixed(3)})`);
+  spineNow.rotation.x = 0;
+  setArmor(m, 'coat');
+  check(colorOf(mt) === 0x8a6a48 && m.armor!.children[0].children.length === 2 && !holder.parent, '다른 갑옷으로 바꾸면 색과 덧대기가 바뀐다 (어깨받이 없음, 앞의 덧대기는 떨어진다)');
+  setFlash(m, true); setArmor(m, 'mail'); setFlash(m, false);
+  check(colorOf(mt) === 0x8f969e, '맞아서 번쩍이는 중에 갑옷이 바뀌어도 번쩍임이 끝나면 새 갑옷 색');
+  setArmor(m, '');
+  check(colorOf(mt) === 0x3f7fbf && !m.armor, '갑옷을 벗으면 본래 색(옷 색)으로 돌아가고 덧대기가 없다');
+
+  const p = makeHumanoid(0x3f7fbf, 'sword', 0xf0c9a0, 'plain');
+  setArmor(p, 'mail');
+  check(p.asset === true && !p.armor && colorOf(meshBy(p.root, 'torso')) === 0x111111, 'armor를 적지 않은 파일의 사람은 예전처럼 갑옷이 보이지 않는다');
+  const warn = console.warn; const warned: string[] = []; console.warn = (s: string) => { warned.push(s); };
+  const o = makeHumanoid(0x3f7fbf, 'sword', 0xf0c9a0, 'odd');
+  console.warn = warn;
+  setArmor(o, 'mail');
+  check(!o.armor && warned.length === 2, `이름(chest, ribs)이 모델에 없으면 아무것도 하지 않고 경고 둘 (${warned.length})`);
+  // 코드 사람 (모두의 파일 person.glb는 읽지 못해 코드 모델이 남는다): 예전과 같은 자리에 덧댄다
+  const c = makeHumanoid(0x3f7fbf, 'sword', 0xf0c9a0, 'nobody');
+  setArmor(c, 'mail');
+  const g = c.armor!;
+  check(!c.asset && !!c.rig && g.parent === c.root && g.children.length === 4 && g.children[0].position.y === 1.2 && g.children[1].position.y === 0.78, '코드 사람은 예전처럼 몸(root)에 가슴받이·허리띠·어깨받이를 덧댄다');
+  setArmor(c, '');
+  check(!c.armor && !c.root.children.includes(g), '코드 사람도 벗으면 덧대기가 빠진다');
 }

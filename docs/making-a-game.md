@@ -330,12 +330,13 @@ export const ITEMS = {
   axe1: { kind: 'weapon', price: 0, damage: 1, tier: 1 },
   axe2: { kind: 'weapon', price: 60, damage: 1.25, tier: 2 },
   coat: { kind: 'armor', price: 80, guard: 0.88, tier: 1 },
+  scale: { kind: 'armor', price: 180, guard: 0.8, tier: 2 },
   stew: { kind: 'potion', price: 12, heal: 80 },
   // 장작: 멧돼지와 곰이 떨어뜨리는 재료. 모닥불에 넣는다 (server/bonfire.ts)
   log: { kind: 'mat', price: 0 },
 } as const satisfies Record<string, ItemDef>;
 export const START_WEAPON: ItemId = 'axe1';
-export const SHOP_STOCK: readonly ItemId[] = ['stew', 'axe2', 'coat'];
+export const SHOP_STOCK: readonly ItemId[] = ['stew', 'axe2', 'coat', 'scale'];
 export const DROPS: Partial<Record<MonsterId, { id: ItemId; chance: number }>> = {
   boar: { id: 'log', chance: 0.6 },
   bear: { id: 'log', chance: 1 },
@@ -463,6 +464,7 @@ export const koNames: ContentNames = {
     axe1: { name: '손도끼', bow: '나무 활', info: '기본 무기' },
     axe2: { name: '벌목 도끼', bow: '사냥 활' },
     coat: { name: '털가죽 옷' },
+    scale: { name: '쇠비늘 조끼' },
     stew: { name: '고기 스튜' },
     log: { name: '장작', info: '멧돼지와 불곰이 떨어뜨립니다. 모닥불에 넣습니다' },
   },
@@ -542,6 +544,7 @@ export function initScene(): void {
   });
   registerBlade('axe2', { color: 0xffd9a0, scale: 1.25, glow: false });
   registerArmor('coat', { color: 0x8a6a48, pads: false });
+  registerArmor('scale', { color: 0x8f969e, pads: true });
   // …
   // 분위기: 저녁 빛 (하늘과 안개의 색, 두 빛의 세기, 안개의 거리)
   view.setMood({ sky: 0xd9b48a, hemi: 1.9, sun: 2.1, fogNear: 52, fogFar: 115 });
@@ -595,8 +598,12 @@ export function initScene(): void {
   // 모델 파일: 곰과 멧돼지는 뼈대 애니메이션 모델 하나를 크기와 털빛만 바꿔 쓴다 (클립 idle/walk/attack/hit/die). 토끼는 위의 코드 모델 그대로
   registerMonsterAsset('bear', { url: './models/beast.glb', height: 2.3, tint: { fur: 0x5a4030 } });
   registerMonsterAsset('boar', { url: './models/beast.glb', height: 1.4, tint: { fur: 0x7b5a44, belly: 0x9a7a5a } });
-  // 사람(모든 직업, 상인): 틀의 사람과 같은 크기의 야영꾼. 팔 뼈에 틀의 손 모양(도끼, 활)이 붙고, 옷과 살갗은 사람마다 칠한다
-  registerHumanoidAsset({ url: './models/camper.glb', arms: { left: 'arm_l', right: 'arm_r' }, paint: { cloth: 'cloth', skin: 'skin' } });
+  // 사람(모든 직업, 상인): 틀의 사람과 같은 크기의 야영꾼. 팔 뼈에 틀의 손 모양(도끼, 활)이 붙고, 옷과 살갗은 사람마다 칠한다.
+  // 갑옷: 몸통(재질 torso)을 갑옷 색으로 칠하고, 틀의 덧대기(가슴받이·허리띠·어깨받이)를 등뼈(spine)에 붙인다
+  registerHumanoidAsset({
+    url: './models/camper.glb', arms: { left: 'arm_l', right: 'arm_r' }, paint: { cloth: ['cloth', 'torso'], skin: 'skin' },
+    armor: { tint: ['torso'], attach: 'spine' },
+  });
   // 도끼(손 모양 axe의 무기 전부): 도끼날 자리에 양날 도끼 머리
   registerWeaponAsset('axe', { url: './models/axe.glb', height: 0.5 });
 ```
@@ -604,7 +611,11 @@ export function initScene(): void {
 - **바꿔 끼우기**: 코드 모델(`registerMonsterModel`의 것, 없으면 눈 달린 덩어리. 사람은 `setHumanoidBody`의 것)을 먼저 세우고, 파일을 다 읽으면 그 모델의 안을 파일의 것으로 바꾼다. 접속 화면은 등록한 파일을 다 읽을 때까지(길어도 12초) 진행 막대를 보이며 기다리므로, 보통은 처음부터 파일의 모델이 보인다. **읽지 못하면 콘솔에 경고 한 줄**을 남기고 코드 모델이 그대로 남는다(게임은 그대로 돈다).
 - 같은 파일은 한 번만 읽고 엔티티마다 복제한다(뼈대가 있으면 `SkeletonUtils.clone`). 같은 파일을 크기와 색만 바꿔 여러 종류에 쓸 수 있다: `tint`는 재질 이름 → 색.
 - **맞추는 값**(`ModelFit`): `height`(경계 상자의 높이를 이 값으로) 또는 `scale`(배율, 기본 1), `lift`(바닥을 땅에 붙인 뒤 더 올리는 높이), `ground`(기본 true: 경계 상자의 바닥을 땅에. false면 파일의 원점이 발), `turn`(돌리는 각, 도. 파일의 앞이 -Z면 180), `shadow`(그림자, 기본 true). 틀의 약속은 코드 모델과 같다: 발이 원점, +Z를 바라본다.
-- **사람**: `registerHumanoidAsset(파일, 직업?)`. 직업을 주면 그 직업만, 주지 않으면 모두(직업 것이 없는 직업, 상인, NPC). `arms`는 틀의 손 모양(검·활·지팡이와 `registerHand`의 것)을 붙일 팔 뼈 이름 둘: 뼈는 쉬는 자세에서 회전 없이 어깨에 있어야 한다. 틀의 사람과 같은 크기(키 약 2.1, 어깨 높이 약 1.48, 팔 길이 약 0.7)로 만들면 손 모양의 자리가 그대로 맞는다. `paint`는 사람마다 칠할 재질 이름(`cloth` 옷 색, `skin` 살갗). 파일의 사람에는 틀의 갑옷 덧대기(`registerArmor`)가 붙지 않는다. `setHumanoidDeco`의 꾸밈은 맨 위 뼈에 붙는다.
+- **사람**: `registerHumanoidAsset(파일, 직업?)`. 직업을 주면 그 직업만, 주지 않으면 모두(직업 것이 없는 직업, 상인, NPC). `arms`는 틀의 손 모양(검·활·지팡이와 `registerHand`의 것)을 붙일 팔 뼈 이름 둘: 뼈는 쉬는 자세에서 회전 없이 어깨에 있어야 한다. 틀의 사람과 같은 크기(키 약 2.1, 어깨 높이 약 1.48, 팔 길이 약 0.7)로 만들면 손 모양의 자리가 그대로 맞는다. `paint`는 사람마다 칠할 재질 이름(`cloth` 옷 색, `skin` 살갗. 여럿이면 목록). `setHumanoidDeco`의 꾸밈은 맨 위 뼈에 붙는다.
+- **사람의 갑옷**(`armor`): 입은 갑옷(`registerArmor`의 색과 `pads`)을 파일의 사람에 보이는 법. 주지 않으면 파일의 사람에는 갑옷이 보이지 않는다(코드 사람은 늘 틀의 자리에 덧댄다).
+  - `tint: ['torso']`: 갑옷 색으로 칠할 이름들. 메시·노드의 이름(그 아래의 메시 모두)이나 재질의 이름. 갑옷을 벗으면 본래 색(옷 색 포함)으로 돌아간다. 뼈대 모델은 스킨 메시가 뼈 아래에 있지 않으므로 보통 **재질 이름**으로 고른다(예제는 몸통에 재질 `torso`를 따로 두고 `paint.cloth`에도 넣었다).
+  - `attach: 'spine'`: 틀의 덧대기(가슴받이·허리띠, `pads`면 어깨받이)를 붙일 뼈·노드. 쉬는 자세에서 코드 사람과 같은 자리(모델 원점 기준, 가슴 높이 약 1.2)에 놓이고 그 뼈를 따라 움직인다. 틀의 사람과 크기가 같은 모델에 맞는다.
+  - 둘 다 써도 되고 하나만 써도 된다. 이름이 모델에 없으면 그 부분은 아무것도 하지 않는다(콘솔에 경고 한 줄). 이름은 같은 이름 → 대소문자만 다른 이름 → `Armature|torso`의 `|` 뒤의 차례로 맞춘다.
 - **무기**: `registerWeaponAsset(id, 파일)`. id는 무기 아이템의 id(그 무기만) 또는 손 모양의 id(그 손의 무기 전부). 손 모양이 돌려준 부분(칼날·도끼날·활대·지팡이)의 자리에 놓고 그 부분을 숨긴다. 모델은 위가 +Y, 가운데가 그 자리에 온다. 길이는 `height`(기본: 숨긴 부분의 길이), 크기는 `registerBlade`의 `scale`을 따른다. 코드 사람과 파일 사람 모두에 붙는다.
 - **애니메이션**: 클립 이름은 `idle`(서 있기), `walk`(걷기), `attack`(공격), `hit`(맞음), `die`(쓰러짐). 다르면 모델마다 `clips: { walk: 'Run' }`, 모든 모델에 `setClipNames({ … })`. 대소문자와 `Armature|Walk`처럼 앞에 붙은 이름은 알아서 맞춘다. 서 있기·걷기는 반복하고, 공격·맞음·쓰러짐은 한 번 튼다. 공격은 서버의 공격 사건(코드 모델이 팔을 휘두르는 바로 그 신호)마다 처음부터 튼다. 맞음은 공격 중이면 끊지 않는다. 상태 사이는 `fade`초(기본 0.2) 섞고, `speed`로 상태마다 빠르기를 바꾼다(`speed: { walk: 1.2 }`).
 - **클립이 없는 상태는 틀의 코드 흔들기**: 걸을 때 통통 튀고, 공격할 때 살짝 뛰고, 쓰러질 때 줄어든다. 쓰러짐 클립이 있으면 그것을 다 틀고 0.5초 누워 있다가(모두 2.5초까지) 사라진다. 틀의 걸음은 한 주기 약 0.63초다: 걷기 클립이 이동 속도와 맞지 않아 미끄러져 보이면 `speed.walk`로 맞춘다.

@@ -9,6 +9,7 @@ export const enNames: ContentNames = {
     axe1: { name: 'Hatchet', bow: 'Wooden Bow', info: 'Starting weapon' },
     axe2: { name: 'Felling Axe', bow: 'Hunting Bow' },
     coat: { name: 'Fur Coat' },
+    scale: { name: 'Scale Vest' },
     stew: { name: 'Meat Stew' },
     log: { name: 'Firewood', info: 'Dropped by boars and bears. Feed it to the bonfire' },
   },

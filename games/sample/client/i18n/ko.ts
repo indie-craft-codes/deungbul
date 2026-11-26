@@ -13,6 +13,7 @@ export const koNames: ContentNames = {
     axe1: { name: '손도끼', bow: '나무 활', info: '기본 무기' },
     axe2: { name: '벌목 도끼', bow: '사냥 활' },
     coat: { name: '털가죽 옷' },
+    scale: { name: '쇠비늘 조끼' },
     stew: { name: '고기 스튜' },
     log: { name: '장작', info: '멧돼지와 불곰이 떨어뜨립니다. 모닥불에 넣습니다' },
   },

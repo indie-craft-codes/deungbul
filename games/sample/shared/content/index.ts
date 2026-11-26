@@ -67,12 +67,13 @@ export const ITEMS = {
   axe1: { kind: 'weapon', price: 0, damage: 1, tier: 1 },
   axe2: { kind: 'weapon', price: 60, damage: 1.25, tier: 2 },
   coat: { kind: 'armor', price: 80, guard: 0.88, tier: 1 },
+  scale: { kind: 'armor', price: 180, guard: 0.8, tier: 2 },
   stew: { kind: 'potion', price: 12, heal: 80 },
   // 장작: 멧돼지와 곰이 떨어뜨리는 재료. 모닥불에 넣는다 (server/bonfire.ts)
   log: { kind: 'mat', price: 0 },
 } as const satisfies Record<string, ItemDef>;
 export const START_WEAPON: ItemId = 'axe1';
-export const SHOP_STOCK: readonly ItemId[] = ['stew', 'axe2', 'coat'];
+export const SHOP_STOCK: readonly ItemId[] = ['stew', 'axe2', 'coat', 'scale'];
 export const DROPS: Partial<Record<MonsterId, { id: ItemId; chance: number }>> = {
   boar: { id: 'log', chance: 0.6 },
   bear: { id: 'log', chance: 1 },

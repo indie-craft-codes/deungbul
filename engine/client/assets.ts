@@ -82,8 +82,37 @@ export interface HumanoidAsset extends ModelAsset {
    * 뼈의 쉬는 자세가 틀의 팔(rig.ra, rig.la)과 같아야 맞는다: 회전 없이 어깨에, 팔이 아래로. 틀의 사람과 같은 크기(어깨 높이 약 1.48)면 손 모양의 자리가 그대로 맞는다
    */
   arms?: { left: string; right: string };
-  /** 사람마다 다른 색을 칠할 재질 이름: 옷(HumanoidLook.cloth), 살갗(skin) */
-  paint?: { cloth?: string; skin?: string };
+  /** 사람마다 다른 색을 칠할 재질 이름: 옷(HumanoidLook.cloth), 살갗(skin). 여러 재질이면 목록 */
+  paint?: { cloth?: string | readonly string[]; skin?: string | readonly string[] };
+  /**
+   * 입은 갑옷(registerArmor)을 이 모델에 보이는 법. 없으면 파일의 사람에는 갑옷이 보이지 않는다 (예전과 같다).
+   * 이름이 모델에 없으면 그 부분은 아무것도 하지 않는다 (콘솔에 경고 한 줄)
+   */
+  armor?: HumanoidArmor;
+}
+/** 파일의 사람에 갑옷을 보이는 법: 칠하기와 덧대기 (둘 다 써도 된다) */
+export interface HumanoidArmor {
+  /**
+   * 갑옷의 색(ArmorLook.color)으로 칠할 이름들: 메시·노드의 이름(그 아래의 메시 모두)이나 재질의 이름. 갑옷을 벗으면 본래의 색(paint의 옷 색 포함)으로 돌아간다.
+   * 이름은 같은 이름 → 대소문자만 다른 이름 → 'Armature|torso'처럼 '|' 뒤가 같은 이름의 차례로 맞춘다
+   */
+  tint?: readonly string[];
+  /**
+   * 틀의 갑옷 덧대기(가슴받이·허리띠, pads면 어깨받이: 코드 사람과 같은 모양)를 붙일 뼈·노드의 이름. 쉬는 자세에서 코드 사람과 같은 자리(모델 원점 기준)에 놓이고 그 뼈를 따라 움직인다.
+   * 틀의 사람과 같은 크기(키 약 2.1, 가슴 높이 약 1.2)로 만든 모델에 맞는다
+   */
+  attach?: string;
+}
+/** 이름 하나 또는 목록을 목록으로 */
+export const nameList = (v: string | readonly string[] | undefined): string[] => (v === undefined ? [] : typeof v === 'string' ? [v] : [...v]);
+/**
+ * 갑옷을 칠할 곳인가: 메시에서 모델의 맨 위까지의 노드 이름들(nodes) 가운데 하나나 재질의 이름(material)이 tint의 이름과 맞으면
+ * 'node'(메시 전체를 칠한다) 또는 'material'(그 재질만), 맞는 것이 없으면 null
+ */
+export function armorHit(tint: readonly string[], nodes: readonly string[], material: string): 'node' | 'material' | null {
+  for (const want of tint) if (pickClip(want, nodes)) return 'node';
+  for (const want of tint) if (material && pickClip(want, [material])) return 'material';
+  return null;
 }
 /** 무기 모델 파일: 손 모양이 돌려준 부분(칼날·도끼날·활대·지팡이)의 자리에 놓이고 그 부분을 숨긴다. 위가 +Y, 가운데가 그 자리에 온다 */
 export interface WeaponAsset {

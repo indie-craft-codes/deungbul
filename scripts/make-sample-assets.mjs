@@ -204,7 +204,7 @@ const camper = () => {
   const boxes = [
     { bone: 'leg_l', mat: 'pants', size: [0.28, 0.6, 0.28], at: [0, -0.3, 0] }, { bone: 'leg_r', mat: 'pants', size: [0.28, 0.6, 0.28], at: [0, -0.3, 0] },
     { bone: 'leg_l', mat: 'boot', size: [0.31, 0.16, 0.38], at: [0, -0.62, 0.04] }, { bone: 'leg_r', mat: 'boot', size: [0.31, 0.16, 0.38], at: [0, -0.62, 0.04] },
-    { bone: 'spine', mat: 'cloth', size: [0.8, 0.8, 0.45], at: [0, 0.2, 0] },
+    { bone: 'spine', mat: 'torso', size: [0.8, 0.8, 0.45], at: [0, 0.2, 0] }, // 몸통: 옷 색으로 칠하고, 갑옷을 입으면 갑옷 색 (재질 이름 torso)
     { bone: 'spine', mat: 'leather', size: [0.84, 0.12, 0.49], at: [0, -0.14, 0] },
     { bone: 'spine', mat: 'leather', size: [0.12, 0.84, 0.48], at: [0, 0.22, 0], }, // 어깨띠
     { bone: 'spine', mat: 'leather', size: [0.5, 0.55, 0.2], at: [0, 0.22, -0.33] }, // 등짐
@@ -217,7 +217,7 @@ const camper = () => {
     { bone: 'head', mat: 'hood', size: [0.22, 0.22, 0.3], at: [0, 0.72, -0.28] }, // 고깔 끝
     { bone: 'head', mat: 'eye', size: [0.08, 0.1, 0.04], at: [-0.12, 0.32, 0.28] }, { bone: 'head', mat: 'eye', size: [0.08, 0.1, 0.04], at: [0.12, 0.32, 0.28] },
   ];
-  const mats = { cloth: 0x3f7fbf, skin: 0xf0c9a0, pants: 0x3b3a4a, boot: 0x4a3220, leather: 0x6b4a2e, hood: 0x2f5a3a, eye: 0x1a1f22 };
+  const mats = { cloth: 0x3f7fbf, torso: 0x3f7fbf, skin: 0xf0c9a0, pants: 0x3b3a4a, boot: 0x4a3220, leather: 0x6b4a2e, hood: 0x2f5a3a, eye: 0x1a1f22 };
   const H = 0.75;
   // 걸음: 틀의 코드 흔들기와 같은 박자 (phase가 초당 10씩 늘고 sin을 쓴다: 한 걸음 주기 2π/10 ≈ 0.63초, 폭 0.75)
   const W = 0.63, A = 0.75;
