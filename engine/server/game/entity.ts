@@ -23,6 +23,8 @@ export interface Ent extends EntExt {
   targetId: number; atkCd: number; lastHurt: number; wait: number;
   /** 게임이 마음대로 쓰는 값 (게임이 등록한 종류의 상태 같은 것). 틀은 읽지 않고 저장하지도 보내지도 않는다: 보낼 값은 종류의 sync가, 저장할 값은 save가 고른다 */
   data: Record<string, unknown>;
+  /** 저장에서 읽었지만 이 게임이 고르지 않은 모듈의 칸: 다시 저장할 때 그대로 적는다 (players.ts. engine/shared/modules.ts의 MODULE_SAVES) */
+  kept?: { top: Record<string, unknown>; ext: Record<string, unknown> };
 
   // ---- 플레이어 (핵심) ----
   bot: boolean;

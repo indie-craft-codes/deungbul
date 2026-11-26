@@ -54,3 +54,29 @@ async function probe(modules: readonly ModuleId[]): Promise<{ types: string[]; m
   for (let i = 0; i < 20; i++) g.tick(0.05);
   check(p.x > x0 + 3, `전투가 없어도 사람은 걷는다 (${(p.x - x0).toFixed(1)}m)`);
 }
+
+// 모듈을 꺼도 그 칸의 저장은 사라지지 않는다 (engine/shared/modules.ts의 MODULE_SAVES): 끈 게임이 읽고 다시 적은 저장을 다 켠 게임이 읽으면 그대로다
+{
+  const { MODULE_SAVES } = await import('../../shared/modules');
+  const full = new Game();
+  const playerNames = full.saves.map((s) => s.name), worldNames = full.worldSaves.map((s) => s.name).filter((n) => n !== 'sanctions');
+  check(playerNames.every((n) => n in MODULE_SAVES.player) && worldNames.every((n) => n in MODULE_SAVES.world) && playerNames.length === Object.keys(MODULE_SAVES.player).length,
+    `모듈의 저장 칸 표(MODULE_SAVES)가 실제로 등록되는 칸과 같다 (캐릭터 ${playerNames.join(', ')} / 월드 ${worldNames.join(', ')})`);
+  const p = full.players.spawn('맡김', false, null, 'kept-key');
+  full.wallet.add(p, 'gold', 777, ''); full.classes.choose(p, 'knight');
+  full.mail.send(p, 'idle', [10], { gold: 5 });
+  const save = full.players.export(p);
+  const world = full.exportWorld();
+  // 재화·우편·직업을 끈 게임 (아이템과 장비도: 그것들이 재화에 기댄다)
+  const lean = new Game({ modules: ['party'] });
+  const q = lean.players.spawn(save.name, false, structuredClone(save), 'kept-key');
+  const again = lean.players.export(q);
+  lean.importWorld(structuredClone(world));
+  const world2 = lean.exportWorld();
+  check(again.gold === 777 && again.cls === 'knight' && JSON.stringify(again.ext?.mail) === JSON.stringify(save.ext?.mail) && again.lv === save.lv,
+    '모듈을 끈 게임이 읽고 다시 적은 캐릭터 저장에도 그 모듈의 칸(골드, 직업, 레벨, 우편)이 그대로 남는다');
+  check(JSON.stringify(world2.market) === JSON.stringify(world.market) && JSON.stringify(world2.guilds) === JSON.stringify(world.guilds) && JSON.stringify(world2.mailbox) === JSON.stringify(world.mailbox),
+    '월드 저장의 끈 모듈 칸(거래소, 길드, 맡긴 우편)도 그대로 남는다');
+  const back = new Game().players.spawn(again.name, false, again, 'kept-key');
+  check(back.gold === 777 && back.cls === 'knight' && back.mail.length === p.mail.length, '다시 켠 게임은 그 칸을 이어서 읽는다 (골드, 직업, 우편)');
+}

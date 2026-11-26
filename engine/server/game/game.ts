@@ -17,7 +17,7 @@ import { NavGrid } from '../../shared/nav';
 import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
 import { resolve } from '../../shared/sim';
 import { LEVEL, MODULES } from '../../shared/defs';
-import { checkModules, type ModuleId } from '../../shared/modules';
+import { MODULE_SAVES, checkModules, type ModuleId } from '../../shared/modules';
 import { PLAYER_SPEED, buildWorld } from '../../shared/world';
 import type { PlayerSave, WorldSave } from '../store';
 import type { Ent } from './entity';
@@ -239,6 +239,8 @@ export class Game {
   readonly personal: { name: string; state: (p: Ent) => unknown; dirty?: (p: Ent) => boolean; sent?: (p: Ent) => void }[] = [];
   /** 게임이 등록한 엔티티 종류 (defineKind) */
   readonly kinds = new Map<string, KindDef>();
+  /** 월드 저장에서 읽었지만 이 게임이 고르지 않은 모듈의 칸 (거래소, 길드 …): 다시 저장할 때 그대로 적는다 (MODULE_SAVES) */
+  private keptWorld: WorldSave = {};
   /** 사건별 처리기. 사건 이름을 미리 적어 두지 않고, 처음 on 할 때 그 칸을 만든다 */
   private hooks: { [K in keyof Hooks]?: Hooks[K][] } = {};
   private nextId = 1;
@@ -431,11 +433,13 @@ export class Game {
   exportWorld(): WorldSave {
     const out: WorldSave = {};
     for (const s of this.worldSaves) out[s.name] = s.save();
-    return { ...out, ...this.saveVersion('world') };
+    return { ...out, ...this.keptWorld, ...this.saveVersion('world') };
   }
   importWorld(saved: WorldSave): void {
     // 옛 버전의 저장은 먼저 지금의 모양으로 올린다 (버전 칸이 없던 저장의 '자기 칸이 없으면 legacy로 찾기'도 여기서: migrate.ts의 WORLD_UP)
     const w = this.upgradeWorld(saved);
+    // 고르지 않은 모듈의 칸은 읽은 그대로 남긴다 (모듈을 껐다 켜도 맡겨 둔 것이 이어지게)
+    this.keptWorld = Object.fromEntries(Object.entries(w).filter(([k, v]) => { const m = MODULE_SAVES.world[k]; return !!m && !this.modules.has(m) && v !== undefined; }));
     for (const s of this.worldSaves) {
       // 한 칸이 깨져 있어도 서버는 떠야 한다: 그 칸만 처음 상태로 둔다
       try { if (s.name in w) s.load(w[s.name]); } catch (err) { console.error(`[game] 월드 저장의 '${s.name}' 칸을 읽지 못했습니다:`, err); }

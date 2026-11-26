@@ -43,6 +43,17 @@ export const MODULE_TABLE = {
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
+
+/**
+ * 모듈의 저장 칸: 캐릭터 저장의 ext 칸·최상위 칸과 월드 저장의 칸이 어느 모듈의 것인가.
+ * 고르지 않은 모듈의 칸은 읽은 그대로 두었다가 다시 적는다 (engine/server/game/game.ts): 모듈을 꺼도 사람과 월드의 것(골드, 우편, 거래소에 맡긴 물건)이 사라지지 않고, 다시 켜면 이어진다.
+ * 틀에 저장 칸을 가진 모듈을 더하면 여기에도 적는다 (engine/test/fx/modules.test.ts가 등록된 칸과 견준다)
+ */
+export const MODULE_SAVES: { player: Readonly<Record<string, ModuleId>>; top: Readonly<Record<string, ModuleId>>; world: Readonly<Record<string, ModuleId>> } = {
+  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build' },
+  top: { lv: 'growth', exp: 'growth', need: 'growth', maxHp: 'combat', sparks: 'economy', gold: 'economy', weapon: 'items', armor: 'items', items: 'items', cls: 'classes', auto: 'away' },
+  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank' },
+};
 /** 모든 모듈 (표의 차례) */
 export const ALL_MODULES = Object.keys(MODULE_TABLE) as ModuleId[];
 /** 전통적인 탭 타깃 MMORPG가 쓰는 모듈 전부. 등불지기처럼 다 쓰는 게임은 `MODULES = RPG_MODULES`로 적어도 된다 */

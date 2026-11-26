@@ -2,6 +2,7 @@
 // 저장의 최상위 칸도 모듈마다다 (export): 핵심은 이름·마지막 시각·자리, 그 밖의 칸은 그 모듈을 고른 게임에만 적힌다.
 import { CLASS_IDS, ECON_HUNT, POTION_CD, REJOIN_KEEP_S, classOf, skillDef, SKILL_SLOTS, SPAWN, START_WEAPON, isClassId, isItemId, maxHpFor, needFor, nextNeed, itemDef } from '../../../shared/defs';
 import type { PlayerSave } from '../../store';
+import { MODULE_SAVES, type ModuleId } from '../../../shared/modules';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { clamp, type Ent } from '../entity';
@@ -71,6 +72,12 @@ export class Players {
       p.lv = n(save.lv, 1, LV_READ_MAX, 1); p.need = needFor(p.lv); p.exp = n(save.exp, 0, p.need, 0);
       // 시스템마다 저장해 둔 몫(장비, 우편, 일일 임무)을 읽는다. 깨진 값은 그 시스템이 걸러 낸다
       const ext = typeof save.ext === 'object' && save.ext !== null ? save.ext : {};
+      // 이 게임이 고르지 않은 모듈의 칸은 읽은 그대로 남겨 두었다가 다시 적는다 (모듈을 껐다 켜도 이어지게)
+      const off = (m: ModuleId | undefined) => !!m && !this.g.has(m);
+      const whole = save as Readonly<Record<string, unknown>>;
+      const top = Object.fromEntries(Object.keys(MODULE_SAVES.top).filter((k) => off(MODULE_SAVES.top[k]) && whole[k] !== undefined).map((k) => [k, whole[k]]));
+      const keptExt = Object.fromEntries(Object.entries(ext).filter(([k, v]) => off(MODULE_SAVES.player[k]) && v !== undefined));
+      if (Object.keys(top).length || Object.keys(keptExt).length) p.kept = { top, ext: keptExt };
       this.vitals = null;
       p.offMs = typeof save.seen === 'number' ? Math.max(0, this.g.now() - save.seen) : 0; // 칸을 읽는 시스템(휴식 보너스)이 쓰므로 먼저 구한다
       // 시스템마다 자기 칸을 읽는다 (옛 형식의 최상위 칸은 위의 이전이 이미 ext로 옮겼다)
@@ -147,6 +154,8 @@ export class Players {
     if (g.has('classes')) out.cls = p.cls;
     out.at = [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10];
     if (g.has('away')) out.auto = p.auto;
+    // 고르지 않은 모듈의 칸: 읽은 그대로 (spawn)
+    if (p.kept) { Object.assign(out, p.kept.top); out.ext = { ...ext, ...p.kept.ext }; }
     return out;
   }
 
