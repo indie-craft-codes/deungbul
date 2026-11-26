@@ -12,9 +12,9 @@
 ## 요약
 
 - 코드는 틀(`engine/`)과 게임 둘(`games/deungbul/` 등불지기, 예제 `games/sample/`)이다. 방향은 게임 → 틀 하나다. **2026-11-27에 시제품·증명 게임 일곱(`cave`·`starmine`·`bastion`·`rollball`·`dalmuri`·`stepstone`·`pond`)을 지웠다**: 코드는 커밋 `7e347c9`에 남아 있고(`git checkout 7e347c9 -- games/<이름>`), 운영 데이터는 `data/backup/retired-<시각>/`로 옮겼다. 증명 기록([proof-rollball.md](proof-rollball.md), [proof-dalmuri.md](proof-dalmuri.md), [proof-stepstone.md](proof-stepstone.md), [proof-pond.md](proof-pond.md))은 틀을 검증한 기록으로 남긴다. 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험이 지킨다.
-- **틀은 장르와 무관한 핵심과 선택 모듈 스물셋이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈', 영웅 장비 `herogear`는 아래 '영웅의 성장', 판 `rooms`는 아래 '턴제의 빈 곳 메우기')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
+- **틀은 장르와 무관한 핵심과 선택 모듈 스물다섯이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈', 영웅 장비 `herogear`는 아래 '영웅의 성장', 판 `rooms`는 아래 '턴제의 빈 곳 메우기', 캐릭터 정의 `chars`와 변신 `morph`는 맨 아래 '캐릭터 정의와 변신')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
 - 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
-- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 8개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 둘의 시험: 검사 2070개, 2026-11-27 게임 정리 뒤) 모두 통과, `npm run build:all` 통과.
+- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 8개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 둘의 시험: 검사 2138개, 2026-11-27 캐릭터 정의와 변신 뒤. 게임 정리 뒤에는 2070개) 모두 통과, `npm run build:all` 통과.
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
@@ -270,6 +270,7 @@
 
 ## 0. 이어 갈 것
 
+0. **캐릭터 정의와 변신: 끝(2026-11-27, 가지 `feat/chardef`)**: 맨 아래 '캐릭터 정의와 변신'. 겉모습 부품(칸 여섯, 기본 부품 34, 굽기), 캐릭터 정의와 검증기(거절 코드 26, 예산, 금칙어 고리, 퍼징 6000), 모듈 `chars`(저장소를 바꿔 끼운다, `roster`와 함께면 영웅)·`morph`(변신, 남에게도 보인다, 기본은 겉모습만), 예제의 정의 넷, 문서 15절. **다음**(사용자 결정이 필요): AI 생성기(결과는 `g.chars.add`로만), 계정 공용 저장소(`useStore`), 소유의 싱크·거래·주간 한도·신고와 회수. 같은 때 다른 가지(`roomfix`: 판 모듈)가 공용 파일(언어 파일, `messages.ts`, `modules.ts`, 문서)의 끝을 함께 고친다: 합칠 때 겹친다.
 0. **판 모듈의 문서 검증 (넷이 두는 판 게임): 끝(2026-11-27, 가지 `feat/boardgame`)**: 14절과 입구만 보고 `games/pond` 반딧불 연못(넷이 미끼 패를 엎어 던져 물고기를 낚는 원작 판 게임: 숨긴 손패·엎은 미끼, 바퀴마다 도는 선, 포트 3010)을 만들었다. 틀은 고치지 않았다. 평가 4.0/5. 검사 2380 → 2495개(이 게임 115), 타입 검사 설정 20 → 22, 등불지기 황금 실행 같음. 컴퓨터끼리 자리별 승률: 처음 규칙 26.5/24.1/21.2/25.5%(4000판) → '물고기는 제 크기보다 작은 미끼를 물지 않는다'를 더해 24.2/24.1/25.2/23.6%(2000판). 문서의 빈 곳 열여섯과 꼼수 여섯은 [proof-pond.md](proof-pond.md). 큰 것: 바퀴마다 선 돌리기(`room.first` + `turnStart`의 `pass`로 우회), 셋 이상의 판의 기권·몰수 동작, 등수 없는 결과, 자리 수 고정, 폰에서 판 막대와 게임의 아래 창이 겹침(기권을 잘못 누름), `RoomView` 타입을 내보내는 입구가 없음(경계 검사만 실패). **다음 후보**: 틀 수리 — `rotateFirst`(또는 `roundEnd`·`skip`), 등수가 있는 `finish`, 자리 수의 범위, 판 막대 자리(`barAt`), 컴퓨터 자리의 이름, `KindLook.label(e, vals)`, `RoomView`의 입구. 문서 — `onFrame` 인자, yaw 0의 방향, `forInput`, `game: { now }`, `spawn`의 `pid`·`players.leave`, 부하 도구의 `PLUGINS` 표. 그 뒤 반딧불 연못을 그 칸으로 옮긴다.
 0. **턴제의 빈 곳: 끝(2026-11-26, 가지 `feat/turnfw`)**: 위 '턴제의 빈 곳 메우기'. 판 모듈 `rooms`(판마다의 층, 대기실·짝짓기·컴퓨터 상대, 차례와 기한·초읽기, 끊긴 사람의 자리, 판의 저장), `setTapHandler`, `g.effect`/`onEffect`, `setCameraYaw`, `CameraAim.center`, `addNotices`의 `quiet`, `g.movement.teleport`, 자리 css의 `free`, 문서 14절. 징검돌을 옮기고 균형(첫 바퀴 보정)을 고쳤다. `feat/dalmig`와 함께 합쳤다. **다음**: 문서(14절)만 보고 다른 판 게임(카드·보드, 셋 이상)을 만드는 검증 → 위 `feat/boardgame`에서 했다.
 0. **달무리 원정대가 찾은 빈 곳 메우기: 끝(2026-11-26, 가지 `feat/idleflow`)**: 위 '단계 밖과 달무리의 빈 곳 메우기'. 던전 안의 자동 전투(`DungeonDef.auto`), 던전 뒤 단계로(`STAGE_RULES.returnAfterDungeon`), 메뉴에서 바로 던전(`DungeonDef.fromMenu`, 명령 `dungeonGo`), 돌아왔을 때의 창(`IDLE.popup`, 메시지 `idleBack`), 재료로 영웅 조각(`HERO_RULES.trade`), 영웅 모델에 id·등급(`setHeroModel`, `HumanoidLook.hero`), 딸려 온 화면 감추기(`HUD.hide`), 메뉴 줄 도우미의 입구(`menuRow` …), 틀 안의 타입 오류 둘, 문서. **달무리 옮기기도 끝(2026-11-26, 가지 `feat/dalmig`)**: 위 '달무리 옮기기'. 꼼수를 지우고 이 칸들로, 소탕·오프라인 진행·픽업 배너·영웅의 성장도 쓴다. 남은 것: 월식 소환 뒤의 배너(소탕 결과 창의 바탕은 합칠 때 고쳤다).
@@ -556,3 +557,31 @@
 5. 화면은 `bash scripts/publish.sh`. 공개 주소 둘이 200인지 본다.
 6. 서버를 끄는 깃발 `stop.flag`는 **저장 파일의 옆**에 놓인다. 확인용 서버는 DB마다 폴더를 따로 주거나 `DB=memory`로 띄우고 프로세스를 포트로 찾아 직접 끈다(운영의 3001은 건드리지 않는다).
 7. 되돌리기: `git revert` 뒤 `npm run build`와 `node scripts/restart.mjs`(또는 `bash scripts/restart.sh`). 저장 형식 버전(2026-11-26)을 들인 뒤의 저장에는 `v` 칸이 붙지만 모양은 그대로라 옛 서버도 그대로 읽는다(모르는 칸은 무시). 저장 파일로 되돌리려면 서버를 끄고 `data/backup/`의 백업(자동 백업은 `auto-<시각>.db`)을 `data/game.db`로 복사하고 `game.db-wal`·`game.db-shm`을 지운다.
+
+## 캐릭터 정의와 변신 (2026-11-27, 가지 `feat/chardef`)
+
+[ideas.md](ideas.md) 3절 'AI로 만드는 캐릭터'의 틀 쪽 바탕. AI 호출·계정·거래·주간 한도는 하지 않았다: 틀은 정해진 형식의 정의를 믿지 않고 검증하고, 부품으로 그리고, 영웅과 변신이 함께 읽게 한다. 쓰는 법은 [making-a-game.md](making-a-game.md) 15절.
+
+| 무엇 | 틀의 칸 | 선택인가 |
+|---|---|---|
+| 겉모습의 형식 | `engine/shared/defs/look.ts`: `Look`(칸 여섯 `body` `head` `hair` `hat` `face` `back`, 색 넷 `skin` `cloth` `hair` `accent`, `pattern`, `size`·`width`), 버전이 있는 짧은 글자 `encodeLook`/`decodeLook`(예 `'1;b=stout;r=bob;C=3f7fbf;z=105'`, 기본값은 적지 않는다), `checkLook`, `lookParts`·`lookPatterns`. 내용 `LOOK_RULES`(add·remove·off·patterns·size·width) | 겉모습을 적지 않은 사람형은 예전 그림 그대로 |
+| 부품 그리기 | `engine/client/scene/look.ts`: 틀의 기본 부품 34가지(체형 4, 머리 4, 머리카락 7, 모자 8, 얼굴 5, 등 6)와 무늬 5. `registerLookBody`·`registerLookHead`·`registerLookPart`·`registerLookPattern`·`lookGeo`. `HumanoidLook.look`, `makeHumanoid`의 여섯째 인자, `Model.frame`(크기 배율과 갑옷 덧대기). 움직이지 않는 부품은 꼭짓점 색의 한 메시로 굽는다 | 같음 |
+| 사람의 겉모습을 남에게 | 핵심: `g.setLook(e, 글자)`, 메시지 `{ t: 'look', id, l }`, `EnterInfo.l`, 화면 `setLookOf`. 저장하지 않는다 | 부르지 않으면 줄 위의 글자가 그대로 |
+| 캐릭터 정의와 검증기 | `engine/shared/defs/chardef.ts`: `CharDef`(v, id, name, bio, look, role, rarity, stats, skills), `validateCharDef`(거절 코드 26가지 `CHAR_ERRS`와 자리·값, 예외 없음), `budgetFromHeroes`, `addCharFilter`·`CHAR_RULES.banned`, `charHero`, `setKnownChars`·`charName`. 내용 `CHAR_RULES`. 문장 `fmt.charErr`, 안내문 `charBad` | 함수일 뿐이다 |
+| 정의를 두기 | 스물넷째 모듈 **`chars`**(`systems/chars.ts`): `g.chars.add`(유일한 길)·`remove`·`get`·`list`·`useStore`(바꿔 끼우는 저장소 `CharStore`), 월드 저장 `chars`, 개인 상태 `chars`, 사건 `charAdded`·`charRemoved`. `roster`와 함께면 영웅의 표에 더한다(`addHeroDef`·`dropHeroDef`·`heroIds()`, `HeroDef.label`·`look`·`skill`) | 모듈 (의존 없음, `RPG_MODULES`에 들지 않는다) |
+| 변신 | 스물다섯째 모듈 **`morph`**(`systems/morph.ts`, `hud/morph.ts`): `grant`·`take`·`owns`·`on`·`off`·`mods`, 명령 `morph`, 저장 `morph`, 개인 상태 `morph`, 엔티티의 칸 `morph`, 사건 `morphed`, 안내문 `charNew`·`morph…` 7가지, 메뉴의 변신 탭(부품으로 그린 작은 그림). 내용 `MORPH_RULES`(기본: 겉모습만, 스스로 풀 때까지, 다시까지 10초, 맞은 지 5초 안에는 못 함, 서른까지) | 모듈 (`chars`에 기댄다, `RPG_MODULES`에 들지 않는다) |
+| 예제 | `games/sample`: 손으로 쓴 정의 넷(`server/chars.ts`, 날것을 `g.chars.add`로), `CHAR_RULES`(예산의 표, 금칙어), `MORPH_RULES`(3분, 다시 15초, 보정 상한 8%·6%), `LOOK_RULES`(모자 `antlers` 더함, 등 `wings` 뺌), 모닥불 곁의 정의마다 선 사람(`client/chars.ts`) | |
+
+확인:
+- `npm run typecheck` 설정 8개 오류 0. `npm test` 두 번 모두 통과(검사 2070 → 2138개: 틀의 `collect/chardef`·`collect/morph`, 예제의 `morph`. 등불지기의 언어 견본에 틀의 새 문장 21개씩을 더했다: 빠지거나 달라진 문장은 없다). `npm run build:all` 통과.
+- 퍼징(`collect/chardef`): 무작위·악의적인 정의 6000개(그 가운데 JSON 글자 858개)가 예외 없이 거절(4694)·통과(1306)했고, 거절은 모두 아는 코드, 통과한 것은 모두 등급의 예산·칸의 상한·아는 부품·배율 범위 안, 통과한 정의의 능력치를 예산 밖으로 민 것은 모두 거절됐다.
+- 황금 실행(`chardef-tools/golden.sh`, 바탕 `a517a06` 복제본과 이 가지): 등불지기(sim) **바이트까지 같다**(7,489,205바이트). 예제는 다르다(맞다): 캐릭터 정의·변신을 골라 개인 상태 `chars`·`morph`, 안내문 `charNew`, 엔티티의 칸 `morph`, 월드 저장의 `chars`가 생겼다. 그것을 빼면 나머지(움직임, 싸움, 보상, 저장)는 같다.
+- 등불지기의 그림: 바탕과 가지에서 등불지기의 사람형(직업마다 무기·갑옷 넷)·주민·몬스터 전부를 정해진 자리에 한 번 그린 장면을 헤드리스 Chrome(GPU)으로 찍어 견줬다: 1200×700에서 **다른 픽셀 0**.
+- 그리기 비용(헤드리스 Chrome GPU, 1280×720, 그림자, 사람형 300이 걷는 장면): 틀의 네모난 사람 프레임 약 20ms(그리기 호출 4689), 부품 사람 굽기 전 약 38ms(9995) → 굽은 뒤 약 24~27ms(4662, 삼각형은 57k → 131k). 예제의 실제 화면에서 봇 300이 저마다 다른 부품 겉모습일 때 평균 32ms, 같은 봇이 예제의 사람 모델 파일(뼈대 애니메이션)일 때 79ms(이름표 300개 포함).
+- 화면(임시 서버 3015, 헤드리스 Chrome GPU): PC·폰 × 한국어·영어로 모닥불 곁의 부품이 다른 캐릭터 넷, 변신 탭(작은 그림·등급·능력치·보정·소개), 내가 변신한 모습, 다른 사람(소켓 접속자)이 변신하는 것을 내 화면에서, 변신 중의 탭(남은 시간·풀기), 풀고 난 재사용 대기. 콘솔 오류 없음. 화면: `%TEMP%\dg-work\chardef-shots\`.
+
+남은 것 (틀 밖, 사용자 결정이 필요):
+- AI 생성기: 프롬프트 → `CharDef` 꼴의 JSON. 결과는 `g.chars.add`로만 넣는다(거절이면 `charBad`로 까닭을 알린다). 요청 검사는 그 앞에서.
+- 계정과 계정 공용 저장소: `g.chars.useStore(CharStore)`에 꽂는다. 소유의 싱크는 `g.morph.grant`·`take`(와 영웅이면 `g.roster.grant`)를 그 저장소에 맞춘다.
+- 거래와 수익 분배, 주간 한도, 신고·회수(회수는 `g.chars.remove`: 그것으로 변신한 사람이 풀리고 영웅의 표에서 빠진다).
+- 겉모습의 구운 모양은 종류만큼 쌓인다(같은 겉모습은 나눠 쓴다). 정의가 수천이 되면 오래 안 쓴 것을 버리는 길이 필요하다. 정의의 목록은 사람마다 개인 상태로 한 번에 간다(바뀔 때만): 수천이 되면 필요한 것만 묻는 길로.
