@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MonsterId } from '@engine/shared/defs';
 import { AREAS } from '@engine/shared/world';
-import { defaultHumanoid, limb, type Look, mat, type Model, onFrame, part, registerArmor, registerBlade, registerHand, registerHumanoidAsset, registerMonsterAsset, registerMonsterModel, registerMusic, registerSound, registerWeaponAsset, S, setHumanoidBody, setMapPaint, setMusicPicker, view } from '@engine/client';
+import { defaultHumanoid, limb, type Look, lookGeo, mat, type Model, onFrame, part, registerArmor, registerBlade, registerHand, registerHumanoidAsset, registerLookPart, registerMonsterAsset, registerMonsterModel, registerMusic, registerSound, registerWeaponAsset, S, setHumanoidBody, setMapPaint, setMusicPicker, view } from '@engine/client';
 import { G } from './bonfire';
 
 const dirt = new THREE.Color(0xa98d62), grass = [new THREE.Color(0x8aa35a), new THREE.Color(0x76904e)];
@@ -48,10 +48,11 @@ function beast(type: string): Model {
 
 export function initScene(): void {
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
-  // 사람 모델: 틀의 사람형(defaultHumanoid)에 털모자를 얹는다. 머리째 바꾸려면 m.head를 지우고 새로 붙인다. 손 모양은 틀이 이미 붙였다
+  // 사람 모델: 틀의 사람형(defaultHumanoid)에 털모자를 얹는다. 머리째 바꾸려면 m.head를 지우고 새로 붙인다. 손 모양은 틀이 이미 붙였다.
+  // 부품으로 된 겉모습(look.look: 캐릭터 정의·변신)이면 그 부품대로 그리고 털모자는 얹지 않는다 (모자는 겉모습의 칸이다)
   setHumanoidBody((look) => {
     const m = defaultHumanoid(look);
-    m.head?.add(part(new THREE.CylinderGeometry(0.3, 0.32, 0.22, 6), mat(0x8a3a2a), 0, 0.36, 0));
+    if (!look.look) m.head?.add(part(new THREE.CylinderGeometry(0.3, 0.32, 0.22, 6), mat(0x8a3a2a), 0, 0.36, 0));
     return m;
   });
   // 나무꾼의 손 모양(직업 정의의 hand: 'axe'): 오른손에 든 자루와 도끼날. 돌려준 도끼날이 무기의 겉모습(registerBlade)을 따른다
@@ -87,4 +88,16 @@ export function initScene(): void {
   // 미니맵의 바탕: 지역은 풀빛, 야영지는 흙빛
   setMapPaint((b) => { for (const a of AREAS) b.quad(a.x0, a.z0, a.x1, a.z1, '#5d7040'); b.disc(BONFIRE.x, BONFIRE.z, 9, '#8a744e'); });
   onFrame((now) => { flame.visible = G.heat > 0; flame.scale.setScalar(0.5 + G.heat / 100); flame.position.y = 0.4 + 0.8 * flame.scale.y + Math.sin(now / 120) * 0.04; });
+  // 이 게임이 더한 모자 '사슴뿔' (내용의 LOOK_RULES.add): 머리 위 양쪽에 가지 친 뿔. 모양은 lookGeo로 나눠 쓴다
+  registerLookPart('hat', 'antlers', ({ head, mats }) => {
+    const beam = lookGeo('antlerBeam', () => new THREE.BoxGeometry(0.06, 0.42, 0.06)), tine = lookGeo('antlerTine', () => new THREE.BoxGeometry(0.05, 0.2, 0.05));
+    for (const s of [-1, 1]) {
+      const b = part(beam, mats.accent, s * (head.w * 0.7), head.h + 0.18, 0);
+      b.rotation.z = -s * 0.45;
+      const t = part(tine, mats.accent, s * 0.06, 0.08, 0.04);
+      t.rotation.z = s * 0.9;
+      b.add(t);
+      head.head.add(b);
+    }
+  });
 }

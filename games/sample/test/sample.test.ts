@@ -96,8 +96,8 @@ import { check, connect, until } from '@engine/testing';
   const has = (k: string) => k in g;
   cmd({ t: 'offer', to: 'tower', n: 1 }); cmd({ t: 'dungeon', id: 'crypt' }); cmd({ t: 'craft', id: 'axe2' }); cmd({ t: 'craft', id: 'sword3' }); cmd({ t: 'buy', id: 'potion' }); cmd({ t: 'class', id: 'warrior' });
   run(2);
-  check(!has('tower') && !has('raid') && !has('quests') && !has('keepers') && !has('rest') && !g.commands.has('offer') && Object.keys(g.state()).join() === 'bonfire' && g.personal.map((x) => x.name).filter((k) => k !== 'bag' && k !== 'salvage').join() === 'fed' && g.rules.siege === null,
-    '등탑·습격·퀘스트·등탑지기·휴식 시스템과 불씨 바치기 명령이 없다 (공유 상태는 bonfire, 게임의 개인 상태는 fed뿐. 틀의 가방·분해 칸은 따로 있다)');
+  check(!has('tower') && !has('raid') && !has('quests') && !has('keepers') && !has('rest') && !g.commands.has('offer') && Object.keys(g.state()).join() === 'bonfire' && g.personal.map((x) => x.name).filter((k) => !['bag', 'salvage', 'chars', 'morph'].includes(k)).join() === 'fed' && g.rules.siege === null,
+    '등탑·습격·퀘스트·등탑지기·휴식 시스템과 불씨 바치기 명령이 없다 (공유 상태는 bonfire, 게임의 개인 상태는 fed뿐. 틀의 가방·분해·캐릭터 정의·변신 칸은 따로 있다)');
   // 가루를 주지 않는 게임(defaults의 SALVAGE.dust가 비어 있다): 분해·자동 분해·가방 넓히기가 꺼져 있고, 화면도 개인 상태(on: false)를 보고 그리지 않는다
   {
     const it = g.gear.roll(1); g.bag.giveGear(p, it, 'test');

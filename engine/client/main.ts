@@ -14,7 +14,7 @@ import { boundKeys, dispatch, onMsg, runFrame, runSlow } from './bus';
 import { initModules } from './modules';
 import { steer } from './actions';
 import { $, startApp, view } from './app';
-import { applySnapshot, clearEntities, placeTags, relabel, renameEntity, setGear, spawnMe, spawnMerchant, tagOf, updateEntities } from './entities';
+import { applySnapshot, clearEntities, placeTags, relabel, renameEntity, setGear, setLookOf, spawnMe, spawnMerchant, tagOf, updateEntities } from './entities';
 import { shakeOffset, updateFx } from './fx';
 import { initChat, logChat } from './hud/chat';
 import { hideGate, initMe, renderTexts, setMyName, showGate } from './hud/me';
@@ -53,6 +53,7 @@ onMsg('stat', (m) => {
 });
 onMsg('icd', (m, now) => { S.itemCdEnd = now + m.ms; S.itemCdLen = m.ms; });
 onMsg('gear', (m) => setGear(m.id, m.weapon, m.cls, m.armor));
+onMsg('look', (m) => setLookOf(m.id, m.l));
 onMsg('cd', (m, now) => { S.cdEnd[m.n] = now + m.ms; S.cdLen[m.n] = m.ms; });
 onMsg('name', (m) => { renameEntity(m.id, m.name); if (S.me && m.id === S.me.id) setMyName(m.name); });
 onMsg('chat', (m) => {

@@ -1,7 +1,7 @@
 // 수집형·방치형 화면의 셈 (영웅 탭, 뽑기의 확률표, 편성, 단계 막대, 던전 열쇠): 화면 요소도 three.js도 읽지 않는다 (시험 engine/test/collect/client.test.ts가 그대로 읽는다).
 // 그리는 것은 hud/collect.ts(메뉴 탭과 영웅의 겉모습)와 hud/stagebar.ts(단계 막대). 확률은 서버와 같은 셈(engine/shared/defs/collect.ts)이다.
 import {
-  BANNER_TABLE, HERO_IDS, HERO_RARITIES, HERO_RULES, STAGES, gearOn, growthOf, heroDef, heroFull, heroTradeShards, heroTrades, rarityDef, rarityOdds, waveCount, BANNER_IDS, effectiveOdds, pityKey, pityMates, pullOdds, stageSweepable, sweepMax,
+  BANNER_TABLE, heroIds, HERO_RARITIES, HERO_RULES, STAGES, gearOn, growthOf, heroDef, heroFull, heroTradeShards, heroTrades, rarityDef, rarityOdds, waveCount, BANNER_IDS, effectiveOdds, pityKey, pityMates, pullOdds, stageSweepable, sweepMax,
   type BannerDef, type HeroGearPiece, type HeroesMe, type Odds, type Reward, type StageMe, type StageRun, type GachaMe, type SweepRule,
 } from '../../shared/defs';
 import type { KeysMe } from '../../shared/defs/collect';
@@ -25,7 +25,7 @@ export interface HeroRow {
  * 공격·체력·전투력은 서버와 같은 heroFull(각성·기술 레벨, gear를 주면 낀 영웅 장비까지)이다: 성장이 없는 게임에서는 heroStats·heroPower와 같다
  */
 export function heroRows(me: HeroesMe, money: number, squad: readonly string[] = [], gear: readonly HeroGearPiece[] = []): HeroRow[] {
-  const rows = HERO_IDS.map((id): HeroRow => {
+  const rows = heroIds().map((id): HeroRow => {
     const d = heroDef(id), h = me[id], owned = !!h;
     const lv = h?.[0] ?? 1, stars = h?.[1] ?? rarityDef(d.rarity).stars, shards = h?.[2] ?? 0;
     const maxLv = HERO_RULES.maxLv(stars), s = heroFull(id, h ? growthOf(h) : { lv, stars }, gearOn(gear, id));

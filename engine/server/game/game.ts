@@ -12,7 +12,7 @@
 //   commands(플레이어 명령), on(사건 구독), mods(수치 보정), ticks(주기 처리), saves(캐릭터 저장), worldSaves(월드 저장),
 //   shared(모두에게 보내는 공유 상태), personal(본인에게만 보내는 상태), defineKind(게임의 엔티티 종류).
 // 틀 자체에 어느 게임에나 쓸 새 모듈을 더할 때만 engine/server/game/systems/에 파일을 만들고 engine/shared/modules.ts의 표와 아래 생성자에 한 줄씩 더한다.
-import { MONSTERS, SPAWN, type MonsterDef } from '../../shared/defs';
+import { MONSTERS, SPAWN, type CharDef, type MonsterDef } from '../../shared/defs';
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import { NavGrid } from '../../shared/nav';
 import type { Ev, Kind, WorldState, ServerMsg } from '../../shared/protocol';
@@ -60,6 +60,8 @@ import { Squad } from './systems/squad';
 import { Stages } from './systems/stages';
 import { HeroGear } from './systems/herogear';
 import { Wallet } from './systems/wallet';
+import { Chars } from './systems/chars';
+import { Morph } from './systems/morph';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
 const NAV_VISITS_PER_TICK = 12000;
@@ -94,6 +96,11 @@ export interface Hooks extends HooksExt {
   stageCleared: (p: Ent, id: string, first: boolean) => void;
   /** [stages, dungeon] 깬 단계나 열쇠 던전을 n번 소탕했다 */
   swept: (p: Ent, kind: 'stage' | 'dungeon', id: string, n: number) => void;
+  /** [chars] 캐릭터 정의가 더해졌거나 바뀌었다 / 빠졌다 */
+  charAdded: (def: CharDef) => void;
+  charRemoved: (id: string) => void;
+  /** [morph] 변신했다 (id) / 풀렸다 (id는 ''): 까닭 on, off 스스로, end 시간이 다 됨, gone 정의가 빠짐 */
+  morphed: (p: Ent, id: string, why: 'on' | 'off' | 'end' | 'gone') => void;
 }
 
 /**
@@ -309,6 +316,8 @@ export class Game {
   /** [squad] 편성: 함께 싸우는 영웅 */ readonly squad: Squad;
   /** [stages] 장과 단계 */ readonly stages: Stages;
   /** [herogear] 영웅 장비 */ readonly herogear: HeroGear;
+  /** [chars] 캐릭터 정의: 검증하고 두고 화면에 보낸다 (roster를 함께 고르면 영웅이 된다) */ readonly chars: Chars;
+  /** [morph] 변신 */ readonly morph: Morph;
   /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
   readonly sanctions: Sanctions;
 
@@ -360,6 +369,9 @@ export class Game {
     this.squad = has('squad') ? new Squad(this) : off('squad', 'squad');
     this.stages = has('stages') ? new Stages(this) : off('stages', 'stages');
     this.herogear = has('herogear') ? new HeroGear(this) : off('herogear', 'herogear');
+    // 캐릭터 정의와 변신: 그 뒤에 (앞의 시스템의 등록 차례가 이것들을 고르지 않은 게임과 같게)
+    this.chars = has('chars') ? new Chars(this) : off('chars', 'chars');
+    this.morph = has('morph') ? new Morph(this) : off('morph', 'morph');
     this.sanctions = new Sanctions(this);
     new Status(this); // 본인에게 보내는 성장 수치(stat)와 장비·우편(meta): 그 칸의 모듈을 고른 게임만
     for (const fn of this.ready) fn();
@@ -424,6 +436,17 @@ export class Game {
    * 팀, 역할, 들고 있는 것처럼 남이 보아야 하는 사람마다의 값에 쓴다 (본인만 볼 값은 g.personal). 한 게임에 하나: 다시 부르면 새 것이 이긴다
    */
   playerSync(fn: ((p: Ent) => readonly number[]) | null): void { this.playerVals = fn; }
+
+  /**
+   * 엔티티의 부품 겉모습을 바꾼다 (engine/shared/defs/look.ts의 encodeLook 글자. 빈 문자열이면 예전 그림으로). 모두에게 { t: 'look' }로 알리고,
+   * 나중에 시야에 들어오는 화면에는 EnterInfo.l로 간다. 저장하지 않는다: 겉모습을 정한 시스템(변신)이 자기 저장에서 다시 부른다
+   */
+  setLook(e: Ent, code: string): void {
+    const l = code || undefined;
+    if (e.look === l) return;
+    if (l) e.look = l; else delete e.look;
+    this.casts.push({ t: 'look', id: e.id, l: code });
+  }
 
   /** 게임이 등록한 종류의 엔티티를 놓는다. 층(layer)을 주지 않으면 1채널의 들판이다 (채널이 여럿이면 채널마다 놓는다: layers.ts의 fieldLayer) */
   place(kind: string, at: { x: number; z: number; type?: string; name?: string; hp?: number; layer?: number; face?: number }): Ent {

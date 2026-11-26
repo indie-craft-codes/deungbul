@@ -24,6 +24,7 @@ import { initShop } from './hud/shop';
 import { initStages } from './hud/stagebar';
 import { initTeams } from './hud/teams';
 import { initRooms } from './hud/rooms';
+import { initChars, initMorph } from './hud/morph';
 import { initWorldMap } from './hud/worldmap';
 import { hasModule } from './mods';
 import { initSound } from './sound';
@@ -59,6 +60,9 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initHeroGear, mod: 'herogear' },
   // 돌아왔을 때의 창 (idle 모듈의 선택 칸 IDLE.popup: 켜지 않은 게임은 init이 아무것도 하지 않는다): 맨 뒤에
   { init: initIdleBack, mod: 'idle' },
+  // 캐릭터 정의와 변신: 그 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)
+  { init: initChars, mod: 'chars' },
+  { init: initMorph, mod: 'morph' },
 ];
 
 export function initModules(): void {

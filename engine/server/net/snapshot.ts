@@ -103,6 +103,7 @@ export function snapshotFor(me: Ent, known: Set<number>, frame: Frame, events: r
           // 갑옷(아이템), 몰려온 적(전투), 길드(길드)는 그 모듈을 고르지 않은 게임의 엔티티에는 칸이 없다(undefined): 빠진다
           if (e.swarm) info.r = 1; // 줄 위의 칸 이름은 그대로 r (몰려온 적)
           if (e.guild) info.g = e.guild;
+          if (e.look) info.l = e.look; // 부품 겉모습 (변신 같은 것: g.setLook). 쓰지 않는 게임의 엔티티에는 칸이 없다
           enter.push(info);
         }
         // 새로 보이거나 상태가 달라진 것만 보낸다

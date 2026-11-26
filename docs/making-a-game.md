@@ -86,6 +86,8 @@
 | `squad` | 편성: 영웅이 주인을 따라다니며 함께 싸운다 (13절) | roster, combat | 메뉴의 편성 탭, 영웅(종류 `hero`)의 겉모습 | |
 | `stages` | 장과 단계(1-1 …), 물결과 우두머리, 자동 진행과 실패, 방치 보상이 깬 단계로 커진다 (13절) | combat | 가운데 위 단계 막대, 메뉴의 단계 탭 | |
 | `rooms` | 판: 판마다의 인스턴스 층, 대기실·짝짓기(컴퓨터 상대), 차례와 기한, 끊긴 사람의 자리, 판의 저장 (14절) | | 대기실 창(오른쪽 위), 판의 막대와 초읽기(가운데 위), 결과 창 | |
+| `chars` | 캐릭터 정의: 바깥(AI·사람)이 만든 정의를 검증해 두고(월드 저장, 바꿔 끼우는 저장소) 화면에 보낸다. `roster`와 함께면 정의가 영웅이 된다 (15절) | | 없음(정의를 받아 둔다: `onChars`) | |
+| `morph` | 변신: 가진 캐릭터 정의의 겉모습(남에게도)과 게임이 정한 보정, 지속 시간·재사용 대기·전투 중 금지 (15절) | chars | 메뉴의 변신 탭 | |
 
 ```ts engine/test/core/shared/content/index.ts
 /** 쓸 모듈: 없다 (핵심만) */
@@ -94,10 +96,10 @@ export const MODULES: readonly ModuleId[] = [];
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph'];
 ```
 
-모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
+모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`, `chars`, `morph`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
 **의존으로 딸려 온 모듈의 화면 감추기**: 쓰려는 모듈의 의존 때문에 고른 모듈의 단추가 필요 없으면(예: 던전 → 장비 → 아이템이라 생기는 가방 단추, 서버가 대신 싸우는 게임의 '가까운 대상 공격') 내용에 `export const HUD: HudRules = { hide: ['bag', 'attackNearest'] };`(타입은 `@engine/shared/defs/hud`)를 적는다. 감출 뿐이라 기능과 단축키는 그대로다. 이름의 목록은 13절 '단계 밖'의 표.
 
@@ -226,7 +228,7 @@ if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키�
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph'];
 export const GUEST_NAME = 'Camper';
 ```
 
@@ -448,7 +450,7 @@ mountBonfire();
 startClient({
   look,
   // 이 게임의 모듈: 적은 차례대로 init되고, 틀의 덧붙는 모듈(상점, 가방, 메뉴 …)보다 먼저다
-  modules: [initBonfire, initScene],
+  modules: [initBonfire, initScene, initCharStands],
 });
 ```
 
@@ -536,10 +538,11 @@ export const look: Look = {
 ```ts games/sample/client/scene.ts
 export function initScene(): void {
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
-  // 사람 모델: 틀의 사람형(defaultHumanoid)에 털모자를 얹는다. 머리째 바꾸려면 m.head를 지우고 새로 붙인다. 손 모양은 틀이 이미 붙였다
+  // 사람 모델: 틀의 사람형(defaultHumanoid)에 털모자를 얹는다. 머리째 바꾸려면 m.head를 지우고 새로 붙인다. 손 모양은 틀이 이미 붙였다.
+  // 부품으로 된 겉모습(look.look: 캐릭터 정의·변신)이면 그 부품대로 그리고 털모자는 얹지 않는다 (모자는 겉모습의 칸이다)
   setHumanoidBody((look) => {
     const m = defaultHumanoid(look);
-    m.head?.add(part(new THREE.CylinderGeometry(0.3, 0.32, 0.22, 6), mat(0x8a3a2a), 0, 0.36, 0));
+    if (!look.look) m.head?.add(part(new THREE.CylinderGeometry(0.3, 0.32, 0.22, 6), mat(0x8a3a2a), 0, 0.36, 0));
     return m;
   });
   // 나무꾼의 손 모양(직업 정의의 hand: 'axe'): 오른손에 든 자루와 도끼날. 돌려준 도끼날이 무기의 겉모습(registerBlade)을 따른다
@@ -705,6 +708,8 @@ export function installSample(g: Game): void {
   g.bonfire = new Bonfire(g);
   // 일일 임무 '장작 넣기'(DAILIES의 kind: 'feed')를 센다. 임무 시스템(g.daily)은 플러그인보다 뒤에 만들어지므로, 모두 만들어진 뒤(ready)에 잇는다
   g.ready.push(() => { const daily = g.daily; g.on('fed', (p, n) => daily.add(p, 'feed', n)); });
+  // 캐릭터 정의 넷과 변신 (./chars.ts)
+  installChars(g);
 }
 ```
 
@@ -1937,3 +1942,103 @@ import { STARTER } from '../shared/content';
 ### 차례·기한을 직접 짤 때 (판 모듈 없이)
 
 판 모듈을 쓰지 않고 틱 위에 차례를 올리려면 `g.now()`(벽시계, 시험은 정해진 시계 `new Game({ now })`)로 기한을 재고 `g.ticks`에서 매 틱 본다(해상도는 틱 50ms). 화면의 초읽기는 남은 시간(ms)을 보낸 때 기준으로 실어 보내고 화면이 받은 때 + 남은 시간을 기한으로 삼는다(판 모듈의 `RoomView.left`가 그렇게 한다: 차례가 바뀔 때만 보내도 매끄럽다).
+
+## 15. 겉모습 부품, 캐릭터 정의, 변신 (`chars`·`morph` 모듈)
+
+사용자 아이디어 'AI로 만드는 캐릭터'([ideas.md](ideas.md) 3절)의 틀 쪽 바탕이다. AI·계정·거래·주간 한도는 아직 없다: 틀은 **정해진 형식의 캐릭터 정의**를 받아 믿지 않고 검증하고, 그 정의를 부품으로 그리고, 수집형의 영웅과 MMORPG의 변신이 함께 읽게 한다. 셋 다 선택이다: 겉모습을 적지 않은 사람형은 예전과 같은 그림이고, 두 모듈을 고르지 않은 게임에는 명령·저장 칸·개인 상태·창이 없다(`RPG_MODULES`에도 들지 않는다).
+
+### 겉모습 부품 (모듈과 상관없이)
+
+- 형식(`engine/shared/defs/look.ts`의 `Look`): 칸 여섯(`body` 체형, `head` 머리 모양, `hair` 머리카락, `hat` 모자, `face` 얼굴 장식, `back` 등 장식)마다 부품 id, 색 넷(`skin`·`cloth`·`hair`·`accent`, 0xRRGGBB), 무늬(`pattern`), 키·너비 배율(`size`·`width`, 기본 범위 0.85~1.15·0.85~1.2). 적지 않은 칸은 그 칸의 기본 부품(목록의 첫째)이다.
+- 줄 위와 저장에는 짧은 글자로 싣는다: `encodeLook(look)` → `'1;b=stout;r=bob;t=helm;C=4c7a3a;p=belt;z=105'`(맨 앞이 버전, 기본값은 적지 않는다: 아무것도 고르지 않으면 `'1'`), `decodeLook(글자)`(모양이 틀리면 `null`, 배율은 범위로 자른다). 믿지 않는 객체는 `checkLook(raw)`가 칸·부품·색·무늬·배율을 모두 보고 틀린 곳을 돌려준다.
+- 틀의 기본 부품: 체형 `plain`(틀의 네모난 사람과 같은 치수)·`stout`·`slim`·`robe`, 머리 `box`(틀의 머리)·`round`·`tall`·`wide`, 머리카락 `none`·`short`·`bob`·`long`·`spiky`·`bun`·`tail`, 모자 `none`·`cap`·`hood`·`pointed`·`crown`·`helm`·`horns`·`band`, 얼굴 `none`·`eyes`·`mask`·`beard`·`goggles`, 등 `none`·`cape`·`pack`·`wings`·`scarf`·`shield`, 무늬 `none`·`stripe`·`sash`·`belt`·`trim`.
+- 게임이 고치는 길: 내용의 `LOOK_RULES`(`add` 칸마다 더할 부품, `remove` 뺄 부품(첫째 기본은 못 뺀다), `off` 끌 칸, `patterns`, `size`·`width` 범위). 더한 부품은 화면에서 그리는 법을 등록한다: `registerLookPart(칸, id, ({ frame, body, head, mats }) => …)`(머리카락·모자·얼굴·등), `registerLookBody`, `registerLookHead`, `registerLookPattern`(`@engine/client`). 머리의 부품은 `head.head`에 붙이고(좌표는 머리 가운데가 원점, `head.w`·`head.h`·`head.d`는 반폭·반높이·반깊이), 등 장식은 `frame`에(몸통의 반깊이 `body.bd`). 모양은 `lookGeo(열쇠, 만들기)`로 나눠 쓴다.
+- 그리기: `makeHumanoid(옷, 손, 살갗, 직업, 영웅, look)`의 여섯째에 겉모습을 주거나 `HumanoidLook.look`이 있으면 `defaultHumanoid`가 부품으로 그린다(`engine/client/scene/look.ts`). 손 모양·무기의 겉모습(`registerBlade`)·갑옷 덧대기(`registerArmor`)·게임의 꾸밈(`setHumanoidDeco`)이 그대로 붙는다. 사람 모델 파일(`registerHumanoidAsset`)로는 바꿔 끼우지 않는다(파일에는 부품이 없다). `setHumanoidBody`로 사람을 바꾼 게임은 `look.look`이 있을 때 자기 덧붙임을 건너뛴다(아래 예제의 털모자). 크기 배율은 안쪽 묶음(`Model.frame`)에 준다.
+- 비용: 움직이지 않는 부품(몸통·머리카락·모자·얼굴·등·무늬)은 다 붙인 뒤 꼭짓점 색을 입힌 **한 메시로 굽는다**(재질 하나를 모두가 나눠 쓰고, 같은 겉모습의 사람은 구운 모양도 나눠 쓴다). 그래서 사람 하나의 그리기 호출은 틀의 네모난 사람과 같다(팔다리 넷 + 머리 + 몸 하나, 부품의 수와 상관없이). 색만 있는 재질이 아닌 부품(게임이 단 빛나는 재질)은 굽지 않고 따로 그린다. 측정: [framework-status.md](framework-status.md)의 '캐릭터 정의와 변신'.
+- 사람의 겉모습을 남에게 보내는 통로(핵심): 서버의 `g.setLook(엔티티, 글자)`(빈 글자면 예전 그림). 모두에게 `{ t: 'look', id, l }`이 가고, 나중에 시야에 들어오는 화면에는 `EnterInfo.l`로 간다. 저장하지 않는다(겉모습을 정한 시스템이 자기 저장에서 다시 부른다). 변신 모듈이 이것을 쓴다.
+
+예제는 모자에 '사슴뿔'을 더하고 등 장식의 '날개'를 뺀다:
+
+```ts games/sample/shared/content/index.ts
+export const LOOK_RULES: LookRules = { add: { hat: ['antlers'] }, remove: { back: ['wings'] } };
+```
+
+```ts games/sample/client/scene.ts
+registerLookPart('hat', 'antlers', ({ head, mats }) => {
+const beam = lookGeo('antlerBeam', () => new THREE.BoxGeometry(0.06, 0.42, 0.06)), tine = lookGeo('antlerTine', () => new THREE.BoxGeometry(0.05, 0.2, 0.05));
+for (const s of [-1, 1]) {
+const b = part(beam, mats.accent, s * (head.w * 0.7), head.h + 0.18, 0);
+```
+
+### 캐릭터 정의와 검증 (`chars` 모듈)
+
+정의 하나(`engine/shared/defs/chardef.ts`의 `CharDef`):
+
+```json
+{
+  "v": 1, "id": "mossguard", "name": "이끼 파수꾼", "bio": "숲 가장자리를 지키는 느긋한 파수꾼.",
+  "look": { "parts": { "body": "stout", "hat": "helm", "face": "beard", "back": "shield" }, "colors": { "cloth": 5012026, "accent": 13148224 }, "pattern": "belt", "size": 1.05 },
+  "role": "", "rarity": 0, "stats": { "atk": 12, "hp": 200 }, "skills": ["chop"]
+}
+```
+
+- **검증기 `validateCharDef(객체 또는 JSON 글자, 쓰는 id인가?)`는 결과를 믿지 않는다**: 모양(객체, 모르는 칸·빠진 칸, 4096자까지의 JSON), 버전, id(영문 소문자로 시작하는 3~32자, 내용의 영웅·저장소의 정의와 겹치지 않게), 이름·소개(NFC로 모은 글자 수, 제어·서식·방향 바꾸기·줄 바꿈 글자, 쓸 수 있는 글자(기본: 한글·로마자·숫자·빈칸·문장 부호 몇), 앞뒤·겹친 빈칸, 금칙어), 역할·등급, 능력치(칸마다 정수, 가장 작은 값, 등급의 칸마다 상한, 무게를 곱한 합의 **예산**), 기술(틀의 기술 효과 `SKILL_DEFS` 가운데 고를 수 있는 것, 수, 겹침), 겉모습(`checkLook`). 예외를 던지지 않고 `{ ok: true, def }`(다듬은 정의) 또는 `{ ok: false, issues: [{ code, path, arg }] }`(32개까지)를 돌려준다.
+- 거절 코드(`CHAR_ERRS`, 26가지): `shape` `extra` `missing` `type` `version` `id` `idTaken` `length` `control` `charset` `space` `banned` `role` `rarity` `stat` `statMin` `statCap` `budget` `skill` `skillCount` `skillDup` `part` `slotOff` `color` `pattern` `size`. 화면의 문장은 `L().fmt.charErr(code, path, arg)`(한국어·영어), 서버가 사람에게 알릴 때는 안내문 `charBad`.
+- 규칙(내용의 `CHAR_RULES`, 모두 선택): `stats`(능력치의 칸과 무게, 기본 `atk` 무게 4·`hp` 무게 0.5: 영웅의 전투력 셈과 같다), `budget`(등급마다 `{ total, cap }`. **적지 않으면 내용의 영웅(`HEROES`)들의 범위에서 셈한다**: `budgetFromHeroes()`, 그 등급의 영웅이 없으면 그 등급은 만들 수 없다), `roles`(기본 `HERO_ROLES` 전부), `skills`·`maxSkills`(기본 `SKILL_DEFS` 전부, 하나), `nameMax`·`bioMax`(16, 120), `charset`, `banned`, `toHero`(영웅으로 쓸 때의 공격·체력).
+- 금칙어 고리: `CHAR_RULES.banned`(목록) 또는 `addCharFilter((글, 'name' | 'bio') => 걸리면 true)`(서버가 시작할 때 꽂는다). 대소문자·빈칸·문장 부호를 무시하고 견준다(`banKey`). 거르개가 예외를 던지면 걸린 것으로 본다.
+- 서버(`g.chars`, `engine/server/game/systems/chars.ts`): `add(raw, { replace? })`가 정의를 더하는 **유일한 길**이다(게임의 규칙, 관리자, 나중의 AI 만들기 요청). 검증을 거쳐 통과한 것만 두고, `remove(id)`(회수), `get`·`has`·`list`. 기본 저장은 월드 저장의 칸 `chars`(서버 DB). `useStore({ all, put, remove })`로 저장소를 바꿔 끼운다(나중의 계정 공용 저장소: 두 게임 서버가 같은 저장소를 읽으면 같은 정의를 본다). 읽은 정의가 지금의 규칙으로 거절되면 쓰지 않고 간직했다가 다시 적는다. 화면에는 개인 상태 `chars`(정의의 목록, 바뀐 때만)로 간다: `onChars(fn)`, `charDefs()`(`@engine/client`).
+- **영웅으로 쓰는 다리**: `roster`를 함께 고른 게임에서는 더한 정의가 영웅의 표에 들어간다(`addHeroDef(id, charHero(def))`: 이름은 글 그대로(`HeroDef.label`), 공격·체력은 능력치, 겉모습(`HeroDef.look`), 기술은 역할의 것 대신 정의의 첫째). `isHeroId`·`heroDef`·`heroRole`·`heroIds()`가 곧바로 보므로 뽑기·편성·저장·영웅 탭·싸우는 영웅의 겉모습이 내용의 영웅처럼 돈다. 서버가 켜지면 월드(정의)를 먼저 읽고 사람을 읽으므로 저장된 영웅이 이어진다.
+
+예제(영웅이 없는 게임)는 예산의 표를 직접 적는다:
+
+```ts games/sample/shared/content/index.ts
+export const CHAR_RULES: CharRules = {
+budget: [{ total: 160, cap: { atk: 20, hp: 220 } }, { total: 200, cap: { atk: 26, hp: 260 } }, { total: 240, cap: { atk: 32, hp: 320 } }],
+roles: [],
+skills: ['chop', 'aim', 'rest'],
+nameMax: 12, bioMax: 80,
+banned: ['운영자', 'admin'],
+};
+```
+
+정의는 날것(`unknown`)으로 두고 검증기를 거쳐서만 받는다(AI의 결과와 같은 자리):
+
+```ts games/sample/server/chars.ts
+export function installChars(g: Game): void {
+g.ready.push(() => {
+for (const raw of SAMPLE_CHARS) {
+const r = g.chars.add(raw, { replace: true });
+if (!r.ok) console.warn(`[sample] 캐릭터 정의가 거절됐다: ${r.issues.map((x) => `${x.code}@${x.path}`).join(', ')}`);
+}
+});
+g.on('playerJoined', (p) => { for (const d of g.chars.list()) g.morph.grant(p, d.id); });
+}
+```
+
+### 변신 (`morph` 모듈, `chars`에 기댄다)
+
+- 사람이 가진 캐릭터 정의로 바뀐다. 겉모습은 `g.setLook`으로 바뀌어 **남의 화면에도 보이고**, 힘의 보정은 `g.mods`(주는 피해 `damage`, 받는 피해 `guard`, 치명타 `crit`, 자연 회복 `regen`)로 건다.
+- 규칙(내용의 `MORPH_RULES`): `durationS`(이어지는 시간, 0이면 스스로 풀 때까지), `cooldownS`(풀린 뒤 다시까지), `noFightS`(맞은 지 이 초 안에는 못 한다, 0이면 언제나), `mods(def)`(정의마다의 보정), `cap`(칸마다 상한, `guard`는 0.9까지), `maxOwn`(가질 수 있는 수). **기본값은 겉모습만**(보정 0), 스스로 풀 때까지, 다시까지 10초, 맞은 지 5초 안에는 못 한다, 서른까지.
+- 서버(`g.morph`): `grant(p, id)`(주기: 게임의 보상·상점, 나중의 거래·AI 만들기), `take(p, id)`(거두기), `owns`, `on(p, id)`, `off(p, why)`, `mods(p)`. 명령 `{ t: 'morph', a: 'on', id }`, `{ t: 'morph', a: 'off' }`. 사건 `morphed(p, id, why)`. 정의가 빠지면 그것으로 변신한 사람이 풀린다. 저장은 캐릭터의 ext `morph`(`{ own, on?, left?, cd? }`), 개인 상태 `morph`(`MorphMe`: 가진 것, 지금의 것, 남은 초, 다시까지).
+- 화면: 메뉴의 '변신' 탭(가진 캐릭터마다 부품으로 그린 작은 그림, 이름·등급·소개·능력치·보정, 변신 단추, 변신 중이면 남은 시간과 풀기). `setMenuTabs`를 쓰는 게임은 목록에 `'morph'`를 넣는다. 내 상태는 `myMorph()`.
+
+```ts games/sample/shared/content/index.ts
+export const MORPH_RULES: MorphRules = {
+durationS: 180, cooldownS: 15, noFightS: 4, maxOwn: 8,
+mods: (d) => ({ damage: (d.stats.atk ?? 0) / 300, guard: (d.stats.hp ?? 0) / 4000 }),
+cap: { damage: 0.08, guard: 0.06 },
+};
+```
+
+화면에서 정의를 받아 쓰는 예(모닥불 곁에 정의마다 그 겉모습의 사람을 세운다):
+
+```ts games/sample/client/chars.ts
+onChars((list) => {
+if (placed || !list.length) return;
+placed = true;
+```
+
+### 시험과 남은 것
+
+- 시험: `engine/test/collect/chardef.test.ts`(검증기의 규칙마다의 거절 코드, 금칙어 고리, 겉모습 글자, **퍼징**: 무작위·악의적인 정의 6000개가 예외 없이 거절·통과하고 통과한 것은 모두 예산 안, 예산을 넘긴 것은 언제나 거절, 영웅의 다리와 저장, 저장소 바꿔 끼우기), `engine/test/collect/morph.test.ts`(변신·풀기·대기·전투 중 금지, `EnterInfo.l`과 `look`, 저장, 회수), `games/sample/test/morph.test.ts`(예제의 정의와 세기, 실제 서버에서 남의 화면).
+- 남은 것(틀 밖, 사용자 결정이 필요한 것): AI 생성기(프롬프트 → 이 형식의 JSON: 결과는 `g.chars.add`로만 넣는다), 계정과 계정 공용 저장소(`useStore`에 꽂는다), 소유의 싱크(`morph.grant`·`take`), 거래와 수익 분배, 주간 한도, 요청 검사·신고·회수(회수는 `g.chars.remove`).

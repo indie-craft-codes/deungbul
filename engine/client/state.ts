@@ -34,6 +34,8 @@ export interface Remote {
   look?: KindLook;
   /** 사람이 입은 옷 색 (setPlayerLook의 cloth, 없으면 틀의 색). 바뀌면 모델을 새로 만든다 */
   cloth?: number;
+  /** 부품 겉모습의 글자 (EnterInfo.l, 메시지 look: 변신 같은 것). 바뀌면 모델을 새로 만든다 */
+  lookCode?: string;
 }
 
 /** 내 캐릭터. 위치는 먼저 예측하고 서버 값(sx, sz)으로 보정한다 */
@@ -54,6 +56,8 @@ export interface Me {
   vals: number[];
   /** 내가 입은 옷 색 (setPlayerLook의 cloth, 없으면 틀의 붉은 옷) */
   cloth?: number;
+  /** 내 부품 겉모습의 글자 (메시지 look: 변신 같은 것) */
+  lookCode?: string;
 }
 
 export const S = {

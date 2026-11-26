@@ -54,6 +54,10 @@ export const MODULE_TABLE = {
   herogear: { needs: ['roster', 'items', 'economy'] },
   /** 판: 사람(과 컴퓨터) 몇이 따로 된 층에서 차례대로 두는 판. 대기실·짝짓기, 차례와 기한, 끊긴 사람의 자리, 판의 저장. 턴제·보드·카드 게임의 바탕 */
   rooms: { needs: [] },
+  /** 캐릭터 정의: 바깥(AI·사람)이 만든 정의를 검증해 서버에 두고(월드 저장, 바꿔 끼울 수 있는 저장소) 화면에 보낸다. roster를 함께 고르면 정의가 영웅이 된다 */
+  chars: { needs: [] },
+  /** 변신: 가진 캐릭터 정의의 겉모습(남에게도 보인다)과 게임이 정한 보정으로 바뀐다. 지속 시간·재사용 대기·전투 중 금지 (MORPH_RULES) */
+  morph: { needs: ['chars'] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
@@ -64,9 +68,9 @@ export type ModuleId = keyof typeof MODULE_TABLE;
  * 틀에 저장 칸을 가진 모듈을 더하면 여기에도 적는다 (engine/test/fx/modules.test.ts가 등록된 칸과 견준다)
  */
 export const MODULE_SAVES: { player: Readonly<Record<string, ModuleId>>; top: Readonly<Record<string, ModuleId>>; world: Readonly<Record<string, ModuleId>> } = {
-  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams', keys: 'dungeon', roster: 'roster', gacha: 'gacha', squad: 'squad', stages: 'stages', formation: 'squad', herogear: 'herogear' },
+  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams', keys: 'dungeon', roster: 'roster', gacha: 'gacha', squad: 'squad', stages: 'stages', formation: 'squad', herogear: 'herogear', morph: 'morph' },
   top: { lv: 'growth', exp: 'growth', need: 'growth', maxHp: 'combat', sparks: 'economy', gold: 'economy', weapon: 'items', armor: 'items', items: 'items', cls: 'classes', auto: 'away' },
-  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams' },
+  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams', chars: 'chars' },
 };
 /** 모든 모듈 (표의 차례) */
 export const ALL_MODULES = Object.keys(MODULE_TABLE) as ModuleId[];
@@ -77,9 +81,10 @@ export const COLLECT_MODULES: readonly ModuleId[] = ['roster', 'gacha', 'squad',
  * 팀(teams)은 들지 않는다: RPG가 아닌 놀이(공놀이, 깃발 뺏기)의 모듈이고, 이 목록을 쓰는 게임이 저절로 팀을 갖지 않게 한다.
  * 수집형의 넷(COLLECT_MODULES)과 영웅 장비(herogear)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 뽑기와 단계를 갖지 않게 한다.
  * herogear는 COLLECT_MODULES에도 들지 않는다: 그 목록을 쓰는 게임이 저절로 영웅 장비(아이템 모듈에 기댄다)를 갖지 않게, 고르는 게임이 따로 적는다.
- * 판(rooms)도 들지 않는다: 턴제·보드 게임의 모듈이고, 이 목록을 쓰는 게임이 저절로 대기실을 갖지 않게 한다
+ * 판(rooms)도 들지 않는다: 턴제·보드 게임의 모듈이고, 이 목록을 쓰는 게임이 저절로 대기실을 갖지 않게 한다.
+ * 캐릭터 정의(chars)와 변신(morph)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 변신을 갖지 않게, 고르는 게임이 따로 적는다
  */
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms');
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph');
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).

@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { armorHit, humanoidAsset, monsterAsset, nameList, pickClip, weaponAsset, type AnimState, type HumanoidArmor, type ModelAsset } from '../assets';
 import type { Animator, Instance, Source } from './gltf';
+import type { Look } from '../../shared/defs/look';
 
 export interface Rig { ll: THREE.Group; rl: THREE.Group; la: THREE.Group; ra: THREE.Group }
 /**
@@ -19,6 +20,8 @@ export interface Model {
   armorId?: string;
   /** 모델 파일의 사람에서 갑옷을 보일 곳 (HumanoidAsset.armor로 찾은 것) */
   fileArmor?: FileArmor;
+  /** 몸 전체를 담은 안쪽 묶음 (겉모습의 크기 배율을 받는다: scene/look.ts). 있으면 갑옷 덧대기도 여기에 붙는다. 없으면 root */
+  frame?: THREE.Group;
 }
 /** 파일의 사람에서 갑옷을 칠할 메시들(본래 재질과 칠할 칸)과 덧대기를 붙일 노드(쉬는 자세의 자리를 되돌리는 행렬) */
 interface FileArmor { meshes: { mesh: THREE.Mesh; base: THREE.Material | THREE.Material[]; slots: boolean[] }[]; node?: THREE.Object3D; rest?: THREE.Matrix4 }
@@ -110,13 +113,23 @@ registerHand('staff', ({ root, rig, cloth }) => {
  * 사람형의 겉모습을 정하는 값: 옷 색, 손 모양(''이면 빈손), 살갗 색, 직업(아는 때만: 직업별 사람 모델 파일을 고른다).
  * 편성의 영웅(엔티티 종류 hero)이면 영웅 id(hero)와 등급 번호(rarity)도 온다: setHumanoidBody가 영웅마다·등급마다 다르게 그릴 수 있다
  */
-export interface HumanoidLook { cloth: number; hand: string; skin: number; cls?: string; hero?: string; rarity?: number }
+export interface HumanoidLook {
+  cloth: number; hand: string; skin: number; cls?: string; hero?: string; rarity?: number;
+  /**
+   * 부품으로 된 겉모습 (engine/shared/defs/look.ts: 체형, 머리, 머리카락, 모자, 얼굴, 등, 색, 무늬, 크기). 캐릭터 정의·변신의 사람에게만 온다.
+   * 있으면 defaultHumanoid가 부품으로 그리고(scene/look.ts) 사람 모델 파일로 바꿔 끼우지 않는다. 없으면 예전과 같은 그림이다
+   */
+  look?: Look;
+}
 /**
  * 사람형 모델을 통째로 바꾼다 (플레이어, 상인, 게임이 세운 NPC, 사람형 몬스터 모두). 등록하지 않으면 틀의 네모난 사람이다.
  * 걷는 동작은 돌려준 모델의 rig(다리 둘, 팔 둘)로, 무기의 겉모습은 blade로, 갑옷은 rig가 있을 때 틀의 자리에 덧댄다
  */
 let humanoidBody: ((look: HumanoidLook) => Model) | null = null;
 export function setHumanoidBody(fn: (look: HumanoidLook) => Model): void { humanoidBody = fn; }
+/** 부품으로 된 겉모습을 그리는 것 (scene/look.ts가 읽힐 때 끼운다: 이 파일이 그 파일을 import하지 않게) */
+let lookBody: ((look: HumanoidLook & { look: Look }) => Model) | null = null;
+export function setLookBody(fn: (look: HumanoidLook & { look: Look }) => Model): void { lookBody = fn; }
 
 /**
  * 손 모양 하나를 몸에 붙이고 무기의 겉모습이 바뀌는 부분을 돌려준다. 사람형을 통째로 바꾼 게임(setHumanoidBody)이 자기 몸에 손을 붙일 때 부른다.
@@ -130,7 +143,9 @@ export function attachHand(hand: string, m: { root: THREE.Group; rig: Rig; cloth
  * 틀의 사람형: 네모난 몸, 팔다리 넷, 손 모양. 머리(head)도 돌려준다.
  * 조금만 바꾸려는 게임은 setHumanoidBody 안에서 이것을 부른 뒤 고친다(예: 머리를 둥근 것으로 바꾸기, 모자 얹기)
  */
-export function defaultHumanoid({ cloth, hand, skin }: HumanoidLook): Model {
+export function defaultHumanoid(hl: HumanoidLook): Model {
+  if (hl.look && lookBody) return lookBody(hl as HumanoidLook & { look: Look });
+  const { cloth, hand, skin } = hl;
   const root = new THREE.Group();
   const pants = mat(0x3b3a4a), cm = mat(cloth);
   const rig: Rig = { ll: limb(G.leg, pants, -0.2, 0.7, 0, 0.35), rl: limb(G.leg, pants, 0.2, 0.7, 0, 0.35), la: limb(G.arm, cm, -0.54, 1.48, 0, 0.35), ra: limb(G.arm, cm, 0.54, 1.48, 0, 0.35) };
@@ -145,12 +160,14 @@ export function defaultHumanoid({ cloth, hand, skin }: HumanoidLook): Model {
  * 사람형 캐릭터. armed: true면 검, 손 모양의 id('bow', 'staff', 게임이 등록한 것)면 그것, false면 빈손(마을 주민).
  * cls는 직업 (아는 때만): 그 직업의 사람 모델 파일(registerHumanoidAsset)이 있으면 그것을, 없으면 모두의 것을, 그것도 없으면 코드 모델을 쓴다
  */
-export function makeHumanoid(cloth: number, armed: boolean | string = true, skin = 0xf0c9a0, cls?: string, hero?: { hero: string; rarity: number }): Model {
+export function makeHumanoid(cloth: number, armed: boolean | string = true, skin = 0xf0c9a0, cls?: string, hero?: { hero: string; rarity: number }, parts?: Look): Model {
   const look: HumanoidLook = { cloth, hand: armed === true ? 'sword' : armed === false ? '' : armed, skin, cls, ...hero };
+  // 부품으로 된 겉모습 (캐릭터 정의·변신): 옷과 살갗의 색은 그 겉모습의 것을 먼저
+  if (parts) { look.look = parts; look.cloth = parts.colors.cloth ?? cloth; look.skin = parts.colors.skin ?? skin; }
   const m = (humanoidBody ?? defaultHumanoid)(look);
-  humanoidDeco?.(m.root); // 게임의 꾸밈 (등불지기는 허리춤의 등불)
+  humanoidDeco?.(m.frame ?? m.root); // 게임의 꾸밈 (등불지기는 허리춤의 등불)
   m.hand = look.hand;
-  const asset = humanoidAsset(cls);
+  const asset = parts ? undefined : humanoidAsset(cls);
   if (!asset) return m;
   const colors: Record<string, number> = {};
   for (const n of nameList(asset.paint?.cloth)) colors[n] = cloth;
@@ -344,7 +361,7 @@ export function setArmor(m: Model, armor: string): void {
   }
   if (!a || !m.rig) return;
   const g = armorGroup(a);
-  m.root.add(g);
+  (m.frame ?? m.root).add(g);
   m.armor = g;
 }
 

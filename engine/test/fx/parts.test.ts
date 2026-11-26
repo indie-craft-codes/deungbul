@@ -17,17 +17,17 @@ const BEFORE = [...CORE, 'hp', 'maxHp', 'targetId', 'atkCd', 'lastHurt', 'guild'
   'def', 'hx', 'hz', 'respawn', 'hitters', 'swarm', 'scale', 'cast', 'windup', 'slowUntil', 'stunUntil', 'buffs', 'dots', 'homing'];
 /**
  * 그 뒤에 더한 모듈의 칸: 수집형·방치형 (roster의 heroes, gacha의 pity·pulls, squad의 squad·squadBack(진형의 뒷줄), stages의 stage, herogear의 hgear·hgSeq).
- * 예전의 게임은 이 모듈을 고르지 않으므로 엔티티에 없다
+ * 예전의 게임은 이 모듈을 고르지 않으므로 엔티티에 없다. 변신(morph)의 morph도 같다
  */
-const ADDED = ['heroes', 'pity', 'pulls', 'squad', 'squadBack', 'stage', 'hgear', 'hgSeq'];
+const ADDED = ['heroes', 'pity', 'pulls', 'squad', 'squadBack', 'stage', 'hgear', 'hgSeq', 'morph'];
 const same = (a: readonly string[], b: readonly string[]) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
 /** 그 모듈과 그 모듈이 기대는 모듈 전부 */
 const closure = (m: ModuleId): ModuleId[] => { const out = new Set<ModuleId>([m]); const q = [m]; while (q.length) for (const n of MODULE_TABLE[q.pop()!].needs as readonly ModuleId[]) if (!out.has(n)) { out.add(n); q.push(n); } return ALL_MODULES.filter((x) => out.has(x)); };
 const owned = partKeys();
 const allPart = [...owned.values()].flat();
 
-check(same([...CORE, ...allPart], [...BEFORE, ...ADDED]) && allPart.every((k) => !CORE.includes(k)), `모듈의 칸(${allPart.length}개)과 핵심의 칸(${CORE.length}개)을 합치면 예전의 엔티티 칸(${BEFORE.length}개)과 수집형의 칸(${ADDED.length}개)이고, 겹치지 않는다`);
-check(ADDED.every((k) => ['roster', 'gacha', 'squad', 'stages', 'herogear'].includes(partOwner(k) ?? '')), '수집형의 칸은 수집형의 모듈 넷과 영웅 장비의 것이다');
+check(same([...CORE, ...allPart], [...BEFORE, ...ADDED]) && allPart.every((k) => !CORE.includes(k)), `모듈의 칸(${allPart.length}개)과 핵심의 칸(${CORE.length}개)을 합치면 예전의 엔티티 칸(${BEFORE.length}개)과 수집형·변신의 칸(${ADDED.length}개)이고, 겹치지 않는다`);
+check(ADDED.every((k) => ['roster', 'gacha', 'squad', 'stages', 'herogear', 'morph'].includes(partOwner(k) ?? '')), '수집형의 칸은 수집형의 모듈 넷과 영웅 장비의 것이다 (morph는 변신의 것)');
 check([...owned.keys()].every((m) => ALL_MODULES.includes(m)) && partOwner('hp') === 'combat' && partOwner('gold') === 'economy' && partOwner('lv') === 'growth' && partOwner('x') === undefined,
   `칸마다 둔 모듈이 하나다 (${[...owned].map(([m, ks]) => `${m} ${ks.length}`).join(', ')})`);
 

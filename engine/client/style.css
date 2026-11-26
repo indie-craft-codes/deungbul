@@ -796,3 +796,10 @@ body.room-still #stick { display: none; }
   body.room-bar-top #topmid #roomBar { bottom: auto; top: var(--room-bar-top, calc(env(safe-area-inset-top, 0px) + 96px)); }
   #roomEnd .rbig { font-size: 26px; }
 }
+
+/* ---------- 변신 (morph 모듈: hud/morph.ts). 등급의 색은 --rc ---------- */
+.morphRow .iname { color: var(--rc, inherit); display: flex; align-items: center; gap: 8px; }
+.morphPic { width: 48px; height: 56px; flex: none; border-radius: 6px; background: rgba(255, 255, 255, .06); }
+.morphRow.on { outline: 1px solid var(--gold); border-radius: 6px; }
+.morphBio { font-style: italic; opacity: .85; margin-top: 2px; }
+.morphHead .mtag { font-size: 11px; border: 1px solid var(--gold); color: var(--gold); border-radius: 3px; padding: 0 5px; }

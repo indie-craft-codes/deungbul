@@ -66,7 +66,7 @@ export function initBonfire(): void {
       }
     },
   }, 'gear');
-  setMenuTabs(['gear', 'camp', 'build', 'mail', 'daily', 'rank']);
+  setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'rank']);
 
   ui.all.addEventListener('click', () => { feed(logs()); ui.all.blur(); });
   $('classBtn').addEventListener('click', openClasses);

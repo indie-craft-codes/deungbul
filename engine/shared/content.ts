@@ -108,3 +108,7 @@ export const GACHA_RULES = get('GACHA_RULES');
 export const SQUAD_RULES = get('SQUAD_RULES');
 export const CHAPTERS = get('CHAPTERS');
 export const STAGE_RULES = get('STAGE_RULES');
+// ---------- 겉모습의 부품, 캐릭터 정의, 변신 ----------
+export const LOOK_RULES = get('LOOK_RULES');
+export const CHAR_RULES = get('CHAR_RULES');
+export const MORPH_RULES = get('MORPH_RULES');
