@@ -1,0 +1,1 @@
+{ "port": 3010, "db": "data/pond/game.db", "dist": "dist-pond", "bots": 0 }

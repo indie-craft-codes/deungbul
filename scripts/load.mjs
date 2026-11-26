@@ -8,7 +8,7 @@
 //   node scripts/load.mjs collect "10,50,100,200" 20 squad=4 mode=stage      (인원 여럿: 차례로 돌려 표 하나)
 //   node scripts/load.mjs bench collect 200 1200 squad=4 mode=stage           (통신 없이 틱·스냅샷의 셈만, 결과의 지문 sha까지: scripts/load/bench.ts)
 //
-// 게임: deungbul, dalmuri, collect(틀의 시험용 내용 '영웅 들판'), rollball, sample, cave, starmine, bastion, stepstone (판: mode=room|roomcpu)
+// 게임: deungbul, dalmuri, collect(틀의 시험용 내용 '영웅 들판'), rollball, sample, cave, starmine, bastion, stepstone·pond (판: mode=room|roomcpu)
 // 이름=값:
 //   mode=stage|field|fight|spread  접속자의 움직임 (scripts/load/clients.mjs의 머리 주석). 기본 field
 //   squad=N      사람마다 영웅 N을 주고 편성한다 (squad 모듈이 있는 게임, 내용의 영웅 수까지). 기본 0 = 게임의 처음 그대로
