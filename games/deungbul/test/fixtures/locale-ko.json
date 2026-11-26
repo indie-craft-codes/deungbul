@@ -1049,6 +1049,13 @@
   "1초",
   "2초"
  ],
+ "fmt.roomCpuN": [
+  "cd3f5aec9646e36b",
+  "컴퓨터 undefined",
+  "컴퓨터 0",
+  "컴퓨터 1",
+  "컴퓨터 2"
+ ],
  "fmt.roomHostWaits": [
   "24b09c2ed6ca45d5",
   "undefined 님이 기다립니다",
@@ -1063,12 +1070,40 @@
   "두는 중인 판 2",
   "두는 중인 판 5"
  ],
+ "fmt.roomRankRow": [
+  "0d9168b92258cf22",
+  "undefined등 undefined",
+  "0등 undefined",
+  "1등 undefined",
+  "2등 undefined"
+ ],
+ "fmt.roomRankTitle": [
+  "87459fc4a8daddd6",
+  "undefined등",
+  "0등",
+  "1등",
+  "2등"
+ ],
  "fmt.roomRound": [
   "15fb16ec6fed3ced",
   "undefined / undefined 바퀴",
   "0 / undefined 바퀴",
   "1 / undefined 바퀴",
   "2 / undefined 바퀴"
+ ],
+ "fmt.roomScore": [
+  "ea3d43a6653bb99f",
+  "NaN점",
+  "0점",
+  "1점",
+  "2점"
+ ],
+ "fmt.roomStartNow": [
+  "ca5ad901f48ffec9",
+  "지금 시작 (undefined명)",
+  "지금 시작 (0명)",
+  "지금 시작 (1명)",
+  "지금 시작 (2명)"
  ],
  "fmt.roomTheirTurn": [
   "db86b004fe8746c5",
@@ -1078,7 +1113,7 @@
   "2의 차례"
  ],
  "fmt.roomWaiting": [
-  "13193181f6459d09",
+  "5ed67f3e58512054",
   "사람을 기다리는 중… (undefined/undefined)",
   "사람을 기다리는 중… (0/undefined)",
   "사람을 기다리는 중… (1/undefined)",
@@ -2229,6 +2264,13 @@
  "msg.roomAgainWait": "다른 사람이 다시 하기를 누르기를 기다립니다.",
  "msg.roomBack": "두던 판으로 돌아왔습니다.",
  "msg.roomBusy": "이미 판에 앉아 있습니다.",
+ "msg.roomFewer": [
+  "72bab817c5737a0f",
+  "undefined명이 모여야 시작할 수 있습니다.",
+  "0명이 모여야 시작할 수 있습니다.",
+  "1명이 모여야 시작할 수 있습니다.",
+  "2명이 모여야 시작할 수 있습니다."
+ ],
  "msg.roomFoeBack": [
   "a9c443c757bde543",
   "undefined 님이 돌아왔습니다.",
@@ -2254,17 +2296,18 @@
  "msg.roomGone": "그 판에는 들어갈 수 없습니다.",
  "msg.roomNotTurn": "내 차례가 아닙니다.",
  "msg.roomResult": [
-  "80b8f6cc7855be39",
+  "9c8bccf27f899bce",
   "비겼습니다.",
   "이겼습니다!",
-  "졌습니다."
+  "졌습니다.",
+  "5명 가운데 함께 4등입니다."
  ],
  "msg.roomStart": [
-  "18d7b685699ae328",
+  "2677823921ae4c79",
   "판이 시작됐습니다. 상대: 컴퓨터. 상대가 먼저 둡니다.",
   "판이 시작됐습니다. 상대: 1. 먼저 둡니다.",
-  "판이 시작됐습니다. 상대: 3. 먼저 둡니다.",
-  "판이 시작됐습니다. 상대: 1234567. 먼저 둡니다."
+  "판이 시작됐습니다. 4명이 둡니다. 먼저 둡니다.",
+  "판이 시작됐습니다. 1234567명이 둡니다. 먼저 둡니다."
  ],
  "msg.roomTimeout": [
   "51a10a618ce52880",
@@ -2713,6 +2756,7 @@
  "ui.roomPass": "차례 넘기기",
  "ui.roomQuick": "빠른 대국",
  "ui.roomResign": "기권",
+ "ui.roomResignSure": "한 번 더 누르면 기권",
  "ui.roomToLobby": "대기실로",
  "ui.roomWin": "이겼습니다!",
  "ui.roomWithCpu": "컴퓨터와 두기",

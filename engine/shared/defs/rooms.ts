@@ -7,7 +7,7 @@ export type RoomPhase = 'wait' | 'play' | 'over';
 
 /** 판의 한 자리 (화면에 보내는 모양) */
 export interface RoomSeatView {
-  /** 이름 (컴퓨터는 빈 문자열: 화면이 언어 파일의 roomCpu로 적는다). 빈 자리도 빈 문자열이다 */
+  /** 이름 (컴퓨터는 게임이 RoomDef.cpuName으로 준 이름, 없으면 빈 문자열: 화면이 언어 파일의 roomCpu로 적는다). 빈 자리도 빈 문자열이다 */
   name: string;
   /** 컴퓨터 1 */
   cpu: 0 | 1;
@@ -39,7 +39,7 @@ export interface RoomView {
   left: number;
   /** 한 차례의 길이(ms). 기한이 없으면 0 */
   turnMs: number;
-  /** 끝났으면 이긴 자리 (비김 -2), 아니면 -1 */
+  /** 끝났으면 이긴 자리 (비김 -2, 등수로 끝낸 판에서 1등이 여럿이어도 -2), 아니면 -1 */
   win: number;
   /** 끝난 까닭: 틀의 것('resign' 기권, 'left' 끊긴 채 돌아오지 않음)이나 게임이 finish에 준 것 */
   why: string;
@@ -47,6 +47,12 @@ export interface RoomView {
   pass: 0 | 1;
   /** 앉은 동안 걸을 수 있는가 (RoomDef.walk) */
   walk: 0 | 1;
+  /** 시작할 수 있는 가장 적은 자리 수 (기다리는 판: RoomDef.seats의 min. 자리 수가 정해진 판과 시작한 판은 seats.length) */
+  min: number;
+  /** 등수로 끝낸 판의 자리마다 등수 (1부터, 같으면 같은 등수). 이김/짐으로 끝냈거나 끝나지 않았으면 빈 배열 */
+  ranks: number[];
+  /** finish에 준 자리마다의 점수 (없으면 빈 배열) */
+  scores: number[];
 }
 
 /** 대기실의 판 한 줄: [판 id, 연 사람의 이름, 앉은 사람 수, 자리 수, 단계 0 기다림 1 두는 중 2 끝남, 컴퓨터가 앉았으면 1] */
@@ -59,4 +65,6 @@ export interface RoomLobby {
   cpu: 0 | 1;
   /** 기다리다 컴퓨터로 채우는 초 (0이면 채우지 않는다) */
   cpuAfterS: number;
+  /** 자리 수가 범위인 판: 기다리다 모인 만큼으로 시작하는 초 (RoomDef.startAfterS, 0이면 없다) */
+  startAfterS: number;
 }

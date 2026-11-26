@@ -1,15 +1,17 @@
 // 판(rooms 모듈): 핵심만의 내용(공 마당) 위에서 작은 '말뚝 세기' 판으로 본다. 게임의 파일을 읽지 않는다.
 // 판 열기·짝짓기·컴퓨터로 채우기, 판마다의 층(엔티티·스냅샷이 나뉜다), 차례와 기한(넘김, 게임의 처리), 바퀴의 상한, 끊김과 같은 저장 키로 돌아옴, 몰수,
 // 기권·다시 하기(자리 돌리기)·나가기와 정리, 걷기 멈춤, 판의 저장과 되살리기, 연출 사건(g.effect), 순간 이동, 실제 소켓 둘. 모듈을 고르지 않으면 아무것도 없다.
+// 셋 이상의 판은 '별 줍기'(server/stars.ts)로: 자리 수의 범위와 지금 시작, 바퀴마다 선 돌리기, 바퀴의 끝, 등수로 끝내기, 셋 이상의 기권(outEnds·out·skip), 컴퓨터의 이름.
 import type { RoomLobby, RoomView } from '../../shared/defs/rooms';
 import type { ServerMsg } from '../../shared/protocol';
 import { Game, type Plugin } from '../../server/game/game';
 import type { Ent } from '../../server/game/entity';
 import { isField } from '../../server/game/layers';
-import type { Room } from '../../server/game/systems/rooms';
+import type { Room, RoomDef } from '../../server/game/systems/rooms';
 import { buildFrame, snapshotFor } from '../../server/net/snapshot';
 import { startServer } from '../../server/net/server';
 import { MemoryStore } from '../../server/store';
+import { STARS, stars, type Stars } from './server/stars';
 import { check, connect, settle, until, type Peer } from '../harness';
 
 /** 말뚝 세기: 내 차례에 말뚝 n개(1~3)를 세면 차례가 넘어간다. 세 바퀴를 다 쓰면 많이 세운 쪽이 이긴다. 컴퓨터는 늘 1개 */
@@ -288,4 +290,195 @@ function world(over?: Partial<Parameters<Game['rooms']['define']>[0]>) {
   } finally {
     await s.close();
   }
+}
+
+// ========== 셋 이상의 판 (별 줍기: server/stars.ts) ==========
+function starWorld(over: Partial<RoomDef<Stars>> = {}) {
+  let clock = 1_800_000_000_000;
+  const g = new Game({ modules: ['rooms'], plugins: [stars(over)], now: () => clock });
+  const run = (s: number) => { for (let i = 0; i < Math.round(s * 20); i++) { clock += 50; g.tick(0.05); } };
+  let n = 0;
+  const join = (name: string) => g.players.spawn(name, false, null, `key-star-${name}-${++n}-0123456789`);
+  const room = (a: string, p: Ent, id?: number) => g.command(p, id === undefined ? { t: 'room', a } : { t: 'room', a, id });
+  const view = (p: Ent) => g.personal.find((x) => x.name === 'room')!.state(p) as RoomView | null;
+  const said = (p: Ent, k: string) => g.notices.filter((x) => x.id === p.id && x.k === k);
+  return { g, run, join, room, view, said };
+}
+
+// ---------- 자리 수의 범위: 셋이면 셋으로, '지금 시작', 넷이면 곧바로, 모자라면 컴퓨터 ----------
+{
+  const { g, join, room, view, said } = starWorld();
+  const [a, b, c] = ['A', 'B', 'C'].map(join);
+  room('quick', a); room('quick', b);
+  const r = g.rooms.of<Stars>(a)!;
+  check(r.st === 'wait' && r.seats.length === 4 && view(a)?.min === 3 && (g.state().rooms as RoomLobby).startAfterS === STARS.startAfterS, 'seats { min: 3, max: 4 }: 판은 넷 자리로 열리고 화면은 min(3)과 저절로 시작하는 초를 안다');
+  room('start', a);
+  check(r.st === 'wait' && said(a, 'roomFewer').length === 1 && said(a, 'roomFewer')[0].a[0] === 3, "'지금 시작'은 사람이 min보다 적으면 거절 (roomFewer)");
+  room('quick', c);
+  room('start', b);
+  check(r.st === 'wait', "'지금 시작'은 가장 먼저 앉은 사람만 (다른 사람은 무시)");
+  g.notices = [];
+  room('start', a);
+  check(r.st === 'play' && r.seats.length === 3 && r.data.pile === 15 && view(c)?.seats.length === 3 && view(c)?.min === 3, "가장 먼저 앉은 사람의 '지금 시작': 모인 셋으로 시작한다 (빈 자리는 빠진다)");
+  check(said(c, 'roomStart')[0]?.a.join() === '0,A,3' && said(a, 'roomStart')[0]?.a[0] === 1, 'roomStart의 셋째 값은 자리 수 (화면은 셋 이상이면 상대 하나를 적지 않는다)');
+  // 기다림이 지나면 저절로: 셋은 셋으로, 둘은 컴퓨터가 넷까지
+  const w2 = starWorld();
+  const [p, q, s] = ['P', 'Q', 'S'].map(w2.join);
+  for (const x of [p, q, s]) w2.room('quick', x);
+  const r2 = w2.g.rooms.of(p)!;
+  w2.run(STARS.startAfterS - 0.5);
+  check(r2.st === 'wait', 'startAfterS 전에는 넷째를 기다린다');
+  w2.run(1);
+  check(r2.st === 'play' && r2.seats.length === 3 && r2.seats.every((x) => x && !x.cpu), 'startAfterS가 지나 사람이 min 이상이면 모인 만큼으로 시작한다 (컴퓨터 없이)');
+  const w3 = starWorld();
+  const [u, v2] = ['U', 'V'].map(w3.join);
+  w3.room('quick', u); w3.room('quick', v2);
+  const r3 = w3.g.rooms.of(u)!;
+  w3.run(STARS.startAfterS + 1);
+  check(r3.st === 'wait', '사람이 min보다 적으면 startAfterS가 지나도 기다린다');
+  w3.run(STARS.cpuAfterS - STARS.startAfterS);
+  check(r3.st === 'play' && r3.seats.length === 4 && r3.seats.filter((x) => x?.cpu).length === 2, '그다음 cpuAfterS가 지나면 컴퓨터가 빈 자리를 채운다 (cpuFill 기본 max: 넷까지)');
+  const w4 = starWorld({ cpuFill: 'min' });
+  const lone = w4.join('L');
+  w4.room('cpu', lone);
+  const r4 = w4.g.rooms.of(lone)!;
+  check(r4.st === 'play' && r4.seats.length === 3 && r4.seats.filter((x) => x?.cpu).length === 2, "cpuFill 'min': 컴퓨터는 min(셋)이 될 만큼만 앉는다");
+  // 넷이 다 차면 곧바로
+  const w5 = starWorld();
+  const four = ['W', 'X', 'Y', 'Z'].map(w5.join);
+  for (const x of four) w5.room('quick', x);
+  check(w5.g.rooms.of(four[0])?.st === 'play' && w5.g.rooms.of(four[0])?.seats.length === 4, '넷이 다 차면 기다리지 않고 시작한다');
+  let msg = '';
+  try { new Game({ modules: ['rooms'], plugins: [(g2) => g2.rooms.define({ seats: { min: 4, max: 3 }, start: () => undefined })], now: () => 0 }); } catch (e) { msg = String(e); }
+  check(msg.includes('min ≤ max'), `seats의 범위가 거꾸로면 define이 알려 준다 (${msg.slice(0, 60)})`);
+}
+
+// ---------- 바퀴마다 선 돌리기 (rotateFirst), 바퀴의 끝 (roundEnd), 등수로 끝내기 ----------
+{
+  const { g, join, room, view, said } = starWorld();
+  const ps = ['A', 'B', 'C', 'D'].map(join);
+  for (const p of ps) room('quick', p);
+  const r = g.rooms.of<Stars>(ps[0])!;
+  const order: number[] = [];
+  for (let k = 0; k < 8; k++) { order.push(r.turn); g.command(ps[r.turn], { t: 'star', n: 1 }); }
+  check(order.join() === '0,1,2,3,1,2,3,0' && r.first === 2 && r.turn === 2 && r.round === 3 && r.data.rounds === 2, `rotateFirst: 1바퀴는 자리 0부터, 2바퀴는 1부터, 3바퀴는 2부터 (차례 ${order.join()}, roundEnd 두 번)`);
+  check(view(ps[2])?.round === 3 && view(ps[0])?.turn === 2, '화면의 바퀴(round)는 그대로 센다');
+  // 기권 하나: 그 자리만 빠지고 남은 셋이 잇는다 (틀의 기본). 빠진 자리는 선도 건너뛴다
+  g.notices = [];
+  room('resign', ps[3]);
+  check(r.st === 'play' && r.seats[3]!.out && view(ps[0])?.seats[3].away === 2, '넷 가운데 하나의 기권: 그 자리만 빠지고 판은 이어진다 (outEnds 기본 false)');
+  const outs: number[] = [];
+  const w0 = starWorld({ out: (_rr, seat) => { outs.push(seat); } });
+  const qs0 = ['Q1', 'Q2', 'Q3', 'Q4'].map(w0.join);
+  for (const p of qs0) w0.room('quick', p);
+  w0.room('resign', qs0[2]); w0.room('resign', qs0[2]); w0.room('leave', qs0[2]);
+  check(outs.join() === '2' && w0.g.rooms.of(qs0[0])?.st === 'play', '이미 빠진 자리가 다시 기권하거나 대기실로 나가도 out은 한 번만 (판은 이어진다)');
+  const order2: number[] = [];
+  for (let k = 0; k < 6 && r.st === 'play'; k++) { order2.push(r.turn); g.command(ps[r.turn], { t: 'star', n: 1 }); }
+  check(order2.join() === '2,0,1,0,1,2', `빠진 자리 3은 차례에서도, 선에서도 건너뛴다 (${order2.join()})`);
+  // 끝까지: 셋이 많이 줍는다 → 무더기가 바닥난 바퀴의 끝에서 등수로
+  g.notices = [];
+  for (let k = 0; k < 40 && r.st === 'play'; k++) g.command(ps[r.turn], { t: 'star', n: r.turn === 1 ? 3 : r.turn === 0 ? 2 : 1 });
+  check(r.st === 'over' && r.why === 'stars' && r.data.pile === 0 && r.round === 5, '무더기가 바닥나면 바퀴의 끝(roundEnd)에서 게임이 끝낸다');
+  const ranks = view(ps[0])!.ranks;
+  check(ranks.join() === '2,1,3,4' && view(ps[0])!.scores.join() === r.data.got.join() && r.win === 1, `등수로 끝내기: finish(room, 등수, 까닭, 점수) → 화면의 ranks·scores, 1등 하나면 room.win (${ranks.join()} / ${r.data.got.join()})`);
+  const res = (i: number) => said(ps[i], 'roomResult')[0]?.a.join();
+  check(res(1) === '0,stars,1,4,0' && res(0) === '1,stars,2,4,0' && res(2) === '1,stars,3,4,0' && res(3) === '1,stars,4,4,0', `roomResult: [이김/짐, 까닭, 내 등수, 자리 수, 같은 등수] (기권하고 앉아 있던 자리도 받는다: ${res(0)} / ${res(1)} / ${res(3)})`);
+  check([0, 1, 2, 3].map((i) => g.rooms.rankOf(r, i)).join() === '2,1,3,4', 'rankOf: 등수로 끝낸 판은 그 등수');
+  // 1등이 둘: room.win은 -2, 두 사람은 '함께 1등'
+  const w = starWorld();
+  const qs = ['E', 'F', 'G'].map(w.join);
+  for (const p of qs) w.room('quick', p);
+  w.room('start', qs[0]);
+  const r2 = w.g.rooms.of<Stars>(qs[0])!;
+  w.g.notices = [];
+  w.g.rooms.finish(r2, [1, 1, 3], 'stars', [5, 5, 2]);
+  check(r2.win === -2 && w.said(qs[0], 'roomResult')[0]?.a.join() === '2,stars,1,3,1' && w.said(qs[2], 'roomResult')[0]?.a.join() === '1,stars,3,3,0', '1등이 여럿이면 room.win은 -2, 그 사람들의 roomResult는 [2, 까닭, 1, 자리 수, 1](함께 1등)');
+}
+
+// ---------- 셋 이상의 기권·몰수: outEnds, out 고리, skip ----------
+{
+  const outs: string[] = [];
+  const { g, join, room } = starWorld({ outEnds: true, out: (_r, seat, why) => { outs.push(`${seat}:${why}`); } });
+  const ps = ['A', 'B', 'C'].map(join);
+  for (const p of ps) room('quick', p);
+  room('start', ps[0]);
+  const r = g.rooms.of<Stars>(ps[0])!;
+  room('resign', ps[1]);
+  check(outs.join() === '1:resign' && r.st === 'over' && r.ranks.join() === '1,3,1' && r.win === -2, `outEnds: 하나가 빠지면 판이 끝난다 (out 고리가 먼저 불리고, 남은 자리가 함께 1등, 빠진 자리는 그다음: ${r.ranks.join()})`);
+  // out 고리에서 게임이 끝을 정한다
+  let gave: Game | null = null;
+  const w = starWorld({ out: (rr, seat) => { gave?.rooms.finish(rr, rr.seats.map((_, i) => (i === seat ? 3 : i + 1)), 'gave'); } });
+  gave = w.g;
+  const qs = ['D', 'E', 'F'].map(w.join);
+  for (const p of qs) w.room('quick', p);
+  w.room('start', qs[0]);
+  w.room('leave', qs[2]);
+  const r2 = w.g.rooms.all()[0] as Room<Stars>;
+  check(r2.st === 'over' && r2.why === 'gave' && r2.ranks.join() === '1,2,3', '두는 중에 나가기도 기권으로 친다: out 고리가 finish를 부르면 그 결과로 끝난다');
+  // 셋 가운데 둘이 빠지면 (outEnds 없이) 남은 하나가 이긴다
+  const w2 = starWorld();
+  const ss = ['G', 'H', 'I'].map(w2.join);
+  for (const p of ss) w2.room('quick', p);
+  w2.room('start', ss[0]);
+  const r3 = w2.g.rooms.of<Stars>(ss[0])!;
+  w2.room('resign', ss[0]);
+  check(r3.st === 'play' && r3.turn === 1, '셋 가운데 차례인 자리가 기권하면 다음 자리로 넘어가고 판은 이어진다');
+  w2.room('resign', ss[2]);
+  check(r3.st === 'over' && r3.win === 1 && r3.ranks.length === 0 && w2.g.rooms.rankOf(r3, 1) === 1 && w2.g.rooms.rankOf(r3, 0) === 2, '남은 자리가 하나면 그 자리가 이긴다 (이김/짐: rankOf는 1과 2)');
+  // skip: 이번에 둘 수 없는 자리를 건너뛴다
+  const sw = starWorld({ skip: (rr, seat) => rr.data.got[seat] >= 2 });
+  const ks = ['J', 'K', 'L'].map(sw.join);
+  for (const p of ks) sw.room('quick', p);
+  sw.room('start', ks[0]);
+  const r4 = sw.g.rooms.of<Stars>(ks[0])!;
+  sw.g.command(ks[0], { t: 'star', n: 1 });
+  sw.g.command(ks[1], { t: 'star', n: 2 });
+  sw.g.command(ks[2], { t: 'star', n: 1 });
+  check(r4.round === 2 && r4.first === 1 && r4.turn === 2, `skip: 2바퀴의 선(자리 1)이 별을 둘 주워 건너뛰면 자리 2부터 (turn ${r4.turn})`);
+  sw.g.command(ks[2], { t: 'star', n: 1 });
+  check(r4.turn === 0, '바퀴 안에서도 건너뛰지 않는 다음 자리로');
+  sw.g.command(ks[0], { t: 'star', n: 2 });
+  check(r4.st === 'play' && r4.round === 3 && r4.turn === 2, `모든 자리가 건너뛰면 틀은 건너뛰기를 무시하고 선(자리 2)부터 (round ${r4.round}, turn ${r4.turn})`);
+}
+
+// ---------- 컴퓨터의 이름, 둘의 판은 예전 그대로 ----------
+{
+  const named = world({ cpuName: (_r, i) => `봇${i}`, cpu: () => undefined });
+  const a = named.join('A');
+  named.room('cpu', a);
+  const r = named.g.rooms.of(a)!;
+  check(named.view(a)?.seats[1].name === '봇1' && r.seats[1]?.name === '봇1', 'RoomDef.cpuName: 컴퓨터 자리의 이름을 게임이 준다 (화면의 seats[i].name)');
+  named.g.command(a, { t: 'peg', n: 1 });
+  named.g.notices = [];
+  named.run(10.1);
+  check(named.said(a, 'roomTimeout') && named.g.notices.find((x) => x.k === 'roomTimeout')?.a[0] === '봇1', '시간 넘김 안내문도 컴퓨터의 이름을 싣는다');
+  const plain = world();
+  const b = plain.join('B');
+  plain.room('cpu', b);
+  check(plain.view(b)?.seats[1].name === '' && plain.view(b)?.seats[1].cpu === 1, '이름을 주지 않으면 빈 문자열 (화면이 roomCpu로, 컴퓨터가 둘 이상이면 roomCpuN의 번호로)');
+  // 둘의 판: 등수 없이 끝내면 ranks·scores는 빈 배열, 안내문의 등수는 0, 선은 늘 자리 0
+  const { g, join, room, said, view } = world();
+  const p = join('P'), q = join('Q');
+  room('quick', p); room('quick', q);
+  const r2 = g.rooms.of<Pegs>(p)!;
+  for (let k = 0; k < 4; k++) g.command(k % 2 ? q : p, { t: 'peg', n: 1 });
+  check(r2.first === 0 && r2.turn === 0 && r2.round === 3, '둘의 판 (rotateFirst 없음): 바퀴가 바뀌어도 자리 0이 먼저');
+  g.notices = [];
+  room('resign', q);
+  check(r2.st === 'over' && r2.win === 0 && view(p)?.ranks.length === 0 && view(p)?.scores.length === 0, '둘의 판의 기권: 상대가 이기고, 등수·점수는 빈 배열 (예전 그대로)');
+  check(said(p, 'roomResult') && g.notices.find((x) => x.k === 'roomResult' && x.id === p.id)?.a.join() === '0,resign,0,0,0', 'roomResult: 앞의 둘(0 이김, 까닭)은 예전 그대로, 등수 칸은 0');
+}
+
+// ---------- 셋의 판 저장과 되살리기 (자리 수가 범위인 판) ----------
+{
+  const w3 = starWorld({ save: (rr) => rr.data, load: (rr, raw) => { rr.data = raw as Stars; } });
+  const qs = ['D', 'E', 'F'].map(w3.join);
+  for (const p of qs) w3.room('quick', p);
+  w3.room('start', qs[0]);
+  w3.g.command(qs[0], { t: 'star', n: 2 });
+  const w4 = starWorld({ save: (rr) => rr.data, load: (rr, raw) => { rr.data = raw as Stars; } });
+  w4.g.importWorld(JSON.parse(JSON.stringify(w3.g.exportWorld())));
+  const back = w4.g.rooms.all()[0] as Room<Stars> | undefined;
+  check(!!back && back.seats.length === 3 && back.turn === 1 && back.data.got.join() === '2,0,0', '셋으로 시작한 판도 저장했다가 셋 자리 그대로 되살린다 (자리 수가 min~max면 받는다)');
 }

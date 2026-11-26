@@ -11,8 +11,11 @@ export interface KindLook {
   model: (e: KindInfo) => Model;
   /** 서버가 실어 보낸 값(KindDef.sync가 돌려준 수들)이 처음 오거나 바뀌었을 때: 모델의 색·크기·켜짐을 맞춘다 */
   update?: (model: Model, vals: readonly number[], e: KindInfo) => void;
-  /** 이름표에 쓸 글자. 없으면 이름표를 달지 않는다 (언어가 바뀌면 다시 부른다) */
-  label?: (e: KindInfo) => string;
+  /**
+   * 이름표에 쓸 글자. 없으면 이름표를 달지 않는다. 놓일 때(vals는 빈 배열), 실려 온 값(KindDef.sync)이 바뀔 때, 언어가 바뀔 때 다시 부른다:
+   * 바뀌는 값(크기, 남은 수)을 이름표에 쓸 수 있다
+   */
+  label?: (e: KindInfo, vals: readonly number[]) => string;
   /** 위치를 보간하지 않고 받은 자리에 바로 둔다 (순간 이동하는 것). 기본은 사람·몬스터처럼 부드럽게 잇는다 */
   snap?: boolean;
   /** 틀의 움직임(걸을 때 통통 튀기, 맞을 때 번쩍임, 쓰러질 때 줄어들기)을 쓴다. 기본은 자리와 방향만 맞춘다 */

@@ -1049,6 +1049,13 @@
   "1s",
   "2s"
  ],
+ "fmt.roomCpuN": [
+  "3c32b7b944c3f506",
+  "Computer undefined",
+  "Computer 0",
+  "Computer 1",
+  "Computer 2"
+ ],
  "fmt.roomHostWaits": [
   "a6bc7d3244bd4669",
   "undefined is waiting",
@@ -1063,12 +1070,40 @@
   "2 matchs in play",
   "5 matchs in play"
  ],
+ "fmt.roomRankRow": [
+  "5d243d8ec1225eed",
+  "undefinedth undefined",
+  "0th undefined",
+  "1st undefined",
+  "2nd undefined"
+ ],
+ "fmt.roomRankTitle": [
+  "18a91f1f6bd5767f",
+  "undefinedth",
+  "0th",
+  "1st",
+  "2nd"
+ ],
  "fmt.roomRound": [
   "2635a24c72b8116c",
   "Round undefined / undefined",
   "Round 0 / undefined",
   "Round 1 / undefined",
   "Round 2 / undefined"
+ ],
+ "fmt.roomScore": [
+  "22a6a33a57537969",
+  "NaN pts",
+  "0 pts",
+  "1 pt",
+  "2 pts"
+ ],
+ "fmt.roomStartNow": [
+  "7d6acbaffd963358",
+  "Start now (undefined)",
+  "Start now (0)",
+  "Start now (1)",
+  "Start now (2)"
  ],
  "fmt.roomTheirTurn": [
   "a26d3407684ac900",
@@ -1078,7 +1113,7 @@
   "2's turn"
  ],
  "fmt.roomWaiting": [
-  "aefd6a74932754bd",
+  "16c1c81c80b8f9a1",
   "Waiting for players… (undefined/undefined)",
   "Waiting for players… (0/undefined)",
   "Waiting for players… (1/undefined)",
@@ -2229,6 +2264,13 @@
  "msg.roomAgainWait": "Waiting for the other player to press Play again.",
  "msg.roomBack": "You are back at your table.",
  "msg.roomBusy": "You are already at a table.",
+ "msg.roomFewer": [
+  "d993f375bf02cf70",
+  "At least undefined players are needed to start.",
+  "At least 0 players are needed to start.",
+  "At least 1 players are needed to start.",
+  "At least 2 players are needed to start."
+ ],
  "msg.roomFoeBack": [
   "15e62e73f2fa85d8",
   "undefined is back.",
@@ -2254,17 +2296,18 @@
  "msg.roomGone": "You cannot join that table.",
  "msg.roomNotTurn": "It is not your turn.",
  "msg.roomResult": [
-  "9832bfc2246999ba",
+  "aee492cc0aac76e5",
   "Draw.",
   "You won!",
-  "You lost."
+  "You lost.",
+  "You finished tied for 4th of 5."
  ],
  "msg.roomStart": [
-  "191ae2585a543f61",
+  "b2e134cb30268ae3",
   "Match started against the computer. Your opponent moves first.",
   "Match started against 1. You move first.",
-  "Match started against 3. You move first.",
-  "Match started against 1234567. You move first."
+  "Match started: 4 players. You move first.",
+  "Match started: 1234567 players. You move first."
  ],
  "msg.roomTimeout": [
   "258a908b7c663d17",
@@ -2713,6 +2756,7 @@
  "ui.roomPass": "End turn",
  "ui.roomQuick": "Quick match",
  "ui.roomResign": "Resign",
+ "ui.roomResignSure": "[[Click|Tap]] again to resign",
  "ui.roomToLobby": "To the lobby",
  "ui.roomWin": "You won!",
  "ui.roomWithCpu": "Play the computer",
