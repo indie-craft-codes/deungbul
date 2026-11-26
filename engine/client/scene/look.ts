@@ -2,10 +2,13 @@
 // 체형(몸통·팔다리), 머리 모양, 머리카락, 모자, 얼굴 장식, 등 장식, 옷의 무늬, 색 넷(살갗·옷·머리카락·강조색), 키·너비 배율.
 // 게임은 부품을 더 그릴 수 있다: registerLookBody, registerLookHead, registerLookPart(hair·hat·face·back), registerLookPattern. 같은 id면 틀의 것을 바꾼다.
 // 내용의 LOOK_RULES.add에 적은 부품은 여기 등록해야 그려진다 (등록하지 않은 부품은 그리지 않는다: 그 칸이 빈다. 몸·머리는 기본 모양으로).
-// 그리기 비용: 모양(기하)은 열쇠마다 하나를 모두가 나눠 쓰고(geo), 재질은 색마다 하나(models.ts의 mat)다. 사람 하나에 부품의 메시 몇 개가 더해질 뿐이다.
+// 그리기 비용: 모양(기하)은 열쇠마다 하나를 모두가 나눠 쓰고(lookGeo), 재질은 색마다 하나(models.ts의 mat)다.
+// 움직이지 않는 부품(몸통, 머리카락, 모자, 얼굴, 등, 무늬)은 다 붙인 뒤 꼭짓점 색을 입힌 한 메시로 굽는다(bake): 재질은 모두가 하나를 나눠 쓰고,
+// 같은 겉모습의 사람은 구운 모양도 나눠 쓴다. 그래서 사람 하나의 그리기 호출은 틀의 네모난 사람과 같다(팔다리 넷 + 머리 + 몸 하나: 부품의 수와 상관없이).
+// 색만 있는 재질(MeshStandardMaterial)이 아닌 부품(게임이 단 빛나는 재질 같은 것)은 굽지 않고 그대로 둔다.
 // 약속은 models.ts와 같다: 발이 원점, +Z를 바라본다, 키 약 2.1 (배율 1). 크기 배율은 안쪽 묶음(Model.frame)에 준다: 틀이 죽는 연출에서 root의 크기를 바꾼다.
 import * as THREE from 'three';
-import { lookParts, lookPatterns, lookSlotOff, type Look, type LookSlot } from '../../shared/defs/look';
+import { encodeLook, lookParts, lookPatterns, lookSlotOff, type Look, type LookSlot } from '../../shared/defs/look';
 import { attachHand, limb, mat, part, setLookBody, type HumanoidLook, type Model, type Rig } from './models';
 
 /** 부품이 쓰는 재질: 살갗, 옷, 머리카락, 강조색, 바지 (색마다 하나를 나눠 쓴다) */
@@ -183,6 +186,59 @@ registerLookPattern('trim', (c) => {
   c.frame.add(part(g, c.mats.accent, 0, 0.74, 0), part(g, c.mats.accent, 0, 1.46, 0));
 });
 
+// ---------- 굽기: 움직이지 않는 부품을 꼭짓점 색의 한 메시로 ----------
+/** 구운 몸이 나눠 쓰는 재질 하나 (models.ts의 mat과 같은 거칠기·각진 그림자에 색은 꼭짓점에서) */
+const bakedMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, flatShading: true, vertexColors: true });
+/** 겉모습(과 색)마다 구운 모양. 같은 겉모습의 사람이 나눠 쓴다 (겉모습의 종류만큼 쌓인다) */
+const baked = new Map<string, THREE.BufferGeometry>();
+const tmpM = new THREE.Matrix4(), inv = new THREE.Matrix4(), tmpC = new THREE.Color();
+/** 모양 여럿을 위치·법선·색만 이어 붙인 한 모양으로 (질감 좌표는 쓰지 않는다: 부품의 재질은 색뿐이다). 색은 작업 색 공간(선형)의 값 */
+function mergeParts(list: { g: THREE.BufferGeometry; m: THREE.Matrix4; c: THREE.Color }[]): THREE.BufferGeometry {
+  const parts = list.map(({ g, m, c }) => { const x = g.index ? g.toNonIndexed() : g.clone(); x.applyMatrix4(m); return { x, c }; });
+  const n = parts.reduce((s, p) => s + p.x.getAttribute('position').count, 0);
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+  let at = 0;
+  for (const { x, c } of parts) {
+    const p = x.getAttribute('position'), q = x.getAttribute('normal');
+    pos.set(p.array as Float32Array, at * 3);
+    if (q) nor.set(q.array as Float32Array, at * 3);
+    for (let i = 0; i < p.count; i++) { col[(at + i) * 3] = c.r; col[(at + i) * 3 + 1] = c.g; col[(at + i) * 3 + 2] = c.b; }
+    at += p.count;
+    x.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  out.computeBoundingSphere();
+  return out;
+}
+/**
+ * frame 아래의 움직이지 않는 메시(keep에 든 묶음과 그 아래, 머리 메시 자신은 빼고, 색만 있는 재질의 것)를 떼어 내고 구운 메시 하나로 바꿔 단다.
+ * 같은 열쇠(겉모습과 색)로 이미 구웠으면 그 모양을 쓴다
+ */
+function bake(frame: THREE.Group, keep: readonly THREE.Object3D[], head: THREE.Mesh, key: string): void {
+  frame.updateMatrixWorld(true);
+  inv.copy(frame.matrixWorld).invert();
+  const meshes: THREE.Mesh[] = [];
+  frame.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh || mesh === head || !(mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial) return;
+    for (let p: THREE.Object3D | null = mesh; p && p !== frame; p = p.parent) if (keep.includes(p)) return;
+    meshes.push(mesh);
+  });
+  if (!meshes.length) return;
+  let g = baked.get(key);
+  if (!g) {
+    g = mergeParts(meshes.map((mesh) => ({ g: mesh.geometry, m: tmpM.multiplyMatrices(inv, mesh.matrixWorld).clone(), c: tmpC.copy((mesh.material as THREE.MeshStandardMaterial).color).clone() })));
+    baked.set(key, g);
+  }
+  for (const mesh of meshes) mesh.removeFromParent();
+  const body = new THREE.Mesh(g, bakedMat);
+  body.castShadow = true;
+  frame.add(body);
+}
+
 /** 머리카락의 기본 색과 강조색의 기본 (겉모습에 적지 않았을 때) */
 const HAIR = 0x4a3324, ACCENT = 0xd9b24a;
 /** 그 칸의 부품 id: 끈 칸, 목록에 없거나 그리는 법이 없는 부품은 기본(첫째) */
@@ -199,6 +255,8 @@ export function lookHumanoid(hl: HumanoidLook & { look: Look }): Model {
   const ctx: LookCtx = { frame, body, head, mats };
   for (const slot of ['hair', 'hat', 'face', 'back'] as const) { const id = pick(l, slot); if (id !== 'none') PARTS.get(`${slot}:${id}`)?.(ctx); }
   if (l.pattern && l.pattern !== 'none' && lookPatterns().includes(l.pattern)) PATTERNS.get(l.pattern)?.(ctx);
+  // 움직이지 않는 부품을 굽는다 (팔다리와 머리는 그대로: 걷는 동작과 게임의 덧붙임(m.head)이 쓴다). 열쇠는 겉모습과 실제로 쓴 색
+  bake(frame, [body.rig.ll, body.rig.rl, body.rig.la, body.rig.ra], head.head, `${encodeLook(l)}|${c.skin ?? hl.skin}|${c.cloth ?? hl.cloth}`);
   const size = l.size ?? 1, width = l.width ?? 1;
   if (size !== 1 || width !== 1) frame.scale.set(size * width, size, size);
   // 모르는 손 모양은 검으로 (models.ts와 같다)

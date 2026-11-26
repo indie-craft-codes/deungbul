@@ -58,9 +58,9 @@ function portrait(d: CharDef): string {
       const sun = new THREE.DirectionalLight(0xffffff, 1.6);
       sun.position.set(2, 4, 3);
       scene.add(sun);
-      const cam = new THREE.PerspectiveCamera(30, 96 / 112, 0.1, 30);
-      cam.position.set(1.6, 2.2, 4.6);
-      cam.lookAt(0, 1.15, 0);
+      const cam = new THREE.PerspectiveCamera(32, 96 / 112, 0.1, 30);
+      cam.position.set(1.8, 2.1, 5.4);
+      cam.lookAt(0, 1.25, 0);
       shot = { r, scene, cam };
     }
     if (shot) {
