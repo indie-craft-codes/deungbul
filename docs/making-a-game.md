@@ -9,9 +9,10 @@
 3. **모듈별 내용**: 고른 모듈의 표(직업, 몬스터, 아이템 …)와 수치를 채운다(3절). 고르지 않은 모듈의 이름은 적지 않는다.
 4. **이 게임만의 규칙과 엔티티**: 서버 시스템, 게임이 등록하는 엔티티 종류(공, 구조물, 떨어진 물건 …)와 그 화면(6절, 12절).
 
-본보기는 둘이다.
+본보기는 셋이다.
 
 - **전투가 없는 게임**: 12절의 "공 마당"(`engine/test/core/`). 모듈을 하나도 고르지 않고, 게임이 등록한 엔티티(공)를 줍는다. 약 80줄. **RPG가 아닌 게임을 만든다면 12절부터 읽는다.**
+- **수집형·방치형 RPG**(영웅 뽑기, 편성, 단계, 방치 보상, 열쇠 던전): 13절의 "영웅 들판"(`engine/test/collect/`).
 - **RPG 모듈을 쓰는 게임**: 작은 예제 `games/sample`("모닥불 사냥터", 약 580줄. 시험 빼고). 2절부터 이 문서의 차례대로 빈 폴더에서 채운 것이다. 큰 본보기는 `games/deungbul`(등불지기: 모듈 전부).
 
 - 문서의 코드는 본보기에서 그대로 따온 것이다. 코드 울타리의 머리에 적힌 경로가 그 출처다. `npm run test:sample`이 문서의 조각과 그 파일이 같은지 검사한다.
@@ -72,10 +73,14 @@
 | `party` | 파티 초대, 함께 받는 보상, 파티원 표시 | | 파티 목록, 받은 초대, 사람 카드의 초대 단추 | |
 | `guild` | 길드 | economy | 메뉴의 길드 탭, 사람 카드의 길드 초대 | |
 | `market` | 거래소 | items, gear, mail, economy | 메뉴의 거래소 탭 | |
-| `dungeon` | 던전 인스턴스, 하루 횟수, 끝낸 보상 | combat, mail, daily, gear | 던전 창 | |
+| `dungeon` | 던전 인스턴스, 하루 횟수(또는 입장 열쇠: 13절 '던전의 열쇠'), 끝낸 보상 | combat, mail, daily, gear | 던전 창 | |
 | `rank` | 전투력 순위 | growth | 메뉴의 순위 탭 | |
 | `away` | 자동 사냥, 창을 닫아도 이어지는 자리 비움 사냥 | combat | 자동 사냥 단추, 지도의 '가서 사냥' | R |
 | `teams` | 팀 고르기·옮기기(사람 수 균형), 팀과 사람마다의 점수, 점수판, 팀 색 옷. 기본은 저장하지 않는다 (6절 '팀과 점수판') | | 가운데 위 점수판, 팀 고르기 창, 내 정보 창의 '내 팀' 줄과 팀 바꾸기, 팀 색 옷과 발밑 고리 | |
+| `roster` | 영웅(동료): 레벨·별·조각, 레벨 업과 별 올리기 (13절) | economy | 메뉴의 영웅 탭 | |
+| `gacha` | 뽑기: 배너, 1번·10번, 천장, 10번 보장, 공개 확률표, 기록. 게임 안의 재화만 (13절) | roster, economy | 메뉴의 뽑기 탭(확률 보기), 결과 창 | |
+| `squad` | 편성: 영웅이 주인을 따라다니며 함께 싸운다 (13절) | roster, combat | 메뉴의 편성 탭, 영웅(종류 `hero`)의 겉모습 | |
+| `stages` | 장과 단계(1-1 …), 물결과 우두머리, 자동 진행과 실패, 방치 보상이 깬 단계로 커진다 (13절) | combat | 가운데 위 단계 막대, 메뉴의 단계 탭 | |
 
 ```ts engine/test/core/shared/content/index.ts
 /** 쓸 모듈: 없다 (핵심만) */
@@ -87,7 +92,7 @@ import type { ModuleId } from '@engine/shared/modules';
 export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
 ```
 
-모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다. `RPG_MODULES`에는 `teams`가 들지 않는다(RPG가 아닌 놀이의 모듈이라 저절로 생기지 않게).
+모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다. `RPG_MODULES`에는 `teams`와 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`)이 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
 **고르지 않은 모듈은**:
 
@@ -1118,7 +1123,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 - 재화(`economy`)는 세 칸(`gold`, `sparks`, 경험치)으로 정해져 있다. 두 번째 재화는 한 가지(`sparks`)뿐이다. 이름은 이름표의 `currency1`·`currency2`로 준다.
 - 기술의 효과는 여섯 가지다(`engine/shared/defs/combat.ts`의 `SkillEffect`). 이보다 새로운 효과는 틀의 `engine/server/game/systems/combat.ts`의 `cast`를 고쳐야 한다.
 - 사람 모델은 틀의 네모난 사람이 기본이다. 꾸밈을 더하거나(`setHumanoidDeco`) 통째로 바꿀 수 있다(`setHumanoidBody`: 옷 색·손 모양·살갗 색을 받아 모델을 돌려준다. 걷는 동작은 `rig`의 팔다리 넷으로, 무기의 겉모습은 `blade`로 따라간다). 손 모양과 날아가는 것은 등록으로 늘린다(`registerHand`, `registerShot`).
-- 메뉴의 탭은 틀의 일곱(`gear` 장비, `build` 성장, `mail` 우편, `daily` 일일, `market` 거래소, `guild` 길드, `rank` 순위)이다. 게임은 `setMenuTabs([...])`로 보일 탭과 차례를 고르고, `addMenuTab({ id, label, draw, dot?, open?, sig? }, 뒤에 올 탭)`으로 자기 탭을 더한다. 일일 임무도 출석도 없으면 일일 탭은 저절로 숨는다. 틀의 탭은 그 모듈을 고른 게임에만 있다: 거래소·길드를 쓰지 않으면 `MODULES`에서 뺀다(탭도 서버의 기능도 없다). `setMenuTabs`로 감추기만 하면 서버의 기능은 그대로 돈다. 예제는 거래소와 길드를 모듈에서 빼고 모닥불 탭을 더했다(`client/bonfire.ts`).
+- 메뉴의 탭은 틀의 일곱(`gear` 장비, `build` 성장, `mail` 우편, `daily` 일일, `market` 거래소, `guild` 길드, `rank` 순위)과 수집형 모듈의 넷(`heroes` 영웅, `gacha` 뽑기, `squad` 편성, `stages` 단계: 13절)이다. 게임은 `setMenuTabs([...])`로 보일 탭과 차례를 고르고, `addMenuTab({ id, label, draw, dot?, open?, sig? }, 뒤에 올 탭)`으로 자기 탭을 더한다. 일일 임무도 출석도 없으면 일일 탭은 저절로 숨는다. 틀의 탭은 그 모듈을 고른 게임에만 있다: 거래소·길드를 쓰지 않으면 `MODULES`에서 뺀다(탭도 서버의 기능도 없다). `setMenuTabs`로 감추기만 하면 서버의 기능은 그대로 돈다. 예제는 거래소와 길드를 모듈에서 빼고 모닥불 탭을 더했다(`client/bonfire.ts`).
 - 장부를 보는 도구(`npm run econ`)는 등불지기의 것이다(`games/deungbul/scripts/econ.ts`). 장부 자체(`g.ledger`)와 서버 지표의 한 줄 요약은 틀의 것이라 어느 게임에서나 돈다.
 
 ## 11. 접점 일람표
@@ -1133,6 +1138,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `modules.ts`의 `MODULE_TABLE`, `RPG_MODULES`, `ModuleId`, `checkModules`, `MODULE_SAVES` | 선택 모듈의 표와 의존, 모듈의 저장 칸 | `shared/content/index.ts` |
 | `defaults.ts` | 수치의 기본값 묶음(게임이 적지 않은 이름을 틀이 채운다). `NET`(틱·전송 주기, 시야), `CAMERA`(카메라의 거리·배율), `HOME_KEY`(H 키), `GEAR_BASE` | `shared/content/index.ts` |
 | `defs/*.ts`의 타입 | `MapDef`, `ClassDef`, `SkillDef`, `MonsterDef`, `ItemDef`, `ForgeDef`, `Recipe`, `DungeonDef`, `DailyDef`, `Reward` | `shared/content/index.ts` |
+| `defs/collect.ts`의 타입과 도우미 | `HeroDef`, `HeroRoleDef`, `HeroRarityDef`, `HeroRules`, `BannerDef`, `ChapterDef`, `StageDef`, `IdleCtx`, `heroStats`, `heroPower`, `bannerOdds`, `poolOdds`, `seededRng`, `STAGES`, `stageIndex` (13절) | `engine/test/collect/shared/content/index.ts` |
 | `defs.ts`, `world.ts` | 틀의 내용 통로: 타입, 도우미(`maxHpFor`, `itemDef` …), 계약의 내용, 엔진 상수. 내용 파일 밖에서는 여기서 읽는다 | `client/scene.ts`, `test/sample.test.ts` |
 | `ext.ts`의 `MsgMap` | 안내문의 종류와 값 | `shared/sample.ts` |
 | `ext.ts`의 `ClientMsgs` / `ServerMsgs` | 화면 → 서버 / 서버 → 화면 메시지 | `shared/sample.ts` (`ServerMsgs`는 쓰지 않는다) |
@@ -1150,6 +1156,8 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `g.defineKind(종류, KindDef)`, `g.place(종류, 자리)`, `Ent.data` | 게임의 엔티티 종류(틱, 화면에 실을 값, 저장)와 놓기 (12절) | `engine/test/core/server/balls.ts` |
 | `g.playerSync(fn)` | 플레이어에게 실어 보낼 게임의 값(역할 …): 6절 '사람마다의 값과 겉모습'. 팀은 `teams` 모듈이 쓴다 | |
 | `g.teams` (`teams` 모듈: `of`, `index`, `members`, `count`, `auto`, `set`, `add`, `score`, `reset`, `addPlayer`, `playerScore`, `syncAlso`) | 팀과 점수: 6절 '팀과 점수판' | `games/rollball/server/pitch.ts` |
+| `g.roster`(`grant`, `owned`, `power`, `levelUp`, `starUp`), `g.gacha`(`draw`, `pityOf`, `rng`), `g.squad`(`set`, `heroes`, `power`), `g.stages`(`start`, `leave`, `inStage`, `cleared`), `g.dungeon`의 `keyCount`·`giveKeys`, 사건 `heroChanged`·`stageCleared` | 수집형·방치형의 넷과 던전의 열쇠: 13절 | `engine/test/collect/server/heath.ts` |
+| `g.combat.registerAlly(종류, { owner, down, skillScale? })` | 사람 편에서 싸우는 게임의 종류(소환수, 용병): 몬스터를 때리고 맞는다. 피해는 주인의 것으로 친다 (13절 '편성') | |
 | `g.on('playerJoined' \| 'playerLeft' \| 'playerDropped', …)` | 사람이 들어왔다(봇 제외) / 월드에서 빠졌다(id) / 연결이 끊겨 저장하기 직전 | `games/rollball/server/pitch.ts` (`playerLeft`) |
 | `g.perFlush` | 전송마다 본인에게 보낼 메시지를 만드는 것 (틀의 `stat`·`meta`가 쓴다) | |
 | `game/ext.ts`의 `GameSystems` | `g.내시스템` | `server/sample.ts` |
@@ -1185,6 +1193,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `app.ts`의 `$`, `view` | 요소 잡기, 3D 화면(`view.scene`, `view.setMood`) | `client/bonfire.ts`, `client/scene.ts` |
 | `bus.ts`의 `onMsg`, `onFrame`, `onSlow`, `onKey` | 서버 메시지, 매 프레임, 0.25초마다, 단축키(고른 모듈이 쓰지 않는 키. 이름은 소문자 `KeyboardEvent.key`: 5절 '단축키') | `client/bonfire.ts`, `client/scene.ts` |
 | `kinds.ts`의 `registerKind`, `scene/models.ts`의 `makeBox`, `makeBall` | 게임의 엔티티 종류의 모습 (12절) | `engine/test/core/client/main.ts` |
+| `hud/collect.ts`의 `myHeroes`, `mySquad`, `onGachaResult`. `hud/stagebar.ts`의 `myStage`. `registerKind`의 `hp`, `shot` | 수집형·방치형의 화면이 받은 상태와 뽑기 결과, 게임의 종류의 체력 막대·날아가는 것 (13절) | `engine/test/collect/client/main.ts` |
 | `mods.ts`의 `hasModule`, `anyModule` | 이 게임이 그 모듈을 골랐는가 | |
 | `i18n/names.ts`의 `withIdNames` | 적지 않은 이름표는 id 그대로 (쓰지 않는 모듈의 이름을 적지 않아도 된다) | `engine/test/core/client/main.ts` |
 | `net.ts`의 `send` | 서버로 명령 | `client/bonfire.ts` |
@@ -1314,3 +1323,186 @@ startClient({});
 - 게임의 창·공유 상태·안내문: 6절과 같다(`mountPanel`, `g.shared`, `MsgMap`).
 - 사람 수를 세는 순위·점수판은 게임의 공유 상태로 만든다(`rank` 모듈은 전투력 순위라 전투 게임의 것이다).
 - 팀: `teams` 모듈(6절 '팀과 점수판'). 역할처럼 사람마다 남이 보는 다른 값은 `g.playerSync`와 `setPlayerLook`(6절 '사람마다의 값과 겉모습'). 더 큰 본보기는 굴림공(`games/rollball`: 팀 공놀이, 모듈은 `teams` 하나).
+
+## 13. 수집형·방치형 RPG 만들기
+
+"○○ 키우기"(세븐나이츠 키우기, 버섯커 키우기 같은 것)처럼 **동료(영웅)를 뽑아 모으고, 키우고, 편성해 자동으로 싸우며 단계를 차례로 깨고, 접속하지 않은 동안에도 보상이 쌓이는** 게임은 선택 모듈 넷과 던전의 열쇠로 만든다. 본보기는 틀 안의 시험용 내용 "영웅 들판"(`engine/test/collect/`: 영웅 여섯, 배너 하나, 장 둘 × 단계 다섯, 열쇠 던전 하나)이다. 운영하는 게임이 아니라 이 절의 모든 칸을 쓰는 가장 작은 본보기이고, 시험과 화면을 함께 쓴다.
+
+| 모듈 | 무엇 | 의존 | 서버 | 화면 |
+|---|---|---|---|---|
+| `roster` | 가진 영웅의 레벨·별·조각, 레벨 업(재화)과 별 올리기(조각) | economy | `g.roster` | 메뉴의 '영웅' 탭 |
+| `gacha` | 배너에서 1번·10번 뽑기, 천장, 10번 보장, **공개 확률표**, 뽑기 기록 | roster, economy | `g.gacha` | 메뉴의 '뽑기' 탭(확률 보기), 결과 창 |
+| `squad` | 가진 영웅 몇을 골라 함께 싸운다: 주인을 따라다니며 몬스터를 친다 | roster, combat | `g.squad`, 엔티티 종류 `hero` | 메뉴의 '편성' 탭, 영웅의 겉모습 |
+| `stages` | 장과 단계(1-1, 1-2 …), 물결과 우두머리, 깨면 다음 단계로, 실패하면 깬 단계로. 방치 보상이 깬 단계로 커진다 | combat | `g.stages` | 가운데 위의 단계 막대, 메뉴의 '단계' 탭 |
+| (던전의 열쇠) | 던전마다 입장 열쇠: 날마다 채움, 상한, 재화로 사기 | (`dungeon`) | `g.dungeon` | 던전 창의 열쇠 줄 |
+
+```ts engine/test/collect/shared/content/index.ts
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'dungeon', 'roster', 'gacha', 'squad', 'stages'];
+```
+
+- 넷은 `RPG_MODULES`에 들지 않는다(`COLLECT_MODULES`로 따로 있다): `MODULES = RPG_MODULES`인 게임(등불지기)은 저절로 뽑기나 단계를 갖지 않는다. 고르지 않으면 서버의 시스템·명령·저장 칸·개인 상태, 엔티티의 칸(`heroes`, `pity`, `pulls`, `squad`, `stage`), 엔티티 종류 `hero`, 화면의 탭·막대가 모두 없다.
+- 이끄는 사람(플레이어)은 그대로 직업 하나를 가진 캐릭터다(`classes`·`combat`). 단계 안에서는 서버가 사람도 대신 싸운다(`STAGE_RULES.leaderAuto`). 사람을 숨기고 영웅만 싸우게 하는 길은 없다(아래 '남은 것').
+- **현금은 없다**: 뽑기와 열쇠의 값은 게임 안의 재화(`gold` 또는 두 번째 재화 `sparks`)뿐이고 지갑(`g.wallet`)을 지난다. 틀에는 결제·상점 연동·구매 훅이 없다.
+- 이름(영웅, 역할, 배너, 장, 등급)은 모두 **문장 키**다: 게임의 언어 파일 `ui`에 그 키로 적는다(팀의 이름과 같다). 틀의 등급 셋의 이름은 틀의 문장(`heroRarity0`~`heroRarity2`: 일반·희귀·전설)에 있다.
+
+### 영웅 (`roster`)
+
+```ts engine/test/collect/shared/content/index.ts
+export const HERO_ROLES: Readonly<Record<string, HeroRoleDef>> = {
+  guard: { name: 'roleGuard', hand: 'sword', range: 2.2, atkCd: 1.2, speed: 4.6, skill: 'shieldbash', cloth: 0x5b7fb0 },
+  …
+export const HEROES: Readonly<Record<string, HeroDef>> = {
+  ironwall: { name: 'heroIronwall', rarity: 0, role: 'guard', atk: 9, hp: 220 },
+```
+
+| 이름 | 모양 (타입은 `@engine/shared/defs/collect`) | 기본값 |
+|---|---|---|
+| `HEROES` | id → `{ name: 문장 키, rarity: 등급 번호, role: 역할 id, atk: 1레벨의 한 번 피해, hp: 1레벨의 체력, cloth?: 옷 색 }` | 비어 있다 |
+| `HERO_RARITIES` | 차례가 번호(0이 가장 흔함): `{ id, name: 문장 키, color, stars: 처음 얻을 때의 별, shards: 또 얻었을 때 받는 조각 }` | 일반(별 1, 조각 5) · 희귀(별 2, 10) · 전설(별 3, 25) |
+| `HERO_ROLES` | id → `{ name, hand: 손 모양(sword·bow·staff·게임의 것), shot?: 날아가는 것(arrow·bolt), range, atkCd, speed, skill?: SKILL_DEFS의 id, cloth }` | 비어 있다 (없는 역할은 붙어서 친다) |
+| `HERO_RULES` | `{ maxStars, maxLv(별), levelCur: 'gold' 또는 'sparks', levelCost(레벨, 등급), starCost(별), grow, starMul }` | 별 6까지, 레벨 상한 10 + 별 × 10, 레벨 값 레벨 × 20 × (등급 + 1) 골드, 별 값 별 × 10 조각, 레벨마다 +10%, 별마다 +25% |
+
+- 능력치: `heroStats(id, 레벨, 별)` = 처음 값 × (1 + grow × (레벨 − 1)) × (1 + starMul × (별 − 등급의 처음 별)). 전투력은 `heroPower` = 공격 × 4 + 체력 ÷ 2. 서버의 영웅 엔티티와 화면의 카드가 같은 함수를 쓴다.
+- 얻기: `g.roster.grant(p, id)` 하나뿐이다(뽑기와 게임의 보상이 부른다). 처음이면 1레벨·처음 별, 이미 가졌으면 그 등급의 조각. 돌려주는 값 `{ dup, shards }`.
+- 명령: `{ t: 'hero', a: 'level', id }`(그 별의 상한 아래에서 `levelCur`로 `levelCost`를 치른다, 원인 `cmd:hero:level`), `{ t: 'hero', a: 'star', id }`(조각 `starCost`). 안 되면 안내문 `costShort`·`heroMaxLv`·`heroShards`, 되면 `heroUp`·`heroStar`, 새 영웅은 `heroNew`.
+- 서버에서 읽기: `g.roster.owned(p, id)`(`{ lv, stars, shards }` 또는 `undefined`), `g.roster.power(p, id)`. 바뀌면 사건 `heroChanged(p, id)`가 난다.
+- 줄 위: 개인 상태 `heroes`(`{ id: [레벨, 별, 조각] }`). 저장은 캐릭터의 `ext.roster`(같은 모양). 내용에서 빠진 영웅과 깨진 값은 읽을 때 버리거나 범위로 자른다.
+
+### 뽑기 (`gacha`)
+
+```ts engine/test/collect/shared/content/index.ts
+export const BANNERS: Readonly<Record<string, BannerDef>> = {
+  dawn: {
+    name: 'bannerDawn', cur: 'sparks', one: 100, ten: 900,
+    pool: [
+      { hero: 'ironwall', w: 375 }, { hero: 'swiftarrow', w: 375 },
+      { hero: 'cinderwitch', w: 110 }, { hero: 'dawnpriest', w: 110 },
+      { hero: 'stormblade', w: 15 }, { hero: 'starseer', w: 15 },
+    ],
+    pity: { after: 50, rarity: 2 },
+    tenAtLeast: 1,
+  },
+};
+```
+
+- **확률은 무게로만**: 영웅의 확률 = 그 칸의 `w` ÷ 무게의 합. 등급의 확률은 그 등급 영웅들의 합(위는 일반 75%, 희귀 22%, 전설 3%). 화면의 공개 확률표와 서버의 뽑기가 같은 함수(`poolOdds`, `pickOdds`)를 쓴다: 표와 실제가 어긋날 수 없다.
+- **천장** `pity: { after, rarity }`: 이 배너에서 `rarity` 이상이 `after − 1`번 이어서 나오지 않으면 `after`번째 뽑기는 `rarity` 이상의 칸에서만 뽑는다(그 칸들 사이의 비율은 그대로). `rarity` 이상이 나오면 셈이 0으로. 셈은 사람마다·배너마다 저장된다.
+- **10번 보장** `tenAtLeast`: 10번 뽑기의 앞 아홉에 그 등급 이상이 없으면 열째는 그 등급 이상에서. 천장과 겹치면 높은 쪽.
+- 명령 `{ t: 'gacha', id: 배너, n: 1 또는 10 }`: 값(`one`·`ten`)을 `cur`로 치르고(원인 `cmd:gacha`. 모자라면 `costShort`, 아무것도 바뀌지 않는다), 나온 영웅을 `g.roster.grant`로 준다. 결과는 본인에게 메시지 `{ t: 'gacha', b, got: [{ h, r, dup, n, pity }] }`.
+- 기록: 최근 `GACHA_RULES.history`(기본 50)개, 새 것이 앞. 개인 상태 `gacha`(`{ pity: { 배너: 셈 }, log }`), 저장 `ext.gacha`.
+- 난수: 서버의 `g.gacha.rng`(기본 `Math.random`). 시험은 `g.gacha.rng = seededRng(씨앗)`(`@engine/shared`)으로 바꿔 같은 결과를 되풀이한다.
+- **확률 공개**(한국의 확률형 아이템 표시 의무에 맞춰 모두 보인다): 뽑기 탭의 '확률 보기'가 펼치는 표에 등급별 확률, 영웅별 확률(소수 넷째 자리까지), 천장의 규칙·지금의 셈·천장에 닿은 뽑기의 확률, 10번 보장의 규칙과 그 열째의 확률, '현금 결제가 없다'는 문장이 있다. 셈은 `rateTable(배너)`(`engine/client/hud/collectcalc.ts`, 합이 저마다 1인 것을 시험이 본다).
+
+### 편성 (`squad`)
+
+```ts engine/test/collect/shared/content/index.ts
+export const SQUAD_RULES = { size: 4, seek: 13, leash: 22, reviveS: 8, regen: 0.06, autoFill: true };
+```
+
+- `SQUAD_RULES`: 함께 싸우는 수(`size`), 주인 둘레 몇 m의 몬스터를 노리는가(`seek`), 주인에게서 이만큼 멀어지면 돌아온다(`leash`. 두 배를 넘으면 주인 곁으로 바로 옮긴다), 쓰러진 뒤 다시 일어나기까지(`reviveS`), 싸우지 않을 때 초마다 회복하는 비율(`regen`), 처음 얻은 영웅을 빈 자리에 저절로 넣기(`autoFill`). 기본은 `{ size: 4, seek: 12, leash: 20, reviveS: 10, regen: 0.05, autoFill: true }`.
+- 편성한 영웅은 월드의 엔티티(종류 `hero`, `type`이 영웅 id)로 주인 뒤에 선다. 주인의 대상이나 주인 둘레의 가장 가까운 몬스터를 노려, 역할의 기본 공격(`atkCd`마다, 공격 ±10%)과 기술(쿨다운마다 `g.combat.cast`: 틀의 기술 효과 여섯을 그대로 쓴다. 피해·회복은 공격 ÷ 10 배)을 쓴다. 주인이 층(채널, 던전, 단계)을 옮기면 따라 옮기고, 주인이 나가면 사라진다. 봇에게는 영웅이 없다.
+- 영웅이 준 피해는 **주인이 준 것**으로 친다: 처치 보상·일일 임무·`hit` 사건이 주인의 것이 된다. 몬스터는 자기를 때린 영웅을 노리고, 영웅의 체력이 0이 되면 쓰러졌다가 `reviveS` 뒤 주인 곁에서 일어난다(주인은 쓰러지지 않는다).
+- 사람 편의 엔티티는 전투 모듈의 접점 `g.combat.registerAlly(종류, { owner, down, skillScale? })`로 만든다. 편성 모듈이 `hero`를 이것으로 등록한다. 게임이 소환수·용병 같은 자기 종류를 만들 때도 같은 것을 쓴다(등록한 것이 없는 게임의 전투 셈은 예전과 같다). 아군 회복·강화(`allies`)도 등록한 종류에 닿는다.
+- 명령 `{ t: 'squad', ids: [영웅 id, …] }`: 가진 영웅만, 겹치지 않게, `size`까지. 틀린 것이 하나라도 있으면 아무것도 바꾸지 않는다. 개인 상태 `squad`(`{ ids, power }`), 저장 `ext.squad`. 서버: `g.squad.set(p, ids)`, `g.squad.heroes(p)`(싸우는 영웅들), `g.squad.power(p)`.
+- 화면: 종류 `hero`를 역할의 옷 색·손 모양의 사람(조금 작게)으로, 발밑에 등급 색 고리, 이름표에 영웅 이름과 체력 막대로 그린다. 쏘는 역할은 화살·불꽃이 날아간다. 게임의 종류도 같은 칸을 쓸 수 있다: `registerKind`의 `hp: true`(이름표의 체력 막대), `shot: (e) => 'arrow'`(때릴 때 날아가는 것).
+
+### 단계 (`stages`)
+
+```ts engine/test/collect/shared/content/index.ts
+const stage = (ch: number, n: number): StageDef => {
+  …
+  return {
+    waves,
+    ...(n === 4 ? { boss: { type: ch === 0 ? 'ogre' : 'golem' } } : {}),
+    scale,
+    reward: { gold: 40 + k * 20, exp: 30 + k * 15, sparks: 30 + k * 5 },
+    first: { sparks: 100 },
+    rec: Math.round(250 * scale * (n === 4 ? 1.6 : 1)),
+  };
+};
+export const CHAPTERS: readonly ChapterDef[] = [
+  { name: 'chapterMeadow', stages: [0, 1, 2, 3, 4].map((n) => stage(0, n)) },
+  { name: 'chapterRidge', stages: [0, 1, 2, 3, 4].map((n) => stage(1, n)) },
+];
+/** 단계는 들판 가운데(0, 10)에서. 접속하면 바로 지금 단계로 들어간다 (방치형) */
+export const STAGE_RULES = { arena: { x: 0, z: 10 }, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: true };
+```
+
+- `CHAPTERS`: 장마다 `{ name: 문장 키, stages }`. 단계의 id는 '장 번호-단계 번호'(1부터: `1-1` … `2-5`)이고 저장과 줄 위에서 이 id로 오간다(단계를 사이에 끼워 넣으면 뒤의 id가 밀린다: 뒤에 더한다).
+- `StageDef`: `waves`(물결들. 물결마다 `{ type: 몬스터 id, n }`의 목록), `boss?`(`{ type, scale? }`: 물결 뒤에 나온다. "다섯째마다 우두머리"는 위처럼 내용에서 정한다), `scale`(몬스터의 체력·피해에 곱한다. 그 몬스터의 정의를 복사해 고치므로 들판의 같은 몬스터는 그대로), `reward`(깰 때마다: 재화는 지갑, 재료는 가방, 장비는 장비 모듈로 **바로** 준다. 원인 `stage`), `first?`(처음 깰 때 더), `rec`(권장 전투력: 화면에만), `timeS?`.
+- `STAGE_RULES`: 단계가 벌어지는 자리(`arena`, 물결은 `radius` 둘레의 앞쪽에서), 물결 사이·깬 뒤·실패 뒤의 쉼(초), 제한 시간, `leaderAuto`(단계 안에서 사람도 서버가 대신 싸운다: 가장 가까운 적, 쓸 수 있는 기술. 손으로 움직이면 1.5초는 맡기지 않는다), `enterOnJoin`(접속하면 바로 지금 단계로). 기본은 `{ arena: (0, 0), radius: 8, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: false }`.
+- 흐름: 단계는 **그 사람만의 층**(던전과 같은 인스턴스 층: 서로 보이지 않는다)에서 벌어진다. 물결을 다 잡으면 다음 물결 → 우두머리 → **깸**(보상, 가장 멀리 깬 단계, 사건 `stageCleared(p, id, 처음인가)`) → 자동 진행이 켜져 있으면 `nextS` 뒤 다음 단계, 꺼져 있으면 같은 단계를 되풀이(파밍). 마지막 단계는 되풀이한다.
+- **실패**(사람이 쓰러짐, 제한 시간): 깬 단계(가장 멀리 깬 단계와 그 단계의 앞 가운데 낮은 쪽)로 돌아가 **자동 진행을 끄고** `retryS` 뒤 되풀이한다. 사람이 '단계' 탭이나 자동 진행 단추로 다시 도전한다. 몬스터는 몰려온 적(`swarm`)으로 놓여 집으로 돌아가지 않고, 대상이 없으면 가장 가까운 사람이나 영웅을 노린다.
+- 명령 `{ t: 'stage', a: 'start' | 'leave' | 'auto' | 'go', on?, id? }`: 지금 단계로 들어가기, 들판으로 나오기(들어오기 전의 자리로), 자동 진행 켜고 끄기, 그 단계로(깬 단계와 그다음까지. 더 먼 단계는 `stageLocked`). 던전 안에서는 시작하지 않는다.
+- 줄 위: 개인 상태 `stage`(`{ cur, best, auto, run }`, `run`은 진행 중이면 `{ id, wave, waves, foes, total, left, state, boss }`). 저장 `ext.stages`(`{ cur, best, auto }`). 서버: `g.stages.start(p, 번호)`, `g.stages.leave(p, false)`, `g.stages.inStage(p)`, `g.stages.cleared(p)`(깬 단계의 수). 단계의 목록은 `STAGES`(`{ i, id, ch, n, def }`), `stageIndex(id)`, `waveCount(def)`.
+- **방치 보상**: `idle` 모듈을 함께 고르면 `IDLE.reward`가 셋째 인자로 `{ stage: 깬 단계의 수 }`를 받는다(단계 모듈이 없으면 0. 예전의 두 인자 식도 그대로 된다):
+
+```ts engine/test/collect/shared/content/index.ts
+export const IDLE = {
+  minMin: 10, maxMin: 720,
+  reward: (minutes: number, lv: number, ctx: IdleCtx): Reward => ({ gold: Math.round(minutes * (4 + ctx.stage * 3)), exp: Math.round(minutes * (2 + lv + ctx.stage)), sparks: Math.floor((minutes * ctx.stage) / 10) }),
+};
+```
+
+- 화면: 가운데 위(폰은 내 정보 창 아래)의 **단계 막대**: 단계 id(`1-3`)와 장의 이름, 남은 시간, 물결마다의 칸(지난 것 가득·지금 것은 잡은 비율·우두머리 칸은 붉게), 물결과 남은 적, 깸·실패의 큰 글, 자동 진행 단추(켜짐이 금색), 도전/나가기. 던전 안에서는 숨는다. 메뉴의 '단계' 탭: 장마다 단계의 줄(깸·지금·잠김, 우두머리, 권장 전투력과 내 편성의 전투력, 가기).
+
+### 던전의 열쇠 (`dungeon`의 선택 칸)
+
+```ts engine/test/collect/shared/content/index.ts
+    gear: false,
+    key: { refill: 2, cap: 2, buy: { cur: 'sparks', cost: 50, perDay: 2 } },
+```
+
+- `DungeonDef.key`가 있는 던전은 하루 횟수(`perDay`) 대신 **열쇠 하나**를 쓰고 들어간다. 날이 바뀌면 `refill`개가 더해지되 `cap`을 넘지 않는다(며칠 비웠어도 `cap`까지. 산 것으로 `cap` 위에 있으면 그대로). 처음 온 사람은 `min(refill, cap)`개. `buy`가 있으면 그 재화로 하나씩 산다(하루 `perDay`번, 명령 `{ t: 'dungeonKey', id }`, 원인 `cmd:dungeonKey`. 안내문 `dungeonKeyBought`·`dungeonKeyLimit`·`costShort`). 열쇠가 없으면 `dungeonNoKeys`. 보상·이벤트로 주려면 `g.dungeon.giveKeys(p, id, n)`, 읽기는 `g.dungeon.keyCount(p, id)`.
+- `DungeonDef.gear: false`는 끝낼 때 장비를 주지 않는다(골드 던전, 재료 던전: `reward`의 골드·재료만 우편으로).
+- 열쇠를 쓰는 던전이 하나도 없는 게임(등불지기: `perDay`만)에는 열쇠의 저장 칸·개인 상태·명령이 **생기지 않는다**: 예전과 글자까지 같다. 하루 3번(`perDay: 3`)은 `refill: 3, cap: 3`의 열쇠와 같은 셈이다(쓰지 않은 것이 쌓이지 않는다).
+- 줄 위: 개인 상태 `keys`(`{ 던전: { n, bought } }`), 저장 `ext.keys`(`{ 던전: [가진 수, 오늘 산 수, 날] }`). 화면: 문 앞의 던전 창이 '열쇠 n / cap', 채워지는 규칙, 값과 오늘 남은 사기 수, '열쇠 사기' 단추를 보인다.
+- 던전 모듈은 파티 모듈 없이도 돈다(파티가 없으면 파티원도 없다).
+
+### 화면과 문장
+
+- 탭 넷(`heroes`, `gacha`, `squad`, `stages`)은 그 모듈의 화면이 `addMenuTab`으로 붙인다. 차례와 보일 탭은 게임이 `setMenuTabs([...])`로 고른다(아래 본보기). 단계 막대와 뽑기 결과 창도 그 모듈을 고른 게임에만 붙는다.
+- 게임이 읽을 수 있는 것(`@engine/client`): `myHeroes()`, `mySquad()`, `myStage()`, `onGachaResult((배너, 결과) => …)`(연출·소리).
+- 틀의 문장(한국어·영어)이 탭·단추·확률표·단계 막대·안내문을 다 갖고 있다. 게임은 **이름 키만** 적는다: 영웅(`HeroDef.name`), 역할(`HeroRoleDef.name`), 배너(`BannerDef.name`), 장(`ChapterDef.name`), 등급을 바꿨으면 그 이름. 두 번째 재화의 이름은 이름표의 `currency2`(뽑기·열쇠의 값에 쓰인다). 쓰러진 뒤 일어나는 곳의 이름표는 `places.stage`.
+
+### 본보기: 영웅 들판
+
+파일:
+
+- 내용 `engine/test/collect/shared/content/index.ts`: 위의 조각 전부(맵, 직업 하나 '대장', 몬스터, 영웅·역할·배너·편성·장·단계, 열쇠 던전, 방치 보상).
+- 서버의 규칙 플러그인 `engine/test/collect/server/heath.ts`: 처음 온 사람에게 직업, 처음 보석·골드, 처음 영웅 둘. 나머지는 틀의 모듈이다.
+
+```ts engine/test/collect/server/heath.ts
+export const heath: Plugin = (g) => {
+  g.on('playerJoined', (p) => {
+    if (p.cls === '' && CLASS_IDS.length) g.classes.choose(p, CLASS_IDS[0]);
+    if (!fresh(p)) return;
+    if (STARTER.gold) g.wallet.add(p, 'gold', STARTER.gold, 'start');
+    if (STARTER.sparks) g.wallet.add(p, 'sparks', STARTER.sparks, 'start');
+    // 처음 영웅 둘 (편성의 빈 자리에 저절로 든다: SQUAD_RULES.autoFill)
+    g.roster.grant(p, 'ironwall');
+    g.roster.grant(p, 'swiftarrow');
+  });
+};
+```
+
+- 화면 `engine/test/collect/client/main.ts`: 언어 묶음(내용의 이름표와 이름 키)과 탭의 차례만.
+
+```ts engine/test/collect/client/main.ts
+setLocales([mergeLocale(koBase(koNames), { ui: koUi }), mergeLocale(enBase(enNames), { ui: enUi })]);
+// 메뉴의 탭: 수집형의 넷을 앞에, 우편(방치 보상과 던전 보상) 뒤에
+setMenuTabs(['heroes', 'gacha', 'squad', 'stages', 'mail']);
+startClient({});
+```
+
+- 시험 `engine/test/collect/`(`npm test`의 `collect/…`): `rules`(영웅·뽑기의 확률과 천장·편성의 싸움·단계의 깸과 실패·열쇠·방치 보상), `saves`(왕복, 깨진 값, 모듈을 끈 게임, 버전 없는 저장), `client`(화면의 셈), `net`(실제 서버와 접속 둘).
+- 띄우기: `npx vite build -c engine/test/collect/vite.config.ts`(→ `dist-collect/`) 뒤에 `PORT=3015 DB=memory npx tsx --tsconfig engine/test/collect/tsconfig.json engine/test/collect/server/main.ts`. 접속하면 1-1이 바로 시작되고, 메뉴(M)의 '뽑기'에서 보석으로 뽑는다. 금광의 문은 들판의 남동쪽(26, −26)이다(`DEV_SPAWN=26,-26`으로 그 곁에서 시작하면 단계에서 '나가기'한 뒤가 문 앞이다).
+- 새 게임으로 만들 때는 이 파일들을 `games/<게임>/`의 같은 자리에 옮기고 2절의 설정을 둔다(12절의 공 마당과 같다). 틀의 파일은 입구(`@engine/server`, `@engine/client`, 타입은 `@engine/shared/defs/collect`)로 가져온다.
+
+### 남은 것 (틀에 없는 것)
+
+- 영웅의 장비·스킬 레벨·각성·전용 무기, 영웅끼리의 시너지(같은 진영 보너스), 진형(앞줄·뒷줄)의 효과는 없다. 전투력은 공격과 체력만으로 셈한다.
+- 이끄는 사람 없이 영웅만 싸우는 모드, 영웅을 직접 조작하기, 영웅의 궁극기 연출은 없다.
+- 뽑기는 영웅만 준다(장비·재료 뽑기 없음). 픽업(배너 기간, 확률 업)과 천장의 '선택권', 배너 사이에 이어지는 천장은 없다. 배너의 기간은 게임이 `BANNERS`를 바꿔 배포해야 한다.
+- 단계는 한 사람씩이다(파티로 함께 깨기 없음). 단계의 순위표, 스킵·소탕권, 오프라인 동안의 단계 진행(지금은 방치 보상의 수치만 커진다)은 없다.
+- 열쇠는 던전 모듈의 것이라 그 의존(`combat`, `mail`, `daily`, `gear`)을 함께 고른다.

@@ -1,6 +1,6 @@
 # 틀과 게임 가르기: 지금의 상태
 
-이 문서는 **지금 무엇이 끝났고, 틀과 게임이 어디서 만나고, 무엇이 남았는지**를 적는다. 2026-11-26(가지 `feat/neutral`, 장르 중립 틀)을 기준으로 현행화했다. 코드를 고치면 이 문서도 함께 고친다.
+이 문서는 **지금 무엇이 끝났고, 틀과 게임이 어디서 만나고, 무엇이 남았는지**를 적는다. 2026-11-26(가지 `feat/neutral`, 장르 중립 틀. 그 뒤의 가지들은 절마다)을 기준으로 현행화했다. 코드를 고치면 이 문서도 함께 고친다.
 
 함께 보는 문서:
 
@@ -12,9 +12,9 @@
 ## 요약
 
 - 코드는 틀(`engine/`)과 게임 여섯(`games/deungbul/` 등불지기, 예제 `games/sample/`, 시제품 `games/cave`·`starmine`·`bastion`, RPG가 아닌 시제품 `games/rollball` 굴림공)이다. 방향은 게임 → 틀 하나다.
-- **틀은 장르와 무관한 핵심과 선택 모듈 열일곱이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
+- **틀은 장르와 무관한 핵심과 선택 모듈 스물하나다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
 - 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
-- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 넷과 게임마다의 설정, 모두 13개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 게임 다섯의 시험: 검사 1568개, 2026-11-26 `feat/stage3`) 모두 통과, `npm run build:all`(게임 다섯) 통과.
+- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 16개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 여섯의 시험: 검사 1813개, 2026-11-26 `feat/collect`) 모두 통과, `npm run build:all` 통과.
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
@@ -24,6 +24,7 @@
 - 빈틈 메우기(2026-11-26, 가지 `feat/gaps`, 아래 '빈틈 메우기'): 문서만 보고 만든 굴림공의 증명 기록([proof-rollball.md](proof-rollball.md))의 빈틈. 카메라(`CAMERA`, `setCameraAim`, `fitZoom`), 사람마다의 값과 겉모습(`g.playerSync`, `setPlayerLook`), '집으로' 끄기(`HOME_KEY`), 고르지 않은 모듈의 줄 칸 빼기, `npm test`의 끝 줄, 문서. `npm test` 검사 1612개.
 - 엔티티의 모듈 몫(2026-11-26, 가지 `feat/entcore`, 아래 '엔티티의 모듈 몫'): 핵심 엔티티(`Ent`)에는 핵심의 칸 27개만 적고, 모듈의 칸 44개(골드, 레벨, 체력, 장비 …)는 모듈마다 `engine/server/game/parts.ts`에 두어 그 모듈을 고른 게임의 엔티티에만 만든다. 등불지기는 줄 위의 글자·저장·난수의 차례가 그대로다(황금 실행과 운영 DB 복사본 비교). `npm test` 검사 1624개.
 - 틀의 남은 한계 메우기(2026-11-26, 가지 `feat/limits`, 아래 같은 이름의 절): 기기 옮기기 코드가 서버를 다시 켜도 남는다(해시만 저장), 파일 모델의 사람에 갑옷(`armor.tint`·`attach`), 팀 모듈 `teams`(굴림공이 쓴다). `npm test` 검사 1687개.
+- 수집형·방치형 모듈(2026-11-26, 가지 `feat/collect`, 아래 같은 이름의 절): 영웅 `roster`, 뽑기 `gacha`(공개 확률표, 천장, 10번 보장, 기록, 게임 안의 재화만), 편성 `squad`(영웅이 함께 싸운다: 전투의 `registerAlly`), 단계 `stages`(장·단계·물결·우두머리, 자동 진행·실패, 방치 보상이 깬 단계로), 던전의 입장 열쇠(`DungeonDef.key`). 본보기 내용 `engine/test/collect/`(영웅 들판). 등불지기는 고르지 않았고 황금 실행이 바이트까지 같다. `npm test` 검사 1813개.
 - 등불지기의 플레이, 저장 형식은 가르는 동안 바뀌지 않았다(장르 중립 틀에서도: 옛 견본 15개와 운영 DB 복사본 캐릭터 59·월드 1을 읽은 결과가 글자까지 같다). 프로토콜은 3이다(2026-11-26: 엔티티 종류를 문자열로, 상태 줄 뒤에 게임의 값, stat·meta의 칸이 모듈마다. 옛 화면은 새로고침을 안내받는다).
 
 ## 장르 중립 틀 (2026-11-26, 가지 `feat/neutral`)
@@ -50,6 +51,31 @@
 - 서버의 바깥 통(`cdAcks`, `itemCds`, `gears`, `partyOut`)과 본인의 `you`의 체력 칸은 틀에 남았다(모듈을 고르지 않으면 비어 있거나 0). 상태 줄의 체력 칸과 `EnterInfo`의 무기·직업·체력 칸은 2026-11-26부터 그 모듈을 고른 게임에만 있다(아래 '빈틈 메우기').
 - '쓰러짐'에서 온 `rules.respawn`, 채널의 '바쁜 때'(`tellBusyS`)는 이름이 RPG에서 왔다. 핵심의 '집으로'(H, `goToTown`)는 2026-11-26부터 내용의 `HOME_KEY = false`로 끌 수 있다.
 - 엔티티끼리의 물리는 틀에 없다(게임이 만든다). 팀과 점수판은 2026-11-26부터 `teams` 모듈. 역할처럼 사람마다 남이 보는 다른 값은 `g.playerSync`로 싣는다.
+
+## 수집형·방치형 모듈 (2026-11-26, 가지 `feat/collect`)
+
+"○○ 키우기"류(영웅을 뽑아 모으고 키워 편성하고, 자동으로 단계를 깨고, 접속하지 않은 동안에도 보상)를 틀로 만들 수 있게 선택 모듈 넷과 던전의 열쇠를 더했다. 새 게임 쪽의 쓰는 법은 [making-a-game.md](making-a-game.md) 13절(모듈마다의 내용 모양·명령·사건·화면, 본보기).
+
+| 무엇 | 틀 쪽 | 지키는 것 |
+|---|---|---|
+| 모듈의 표 | `modules.ts`: `roster`(economy), `gacha`(roster, economy), `squad`(roster, combat), `stages`(combat). `COLLECT_MODULES`. `RPG_MODULES`에서 빠진다(등불지기·버섯 동굴에 저절로 생기지 않게). 표의 맨 뒤라 다른 모듈의 만드는 차례·엔티티 칸의 차례가 그대로다. `MODULE_SAVES.player`에 `roster`, `gacha`, `squad`, `stages`, `keys`(던전) | `collect/rules`(의존), `fx/modules`, `fx/parts`(모듈마다 띄워도 고르지 않은 칸이 생기지 않는다. 칸 다섯 `heroes`·`pity`·`pulls`·`squad`·`stage`) |
+| 계약 | `contract.ts`의 `CollectContent`: `HEROES`, `HERO_RARITIES`, `HERO_ROLES`, `HERO_RULES`, `BANNERS`, `GACHA_RULES`, `SQUAD_RULES`, `CHAPTERS`, `STAGE_RULES`(기본값은 `defaults.ts`: 빈 표와 등급 셋). 타입과 도우미는 `engine/shared/defs/collect.ts`(능력치·전투력, 확률표 `poolOdds`·`pickOdds`·`rateTable`, `seededRng`, `STAGES`). `DungeonDef.key`·`gear`(선택), `IDLE.reward`의 셋째 인자 `IdleCtx`(깬 단계의 수: 두 인자 식도 그대로) | 타입 검사 설정 `engine/test/collect/tsconfig.json`(넷째 틀 설정), 경계 검사 |
+| 영웅 | `systems/roster.ts`(`g.roster`): 얻기(`grant`: 처음이면 등급의 처음 별, 또 얻으면 조각), 레벨 업(지갑, `cmd:hero:level`, 별마다 레벨 상한), 별 올리기(조각), 사건 `heroChanged`, 개인 상태 `heroes`, 저장 `ext.roster` | `collect/rules`, `collect/saves` |
+| 뽑기 | `systems/gacha.ts`(`g.gacha`): 1·10번, 값은 지갑(`cmd:gacha`, 게임 안의 재화만: 결제·구매 훅 없음), 영웅마다의 무게로만 정하는 확률, 천장(배너마다·사람마다 저장), 10번 보장, 기록(최근 `GACHA_RULES.history`), 메시지 `gacha`, 바꿔 끼우는 난수 `rng` | `collect/rules`(정해진 난수로 30,000번: 영웅마다 4시그마 안, 천장 50번째, 10번 보장, 값, 같은 씨앗이면 같은 결과), `collect/client`(공개 확률표의 합, 서버 셈과 같음) |
+| 편성 | `systems/squad.ts`(`g.squad`): 엔티티 종류 `hero`(주인을 따라다님, 대상 고르기, 기본 공격·기술, 쓰러졌다 일어나기, 층 따라가기, 주인이 나가면 사라짐), 자동으로 채우기, 개인 상태 `squad`, 저장 `ext.squad`. 전투에 `registerAlly(종류, { owner, down, skillScale })`: 사람 편 종류의 피해는 주인의 것(처치 보상·`hit`), 몬스터가 노리고, 체력 0이면 `down`. 아군 회복·강화도 닿는다(등록한 것이 없는 게임의 셈은 그대로) | `collect/rules`(영웅이 몬스터를 잡고 보상은 주인에게, 쓰러짐·일어남, 층), `collect/net` |
+| 단계 | `systems/stages.ts`(`g.stages`): 사람마다의 인스턴스 층(던전과 함께 쓰는 층 번호의 줄 `layers.ts`의 `instanceLayer`), 물결·우두머리(정의를 복사해 `scale`), 깸(보상은 지갑·가방으로 바로, 원인 `stage`, 처음 깸, 사건 `stageCleared`), 자동 진행, 실패(쓰러짐·시간 → 깬 단계로, 자동 진행 끔, 파밍), 잠김, 사람도 대신 싸움(`leaderAuto`), 접속하면 바로 들어가기(`enterOnJoin`), 방치 보상의 깬 단계(`g.idle.stageOf`), 개인 상태 `stage`, 저장 `ext.stages` | `collect/rules`(1-1 깸 → 1-2, 실패 둘, 잠김, 1-5 우두머리 → 2-1, 방치 보상), `collect/net` |
+| 던전의 열쇠 | `systems/dungeon.ts`: `DungeonDef.key`(`refill`, `cap`, `buy`)가 있는 던전만 열쇠(날마다 채움·상한·사기 `dungeonKey`·하루 한도, `giveKeys`, `keyCount`, 개인 상태 `keys`, 저장 `ext.keys`). `gear: false`면 장비 없이. 열쇠 던전이 없는 게임에는 저장 칸·개인 상태·명령이 생기지 않는다(하루 횟수의 길은 한 글자도 바뀌지 않았다). 함께 고친 것: 던전이 파티 모듈 없이 돌면 죽던 것(`g.party.mates`를 묻지 않고 불렀다) | `collect/rules`(채우기·상한·사기·하루 한도·저장), `fx/modules`(열쇠 던전이 없으면 칸 없음), 등불지기 황금 실행 |
+| 화면 | `hud/collect.ts`(메뉴의 '영웅'·'뽑기'·'편성' 탭을 `addMenuTab`으로, 뽑기 결과 창, 공개 확률표, 영웅의 겉모습 `registerKind('hero')`), `hud/stagebar.ts`(가운데 위 단계 막대, '단계' 탭), `hud/dungeon.ts`(열쇠 줄), 셈 `hud/collectcalc.ts`(화면 요소를 읽지 않는다). `registerKind`에 `hp`(이름표의 체력 막대), `shot`(날아가는 것). 화면 모듈 목록의 맨 뒤라 고르지 않은 게임의 init 차례가 그대로. 문장은 한국어·영어(틀의 키 81개). 레벨 업 안내문은 능력치 모듈이 있을 때만 '능력치 점수'를 말한다(없는 게임의 거짓 안내였다) | `collect/client`, 화면(영웅 들판 PC 1280×720·폰 390×844, 한국어·영어) |
+| 본보기 | `engine/test/collect/`("영웅 들판": 영웅 여섯·역할 넷·배너 하나·장 둘 × 단계 다섯·금광 열쇠 던전, 플러그인 `server/heath.ts`, 화면 `client/main.ts`, `vite.config.ts` → `dist-collect/`). `test/all.ts`의 `collect` 묶음, `scripts/typecheck.mjs`의 틀 설정 | `npm test`의 `collect/rules`·`saves`·`client`·`net` |
+
+등불지기가 바뀌지 않았다는 증거(바탕 커밋 `c00c159`의 작업 트리와 이 가지를 같은 도구로 돌려 바이트를 견줬다. 도구는 `$TEMP/dg-work/collect-tools/golden.mts`: 엔티티 칸의 가지 `entcore`의 황금 실행에 던전을 더한 것):
+
+- 황금 실행: 시계와 난수를 고정하고 새 사람 9·봇 6을 4분(4,800틱) 돌렸다. 엔트코어 때의 명령 전부에 더해 **던전**: 셋이 레벨을 올려 지하묘에 하루 다섯 번 들어가려 하고(셋은 들어가고 둘은 `dungeonNoRuns`), 날을 넘겨 다시 들어간다(들어감 12, 거절 6). 전송마다의 스냅샷·`stat`·`meta`·개인 상태·사건·안내문·바깥 통·공유 상태, 끝의 캐릭터 저장·엔티티 전부·월드 저장: 27,240줄 5,214,110바이트가 같다(sha256 `dbf60fd7…`).
+- 다른 게임(같은 실행을 새 사람 9·봇 6으로 2분): 모닥불 사냥터·버섯 동굴·별가루 광산·돌담 마을·굴림공 모두 바이트까지 같다.
+- 시험: `fx/wire`(예전 스냅샷과 글자 비교), `deungbul/saves`(옛 견본과 운영 DB 견본의 읽기 결과), 문장 견본(`games/deungbul/test/fixtures/locale-*.json`: 틀의 새 키만 더해졌고 달라진 문장 0).
+- 화면: 바탕과 이 가지의 등불지기 서버(3016, 3015)를 같은 자리(`DEV_SPAWN`)에서 띄워 PC 1280×720·폰 390×844에서 접속 → 직업 고르기 → 메뉴를 열고, 모든 id 요소의 숨김·class를 견줬다: 같다(무작위 이름만 다르다). 빌드(`dist/`)는 다르다: 화면 모듈 목록에 수집형의 화면 코드와 css가 더해졌다(고르지 않아 init되지 않는다).
+
+남은 것과 주의: [making-a-game.md](making-a-game.md) 13절 '남은 것'(영웅의 장비·시너지·진형, 영웅만 싸우는 모드, 픽업·선택권, 파티 단계, 소탕권 없음). 단계의 몬스터는 몰려온 적(`swarm`)이라 게임의 `g.rules.siege`가 있으면 그곳으로 가려 한다(단계의 대상 고르기가 먼저 대상을 준다). 단계 안의 사람은 서버가 움직이므로 화면의 예측과 잠깐 어긋날 수 있다(위치 보정으로 따라간다).
 
 ## 틀의 남은 한계 메우기 (2026-11-26, 가지 `feat/limits`)
 
@@ -106,6 +132,7 @@
 
 ## 0. 이어 갈 것
 
+0. **수집형·방치형 모듈: 끝(2026-11-26, 가지 `feat/collect`)**: 위 '수집형·방치형 모듈'. 다음은 문서([making-a-game.md](making-a-game.md) 13절)만 보고 이 장르의 게임을 만드는 검증이다(별도 에이전트).
 0. **틀의 남은 한계 메우기: 끝(2026-11-26)**. 엔티티에서 RPG 칸 떼기(가지 `feat/entcore`: 위 '엔티티의 모듈 몫'), 기기 옮기기 코드를 재시작에도 남기기·파일 모델의 갑옷·팀 모듈 `teams`(가지 `feat/limits`: 위 '틀의 남은 한계 메우기'). 그 전에 끝남: 장르 중립 틀의 검증(굴림공 `games/rollball`, [proof-rollball.md](proof-rollball.md)).
 
 틀이 최우선이다(사용자 결정). **2026-11-24 결정: 등불지기는 전통 MMORPG로 두고 새 장르 모드는 만들지 않는다. 작업은 틀만 한다.**
