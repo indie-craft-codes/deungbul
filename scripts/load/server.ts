@@ -35,15 +35,8 @@ const imp = (f: string) => import(pathToFileURL(path.join(root, f)).href);
 /** 게임마다의 규칙 플러그인: [파일, 내보낸 이름, 설정을 받는 함수인가] */
 const PLUGINS: Record<string, [string, string, boolean]> = {
   deungbul: ['games/deungbul/server/deungbul.ts', 'installDeungbul', true],
-  dalmuri: ['games/dalmuri/server/dalmuri.ts', 'installDalmuri', false],
   collect: ['engine/test/collect/server/heath.ts', 'heath', false],
-  rollball: ['games/rollball/server/rollball.ts', 'installRollball', false],
   sample: ['games/sample/server/sample.ts', 'installSample', false],
-  cave: ['games/cave/server/cave.ts', 'installCave', false],
-  starmine: ['games/starmine/server/starmine.ts', 'installStarmine', false],
-  bastion: ['games/bastion/server/bastion.ts', 'bastion', true],
-  stepstone: ['games/stepstone/server/stepstone.ts', 'installStepstone', false],
-  pond: ['games/pond/server/pond.ts', 'installPond', false],
 };
 const [file, fn, takesCfg] = PLUGINS[cfg.game] ?? (() => { throw new Error(`모르는 게임: ${cfg.game}`); })();
 const mod = await imp(file);

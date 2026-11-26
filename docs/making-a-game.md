@@ -2,6 +2,8 @@
 
 이 저장소는 두 덩어리다: 다른 게임에서도 그대로 쓰는 **틀**(`engine/`)과 게임들(`games/`). 이 문서는 틀 위에 새 게임을 만드는 차례를 적는다.
 
+> **지운 본보기 게임 (2026-11-27)**: 시제품과 증명 게임 일곱(버섯 동굴 `cave`, 별가루 광산 `starmine`, 돌담 마을 `bastion`, 굴림공 `rollball`, 달무리 원정대 `dalmuri`, 징검돌 전술 `stepstone`, 반딧불 연못 `pond`)은 저장소에서 지웠다. 지금 `games/`에는 등불지기(`deungbul`)와 예제(`sample`)만 있다. 이 문서가 `games/<그 이름>/…`을 예로 들면 커밋 `7e347c9`에서 본다: `git show 7e347c9:games/stepstone/server/duels.ts`, 폴더째 되살리기는 `git checkout 7e347c9 -- games/stepstone`. 틀의 기능(`rooms`, `teams`, 수집형 모듈 …)은 그대로 있고 틀의 시험(`engine/test/core`, `collect`)이 지킨다.
+
 틀은 **장르와 무관한 핵심**과 **고를 수 있는 모듈**로 되어 있다. 새 게임은 이 차례로 만든다.
 
 1. **핵심**: 맵과 쓸 모듈의 목록(`MAP`, `MODULES`)만 적으면 서버와 화면이 뜬다. 접속, 이동, 지도, 대화, 채널, 저장은 늘 있다(1절).
@@ -420,13 +422,6 @@ runServer({ port: 3002, db: path.join(root, 'data', 'sample', 'game.db'), dist: 
 |---|---|---|
 | 3001 | 등불지기 `games/deungbul` (운영) | 5173 |
 | 3002 | 예제 `games/sample` | 5174 |
-| 3003 | 버섯 동굴 `games/cave` | 5180 |
-| 3004 | 별가루 광산 `games/starmine` | 5191 |
-| 3005 | 돌담 마을 `games/bastion` | 5190 |
-| 3007 | 굴림공 `games/rollball` | 5192 |
-| 3008 | 달무리 원정대 `games/dalmuri` | 5193 |
-| 3009 | 징검돌 전술 `games/stepstone` | 5196 |
-| 3010 | 반딧불 연못 `games/pond` | 5197 |
 | 3015~3017 | 확인용으로 잠깐 띄우는 서버(공 마당 `engine/test/core`의 기본 3015, 검증 작업). 오래 쓰지 않는다 | |
 | 0 | 시험(`startServer(0)`: 빈 포트를 고른다) | |
 - 서버는 `dist` 폴더의 화면을 같은 포트로 내보낸다. 화면을 빌드하지 않았으면 접속만 되지 않을 뿐 서버는 돈다.
@@ -1807,7 +1802,8 @@ import { STARTER } from '../shared/content';
 
 플러그인에서 `g.rooms.define(def)`를 한 번 부른다(`RoomDef`: `engine/server/game/systems/rooms.ts`). `start`만 꼭 주고 나머지는 선택이다. 자리 번호(0부터)가 곧 편이고, 자리 0이 먼저 둔다.
 
-```ts games/stepstone/server/duels.ts
+```ts
+// games/stepstone/server/duels.ts (지운 본보기 게임: 커밋 7e347c9에 있다)
     g.rooms.define<Board>({
       seats: 2, turnS: TURN.turnS, rounds: TURN.rounds, graceS: TURN.graceS, cpuStepMs: TURN.cpuStepMs, cpuAfterS: TURN.cpuAfterS,
       seatAt: (_room, side) => { const at = seatPos(AT, side as 0 | 1); return { ...at, face: faceTo(at, BOARDS[AT]) }; },
@@ -1841,7 +1837,8 @@ import { STARTER } from '../shared/content';
 
 게임의 수는 게임의 명령으로 받고, 차례인지는 틀에 묻는다(차례가 아니면 틀이 `roomNotTurn`을 알린다):
 
-```ts games/stepstone/server/duels.ts
+```ts
+// games/stepstone/server/duels.ts (지운 본보기 게임: 커밋 7e347c9에 있다)
     const t = this.g.rooms.myTurn<Board>(p);
 ```
 
@@ -1860,20 +1857,23 @@ import { STARTER } from '../shared/content';
 - 판 화면에 게임의 것: `setRoomLook({ seatColor: (i) => css 색, note: () => 막대 아래 줄, title: () => 결과 창의 큰 글, lobby: () => 대기실 창 제목 옆 글 })`.
 - 칸 누르기: 판에 앉은 동안 땅 누르기를 게임이 받는다(아래 '땅 누르기를 게임이 받기').
 
-```ts games/stepstone/client/duel.ts
+```ts
+// games/stepstone/client/duel.ts (지운 본보기 게임: 커밋 7e347c9에 있다)
   setTapHandler((sx, sy) => { if (!myRoom()) return false; tap(sx, sy); return true; });
 ```
 
 - 카메라: 판 전체를 비추고(`setCameraAim`의 `center: true`로 폰 세로에서도 한가운데), 오른쪽 자리면 카메라를 반대편으로 돌린다(`setCameraYaw`): 누구나 자기 진영을 같은 쪽에 본다.
 
-```ts games/stepstone/client/duel.ts
+```ts
+// games/stepstone/client/duel.ts (지운 본보기 게임: 커밋 7e347c9에 있다)
   onRoomChange((before, r) => {
     setCameraYaw(r && r.me === 1 ? Math.PI : 0);
 ```
 
 - 연출: 서버의 `g.effect(엔티티 id, 이름, 수…)`를 화면의 `onEffect(이름, (id, vals) => …)`가 받는다(아래 '연출 사건').
 
-```ts games/stepstone/server/duels.ts
+```ts
+// games/stepstone/server/duels.ts (지운 본보기 게임: 커밋 7e347c9에 있다)
     this.g.effect(u.id, 'hit', foe.id, d, killed ? 1 : 0);
 ```
 

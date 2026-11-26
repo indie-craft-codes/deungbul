@@ -21,9 +21,7 @@ const now = () => T;
 
 const PLUGINS: Record<string, [string, string]> = {
   deungbul: ['games/deungbul/server/deungbul.ts', 'installDeungbul'],
-  dalmuri: ['games/dalmuri/server/dalmuri.ts', 'installDalmuri'],
   collect: ['engine/test/collect/server/heath.ts', 'heath'],
-  rollball: ['games/rollball/server/rollball.ts', 'installRollball'],
 };
 const [file, fn] = PLUGINS[cfg.game];
 const mod = await imp(file);

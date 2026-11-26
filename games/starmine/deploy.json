@@ -1,6 +1,0 @@
-{
-  "port": 3004,
-  "db": "data/starmine/game.db",
-  "dist": "dist-starmine",
-  "bots": 0
-}

@@ -1,6 +1,0 @@
-{
-  "port": 3009,
-  "db": "data/stepstone/game.db",
-  "dist": "dist-stepstone",
-  "bots": 0
-}

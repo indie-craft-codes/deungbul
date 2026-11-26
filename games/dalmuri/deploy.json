@@ -1,6 +1,0 @@
-{
-  "port": 3008,
-  "db": "data/dalmuri/game.db",
-  "dist": "dist-dalmuri",
-  "bots": 0
-}

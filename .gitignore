@@ -1,7 +1,6 @@
 node_modules/
 dist/
 dist-sample/
-dist-bastion/
 *.log
 data/
 
@@ -15,11 +14,5 @@ resume.ps1
 # 헤드리스 Chrome의 임시 프로필 (그림 변환·화면 확인 도구가 만든다)
 chrome-webp-*/
 chrome-prof-*/
-dist-cave/
-dist-starmine/
 dist-core/
-dist-rollball/
 dist-collect/
-dist-dalmuri/
-dist-stepstone/
-dist-pond/

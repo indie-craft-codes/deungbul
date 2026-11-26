@@ -1,5 +1,7 @@
 # 증명 노트: 넷이 두는 판 게임 "반딧불 연못"을 문서만으로 만들기
 
+> 이 게임은 2026-11-27에 저장소에서 지웠다. 코드는 커밋 `7e347c9`에 있다 (`git checkout 7e347c9 -- games/<이름>`). 이 기록은 틀을 검증한 기록으로 남긴다.
+
 처음 보는 개발자로서 `docs/making-a-game.md`(1~12절과 14절 '판으로 나뉘는 게임')와 앞의 기록(`docs/proof-stepstone.md`, `docs/proof-dalmuri.md`)을 읽고
 틀의 판 모듈(`rooms`)과 턴제 접점으로 `games/pond/`를 만들었다. 바탕 커밋은 `7a67da4`, 가지 `feat/boardgame`. **`engine/`은 한 줄도 고치지 않았다.**
 다른 게임의 코드(`games/stepstone`, `games/sample` …)는 읽지 않았다. 문서가 본보기로 가리키는 `engine/test/core/`(12절 '공 마당')와 입구의 타입 선언·주석은 읽었다.

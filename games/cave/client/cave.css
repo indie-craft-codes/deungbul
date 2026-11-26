@@ -1,9 +1,0 @@
-:root {
-  --sky: #2a2438;
-  --ink: #17131f;
-  --ink-rgb: 23, 19, 31;
-  --panel: rgba(var(--ink-rgb), .88);
-  --cover-rgb: 12, 9, 18;
-  --line: rgba(190, 150, 255, .3);
-  --gold: #c9a0ff;
-}

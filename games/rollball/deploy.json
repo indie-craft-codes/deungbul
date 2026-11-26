@@ -1,6 +1,0 @@
-{
-  "port": 3007,
-  "db": "data/rollball/game.db",
-  "dist": "dist-rollball",
-  "bots": 0
-}
