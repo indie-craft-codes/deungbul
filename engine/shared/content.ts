@@ -94,3 +94,6 @@ export const ECON_HUNT = get('ECON_HUNT');
 export const ECON_LEVEL_MARKS = get('ECON_LEVEL_MARKS');
 export const ECON_FRESH_DAYS = get('ECON_FRESH_DAYS');
 export const ECON_WATCH = get('ECON_WATCH');
+// ---------- 팀 ----------
+export const TEAMS = get('TEAMS');
+export const TEAM_RULES = get('TEAM_RULES');

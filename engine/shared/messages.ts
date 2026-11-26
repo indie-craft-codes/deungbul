@@ -133,4 +133,8 @@ export type MsgKey =
   | 'handoffBad' // [더 틀릴 수 있는 횟수] 맞지 않거나 시간이 지난 코드
   | 'handoffWait' // [다시 해 볼 수 있을 때까지의 분] 틀린 코드를 너무 많이 넣었다
   | 'handoffSelf' // [] 지금 이 기기의 캐릭터의 코드다
-  | 'handedOff'; // [] 이 캐릭터를 다른 기기로 옮겼다: 이 기기에서는 더 이어지지 않는다
+  | 'handedOff' // [] 이 캐릭터를 다른 기기로 옮겼다: 이 기기에서는 더 이어지지 않는다
+  // ---- 팀 (engine/server/game/systems/teams.ts) ----
+  | 'teamJoined' // [팀 번호] 그 팀에 들어갔다
+  | 'teamFull' // [팀 번호] 그 팀은 사람이 더 많아 들어갈 수 없다
+  | 'teamStay'; // [팀 번호(지금 팀)] 이 게임은 팀을 옮길 수 없다

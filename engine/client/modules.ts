@@ -18,6 +18,7 @@ import { initMinimap } from './hud/minimap';
 import { initNear } from './hud/near';
 import { initCard, initParty } from './hud/party';
 import { initShop } from './hud/shop';
+import { initTeams } from './hud/teams';
 import { initWorldMap } from './hud/worldmap';
 import { hasModule } from './mods';
 import { initSound } from './sound';
@@ -29,6 +30,7 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initClasses, mod: 'classes' },
   { init: initCard },
   { init: initParty, mod: 'party' },
+  { init: initTeams, mod: 'teams' },
   { init: initAuto, mod: 'away' },
   { init: initBag, mod: 'items' },
   { init: initBuffs, mod: 'combat' },

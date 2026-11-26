@@ -1,7 +1,8 @@
-// 굴림공의 규칙 시험: 팀 고르기와 균형, 공의 물리(밀기, 차기, 마찰, 벽 안에 머묾), 골과 공 되돌리기, 판의 끝, 실제 접속 둘로 골 넣기.
+// 굴림공의 규칙 시험: 팀 고르기와 균형(틀의 teams 모듈 위에서), 공의 물리(밀기, 차기, 마찰, 벽 안에 머묾), 골과 공 되돌리기, 판의 끝, 실제 접속 둘로 골 넣기.
 // 실행: node scripts/game.mjs test rollball (npm test도 함께 돌린다)
 import { PITCH } from '../shared/content/pitch';
 import type { PitchState } from '../shared/rollball';
+import type { TeamBoard, TeamMe } from '@engine/shared/defs';
 import { installRollball } from '../server/rollball';
 import { type Ent, Game, MemoryStore, startServer } from '@engine/server';
 import { check, connect, until } from '@engine/testing';
@@ -18,11 +19,11 @@ function world() {
   return { g, run, at, said, heard, ball: g.pitch.ball, v: () => g.pitch.spin() };
 }
 
-// ---------- 내용: 고른 모듈이 없다 ----------
+// ---------- 내용: 고른 모듈은 팀 하나 ----------
 {
   const { g } = world();
-  check(g.modules.size === 0 && !g.commands.has('attack') && !g.commands.has('buy') && Object.keys(g.state()).join() === 'pitch',
-    '모듈을 하나도 고르지 않았다: 전투·상점 명령이 없고, 공유 상태는 경기 하나뿐이다');
+  check(g.modules.size === 1 && g.has('teams') && !g.commands.has('attack') && !g.commands.has('buy') && Object.keys(g.state()).join() === 'teams,pitch',
+    '고른 모듈은 팀 하나: 전투·상점 명령이 없고, 공유 상태는 점수판(틀의 teams)과 경기뿐이다');
   check([...g.ents.values()].filter((e) => e.kind === 'ball').length === 1 && g.pitch.ball.x === 0 && g.pitch.ball.z === 0, '공 하나가 가운데에 놓인다');
 }
 
@@ -30,30 +31,31 @@ function world() {
 {
   const { g, said } = world();
   const [p1, p2, p3, p4] = ['a', 'b', 'c', 'd'].map((n) => g.players.spawn(n, false));
-  g.command(p1, { t: 'team', side: 0 });
-  check(g.pitch.side.get(p1.id) === 0 && said(p1, 'teamJoined'), '빈 경기장에서는 아무 팀이나 고른다');
+  const side = (p: Ent) => g.teams.index(p);
+  g.command(p1, { t: 'team', team: 0 });
+  check(side(p1) === 0 && said(p1, 'teamJoined'), '빈 경기장에서는 아무 팀이나 고른다');
   g.notices = [];
-  g.command(p2, { t: 'team', side: 0 });
-  check(!g.pitch.side.has(p2.id) && said(p2, 'teamFull'), '사람이 더 많은 팀으로는 갈 수 없다 (1 : 0에서 노을로)');
-  g.command(p2, { t: 'team', side: 1 });
-  g.command(p3, { t: 'team', side: 0 });
-  check(g.pitch.side.get(p2.id) === 1 && g.pitch.side.get(p3.id) === 0 && g.pitch.count(0) === 2 && g.pitch.count(1) === 1, '같은 수이면 어느 팀으로나 간다 (2 : 1)');
+  g.command(p2, { t: 'team', team: 0 });
+  check(side(p2) === -1 && said(p2, 'teamFull'), '사람이 더 많은 팀으로는 갈 수 없다 (1 : 0에서 노을로)');
+  g.command(p2, { t: 'team', team: 1 });
+  g.command(p3, { t: 'team', team: 0 });
+  check(side(p2) === 1 && side(p3) === 0 && g.teams.count(0) === 2 && g.teams.count(1) === 1, '같은 수이면 어느 팀으로나 간다 (2 : 1)');
   g.notices = [];
-  g.command(p4, { t: 'team', side: 0 });
-  check(!g.pitch.side.has(p4.id) && said(p4, 'teamFull'), '2 : 1에서 많은 쪽으로는 못 간다');
-  g.command(p3, { t: 'team', side: 1 });
-  check(g.pitch.side.get(p3.id) === 1, '팀을 바꿀 때는 나를 빼고 센다 (1 : 1에서 물결로 옮긴다)');
-  for (const bad of [2, -1, '0', null, 0.5]) g.command(p4, { t: 'team', side: bad });
-  check(!g.pitch.side.has(p4.id), '이상한 팀 번호는 무시한다');
+  g.command(p4, { t: 'team', team: 0 });
+  check(side(p4) === -1 && said(p4, 'teamFull'), '2 : 1에서 많은 쪽으로는 못 간다');
+  g.command(p3, { t: 'team', team: 1 });
+  check(side(p3) === 1, '팀을 바꿀 때는 나를 빼고 센다 (1 : 1에서 물결로 옮긴다)');
+  for (const bad of [2, -1, '0', null, 0.5]) g.command(p4, { t: 'team', team: bad });
+  check(side(p4) === -1, '이상한 팀 번호는 무시한다');
   g.fire('playerLeft', p1.id);
-  check(!g.pitch.side.has(p1.id) && !(p1.id in g.pitch.state().teams), '나가면 팀에서 빠진다');
+  check(side(p1) === -1 && (g.state().teams as TeamBoard).count.join() === '0,2', '나가면 팀에서 빠진다 (점수판의 사람 수도)');
 }
 
 // ---------- 공의 물리 ----------
 {
   const { g, run, at, ball, v } = world();
   const p = g.players.spawn('runner', false);
-  g.command(p, { t: 'team', side: 0 });
+  g.command(p, { t: 'team', team: 0 });
   // 걸어서 밀기: 공의 왼쪽에서 오른쪽으로 걸어 들어간다
   at(p, -4, 0);
   g.command(p, { t: 'move', x: 6, z: 0 });
@@ -103,8 +105,8 @@ function world() {
   run(2);
   check(g.pitch.left === left0, '팀이 있는 사람이 없으면 시계가 흐르지 않는다');
   const p = g.players.spawn('striker', false), q = g.players.spawn('keeper', false);
-  g.command(p, { t: 'team', side: 0 });
-  g.command(q, { t: 'team', side: 1 });
+  g.command(p, { t: 'team', team: 0 });
+  g.command(q, { t: 'team', team: 1 });
   at(p, -10, 10); at(q, 10, 10);
   // 노을이 오른쪽 골문에 넣는다
   ball.x = W - 3; ball.z = 0;
@@ -112,11 +114,11 @@ function world() {
   g.command(p, { t: 'kick' });
   at(p, -10, 10);
   run(0.5);
-  check(g.pitch.a === 1 && g.pitch.b === 0 && g.pitch.phase === 'goal' && heard('goal') && g.pitch.goals.get(p.id) === 1,
-    '공이 골문 안의 골라인을 넘으면 넣은 팀에 1점, 넣은 사람의 골이 오른다');
+  check(g.teams.score(0) === 1 && g.teams.score(1) === 0 && g.pitch.phase === 'goal' && heard('goal') && g.teams.playerScore(p) === 1,
+    '공이 골문 안의 골라인을 넘으면 넣은 팀에 1점(팀의 점수), 넣은 사람의 골(사람의 점수)이 오른다');
   const ann = g.announces.find((n) => n.k === 'goal');
   check(ann?.a[0] === 0 && ann.a[1] === 'striker' && ann.a[2] === 1 && ann.a[3] === 0, '골 안내문: 팀, 넣은 사람, 점수');
-  check((g.state().pitch as PitchState).a === 1, '점수는 공유 상태로 모두에게 간다');
+  check((g.state().teams as TeamBoard).score.join() === '1,0', '점수는 점수판(공유 상태 teams)으로 모두에게 간다');
   run(PITCH.goalPauseS + 0.2);
   check(g.pitch.phase === 'play' && ball.x === 0 && ball.z === 0 && v().vx === 0, '골 뒤 잠시 멈췄다가 공이 가운데로 돌아온다');
   // 자책골: 물결의 q가 오른쪽(자기 골문)에 넣으면 노을의 점수, q의 골은 오르지 않는다
@@ -126,7 +128,7 @@ function world() {
   g.command(q, { t: 'kick' });
   at(q, 10, 10);
   run(0.5);
-  check(g.pitch.a === 2 && !g.pitch.goals.has(q.id) && g.announces.find((n) => n.k === 'goal')?.a[1] === '', '자책골은 상대 팀의 점수이고 넣은 사람의 이름이 없다');
+  check(g.teams.score(0) === 2 && g.teams.playerScore(q) === 0 && g.announces.find((n) => n.k === 'goal')?.a[1] === '', '자책골은 상대 팀의 점수이고 넣은 사람의 이름이 없다');
   run(PITCH.goalPauseS + 0.2);
   // 판의 끝: 시간을 거의 다 쓴다
   g.announces = [];
@@ -138,7 +140,7 @@ function world() {
   run(1);
   check(ball.x === 3, '판이 끝난 동안에는 공이 움직이지 않는다');
   run(PITCH.endPauseS);
-  check(g.pitch.phase === 'play' && g.pitch.round === 2 && g.pitch.a === 0 && g.pitch.b === 0 && g.pitch.left > PITCH.roundS - 2 && heard('roundStart'), '다음 판은 0 : 0, 시계는 처음부터');
+  check(g.pitch.phase === 'play' && g.pitch.round === 2 && g.teams.score(0) === 0 && g.teams.score(1) === 0 && g.teams.playerScore(p) === 1 && g.pitch.left > PITCH.roundS - 2 && heard('roundStart'), '다음 판은 0 : 0 (넣은 사람의 골은 남는다), 시계는 처음부터');
   g.pitch.left = 0.5; g.announces = [];
   run(1);
   check(g.announces.find((n) => n.k === 'roundOver')?.a[0] === -1, '같은 점수면 비긴다');
@@ -148,19 +150,19 @@ function world() {
 {
   const server = await startServer(0, { store: new MemoryStore(), game: { plugins: [installRollball] } });
   const g = server.game;
-  const states: PitchState[][] = [[], []], sides: number[][] = [[], []];
+  const states: PitchState[][] = [[], []], boards: TeamBoard[][] = [[], []], sides: number[][] = [[], []];
   const listen = (i: number) => (m: { t: string; s?: unknown; k?: string }) => {
-    if (m.t === 'world') states[i].push((m.s as { pitch: PitchState }).pitch);
-    if (m.t === 'me' && m.k === 'side') sides[i].push(m.s as number);
+    if (m.t === 'world') { const w = m.s as { pitch: PitchState; teams: TeamBoard }; states[i].push(w.pitch); boards[i].push(w.teams); }
+    if (m.t === 'me' && m.k === 'team') sides[i].push((m.s as TeamMe).i);
   };
   const a = await connect(server.port, 'Alpha', undefined, listen(0));
   const b = await connect(server.port, 'Beta', undefined, listen(1));
   // 차례를 지킨다: 두 연결의 명령은 어느 쪽이 먼저 처리될지 모른다 (npm test는 여러 시험을 함께 돌려 느릴 수 있다)
-  a.send({ t: 'team', side: 0 });
+  a.send({ t: 'team', team: 0 });
   await until(() => a.sys.some((s) => s.startsWith('teamJoined')), 10000);
-  b.send({ t: 'team', side: 0 });
+  b.send({ t: 'team', team: 0 });
   await until(() => b.sys.some((s) => s.startsWith('teamFull')), 10000);
-  b.send({ t: 'team', side: 1 });
+  b.send({ t: 'team', team: 1 });
   await until(() => sides[1].at(-1) === 1 && sides[0].at(-1) === 0, 10000);
   check(sides[0].at(-1) === 0 && sides[1].at(-1) === 1 && b.sys.some((s) => s.startsWith('teamFull')), '접속한 둘이 팀을 고른다 (둘째는 같은 팀에 못 가고 다른 팀으로). 내 팀은 개인 상태로 온다');
   const ballId = g.pitch.ball.id;
@@ -176,15 +178,15 @@ function world() {
   a.send({ t: 'move', x: W - 5.2, z: 0 });
   await until(() => Math.hypot(pa.x - (W - 5.2), pa.z) < 0.3, 8000);
   a.send({ t: 'kick' });
-  const scored = await until(() => states[0].at(-1)?.a === 1 && states[1].at(-1)?.a === 1 && b.sys.some((s) => s.startsWith('goal:0:Alpha')), 10000);
+  const scored = await until(() => boards[0].at(-1)?.score[0] === 1 && boards[1].at(-1)?.score[0] === 1 && b.sys.some((s) => s.startsWith('goal:0:Alpha')), 10000);
   check(scored, `알파가 차서 골: 두 화면이 점수 1 : 0과 골 안내문을 받는다 (${b.sys.filter((s) => s.startsWith('goal')).join()})`);
   check(Math.abs(b.seen.get(ballId)!.x) > W - 1, '골 뒤 멈춘 동안 공은 골문 안에 보인다');
   await until(() => states[1].at(-1)?.phase === 'play', 10000);
   await until(() => Math.abs(b.seen.get(ballId)!.x) < 0.01, 5000);
   check(b.seen.get(ballId)!.x === 0 && b.seen.get(ballId)!.z === 0, '멈춤이 끝나면 화면의 공도 가운데로 돌아온다');
   a.ws.close();
-  await until(() => !(a.id in (states[1].at(-1)?.teams ?? {})), 8000);
-  check(!(a.id in (states[1].at(-1)?.teams ?? {})), '알파가 나가면 남은 화면의 팀 표에서 빠진다');
+  await until(() => boards[1].at(-1)?.count.join() === '0,1', 8000);
+  check(boards[1].at(-1)?.count.join() === '0,1', '알파가 나가면 남은 화면의 점수판에서 빠진다 (사람 수 0 : 1)');
   b.ws.close();
   await server.close();
 }

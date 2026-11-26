@@ -1,38 +1,12 @@
-/* 굴림공의 스타일: 틀의 스타일 뒤에 읽혀 덮어쓴다 */
+/* 굴림공의 스타일: 틀의 스타일 뒤에 읽혀 덮어쓴다. 점수판·팀 고르기 창의 스타일은 틀의 teams 모듈의 것 (engine/client/style.css) */
 :root {
   --sky: #bfe3f5;
   --ink: #14261a;
   --ink-rgb: 20, 38, 26;
   --panel: rgba(var(--ink-rgb), .84);
   --line: rgba(190, 255, 200, .25);
-  --team-a: #f06a3c;
-  --team-b: #3c8ef0;
 }
-#score { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; padding: 6px 12px; pointer-events: none; }
-#score .team.a b { color: var(--team-a); }
-#score .team.b b { color: var(--team-b); }
-#score .team small { opacity: .75; font-size: 11px; }
-#score .big { font-size: 24px; font-weight: 700; min-width: 1ch; text-align: center; }
-#score .sep { font-size: 20px; opacity: .7; }
-#score .clock { display: inline-flex; gap: 6px; align-items: baseline; margin-left: 6px; }
-#score .clock small { opacity: .7; font-size: 11px; }
-#score #phase { flex-basis: 100%; text-align: center; font-weight: 700; color: var(--gold); }
-#teamPick { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100vw - 32px)); z-index: 30; display: flex; flex-direction: column; gap: 8px; text-align: center; }
-#teamPick[hidden] { display: none; }
-#teamPick .btns { display: flex; gap: 8px; }
-.teamBtn { flex: 1; padding: 12px 0; font-size: 16px; font-weight: 700; color: #fff; border: 0; }
-.teamBtn.a { background: var(--team-a); }
-.teamBtn.b { background: var(--team-b); }
 button.kick { font-weight: 700; }
 #ballArrow { position: fixed; left: 0; top: 0; width: 32px; height: 32px; line-height: 32px; text-align: center; font-size: 24px; color: #fff;
   text-shadow: 0 0 4px #000, 0 0 8px #000; pointer-events: none; z-index: 20; }
 #ballArrow[hidden] { display: none; }
-/* 폰 세로: 점수판(가운데 위 자리)은 내 정보 창 아래 왼쪽에 놓이고, 오른쪽 위에는 대화창(폭 160px)이 있다. 대화 기록이 차면 대화창이 아래로 자라
-   점수판을 덮었다: 점수판의 폭을 대화창의 왼쪽까지로 줄이고, 팀 이름 아래에 사람 수를, 시계는 다음 줄에 둔다 */
-@media (max-width: 720px) {
-  #score { max-width: calc(100vw - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px)) - 160px - 8px);
-    padding: 4px 8px; gap: 0 8px; }
-  #score .team { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
-  #score .big { font-size: 22px; }
-  #score .clock { flex-basis: 100%; justify-content: center; margin-left: 0; }
-}

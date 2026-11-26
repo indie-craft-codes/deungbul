@@ -11,6 +11,7 @@ import type { DailyDef } from '@engine/shared/defs/growth';
 import type { ItemDef, ItemId } from '@engine/shared/defs/items';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
+import type { TeamDef, TeamRules } from '@engine/shared/defs/teams';
 import { GEAR_BASE } from '@engine/shared/defaults';
 import { RPG_MODULES } from '@engine/shared/modules';
 
@@ -171,3 +172,13 @@ export const DUNGEONS = {
     dropRar: 2, dropLv: 5,
   },
 } as const satisfies Record<string, DungeonDef>;
+
+// ---------- 팀 (teams 모듈: 위의 MODULES에는 없다. 시험이 GameOptions.modules로 고른다) ----------
+/** 셋: 팀이 둘이 아닌 게임도 시험한다. 이름은 언어 파일 ui의 키 */
+export const TEAMS: readonly TeamDef[] = [
+  { id: 'red', color: 0xd04040, name: 'fxTeamRed' },
+  { id: 'blue', color: 0x4060d0, name: 'fxTeamBlue' },
+  { id: 'green', color: 0x40a040, name: 'fxTeamGreen' },
+];
+/** 시험이 규칙을 바꿔 가며 본다 (teams.test가 고쳤다가 되돌린다) */
+export const TEAM_RULES: TeamRules = { balance: true, switch: true, persist: false };

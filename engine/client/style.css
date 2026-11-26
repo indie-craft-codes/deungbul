@@ -612,3 +612,36 @@ html:lang(en) body { overflow-wrap: break-word; }
 .note.gres { font-weight: 700; padding: 2px 7px; border-left: 3px solid; }
 .note.gres.ok { color: #a6efae; border-color: var(--good); background: rgba(127, 214, 138, .12); }
 .note.gres.fail { color: var(--bad); border-color: var(--hp); background: rgba(220, 90, 76, .14); }
+
+/* ---------- 팀 (teams 모듈: hud/teams.ts). 팀의 색은 요소마다 --tc ---------- */
+#teamBoard { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; padding: 6px 12px; pointer-events: none; }
+#teamBoard .tm b { color: var(--tc); }
+#teamBoard .tm small { opacity: .75; font-size: 11px; }
+#teamBoard .big { font-size: 24px; font-weight: 700; min-width: 1ch; text-align: center; }
+#teamBoard .sep { font-size: 20px; opacity: .7; }
+#teamBoard.list { flex-direction: column; align-items: stretch; gap: 2px; }
+#teamBoard.list .tmRow { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+#teamBoard.list .big { font-size: 18px; }
+#teamBoard .tmExtra { display: inline-flex; gap: 6px; align-items: baseline; margin-left: 6px; opacity: .9; }
+#teamBoard .tmExtra[hidden] { display: none; }
+#teamBoard #teamNote { flex-basis: 100%; text-align: center; font-weight: 700; color: var(--gold); }
+#teamBoard #teamNote[hidden] { display: none; }
+#teamPick { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100vw - 32px)); z-index: 30; display: flex; flex-direction: column; gap: 8px; text-align: center; }
+#teamPick[hidden] { display: none; }
+#teamPick .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.teamBtn { flex: 1 1 0; min-width: 6em; padding: 10px 0; font-size: 16px; font-weight: 700; color: #fff; border: 0; background: var(--tc); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.teamBtn small { font-size: 11px; font-weight: 400; opacity: .9; }
+.teamBtn small:empty { display: none; }
+.teamBtn:disabled { filter: grayscale(.6) brightness(.8); }
+.teamBtn.on { outline: 2px solid #fff; }
+#teamMeRow[hidden] { display: none; }
+/* 폰: 점수판(가운데 위 자리)은 내 정보 창 아래 왼쪽에 놓이고, 오른쪽 위에는 대화창(폭 160px)이 있다. 대화 기록이 차서 대화창이 아래로 자라도
+   덮이지 않게 점수판의 폭을 대화창의 왼쪽까지로 줄이고, 팀 이름 아래에 사람 수를, 게임의 글(시계)은 다음 줄에 둔다 */
+@media (max-width: 720px) {
+  #teamBoard { max-width: calc(100vw - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px)) - 160px - 8px);
+    padding: 4px 8px; gap: 0 8px; }
+  #teamBoard .tm { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
+  #teamBoard.list .tm { flex-direction: row; gap: 4px; }
+  #teamBoard .big { font-size: 22px; }
+  #teamBoard .tmExtra { flex-basis: 100%; justify-content: center; margin-left: 0; }
+}

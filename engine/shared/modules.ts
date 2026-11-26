@@ -40,6 +40,8 @@ export const MODULE_TABLE = {
   rank: { needs: ['growth'] },
   /** 자동 사냥과 자리 비움 사냥 (접속이 끊겨도 서버가 이어서 싸운다) */
   away: { needs: ['combat'] },
+  /** 팀: 고르기·바꾸기(사람 수 균형), 팀과 사람마다의 점수, 점수판, 팀 색 옷. 기본은 저장하지 않는다 (TEAM_RULES.persist) */
+  teams: { needs: [] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
@@ -50,14 +52,17 @@ export type ModuleId = keyof typeof MODULE_TABLE;
  * 틀에 저장 칸을 가진 모듈을 더하면 여기에도 적는다 (engine/test/fx/modules.test.ts가 등록된 칸과 견준다)
  */
 export const MODULE_SAVES: { player: Readonly<Record<string, ModuleId>>; top: Readonly<Record<string, ModuleId>>; world: Readonly<Record<string, ModuleId>> } = {
-  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build' },
+  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams' },
   top: { lv: 'growth', exp: 'growth', need: 'growth', maxHp: 'combat', sparks: 'economy', gold: 'economy', weapon: 'items', armor: 'items', items: 'items', cls: 'classes', auto: 'away' },
-  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank' },
+  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams' },
 };
 /** 모든 모듈 (표의 차례) */
 export const ALL_MODULES = Object.keys(MODULE_TABLE) as ModuleId[];
-/** 전통적인 탭 타깃 MMORPG가 쓰는 모듈 전부. 등불지기처럼 다 쓰는 게임은 `MODULES = RPG_MODULES`로 적어도 된다 */
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES;
+/**
+ * 전통적인 탭 타깃 MMORPG가 쓰는 모듈 전부. 등불지기처럼 다 쓰는 게임은 `MODULES = RPG_MODULES`로 적어도 된다.
+ * 팀(teams)은 들지 않는다: RPG가 아닌 놀이(공놀이, 깃발 뺏기)의 모듈이고, 이 목록을 쓰는 게임이 저절로 팀을 갖지 않게 한다
+ */
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams');
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).

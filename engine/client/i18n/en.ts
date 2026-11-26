@@ -5,7 +5,7 @@ import { BUILD, ENHANCE, GUILD, HOME_KEY, MARKET, PARTY } from '../../shared/def
 import type { BuildStat, ClassId, GearSlot, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
-import { keyHints, moduleHints, type EngineLocale } from './ko';
+import { keyHints, moduleHints, teamName, type EngineLocale } from './ko';
 import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
@@ -73,6 +73,12 @@ export const enBase = (n: ContentNames): EngineLocale => {
       gateKicked: 'A moderator disconnected you.',
       gateHandedOff: 'This character has moved to another device. If you reconnect, you will start a new character on this device.',
       gateHandoffDone: 'Character transferred. Reconnecting…',
+      teamPickTitle: 'Pick a team',
+      teamPickInfo: 'You wear the color of the team you pick.',
+      teamPickBalance: 'You cannot join the team with more players.',
+      teamMore: 'More players',
+      teamSwitch: 'Switch team',
+      teamBoard: 'Scoreboard',
       tabDevice: 'Device',
       deviceMoveHead: 'Move to another device',
       deviceMoveInfo: 'Get a code and enter it in the game on your other device to move this character there. Afterwards, this device can no longer open this character. A code works once, for 10 minutes. Anyone you share it with can take your character, so keep it to yourself.',
@@ -360,6 +366,8 @@ export const enBase = (n: ContentNames): EngineLocale => {
       cmpArrow: (verdict) => `If you swap now: ${verdict}`,
       haveBig: (n, max) => `${num(n)} / ${num(max)}`,
       deviceCode: (minutes) => `Enter this code on your other device within ${minutes} minute${minutes === 1 ? '' : 's'}. It works only once.`,
+      teamCount: (n) => (n === 1 ? '1 player' : `${n} players`),
+      teamMine: (team, score) => `Team ${team} · score ${num(score)}`,
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -490,6 +498,9 @@ export const enBase = (n: ContentNames): EngineLocale => {
       handoffWait: (a) => `Too many wrong codes. Try again in ${a[0]} min.`,
       handoffSelf: () => 'That code is for the character on this device. Enter it on your other device.',
       handedOff: () => 'This character has moved to another device and will not continue here.',
+      teamJoined: (a) => `You joined ${teamName(a[0])}.`,
+      teamFull: (a) => `${teamName(a[0])} has more players. Pick another team.`,
+      teamStay: () => 'You cannot switch teams in this game.',
     },
     nameA: n.nameA,
     nameB: n.nameB,

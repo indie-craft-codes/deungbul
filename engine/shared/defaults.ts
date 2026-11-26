@@ -13,6 +13,7 @@ import type { CurrencyDef } from './defs/economy';
 import type { DailyDef, Reward } from './defs/growth';
 import type { ItemDef } from './defs/items';
 import type { MonsterDef } from './defs/monsters';
+import type { TeamDef, TeamRules } from './defs/teams';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -169,3 +170,9 @@ export const ECON_WATCH = {
   sinkRatio: { min: 0.7, max: 1.0 }, holdDays: { max: 7 }, topRatio: { max: 10 }, awayShare: { max: 0.35 },
   maxEnhShare: { max: 0.3 }, unknownShare: { max: 0.01 }, minSample: 30,
 } as const;
+
+// ---------- 팀 (teams) ----------
+/** 팀의 표: 비어 있다 (teams를 고른 게임이 적는다) */
+export const TEAMS: readonly TeamDef[] = [];
+/** 사람이 더 많은 팀으로는 못 간다, 옮길 수 있다, 저장하지 않는다 */
+export const TEAM_RULES: TeamRules = { balance: true, switch: true, persist: false };

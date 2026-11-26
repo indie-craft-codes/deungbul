@@ -75,6 +75,7 @@
 | `dungeon` | 던전 인스턴스, 하루 횟수, 끝낸 보상 | combat, mail, daily, gear | 던전 창 | |
 | `rank` | 전투력 순위 | growth | 메뉴의 순위 탭 | |
 | `away` | 자동 사냥, 창을 닫아도 이어지는 자리 비움 사냥 | combat | 자동 사냥 단추, 지도의 '가서 사냥' | R |
+| `teams` | 팀 고르기·옮기기(사람 수 균형), 팀과 사람마다의 점수, 점수판, 팀 색 옷. 기본은 저장하지 않는다 (6절 '팀과 점수판') | | 가운데 위 점수판, 팀 고르기 창, 내 정보 창의 '내 팀' 줄과 팀 바꾸기, 팀 색 옷과 발밑 고리 | |
 
 ```ts engine/test/core/shared/content/index.ts
 /** 쓸 모듈: 없다 (핵심만) */
@@ -86,7 +87,7 @@ import type { ModuleId } from '@engine/shared/modules';
 export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away'];
 ```
 
-모든 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다.
+모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다. `RPG_MODULES`에는 `teams`가 들지 않는다(RPG가 아닌 놀이의 모듈이라 저절로 생기지 않게).
 
 **고르지 않은 모듈은**:
 
@@ -870,7 +871,41 @@ export function initBonfire(): void {
 - 화면: `setPlayerLook({ cloth, update })`(`@engine/client`, 화면 모듈의 init에서).
   - `cloth(p)`: 옷 색. `p`는 `{ id, name, me, vals }`(`vals`가 실려 온 값). `undefined`면 틀의 색. 색이 바뀌면 그 사람의 모델을 새로 만든다(`setHumanoidBody`·`registerHumanoidAsset`의 사람이 그 색을 받는다).
   - `update(model, p)`: 값이 처음 오거나 바뀌었을 때, 그리고 모델을 새로 만들었을 때. 표식을 붙이거나 크기를 바꾼다.
-- 예(굴림공): 서버 `g.playerSync((p) => [this.side.get(p.id) ?? -1])`, 화면은 팀 색 옷과 발밑의 같은 색 고리.
+- 팀이 필요하면 이것을 손으로 짜지 말고 `teams` 모듈을 고른다(아래 '팀과 점수판'): 그 모듈이 `g.playerSync`와 `setPlayerLook`을 쓴다(팀 번호를 싣고 팀 색 옷을 입힌다). 게임의 값을 더 실으려면 `g.teams.syncAlso`, 표식을 더하려면 `onTeamLook`.
+
+### 팀과 점수판 (`teams` 모듈)
+
+팀을 나누는 놀이(공놀이, 깃발 뺏기, 팀 대결)는 `MODULES`에 `'teams'`를 넣고 팀의 표를 적는다. 본보기는 굴림공(`games/rollball`).
+
+```ts
+// games/rollball/shared/content/index.ts
+export const MODULES: readonly ModuleId[] = ['teams'];
+export const TEAMS: readonly TeamDef[] = [
+  { id: 'ember', color: TEAM_COLOR[0], name: 'teamA' },
+  { id: 'tide', color: TEAM_COLOR[1], name: 'teamB' },
+];
+```
+
+- **`TEAMS`**: 팀마다 `id`(저장에 쓰는 이름: 바꾸지 않는다), `color`(옷·고리·점수판), `name`(이름의 **문장 키**: 게임의 언어 파일 `ui`에 그 키로 이름을 적는다. 예: `teamA: '노을'`). 차례가 곧 번호(0부터)이고 줄 위에서는 번호로 오간다(팀이 없으면 -1). 둘이 흔하지만 셋 이상도 된다(점수판이 팀마다 한 줄로 바뀐다). 타입 `TeamDef`는 `@engine/shared/defs/teams`.
+- **`TEAM_RULES`**(선택, 기본 `{ balance: true, switch: true, persist: false }`): `balance` 사람이 더 많은 팀으로는 못 간다(옮길 때는 나를 빼고 센다. 같으면 된다. 팀이 셋 이상이면 가장 적은 다른 팀과 견준다), `switch` 팀이 있는 사람이 옮길 수 있다, `persist` 저장한다(아래).
+- **서버** `g.teams`(규칙 플러그인보다 먼저 만들어지므로 플러그인에서 바로 쓴다):
+
+| 하고 싶은 일 | 쓰는 것 |
+|---|---|
+| 그 사람의 팀 | `g.teams.of(p)`(`TeamDef` 또는 `undefined`), `g.teams.index(p)`(번호, 없으면 -1. 엔티티 id도 된다) |
+| 팀의 사람들 | `g.teams.members(번호)`, `g.teams.all()`(`[사람, 번호]`), `g.teams.count(번호, 뺄 사람 id?)`, `g.teams.size` |
+| 넣기 | 화면의 고르기 창이 보내는 명령 `{ t: 'team', team: 번호 }`(규칙을 보고, 안 되면 안내문 `teamFull`·`teamStay`, 되면 `teamJoined`). 게임이 정해 주려면 `g.teams.auto(p)`(가장 적은 팀), `g.teams.set(p, 번호)`(규칙을 보지 않는다, -1이면 뺀다), `g.teams.canJoin(p, 번호)` |
+| 팀의 점수 | `g.teams.add(번호, n = 1)`, `g.teams.score(번호)`, `g.teams.leader()`(가장 많은 팀, 같으면 -1), `g.teams.reset(사람의 점수도?)`(새 판) |
+| 사람마다의 점수 | `g.teams.addPlayer(p, n = 1)`, `g.teams.playerScore(p)` |
+| 사람에게 값을 더 싣기 | `g.teams.syncAlso((p) => [수, …])`: 팀 번호 뒤에 붙는다(`g.playerSync`는 이 모듈이 쓴다) |
+
+- 무엇을 하면 점수가 오르는지(골, 깃발, 처치)와 판의 시간은 게임이 정한다. 사람이 나가면(`playerLeft`) 팀과 사람의 점수에서 빠진다. 점수판은 공유 상태 `teams`(`{ score: 팀마다, count: 팀마다의 사람 수 }`), 내 팀은 개인 상태 `team`(`{ i, score }`)으로 간다.
+- **화면**(틀이 붙인다): 가운데 위의 점수판(팀이 둘이면 '이름 점수 : 점수 이름', 폰에서는 대화창 왼쪽까지로 줄어든다), 팀이 없을 때 화면 가운데의 고르기 창(사람이 더 많은 팀의 단추는 막힌다), 내 정보 창의 '내 팀 · 점수' 줄과 '팀 바꾸기'(둘이면 곧바로 다른 팀, 셋 이상이면 고르기 창), 팀 색 옷과 발밑 고리(내 것은 크게. 팀이 없으면 회색 옷). 게임이 더하는 것:
+  - `setTeamBoardExtra(() => ({ side, note }))`: 점수판 옆의 글(시계, 판의 번호)과 아래 줄(골, 경기 끝). 느린 주기마다 불린다.
+  - `onTeamLook((model, p, team) => …)`: 팀 색 옷과 고리 위에 표식을 더한다.
+  - `myTeam()`, `myTeamScore()`, `teamBoard()`: 카메라나 `rules.home`이 내 팀을 읽을 때(굴림공: 팀이 없으면 경기장 전체를 비춘다, H는 우리 진영으로).
+- **문장**: 틀의 문장(`teamPickTitle`, `teamPickInfo`, `teamPickBalance`, `teamMore`, `teamSwitch`, `teamBoard`, `fmt.teamCount`, `fmt.teamMine`, 안내문 `teamJoined`·`teamFull`·`teamStay`)이 한국어·영어로 있다. 게임은 팀의 이름(`TEAMS`의 `name` 키)을 반드시 적고, 고르기 창의 설명(`teamPickInfo`)이나 '내 팀' 줄(`fmt.teamMine`, 굴림공은 '내 골')을 자기 말로 덮어쓸 수 있다. 게임의 문장에서 팀의 이름은 `teamName(번호)`(`@engine/client/i18n/ko`).
+- **저장**: 기본은 아무것도 저장하지 않는다(판마다 새로 고르는 놀이). `TEAM_RULES.persist = true`면 캐릭터 저장의 `ext.teams`(`{ t: 팀 id, s: 내 점수 }`)와 월드 저장의 `teams`(팀 id → 점수)에 적고, 다시 들어온 사람은 같은 팀으로 돌아온다(손님은 저장되지 않는다). 모듈을 빼도 그 칸은 지우지 않는다(`MODULE_SAVES`).
 
 ## 7. 저장과 호환
 
@@ -1094,7 +1129,8 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `GameOptions.plugins` | 규칙 플러그인 `(g) => void` | `server/sample.ts` |
 | `GameOptions.modules`, `g.has(모듈)`, `g.modules` | 쓸 모듈(주지 않으면 내용의 `MODULES`), 골랐는가 | |
 | `g.defineKind(종류, KindDef)`, `g.place(종류, 자리)`, `Ent.data` | 게임의 엔티티 종류(틱, 화면에 실을 값, 저장)와 놓기 (12절) | `engine/test/core/server/balls.ts` |
-| `g.playerSync(fn)` | 플레이어에게 실어 보낼 게임의 값(팀 …): 6절 '사람마다의 값과 겉모습' | `games/rollball/server/pitch.ts` |
+| `g.playerSync(fn)` | 플레이어에게 실어 보낼 게임의 값(역할 …): 6절 '사람마다의 값과 겉모습'. 팀은 `teams` 모듈이 쓴다 | |
+| `g.teams` (`teams` 모듈: `of`, `index`, `members`, `count`, `auto`, `set`, `add`, `score`, `reset`, `addPlayer`, `playerScore`, `syncAlso`) | 팀과 점수: 6절 '팀과 점수판' | `games/rollball/server/pitch.ts` |
 | `g.on('playerJoined' \| 'playerLeft' \| 'playerDropped', …)` | 사람이 들어왔다(봇 제외) / 월드에서 빠졌다(id) / 연결이 끊겨 저장하기 직전 | `games/rollball/server/pitch.ts` (`playerLeft`) |
 | `g.perFlush` | 전송마다 본인에게 보낼 메시지를 만드는 것 (틀의 `stat`·`meta`가 쓴다) | |
 | `game/ext.ts`의 `GameSystems` | `g.내시스템` | `server/sample.ts` |
@@ -1135,7 +1171,8 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `state.ts`의 `S` | 틀의 상태. `S.me`: 내 캐릭터(`Me`: `id`, `name`, `x`, `z`, `model`(`model.root`가 three.js 묶음), `vals`(`g.playerSync`의 값), 모듈의 수치 `hp`·`lv`·`gold`·`items` …. 접속 전이면 `null`). `S.others`: 시야 안의 다른 엔티티(`Map<id, Remote>`: `kind`(`'p'` 사람, `'m'` 몬스터, 게임의 종류), `type`, `name`, `x`, `z`, `model`, `vals`). `S.online`(접속자 수), `S.zoom`(카메라 배율), `S.party`. 그 밖의 칸은 모듈의 것(`engine/client/state.ts`) | `client/bonfire.ts` |
 | `rules.ts`의 `rules` | 화면 쪽 규칙 | `client/bonfire.ts` (`home`) |
 | `camera.ts`의 `setCameraAim`, `fitZoom`, `CameraAim` | 카메라가 비출 곳과 배율, 네모가 다 보이는 배율 (5절 '카메라') | `games/rollball/client/pitch.ts` |
-| `entities.ts`의 `setPlayerLook`, `PlayerLook`, `PlayerInfo` | 사람의 옷 색과 꾸밈을 게임의 값으로 (6절) | `games/rollball/client/pitch.ts` |
+| `entities.ts`의 `setPlayerLook`, `PlayerLook`, `PlayerInfo` | 사람의 옷 색과 꾸밈을 게임의 값으로 (6절). `teams` 모듈을 고른 게임은 그 모듈이 쓴다 | `engine/client/hud/teams.ts` |
+| `hud/teams.ts`의 `setTeamBoardExtra`, `onTeamLook`, `myTeam`, `myTeamScore`, `teamBoard` | 팀 모듈의 화면에 게임이 더하는 것 (6절 '팀과 점수판') | `games/rollball/client/pitch.ts` |
 | `hud/notify.ts`의 `addNotices`, `banner`, `feed` | 안내문을 띄울 곳 | `client/bonfire.ts` |
 | `hud/icons.ts`의 `addIconSheet`(`addItemSheet`), `itemIcon`, `gearIcon`, `hasItemIcon` | 그림 시트를 등록하고(열쇠: 아이템 id, `slot:칸`, `cur:gold`, `cur:second`, `ui:mail`), 그림 하나의 요소를 만든다(게임의 창에서도 쓸 수 있다) | |
 | `hud/menu.ts`의 `setMenuTabs`, `addMenuTab`, `openMenu`, `MENU_TABS` | 메뉴에 보일 탭과 차례(틀의 탭은 그 모듈을 고른 게임에만 있다), 게임의 탭, 탭을 골라 열기 | `client/bonfire.ts` |
@@ -1256,4 +1293,4 @@ startClient({});
 - 재화가 있는 게임: `MODULES`에 `economy`(그리고 아이템이 있으면 `items`)를 더하면 지갑(`g.wallet.add(p, 'gold', n, '이유')`), 내 정보 창의 재화, 상점이 생긴다. 전투·직업 없이 된다.
 - 게임의 창·공유 상태·안내문: 6절과 같다(`mountPanel`, `g.shared`, `MsgMap`).
 - 사람 수를 세는 순위·점수판은 게임의 공유 상태로 만든다(`rank` 모듈은 전투력 순위라 전투 게임의 것이다).
-- 팀·역할: 사람마다의 값은 `g.playerSync`와 `setPlayerLook`(6절 '사람마다의 값과 겉모습'). 더 큰 본보기는 굴림공(`games/rollball`: 팀 공놀이, 모듈 0개).
+- 팀: `teams` 모듈(6절 '팀과 점수판'). 역할처럼 사람마다 남이 보는 다른 값은 `g.playerSync`와 `setPlayerLook`(6절 '사람마다의 값과 겉모습'). 더 큰 본보기는 굴림공(`games/rollball`: 팀 공놀이, 모듈은 `teams` 하나).

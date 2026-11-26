@@ -60,7 +60,9 @@ async function probe(modules: readonly ModuleId[]): Promise<{ types: string[]; m
   const { MODULE_SAVES } = await import('../../shared/modules');
   const full = new Game();
   const playerNames = full.saves.map((s) => s.name), worldNames = full.worldSaves.map((s) => s.name).filter((n) => n !== 'sanctions');
-  check(playerNames.every((n) => n in MODULE_SAVES.player) && worldNames.every((n) => n in MODULE_SAVES.world) && playerNames.length === Object.keys(MODULE_SAVES.player).length,
+  // 표의 칸 가운데 이 게임이 고른 모듈의 것 (팀은 RPG_MODULES에 없고, 골라도 TEAM_RULES.persist일 때만 저장한다: teams.test가 본다)
+  const pickedSaves = Object.values(MODULE_SAVES.player).filter((m) => full.has(m));
+  check(playerNames.every((n) => n in MODULE_SAVES.player) && worldNames.every((n) => n in MODULE_SAVES.world) && playerNames.length === pickedSaves.length,
     `모듈의 저장 칸 표(MODULE_SAVES)가 실제로 등록되는 칸과 같다 (캐릭터 ${playerNames.join(', ')} / 월드 ${worldNames.join(', ')})`);
   const p = full.players.spawn('맡김', false, null, 'kept-key');
   full.wallet.add(p, 'gold', 777, ''); full.classes.choose(p, 'knight');

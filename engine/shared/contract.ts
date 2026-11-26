@@ -15,6 +15,7 @@ import type { DailyDef, Reward, StatMod } from './defs/growth';
 import type { ItemDef } from './defs/items';
 import type { MapDef } from './defs/map';
 import type { MonsterDef } from './defs/monsters';
+import type { TeamDef, TeamRules } from './defs/teams';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
 import * as content from '@game/shared/content';
@@ -160,8 +161,16 @@ export interface EconomyContent {
   ECON_WATCH: { sinkRatio: { min: number; max: number }; holdDays: { max: number }; topRatio: { max: number }; awayShare: { max: number }; maxEnhShare: { max: number }; unknownShare: { max: number }; minSample: number };
 }
 
+/** teams: 팀의 표와 규칙 */
+export interface TeamsContent {
+  /** 팀들 (차례가 곧 줄 위의 번호다). 둘이 흔하지만 셋 이상도 된다 */
+  TEAMS: readonly TeamDef[];
+  /** 사람 수 균형, 옮기기, 저장 */
+  TEAM_RULES: TeamRules;
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 
