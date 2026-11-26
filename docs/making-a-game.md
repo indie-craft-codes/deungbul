@@ -69,7 +69,7 @@
 | `gear` | 떨어지는 장비, 끼기·팔기·비교, 강화·재련·분해, 장비 가방 넓히기 | items, economy | 메뉴의 장비 탭 | |
 | `mail` | 우편(보상을 맡아 둔다) | items, economy | 메뉴의 우편 탭 | |
 | `daily` | 일일 임무와 출석 | mail | 메뉴의 일일 탭 | |
-| `idle` | 접속하지 않은 동안의 보상 | mail | | |
+| `idle` | 접속하지 않은 동안의 보상 | mail | 기본은 없음: 보상은 **우편으로만** 온다(우편 탭의 점·메뉴 단추의 수). 내용의 `IDLE.popup: true`면 돌아왔을 때 가운데 창(받은 것, 오프라인 진행, '받기'·'나중에': 13절 '단계 밖') | |
 | `party` | 파티 초대, 함께 받는 보상, 파티원 표시 | | 파티 목록, 받은 초대, 사람 카드의 초대 단추 | |
 | `guild` | 길드 | economy | 메뉴의 길드 탭, 사람 카드의 길드 초대 | |
 | `market` | 거래소 | items, gear, mail, economy | 메뉴의 거래소 탭 | |
@@ -94,6 +94,8 @@ export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'co
 
 모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기, 버섯 동굴)로 적는다. `RPG_MODULES`에는 `teams`와 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`)이 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
+**의존으로 딸려 온 모듈의 화면 감추기**: 쓰려는 모듈의 의존 때문에 고른 모듈의 단추가 필요 없으면(예: 던전 → 장비 → 아이템이라 생기는 가방 단추, 서버가 대신 싸우는 게임의 '가까운 대상 공격') 내용에 `export const HUD: HudRules = { hide: ['bag', 'attackNearest'] };`(타입은 `@engine/shared/defs/hud`)를 적는다. 감출 뿐이라 기능과 단축키는 그대로다. 이름의 목록은 13절 '단계 밖'의 표.
+
 **고르지 않은 모듈은**:
 
 - 서버: 그 시스템이 만들어지지 않는다. `g.wallet` 같은 칸은 건드리면 "모듈 'economy'를 고르지 않았습니다"를 던지는 자리표다. 명령이 등록되지 않으므로 웹소켓으로 직접 보내도 무시된다. 틱도, 캐릭터·월드 저장의 칸도, 본인에게 보내는 상태(`stat`·`meta`의 그 칸)도 없다.
@@ -109,7 +111,7 @@ export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'co
 | 입구 | 무엇이 있나 | 예 |
 |---|---|---|
 | `@engine/server` | 서버의 모든 것: `Game`(`g.has`, `g.defineKind`, `g.place`), `Ent`, `KindDef`, `startServer`, `runServer`, 저장소(`MemoryStore` …), `dist`·`readInt`·`clamp`·`ri`·`dayOf`, 층 도우미, `addBannedWords`, `WHY`·`mailWhy` | `import { dist, type Ent, type Game, readInt } from '@engine/server';` |
-| `@engine/client` | 화면의 모든 것: `startClient`, `bus`(`onMsg`·`onFrame`·`onSlow`·`onKey`), `rules`, `S`, `send`, `hasModule`, 엔티티 종류(`registerKind`, `makeBox`, `makeBall`), 창(`mountPanel`, `addPlace`, `addNotices`), 모델·장면(`registerHand` …), 지도(`addMapPlaces` …), 메뉴(`setMenuTabs` …) | `import { addMapPlaces, onMsg, rules, S } from '@engine/client';` |
+| `@engine/client` | 화면의 모든 것: `startClient`, `bus`(`onMsg`·`onFrame`·`onSlow`·`onKey`), `rules`, `S`, `send`, `hasModule`, 엔티티 종류(`registerKind`, `makeBox`, `makeBall`), 창(`mountPanel`, `addPlace`, `addNotices`), 모델·장면(`registerHand` …), 지도(`addMapPlaces` …), 메뉴(`setMenuTabs`, `closeMenu`, 탭의 줄 만들기 `menuRow`·`menuButton`·`menuEl`·`menuSpan`·`menuChips`·`redrawMenu` …) | `import { addMapPlaces, onMsg, rules, S } from '@engine/client';` |
 | `@engine/client/i18n` | 문장: `L`, `t`, `setLocales`, `onLangChange`. 언어 묶음은 `@engine/client/i18n/ko`·`en`·`names`·`merge` | `import { L, t } from '@engine/client/i18n';` |
 | `@engine/shared` | 공용: 메시지 타입(`ServerMsg` …), 모듈의 표(`ALL_MODULES`, `RPG_MODULES`, `checkModules`, `ModuleId`), 자동 사냥의 기준(`AUTO`, `AWAY`), 길찾기, `PROTOCOL` | `import type { ServerMsg } from '@engine/shared';` |
 | `@engine/shared/defs`, `@engine/shared/world` | 내용 통로: 내용의 타입·도우미(`maxHpFor`, `itemDef` …)와 맵(`AREAS` …) | `import { maxHpFor } from '@engine/shared/defs';` |
@@ -1111,7 +1113,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `npm test`의 `boundary`가 "알림 …: 'hex' (games/…의 id와 같은 틀의 낱말. 잡지 않는다)"라고 적는다 | 실패가 아니다. 그 게임의 id가 틀이 자기 뜻으로 쓰는 낱말(`hex`, `heal` 같은 것)과 같을 뿐이다. 헷갈리지 않게 다른 id로 짓기를 권한다 |
 | 타입 검사와 그 게임의 시험은 통과하는데 `npm test`의 `boundary`에서 "게임은 틀을 입구로만 읽는다"가 실패한다 | 틀의 내부 파일을 깊게 import했다(`@engine/server/game/entity` 같은 것). 1절의 입구(`@engine/server` 등)에서 가져온다. 실패 글이 파일과 줄을 알려 준다 |
 | 쓰러지면 "…에서 다시 일어났습니다"의 자리에 엉뚱한 말이 나온다 | 이름표의 `places`에 `g.rules.respawn`이 돌려주는 id의 이름이 없다(5절). 정하지 않았으면 '처음 자리'다 |
-| 내 내용은 계약을 지키는데 `engine/` 안의 파일에서 타입 오류가 난다 | 틀은 내용을 계약의 타입이 아니라 **게임이 적은 그대로의 타입**으로 본다. 표를 비웠거나(`{}`의 id는 `never`가 된다) 함수를 계약보다 좁게 적은 자리에서 틀이 걸릴 수 있다. 시험이 지키는 경우: 던전·대장간·보스·두 번째 재화가 없다(예제), 상점·무리·재료·일일 임무가 없다, 아이템이 무기 하나뿐이다(`games/sample/test/empty.test.ts`). 그 밖의 경우(직업이 하나, 몬스터가 한 종류 …)에 걸리면 틀의 수리 대상이다: `npm run typecheck:game -- sample`과 같은 검사를 자기 게임의 설정으로 돌려 자리를 찾는다 |
+| 내 내용은 계약을 지키는데 `engine/` 안의 파일에서 타입 오류가 난다 | 틀은 내용을 계약의 타입이 아니라 **게임이 적은 그대로의 타입**으로 본다. 표를 비웠거나(`{}`의 id는 `never`가 된다) 함수를 계약보다 좁게 적은 자리에서 틀이 걸릴 수 있다. 시험이 지키는 경우: 던전·대장간·보스·두 번째 재화가 없다(예제), 상점·무리·재료·일일 임무가 없다, 아이템이 무기 하나뿐이다(`games/sample/test/empty.test.ts`), **`CAMPS`를 적지 않았다**(예전에는 `monsters.ts`에서 "`string`을 몬스터 id에 넣을 수 없다"), **아이템이 무기와 재료뿐이고 갑옷이 없다**(`as const`의 좁은 종류: 예전에는 `gear.ts`·`shop.ts`에서 "'mat'과 'armor'는 겹치지 않는다". 둘 다 2026-11-26부터 틀이 넓혀 읽는다: `engine/test/collect/idleflow.test.ts`). 그 전의 틀을 쓰는 게임은 `CAMPS: readonly { …; types: readonly MonsterId[] }[] = []`로 적거나 그 칸의 종류를 `kind: 'mat' as ItemDef['kind']`로 넓혀 피한다. 그 밖의 경우(직업이 하나, 몬스터가 한 종류 …)에 걸리면 틀의 수리 대상이다: `npm run typecheck:game -- sample`과 같은 검사를 자기 게임의 설정으로 돌려 자리를 찾는다 |
 
 **틀을 고쳐야 할 때**: 게임에서 할 수 없는 일이면 틀에 접점을 더한다. 틀의 파일이 게임의 폴더를 import하거나 게임의 id를 적으면 안 된다(`games/deungbul/test/split.test.ts`가 검사한다). 고친 뒤에는 8절의 검사를 모두 돌린다. 틀에 남아 있는 등불지기의 흔적과 알려진 한계는 `docs/framework-status.md`에 있다.
 
@@ -1139,6 +1141,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `defaults.ts` | 수치의 기본값 묶음(게임이 적지 않은 이름을 틀이 채운다). `NET`(틱·전송 주기, 시야), `CAMERA`(카메라의 거리·배율), `HOME_KEY`(H 키), `GEAR_BASE` | `shared/content/index.ts` |
 | `defs/*.ts`의 타입 | `MapDef`, `ClassDef`, `SkillDef`, `MonsterDef`, `ItemDef`, `ForgeDef`, `Recipe`, `DungeonDef`, `DailyDef`, `Reward` | `shared/content/index.ts` |
 | `defs/collect.ts`의 타입과 도우미 | `HeroDef`, `HeroRoleDef`, `HeroRarityDef`, `HeroRules`, `BannerDef`, `ChapterDef`, `StageDef`, `IdleCtx`, `heroStats`, `heroPower`, `bannerOdds`, `poolOdds`, `seededRng`, `STAGES`, `stageIndex` (13절) | `engine/test/collect/shared/content/index.ts` |
+| `defs/hud.ts`의 `HudRules`, `HUD_PARTS`, `HudPart` | 내용의 `HUD`: 감출 틀의 요소(가방 단추, '가까운 대상 공격' …: 13절 '단계 밖') | `engine/test/collect/shared/content/index.ts` |
 | `defs.ts`, `world.ts` | 틀의 내용 통로: 타입, 도우미(`maxHpFor`, `itemDef` …), 계약의 내용, 엔진 상수. 내용 파일 밖에서는 여기서 읽는다 | `client/scene.ts`, `test/sample.test.ts` |
 | `ext.ts`의 `MsgMap` | 안내문의 종류와 값 | `shared/sample.ts` |
 | `ext.ts`의 `ClientMsgs` / `ServerMsgs` | 화면 → 서버 / 서버 → 화면 메시지 | `shared/sample.ts` (`ServerMsgs`는 쓰지 않는다) |
@@ -1157,6 +1160,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `g.playerSync(fn)` | 플레이어에게 실어 보낼 게임의 값(역할 …): 6절 '사람마다의 값과 겉모습'. 팀은 `teams` 모듈이 쓴다 | |
 | `g.teams` (`teams` 모듈: `of`, `index`, `members`, `count`, `auto`, `set`, `add`, `score`, `reset`, `addPlayer`, `playerScore`, `syncAlso`) | 팀과 점수: 6절 '팀과 점수판' | `games/rollball/server/pitch.ts` |
 | `g.roster`(`grant`, `owned`, `power`, `levelUp`, `starUp`), `g.gacha`(`draw`, `pityOf`, `rng`), `g.squad`(`set`, `heroes`, `power`), `g.stages`(`start`, `leave`, `inStage`, `cleared`), `g.dungeon`의 `keyCount`·`giveKeys`, 사건 `heroChanged`·`stageCleared` | 수집형·방치형의 넷과 던전의 열쇠: 13절 | `engine/test/collect/server/heath.ts` |
+| 단계 밖: `g.dungeon.go(p, id)`(메뉴에서 들어가기, 명령 `dungeonGo`), `g.roster.trade(p, 영웅, 아이템, n)`(재료로 조각), `g.stages.returnIn(p)`, 사건 `dungeonExited(p, id, why)`, `leaderFight(g, p, 적 id들)`(서버가 사람을 대신 싸우게 하는 한 셈) | 13절 '단계 밖' | `engine/test/collect/idleflow.test.ts` |
 | `g.combat.registerAlly(종류, { owner, down, skillScale? })` | 사람 편에서 싸우는 게임의 종류(소환수, 용병): 몬스터를 때리고 맞는다. 피해는 주인의 것으로 친다 (13절 '편성') | |
 | `g.on('playerJoined' \| 'playerLeft' \| 'playerDropped', …)` | 사람이 들어왔다(봇 제외) / 월드에서 빠졌다(id) / 연결이 끊겨 저장하기 직전 | `games/rollball/server/pitch.ts` (`playerLeft`) |
 | `g.perFlush` | 전송마다 본인에게 보낼 메시지를 만드는 것 (틀의 `stat`·`meta`가 쓴다) | |
@@ -1194,6 +1198,8 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `bus.ts`의 `onMsg`, `onFrame`, `onSlow`, `onKey` | 서버 메시지, 매 프레임, 0.25초마다, 단축키(고른 모듈이 쓰지 않는 키. 이름은 소문자 `KeyboardEvent.key`: 5절 '단축키') | `client/bonfire.ts`, `client/scene.ts` |
 | `kinds.ts`의 `registerKind`, `scene/models.ts`의 `makeBox`, `makeBall` | 게임의 엔티티 종류의 모습 (12절) | `engine/test/core/client/main.ts` |
 | `hud/collect.ts`의 `myHeroes`, `mySquad`, `onGachaResult`. `hud/stagebar.ts`의 `myStage`. `registerKind`의 `hp`, `shot` | 수집형·방치형의 화면이 받은 상태와 뽑기 결과, 게임의 종류의 체력 막대·날아가는 것 (13절) | `engine/test/collect/client/main.ts` |
+| 단계 밖: `hud/collect.ts`의 `setHeroModel`(영웅 id·등급으로 영웅의 모델), `hud/idleback.ts`의 `onIdleBack`, `hud/dungeon.ts`의 `myKeys`. `scene/models.ts`의 `HumanoidLook.hero`·`rarity` | 13절 '단계 밖' | `engine/test/collect/client/main.ts` |
+| `hud/menu/parts.ts`의 `menuRow`, `menuButton`, `menuEl`, `menuSpan`, `menuChips`, `redrawMenu`(입구의 이름), `hud/menu.ts`의 `closeMenu` | 게임의 메뉴 탭을 틀의 탭과 같은 모양(class `mrow`, `plain` …)으로 만드는 도우미, 메뉴 닫기 | |
 | `mods.ts`의 `hasModule`, `anyModule` | 이 게임이 그 모듈을 골랐는가 | |
 | `i18n/names.ts`의 `withIdNames` | 적지 않은 이름표는 id 그대로 (쓰지 않는 모듈의 이름을 적지 않아도 된다) | `engine/test/core/client/main.ts` |
 | `net.ts`의 `send` | 서버로 명령 | `client/bonfire.ts` |
@@ -1339,13 +1345,14 @@ startClient({});
 | (소탕) | 깬 단계·끝낸 열쇠 던전을 싸우지 않고 n번 끝내 보통 보상 (소탕권·재화·열쇠) | `stages`, `dungeon`의 선택 칸 | `g.stages.sweep`, `g.dungeon.sweep` | '단계' 탭과 던전 창의 '소탕 ×n', 결과 창 |
 | (오프라인 진행) | 접속하지 않은 동안 편성의 전투력으로 단계가 나아간다 | `stages`의 선택 칸 | `g.stages.offline` | 돌아왔을 때의 가운데 알림, 방치 우편의 제목 |
 | (픽업·선택권) | 픽업(확률 업)·반반·천장 공유·기간 한정 배너, 영웅 선택권 | `gacha`의 선택 칸 | `g.gacha` | '뽑기' 탭(픽업, 남은 기간, 확률표), 선택권의 줄 |
+| (단계 밖) | 던전 안의 자동 전투, 던전 뒤 단계로 돌아가기, 메뉴에서 바로 던전, 돌아왔을 때의 창, 재료로 영웅의 조각, 화면의 틀 요소 감추기 (아래 '단계 밖') | `dungeon`·`stages`·`idle`·`roster`의 선택 칸, `HUD` | `g.dungeon.go`, `g.roster.trade` | '단계' 탭의 '던전' 줄, 돌아왔을 때의 창, '영웅' 탭의 재료 단추 |
 
 ```ts engine/test/collect/shared/content/index.ts
 export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'dungeon', 'roster', 'gacha', 'squad', 'stages', 'herogear'];
 ```
 
 - 넷은 `RPG_MODULES`에 들지 않는다(`COLLECT_MODULES`로 따로 있다): `MODULES = RPG_MODULES`인 게임(등불지기)은 저절로 뽑기나 단계를 갖지 않는다. 고르지 않으면 서버의 시스템·명령·저장 칸·개인 상태, 엔티티의 칸(`heroes`, `pity`, `pulls`, `squad`, `stage`), 엔티티 종류 `hero`, 화면의 탭·막대가 모두 없다.
-- 이끄는 사람(플레이어)은 그대로 직업 하나를 가진 캐릭터다(`classes`·`combat`). 단계 안에서는 서버가 사람도 대신 싸운다(`STAGE_RULES.leaderAuto`). 사람을 숨기고 영웅만 싸우게 하는 길은 없다(아래 '남은 것').
+- 이끄는 사람(플레이어)은 그대로 직업 하나를 가진 캐릭터다(`classes`·`combat`). 단계 안에서는 서버가 사람도 대신 싸운다(`STAGE_RULES.leaderAuto`). 단계 밖(열쇠 던전)에서도 맡기려면 `DungeonDef.auto`, 던전에서 나오면 단계로 돌려보내려면 `STAGE_RULES.returnAfterDungeon`(아래 '단계 밖'). 사람을 숨기고 영웅만 싸우게 하는 길은 없다(아래 '남은 것').
 - **현금은 없다**: 뽑기와 열쇠의 값은 게임 안의 재화(`gold` 또는 두 번째 재화 `sparks`)뿐이고 지갑(`g.wallet`)을 지난다. 틀에는 결제·상점 연동·구매 훅이 없다.
 - 이름(영웅, 역할, 배너, 장, 등급)은 모두 **문장 키**다: 게임의 언어 파일 `ui`에 그 키로 적는다(팀의 이름과 같다). 틀의 등급 셋의 이름은 틀의 문장(`heroRarity0`~`heroRarity2`: 일반·희귀·전설)에 있다.
 
@@ -1450,6 +1457,7 @@ export const STAGE_RULES: StageRules = {
 ```ts engine/test/collect/shared/content/index.ts
 export const IDLE = {
   minMin: 10, maxMin: 720,
+  …
   reward: (minutes: number, lv: number, ctx: IdleCtx): Reward => ({ gold: Math.round(minutes * (4 + ctx.stage * 3)), exp: Math.round(minutes * (2 + lv + ctx.stage)), sparks: Math.floor((minutes * ctx.stage) / 10) }),
 };
 ```
@@ -1541,6 +1549,7 @@ export const HERO_RULES: HeroRules = {
     ],
   },
   gear: HERO_GEAR,
+  …
 };
 ```
 
@@ -1648,6 +1657,49 @@ export const GACHA_RULES: GachaRules = { history: 50, select: { herochoice: ['st
 - **선택권** `GACHA_RULES.select`: 아이템 id → 고를 수 있는 영웅들(`items` 모듈이 있어야 한다). 명령 `{ t: 'gacha', a: 'select', item, hero }`: 선택권 하나(`g.bag.takeItem`, 원인 `cmd:gacha:select`)로 그 영웅을 `g.roster.grant`(가진 영웅이면 조각). 안내문 `heroPicked`(`[영웅, 이미 가졌으면 1, 조각]`), 선택권이 없으면 `itemShort`. 서버: `g.gacha.select(p, item, hero)`. 화면: '뽑기' 탭 끝의 '영웅 선택권' 줄(가진 수, 영웅마다 '고르기').
 - 화면의 '뽑기' 탭은 열린 배너만 보인다(서버가 `open`을 보내기 전에는 기간이 없는 배너만). 픽업 배너는 금색 테두리에 픽업 영웅, 남은 기간, 확정, 천장 공유를 적는다. 셈은 `openBanners`, `bannerPity`, `rateTable`(`hud/collectcalc.ts`).
 
+### 단계 밖 (던전 오가기, 돌아왔을 때의 창, 재료로 키우기)
+
+단계 안에서는 서버가 사람(대장)도 대신 싸우고 자동 진행이 다음 단계로 데려간다. 그 흐름이 **단계를 벗어날 때**(열쇠 던전, 접속하지 않은 동안)에도 이어지게 하는 선택 칸이다. 모두 내용에 적어야 켜진다: 적지 않은 게임은 예전과 같다(대장은 던전에서 손으로 싸우고, 던전에서 나오면 문 앞에 남고, 방치 보상은 우편으로만 온다).
+
+```ts engine/test/collect/shared/content/index.ts
+export const HUD: HudRules = { hide: ['bag', 'attackNearest'] };
+…
+export const IDLE = {
+  minMin: 10, maxMin: 720,
+  …
+  popup: true,
+  …
+export const HERO_RULES: HeroRules = {
+  …
+  trade: { stardust: { cost: (r) => [3, 6, 15][r] ?? 15 } },
+};
+…
+export const STAGE_RULES: StageRules = {
+  …
+  returnAfterDungeon: 2,
+};
+…
+    reward: { gold: 600, exp: 120, items: { stardust: 4 } },
+    …
+    fromMenu: true,
+    auto: true,
+```
+
+| 칸 | 뜻 | 서버 | 줄 위 | 화면 |
+|---|---|---|---|---|
+| `DungeonDef.auto: true` | 그 던전 안에서는 사람(봇 말고)도 서버가 대신 싸운다: 단계의 `leaderAuto`와 같은 셈(가장 가까운 적을 대상으로 주면 전투가 사거리까지 다가가 친다, 쓸 수 있는 기술 하나, 회복은 체력 60% 아래에서만). 손으로 움직이면 1.5초는 맡기지 않는다 | `dungeon.ts`의 `autoFight`, 한 셈 `systems/leader.ts`의 `leaderFight`(입구 `@engine/server`) | 없음 | 없음 |
+| `STAGE_RULES.returnAfterDungeon: 초` | 던전을 끝냈거나(회차가 닫힘) 스스로 나온 사람을 그 초 뒤 **지금 단계**로 들여보낸다. 접속이 끊겨 나온 것은 아니다(다시 접속하면 `enterOnJoin`이 맡는다). 그사이 스스로 단계나 던전에 들어가면 그만둔다 | `stages.ts`(사건 `dungeonExited(p, id, 'self' \| 'end' \| 'drop')`을 듣는다), `g.stages.returnIn(p)` | 없음 | 없음 |
+| `DungeonDef.fromMenu: true` | 문까지 걷지 않고 메뉴에서 들어간다. 들판에서도 단계 안에서도: 단계 안이면 단계에서 나와(들어오기 전의 자리) 문 앞을 거쳐 들어간다. 들어갈 수 있는지(레벨, 열쇠나 하루 횟수)를 **먼저** 보고 안 되면 아무것도 바뀌지 않는다(단계에서도 나오지 않는다). 안내문은 문에서와 같다(`dungeonLevel`, `dungeonNoKeys`, `dungeonNoRuns`) | 명령 `{ t: 'dungeonGo', id }`(그런 던전이 있는 게임에만), `g.dungeon.go(p, id)` | 메시지 `dungeon`(문에서와 같다) | '단계' 탭 끝의 **'던전'** 줄: 이름, 열쇠(또는 오늘 남은 횟수), 레벨, '들어가기'(누르면 메뉴가 닫힌다)와 소탕 단추. 셈 `dungeonGoView`(`hud/collectcalc.ts`) |
+| `IDLE.popup: true` | 돌아왔을 때 받은 방치 보상(과 오프라인 진행)을 화면 가운데 창 하나로 알린다. 보상은 **예전처럼 우편으로** 온다: 창의 '받기'는 그 우편을 받는 명령(`mailClaim`)을 보내고 '나중에'는 창만 닫는다(우편에 남는다). 그래서 장부의 원인도 우편의 것 그대로다(`mail:idle`) | `idle.ts`가 방치 우편을 보낸 바로 뒤에 | 메시지 `{ t: 'idleBack', mail, min, r, from?, to?, n? }`(`IdleBack`: 우편 id, 비운 분, 보상, 진행이 있으면 처음·지금 단계와 깬 수) | `hud/idleback.ts`의 창(제목, 비운 시간, 진행, 받은 것의 줄, 받기·나중에). 게임은 `onIdleBack(fn)`으로 함께 받는다(연출·소리). 셈 `idleBackLines` |
+| `HERO_RULES.trade` | 재료로 영웅 키우기: 아이템 id → `{ cost: (등급) => 드는 수, shards?: (등급) => 얻는 조각 }`(shards가 없으면 그 등급의 조각 한 묶음 `HeroRarityDef.shards`). 가진 영웅에게만. 아이템 모듈과 `ITEMS`의 id여야 한다(틀리면 서버를 띄울 때 멈춘다) | `g.roster.trade(p, 영웅, 아이템, n)`, 명령 `{ t: 'hero', a: 'trade', id, item, n? }`(n은 1~99, 한꺼번에 되거나 하나도 안 된다), 원인 `cmd:hero:trade` | 안내문 `heroTraded`(`[영웅, 받은 조각, 아이템, 남은 수]`), 모자라면 `itemShort`. 개인 상태 `heroes`의 조각 | '영웅' 탭 위에 가진 재료, 가진 영웅의 줄마다 '별가루 3 → 조각 +5' 단추(모자라면 잠김). 셈 `tradeViews` |
+| `HUD.hide` | 의존으로 딸려 온 틀의 화면을 감춘다: `bag`(가방 단추), `attackNearest`('가까운 대상 공격'), `auto`(자동 사냥 단추), `worldMap`(지도 단추), `minimap`, `hint`(조작 안내), `skills`(기술 단추 줄), `channel`(채널 고르기). **감출 뿐**이라 그 모듈의 기능과 단축키(B, Tab …)는 그대로다. 기능까지 빼려면 `MODULES`에서 모듈을 뺀다 | 없음 | 없음 | `hud/shell.ts`가 뼈대를 붙일 때 그 요소에 class `hudOff`. 이름과 요소 id의 표 `HUD_PARTS`(`engine/shared/defs/hud.ts`) |
+
+- **영웅의 겉모습을 영웅마다·등급마다**: 화면의 영웅(종류 `hero`)은 틀의 사람형을 만들 때 영웅 id와 등급을 넘긴다. 사람형 전체를 바꾸는 `setHumanoidBody((look) => …)`의 `look.hero`·`look.rarity`(영웅이 아니면 없다)로 고르거나, 영웅만 바꾸는 `setHeroModel(({ id, rarity, look }) => 모델 또는 null)`(`@engine/client`. null이면 틀의 것)을 쓴다. 발밑의 등급 고리와 크기는 틀이 그 뒤에 얹는다. 옷 색으로 등급을 거꾸로 알아낼 일이 없다.
+- **게임의 메뉴 탭을 틀의 탭과 같은 모양으로**: `@engine/client`의 `menuRow(이름, 설명, 단추들, class)`, `menuButton(글, 누르면, 잠김)`, `menuEl(class, 글)`, `menuSpan`, `menuChips`, `redrawMenu()`, `closeMenu()`, 열쇠 던전의 내 열쇠 `myKeys()`. 던전의 이름은 `dungeonLabel(L(), id).name`(`@engine/client/i18n/names`).
+- **명령 처리기 안에서 사람을 옮길 때**(게임이 스스로 할 때): 자리(`p.x`, `p.z`, `p.tx`, `p.tz`), `p.moving = false`, `p.path = null`을 바꾼 뒤 `g.emit(['r', p.id])`(화면이 바로 옮긴다). 사람의 대상(`p.targetId`)을 몬스터 id로 주면 전투 모듈의 사람 틱이 사거리까지 다가가 친다. 이 둘은 위 칸들이 안에서 하는 일이라 그 칸을 쓰면 게임이 할 일이 없다.
+- **처리기의 차례**: 사건의 처리기는 등록한 차례대로 불린다. 플러그인은 틀의 시스템보다 먼저 만들어지므로 플러그인이 `g.on('playerJoined', …)`로 건 것은 틀의 처리기(방치 보상, 단계 들어가기)보다 **먼저** 불린다. 틀의 처리기 뒤에 불려야 하면 `g.ready.push(() => g.on(…))`로 건다.
+- 시험: `engine/test/collect/idleflow.test.ts`(셈·저장·장부·화면의 셈, 끄면 예전과 같음, 틀 안의 타입 오류였던 두 경우), `idleflownet.test.ts`(실제 서버: 단계 → 메뉴의 금광 → 자동 전투 → 단계로 돌아옴 → 재료 → 다시 접속하면 창 → 받기).
+
 ### 화면과 문장
 
 - 탭 넷(`heroes`, `gacha`, `squad`, `stages`)은 그 모듈의 화면이 `addMenuTab`으로 붙인다. 차례와 보일 탭은 게임이 `setMenuTabs([...])`로 고른다(아래 본보기). 단계 막대와 뽑기 결과 창도 그 모듈을 고른 게임에만 붙는다.
@@ -1692,12 +1744,21 @@ startClient({});
 - 시험 `engine/test/collect/`(`npm test`의 `collect/…`): `rules`(영웅·뽑기의 확률과 천장·편성의 싸움·단계의 깸과 실패·열쇠·방치 보상), `saves`(왕복, 깨진 값, 모듈을 끈 게임, 버전 없는 저장), `client`(화면의 셈), `net`(실제 서버와 접속 둘), 영웅의 성장 `growth`(셈·값·장부의 원인·떨어지기·세트·시너지·앞줄이 먼저 맞기·전투력이 한 셈인가), `growthsaves`(왕복, 성장 전의 저장이 글자까지 같게, 깨진 값, 모듈을 끈 게임), `growthnet`(실제 서버로 끼기·강화·기술·진형, 화면의 셈 = 서버), `growthclient`(상세·장비 창·진형·시너지의 셈, 두 언어의 문장).
 - 시험 `engine/test/collect/`(`npm test`의 `collect/…`): `rules`(영웅·뽑기의 확률과 천장·편성의 싸움·단계의 깸과 실패·열쇠·방치 보상), `saves`(왕복, 깨진 값, 모듈을 끈 게임, 버전 없는 저장, 천장 무리·확정·끝낸 적), `client`(화면의 셈, 확률표가 뽑기와 같은 셈인가, 문장), `net`(실제 서버와 접속 둘), `sweep`(소탕권과 보상의 셈, 장부의 원인, 열쇠 던전), `offline`(전투력·상한·거꾸로 간 시계·아주 큰 틈의 표, 방치 보상의 토막), `pickup`(픽업의 몫, 정해진 난수 12만 번과 실효 확률, 반반, 천장 무리, 기간, 선택권), `sweepnet`(정해진 서버 시계로 실제 접속: 소탕·픽업·선택권·오프라인 진행).
 - 띄우기: `npx vite build -c engine/test/collect/vite.config.ts`(→ `dist-collect/`) 뒤에 `PORT=3015 DB=memory npx tsx --tsconfig engine/test/collect/tsconfig.json engine/test/collect/server/main.ts`. 접속하면 1-1이 바로 시작되고, 메뉴(M)의 '뽑기'에서 보석으로 뽑는다. 금광의 문은 들판의 남동쪽(26, −26)이다(`DEV_SPAWN=26,-26`으로 그 곁에서 시작하면 단계에서 '나가기'한 뒤가 문 앞이다).
-- 새 게임으로 만들 때는 이 파일들을 `games/<게임>/`의 같은 자리에 옮기고 2절의 설정을 둔다(12절의 공 마당과 같다). 틀의 파일은 입구(`@engine/server`, `@engine/client`, 타입은 `@engine/shared/defs/collect`)로 가져온다.
+- 새 게임으로 만들 때는 이 파일들을 `games/<게임>/`의 같은 자리에 옮기고 2절의 설정을 둔다(12절의 공 마당과 같다). 본보기는 틀 안에 있어 상대 경로(`../../../shared/defs`)로 가져오지만, **새 게임에서는 입구로** 가져온다. 플러그인(`games/<게임>/server/<게임>.ts`)의 머리는 이 두 줄이다:
+
+```ts
+import { CLASS_IDS, heroDef } from '@engine/shared/defs';
+import { dist, type Ent, type Game, type Plugin } from '@engine/server';
+import { STARTER } from '../shared/content';
+```
+
+  내용 파일의 타입은 `import type { HeroDef, HeroRules, StageRules, … } from '@engine/shared/defs/collect';`, 화면은 `import { menuRow, myHeroes, setHeroModel, … } from '@engine/client';`와 `import { dungeonLabel } from '@engine/client/i18n/names';`.
 
 ### 남은 것 (틀에 없는 것)
 
 - 영웅의 전용 무기(그 영웅만 끼는 장비), 장비의 무작위 옵션·재련, 장비 뽑기는 없다. 영웅 장비는 거래소에 올릴 수 없다(장부에는 재화·재료의 흐름만 적힌다).
 - 이끄는 사람 없이 영웅만 싸우는 모드, 영웅을 직접 조작하기, 영웅의 궁극기 연출은 없다.
 - 뽑기는 영웅만 준다(장비·재료 뽑기 없음). 천장에 닿으면 고르는 '천장 선택'(교환 상점)은 없다(선택권 아이템은 있다). 기간 한정 배너를 더하거나 고치려면 게임이 `BANNERS`를 바꿔 배포한다(기간은 서버 시계로 저절로 열리고 닫힌다).
+- 재료로 키우는 길은 영웅의 조각(`HERO_RULES.trade`)뿐이다(재료로 영웅의 경험치·레벨을 올리는 길은 없다: 레벨은 `levelCur`의 재화로).
 - 단계는 한 사람씩이다(파티로 함께 깨기 없음). 단계의 순위표, 하루 소탕 횟수의 한도는 없다. 오프라인 진행은 전투력과 권장 전투력만 본다(실제 싸움을 흉내 내지 않는다).
 - 열쇠는 던전 모듈의 것이라 그 의존(`combat`, `mail`, `daily`, `gear`)을 함께 고른다.
