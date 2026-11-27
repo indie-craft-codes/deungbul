@@ -44,8 +44,9 @@
 | `morph` | 변신: 가진 정의의 겉모습(남에게도)과 보정 | chars | 그 밖 | | ○ | ○ | 〃 |
 | `chat` | 대화 채널: 귓말·근처·파티, 채널 탭과 거르기, 도배 막기(`CHAT_RULES`). 고르지 않으면 전체와 길드뿐 | — | 그 밖 | | ○ | ○ | 사회와 안전 |
 | `friends` | 친구: 요청·수락·삭제, 목록(접속·있는 곳), 상한(`FRIENDS`) | — | 그 밖 | | ○ | ○ | 〃 |
+| `modes` | 게임 안의 모드: 한 캐릭터로 두 게임(들판·단계)을 오가기, 보이지 않는 쪽 이어 가기(대역·뒤에서 잇는 단계) | stages | 그 밖 | | | ○ | [making-a-game.md](making-a-game.md) 19절 |
 
-'RPG' 열여섯이 `RPG_MODULES`(등불지기는 `MODULES = RPG_MODULES`), '수집형'의 앞 넷이 `COLLECT_MODULES`다. 수집형·`teams`·`rooms`·`chars`·`morph`·`chat`·`friends`는 `RPG_MODULES`에 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
+'RPG' 열여섯이 `RPG_MODULES`(등불지기는 `MODULES = RPG_MODULES`), '수집형'의 앞 넷이 `COLLECT_MODULES`다. 수집형·`teams`·`rooms`·`chars`·`morph`·`chat`·`friends`·`modes`는 `RPG_MODULES`에 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
 - **게임**: 셋. 등불지기(`games/deungbul/`, 운영, 포트 3001), 예제(`games/sample/` "모닥불 사냥터", 3002), 두 장르를 합친 예제(`games/echopact/` "메아리 계약", 3003: 들판의 MMORPG + 뽑기·편성·단계의 수집형, 같은 캐릭터 정의가 동료와 변신으로. [proof-echopact.md](proof-echopact.md)). 방향은 게임 → 틀 하나다. **2026-11-27에 시제품·증명 게임 일곱(`cave`·`starmine`·`bastion`·`rollball`·`dalmuri`·`stepstone`·`pond`)을 지웠다**: 코드는 커밋 `7e347c9`에 남아 있고(`git checkout 7e347c9 -- games/<이름>`), 운영 데이터는 `data/backup/retired-<시각>/`로 옮겼다. 증명 기록([proof-rollball.md](proof-rollball.md), [proof-dalmuri.md](proof-dalmuri.md), [proof-stepstone.md](proof-stepstone.md), [proof-pond.md](proof-pond.md))은 틀을 검증한 기록으로 남긴다. 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험(`engine/test/core`의 공 마당·별 줍기, `engine/test/collect`의 영웅 들판)이 지킨다.
 - **확인**(2026-11-27, 두 장르를 합친 예제를 더한 `feat/hybrid`, 바탕 `07e496e`): `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정 둘씩, 모두 10개) 오류 0, `npm test`(틀의 경계 검사 `boundary`, 틀의 시험 `fx`, 핵심만 `core`, 수집형 `collect`, 게임 셋) **검사 2435개**(바탕 2393 + 메아리 계약 42) 모두 통과, `npm run build:all` 통과. 틀의 시험은 게임 없이 돈다(시험용 내용 위에서. `games/`를 지운 복사본에서도 통과: 2026-11-25에 확인).
@@ -66,8 +67,26 @@
 | 플랫폼 분리 1단계 | `feat/plat1` | 브라우저 직접 호출을 `engine/client/platform/` 뒤로, 버전 범위, 서버의 정적 파일 끄기·Origin, 길게 누르기 툴팁, 경계 시험 | → 2339 |
 | 문서 현행화 | `feat/docs5` | 뿌리 README를 틀 + 게임의 안내로, 등불지기 설명을 [../games/deungbul/README.md](../games/deungbul/README.md)로, 문서 지도 [README.md](README.md), 이 요약 | 2393 (묶음 3과 합친 뒤) |
 | 두 장르를 합친 예제 | `feat/hybrid` | 새 예제 `games/echopact` "메아리 계약"(3003): 들판의 MMORPG + 뽑기·편성·단계, 캐릭터 정의 하나가 단계의 동료이자 들판의 변신. 틀은 고치지 않았다. 틀의 빈 곳 열은 [proof-echopact.md](proof-echopact.md) | 2393 → 2435 |
+| 두 게임을 오가는 메아리 계약 | `feat/pact2` | 틀: 게임 안의 모드(`modes`: 싸우는 중에도 바꾸기, 보이지 않는 쪽 이어 가기 — 들판의 대역·뒤에서 잇는 단계), `SQUAD_RULES.where`, `MORPH_RULES.fromRoster`·`stats`·`mods(def, grow)`, `CharDef.text`, 자동 사냥 안전장치 `g.away.safety`, 대화의 `md`·`nearScope`. 메아리 계약을 계약의 탑(A)·울림골(B) 두 게임으로 다시 짬, 저장 이전 | 2435 → 2462 |
 
 그 전(2026-11-24~26)의 묶음은 아래 '0. 이어 갈 것' 끝의 '요약에서 내린 줄'에 한 줄씩 있다. 다음 후보와 사용자가 정할 것도 '0. 이어 갈 것'에 모았다.
+## 두 게임을 오가기: 게임 안의 모드 (2026-11-27, 가지 `feat/pact2`)
+
+사용자가 원한 모양("두 게임을 왔다 갔다 하면서 하고 수집한 게 변신", "카드 능력치가 변신 능력치", "채팅은 공통", "자동 사냥하면서 스테이지 게임으로 넘어가는 것, 반대도", "싸우는 중에도 넘어갈 수 있어야")으로 메아리 계약을 다시 짜고, 그에 쓰인 틀의 칸을 넣었다. 모두 기본은 꺼짐이고 다른 게임은 그대로다(등불지기 황금 실행 7,489,205바이트 sha 앞 `ba83af30d07f` 같음). 쓰는 법은 [making-a-game.md](making-a-game.md) 19절, 예제의 기록·수치는 [proof-echopact.md](proof-echopact.md).
+
+| 틀의 칸 | 무엇 |
+|---|---|
+| `modes` 모듈 (`MODE_RULES`) | 한 캐릭터가 모드(들판·단계)를 오간다. 명령 `mode`, 개인 상태 `mode`·`modeSide`, 저장 `ext.mode`, 사건 `modeChanged`. 화면의 '게임 바꾸기'·모드마다 탭·감출 요소·`body[data-mode]`. `fieldStay`(들판의 대역 `stand`가 자동 사냥을 잇는다), `stageStay`(싸우던 단계가 영웅만으로 뒤에서 잇는다) |
+| 단계 | 대기실(`lobby`), `detach`·`attach`·`runOf`·`inLobby`·`fieldRespawn` |
+| 편성 | `SQUAD_RULES.where: 'stage'` |
+| 변신 | `fromRoster`, 능력치 대체 `stats(card)`(화면과 같은 셈 `morphCard`·`morphStats`), `mods(def, grow)`, 변신 탭의 역할 이름 |
+| 캐릭터 정의 | `CharDef.text`(언어마다의 이름·소개, 같은 검증), 정의를 받으면 이름표를 다시 쓴다 |
+| 자동 사냥 | 안전장치 `g.away.safety`·명령 `autoSafe`·안내문 셋, `g.away.proxied` |
+| 전투·대화 | `g.rules.bodyOn`(다른 층의 몸의 처치 보상), 대화 줄의 `md`, `CHAT_RULES.nearScope: 'mode'` |
+
+- 확인: `npm run typecheck` 오류 0, `npm test` 두 번과 `TZ=UTC npm test` 통과(검사 2435 → 2462개), `npm run build:all` 통과. 화면(임시 서버 3019, PC·폰 × 한국어·영어): 탑의 단계 선택·뽑기·카드·전투, 싸우는 중 전환, 울림골(동료 없음·변신 탭·변신한 모습), 자동 사냥을 켠 채 탑으로(작은 표시), 들판의 위험 알림과 '바로 가기'. 콘솔 오류 없음.
+- 1판(`feat/hybrid`)의 '틀의 빈 곳' 열 가운데 1·2·3·4·9·10을 메웠다(남은 것: 뽑기의 사건, 정의의 진영, 배너 판의 id 검사, 부하 도구의 `squad=N`).
+
 ## 두 장르를 합친 예제 (2026-11-27, 가지 `feat/hybrid`)
 
 사용자 아이디어([ideas.md](ideas.md) 3절: 뽑기·수집형 RPG와 MMORPG의 변신을 잇기)를 틀 위의 새 예제 **"메아리 계약"**(`games/echopact`)으로 보였다. 등불지기와 무관한 별도 게임이고 틀(`engine/`)은 고치지 않았다. 만든 것·잇는 방법·수치 표·틀의 빈 곳·평가는 [proof-echopact.md](proof-echopact.md).
@@ -353,7 +372,7 @@
 
 ### 다음 후보 (위가 먼저)
 
-1. **두 장르를 잇는 틀의 칸** ([proof-echopact.md](proof-echopact.md) '틀의 빈 곳과 우회', 예제 `games/echopact`이 게임 안에서 우회한 것): ① 캐릭터 정의의 언어마다의 이름·소개(`CharDef`의 선택 칸이나 화면의 고리) ② 변신 탭이 역할 id를 그대로 보이는 것(한 줄) ③ 영웅의 소유와 변신의 소유를 잇는 칸(`MORPH_RULES.fromRoster`) ④ 변신 보정이 그 사람의 성장(레벨·별)을 받기 ⑤ 뽑기의 사건 `pulled` ⑥ 정의에 진영(`tag`) ⑦ 배너 판의 id를 정의를 읽은 뒤 검사 ⑧ 정의가 화면에 오기 전에 그려진 영웅 이름표를 다시 쓰기(`relabel`) ⑨ 부하 도구의 `squad=N`이 실행 중에 더한 영웅도 보기. 칸을 넣으면 예제의 우회(`server/pact.ts`, `client/echoes.ts`)를 지운다. 그 뒤 AI 생성기·계정 공용 저장소·두 서버의 싱크는 사용자 결정([ideas.md](ideas.md) 3절).
+1. **두 장르를 잇는 틀의 칸의 남은 것** ([proof-echopact.md](proof-echopact.md) '틀의 빈 곳'): ①②③④⑧과 편성의 자리·모드는 2026-11-27 `feat/pact2`에서 메웠다. 남은 것: 뽑기의 사건 `pulled`, 정의에 진영(`tag`), 배너 판의 id를 정의를 읽은 뒤 검사, 부하 도구의 `squad=N`이 실행 중에 더한 영웅도 보기. 그 뒤 AI 생성기·계정 공용 저장소·두 서버의 싱크(두 모드를 두 서버로)는 사용자 결정([ideas.md](ideas.md) 3절).
 2. **플랫폼 분리 2단계: 데스크톱 시제품** ([platforms.md](platforms.md) 4절): `apps/desktop/`(Electron main·preload, 사용자 정의 프로토콜 `app://`로 dist-sample, `autoplayPolicy`, F11 전체 화면, 바깥 링크는 `shell.openExternal`), `platform/desktop.ts`(preload의 storage·openUrl·copy·saveFile·version), 게임패드 이동·기술, 단축키를 `input.keyName`(ev.code)으로, 실제 Origin 머리말 기록. 비용 0(서명·Steam 없이). 그 뒤 3단계 모바일 시제품(Capacitor, Android 먼저).
 3. **웹 출시의 바탕(묶음 2)의 남은 것**: ② 정적 서버의 캐시 머리말(이름에 해시가 든 빌드 파일은 오래 캐시: 지금은 매번 다시 받는다) ③ 판 모듈이 `Platform.invite`를 부르기(묶음 7과 함께) ④ 캐주얼·.io 증명 게임으로 포털 요건을 다시 확인 ⑤ 실제 크롬의 숨김 탭(헤드리스가 아닌 창)에서 5분 ⑥ 약한 기기에서 품질 단계의 값 ⑦ 내보내기에 게임의 개인 데이터 칸(등불지기의 월드에 둔 몫이 있으면 `personalData`에) ⑧ 새 외부 요청이 생기지 않는지 보는 빌드 검사. (① 옛 브라우저 직접 호출을 접점으로 옮기기는 플랫폼 분리 1단계에서 끝났다.)
 4. **판 모듈(묶음 7과 겹침)**: 판 구경(앉지 않고 보기), 대기실의 판 목록 넘기기, 자리 수를 판을 열 때 고르기, 3D 월드를 쓰지 않는 화면(카드 탁자), 좁은 화면에서 자리가 다섯 이상인 막대. 문서(14절)만 보고 셋 이상의 다른 판 게임(카드)을 만드는 검증(별도 에이전트)에 방 코드·관전·여러 규칙을 함께.

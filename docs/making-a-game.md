@@ -2040,6 +2040,7 @@ g.on('playerJoined', (p) => { for (const d of g.chars.list()) g.morph.grant(p, d
 - 규칙(내용의 `MORPH_RULES`): `durationS`(이어지는 시간, 0이면 스스로 풀 때까지), `cooldownS`(풀린 뒤 다시까지), `noFightS`(맞은 지 이 초 안에는 못 한다, 0이면 언제나), `mods(def)`(정의마다의 보정), `cap`(칸마다 상한, `guard`는 0.9까지), `maxOwn`(가질 수 있는 수). **기본값은 겉모습만**(보정 0), 스스로 풀 때까지, 다시까지 10초, 맞은 지 5초 안에는 못 한다, 서른까지.
 - 서버(`g.morph`): `grant(p, id)`(주기: 게임의 보상·상점, 나중의 거래·AI 만들기), `take(p, id)`(거두기), `owns`, `on(p, id)`, `off(p, why)`, `mods(p)`. 명령 `{ t: 'morph', a: 'on', id }`, `{ t: 'morph', a: 'off' }`. 사건 `morphed(p, id, why)`. 정의가 빠지면 그것으로 변신한 사람이 풀린다. 저장은 캐릭터의 ext `morph`(`{ own, on?, left?, cd? }`), 개인 상태 `morph`(`MorphMe`: 가진 것, 지금의 것, 남은 초, 다시까지).
 - 화면: 메뉴의 '변신' 탭(가진 캐릭터마다 부품으로 그린 작은 그림, 이름·등급·소개·능력치·보정, 변신 단추, 변신 중이면 남은 시간과 풀기). `setMenuTabs`를 쓰는 게임은 목록에 `'morph'`를 넣는다. 내 상태는 `myMorph()`.
+- 선택 칸(19절): `fromRoster`(가진 영웅 = 변신 목록), `stats(card)`(카드의 능력치로 바꾸는 방식), `mods(def, grow)`(키운 만큼). 정의의 언어마다의 이름·소개는 `CharDef.text`.
 
 ```ts games/sample/shared/content/index.ts
 export const MORPH_RULES: MorphRules = {
@@ -2411,3 +2412,52 @@ addTextFilter((text, where) => where === 'chat' && /https?:\/\//i.test(text)); /
 - 서버 → 화면: `chat`의 `ch`·`n`(줄 번호)·`q`·`to`, `blocks`, `friends`, `talk`(제한 모드·물어야 하는가·받기 설정. 연령을 묻거나 `chat`·`friends`를 고른 게임만). 안내문 21가지(`blockedOn` …, `engine/shared/messages.ts`).
 - 저장: SQLite 스키마 4 (`blocks`, `friends`, `social_prefs`). 3인 DB를 열면 더한다. 내 데이터 내보내기에 `social`(차단한 사람, 친구, 설정)이 들고, 지우면 그 저장 키의 줄을 모두 지운다(차단한 것과 당한 것).
 - 설정 칸은 `addSetting`의 `group`(새 칸)으로 '대화' 머리 아래에 모인다. 게임의 칸도 `group`을 주면 그 머리로 간다.
+
+## 19. 한 캐릭터로 두 게임을 오가기: `modes` 모듈과 함께 쓰는 칸
+
+한 서버·한 캐릭터 안에 '두 게임'(예: 들판의 MMORPG와 단계의 수집형)을 두고 화면의 **'게임 바꾸기'** 단추로 오가는 게임을 만든다. 소유(영웅·재화·장비·변신)는 한 캐릭터의 것이라 저절로 하나이고, 모드가 정하는 것은 **서 있는 곳과 화면**이다. 본보기는 `games/echopact` "메아리 계약"([proof-echopact.md](proof-echopact.md)). 모든 칸은 기본으로 꺼져 있다: 고르지 않은 게임은 예전과 같다(`RPG_MODULES`에도 들지 않는다).
+
+### 모드 (`modes` 모듈, `stages`에 기댄다)
+
+```ts
+export const MODE_RULES: ModeRules = {
+  list: [
+    { id: 'tower', name: 'modeTower', kind: 'stage', tabs: ['gacha', 'heroes', 'squad', 'stages'], hide: ['auto', 'minimap', 'skills'] },
+    { id: 'vale', name: 'modeVale', kind: 'field', tabs: ['morph', 'gear', 'daily'] },
+  ],
+  start: 'tower', switchCdS: 1, fieldStay: true, stageStay: true,
+};
+```
+
+- 모드마다 `kind`: `'field'` 들판(채널의 층) / `'stage'` 단계(그 사람만의 층: 들어오면 **대기실** `g.stages.lobby`에 서고, 단계를 고르면 그 층에서 싸운다). `name`은 문장 키, `tabs`는 그 모드의 메뉴 탭(`setMenuTabs`와 같은 id), `hide`는 그 모드에서 감출 틀 요소(`HUD_PARTS`의 이름).
+- 바꾸기: 명령 `{ t: 'mode', id }` — **싸우는 중에도 바로** 된다(`switchCdS` 초 동안만 다시 못 바꾼다: `modeWait`). 서버 `g.modes.set(p, id)`, `g.modes.of(p)`, `g.modes.standOf(p)`, 사건 `modeChanged(p, id, from)`. 저장 `ext.mode`(처음 모드면 적지 않는다), 개인 상태 `mode`(`ModeMe`)·`modeSide`(`ModeSideMe`). 접속하면 저장된 모드로(단계 모드면 대기실).
+- 단계 명령이 모드에 맞춰진다: 들판에서 `stage go`·`start`를 보내면 단계 모드로 건너가고, 단계 모드의 `leave`는 대기실로 간다.
+- **보이지 않는 쪽 이어 가기** (둘 다 선택):
+  - `fieldStay`: 들판을 떠날 때 자동 사냥(R)이 켜져 있으면 그 자리에 **대역**(엔티티 종류 `stand`: 그 사람의 이름·직업·무기·겉모습)이 남아 자리 비움 사냥과 같은 판단으로 사냥한다. 힘은 그 사람의 것(최대 체력, 주는 피해·받는 피해의 보정: 장비·변신), 물약은 그 사람의 가방에서. 처치 보상·일일 임무는 그 사람의 것이고(`g.rules.bodyOn`), 장부의 원인은 자리 비움 사냥(`huntAway`)이며 하루 한도(`AWAY.maxS`)도 함께 쓴다. 돌아오면 대역의 자리·체력을 이어받는다. 레벨 `AWAY.minLv` 이상, 직업이 있을 때만.
+  - `stageStay`: 단계를 떠날 때 싸우는 중이면 그 회차가 **뒤에서 이어 간다**(`g.stages.detach`: 편성의 영웅만 싸운다). 깨면 보상, 자동 진행이 켜져 있으면 다음 단계로. 자동 진행이 꺼져 있거나 지면(영웅이 모두 쓰러지거나 시간) 회차를 닫고 안내문 `stageBgStop`. 돌아오면 그 싸움으로(`attach`). 들판에서 `stage leave`로 멈춘다.
+  - 접속이 끊기면 대역은 그 사람 자신으로 돌아오고(자동 사냥이 켜져 있으면 틀의 자리 비움 사냥이 이어 간다), 뒤에서 잇던 회차는 닫힌다(돌아왔을 때 `STAGE_RULES.offline`이 맡는다).
+- 화면(`engine/client/hud/modes.ts`): '게임 바꾸기' 단추(`#modeBtn`, 건너갈 모드의 이름 `fmt.modeTo`), 모드마다 메뉴 탭·감출 요소, 문서의 `body[data-mode]`·`data-mode-kind`(게임의 스타일이 두 게임의 겉모습을 가른다), 대역의 겉모습(`registerKind('stand')`). 게임이 쓸 것: `onModeChange((def, from) => …)`(장면의 하늘, 게임의 창), `onModeSide((s) => …)`(보이지 않는 쪽의 작은 표시), `switchMode(id?)`, `myMode()`, `myModeSide()`. 다른 쪽의 위험(`modeStandDown`·`stageBgStop`·`autoRetreat`·`autoNoPotion`·`autoDied`·`modeStandEnd`)은 틀의 가운데 알림으로 뜬다(게임이 `onMsg('sys')`로 '바로 가기' 단추를 더할 수 있다).
+
+### 함께 쓰는 칸
+
+| 칸 | 무엇 | 기본 |
+|---|---|---|
+| `SQUAD_RULES.where: 'stage' \| 'all'` | 편성의 영웅이 나타나는 곳. `'stage'`면 단계의 회차(대기실 포함)에서만 (들판에는 동료가 없다) | `'all'` |
+| `MORPH_RULES.fromRoster` | 가진 변신 = 가진 영웅 ∩ 정의 (따로 저장·맞추기 없음. `grant`는 영웅을 준다) | 끔 |
+| `MORPH_RULES.stats(card)` | **능력치 대체**: 변신한 동안 기본 최대 체력과 기본 공격(직업의 기본 공격 한 번)을 카드에서 셈한 `{ hp, atk }`로 (장비·버프는 그 위에, 기술도 같은 비율). `card`는 `{ def, atk, hp, lv, stars, who: { lv } }`(영웅 탭의 카드와 같은 셈). 화면은 영웅 탭의 카드와 변신 탭에 같은 '변신 시 체력·공격'을 보인다(`morphCard`·`morphStats`) | 없음(보정 방식) |
+| `MORPH_RULES.mods(def, grow)` | 보정 방식에 그 사람이 키운 만큼(`{ lv, stars }`) | 둘째 인자 없음 |
+| `CharDef.text` | 정의의 언어마다의 이름·소개 `{ en: { name, bio? } }` (같은 검증, 8개 언어까지). 화면은 `charText(def)`, `charName(id)` | 없음 |
+| `g.away.safety` (`AwaySafety`) | 보이지 않을 때의 자동 사냥(자리 비움 사냥, 대역) 안전장치: `potionAt`, `retreatAt`, `stopNoPotion`, `stopOnDeath`. 플러그인이 켜고, 사람마다 명령 `{ t: 'autoSafe', potion, retreat, noPotion, death }`(저장 `ext.autosafe`, 개인 상태 `autosafe`) | `null`(예전과 같다) |
+| `CHAT_RULES.nearScope: 'layer' \| 'mode'` | '근처' 채널: 같은 층의 거리 안 / 같은 모드에 있는 사람 모두 (층을 넘는다). 대화 줄에는 말한 사람의 모드 `md`가 붙는다 | `'layer'` |
+| `g.rules.bodyOn(p, layer)` | 다른 층에 둔 몸의 자리 (처치 보상의 거리 셈). 모드가 대역·뒤에서 잇는 회차로 채운다 | 없음 |
+
+```ts
+// 카드 → 변신 능력치 (메아리 계약: 카드의 공격 차를 반으로 누른다)
+export const MORPH_RULES: MorphRules = { durationS: 0, cooldownS: 10, noFightS: 4, maxOwn: 60, fromRoster: true, stats: (c) => ({ atk: 8 + c.atk * 0.5, hp: 120 + c.hp * 0.6 + 15 * (c.who.lv - 1) }) };
+```
+
+### 남은 것
+
+- 두 게임이 한 서버의 두 모드다. 진짜 두 서버(계정이 같은 사람을 알아보고 소유를 함께 읽기)는 계정과 계정 공용 저장소가 있어야 한다.
+- 모드는 들판 하나·단계 하나의 짝이 바탕이다(셋 이상도 적을 수 있지만 '게임 바꾸기'는 차례로 다음). 던전·판(rooms)의 자리 종류는 없다.
+- 대역은 파티·필드 보스·던전에 들지 않는다. 사람 카드(귓말·친구)가 뜨지 않는다.

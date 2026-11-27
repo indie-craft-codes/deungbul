@@ -61,7 +61,7 @@ export const koGame = {
     modeTower: '계약의 탑', modeVale: '울림골',
     // 틀의 '영웅' 탭을 이 게임의 말로, 근처 대화는 '같은 곳'
     tabHeroes: '메아리',
-    chatTagNear: '[같은 곳]',
+    chatTagNear: '[같은 곳]', chatTabNear: '같은 곳',
     roleVanguard: '선봉', roleRanger: '사수', roleMystic: '비술', roleMender: '치유',
     bannerWell: '울림 샘', chapterPath: '속삭임 길', chapterRuins: '종소리 폐허', chapterSpire: '울림 첨탑',
     // 탑의 첫 화면 (client/tower.ts)
@@ -109,14 +109,17 @@ export const koGame = {
     towerBest: (id: string) => (id ? `가장 멀리 깬 단계 ${id}` : '아직 깬 단계가 없습니다'),
     /** 보고 있지 않은 들판·탑의 작은 표시 */
     sideVale: (state: string, hp: number, max: number, kills: number, sparks: number) => `울림골: ${state} · 체력 ${hp}/${max} · ${kills}마리 · 조각 +${sparks}`,
-    sideTower: (id: string, state: string, cleared: number, sparks: number, auto: boolean) => `탑: ${id} ${state} · 깸 ${cleared} · 조각 +${sparks}${auto ? ' · 자동' : ''}`,
+    sideTower: (id: string, state: string, cleared: number, sparks: number, auto: boolean) => `탑: ${id} ${state} · 깬 수 ${cleared} · 조각 +${sparks}${auto ? ' · 자동 진행' : ''}`,
     pct: (v: number) => `${Math.round(v * 100)}%`,
+    /** 게임 바꾸기 단추: 틀의 '(으)로' 대신 */
+    modeTo: (name: string) => `${name} 가기`,
   },
   /** 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것 */
   msg: {
     heroNew: (a) => `새 메아리 ${charName(a[0])}: 탑에서 함께 싸우고, 울림골에서는 이 모습으로 변신할 수 있습니다.`,
     classFar: () => '직업은 울림 샘 곁에서 바꿀 수 있습니다.',
     noPotion: () => '샘물 약이 없습니다. 상인에게서 살 수 있습니다.',
+    modeOn: (a): string => (a[0] === 'tower' ? '계약의 탑에 왔습니다.' : '울림골에 왔습니다.'),
     modeStandOn: () => '울림골에 남은 몸이 자동 사냥을 이어 갑니다.',
     modeStandDown: () => '울림골에서 사냥하던 몸이 쓰러졌습니다.',
   } satisfies Partial<Record<MsgKey, (a: MsgArg[]) => string>>,

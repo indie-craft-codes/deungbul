@@ -15,6 +15,8 @@ function drawHome(): void {
   const box = $('towerHome'), st = myStage();
   const lobby = inTower() && !!S.me && (!st?.run || st.run.state === 'lobby');
   box.hidden = !lobby;
+  // 단계 선택 화면에서는 틀의 단계 막대를 감춘다 (같은 것을 화면이 크게 보인다: echopact.css)
+  document.body.classList.toggle('towerLobby', lobby);
   if (!lobby || !S.me) return;
   const loc = L(), rows = stageRows(st);
   $('towerHave').textContent = loc.fmt.towerHave(S.me.sparks, S.me.gold, mySquad().power);
