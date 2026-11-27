@@ -29,7 +29,7 @@ const ERR_BODY_MAX = 8192;
 const ERR_KEEP = 500;
 /** 주소마다: 한꺼번에 10건, 그 뒤로는 10초에 1건. 서버 전체: 한꺼번에 60건, 그 뒤로는 초당 1건 */
 const ERR_IP_BURST = 10, ERR_IP_PER_S = 0.1, ERR_ALL_BURST = 60, ERR_ALL_PER_S = 1;
-/** 내보내기는 저장 키마다 30초에 한 번, 삭제 요청·취소는 5초에 한 번 */
+/** 내보내기는 저장 키마다 30초에 한 번, 삭제 요청은 5초에 한 번 (거두기는 언제나) */
 const EXPORT_GAP_MS = 30_000, ERASE_GAP_MS = 5_000;
 const DAY_MS = 86_400_000;
 
@@ -178,8 +178,11 @@ export function createWeb(host: WebHost): Web {
       return;
     }
     if (m.a !== 'erase' && m.a !== 'cancel') return;
-    if (now - (lastErase.get(key) ?? -Infinity) < ERASE_GAP_MS) { host.send(c, sys('mydataWait', Math.ceil(ERASE_GAP_MS / 1000))); return; }
-    lastErase.set(key, now);
+    // 요청은 5초에 한 번 (거두기는 언제나: 잘못 누른 것을 곧바로 되돌릴 수 있게)
+    if (m.a === 'erase') {
+      if (now - (lastErase.get(key) ?? -Infinity) < ERASE_GAP_MS) { host.send(c, sys('mydataWait', Math.ceil(ERASE_GAP_MS / 1000))); return; }
+      lastErase.set(key, now);
+    }
     const had = ws.eraseOf(key);
     if (m.a === 'erase') {
       if (had?.state !== 'wait') {

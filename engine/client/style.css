@@ -821,9 +821,13 @@ body.room-still #stick { display: none; }
 .legalLinks a { color: var(--gold); }
 #menuList .legalLinks { padding-left: 10px; }
 /* 튜토리얼 카드와 강조 (hud/tutorial.ts) */
-#tut { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); width: min(360px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 6px; z-index: 9; border-color: var(--gold); }
+#tut { position: fixed; left: 50%; top: 76px; transform: translateX(-50%); width: min(360px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 6px; z-index: 9; border-color: var(--gold); }
 #tut[hidden] { display: none; }
+/* 큰 창(메뉴, 전체 지도, 직업 고르기, 동의 창, 손님 진행 보호)이 열려 있는 동안에는 안내 카드를 숨긴다 (창을 덮지 않게) */
+body:has(#menu:not([hidden]), #wmap:not([hidden]), #classPick:not([hidden]), #keepSafe:not([hidden]), .modal:not([hidden])) #tut { display: none; }
 #tutText { font-size: 14px; }
+/* 폰 세로: 위는 내 정보 창이 차지한다. 기술 단추 위, 화면 가운데 아래에 */
+@media (max-width: 600px) { #tut { top: auto; bottom: 240px; } }
 .tutHi { outline: 2px solid var(--gold) !important; outline-offset: 2px; animation: tutPulse 1.2s ease-in-out infinite; }
 @keyframes tutPulse { 50% { outline-color: transparent; } }
 /* 손님 진행 보호 (hud/keepsafe.ts) */

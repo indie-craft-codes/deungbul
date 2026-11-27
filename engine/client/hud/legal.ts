@@ -102,7 +102,7 @@ export function initLegal(): void {
   // 내 데이터
   onMsg('mydata', (m) => {
     if (m.a === 'state') { erase = { due: m.due, days: m.days }; renderMenu(); return; }
-    const day = new Date().toISOString().slice(0, 10);
+    const day = new Date().toLocaleDateString('sv'); // 이 기기의 날짜 (YYYY-MM-DD)
     void platform().saveFile(`mydata-${day}.json`, JSON.stringify(m.data, null, 2), 'application/json');
   });
   onMsg('welcome', () => { erase = null; agreed = undefined; send({ t: 'mydata', a: 'status' }); if (LEGAL) send({ t: 'consent', a: 'ask' }); });

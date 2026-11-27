@@ -70,7 +70,7 @@ export function initBonfire(): void {
 
   ui.all.addEventListener('click', () => { feed(logs()); ui.all.blur(); });
   $('classBtn').addEventListener('click', openClasses);
-  onKey('f', () => feed(1));
+  onKey('f', () => feed(1), () => t('feedKey')); // 이름: 설정 창의 단축키 목록에 보인다
 
   // 느린 주기(0.25초)마다 글자와 단추를 맞춘다
   onSlow(() => {
