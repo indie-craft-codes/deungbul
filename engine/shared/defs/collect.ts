@@ -240,6 +240,13 @@ export interface StageRules {
    * 몬스터는 영웅만 노리고, 영웅이 모두 쓰러지면 진다. 화면은 사람의 몸·이름표를 그리지 않는다(모드 modes의 단계 모드). 기본 false (사람도 앞에서 싸운다)
    */
   squadOnly?: boolean;
+  /**
+   * 배속 (전투 화면의 ×1·×2: hud/battle.ts): 그 사람의 단계 층의 시간을 max배까지 빠르게 한다 (몬스터·영웅·제한 시간이 함께).
+   * unlock: 이 단계를 깨면 열린다 (없으면 처음부터). 고른 배속은 저장된다. 뒤에서 잇는 회차는 늘 ×1. 없으면 배속이 없다 (예전과 같다)
+   */
+  speed?: { max: number; unlock?: string };
+  /** 일시정지 (전투 화면의 ‖, 전투 중 뒤로 가기): 그 사람의 단계 층의 시간을 멈춘다. maxS초(기본 600) 뒤 저절로 풀린다. 없으면 없다 */
+  pause?: boolean | { maxS: number };
 }
 
 /** 방치 보상(idle 모듈)의 셈에 틀이 넘기는 것: 깬 단계의 수 (stages 모듈이 없으면 0) */
@@ -501,6 +508,10 @@ export interface StageMe {
   cur: string; best: string; auto: boolean; run: StageRun | null;
   /** 단계마다 딴 별(비트, starMask). 별 조건이 있는 게임만 온다 */
   stars?: Record<string, number>;
+  /** 배속(STAGE_RULES.speed가 있는 게임만): 고른 배속, 지금 쓸 수 있는 가장 큰 배속(잠겼으면 1) */
+  speed?: number; speedMax?: number;
+  /** 일시정지 중 (STAGE_RULES.pause가 있는 게임만) */
+  paused?: boolean;
 }
 /** 개인 상태 'keys' (열쇠를 쓰는 던전이 있는 게임): 던전마다 가진 열쇠와 오늘 산 수 */
 export type KeysMe = Record<string, { n: number; bought: number; won?: boolean }>;

@@ -1,0 +1,174 @@
+/* 디자인 토큰 (U1 디자인 체계: docs/ux-review.md 3절, 쓰는 법은 docs/making-a-game.md 24절).
+   색·글자 크기 단계·간격·모서리·그림자·층(z)·움직임 시간을 이 한 곳에 둔다. 틀의 스타일(style.css)과 틀의 부품은 이 이름만 쓴다.
+   게임은 자기 css에서 같은 이름을 다시 적어 값만 바꾼다 (:root는 게임 전체, body[data-mode="…"]·요소 하나는 그 안만: 그 안의 틀 창까지 함께 바뀐다).
+
+   예전 색 변수(--sky --ink --ink-rgb --panel --cover-rgb --line --fg --dim --gold --on-gold --good --bad --ally --hp --xp)는 그대로 있다:
+   새 토큰의 기본값이 그것을 읽으므로, 예전 이름을 덮어쓴 게임도 그대로 보인다. 새로 짓는 게임과 틀은 새 이름(--c-…)을 쓴다. */
+:root {
+  color-scheme: dark;
+  /* ---- 예전 색 변수 (기본값) ---- */
+  --sky: #a9cdd0;
+  --ink: #0e2227;
+  --ink-rgb: 14, 34, 39;
+  --panel: rgba(var(--ink-rgb), .86);
+  --cover-rgb: 8, 20, 24;
+  --line: rgba(233, 214, 160, .3);
+  --fg: #eef3ee;
+  --dim: #a9bdb8;
+  --gold: #f0bb55;
+  --on-gold: #1c1405;
+  --good: #7fd68a;
+  --bad: #ffb3a8;
+  --ally: #8fd8ff;
+  --hp: #dc5a4c;
+  --xp: #a98bea;
+  --font: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --mono: Consolas, "SF Mono", monospace;
+
+  /* ---- 색: 바탕의 층 ---- */
+  --c-bg: var(--sky);                       /* 문서 바탕 (3D가 없는 곳) */
+  --c-surface: var(--ink);                  /* 창 바탕 (불투명): 메뉴·결과 창·확인 창 */
+  --c-surface-rgb: var(--ink-rgb);          /* 같은 색의 "r, g, b" (반투명한 바탕들) */
+  --c-overlay-rgb: var(--cover-rgb);        /* 화면을 덮는 막 */
+  --c-fill-1: rgba(255, 255, 255, .05);     /* 창 안의 칸·줄 */
+  --c-fill-2: rgba(255, 255, 255, .1);      /* 고른 칸, 막대의 빈 몫 */
+  --c-sunk: rgba(0, 0, 0, .38);             /* 움푹한 칸 (입력·칩·단추 띠) */
+  --c-sunk-1: rgba(0, 0, 0, .2);
+  --c-sunk-2: rgba(0, 0, 0, .55);
+  --c-sunk-3: rgba(0, 0, 0, .75);           /* 3D 위 글자의 그림자 */
+  --c-black: #000;
+  --c-white: #fff;
+  --c-flash: #0a0f12;                       /* 쓰러질 때 화면을 덮는 색 */
+  /* ---- 색: 선 ---- */
+  --c-line: var(--line);
+  /* ---- 색: 글자 (바탕 --c-surface 위에서 대비 4.5:1 이상. --c-text-3은 흐린(못 누르는) 것에만) ---- */
+  --c-text: var(--fg);
+  --c-text-2: var(--dim);
+  --c-text-3: #7d8f8b;
+  /* ---- 색: 주 행동 ---- */
+  --c-accent: var(--gold);
+  --c-on-accent: var(--on-gold);
+  --c-accent-bg: rgba(240, 190, 90, .12);
+  --c-accent-grad: linear-gradient(180deg, #ffd27a, #e0a040); /* 가장 큰 진행 단추 */
+  --c-on-accent-grad: #2a1a08;
+  /* ---- 색: 상태 ---- */
+  --c-good: var(--good);
+  --c-good-hi: #b0eeb6;
+  --c-good-bg: rgba(127, 214, 138, .15);
+  --c-good-line: rgba(127, 214, 138, .5);
+  --c-bad: var(--bad);
+  --c-bad-strong: #ff8a74;
+  --c-bad-bg: rgba(220, 90, 76, .18);
+  --c-bad-line: rgba(255, 120, 100, .45);
+  --c-danger-fill: #8a2a2a;                 /* 위험 알림·되돌릴 수 없는 단추의 바탕 */
+  --c-warn: #f0c86e;
+  --c-info: var(--ally);
+  --c-ally: var(--ally);
+  --c-foe: #ffd9d2;
+  --c-boss: #e0603a;
+  --c-boss-bg: rgba(224, 96, 58, .25);
+  --c-dot: #e5483a;                         /* 알림 점 */
+  --c-hp: var(--hp);
+  --c-xp: var(--xp);
+  --c-xp-hi: #cdb8ff;
+  --c-cur-gold: #ffe08a;                    /* 재화의 글자: 골드 · 두 번째 재화 */
+  --c-cur-second: #9fd8ff;
+  --c-dungeon: #c9b8ff;
+  --c-dungeon-line: #8f7bd0;
+  --c-row-front: #d98a5a;                   /* 진형: 앞줄 · 뒷줄 */
+  --c-row-back: #5a9ad9;
+  --c-chat-who: #8fe0e6;
+  --c-chat-near: #c9e6a0;
+  --c-chat-guild: #9fe0a8;
+  --c-chat-party: #a9cdfa;
+  --c-chat-whisper: #e3b5ff;
+  --c-icon-bg: var(--icon-bg, rgba(255, 255, 255, .05));
+
+  /* ---- 등급 색 표 하나: 카드 테두리·뽑기 연출·이름표·장비 줄·3D 발밑 고리가 함께 쓴다 (hud/rarity.ts).
+     영웅의 등급(HeroRarityDef.id)이 이 이름이면 이 색, 아니면 내용의 color. 장비의 등급 1·2·3은 uncommon·rare·epic ---- */
+  --rar-common: #b4bcc4;
+  --rar-uncommon: #7fd68a;
+  --rar-rare: #6aa8f0;
+  --rar-epic: #d79bff;
+  --rar-legend: #f0b440;
+  --rar-myth: #ff6a5a;
+
+  /* ---- 글자 크기 단계 (일곱. 이보다 작은 글은 없다: 폰에서 12px, 본문 14px) ---- */
+  --fs-xs: 12px;   /* 덧붙임 숫자·단축키·칩 */
+  --fs-sm: 13px;   /* 설명(.note)·보조 */
+  --fs-md: 14px;   /* 본문·목록 이름·단추 */
+  --fs-lg: 16px;   /* 작은 제목·강조 숫자 */
+  --fs-xl: 20px;   /* 창 제목·큰 단추 */
+  --fs-2xl: 24px;  /* 화면 제목·결과 '깸!' */
+  --fs-3xl: 30px;  /* 가장 큰 숫자 */
+  --lh: 1.45;
+
+  /* ---- 간격 ---- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+  /* ---- 모서리 (게임은 이 넷의 값만 바꿔 분위기를 낸다) ---- */
+  --r-sm: 4px;     /* 칸·작은 단추·칩 */
+  --r-md: 6px;     /* 단추·카드 */
+  --r-lg: 12px;    /* 창·결과 창 */
+  --r-pill: 999px; /* 알약·토글 */
+  /* ---- 그림자 ---- */
+  --shadow-1: 0 4px 14px rgba(0, 0, 0, .45);  /* 떠 있는 창 */
+  --shadow-2: 0 8px 30px rgba(0, 0, 0, .55);  /* 화면을 막는 창 */
+  /* ---- 층 (z-index). 차례가 곧 규칙: 페이지 < 떠 있는 표시 < 튜토리얼 < 단계 창 < 메뉴 < 알림 < 연출 < 확인 < 툴팁 ---- */
+  --z-zone: 3;        /* 폰 HUD 구역 */
+  --z-hud-float: 9;   /* HUD 위에 뜨는 작은 창 (튜토리얼 카드·공지 띠의 PC 자리) */
+  --z-page: 12;       /* 전체 화면 페이지 (홈·모험) */
+  --z-page-over: 13;  /* 페이지 위 단추 */
+  --z-modal: 20;      /* 약관·나이 확인 창 */
+  --z-float: 30;      /* 게임 바꾸기·지도·팀 고르기 */
+  --z-popup: 41;      /* 돌아왔을 때의 창·공지 창 */
+  --z-tutorial: 49;
+  --z-stpage: 51;     /* 단계 페이지 (편성 확인) */
+  --z-sheet: 52;      /* 아래서 올라오는 창 (단계 정보·결과·일시정지) */
+  --z-menu: 53;       /* 틀의 메뉴·가방·지도 (페이지 위) */
+  --z-toast: 55;      /* 가운데 알림·위험 알림·운영 띠 */
+  --z-reveal: 56;     /* 뽑기 연출·소탕 결과 */
+  --z-confirm: 60;    /* 귀한 재화 확인 */
+  --z-tip: 61;        /* 툴팁 */
+  /* ---- 움직임 ---- */
+  --dur-fast: 120ms;    /* 눌림·토글 */
+  --dur-base: 200ms;    /* 창 열기·탭 바꾸기 */
+  --dur-slow: 350ms;    /* 화면 바꾸기·결과 창 */
+  --dur-reward: 600ms;  /* 보상·공개 연출 */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-in: cubic-bezier(.4, 0, 1, 1);
+  /* ---- 누르는 크기 ---- */
+  --tap: 32px;          /* PC의 단추 높이 */
+}
+/* 파생 토큰: 다른 토큰에서 셈하는 것은 body에서 셈한다 (게임이 body[data-mode="…"]에서 바탕 토큰을 바꾸면 이것도 따라 바뀐다).
+   이 셋을 따로 바꾸려면 body나 그 아래에서 적는다 (:root에 적으면 여기에 가린다) */
+body {
+  --c-panel: rgba(var(--c-surface-rgb), .86); /* HUD 위의 작은 창 (3D가 조금 비친다) */
+  --c-line-strong: var(--c-accent);           /* 고른 것·주 행동의 테두리 */
+  --c-title: var(--c-accent);                 /* 창 제목 */
+}
+/* 터치: 누르는 것은 44px 이상 (Apple HIG 44pt) */
+@media (pointer: coarse) { :root { --tap: 44px; } }
+/* 움직임 줄이기: 모든 움직임 시간이 거의 0 */
+@media (prefers-reduced-motion: reduce) { :root { --dur-fast: 1ms; --dur-base: 1ms; --dur-slow: 1ms; --dur-reward: 1ms; } }
+
+/* ---------- 단추 종류 넷 + 크기 둘 ----------
+   .btn-primary   그 화면의 한 다음 행동 (금빛 채움). 한 화면에 하나, 많아야 둘. 틀의 맨 button과 같다
+   .btn-secondary 다른 행동 (어두운 채움 + 테두리). 예전의 .plain과 같다
+   .btn-ghost     덜 중요한 것 (건너뛰기·닫기 글자): 테두리·채움 없음
+   .btn-danger    되돌릴 수 없는 것 (포기·분해·팔기): 붉은 테두리, 두 번 누름(armed)과 함께
+   .btn-lg 엄지 자리의 큰 진행 단추 / .btn-sm 줄 안의 작은 단추 (터치에서도 누르는 범위는 44px)
+   흐림(disabled)일 때 이유: 단추 안의 <small class="why">(parts.button의 why) 또는 title. 이유가 있는 흐린 단추는 글이 읽히게 덜 흐리다 */
+.btn-primary { background: var(--c-accent); color: var(--c-on-accent); border: 1px solid transparent; font-weight: 700; }
+.btn-secondary, button.plain { background: var(--c-panel); color: var(--c-text); border: 1px solid var(--c-line); font-weight: 400; }
+.btn-ghost { background: none; color: var(--c-text-2); border: 1px solid transparent; font-weight: 400; }
+.btn-danger { background: none; color: var(--c-bad); border: 1px solid var(--c-bad-line); font-weight: 700; }
+.btn-danger.armed { background: var(--c-danger-fill); color: var(--c-white); }
+.btn-lg { min-height: 52px; font-size: var(--fs-xl); font-weight: 800; border-radius: var(--r-lg); }
+.btn-sm { padding: 4px 8px; font-size: var(--fs-xs); }
+button .why { display: block; font-size: var(--fs-xs); font-weight: 400; line-height: 1.25; }
+button:disabled .why { color: var(--c-warn); }
+button.has-why:disabled { opacity: 1; filter: none; background: var(--c-fill-1); color: var(--c-text-3); border-color: var(--c-line); }
+/* 토글 (켬/끔이 있는 단추: aria-pressed). 켜면 금빛 점 */
+.toggle { display: inline-flex; align-items: center; gap: 6px; }
+.toggle::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--c-text-3); flex: none; }
+.toggle[aria-pressed="true"]::before { background: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-bg); }

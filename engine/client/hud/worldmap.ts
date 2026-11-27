@@ -249,9 +249,9 @@ function draw(): void {
   if (areaOfMe() !== view.area) { measure(true); selected = null; showCard(); renderList(); } // 던전에 들어가거나 나오면 그 지역으로
   const a = AREAS[view.area], font = getComputedStyle(document.body).fontFamily, k = view.k;
   c.clearRect(0, 0, view.w, view.h);
-  // 지역 밖의 바탕과 글자 테두리는 게임의 창 색(--ink)을 따른다
-  const inkRgb = cssVar('--ink-rgb', '14, 34, 39');
-  c.fillStyle = cssVar('--ink', COLOR.out); c.fillRect(0, 0, view.w, view.h);
+  // 지역 밖의 바탕과 글자 테두리는 게임의 창 색(--c-surface)을 따른다
+  const inkRgb = cssVar('--c-surface-rgb', '14, 34, 39');
+  c.fillStyle = cssVar('--c-surface', COLOR.out); c.fillRect(0, 0, view.w, view.h);
   // 지역 안만 칠한다
   const corners = [toMap(a.x0, a.z0), toMap(a.x1, a.z0), toMap(a.x1, a.z1), toMap(a.x0, a.z1)];
   c.save();

@@ -4,8 +4,8 @@
 //   morph  메뉴의 '변신' 탭: 가진 캐릭터마다 얼굴 그림(부품으로 그린 작은 그림), 이름·등급·소개·능력치·보정, 변신 단추. 변신 중이면 남은 시간과 풀기 단추
 // 게임이 더 할 수 있는 것: 정의가 바뀔 때 듣기(onChars), 내 변신 상태 읽기(myMorph).
 import * as THREE from 'three';
-import { addHeroDef, charHero, charStats, charText, dropHeroDef, HERO_RARITIES, HERO_ROLES, knownChar, MORPH_RULE_VIEW, morphCard, morphMods, morphStats, rarityDef, setCharLang, setKnownChars, type CharDef, type HeroesMe, type MorphMe, type OwnedHero } from '../../shared/defs';
-import { teamCss } from '../../shared/defs/teams';
+import { addHeroDef, charHero, charStats, charText, dropHeroDef, HERO_RARITIES, HERO_ROLES, knownChar, MORPH_RULE_VIEW, morphCard, morphMods, morphStats, setCharLang, setKnownChars, type CharDef, type HeroesMe, type MorphMe, type OwnedHero } from '../../shared/defs';
+import { tintRarity } from './rarity';
 import { onMsg } from '../bus';
 import { relabel } from '../entities';
 import { L, onLangChange, t } from '../i18n';
@@ -108,7 +108,7 @@ function portrait(d: CharDef, w = 96, h = 112): string {
 }
 
 // ---------- 변신 탭 ----------
-const tinted = <T extends HTMLElement>(e: T, r: number): T => { e.style.setProperty('--rc', teamCss(rarityDef(r).color)); return e; };
+const tinted = tintRarity;
 /** 역할의 이름 (HERO_ROLES의 이름 키. 없는 역할은 id 그대로) */
 const roleName = (id: string): string => { const r = HERO_ROLES[id]; return r ? uiText.get(r.name) : id; };
 const statName = (k: string): string => { const s = charStats()[k]; return s?.name ? uiText.get(s.name) : k === 'atk' ? t('charAtk') : k === 'hp' ? t('charHp') : k; };

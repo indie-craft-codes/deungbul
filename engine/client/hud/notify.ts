@@ -1,8 +1,11 @@
-// 알림을 중요도에 따라 세 곳에 나눠 보여 준다.
-//   가운데 알림(banner): 놓치면 안 되는 일. 쓰러짐, 레벨 상승, 게임의 큰 일(등불지기의 습격, 장 완료, 구역 진입)
-//   흘러가는 알림(feed):  방금 한 일의 결과. 처치, 바치기, 구매, 거절 사유. 몇 초 뒤 사라진다
-//   대화창(log):         사람들의 말과, 나중에 다시 볼 만한 소식
-// 이렇게 나누지 않으면 처치 알림이 대화와 중요한 소식을 밀어낸다.
+// 알림의 종류와 규칙 (U1 디자인 체계: docs/making-a-game.md 24절 '알림 규칙'). 한 소식은 **한 곳에만** 뜬다.
+//   가운데 알림(banner) 지금 보고 있는 화면의 큰 일: 쓰러짐, 레벨 상승, 게임의 큰 일(등불지기의 습격, 장 완료). 2~5초, 한 번에 하나(차례로)
+//   흘러가는 알림(feed) 내가 방금 한 일의 결과와 거절 사유: 처치, 바치기, 구매, '골드가 모자랍니다'. 몇 초 뒤 사라진다 (토스트)
+//   위험 알림(alert)    보고 있지 않은 쪽(다른 모드·뒤에서 잇는 일)의 위험과 바로 가기 단추. 손으로 닫거나 12초 (dangerAlert)
+//   상태 줄(status)     지금의 상태를 짧은 낱말로 (게임의 작은 표시·단계 막대). 사건의 문장을 되풀이하지 않는다 (게임의 몫)
+//   대화창(log)         사람들의 말과 나중에 다시 볼 만한 소식의 기록. 가운데·위험 알림으로 뜬 줄은 기록에만 남고 접힌 대화의 한 줄 미리 보기에는 나오지 않는다(echo)
+// 틀이 막는 중복: 같은 글이 가운데 알림·위험 알림에 이미 떠 있으면 다시 띄우지 않는다. 위험 알림이 뜬 소식은 가운데 알림으로 띄우지 않는다(routeNotice).
+// 결과 창(단계)이 떠 있는 동안 가운데 알림은 띄우지 않는다 (style.css).
 // 여기 적힌 것은 틀의 안내문(engine/shared/messages.ts)의 분류다. 게임이 더한 안내문은 게임의 모듈이 addNotices로 자기 분류를 등록한다 (이 게임: games/deungbul/client/words.ts).
 import type { MsgArg, MsgKey } from '../../shared/messages';
 import { $ } from '../app';
@@ -43,6 +46,9 @@ export function addNotices(more: { banner?: Partial<Record<MsgKey, Tone | { tone
 }
 
 const ui = { banner: $('banner'), bannerText: $('bannerText'), bannerSub: $('bannerSub'), feed: $('feed'), flash: $('flash') };
+/** 안내문을 가로채 다른 곳에 띄우는 길 (틀의 모드: 보고 있지 않은 쪽의 위험 → 위험 알림). 참을 돌려주면 그 안내문은 가운데·흘러가는 알림으로 띄우지 않는다 */
+const routes: ((k: MsgKey, a: MsgArg[], text: string) => boolean)[] = [];
+export function routeNotice(fn: (k: MsgKey, a: MsgArg[], text: string) => boolean): void { routes.push(fn); }
 const queue: { text: string; sub: string; tone: Tone; stale?: () => boolean }[] = [];
 let showing = false;
 
@@ -64,6 +70,8 @@ function next(): void {
 
 /** 화면 가운데 위에 크게 뜨는 알림. 여러 개가 겹치면 차례로 보여 준다. stale이 참을 돌려주면 차례가 와도 띄우지 않는다. */
 export function banner(text: string, tone: Tone = '', sub = '', stale?: () => boolean): void {
+  // 같은 글이 이미 떠 있거나(가운데 알림·위험 알림) 차례를 기다리면 다시 넣지 않는다
+  if ((!ui.banner.hidden && ui.bannerText.textContent === text) || queue.some((q) => q.text === text) || alertShows(text)) return;
   if (queue.length > 4) queue.shift(); // 너무 밀리면 오래된 것부터 버린다
   queue.push({ text, sub, tone, stale });
   if (!showing) next();
@@ -80,8 +88,37 @@ export function feed(text: string): void {
   setTimeout(() => d.remove(), 4500);
 }
 
+// ---------- 위험 알림: 보고 있지 않은 쪽의 위험 + 바로 가기 ----------
+let alertBox: HTMLElement | null = null;
+let alertTimer = 0;
+const alertShows = (text: string): boolean => !!alertBox && !alertBox.hidden && alertBox.querySelector('.alertText')?.textContent === text;
+/** 위험 알림을 닫는다 */
+export function closeDangerAlert(): void { if (alertBox) alertBox.hidden = true; clearTimeout(alertTimer); }
+/**
+ * 위험 알림 (보고 있지 않은 쪽의 위험): 붉은 띠에 글과 바로 가기 단추·닫기. 손으로 닫거나 12초 뒤 사라진다.
+ * 구역 밖에 둔다(홈 같은 페이지 위에도 보이게): PC는 화면 가운데 아래, 폰은 화면 가운데. 같은 글이 가운데 알림에 떠 있으면 그것을 거둔다 (한 곳에만)
+ */
+export function dangerAlert(text: string, go?: { label: string; onClick: () => void }): void {
+  if (!alertBox) {
+    alertBox = document.createElement('div');
+    alertBox.id = 'alertBox'; alertBox.className = 'alertBox'; alertBox.setAttribute('role', 'alert'); alertBox.hidden = true;
+    alertBox.innerHTML = '<span class="alertText"></span><button type="button" class="alertGo"></button><button type="button" class="alertX btn-ghost" aria-label="×">×</button>';
+    alertBox.querySelector('.alertX')!.addEventListener('click', closeDangerAlert);
+    $('hud').append(alertBox);
+  }
+  alertBox.querySelector('.alertText')!.textContent = text;
+  const btn = alertBox.querySelector<HTMLButtonElement>('.alertGo')!;
+  btn.hidden = !go;
+  btn.textContent = go?.label ?? '';
+  btn.onclick = go ? () => { closeDangerAlert(); go.onClick(); } : null;
+  if (!ui.banner.hidden && ui.bannerText.textContent === text) next();
+  alertBox.hidden = false;
+  clearTimeout(alertTimer);
+  alertTimer = window.setTimeout(closeDangerAlert, 12000);
+}
+
 // 언어를 바꾸면 떠 있던 알림이 이전 언어로 남는다: 한 줄 알림과 가운데 알림을 지운다 (대화창의 기록은 남긴다)
-onLangChange(() => { ui.feed.textContent = ''; queue.length = 0; ui.banner.hidden = true; });
+onLangChange(() => { ui.feed.textContent = ''; queue.length = 0; ui.banner.hidden = true; closeDangerAlert(); });
 
 /** 쓰러졌을 때 화면이 잠깐 어두워졌다 돌아온다 */
 function flash(): void {
@@ -95,9 +132,11 @@ export function notifySys(k: MsgKey, a: MsgArg[] = []): void {
   const make = L().msg[k];
   const text = make ? forInput(make(a)) : k;
   if (k === 'joined' || k === 'left') return; // 드나드는 소식이 대화와 큰 소식을 밀어낸다
+  // 다른 곳(위험 알림)이 가져간 안내문: 기록에만 남긴다
+  for (const fn of routes) if (fn(k, a, text)) { if (!QUIET.has(k)) logText(text, true); return; }
   if (FEED.has(k)) { feed(text); return; }
-  if (!QUIET.has(k)) logText(text);
   const tone = BANNER[k];
+  if (!QUIET.has(k)) logText(text, tone !== undefined);
   if (tone !== undefined) banner(text, tone, BANNER_SUB[k]?.(a) ?? '');
   if (k === 'died') flash();
 }

@@ -3,8 +3,8 @@
 //   영웅 장비 탭   메뉴의 '영웅 장비'(herogear 모듈): 가진 장비, 강화 창(지금 → 다음, 값, 확률), 분해
 //   편성의 진형    편성 탭의 앞줄·뒷줄(줄 바꾸기)과 시너지(태그마다의 수와 단)
 // 셈은 hud/herogrowcalc.ts (서버와 같은 engine/shared/defs/herogrow.ts의 셈). 서버의 짝은 systems/roster.ts, squad.ts, herogear.ts.
-import { heroDetailOn, heroDef, heroGearRules, heroRole, piecesOf, rarityDef, type HeroBonus, type HeroGearMe, type HeroGearPiece, type HeroesMe, type ItemId, type SkillId, type SquadMe } from '../../shared/defs';
-import { teamCss } from '../../shared/defs/teams';
+import { heroDetailOn, heroDef, heroGearRules, heroRole, piecesOf, type HeroBonus, type HeroGearMe, type HeroGearPiece, type HeroesMe, type ItemId, type SkillId, type SquadMe } from '../../shared/defs';
+import { tintRarity } from './rarity';
 import { bonusParts } from '../../shared/defs/herogrow';
 import { onMsg } from '../bus';
 import { L, t } from '../i18n';
@@ -37,7 +37,7 @@ export function openHero(id: string): void { detail = id; tab = 'level'; pickSlo
 /** 영웅 탭의 다시 그리기를 가르는 값 */
 export const growthSig = (): unknown => [detail, tab, pickSlot, enhUid, hgear, S.me?.items];
 
-const tinted = <T extends HTMLElement>(e: T, r: number): T => { e.style.setProperty('--rc', teamCss(rarityDef(r).color)); return e; };
+const tinted = tintRarity;
 const stars = (n: number) => '★'.repeat(Math.max(0, Math.min(9, n)));
 const wallet = (): Wallet => ({ gold: S.me?.gold ?? 0, sparks: S.me?.sparks ?? 0, items: S.me?.items ?? {} });
 const itemLabel = (id: string): string => L().items[id as ItemId]?.name ?? id;

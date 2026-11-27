@@ -20,8 +20,10 @@ export interface ScreenOpts {
   root?: boolean;
   /** 화면의 요소: 주면 쌓인 차례대로 겹친다(z-index 50부터, 바탕 페이지는 그대로). 페이지는 그 위에 다른 페이지·보기가 있으면 감춘다(class scrUnder) */
   el?: HTMLElement;
+  /** 뒤로 가기가 이 화면에 왔을 때 먼저 부른다: 참을 돌려주면 닫지 않는다 (전투 중 뒤로 = 일시정지 창: hud/battle.ts) */
+  onBack?: () => boolean;
 }
-interface Entry { id: string; kind: ScreenKind; close?: () => void; root: boolean; el?: HTMLElement }
+interface Entry { id: string; kind: ScreenKind; close?: () => void; root: boolean; el?: HTMLElement; onBack?: () => boolean }
 
 const stack: Entry[] = [];
 const fns: ((ids: readonly string[]) => void)[] = [];
@@ -65,7 +67,7 @@ export function openScreen(id: string, opts: ScreenOpts = {}): void {
   start();
   const at = stack.findIndex((e) => e.id === id);
   const old = at >= 0 ? stack.splice(at, 1)[0] : undefined;
-  const e: Entry = { id, kind: opts.kind ?? old?.kind ?? 'sheet', close: opts.close ?? old?.close, root: opts.root ?? old?.root ?? false, el: opts.el ?? old?.el };
+  const e: Entry = { id, kind: opts.kind ?? old?.kind ?? 'sheet', close: opts.close ?? old?.close, root: opts.root ?? old?.root ?? false, el: opts.el ?? old?.el, onBack: opts.onBack ?? old?.onBack };
   // 바탕 페이지는 언제나 맨 아래에
   if (e.root) stack.unshift(e); else stack.push(e);
   sync();
@@ -90,6 +92,7 @@ export function backScreen(): boolean {
   for (let i = stack.length - 1; i >= 0; i--) {
     const e = stack[i];
     if (e.root) continue;
+    if (e.onBack?.()) return true;
     closeScreen(e.id);
     return true;
   }
@@ -125,13 +128,12 @@ export function trackPanel(el: HTMLElement | null | undefined, opts: ScreenOpts 
   apply();
 }
 
-/** 틀의 창을 쌓임에 잇는다 (startClient가 모듈을 모두 엮은 뒤에 부른다): 메뉴·가방·지도·뽑기 결과·소탕 결과 */
+/** 틀의 창을 쌓임에 잇는다 (startClient가 모듈을 모두 엮은 뒤에 부른다): 메뉴·가방·지도·소탕 결과 (뽑기 연출은 hud/gachashow.ts가 스스로 넣는다) */
 export function initScreens(closeMap?: () => void): void {
   start();
   const byId = (id: string) => $(id);
   trackPanel(byId('menu'));
   trackPanel(byId('bag'));
   trackPanel(byId('wmap'), { close: closeMap });
-  trackPanel(byId('gachaPop'));
   trackPanel(byId('sweepPop'));
 }

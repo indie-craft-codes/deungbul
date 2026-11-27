@@ -88,7 +88,7 @@ export interface SquadPart { squad: string[]; squadBack: string[] }
 
 /** [stages] 지금 단계와 가장 멀리 깬 단계(없으면 ''), 자동 진행 (systems/stages.ts) */
 /** stars: 단계마다 딴 별(비트). 별 조건이 있는 게임에서 처음 별을 따면 생긴다 */
-export interface StagesPart { stage: { cur: string; best: string; auto: boolean; stars?: Record<string, number> } }
+export interface StagesPart { stage: { cur: string; best: string; auto: boolean; stars?: Record<string, number>; /** 고른 배속 (STAGE_RULES.speed) */ speed?: number } }
 
 /** [herogear] 가진 영웅 장비(낀 것 포함)와 다음 번호를 정하는 수 (systems/herogear.ts) */
 export interface HeroGearPart { hgear: HeroGearPiece[]; hgSeq: number }

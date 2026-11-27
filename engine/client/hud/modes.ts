@@ -3,7 +3,7 @@
 // 지금 모드는 문서의 body에 적힌다: data-mode="<모드 id>", data-mode-kind="field|stage". 게임의 스타일이 이것으로 모드마다 다른 겉모습을 준다.
 // 게임이 더 할 수 있는 것: 모드가 바뀔 때 듣기(onModeChange: 장면의 분위기, 게임의 창), 다른 쪽의 상황 듣기(onModeSide: 보이지 않는 쪽의 작은 표시),
 // 바꾸기(switchMode), 읽기(myMode, myModeSide). 다른 쪽의 위험(대역의 쓰러짐·물러남·멈춤, 단계의 멈춤)은 틀의 가운데 알림(banner)으로 뜬다.
-import { classOf, modeDef, otherMode, STAGE_RULE_VIEW, startMode, type ModeDef, type ModeMe, type ModeSideMe } from '../../shared/defs';
+import { classOf, MODE_RULE_VIEW, modeDef, otherMode, STAGE_RULE_VIEW, startMode, type ModeDef, type ModeMe, type ModeSideMe } from '../../shared/defs';
 import { autoOffByServer, resetAutoAnchor, setAutoGate } from '../auto';
 import { onFrame } from '../bus';
 import { hasModule } from '../mods';
@@ -20,7 +20,8 @@ import { makeHumanoid, setArmor, setBlade } from '../scene/models';
 import { S } from '../state';
 import { setMenuTabs } from './menu';
 import { redraw } from './menu/parts';
-import { addNotices } from './notify';
+import { addNotices, closeDangerAlert, dangerAlert, routeNotice } from './notify';
+import type { MsgKey } from '../../shared/messages';
 import { placeIn } from './layout';
 import { mountPanel } from './shell';
 
@@ -37,6 +38,8 @@ export function setModeHome(id: string, open: () => void): void { homes.set(id, 
 /** 지금 모드의 홈 화면을 연다 (게임의 '홈' 단추). 없으면 아무것도 하지 않는다 */
 export function openModeHome(): void { homes.get(mode.id || startMode())?.(); }
 const sideFns: ((s: Readonly<ModeSideMe>) => void)[] = [];
+/** 위험의 안내문이 어느 쪽(모드의 종류)의 일인가: 들판의 대역·자동 사냥은 field, 뒤에서 잇는 단계는 stage */
+const DANGER_SIDE: Partial<Record<MsgKey, 'field' | 'stage'>> = { modeStandDown: 'field', autoRetreat: 'field', autoNoPotion: 'field', autoDied: 'field', modeStandEnd: 'field', stageBgStop: 'stage' };
 
 /** 지금 모드 (서버가 알려 주기 전이면 처음 모드) */
 export const myMode = (): ModeDef | undefined => modeDef(mode.id || startMode());
@@ -110,8 +113,19 @@ export function initModes(): void {
     if (me.tag.el.classList.contains('modeOff') !== hide) me.tag.el.classList.toggle('modeOff', hide);
   });
   onLangChange(label);
-  // 다른 쪽의 위험은 가운데 알림으로 (게임이 같은 안내문을 다시 분류하면 게임의 것이 이긴다: keep)
+  // 위험의 안내문: 그 일이 일어난 쪽을 보고 있으면 가운데 알림 (게임이 같은 안내문을 다시 분류하면 게임의 것이 이긴다: keep)
   addNotices({ banner: { modeStandDown: 'bad', stageBgStop: 'bad', autoRetreat: 'bad', autoNoPotion: 'bad', autoDied: 'bad', modeStandEnd: 'bad' }, feed: ['modeOn', 'modeWait', 'modeStandOn'] }, true);
+  // 보고 있지 않은 쪽의 위험은 위험 알림 한 곳에만 (가운데 알림으로 다시 띄우지 않는다): 글과 그쪽으로 가는 단추
+  routeNotice((k, _a, text) => {
+    const kind = DANGER_SIDE[k];
+    const cur = myMode();
+    if (!kind || !cur || cur.kind === kind) return false;
+    const to = MODE_RULE_VIEW.list.find((m) => m.kind === kind);
+    if (!to) return false;
+    dangerAlert(text, { label: L().fmt.modeTo(uiText.get(to.name)), onClick: () => { if (myMode()?.id !== to.id) switchMode(to.id); } });
+    return true;
+  });
+  onModeChange(() => closeDangerAlert());
   // 들판의 대역: 그 사람의 직업·무기·갑옷·겉모습으로 그린 사람 (type = '직업|무기|갑옷', 이름은 그 사람의 이름)
   registerKind('stand', {
     model: (e) => {

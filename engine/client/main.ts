@@ -6,6 +6,7 @@
 //   hud/      패널, 대화창, 이름표         i18n/     언어
 //   bus       모듈이 스스로 끼어드는 자리   modules   덧붙는 기능 모듈의 목록
 // 틀의 스타일: 게임의 index.html이 틀의 폴더를 가리키지 않아도 되게 여기서 읽는다. 맨 먼저 읽어야 게임의 스타일(틀의 것을 덮어쓴다)보다 앞에 놓인다
+import './tokens.css';
 import './style.css';
 import { PROTOCOL, protocolFits } from '../shared/protocol';
 import { HOME_KEY, SKILL_SLOTS } from '../shared/defs';

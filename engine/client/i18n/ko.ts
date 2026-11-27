@@ -407,6 +407,13 @@ export const koBase = (n: ContentNames) => {
       chatFold: '접기',
       // ---- 화면 쌓기·수집형 홈·단계 정보 창·편성 확인·결과 창 (묶음 A·B: hud/screens.ts, homekit.ts, stagepage.ts) ----
       scrBack: '뒤로', scrHome: '홈',
+      hkEvent: '이벤트', hkSeason: '시즌', hkSoon: '곧 시작',
+      btlPaused: '일시정지', btlResume: '계속', btlHome: '홈으로', btlQuit: '포기', btlQuitArm: '한 번 더 누르면 포기', btlAuto: '자동',
+      btlPauseNote: '전투가 멈췄습니다. 홈으로 가면 전투는 뒤에서 이어지고, 포기하면 이 판을 끝냅니다.',
+      gsTap: '눌러서 열기', gsNext: '눌러서 다음', gsSkip: '건너뛰기', gsNew: 'NEW', gsOk: '확인',
+      cdSort: '정렬', cdSortRarity: '등급', cdSortPower: '전투력', cdSortLevel: '레벨', cdSortNew: '새로 얻음', cdAll: '전체',
+      cdGrow: '성장', cdStar: '돌파', cdSkill: '기술', cdMorph: '변신 시 능력치', cdToSquad: '편성에 넣기', cdFromSquad: '편성에서 빼기',
+      cdMorphGo: '이 모습으로 변신', cdGrowMore: '성장 자세히', cdNoSkill: '기본 공격만', cdSquadFull: '편성이 가득 찼습니다', cdClose: '닫기',
       stEnemies: '적', stRec: '권장 전투력', stMine: '내 편성', stStars: '별 조건', stFirst: '처음 깬 보상', stRepeat: '반복 보상',
       stCheck: '편성 확인', stGo: '출발', stBoss: '우두머리', stSweepNeedStars: '별을 모두 따면 소탕할 수 있습니다',
       starClear: '깸', starAlive: '아무도 쓰러지지 않음',
@@ -992,6 +999,14 @@ export const koBase = (n: ContentNames) => {
       liveSpan: (from: number, to: number) => `${whenText(from, 'ko-KR')} ~ ${whenText(to, 'ko-KR')}`,
       /** 끝까지 남은 시간 */
       liveLeft: (ms: number) => `${spanMs(Math.max(0, ms), 'ko')} 남음`,
+      liveStarts: (ms: number) => `${spanMs(Math.max(0, ms), 'ko')} 뒤 시작`,
+      btlSpeed: (x: number) => `×${x}`,
+      btlSpeedLocked: (id: string) => `${id} 단계를 깨면 배속이 열립니다`,
+      gsHead: (banner: string, n: number) => `${banner} · ${n}번`,
+      gsAgain: (n: number) => `한 번 더 ${n}번`,
+      cdOwned: (n: number, m: number) => `${n} / ${m}`,
+      cdWhyGold: (need: number) => `골드 ${need.toLocaleString('ko-KR')} 필요`,
+      cdWhyShards: (have: number, need: number) => `조각 ${have} / ${need}`,
       /** 상품의 값 (ev면 이벤트 재화) */
       goodsPrice: (n: number, cur: string, ev: boolean) => `${num(n)} ${ev ? '이벤트 ' : ''}${curName(cur)}`,
       /** 사람마다의 한정: 이번 기간에 산 수 / 한도 */

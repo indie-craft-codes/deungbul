@@ -14,7 +14,9 @@
 //   그동안 사람은 그 층에 없으므로 대신 싸우지 않고, 몬스터는 영웅만 노리며, 쓰러진 자리·실패 사건은 회차와 상관없다.
 // 별(StageDef.stars·STAGE_RULES.stars, 없으면 별이 없다): 깰 때 조건(깸·n초 안·아무도 쓰러지지 않음)마다 별 하나. 단계마다 가장 많이 딴 별을 남기고(stars),
 //   안내문 stageClear의 셋째 값으로 이번에 딴 별(비트)을 알린다. STAGE_RULES.sweep.allStars면 별을 다 딴 단계만 소탕할 수 있다.
-// 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }, 별을 땄으면 stars). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
+// 배속(STAGE_RULES.speed)·일시정지(STAGE_RULES.pause): 그 사람의 단계 층의 시간 배율(g.layerScale: ×2면 한 틱에 두 번, 멈추면 0)과 제한 시간·기다림을 함께 바꾼다.
+//   명령 { t: 'stage', a: 'speed', x } (unlock 단계를 깨야 ×2 이상), { a: 'pause', on }. 뒤에서 잇는 회차·대기실은 늘 ×1이고 멈추지 않는다. 일시정지는 maxS초 뒤 풀린다.
+// 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }, 별을 땄으면 stars, 배속을 골랐으면 speed). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
 import { IDLE_VIEW, MONSTERS, allStarsOf, anyStars, stageStars, starMask, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
@@ -51,6 +53,8 @@ interface Run {
   bg?: boolean;
   /** 이번 판에 편성(또는 사람)이 쓰러진 적이 있다 (별 조건 alive) */
   lost?: boolean;
+  /** 일시정지한 지 몇 초 (멈춰 있지 않으면 undefined) */
+  paused?: number;
 }
 
 /** 편성만 싸우는 단계 (STAGE_RULES.squadOnly) */
@@ -59,6 +63,9 @@ const SQUAD_ONLY = !!(STAGE_RULES as { squadOnly?: boolean }).squadOnly;
 const heroesOnly = (r: { bg?: boolean }): boolean => !!r.bg || SQUAD_ONLY;
 /** 별 조건이 있는 게임 (없으면 별을 셈하지도 알리지도 않는다: 예전과 같다) */
 const STARS = anyStars();
+/** 배속·일시정지의 규칙 (없으면 없다) */
+const SPEED = STAGE_RULE_VIEW.speed;
+const PAUSE_MAX_S = STAGE_RULE_VIEW.pause ? (typeof STAGE_RULE_VIEW.pause === 'object' ? STAGE_RULE_VIEW.pause.maxS : 600) : 0;
 
 /** 단계가 없다는 알림을 이미 했다 (한 프로세스에 한 번: 시험은 게임을 여러 번 만든다) */
 let warned = false;
@@ -129,7 +136,7 @@ export class Stages {
     const r = this.runs.get(p.id);
     if (!r) return false;
     if (r.state === 'lobby') { this.end(r); this.squadIn(p); return false; }
-    r.bg = true;
+    r.bg = true; r.paused = undefined; this.scale(r);
     for (const id of r.mobs) { const m = this.g.ents.get(id); if (m && m.targetId === p.id) m.targetId = 0; }
     this.squadIn(p);
     return true;
@@ -139,7 +146,7 @@ export class Stages {
     const r = this.runs.get(p.id);
     if (!r) return false;
     if (!r.bg && p.layer === r.layer) return true;
-    r.bg = false;
+    r.bg = false; this.scale(r);
     this.place(p, STAGE_RULES.arena.x, STAGE_RULES.arena.z + 3, r.layer);
     if (this.g.has('combat')) { p.targetId = 0; p.hp = Math.max(1, p.hp); }
     this.squadIn(p);
@@ -153,6 +160,8 @@ export class Stages {
     return {
       cur: STAGES[this.curIndex(p)]?.id ?? '', best: p.stage.best, auto: p.stage.auto,
       ...(STARS ? { stars: { ...(p.stage.stars ?? {}) } } : {}),
+      ...(SPEED ? { speed: this.speedOf(p), speedMax: this.speedMax(p) } : {}),
+      ...(PAUSE_MAX_S ? { paused: r?.paused !== undefined } : {}),
       run: r ? { id: r.stage.id, wave: r.wave, waves: waveCount(r.stage.def), foes: r.mobs.size, total: r.total, left: r.state === 'lobby' ? 0 : Math.ceil(Math.max(0, r.state === 'fight' || r.state === 'gap' ? r.left : r.wait)), state: r.state, boss: r.wave >= r.stage.def.waves.length && !!r.stage.def.boss } : null,
     };
   }
@@ -164,6 +173,8 @@ export class Stages {
     else if (m.a === 'leave') this.leave(p, true);
     else if (m.a === 'auto') { p.stage.auto = m.on === true; p.unsaved = true; }
     else if (m.a === 'sweep' && typeof m.id === 'string') this.sweep(p, m.id, m.n);
+    else if (m.a === 'speed' && SPEED) { const x = Number(m.x); if (Number.isInteger(x) && x >= 1 && x <= this.speedMax(p)) { p.stage.speed = x; p.unsaved = true; const r = this.runs.get(p.id); if (r) this.scale(r); } }
+    else if (m.a === 'pause' && PAUSE_MAX_S) { const r = this.runs.get(p.id); if (r && !r.bg && (r.state === 'fight' || r.state === 'gap')) { r.paused = m.on === true ? r.paused ?? 0 : undefined; this.scale(r); } }
     else if (m.a === 'go' && typeof m.id === 'string') {
       const i = stageIndex(m.id);
       if (i < 0) return;
@@ -173,6 +184,16 @@ export class Stages {
       this.start(p, i);
     }
   }
+
+  // ---------- 배속·일시정지 ----------
+  /** 지금 쓸 수 있는 가장 큰 배속 (잠겼으면 1) */
+  speedMax(p: Ent): number { return !SPEED ? 1 : SPEED.unlock && stageIndex(SPEED.unlock) > this.bestIndex(p) ? 1 : Math.max(1, Math.floor(SPEED.max)); }
+  /** 고른 배속 (쓸 수 있는 만큼으로 줄인다) */
+  speedOf(p: Ent): number { return Math.max(1, Math.min(p.stage.speed ?? 1, this.speedMax(p))); }
+  /** 회차의 시간 배율: 멈춤 0, 대기실·뒤에서 잇는 회차 1, 아니면 고른 배속 */
+  private rate(r: Run): number { return r.state === 'lobby' || r.bg ? 1 : r.paused !== undefined ? 0 : this.speedOf(r.p); }
+  /** 회차의 층에 시간 배율을 적는다 (1이면 지운다: 배율이 없는 층은 예전과 똑같이 돈다) */
+  private scale(r: Run): void { const k = this.rate(r); if (k === 1) this.g.layerScale.delete(r.layer); else this.g.layerScale.set(r.layer, k); }
 
   // ---------- 소탕 ----------
   /**
@@ -235,7 +256,8 @@ export class Stages {
       this.runs.set(p.id, r);
       this.byLayer.set(r.layer, r);
     }
-    r.stage = stage; r.wave = 0; r.left = stage.def.timeS ?? STAGE_RULES.timeS; r.state = 'fight'; r.wait = 0; r.lost = false;
+    r.stage = stage; r.wave = 0; r.left = stage.def.timeS ?? STAGE_RULES.timeS; r.state = 'fight'; r.wait = 0; r.lost = false; r.paused = undefined;
+    if (SPEED || PAUSE_MAX_S) this.scale(r);
     p.stage.cur = stage.id; p.unsaved = true;
     // 사람을 단계의 가운데로 (체력을 채운다: 앞 단계의 상처를 끌고 들어가지 않게). 뒤에서 이어 가는 회차는 사람이 이 층에 없다: 영웅만 가운데로
     if (!r.bg) {
@@ -264,7 +286,8 @@ export class Stages {
       this.byLayer.set(r.layer, r);
     }
     if (!r.stage) return;
-    r.state = 'lobby'; r.wave = 0; r.wait = 0; r.left = 0; r.total = 0;
+    r.state = 'lobby'; r.wave = 0; r.wait = 0; r.left = 0; r.total = 0; r.paused = undefined;
+    if (SPEED || PAUSE_MAX_S) this.scale(r);
     this.place(p, STAGE_RULES.arena.x, STAGE_RULES.arena.z + 3, r.layer);
     if (g.has('combat')) { p.hp = p.maxHp; p.targetId = 0; p.dead = false; }
     this.squadIn(p);
@@ -368,6 +391,7 @@ export class Stages {
 
   /** 회차를 끝낸다 (사람은 옮기지 않는다) */
   private end(r: Run): void {
+    this.g.layerScale.delete(r.layer);
     this.despawn(r);
     this.runs.delete(r.p.id);
     this.byLayer.delete(r.layer);
@@ -393,6 +417,9 @@ export class Stages {
       const p = r.p;
       if (this.g.ents.get(p.id) !== p) { this.end(r); continue; }
       if (r.state === 'lobby') continue;
+      // 배속·일시정지: 이 회차의 시간은 배율만큼 (멈춤은 maxS초까지)
+      if (r.paused !== undefined) { r.paused += dt; if (r.paused >= PAUSE_MAX_S) { r.paused = undefined; this.scale(r); } else continue; }
+      const d = SPEED && !r.bg ? dt * this.rate(r) : dt;
       // 뒤에서 이어 가는 회차: 영웅이 모두 쓰러졌으면 실패
       if (heroesOnly(r) && r.state === 'fight' && !this.anyHero(p)) { this.fail(r, 0); continue; }
       // 편성만 싸우는 게임: 보는 사람은 단계의 가운데에 묶인다 (화면의 눈이 싸움을 따라가게)
@@ -400,19 +427,19 @@ export class Stages {
       if (r.state === 'fight' || r.state === 'gap') {
         // 별 조건 alive: 이 판의 층에서 편성의 영웅이 쓰러졌다
         if (STARS && !r.lost && this.g.has('squad') && this.g.squad.heroes(p).some((e) => e.dead && e.layer === r.layer)) r.lost = true;
-        r.left -= dt;
+        r.left -= d;
         if (r.left <= 0) { this.fail(r, 1); continue; }
       }
-      if (r.state === 'gap') { r.wait -= dt; if (r.wait <= 0) { r.state = 'fight'; this.spawnWave(r); } continue; }
+      if (r.state === 'gap') { r.wait -= d; if (r.wait <= 0) { r.state = 'fight'; this.spawnWave(r); } continue; }
       if (r.state === 'clear' || r.state === 'fail') {
-        r.wait -= dt;
+        r.wait -= d;
         if (r.wait > 0) continue;
         // 뒤에서 이어 가는 회차는 자동 진행이 꺼졌거나 실패했으면 멈춘다 (회차를 닫는다)
         if (r.bg && (r.state === 'fail' || !p.stage.auto)) { const why = r.state === 'fail' ? 1 : 0, at = r.stage.id; this.end(r); this.squadIn(p); this.g.notify(p, 'stageBgStop', at, why); continue; }
         this.start(p, this.curIndex(p));
         continue;
       }
-      this.aim(r, dt);
+      this.aim(r, d);
     }
     if (this.returning.size) this.comeBack(dt);
   }
@@ -451,10 +478,11 @@ export class Stages {
   }
 
   // ---------- 저장 ----------
-  private saveOf(p: Ent): { cur: string; best: string; auto: boolean; stars?: Record<string, number> } | undefined {
+  private saveOf(p: Ent): { cur: string; best: string; auto: boolean; stars?: Record<string, number>; speed?: number } | undefined {
     const s = p.stage;
     const stars = s.stars && Object.keys(s.stars).length ? { stars: { ...s.stars } } : {};
-    return s.cur || s.best || !s.auto || stars.stars ? { cur: s.cur, best: s.best, auto: s.auto, ...stars } : undefined;
+    const speed = s.speed && s.speed > 1 ? { speed: s.speed } : {};
+    return s.cur || s.best || !s.auto || stars.stars || speed.speed ? { cur: s.cur, best: s.best, auto: s.auto, ...stars, ...speed } : undefined;
   }
   private loadOf(p: Ent, raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return;
@@ -465,6 +493,8 @@ export class Stages {
     // 지금 단계는 깬 단계의 다음을 넘지 않는다 (내용이 바뀌어 단계가 줄었을 때)
     if (stageIndex(cur) > stageIndex(best) + 1) cur = STAGES[stageIndex(best) + 1]?.id ?? best;
     p.stage = { cur, best, auto: d.auto !== false };
+    const sp = (d as { speed?: unknown }).speed;
+    if (SPEED && Number.isInteger(sp) && (sp as number) > 1 && (sp as number) <= SPEED.max) p.stage.speed = sp as number;
     // 별: 있는 단계의 0~255 정수만
     const st = (d as { stars?: unknown }).stars;
     if (st && typeof st === 'object') {

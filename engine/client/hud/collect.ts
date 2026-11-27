@@ -5,9 +5,8 @@
 // 기간이 있는 배너는 서버가 열려 있다고 보낸 것(GachaMe.open)만 보인다. 영웅 선택권(GACHA_RULES.select)이 있으면 뽑기 탭 끝에 고르는 줄이 붙는다.
 // 게임이 더 할 수 있는 것: 뽑기 결과를 받기(onGachaResult: 연출, 소리), 내 영웅·편성 읽기(myHeroes, mySquad).
 import * as THREE from 'three';
-import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, rarityDef, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
-import { teamCss } from '../../shared/defs/teams';
-import { $ } from '../app';
+import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
+import { rarityHex, tintRarity } from './rarity';
 import { onMsg } from '../bus';
 import { registerKind } from '../kinds';
 import { L, onLangChange, t } from '../i18n';
@@ -17,13 +16,14 @@ import { hasModule } from '../mods';
 import { send } from '../net';
 import { makeHumanoid, type HumanoidLook, type Model } from '../scene/models';
 import { S } from '../state';
-import { bannerPity, heroRows, openBanners, rateTable, squadToggle, tradeViews, type RateRow } from './collectcalc';
+import { bannerPity, heroRows, openBanners, rateTable, squadToggle, type RateRow } from './collectcalc';
 import { drawFormation, drawHeroDetail, growthSig, heroDetailShown, initHeroGrowth, myHeroGear, openHero } from './herogrow';
 import { addMenuTab } from './menu';
 import { button, el, redraw, row, span } from './menu/parts';
 import { addNotices } from './notify';
 import { confirmSpend } from './confirm';
-import { morphStatsOf } from './morph';
+import { drawCardList, redrawCard, type CardData } from './cards';
+import { gachaShowMoney, redrawGachaShow, setShowPic, startGachaShow } from './gachashow';
 
 /** 서버가 보낸 내 영웅·뽑기·편성 (개인 상태) */
 let heroes: HeroesMe = {};
@@ -38,6 +38,11 @@ const pullFns: ((banner: string, got: readonly PullGot[]) => void)[] = [];
 export const myHeroes = (): Readonly<HeroesMe> => heroes;
 /** 내 편성과 그 전투력 */
 export const mySquad = (): Readonly<SquadMe> => squad;
+/** 영웅의 초상 그림 (카드 목록·카드 상세·뽑기 연출·전투 초상이 함께 쓴다). 게임이 setHeroPic으로 정한다 (없으면 이름의 첫 글자) */
+let picFn: (id: string) => string | undefined = () => undefined;
+export const heroPic = (id: string): string | undefined => picFn(id);
+/** 영웅의 초상 그림을 정한다 (메아리 계약: 캐릭터 정의의 charPortrait) */
+export function setHeroPic(fn: (id: string) => string | undefined): void { picFn = fn; setShowPic(fn); }
 /** 뽑기 결과를 받는다 (결과 창이 뜨는 것과 함께) */
 export function onGachaResult(fn: (banner: string, got: readonly PullGot[]) => void): void { pullFns.push(fn); }
 
@@ -51,7 +56,7 @@ let heroModel: ((h: HeroModelInfo) => Model | null | undefined) | null = null;
 export function setHeroModel(fn: (h: HeroModelInfo) => Model | null | undefined): void { heroModel = fn; }
 
 /** 등급의 색을 입힌 요소 */
-function tinted<T extends HTMLElement>(e: T, r: number): T { e.style.setProperty('--rc', teamCss(rarityDef(r).color)); return e; }
+const tinted = tintRarity;
 const money = (cur: Coin) => (S.me ? (cur === 'gold' ? S.me.gold : S.me.sparks) : 0);
 const stars = (n: number) => '★'.repeat(Math.max(0, Math.min(9, n)));
 const roleName = (id: string) => uiText.get(heroRole(id).name);
@@ -59,26 +64,17 @@ const roleName = (id: string) => uiText.get(heroRole(id).name);
 // ---------- 영웅 탭 ----------
 function drawHeroes(list: HTMLElement): void {
   if (drawHeroDetail(list, heroes)) return; // 영웅 상세를 펼쳤다 (성장을 켠 게임: hud/herogrow.ts)
-  const loc = L(), rows = heroRows(heroes, money(HERO_RULES.levelCur), squad.ids, myHeroGear());
-  if (!rows.some((r) => r.owned)) list.append(el('note', t('heroNone')));
+  if (!Object.keys(heroes).length) list.append(el('note', t('heroNone')));
   drawTradeHead(list);
-  for (const r of rows) {
-    const name = tinted(el('iname', heroName(r.id)), r.rarity);
-    name.append(span('hstar', stars(r.stars)));
-    if (r.inSquad) name.append(span('hsq', t('tabSquad')));
-    if (!r.owned) { list.append(row(name, `${loc.fmt.heroRole(roleName(r.id), rarityName(r.rarity))} · ${t('heroNotOwned')}`, [], 'hrow off')); continue; }
-    const note = el('note');
-    note.append(el('', `${loc.fmt.heroRole(roleName(r.id), rarityName(r.rarity))} · ${loc.fmt.heroLv(r.lv, r.maxLv)}`), el('', loc.fmt.heroStats(r.atk, r.hp, r.power)), el('', r.starNeed ? loc.fmt.heroShards(r.shards, r.starNeed) : `${loc.fmt.heroShards(r.shards, 0).split('/')[0]} · ${t('heroMax')}`));
-    // 변신의 능력치 대체 방식(MORPH_RULES.stats): 이 카드로 변신했을 때의 능력치 (변신 탭과 같은 셈)
-    const ms = hasModule('morph') ? morphStatsOf(r.id) : null;
-    if (ms) note.append(el('mstat', loc.fmt.morphStats(ms.s.hp, ms.s.atk)));
-    const lvBtn = button(r.levelCost ? `${t('heroLevelBtn')} · ${loc.fmt.heroCost(r.levelCost, HERO_RULES.levelCur)}` : t('heroMax'), () => send({ t: 'hero', a: 'level', id: r.id }), !r.canLevel);
-    const starBtn = button(t('heroStarBtn'), () => send({ t: 'hero', a: 'star', id: r.id }), !r.canStar);
-    // 재료로 조각 얻기 (HERO_RULES.trade): 재료마다 단추 하나
-    const trades = tradeViews(r.id, r.owned, S.me?.items ?? {}).map((x) => button(loc.fmt.heroTradeBtn(x.item, x.cost, x.shards), () => send({ t: 'hero', a: 'trade', id: r.id, item: x.item }), !x.can));
-    list.append(row(name, note, [lvBtn, starBtn, ...trades, ...(heroDetailShown() ? [button(t('heroDetail'), () => openHero(r.id))] : [])], 'hrow'));
-  }
+  // 격자·정렬·거르기·카드 상세 (hud/cards.ts)
+  drawCardList(list, cardData, () => redraw());
 }
+/** 카드 목록·상세가 읽는 것 */
+const cardData = (): CardData => ({
+  heroes, squad: squad.ids, size: SQUAD_RULES.size, money: money(HERO_RULES.levelCur), cur: HERO_RULES.levelCur, pic: heroPic, gear: myHeroGear(),
+  gotAt: (id) => gacha.log.find((g) => g.h === id)?.at ?? 0,
+  ...(heroDetailShown() ? { grow: (id: string) => openHero(id) } : {}),
+});
 
 /** 재료 교환이 있는 게임: 영웅 탭 위에 가진 재료와 규칙 */
 function drawTradeHead(list: HTMLElement): void {
@@ -203,24 +199,9 @@ function drawSquad(list: HTMLElement): void {
   }
 }
 
-// ---------- 뽑기 결과 창 ----------
-let popTimer = 0;
+// ---------- 뽑기 결과: 연출 (hud/gachashow.ts) ----------
 function showPull(b: string, got: readonly PullGot[]): void {
-  const pop = $('gachaPop'), cards = $('gachaCards');
-  cards.textContent = '';
-  const top = Math.max(...got.map((g) => g.r));
-  for (const g of got) {
-    const c = el('gcard' + (g.r === top && top > 0 ? ' top' : ''));
-    tinted(c, g.r);
-    const name = document.createElement('b'); name.textContent = heroName(g.h);
-    c.append(name, el('', rarityName(g.r)), span('', g.dup ? L().fmt.gachaDup(g.n) : L().fmt.gachaNew()));
-    if (g.pity) c.append(span('', t('gachaPityMark')));
-    cards.append(c);
-  }
-  $('gachaPopTitle').textContent = `${t('gachaResult')} · ${uiText.get(BANNER_TABLE[b]?.name ?? b)}`;
-  pop.hidden = false;
-  clearTimeout(popTimer);
-  popTimer = window.setTimeout(() => { pop.hidden = true; }, 7000);
+  startGachaShow(b, got);
   for (const fn of pullFns) fn(b, got);
 }
 
@@ -237,7 +218,7 @@ function heroLook(): void {
       const parts = d?.look, hl: HumanoidLook = { cloth: parts?.colors.cloth ?? cloth, hand: hand === false ? '' : hand, skin: parts?.colors.skin ?? 0xf0c9a0, hero: e.type, rarity: r, ...(parts ? { look: parts } : {}) };
       const m = heroModel?.({ id: e.type, rarity: r, look: hl }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, undefined, { hero: e.type, rarity: r }, parts);
       let mat = rings.get(r);
-      if (!mat) rings.set(r, mat = new THREE.MeshBasicMaterial({ color: rarityDef(r).color, transparent: true, opacity: 0.85 }));
+      if (!mat) rings.set(r, mat = new THREE.MeshBasicMaterial({ color: rarityHex(r), transparent: true, opacity: 0.85 }));
       const ring = new THREE.Mesh(ringGeo, mat);
       ring.position.y = 0.04;
       m.root.add(ring);
@@ -256,7 +237,8 @@ export function initRoster(): void {
   const trade = Object.keys(heroTrades()).length > 0;
   addMenuTab({ id: 'heroes', label: () => t('tabHeroes'), draw: drawHeroes, sig: () => (trade ? [heroes, squad.ids, S.me?.gold, S.me?.sparks, growthSig(), S.me?.items] : [heroes, squad.ids, S.me?.gold, S.me?.sparks, growthSig()]), mod: 'roster', dot: () => heroRows(heroes, money(HERO_RULES.levelCur)).some((r) => r.canStar) });
   if (trade) addNotices({ feed: ['heroTraded', 'itemShort'] });
-  onMsg('me', (m) => { if (m.k === 'heroes') { heroes = m.s as HeroesMe; redraw(true); } });
+  onMsg('me', (m) => { if (m.k === 'heroes') { heroes = m.s as HeroesMe; redraw(true); redrawCard(); } });
+  onMsg('stat', redrawCard);
   addNotices({ feed: ['costShort', 'heroUp', 'heroStar', 'heroMaxLv', 'heroShards', 'heroNew'] });
   initHeroGrowth();
 }
@@ -264,20 +246,15 @@ export function initRoster(): void {
 export function initGacha(): void {
   // 알림 점: 열린 배너 가운데 1번 뽑을 재화가 있다 (지금 할 수 있는 것)
   addMenuTab({ id: 'gacha', label: () => t('tabGacha'), draw: drawGacha, sig: () => [gacha, [...ratesOpen], S.me?.gold, S.me?.sparks], mod: 'gacha', dot: () => openBanners(gacha).some((id) => money(BANNER_TABLE[id].cur) >= BANNER_TABLE[id].one) }, 'heroes');
-  // 결과 창은 문서의 맨 끝에 붙인다: 메뉴 창(뽑기 탭에서 누른다) 위에 떠야 한다
-  const pop = document.createElement('div');
-  pop.className = 'panel'; pop.id = 'gachaPop'; pop.hidden = true; pop.setAttribute('role', 'dialog');
-  pop.innerHTML = '<div class="ttitle" id="gachaPopTitle"></div><div id="gachaCards"></div>';
-  document.body.append(pop);
-  $('gachaPop').addEventListener('click', () => { $('gachaPop').hidden = true; });
   onMsg('me', (m) => { if (m.k === 'gacha') { gacha = m.s as GachaMe; redraw(true); } });
   onMsg('gacha', (m) => showPull(m.b, m.got));
-  onLangChange(() => { $('gachaPop').hidden = true; });
+  onLangChange(redrawGachaShow);
+  onMsg('stat', gachaShowMoney);
   addNotices({ feed: ['bannerClosed', 'heroPicked', 'itemShort', 'costShort'] });
 }
 
 export function initSquad(): void {
   addMenuTab({ id: 'squad', label: () => t('tabSquad'), draw: drawSquad, sig: () => [heroes, squad, growthSig()], mod: 'squad' }, hasModule('gacha') ? 'gacha' : 'heroes');
-  onMsg('me', (m) => { if (m.k === 'squad') { squad = m.s as SquadMe; redraw(true); } });
+  onMsg('me', (m) => { if (m.k === 'squad') { squad = m.s as SquadMe; redraw(true); redrawCard(); } });
   heroLook();
 }

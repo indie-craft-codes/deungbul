@@ -18,6 +18,10 @@ import { makeBox } from './scene/models';
 import { decodeLook, type Look } from '../shared/defs/look';
 import './scene/look'; // 부품으로 된 사람형을 그리는 법 (models.ts의 defaultHumanoid가 겉모습이 있을 때 부른다)
 
+/** 누가 기술을 썼다 (사건 's': 쓴 엔티티 id, 기술 id). 전투 화면의 초상 칸이 기술 준비를 셈한다 (hud/battle.ts) */
+const castFns: ((id: number, skill: string) => void)[] = [];
+export function onCast(fn: (id: number, skill: string) => void): void { castFns.push(fn); }
+
 const INTERP_MS = 150; // 다른 엔티티는 이만큼 과거 시점을 그려서 스냅샷 사이를 부드럽게 잇는다
 const SWING_S = 0.3;
 const DIE_S = 0.3;
@@ -351,6 +355,7 @@ function onEvent(e: Ev, me: Me): void {
     }
     case 's': {
       swing(e[1]);
+      for (const fn of castFns) fn(e[1], e[2]);
       // 보스의 내려치기 예고: 맞는 범위가 붉은 고리로 천천히 차오른다. 다 차기 전에 벗어나야 한다
       if (e[2] === 'slam') { const b = posOf(e[1]); if (b) burst(b.x, b.z, BOSS.slamRadius, 0xff5a4a, BOSS.slamWarnS); break; }
       // 범위 기술: 대상이 있으면 대상 자리에, 없으면 쓴 사람 자리에 고리가 퍼진다

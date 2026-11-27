@@ -576,21 +576,21 @@ export function initScene(): void {
 - 사람 모델(플레이어, 상인, NPC, 사람형 몬스터 모두)을 바꾸려면 `setHumanoidBody((look) => Model)`. `look`은 옷 색(`cloth`), 손 모양(`hand`), 살갗(`skin`)이다. 옷 색은 틀이 정한다(나는 붉은 옷, 남은 id마다 열 가지 가운데 하나): 사람마다 게임이 정하려면(팀 색) 6절 '사람마다의 값과 겉모습'의 `setPlayerLook`. 조금만 바꾸려면 위처럼 `defaultHumanoid(look)`을 불러 고치고(`m.head` 머리, `m.rig` 팔다리), 몸을 처음부터 짜려면 팔다리 넷 `rig`(`{ ll, rl, la, ra }`, `limb`으로 만든다)을 두고 손은 `attachHand(look.hand, { root, rig, cloth: 재질 })`로 붙인다(틀의 검·활·지팡이와 게임이 등록한 손 모양이 그대로 붙는다). 무기의 겉모습은 돌려준 `blade`로 따라간다.
 - 모델을 등록하지 않은 몬스터는 눈 달린 덩어리로 뜬다. 먼저 띄우고 나중에 꾸며도 된다.
 - 모델의 약속: 발이 원점, +Z를 바라본다. `{ root, legs }`를 돌려주면 네발 걸음(`legs`는 `limb()`가 돌려준 다리 묶음 넷의 배열: 앞왼, 앞오른, 뒤왼, 뒤오른), `{ root, rig }`면 사람 걸음(`rig`는 팔다리 넷 `{ ll, rl, la, ra }`), `{ root, blob }`이면 통통 튀는 동작을 틀이 입힌다(`blob`은 묶음이 아니라 **메시 하나**: `part(…)`가 돌려준 것). 크기를 바꾸려면 안쪽 묶음에 준다(틀이 쓰러지는 연출에서 `root`의 크기를 바꾼다).
-- 창의 색은 css 변수로 정한다. 게임의 css는 틀의 것 뒤에 읽혀 덮어쓴다(모듈에서 `import './sample.css'`).
+- 창의 색은 css의 **디자인 토큰**으로 정한다(24절). 게임의 css는 틀의 것 뒤에 읽혀 덮어쓴다(모듈에서 `import './sample.css'`).
 
 ```css games/sample/client/sample.css
 :root {
   --sky: #d9b48a;
-  --ink: #1d1712;
-  --ink-rgb: 29, 23, 18;
-  --panel: rgba(var(--ink-rgb), .86);
-  --cover-rgb: 20, 14, 9;
-  --line: rgba(255, 190, 120, .3);
-  --gold: #ffb057;
+  --c-bg: #d9b48a;
+  --c-surface: #1d1712;
+  --c-surface-rgb: 29, 23, 18;
+  --c-overlay-rgb: 20, 14, 9;
+  --c-line: rgba(255, 190, 120, .3);
+  --c-accent: #ffb057;
 }
 ```
 
-- 틀의 색 변수: `--sky`(문서 바탕), `--ink`와 `--ink-rgb`(창의 바탕색. 둘을 같은 색으로: 반투명한 바탕들이 `--ink-rgb`를 쓴다), `--panel`, `--cover-rgb`(화면을 덮는 막), `--line`, `--fg`, `--dim`, `--gold`, `--on-gold`(금빛 단추 위의 글자), `--good`·`--bad`·`--ally`(좋음·나쁨·파티원), `--hp`, `--xp`, `--icon-bg`(그림 칸의 바탕), `--font`, `--mono`. 기본값과 뜻은 `engine/client/style.css`의 맨 위.
+- 토큰(전체 목록과 기본값은 `engine/client/tokens.css`): 색 `--c-bg`(문서 바탕), `--c-surface`와 `--c-surface-rgb`(창의 바탕색. 둘을 같은 색으로: 반투명한 바탕들이 `-rgb`를 쓴다), `--c-overlay-rgb`(화면을 덮는 막), `--c-line`, `--c-text`·`--c-text-2`·`--c-text-3`(본문·보조·흐림), `--c-accent`·`--c-on-accent`(주 행동과 그 위의 글자), `--c-good`·`--c-bad`·`--c-warn`·`--c-ally`, `--c-hp`·`--c-xp`, 등급 색 `--rar-*`, 글자 크기 `--fs-xs`~`--fs-3xl`, 모서리 `--r-sm`·`--r-md`·`--r-lg`, 층 `--z-*`, 움직임 `--dur-*`. 예전 이름(`--sky`·`--ink`·`--ink-rgb`·`--panel`·`--cover-rgb`·`--line`·`--fg`·`--dim`·`--gold`·`--on-gold`·`--good`·`--bad`·`--ally`·`--hp`·`--xp`·`--icon-bg`)도 남아 있어 새 토큰의 기본값이 그것을 읽는다: 예전 이름만 적은 게임도 그대로 보인다. `--sky`는 문서 바탕(`--c-bg`)의 예전 이름이라 둘을 함께 적었다.
 
 ### 카메라 (선택)
 
@@ -2830,7 +2830,7 @@ export const CODEX = { echoes: { name: 'codexEchoes', of: 'hero', rewards: [{ n:
 - 업적의 종류는 사건의 누적 수뿐이다(레벨·모은 수 같은 상태 업적은 게임이 `g.daily.add`로 센다).
 - 웹 관리 화면의 쿠폰 만들기·일괄 우편 칸은 보상을 CLI의 선택 글로 적는다(`--gold 100 --item id:2`).
 
-## 23. 장르별 기본 화면: 화면 쌓기, 폰 HUD 구역, 재화 줄, 알림 점, 수집형 홈, 단계 화면
+## 23. 장르별 기본 화면: 화면 쌓기, 폰 HUD 구역, 재화 줄, 알림 점, 수집형 홈(이벤트 배너), 단계 화면
 
 [screens.md](screens.md) 9절의 묶음 A·B. 화면의 모양(페이지·구역·창·연출의 차례)은 틀이, 글·그림·색·어느 부품을 쓸지는 게임이 정한다. 쓰지 않으면 예전과 같다(등불지기·예제는 PC 화면이 그대로이고, 폰에서만 구역 배치가 겹침을 줄인다).
 
@@ -2885,7 +2885,8 @@ export const CODEX = { echoes: { name: 'codexEchoes', of: 'hero', rewards: [{ n:
 | `go` | 진행 단추 `{ label, sub, onClick, dot }`: 오른쪽 아래 엄지 자리, 가장 크다 |
 | `info()` | 진행 단추 곁의 작은 글(줄바꿈 `\n`) |
 | `dock` | 아래 띠 5~6칸 `{ id, label, dot?, locked?, onClick }`(`locked`가 글을 돌려주면 잠김) |
-| `banners()` | 왼쪽 배너 `{ id, text, sub?, dot?, onClick? }` |
+| `events()` | 왼쪽 열의 이벤트 배너(코드로 그린 카드, 넘김·점: 아래 '홈의 이벤트 배너') |
+| `banners()` | 배너 아래 작은 바로 가기 줄 `{ id, text, icon?, sub?, dot?, onClick? }` |
 | `slot('corner' / 'status' / 'side')` | 게임이 요소를 붙이는 자리: 위 오른쪽, 재화 줄 아래의 상태 줄(다른 모드의 작은 표시), 왼쪽 배너 아래 |
 
 배치: 세로는 위 재화 줄 → 상태 줄 → 제목 → (왼쪽 배너 | 가운데 대표) → (정보 | 진행 단추) → 아래 띠. **가로(폰 가로·PC)는 대표를 왼쪽 가운데, 상태 줄·진행 단추·띠(3열 격자)를 오른쪽에** 두어 높이 390px에서도 단추가 화면 안에 남는다. 높이가 모자라면 페이지가 스크롤된다. 색은 게임의 css가 `--hk-bg`·`--hk-accent`·`--hk-ink`·`--hk-title`로.
@@ -2918,3 +2919,113 @@ export const CODEX = { echoes: { name: 'codexEchoes', of: 'hero', rewards: [{ n:
 
 - `TutorialStep.when`: 그 단계를 보일 때(지금 모드·화면이 맞을 때)만 카드를 보인다. 아니면 접어 두고 맞으면 다시 보인다(진행은 그대로). `target`은 함수도 된다(화면마다 단추가 다를 때: 메아리 계약의 '울림골'은 홈의 아래 띠, 전투 중에는 '울림골 가기'). 카드가 강조한 요소를 덮으면 화면의 반대쪽 반으로 비킨다. '건너뛰기'는 카드 머리의 작은 단추이고 한 번 더 눌러야 건너뛴다.
 - `#hud` 층은 누르기를 받지 않는다(`pointer-events: none`). 그 안에 붙은 단추·입력·고르기는 틀이 늘 누르기를 받게 한다(게임이 `.panel`이 아닌 상자에 붙여도). 홈 키트·단계 화면은 문서 끝에 붙어 기본으로 눌린다. 화면을 확인할 때는 보이는 단추마다 가운데의 `document.elementFromPoint`가 그 단추인지 본다(코드의 `click()`은 덮인 단추도 눌러 시험이 못 잡는다).
+
+### 홈의 이벤트 배너 (`makeHome`의 `events`)
+
+| 칸 | 무엇 |
+|---|---|
+| `events()` | 왼쪽 열의 배너 `{ id, title, tag?, left?, art?: { from, to, glyph? }, dot?, onClick? }`. 그림 파일 없이 코드로 그린다(색 두 개의 바탕 + 큰 글자 그림 + 제목 + 머리표 + 남은 기간). 여럿이면 6초마다 넘어가고(움직임 줄이기면 저절로 넘기지 않는다) 밀어서 넘기며 아래에 점, 비면 칸을 비운다 |
+| `banners()` | 배너 아래 작은 바로 가기 줄 `{ id, text, icon?, dot?, onClick? }`(우편·확률·설정 따위, 두 칸씩). 홈은 배너가 중심이다 |
+| `liveBanners()` | 라이브 콘텐츠(22절)에서 배너로 쓸 것: 열린 기간 이벤트, 지금 시즌, 7일 안에 열릴 이벤트 `{ id, kind, name, from, to, open, ready? }`. 글은 틀의 `t('hkEvent')`·`t('hkSeason')`·`t('hkSoon')`·`fmt.liveLeft`·`fmt.liveStarts` |
+
+메아리 계약: 울림 축제(열리기 전에는 '곧 시작 · n일 뒤 시작')와 메아리의 계절을 배너로, 누르면 이벤트·시즌 탭. 배너의 색은 게임 css의 토큰(`--ep-fest-a` …).
+
+## 24. 디자인 체계와 수집형의 손맛: 토큰, 단추, 등급 색, 알림 규칙, 전투 화면, 뽑기 연출, 카드 목록
+
+[ux-review.md](ux-review.md) 3절의 U1(디자인 체계)과 [screens.md](screens.md) 9절의 묶음 C. 쓰지 않으면 예전과 같다(서버는 규칙 칸을 적은 게임만 바뀐다. 등불지기의 황금 실행은 그대로).
+
+### 디자인 토큰 (`engine/client/tokens.css`)
+
+틀의 스타일(`style.css`)과 틀의 부품은 토큰의 이름만 쓴다. 게임은 자기 css에서 **값만** 덮어쓴다: `:root`는 게임 전체, `body[data-mode="…"]`는 그 모드에서(그 안의 틀 창·메뉴·확인 창까지 함께 바뀐다), 요소 하나는 그 안만.
+
+| 묶음 | 토큰 | 쓰임 |
+|---|---|---|
+| 바탕 | `--c-bg`, `--c-surface`(+`-rgb`), `--c-panel`(파생), `--c-overlay-rgb`, `--c-fill-1`·`-2`, `--c-sunk`·`-1`·`-2`·`-3` | 문서 바탕 / 창(불투명) / HUD 위 작은 창 / 덮는 막 / 창 안의 칸 / 움푹한 칸 |
+| 선·글자 | `--c-line`, `--c-line-strong`(파생), `--c-text`·`-2`·`-3`, `--c-title`(파생) | 글자는 바탕 위 대비 4.5:1 이상. `-3`은 흐린(못 누르는) 것에만 |
+| 행동·상태 | `--c-accent`·`--c-on-accent`·`--c-accent-grad`, `--c-good`·`--c-bad`·`--c-warn`·`--c-info`, `--c-danger-fill`, `--c-hp`·`--c-xp`, `--c-dot` | 주 행동(금빛) / 상태 / 위험 알림·포기 |
+| 등급 | `--rar-common`·`uncommon`·`rare`·`epic`·`legend`·`myth` | 아래 '등급 색 표' |
+| 글자 크기 | `--fs-xs` 12 · `--fs-sm` 13 · `--fs-md` 14(본문) · `--fs-lg` 16 · `--fs-xl` 20 · `--fs-2xl` 24 · `--fs-3xl` 30 | 이보다 작은 글은 없다. iOS 입력칸은 따로 16px 그대로 |
+| 간격·모서리 | `--sp-1`~`--sp-6`(4~32), `--r-sm`·`--r-md`·`--r-lg`·`--r-pill` | 게임은 모서리 넷만 바꿔 분위기를 낸다(등불지기 4·6·12, 메아리 계약 6·10·16) |
+| 그림자·층 | `--shadow-1`·`-2`, `--z-zone` < `--z-hud-float` < `--z-page` < `--z-modal` < `--z-float` < `--z-popup` < `--z-tutorial` < `--z-stpage` < `--z-sheet` < `--z-menu` < `--z-toast` < `--z-reveal` < `--z-confirm` < `--z-tip` | 새 창은 숫자를 고르지 않고 층의 이름을 쓴다 |
+| 움직임 | `--dur-fast` 120ms · `--dur-base` 200 · `--dur-slow` 350 · `--dur-reward` 600, `--ease-out`·`--ease-in` | 움직임 줄이기(`prefers-reduced-motion`)면 모두 1ms |
+| 누르는 크기 | `--tap` (PC 32px, 터치 44px) | 아래 '단추' |
+
+- **파생 토큰**(`--c-panel`·`--c-line-strong`·`--c-title`)은 `body`에서 셈한다: `body[data-mode]`에서 바탕 토큰을 바꾸면 따라 바뀐다. 그것만 따로 바꾸려면 `body`나 그 아래에서 적는다.
+- **예전 이름**(`--ink`·`--gold` …)은 남아 새 토큰의 기본값이 된다. 새 게임은 새 이름을 쓴다. 화면 코드가 색을 읽어야 하면(`cssVar('--c-surface')`: 지도) 새 이름으로 읽는다.
+- 게임만의 색은 게임 css의 `:root`에 이름(`--ep-…`, `--db-…`)으로 한 번만 적고 규칙은 그 이름을 쓴다(메아리 계약: 규칙 안의 생 색 0곳).
+
+```css
+/* 메아리 계약: 울림골(:root)과 탑이 같은 토큰을 다른 값으로 (games/echopact/client/echopact.css) */
+body[data-mode="tower"] {
+  --c-surface: #1c1630;
+  --c-surface-rgb: 28, 22, 48;
+  --c-line: rgba(184, 160, 255, .42);
+  --c-accent: var(--ep-amber);
+  --c-title: var(--ep-cream);
+}
+```
+
+### 단추
+
+| 종류 | 클래스 | 쓰임 |
+|---|---|---|
+| 주 | `.btn-primary` (틀의 맨 `button`과 같다) | 그 화면의 한 다음 행동. 한 화면에 하나, 많아야 둘 |
+| 보조 | `.btn-secondary` (예전 `.plain`) | 다른 행동 |
+| 글자만 | `.btn-ghost` | 건너뛰기·닫기·넘기기 |
+| 위험 | `.btn-danger` (+ `.armed`) | 되돌릴 수 없는 것: 두 번 누름과 함께 (전투의 '포기') |
+| 크기 | `.btn-lg`(52px, 엄지 자리), `.btn-sm` | 터치에서는 어느 것이든 누르는 범위 44px(`--tap`) |
+| 토글 | `.toggle[aria-pressed]` | 켬/끔: 금빛 점 (탑의 자동 진행, 전투의 자동) |
+
+- **눌림**: 누르는 즉시 `scale .96` + 어둡게(transform이 아닌 `scale`이라 자리를 잡는 transform과 겹치지 않는다).
+- **누르는 크기**: 터치(`pointer: coarse`)에서 `button`·`select`·`[role=button]`은 44px 이상. 보이는 모양을 작게 두어야 하는 것(대화 탭, 재화의 '+', 배너의 점)은 `::before`로 누르는 범위만 넓힌다.
+- **흐림의 까닭**: `parts.button(글, 누르면, 흐림, 까닭)`(입구 `menuButton`) 또는 `whyOf(단추, 까닭)` — 단추 안의 작은 줄과 툴팁(폰은 길게 누르면). 까닭이 있는 흐린 단추는 글이 읽히게 덜 흐리다(`.has-why`). 예: 카드 상세의 '별 올리기 · 조각 0 / 20', 뽑기 요약의 '한 번 더'(모자란 재화).
+
+### 등급 색 표 (`engine/client/hud/rarity.ts`)
+
+`--rar-<등급 이름>` 하나를 카드 테두리·뽑기 연출·이름 색·장비 줄(장비의 등급 1·2·3 = uncommon·rare·epic)·3D 발밑 고리가 함께 쓴다. 영웅의 등급(`HeroRarityDef.id`: 틀의 기본 common·rare·legend)이 그 이름이면 토큰, 아니면 내용의 `color`. `tintRarity(요소, 등급)`(`--rc`와 `data-rar`), `rarityCss(등급)`, `rarityHex(등급)`(3D 재질). 게임은 css에서 `--rar-legend: #f6b93b;`처럼 덮어쓴다.
+
+### 알림 규칙 (`engine/client/hud/notify.ts`)
+
+한 소식은 **한 곳에만** 뜬다.
+
+| 종류 | 언제 | 부품 |
+|---|---|---|
+| 가운데 알림 | 지금 보고 있는 화면의 큰 일(쓰러짐·레벨 상승·장 완료) | `banner`, `addNotices({ banner })` |
+| 흘러가는 알림(토스트) | 내가 방금 한 일의 결과·거절 사유 | `feed`, `addNotices({ feed })` |
+| 위험 알림 | 보고 있지 않은 쪽(다른 모드·뒤에서 잇는 일)의 위험 + 바로 가기 단추. 손으로 닫거나 12초 | `dangerAlert(글, { label, onClick })`, `routeNotice(fn)` |
+| 상태 줄 | 지금의 상태를 짧은 낱말로(게임의 작은 표시·단계 막대). 사건의 문장을 되풀이하지 않는다 | 게임의 것 |
+| 대화창 기록 | 사람들의 말과 나중에 볼 소식 | `logText` |
+
+- 틀이 막는 중복: 같은 글이 가운데 알림·위험 알림에 떠 있으면 다시 띄우지 않는다. 가운데·위험 알림으로 뜬 줄은 기록에는 남되 접힌 대화의 한 줄 미리 보기에 되풀이하지 않는다(`echo`). 결과 창이 떠 있는 동안 가운데 알림은 띄우지 않는다.
+- 모드(`modes`)가 있으면 틀이 '다른 쪽의 위험'(대역의 쓰러짐·물러남·물약 없음·끝남, 뒤에서 잇던 단계의 멈춤)을 위험 알림 한 곳에 띄운다(그쪽을 보고 있으면 가운데 알림). 예전에 메아리 계약에서 '단계 1-3에서 져서 … 멈췄습니다'가 위 가운데 알림·접힌 대화 줄·게임의 붉은 위험 알림 세 곳에 함께 뜨던 것이 하나로 줄었다. 게임이 다른 안내문을 같은 길로 보내려면 `routeNotice((k, a, text) => { …; dangerAlert(text, …); return true; })`.
+
+### 전투 화면 (`engine/client/hud/battle.ts`)
+
+수집형의 단계 전투를 보는 동안: 위 띠(일시정지 ‖ · 단계와 물결 · 남은 시간 · 자동 · 배속 ×1/×2), 아래 편성의 초상 칸(그림·이름·체력·기술 준비의 둥근 막: 다 차면 빛난다), 일시정지 창([계속] [홈] [포기(두 번)]).
+
+| 칸 | 무엇 |
+|---|---|
+| `useBattleScreen({ shown, pic?, home })` | 켠다. `shown`: 보일 때(게임의 전투 보기), `pic`: 초상 그림, `home`: 일시정지 창의 [홈]·[포기] 뒤에 갈 곳 |
+| `openBattle(id)` | 전투를 화면 쌓기에 장면 보기로 넣는다: **전투 중 뒤로 가기 = 일시정지 창**(화면 쌓기의 `onBack`). 일시정지가 없는 게임은 예전처럼 한 칸 뒤로 |
+| `openPause()` | 일시정지 창 (서버의 시간도 멈춘다) |
+| `STAGE_RULES.speed` | `{ max, unlock? }`: 배속. `unlock` 단계를 깨면 열린다(잠겼으면 '×2 🔒', 누르면 까닭). 고른 배속은 저장(`ext.stages.speed`) |
+| `STAGE_RULES.pause` | `true` 또는 `{ maxS }`(기본 600초 뒤 저절로 풀림) |
+
+- 서버: 그 사람의 단계 층의 시간 배율(`g.layerScale`: 멈춤 0, ×2면 한 틱에 두 번)과 제한 시간·기다림이 함께 바뀐다. 명령 `{ t: 'stage', a: 'speed', x }`·`{ a: 'pause', on }`, 개인 상태 `stage.speed`·`speedMax`·`paused`. 뒤에서 잇는 회차와 대기실은 늘 ×1이고 멈추지 않는다. 배율이 없는 층은 예전과 똑같이 돈다.
+- 기술 준비는 화면이 셈한다(사건 `s`를 `onCast`로 듣고 역할의 기술 쿨다운으로). 전투 화면이 떠 있는 동안 `body.battleOn`(게임 css가 단계 막대를 감출 때).
+
+### 뽑기 연출 (`engine/client/hud/gachashow.ts`)
+
+뽑기 결과(메시지 `gacha`)가 오면 틀이 연출한다: **예고**(가장 높은 등급의 색이 먼저 비친다) → **한 장씩**(낮은 등급은 저절로 빠르게, 새 카드(NEW)·가장 높은 등급은 누를 때까지 멈춤) → **요약**(열 칸 격자, NEW·'조각 +n', 가진 재화, [확인] [한 번 더 n번]). 오른쪽 위 **건너뛰기**는 남은 공개를 건너 요약으로 가되 아직 보이지 않은 새 카드·가장 높은 등급에서 한 번 멈춘다. 저절로 닫지 않는다. 화면 쌓기의 sheet(`gachaPop`)라 뒤로 가기가 닫는다. 그림은 `setHeroPic`. 게임의 소리·덤 연출은 예전처럼 `onGachaResult`.
+
+### 카드 목록과 상세 (`engine/client/hud/cards.ts`)
+
+메뉴의 영웅 탭이 격자가 된다: 칸 = 초상 + 등급 색 테두리 + 별 + 레벨 + 편성 표시(◆) + 별을 올릴 수 있으면 알림 점, 없는 것은 흑백·점선. 정렬(등급·전투력·레벨·새로 얻음)과 거르기(역할·등급)는 이 기기에 기억한다(플랫폼의 저장소 `dg.cards`). 칸을 누르면 **카드 상세**(한 화면): 큰 그림, 성장(레벨 막대·[레벨 업]), 돌파(조각 막대·[별 올리기]·재료 교환), 기술, 변신 시 능력치(변신의 능력치 대체 방식을 쓰는 게임), 바로 가기([편성에 넣기/빼기] [이 모습으로 변신] [성장 자세히]), 좌우 넘기기(‹ ›). 못 누르는 단추에는 까닭.
+
+| 칸 | 무엇 |
+|---|---|
+| `setHeroPic(id → 그림)` | 초상 그림 하나를 카드 목록·상세·뽑기 연출·전투 초상이 함께 쓴다(`heroPic(id)`로 읽기) |
+| `setCardActions({ morph })` | '이 모습으로 변신'의 일 (없고 변신 모듈이 있으면 메뉴의 변신 탭) |
+| `openCard(id)` | 상세를 연다 (화면 쌓기의 sheet) |
+
+메아리 계약: 초상은 `charPortrait`, '이 모습으로 변신'은 울림골로 가서 변신 탭을 연다.

@@ -104,12 +104,47 @@
   "You muted 1. Their chat is now hidden for you only.",
   "You muted 2. Their chat is now hidden for you only."
  ],
+ "fmt.btlSpeed": [
+  "12111541eec5079a",
+  "×undefined",
+  "×0",
+  "×1",
+  "×2"
+ ],
+ "fmt.btlSpeedLocked": [
+  "63d237aaeaa6c6d9",
+  "Clear stage undefined to unlock speed-up",
+  "Clear stage 0 to unlock speed-up",
+  "Clear stage 1 to unlock speed-up",
+  "Clear stage 2 to unlock speed-up"
+ ],
  "fmt.buffLeft": [
   "be76f9ac7e188e64",
   "undefined undefineds",
   "0 undefineds",
   "1 undefineds",
   "2 undefineds"
+ ],
+ "fmt.cdOwned": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.cdWhyGold": [
+  "c4f3eb15a2cdbbe1",
+  "(던짐) TypeError",
+  "Needs 0 gold",
+  "Needs 1 gold",
+  "Needs 2 gold"
+ ],
+ "fmt.cdWhyShards": [
+  "8777baf1c53a4191",
+  "Shards undefined / undefined",
+  "Shards 0 / undefined",
+  "Shards 1 / undefined",
+  "Shards 2 / undefined"
  ],
  "fmt.channelOpt": [
   "ed49aac5f4935f19",
@@ -602,6 +637,20 @@
   "1 left",
   "2 left"
  ],
+ "fmt.gsAgain": [
+  "9c7abecf78535e94",
+  "Again ×undefined",
+  "Again ×0",
+  "Again ×1",
+  "Again ×2"
+ ],
+ "fmt.gsHead": [
+  "e616546821e86732",
+  "undefined · undefined pulls",
+  "0 · undefined pulls",
+  "1 · undefined pulls",
+  "2 · undefined pulls"
+ ],
  "fmt.guildCreateInfo": [
   "feb56c30cb1e1539",
   "Creating a guild takes level undefined and NaN gold. To join another guild, ask its leader for an invite.",
@@ -928,6 +977,12 @@
   "1/1, 12:00 AM – Invalid Date",
   "1/1, 12:20 AM – Invalid Date",
   "1/1, 12:00 AM – 1/1, 12:00 AM"
+ ],
+ "fmt.liveStarts": [
+  "1e9e8c32b9f2e006",
+  "Starts in NaNm",
+  "Starts in 1m",
+  "Starts in 21m"
  ],
  "fmt.mailLeft": [
   "19644e7de4be6b24",
@@ -3502,7 +3557,31 @@
  "ui.block": "Block",
  "ui.blockHead": "Blocked players",
  "ui.blockNone": "You have not blocked anyone. Blocking stops their chat, whispers, friend requests and invites from reaching you.",
+ "ui.btlAuto": "Auto",
+ "ui.btlHome": "Home",
+ "ui.btlPauseNote": "The battle is paused. Going home keeps it running in the background; giving up ends this run.",
+ "ui.btlPaused": "Paused",
+ "ui.btlQuit": "Give up",
+ "ui.btlQuitArm": "Tap again to give up",
+ "ui.btlResume": "Resume",
  "ui.buffs": "Active buffs",
+ "ui.cdAll": "All",
+ "ui.cdClose": "Close",
+ "ui.cdFromSquad": "Remove from squad",
+ "ui.cdGrow": "Growth",
+ "ui.cdGrowMore": "Growth details",
+ "ui.cdMorph": "Stats when shifted",
+ "ui.cdMorphGo": "Shift into this form",
+ "ui.cdNoSkill": "Basic attack only",
+ "ui.cdSkill": "Skill",
+ "ui.cdSort": "Sort",
+ "ui.cdSortLevel": "Level",
+ "ui.cdSortNew": "Newest",
+ "ui.cdSortPower": "Power",
+ "ui.cdSortRarity": "Rarity",
+ "ui.cdSquadFull": "Squad is full",
+ "ui.cdStar": "Limit break",
+ "ui.cdToSquad": "Add to squad",
  "ui.changeClass": "Change class",
  "ui.channel": "Channel",
  "ui.charAtk": "Attack",
@@ -3649,6 +3728,11 @@
  "ui.goodsNone": "Nothing for sale right now.",
  "ui.goodsNpc": "Merchant's specials",
  "ui.goodsSoldOut": "Sold out",
+ "ui.gsNew": "NEW",
+ "ui.gsNext": "Tap for next",
+ "ui.gsOk": "OK",
+ "ui.gsSkip": "Skip",
+ "ui.gsTap": "Tap to open",
  "ui.guildChatHint": "Type '/g message' in chat to talk to your guild only. The leader invites people by [[clicking|tapping]] them.",
  "ui.guildChatTag": "[Guild]",
  "ui.guildCreate": "Create",
@@ -3691,6 +3775,9 @@
  "ui.hgSets": "Sets",
  "ui.hgUnequip": "Remove",
  "ui.hint": "Click or WASD: move · Click a monster: attack · 1–3: skills · Q: potion · F: quest · R: auto-hunt · H: town · B: bag · M: menu · N: map · Tab: target · Enter: chat",
+ "ui.hkEvent": "Event",
+ "ui.hkSeason": "Season",
+ "ui.hkSoon": "Coming soon",
  "ui.htAwaken": "Awaken",
  "ui.htGear": "Gear",
  "ui.htLevel": "Level",
