@@ -17,14 +17,14 @@ import type { LookRules } from '@engine/shared/defs/look';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import type { MorphRules } from '@engine/shared/defs/morph';
-import { GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
+import { BASIC_QUICK_CHAT, GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
 import type { ModuleId } from '@engine/shared/modules';
 import { ARENA, WELL } from './pact';
 
 // ---------- 쓸 모듈 ----------
-// 들판(MMORPG)의 모듈 + 수집형의 넷 + 캐릭터 정의와 변신. 길드·거래소·던전·영웅 장비는 쓰지 않는다
+// 들판(MMORPG)의 모듈(대화 채널·귓말·친구까지) + 수집형의 넷 + 캐릭터 정의와 변신. 길드·거래소·던전·영웅 장비는 쓰지 않는다
 export const MODULES: readonly ModuleId[] = [
-  'economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'away',
+  'economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'away', 'chat', 'friends',
   'roster', 'gacha', 'squad', 'stages',
   'chars', 'morph',
 ];
@@ -208,6 +208,9 @@ export const CHAPTERS: readonly ChapterDef[] = [
 export const STAGE_RULES: StageRules = {
   arena: ARENA, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: false,
 };
+
+// ---------- 사회: 정해진 문장(틀의 여덟. 받는 사람이 자기 언어로 읽는다). 연령은 묻지 않는다 ----------
+export const QUICK_CHAT: readonly string[] = [...BASIC_QUICK_CHAT];
 
 // ---------- 운영: 초기화 시각, 원격 설정으로 바꿀 수 있는 칸 ----------
 export const RESET: ResetRules = { tz: 'local', dayAt: 0, weekStart: 1 };
