@@ -4,10 +4,8 @@
 import type { HeroesMe, IdleBack, KeysMe, StageMe } from '../../shared/defs';
 import type { Mail } from '../../shared/defs/growth';
 import type { ServerMsg } from '../../shared/protocol';
-import { startServer } from '../../server/net/server';
-import { MemoryStore } from '../../server/store';
-import { check, connect, until, type Peer } from '../harness';
-import { heath } from './server/heath';
+import { check, until, type Peer } from '../harness';
+import { clearLayer, heathServer, join, leave } from './netbench';
 
 interface Seen { heroes?: HeroesMe; stage?: StageMe; keys?: KeysMe; dungeon: string; back: IdleBack[]; mail: Mail[] }
 const fresh = (): Seen => ({ dungeon: '', back: [], mail: [] });
@@ -22,11 +20,10 @@ const listen = (s: Seen) => (m: ServerMsg) => {
 };
 
 let T = Date.UTC(2026, 10, 25, 9, 0, 0);
-const server = await startServer(0, { store: new MemoryStore(), game: { plugins: [heath], now: () => T } });
-const g = server.game;
+const { server, g } = await heathServer(() => T);
 try {
   const sa = fresh();
-  const a: Peer = await connect(server.port, 'Runner', 'collect-idleflow-token-01', listen(sa));
+  const a: Peer = await join(server, 'Runner', 'collect-idleflow-token-01', listen(sa));
   await until(() => !!sa.stage?.run && !!sa.keys && !!sa.heroes);
   const ea = g.ents.get(a.id)!;
   const keys0 = sa.keys?.goldmine?.n ?? 0;
@@ -39,7 +36,7 @@ try {
   await until(() => (a.youRaw[4] ?? 0) > 0 && a.mons.has(a.youRaw[4]));
   check(a.mons.get(a.youRaw[4]) === 'coinbug' || a.mons.get(a.youRaw[4]) === 'hoarder', `금광 안에서 대장의 대상이 저절로 생긴다 (${a.mons.get(a.youRaw[4])})`);
   // 끝내고 스스로 나오면 단계로
-  for (const e of [...g.ents.values()]) if (e.kind === 'm' && e.layer === ea.layer) g.combat.damage(ea, e, e.hp + 1, false);
+  clearLayer(server, ea);
   await until(() => a.sys.some((x) => x.startsWith('dungeonClear')));
   a.send({ t: 'dungeonLeave' });
   await until(() => sa.dungeon === '');
@@ -53,11 +50,10 @@ try {
   await until(() => a.sys.some((x) => x.startsWith('heroTraded')) && (sa.heroes?.[id]?.[2] ?? -1) > shards0);
   check(a.sys.some((x) => x.startsWith(`heroTraded:${id}:5:stardust:1`)) && sa.heroes?.[id]?.[2] === shards0 + 5, `별가루 3으로 ${id}의 조각 +5 (개인 상태 ${shards0} → ${sa.heroes?.[id]?.[2]})`);
   // 나갔다가 한 시간 뒤: 돌아왔을 때의 창
-  a.ws.close();
-  await until(() => !g.ents.has(a.id));
+  await leave(server, a);
   T += 60 * 60000;
   const sb = fresh();
-  const b = await connect(server.port, 'Runner', 'collect-idleflow-token-01', listen(sb));
+  const b = await join(server, 'Runner', 'collect-idleflow-token-01', listen(sb));
   await until(() => sb.back.length > 0 && sb.mail.some((m) => m.k === 'idle'));
   const back = sb.back[0], mail = sb.mail.find((m) => m.k === 'idle');
   check(sb.back.length === 1 && !!mail && back.mail === mail.id && back.min === 60 && (back.r.gold ?? 0) > 0 && back.r.gold === mail.r.gold, `다시 접속하면 idleBack: 우편 ${back?.mail}, 60분, 골드 ${back?.r.gold}`);

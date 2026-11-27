@@ -24,6 +24,7 @@ import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
 import type { OddsRules } from './defs/odds';
 import type { ModeRules } from './defs/modes';
+import type { AchieveDef, CodexDef, ComebackRules, CouponRules, EventDef, GoodsDef, MailRules, SeasonRules } from './defs/livecontent';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -257,3 +258,21 @@ export const ODDS: OddsRules = { tables: [], keepDays: 1825 };
 // ---------- 게임 안의 모드 (modes) ----------
 /** 모드가 없다 (한 게임: 예전과 같다) */
 export const MODE_RULES: ModeRules = { list: [] };
+
+// ---------- 라이브 콘텐츠 (묶음 6: engine/shared/defs/livecontent.ts). 모두 비어 있다: 적지 않은 게임은 지금과 같다 ----------
+/** 상품 (items 모듈): 비어 있으면 상품이 없다 */
+export const GOODS: Readonly<Record<string, GoodsDef>> = {};
+/** 기간 이벤트 (event 모듈) */
+export const EVENTS: Readonly<Record<string, EventDef>> = {};
+/** 시즌과 무료 보상 트랙 (season 모듈) */
+export const SEASON: SeasonRules | null = null;
+/** 업적과 칭호 (achieve 모듈) */
+export const ACHIEVES: Readonly<Record<string, AchieveDef>> = {};
+/** 도감 (codex 모듈) */
+export const CODEX: Readonly<Record<string, CodexDef>> = {};
+/** 쿠폰 코드: 4~20자, 틀린 코드를 10분 안에 다섯 번 넣으면 10분 막는다 (coupon 모듈) */
+export const COUPON: CouponRules = { min: 4, max: 20, tries: 5, lockMin: 10 };
+/** 복귀 보상 (coupon 모듈) */
+export const COMEBACK: ComebackRules | null = null;
+/** 우편의 만료 (mail 모듈): 비어 있으면 만료가 없다 */
+export const MAIL_RULES: MailRules = {};

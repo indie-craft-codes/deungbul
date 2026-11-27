@@ -6,3 +6,4 @@ export { hasWeb, type ClientErrorRow, type EraseRow, type WebStore } from './typ
 export { hasSocial, type BlockRow, type FriendRow, type ReportLine, type SocialStore } from './types';
 export { hasOdds, type DrawQuery, type OddsStore, type OddsVersionRow } from './types';
 export { hasOps, type EventRow, type OpsStore, type StashRow, type TicketRow } from './types';
+export { hasCoupons, type CouponRow, type CouponStore } from './types';

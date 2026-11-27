@@ -11,6 +11,8 @@ import { itemIcon } from './icons';
 import { addPlace } from './near';
 
 let ui: Record<'panel' | 'gold' | 'list', HTMLElement>;
+/** 상점 창의 목록 끝에 붙이는 것 (상인의 특별 상품: hud/live.ts, GOODS의 shop 'npc') */
+export const shopExtras: ((list: HTMLElement) => void)[] = [];
 let potion: { button: HTMLButtonElement; count: HTMLElement; cd: HTMLElement; time: HTMLElement } | null = null;
 
 export function initShop(): void {
@@ -77,6 +79,7 @@ export function renderShop(): void {
     row.append(info, btn);
     ui.list.appendChild(row);
   }
+  for (const f of shopExtras) f(ui.list);
   if (potion) {
     const total = (Object.keys(ITEMS) as ItemId[]).filter((id) => itemDef(id).kind === 'potion').reduce((n, id) => n + (items[id] ?? 0), 0);
     potion.count.textContent = loc.fmt.potions(total);

@@ -1,9 +1,6 @@
 // 지갑(g.wallet): 재화를 더하고 빼는 한 통로 (서버 없이 게임 규칙만 돌린다. 규칙 플러그인 없는 틀만의 게임이다). (시험용 내용 위에서)
 // 더하기·빼기·잔액 부족·깨진 값·상한, 수급 배율의 등록, 장부와의 관계(지갑이 원인을 직접 알린다, 지갑 밖의 변화는 other·tick으로 드러난다),
 // 그리고 "재화의 칸을 직접 고치는 코드가 지갑 밖에 없다"를 소스를 읽어 검사한다.
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { FORGES, SHOPS } from '../../shared/defs';
 import { ATTEND, CAMPS, CURRENCIES, DAILIES, ECON_HUNT, ENHANCE, GUILD, ITEMS, MONSTERS, RECIPES, marketFee, type CurrencyDef, type MarketItem } from '../../shared/defs';
 import type { Ent } from '../../server/game/entity';
@@ -11,6 +8,7 @@ import { Game } from '../../server/game/game';
 import { WHY, mailWhy, type Cur } from '../../server/game/systems/wallet';
 import type { EconRow, PlayerSave } from '../../server/store';
 import { check } from '../harness';
+import { noUnknownCause, scanWrites } from './sourcescan';
 
 /** 시험용 내용의 상인과 대장간 */
 const SHOP = SHOPS[0], SMITHY = FORGES[0];
@@ -172,7 +170,7 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   cmd(p, { t: 'mailClaim', id: 0 });
   check(same(fresh(), [`gold market:in +${200 - marketFee(200)}`]), '판 값을 우편으로 받기: market:in');
   Math.random = rnd;
-  check(g.ledger.rows().every((r) => r.why !== 'other' && r.why !== 'tick'), '이 흐름에서 원인을 가리지 못한 줄(other, tick)이 없다: 지갑 밖에서 바뀐 재화가 없다');
+  noUnknownCause(g.ledger.rows(), '이 흐름(지갑 밖에서 바뀐 재화가 없다)');
 }
 
 // ---------- 수급 배율 ----------
@@ -231,23 +229,11 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   Math.random = rnd;
 }
 
-// ---------- 재화의 칸을 직접 고치는 코드가 지갑 밖에 없다 (소스를 읽는다) ----------
+// ---------- 재화의 칸을 직접 고치는 코드가 지갑 밖에 없다 (소스를 읽는다: 훑기와 검사는 sourcescan.ts, bag.test.ts와 같은 도우미) ----------
+// 값을 넣는 모양: .gold = / += / -= / *= / ++ / -- (견주기 ==, 화살표 =>는 아니다). 돌아가는 길도 잡는다: 대괄호(p['gold'] +=)와 Object.assign(p, { gold: … })
 {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-  const rel = (f: string) => path.relative(root, f).replaceAll('\\', '/');
-  const walk = (dir: string): string[] => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : []);
-  // 서버와 공용 코드만 본다 (틀과 모든 게임). 화면(client)이 들고 있는 값은 서버가 보낸 것의 사본이고, 시험(test)은 준비로 직접 고친다
-  // 게임이 하나도 없는 저장소(틀만 떼어 낸 것)에서도 돈다: 그때는 틀의 소스만 본다
-  const games = fs.existsSync(path.join(root, 'games')) ? fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name) : [];
-  const dirs = ['engine/server', 'engine/shared', ...games.flatMap((n) => [`games/${n}/server`, `games/${n}/shared`])];
-  const files = dirs.flatMap((d) => walk(path.join(root, d))).map(rel).filter((f) => !/\.test\.ts$/.test(f));
-  /**
-   * 재화의 칸에 값을 넣는 모양: .gold = / += / -= / *= / ++ / -- (견주기 ==, 화살표 =>는 아니다).
-   * 돌아가는 길도 잡는다: 대괄호(p['gold'] +=)와 Object.assign(p, { gold: … })
-   */
-  const WRITE = /(?:\.(gold|sparks|exp)|\[\s*['"`](gold|sparks|exp)['"`]\s*\])\s*(?:[-+*/%]?=(?![=>])|\+\+|--)|Object\.assign\([^)]*\b(gold|sparks|exp)\s*[:,}]/;
   /** 직접 고쳐도 되는 곳: 파일, 그 줄의 모양, 까닭. 이 목록에 없는 곳에서 재화의 칸을 고치면 실패한다 */
-  const ALLOWED: { file: string; line: RegExp; why: string }[] = [
+  const allowed: { file: string; line: RegExp; why: string }[] = [
     { file: 'engine/server/game/systems/players.ts', line: /p\.exp = n\(save\.exp,/, why: '저장을 읽는다 (spawn): 새로 생긴 재화가 아니다' },
     { file: 'engine/server/game/parts.ts', line: /economy: \{ init: \(e\) => \{ e\.gold = 0; e\.sparks = 0; \} \},/, why: '엔티티의 처음 값 (재화 모듈의 칸: Game.create가 부른다). 새로 생긴 재화가 아니다' },
     { file: 'engine/server/game/parts.ts', line: /growth: \{ init: \(e\) => \{ e\.lv = 1; e\.exp = 0;/, why: '엔티티의 처음 값 (성장 모듈의 칸)' },
@@ -265,30 +251,12 @@ const same = (got: string[], want: string[]): boolean => [...got].sort().join(' 
   ];
   /** 지갑 자신: 칸의 이름을 변수로 고친다 (p[cur] += n) */
   const WALLET = 'engine/server/game/systems/wallet.ts';
-  const used = new Set<number>(), stray: string[] = [];
-  let writes = 0;
-  for (const f of files) {
-    const lines = fs.readFileSync(path.join(root, f), 'utf8').split(/\r?\n/);
-    lines.forEach((raw, i) => {
-      const line = /^\s*(\*|\/\*|\/\/)/.test(raw) ? '' : raw.replace(/\s\/\/ .*$/, ''); // 주석은 보지 않는다
-      if (!WRITE.test(line) || f === WALLET) return;
-      writes++;
-      const k = ALLOWED.findIndex((a) => a.file === f && a.line.test(line));
-      if (k >= 0) used.add(k); else stray.push(`${f}:${i + 1}: ${raw.trim().slice(0, 100)}`);
-    });
-  }
-  for (const s of stray) console.log('      ' + s);
-  check(files.length >= 40 && files.includes(WALLET) && files.includes('engine/server/game/systems/players.ts') && (games.length === 0 || files.some((f) => f.startsWith('games/'))) && writes >= ALLOWED.length,
-    `서버와 공용 소스를 읽었다 (${files.length}개 파일: 틀과 게임 ${games.join(', ')})`);
-  check(stray.length === 0, `재화의 칸(.gold, .sparks, .exp)을 직접 고치는 코드가 지갑과 허용 목록 밖에 없다${stray.length ? ` (${stray.length}곳: 위)` : ''}`);
-  const unused = ALLOWED.filter((_, k) => !used.has(k));
-  check(unused.length === 0, `허용 목록의 줄이 모두 실제로 있다 (${ALLOWED.length}곳)${unused.length ? ': 없는 것 ' + unused.map((a) => `${a.file} ${a.line}`).join(', ') : ''}`);
-  // 검사가 실제로 잡아내는가
-  const hits = ['p.gold += 5;', 'p.gold -= cost;', 'p.sparks=0', 'q.exp ++', 'e.gold--;', 'this.p.gold *= 2', 'a.gold = b.gold', "p['gold'] += 0", 'p["sparks"]--', 'Object.assign(p, { sparks })', 'Object.assign(p, { gold: 9 })'].filter((s) => WRITE.test(s));
-  const misses = ['if (p.gold === 5)', 'p.gold >= cost', 'x = p.gold;', '{ gold: 5, exp: 0 }', 'p.gold == 1', '(r) => r.gold', 'm.r.gold ?? 0', 'p.golden = 1', "p['gold'] === 1", 'Object.assign(p, { goldBonus: 1 })'].filter((s) => WRITE.test(s));
-  check(hits.length === 11 && misses.length === 0, '검사의 모양: 값을 넣는 줄은 잡고, 읽거나 견주는 줄은 잡지 않는다');
-  // 지갑의 통로를 실제로 쓰고 있는가 (틀의 시스템과 게임의 규칙 시스템)
-  const uses = files.filter((f) => f !== WALLET && /\.wallet\.(add|take|can|amount)\(/.test(fs.readFileSync(path.join(root, f), 'utf8')));
   const want = ['players', 'gear', 'shop', 'craft', 'build', 'guild', 'market', 'mail'].map((n) => `engine/server/game/systems/${n}.ts`);
-  check(want.every((f) => uses.includes(f)) && (games.length === 0 || uses.some((f) => f.startsWith('games/'))), `틀의 시스템 ${want.length}곳과 게임의 규칙 시스템이 지갑을 쓴다 (${uses.length}개 파일)`);
+  scanWrites({
+    what: '재화의 칸(.gold, .sparks, .exp)', write: /(?:\.(gold|sparks|exp)|\[\s*['"`](gold|sparks|exp)['"`]\s*\])\s*(?:[-+*/%]?=(?![=>])|\+\+|--)|Object\.assign\([^)]*\b(gold|sparks|exp)\s*[:,}]/,
+    allowed, self: WALLET, mustRead: 'engine/server/game/systems/players.ts',
+    hits: ['p.gold += 5;', 'p.gold -= cost;', 'p.sparks=0', 'q.exp ++', 'e.gold--;', 'this.p.gold *= 2', 'a.gold = b.gold', "p['gold'] += 0", 'p["sparks"]--', 'Object.assign(p, { sparks })', 'Object.assign(p, { gold: 9 })'],
+    misses: ['if (p.gold === 5)', 'p.gold >= cost', 'x = p.gold;', '{ gold: 5, exp: 0 }', 'p.gold == 1', '(r) => r.gold', 'm.r.gold ?? 0', 'p.golden = 1', "p['gold'] === 1", 'Object.assign(p, { goldBonus: 1 })'],
+    uses: /\.wallet\.(add|take|can|amount)\(/, want, games: true,
+  });
 }

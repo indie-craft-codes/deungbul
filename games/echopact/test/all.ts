@@ -2,7 +2,7 @@
 //   node scripts/game.mjs test echopact -- pact   고른 것만 (pact, net, flow)
 import { failures } from '@engine/testing';
 
-const ALL = ['pact', 'net', 'flow', 'odds'];
+const ALL = ['pact', 'net', 'flow', 'odds', 'live'];
 const only = process.argv.slice(2);
 for (const name of only.length ? only : ALL) {
   console.log(`\n[echopact/${name}]`);

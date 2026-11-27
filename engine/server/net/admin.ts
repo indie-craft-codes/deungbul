@@ -25,6 +25,7 @@
 //   (웹 출시의 바탕, net/web.ts) errors [수] [--all] | errors clear 서명|all | erase [list|log [수]|ask 이름 [일수]|cancel 이름|now 이름|sweep]
 //   (사회와 안전, net/social.ts) words [test 글 | add 낱말… | del 낱말…] | age 이름 [reset] | blocks 이름
 //   (운영 도구와 고객지원) stats · ledger · suspects · alerts · mail · rollback · tickets · ticket · answer · tclose · treopen · whoami · metrics (net/opstools.ts, net/support.ts, net/rollback.ts)
+//   (라이브 콘텐츠, 묶음 6) events · season · coupon [list|show|add|del] (net/livecmds.ts), mail --all의 --lv·--expire (net/opstools.ts)
 //   기간: 숫자(시간), 30m·12h·7d처럼 단위를 붙인 것, 또는 perm(영구)
 //
 // 역할 (운영 도구): 토큰이 셋이다. admin.token은 전체(full), admin-ops.token은 운영(ops), admin-view.token은 보기 전용(view). 명령마다 필요한 역할은 roleFor 한 곳에서 정한다:
@@ -102,6 +103,9 @@ export function roleFor(cmd: string, a: readonly string[]): Role {
     // 확률 공개 (odds 모듈, net/odds.ts): 표·이력·사전 공지 목록과 추첨 기록은 보기, 사전 공지를 적고 거두는 것·버전 올리기·다시 쓰기는 전체
     case 'odds': return !a.length || ['list', 'show', 'log', 'plans'].includes(a[0]) ? 'view' : 'full';
     case 'draws': return 'view';
+    // 라이브 콘텐츠 (묶음 6, net/livecmds.ts): 이벤트·상품·시즌은 보기(바꾸는 것은 원격 설정 set), 쿠폰의 목록·보기는 보기, 만들기·지우기는 전체
+    case 'events': case 'season': return 'view';
+    case 'coupon': return !a.length || a[0] === 'list' || a[0] === 'show' ? 'view' : 'full';
     default: return 'full';
   }
 }

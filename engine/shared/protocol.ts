@@ -56,6 +56,8 @@ export interface EnterInfo {
   a?: string;
   /** 길드 이름 (플레이어만, 없으면 생략) */
   g?: string;
+  /** 단 칭호 (업적 id: achieve 모듈. 플레이어만, 없으면 생략) */
+  ti?: string;
   /** 플레이어의 직업 (CLASSES의 키). 아직 고르지 않았거나 몬스터면 빈 문자열. 직업(classes)을 고르지 않은 게임에는 없다 */
   c?: string;
   x: number; z: number; face: number;
@@ -223,6 +225,15 @@ export type ClientMsg =
   /** 문의: list 내 문의와 지금 걸린 말 막기, new 새 문의 (kind: ask 질문, bug 오류, appeal 말 막기에 대한 이의) */
   | { t: 'support'; a: 'list' }
   | { t: 'support'; a: 'new'; kind: TicketView['kind']; text: string }
+  // ---- 라이브 콘텐츠 (묶음 6: engine/server/game/systems/goods.ts·season.ts·achieve.ts·coupon.ts) ----
+  /** 상품을 산다 (GOODS의 id) */
+  | { t: 'goods'; id: string }
+  /** 시즌 트랙의 칸을 받는다 (-1이면 받을 수 있는 칸 모두) */
+  | { t: 'season'; i: number }
+  /** 칭호를 단다 (업적 id, ''이면 뗀다) */
+  | { t: 'title'; id: string }
+  /** 쿠폰 코드를 쓴다 */
+  | { t: 'coupon'; code: string }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -349,6 +360,8 @@ export type ServerMsg =
   | { t: 'support'; a: 'sent'; id: number }
   /** 접속이 막혀 있다 (닫기 전에): 사유·끝 시각, 이의를 이미 냈는가, 이의에 답이 있으면 그 답 */
   | { t: 'sanction'; s: SanctionView; appealed: boolean; answer?: string }
+  /** 누군가 칭호를 바꿨다 (achieve 모듈): 엔티티 id, 업적 id(''이면 뗐다) */
+  | { t: 'title'; id: number; ti: string }
   | Added<ServerMsgs>;
 
 /** 문의 한 건의 화면 몫 (support 모듈): 번호, 종류, 상태(open 열림, answered 답변, closed 닫힘), 보낸 글, 답(없으면 빈 글), 접수·마지막으로 바뀐 시각(UTC ms) */

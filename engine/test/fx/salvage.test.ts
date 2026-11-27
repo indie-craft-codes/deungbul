@@ -7,6 +7,7 @@ import { Game } from '../../server/game/game';
 import { WHY } from '../../server/game/systems/wallet';
 import type { EconRow, PlayerSave } from '../../server/store';
 import { check } from '../harness';
+import { noUnknownCause } from './sourcescan';
 
 /** 시험용 내용의 상인과 대장간 */
 const SHOP = SHOPS[0], SMITHY = FORGES[0];
@@ -101,7 +102,7 @@ const goldOf = (p: Ent): number => p.gold;
   cmd(p, { t: 'salvage', uids: [f.uid] });
   check(dustOf(p) === cap && !p.gear.includes(f), '한도에 꼭 맞으면 분해된다');
   g.ledger.note(p, 'setup');
-  check(g.ledger.rows().every((r) => r.why !== 'other' && r.why !== 'tick'), '분해의 흐름에서 원인을 가리지 못한 줄(other, tick)이 없다');
+  noUnknownCause(g.ledger.rows(), '분해의 흐름');
 }
 
 // ---------- 잠금 ----------
@@ -234,7 +235,7 @@ const goldOf = (p: Ent): number => p.gold;
   check(dustOf(p) === itemCap(DUST) && p.gear.length === n4 + 1, '가루가 한도까지 찼으면 분해하지 않고 가방에 넣는다 (가루를 버리지 않는다)');
   Math.random = rnd;
   g.ledger.note(p, 'setup');
-  check(g.ledger.rows().every((r) => r.why !== 'other' && r.why !== 'tick'), '자동 분해의 흐름에서 원인을 가리지 못한 줄(other, tick)이 없다');
+  noUnknownCause(g.ledger.rows(), '자동 분해의 흐름');
 }
 
 // ---------- 자리 비움 사냥 중의 자동 분해와, 돌아왔을 때의 안내 ----------
@@ -277,7 +278,7 @@ const goldOf = (p: Ent): number => p.gold;
   check(!said(p).some((s) => s.startsWith('awayGear')), '버려진 것도 분해한 것도 없으면 장비 안내는 없다');
   Math.random = rnd;
   g.ledger.note(p, 'setup');
-  check(g.ledger.rows().every((r) => r.why !== 'other' && r.why !== 'tick'), '자리 비움 사냥의 흐름에서 원인을 가리지 못한 줄(other, tick)이 없다');
+  noUnknownCause(g.ledger.rows(), '자리 비움 사냥의 흐름');
 }
 
 // ---------- 가방 넓히기 ----------

@@ -40,16 +40,13 @@ import { check, connect, until } from '@engine/testing';
   hunt(rabbit);
   const kill = said().find((n) => n.k === 'kill');
   check(rabbit.dead && p.exp === MONSTERS.rabbit.exp && p.gold >= MONSTERS.rabbit.gold[0] && p.sparks === 0 && kill?.a[0] === 'rabbit' && kill.a[2] === 0, '토끼를 잡으면 경험치와 골드를 받는다 (두 번째 재화는 0)');
-  for (let i = 0; i < 12 && p.lv < 2; i++) { const m = alive('rabbit')[0] ?? alive('boar')[0]; hunt(m); }
-  check(p.lv === 2 && p.maxHp === maxHpFor('hunter', 2), '경험치가 차면 레벨이 오른다');
+  // 레벨 업(경험치가 차면 오른다)은 틀의 시험(engine/test/fx/wallet.test.ts)이 본다
 
   // 상점
   at(SHOPS[0].x + 1, SHOPS[0].z); p.gold = 100;
   cmd({ t: 'buy', id: 'stew' }); cmd({ t: 'buy', id: 'axe2' });
   check(p.items.stew === 1 && p.weapon === 'axe2' && p.gold === 100 - 12 - 60, '상인 곁에서 스튜와 도끼를 산다');
-  at(30, 30);
-  cmd({ t: 'buy', id: 'stew' });
-  check(said().some((n) => n.k === 'shopFar') && p.items.stew === 1, '상인에게서 멀면 살 수 없다');
+  // 상인에게서 멀면 살 수 없는 것은 틀의 시험(engine/test/fx/shop.test.ts)이 본다
 
   // 이 게임의 규칙: 모닥불
   at(BONFIRE.x, BONFIRE.z + 3);

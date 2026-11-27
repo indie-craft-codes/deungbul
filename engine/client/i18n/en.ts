@@ -14,6 +14,8 @@ import { charName, type CharErr } from '../../shared/defs/chardef';
 import type { MorphMods } from '../../shared/defs/morph';
 import { modeDef } from '../../shared/defs/modes';
 import { uiText } from './names';
+import { achName, codexName, evName, goodsName, missionName, seasonName, titleName } from './live';
+import { codexDef } from '../../shared/defs';
 
 /** Field names of a character definition (ko.ts의 charField와 같다) */
 const charField = (path: string): string => {
@@ -72,6 +74,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
   const dungeonName = (id: MsgArg) => dungeonLabel(n, id).name;
   /** 치르는 재화의 이름 (뽑기·영웅·열쇠) */
   const curName = (c: MsgArg) => (c === 'gold' ? G.name : coin?.name ?? 'currency');
+  const codexEntry = (gid: MsgArg, id: MsgArg) => { const of = codexDef(String(gid))?.of; return of === 'hero' ? heroName(id) : of === 'monster' ? monsters[id as MonsterId] ?? String(id) : of === 'item' ? itemName(id) : String(id); };
   /** 1st, 2nd, 3rd, 4th … */
   const ordinal = (k: number) => `${k}${k % 100 >= 11 && k % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][k % 10] ?? 'th'}`;
   /** The name of the place you rise at after falling */
@@ -533,6 +536,35 @@ export const enBase = (n: ContentNames): EngineLocale => {
       friendsEmpty: 'No friends yet. Tap a person or type a name to send a request.',
       // Odds and currency transparency (odds module: odds window, my draw log, confirming a precious currency)
       tabOdds: 'Odds',
+      // Live content (bundle 6: hud/live.ts)
+      tabGoods: 'Shop',
+      tabEvent: 'Event',
+      tabSeason: 'Season',
+      tabAchieve: 'Feats',
+      tabCodex: 'Codex',
+      goodsNone: 'Nothing for sale right now.',
+      goodsBuy: 'Buy',
+      goodsSoldOut: 'Sold out',
+      goodsAllBought: 'Limit reached',
+      goodsNpc: "Merchant's specials",
+      eventNone: 'No event is running right now.',
+      eventMissions: 'Event tasks',
+      eventShop: 'Event shop',
+      eventGone: 'Event currency left over when the event ends disappears.',
+      seasonNone: 'No season is running right now.',
+      seasonTrack: 'Reward track (free)',
+      seasonClaim: 'Claim',
+      seasonClaimAll: 'Claim everything available',
+      seasonNote: 'Points come from hunting, tasks and other play. Rewards you reached but did not claim are mailed to you when the season ends.',
+      achieveTitles: 'Titles',
+      titleNone: 'No title worn yet.',
+      titleUse: 'Wear',
+      titleOff: 'Remove',
+      codexNote: 'Things you get for the first time go into the codex. Collecting enough sends rewards by mail.',
+      codexUnknown: '???',
+      couponHead: 'Coupon',
+      couponPh: 'Coupon code',
+      couponUse: 'Redeem',
       oddsTables: 'Odds tables',
       oddsMine: 'My draw log',
       oddsMineNone: 'No draws yet.',
@@ -671,7 +703,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       power: (n) => `Power ${num(n)}`,
       streak: (n) => `Day ${n} streak`,
       reward: (gold, exp, second) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)${a[2] ? ` · advanced ${a[1]} → ${a[2]}` : ''}` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : k === 'maint' ? 'Maintenance compensation' : k === 'support' ? `Reply to your request #${a[0]} (Settings → Support)` : k === 'comp' ? 'Compensation from the team' : String(k)),
+      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)${a[2] ? ` · advanced ${a[1]} → ${a[2]}` : ''}` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : k === 'maint' ? 'Maintenance compensation' : k === 'support' ? `Reply to your request #${a[0]} (Settings → Support)` : k === 'comp' ? 'Compensation from the team' : k === 'event' ? `Event task: ${missionName(a[0], a[1])}` : k === 'eventSwap' ? `Exchanged ${a[1]} leftover currency from “${evName(a[0])}”` : k === 'season' ? `${seasonName()}: unclaimed rewards` : k === 'achieve' ? `Feat unlocked: ${achName(a[0])}` : k === 'codex' ? `Codex ${codexName(a[0])}: ${a[1]} collected` : k === 'coupon' ? `Coupon ${a[0]}` : k === 'comeback' ? `Welcome back (after ${a[0]} days)` : String(k)),
       potions: (n) => `Potions ${n}`,
       distance: (m) => `${m} m`,
       num: (n) => num(n),
@@ -812,6 +844,24 @@ export const enBase = (n: ContentNames): EngineLocale => {
       confirmPrice: (price: string) => `Real price: ${price}`,
       oddsDrawHead: (at: number, kind: string, ver: number) => `${whenText(at, 'en-US')} · ${kind === 'gacha' ? 'Summon' : kind === 'enhance' ? 'Enhance' : kind} · table v${ver}`,
       oddsVersion: (v: number) => `Version ${v}`,
+      // Live content (bundle 6)
+      liveSpan: (from: number, to: number) => `${whenText(from, 'en-US')} – ${whenText(to, 'en-US')}`,
+      liveLeft: (ms: number) => `${spanMs(Math.max(0, ms), 'en')} left`,
+      goodsPrice: (n: number, cur: string, ev: boolean) => `${num(n)} ${ev ? 'event ' : ''}${curName(cur)}`,
+      goodsLimit: (have: number, n: number, per: string) => `${per === 'day' ? 'Daily' : per === 'week' ? 'Weekly' : per === 'month' ? 'Monthly' : 'Per player'} ${have}/${n}`,
+      goodsStock: (n: number) => `${num(n)} left`,
+      eventHave: (n: number, cur: string) => `Event ${curName(cur)}: ${num(n)}`,
+      eventSwap: (rate: number, to: string) => `When the event ends, leftover event currency is exchanged at ${rate}× into ${curName(to)} and mailed to you.`,
+      eventEv: (n: number) => `+${num(n)} event currency`,
+      seasonHead: (name: string, n: number) => `${name}${n ? ` · Season ${n}` : ''}`,
+      seasonPts: (n: number) => `${num(n)} points`,
+      seasonTier: (i: number, pts: number) => `Tier ${i + 1} · ${num(pts)} pts`,
+      seasonReset: (r: string) => (r === 'keep' ? 'Your points carry over to the next season.' : r === 'all' ? 'Points start from 0 next season.' : `${r}% of your points carry over to the next season.`),
+      achieveTitle: (name: string) => `Title “${name}”`,
+      titleTag: (name: string) => `“${name}”`,
+      codexCount: (have: number, total: number) => `${have} / ${total}`,
+      codexAt: (n: number) => `Collect ${n}`,
+      mailLeft: (ms: number) => `expires in ${spanMs(Math.max(0, ms), 'en')}`,
       // Ops tools and support
       sanctionUntil: (until: number) => (until === 0 ? 'Permanent' : `Until ${whenText(until, 'en-US')}`),
       supportCount: (n: number, max: number) => `${n} / ${max}`,
@@ -1061,6 +1111,22 @@ export const enBase = (n: ContentNames): EngineLocale => {
       autoRetreat: (a) => `Health at ${a[0]}%: auto-hunt stopped and you fell back.`,
       autoNoPotion: () => 'Out of potions: auto-hunt stopped.',
       autoDied: () => 'You went down, so auto-hunt ended.',
+      // Live content (bundle 6)
+      mailExpired: (a) => `${a[0]} expired ${Number(a[0]) === 1 ? 'letter was' : 'letters were'} removed.`,
+      mailExpSoon: (a) => `${a[0]} ${Number(a[0]) === 1 ? 'letter expires' : 'letters expire'} within ${a[1]} h. Claim ${Number(a[0]) === 1 ? 'it' : 'them'} from Mail in the menu.`,
+      goodsGot: (a) => `Bought ${goodsName(a[0])}.`,
+      goodsNo: (a) => ['That item is not on sale right now.', 'You have reached the limit for that item.', 'Sold out.', 'Not enough currency.', 'Not enough room in your bag.', 'Only sold next to the merchant.'][Number(a[0])] ?? 'You cannot buy that.',
+      eventStart: (a) => `The event “${evName(a[0])}” has started. See the Event tab in the menu.`,
+      eventMission: (a) => `Event task done: ${missionName(a[0], a[1])}${Number(a[2]) ? ` (+${a[2]} event currency)` : ''}`,
+      eventEnd: (a) => `The event “${evName(a[0])}” has ended.${Number(a[1]) ? (Number(a[2]) ? ` Your ${a[1]} leftover event currency was exchanged for ${a[2]} and mailed to you.` : ` Your ${a[1]} leftover event currency has expired.`) : ''}`,
+      seasonNew: (a) => `A new season has begun${Number(a[0]) ? ` (Season ${a[0]})` : ''}.${Number(a[1]) ? ` You keep ${a[1]} points.` : ''}${Number(a[2]) ? ` ${a[2]} unclaimed ${Number(a[2]) === 1 ? 'reward was' : 'rewards were'} mailed to you.` : ''}`,
+      seasonGot: (a) => `Claimed season reward tier ${Number(a[0]) + 1}.`,
+      achieveGot: (a) => `Feat unlocked: ${achName(a[0])}${titleName(a[0]) ? ` · you can now wear the title “${titleName(a[0])}”` : ''}`,
+      titleSet: (a) => (a[0] ? `You now wear the title “${titleName(a[0])}”.` : 'Title removed.'),
+      codexNew: (a) => `New codex entry: ${codexName(a[0])} · ${codexEntry(a[0], a[1])}`,
+      couponOk: (a) => `The reward for coupon ${a[0]} was mailed to you.`,
+      couponNo: (a) => ['That coupon code does not exist.', 'You have already used that coupon.', 'That coupon cannot be used right now.', 'That coupon has been fully redeemed.', `Too many wrong codes. Try again in ${a[1]} min.`, 'Guests (not saved) cannot use coupons.', 'Codes use only letters and numbers.'][Number(a[0])] ?? 'You cannot use that coupon.',
+      comeback: (a) => `Welcome back after ${a[0]} days! A return gift was mailed to you.`,
     },
     nameA: n.nameA,
     nameB: n.nameB,
@@ -1252,4 +1318,16 @@ export const enAdminPage: typeof koAdminPage = {
   file: 'Backup file',
   cmdPh: 'Command and arguments (e.g. who, flag market off)',
   cmdNote: 'Same commands as the CLI (npm run admin). Commands your role cannot run are refused. Command output is in Korean.',
+  // Live content (bundle 6: 'Live' tab)
+  tabLive: 'Live',
+  liveEvents: 'Timed events',
+  liveGoods: 'Goods',
+  liveSeason: 'Season',
+  liveCoupons: 'Coupons',
+  liveMail: 'Bulk mail',
+  liveNote: 'Change event dates with remote config (Commands tab: set EVENTS.<id>.to). Each player can use a coupon once; rewards go by mail.',
+  stOpen: 'Open', stSoon: 'Upcoming', stEnded: 'Ended',
+  from: 'From', to: 'To', shop: 'Sold at', price: 'Price', left: 'Left', uses: 'Uses', code: 'Code', reward: 'Reward', missions: 'Tasks',
+  couponPh: 'Code (letters, digits)', couponAdd: 'Create', couponDel: 'Delete',
+  mailPh: 'What to send · --gold 100 --item itemId:2', mailLv: 'Level range · 10-30', mailExpire: 'Expires after (days)', mailSend: 'Send to everyone',
 };

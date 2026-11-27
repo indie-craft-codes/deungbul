@@ -42,3 +42,8 @@ export function runServer(opts: RunOptions): ReturnType<typeof runWith> {
 export { oddsFile, oddsHtml, type OddsFile } from './net/odds';
 export type { OddsSys } from './game/systems/odds';
 export { hasOdds, type OddsStore } from './store';
+// 라이브 콘텐츠 (묶음 6): 관리자 역할의 셈과 스키마 목록(시험), 쿠폰 저장소
+export { roleFor } from './net/admin';
+export { SCHEMA } from './store/sqlite';
+export { hasCoupons, type CouponRow, type CouponStore } from './store';
+export { baseWhy } from './game/systems/wallet';

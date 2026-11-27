@@ -4,10 +4,8 @@
 //   나갔다가 서버 시계로 한 시간 뒤에 들어오면 단계가 나아가 있고(돌아왔을 때의 창 idleBack 하나로만 알린다: 안내문 stageAway는 없다) 방치 우편의 제목 값에 진행이 적힌다.
 import { seededRng, type GachaMe, type HeroesMe, type KeysMe, type StageMe, type SweepGot } from '../../shared/defs';
 import type { ServerMsg } from '../../shared/protocol';
-import { startServer } from '../../server/net/server';
-import { MemoryStore } from '../../server/store';
-import { check, connect, settle, until, type Peer } from '../harness';
-import { heath } from './server/heath';
+import { check, settle, until, type Peer } from '../harness';
+import { clearLayer, heathServer, join, leave } from './netbench';
 
 interface Seen { heroes?: HeroesMe; gacha?: GachaMe; stage?: StageMe; keys?: KeysMe; sweeps: SweepGot[]; pulls: number; mail: { k: string; a: (string | number)[] }[]; backs: { from?: string; to?: string; n?: number }[] }
 const fresh = (): Seen => ({ sweeps: [], pulls: 0, mail: [], backs: [] });
@@ -24,13 +22,11 @@ const listen = (s: Seen) => (m: ServerMsg) => {
 };
 
 let T = Date.UTC(2026, 10, 22, 9, 0, 0); // 별똥별(11월 20일부터 2주)이 열린 때
-const store = new MemoryStore();
-const server = await startServer(0, { store, game: { plugins: [heath], now: () => T } });
-const g = server.game;
+const { server, g } = await heathServer(() => T);
 g.gacha.rng = seededRng(5); // 뽑기 결과(편성의 전투력)를 정해 둔다
 try {
   const sa = fresh();
-  const a: Peer = await connect(server.port, 'Sweeper', 'collect-sweep-token-a-01', listen(sa));
+  const a: Peer = await join(server, 'Sweeper', 'collect-sweep-token-a-01', listen(sa));
   await until(() => !!sa.gacha && !!sa.stage?.run && !!sa.keys);
   check(!!sa.gacha?.open && sa.gacha.open.dawn === -1 && (sa.gacha.open.starfall ?? 0) > 0 && !('stormcall' in sa.gacha.open), `열린 배너: 상시(-1)와 별똥별(남은 ${sa.gacha?.open?.starfall}분), 다음 배너(폭풍)는 없다`);
   a.send({ t: 'gacha', id: 'stormcall', n: 1 });
@@ -54,7 +50,7 @@ try {
   await until(() => a.sys.includes('sweepLocked:dungeon:goldmine'));
   a.send({ t: 'dungeon', id: 'goldmine' });
   await until(() => !!g.dungeon.runOf(ea));
-  for (const e of [...g.ents.values()]) if (e.kind === 'm' && e.layer === ea.layer) g.combat.damage(ea, e, e.hp + 1, false);
+  clearLayer(server, ea);
   await until(() => sa.keys?.goldmine?.won === true);
   a.send({ t: 'dungeonLeave' });
   await until(() => !g.dungeon.runOf(ea));
@@ -76,11 +72,10 @@ try {
   // 오프라인 진행: 나갔다가 서버 시계로 한 시간 뒤에
   ea.stage.auto = true;
   const power = g.squad.power(ea);
-  a.ws.close();
-  await until(() => !g.ents.has(a.id));
+  await leave(server, a);
   T += 60 * 60000;
   const sb = fresh();
-  const b = await connect(server.port, 'Sweeper', 'collect-sweep-token-a-01', listen(sb));
+  const b = await join(server, 'Sweeper', 'collect-sweep-token-a-01', listen(sb));
   await until(() => !!sb.stage && sb.backs.length > 0 && sb.mail.some((m) => m.k === 'idle'));
   await settle(b, 1);
   const back = sb.backs[0], idle = sb.mail.find((m) => m.k === 'idle'), away = `${back?.from}:${back?.to}:${back?.n}`;

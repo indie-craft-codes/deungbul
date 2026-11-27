@@ -12,7 +12,7 @@
 
 ## 요약
 
-**틀**(`engine/`)은 장르와 무관한 **핵심**과 **선택 모듈 29개**다. 게임은 내용의 `MODULES` 한 곳에서 고르고(`engine/shared/modules.ts`의 `MODULE_TABLE`이 목록과 의존, 시작할 때 `checkModules`가 빠진 의존을 오류로), 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다. 끈 모듈의 저장 칸은 읽은 그대로 두었다가 다시 적는다(`MODULE_SAVES`). 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 `MAP`·`MODULES`와 모듈마다의 선택 계약, 이름 89개)뿐이고 `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/client/platform`, `@engine/testing`)로만 읽는다.
+**틀**(`engine/`)은 장르와 무관한 **핵심**과 **선택 모듈 35개**다. 게임은 내용의 `MODULES` 한 곳에서 고르고(`engine/shared/modules.ts`의 `MODULE_TABLE`이 목록과 의존, 시작할 때 `checkModules`가 빠진 의존을 오류로), 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다. 끈 모듈의 저장 칸은 읽은 그대로 두었다가 다시 적는다(`MODULE_SAVES`). 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 `MAP`·`MODULES`와 모듈마다의 선택 계약, 이름 89개)뿐이고 `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/client/platform`, `@engine/testing`)로만 읽는다.
 
 | 모듈 | 한 줄 | 의존 | 묶음 | 등불지기 | 예제 | 메아리 | 들어온 절 |
 |---|---|---|---|---|---|---|---|
@@ -49,6 +49,11 @@
 
 'RPG' 열여섯이 `RPG_MODULES`(등불지기는 `MODULES = RPG_MODULES`), '수집형'의 앞 넷이 `COLLECT_MODULES`다. 수집형·`teams`·`rooms`·`chars`·`morph`·`chat`·`friends`·`odds`는 `RPG_MODULES`에 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 | `modes` | 게임 안의 모드: 한 캐릭터로 두 게임(들판·단계)을 오가기, 보이지 않는 쪽 이어 가기(대역·뒤에서 잇는 단계) | stages | 그 밖 | | | ○ | [making-a-game.md](making-a-game.md) 21절 |
+| `event` | 기간 이벤트: 이벤트 임무·이벤트 재화(종류 event)·이벤트 상점, 끝나면 소멸·환전 | daily, mail, economy | 라이브 | | | ○ | 라이브 콘텐츠 (22절) |
+| `season` | 시즌과 무료 보상 트랙, 초기화 방식, 놓친 보상 | daily, mail, economy | 라이브 | | | ○ | 〃 |
+| `achieve` | 업적과 칭호 | daily, mail | 라이브 | | | ○ | 〃 |
+| `codex` | 도감(처음 얻은 것, 모은 수의 보상) | mail | 라이브 | | | ○ | 〃 |
+| `coupon` | 쿠폰 코드(사람당 1회, 남용 막기)와 복귀 보상 | mail | 라이브 | | | ○ | 〃 |
 
 'RPG' 열여섯이 `RPG_MODULES`(등불지기는 `MODULES = RPG_MODULES`), '수집형'의 앞 넷이 `COLLECT_MODULES`다. 수집형·`teams`·`rooms`·`chars`·`morph`·`chat`·`friends`·`modes`는 `RPG_MODULES`에 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
@@ -74,6 +79,7 @@
 | 운영 도구와 고객지원 (묶음 5) | `feat/ops5` | 분석 사건 `g.track`·집계(D1/D7/D30·일별 활성·퍼널), 웹 관리 화면과 역할 셋, 모듈 `support`(스물여덟째: 문의·제재 이의), 계정 단위 롤백, 봇 의심 점수, 경보(웹훅), 운영 보상 우편. 사고 리허설 시험 | 2435 → 2513 |
 | 확률과 재화의 투명성 (묶음 4) | `feat/odds4` | 확률표 단일 원본(뽑기·강화가 표에서만 굴림), 모듈 `odds`(스물아홉째: 버전·이력·사전 공지, 공개 페이지, 추첨 기록, 확률 탭), 재화의 종류(`CURRENCIES.kinds`), 확인 단계(`CURRENCIES.confirm`). 예제는 메아리 계약 | 합쳐 2513 → 2567 |
 | 두 게임을 오가는 메아리 계약 | `feat/pact2` | 틀: 게임 안의 모드(`modes`: 싸우는 중에도 바꾸기, 보이지 않는 쪽 이어 가기 — 들판의 대역·뒤에서 잇는 단계), `SQUAD_RULES.where`, `MORPH_RULES.fromRoster`·`stats`·`mods(def, grow)`, `CharDef.text`, 자동 사냥 안전장치 `g.away.safety`, 대화의 `md`·`nearScope`. 메아리 계약을 계약의 탑(A)·울림골(B) 두 게임으로 다시 짬, 저장 이전 | 2435 → 2462(묶음 4·5를 합친 뒤 2567 → 2603) |
+| 시험 묶기 | `chore/testtrim` | 같은 검사를 되풀이하던 것을 묶음(잃은 조건 없음): 틀의 시험 도구 `checkEach`(언어·등급·몬스터마다의 검사를 하나로, 실패하면 틀린 항목을 모두 적는다), 소스 훑기·장부 원인(`engine/test/fx/sourcescan.ts`), 수집형의 저장·실제 서버 준비(`engine/test/collect/savebench.ts`·`netbench.ts`), 등불지기 `server`는 틀의 흐름을 되풀이하지 않음(17.5초 → 4초), 예제의 틀과 같은 검사 둘을 뺌 | 2603 → 2535 |
 
 그 전(2026-11-24~26)의 묶음은 아래 '0. 이어 갈 것' 끝의 '요약에서 내린 줄'에 한 줄씩 있다. 다음 후보와 사용자가 정할 것도 '0. 이어 갈 것'에 모았다.
 ## 두 게임을 오가기: 게임 안의 모드 (2026-11-27, 가지 `feat/pact2`)
@@ -373,6 +379,7 @@
 
 ### 끝난 것 (최근 것부터)
 
+- **시험 묶기: 끝(2026-11-27, 가지 `chore/testtrim`)**: 검사 2603 → 2535, `npm test` 약 2분 46초 → 2분 32초. 도감(`guide`) 124 → 81(언어마다·등급마다·보스마다를 `checkEach`로), `fx/bag`·`fx/wallet`의 소스 훑기 다섯씩 → 하나씩, 등불지기 `server`가 틀의 흐름(이름 바꾸기, 걸어가 슬라임 잡기)을 되풀이하지 않음, 예제의 `shopFar`·레벨 업 검사는 틀의 시험(`fx/shop`, `fx/wallet`)에 맡김. 새 시험을 쓸 때: 항목마다 같은 검사는 `checkEach`로, 틀의 기능은 게임의 시험에서 다시 보지 않는다([making-a-game.md](making-a-game.md) 8절).
 - **확률과 재화의 투명성(묶음 4): 끝(2026-11-27, 가지 `feat/odds4`)**: 맨 아래 '확률과 재화의 투명성'. 확률표 단일 원본(뽑기·강화), 모듈 `odds`(버전·이력·사전 공지·공개 페이지·추첨 기록·확률 탭·관리자 `odds`·`draws`), 재화의 종류, 확인 단계. 검사 2435 → 2488개, 스키마 4 → 5, 등불지기·sample 황금 실행 같음.
 - **두 장르를 합친 예제 게임: 끝(2026-11-27, 가지 `feat/hybrid`)**: 위 '두 장르를 합친 예제'. `games/echopact` "메아리 계약"(포트 3003): 들판의 사냥·장비·파티·대화와 울림 샘의 뽑기(공개 확률표·천장 40)·편성·단계(장 셋 × 다섯)를 한 캐릭터가 함께 하고, 손으로 쓴 캐릭터 정의 열이 뽑기의 메아리(영웅)이자 들판의 변신이다. 틀은 고치지 않았다. 검사 2393 → 2435개, 등불지기·sample 황금 실행 같음.
 - **사회와 안전(묶음 3): 끝(2026-11-27, 가지 `feat/social3`)**: 맨 아래 '사회와 안전'. 서버 저장 차단(옛 브라우저 목록은 처음 접속 때 옮긴다), 금칙어 정규화(`engine/shared/textfilter.ts`: 이름·길드·공지·캐릭터 정의도 같은 고리), 신고의 문맥(앞뒤 줄, 관리자 `report`), 대화 보이기 설정 — 여기까지 핵심이라 등불지기에도 들었다. 선택: 모듈 `chat`(귓말·근처·파티 채널, 탭, 도배 막기), `friends`, 칸 `QUICK_CHAT`, `AGE`(연령·제한 모드) — 예제에서만 켰다. 검사 2308 → 2362개, 스키마 3 → 4, 등불지기 황금 실행 같음(운영 DB 복사본으로도). **사용자가 정할 것**: 등불지기에 귓말·친구·채널(`chat`, `friends`)과 정해진 문장을 켤지, 연령 기준(`AGE.limit`: 한국 14세, 미국 13세 …)과 묻는 모양(태어난 해/구간), 제한 모드에서 막을 명령(등불지기라면 거래소 `market`), 보호자 동의·본인확인(비용), 금칙어 목록의 크기(외부 검열 API는 비용). **남은 것**: 파티 저장·파티 찾기(b4·b5), 프로필 카드 칸(b25), 핑·이모트, 판·채널(층)·거래 채널, 1:1 거래가 없어 '거래 요청' 차단은 해당 없음, 관리자 `allow`(허용 낱말) 명령, 영문 자판 + 띄어쓰기를 겹친 우회(퍼징의 놓침 대부분), 손님(저장 키 없음)끼리 같은 주소면 한 사람으로 묶이는 것.
@@ -883,3 +890,30 @@ PC(1280×800)와 폰(390×844, 터치, DPR 2), 한국어·영어 넷씩, 두 게
 사용자가 정할 것: 등불지기에 공개 페이지·추첨 기록을 켤지(강화 재료를 유상으로 팔 때는 공개 의무), 추첨 기록의 보관 기간(틀의 기본 5년), 내 데이터 삭제 때 추첨 기록을 남길지(지금은 사람 칸만 지운다), 공개 페이지의 운영자 문구(상호·문의처·등급), 유상 재화를 둘지(결제 결정과 함께).
 
 합칠 때: SQLite 스키마는 목록 끝에 한 단계를 덧붙였다(다른 가지가 단계를 더했으면 그 뒤로 옮긴다. 시험은 번호를 쓰지 않는다). 공용 파일에는 끝에 덧붙였다: `MODULE_TABLE`(`odds`)·`MODULE_SAVES`(`purse`)·`RPG_MODULES`의 거르기, `scripts/admin.mjs`의 도움말, i18n ko/en(ui·fmt의 끝, 파일 끝의 `koOddsPage`·`enOddsPage`), `engine/client/modules.ts`의 목록 끝, `net/server.ts`의 HTTP 처리 고리와 관리자 `extra`, 계약·기본값·content·defs의 끝.
+
+## 라이브 콘텐츠 (2026-11-27, 가지 `feat/live6`)
+
+[genre-features.md](genre-features.md) 5.6절의 묶음 6. 쓰는 법은 [making-a-game.md](making-a-game.md) 22절, 예제의 수치는 [proof-echopact.md](proof-echopact.md) '라이브 콘텐츠'.
+
+| 무엇 | 틀의 칸 | 고르지 않으면 |
+|---|---|---|
+| 모양과 검사 | `engine/shared/defs/livecontent.ts`: `GoodsDef`·`EventDef`·`SeasonRules`·`AchieveDef`·`CodexDef`·`CouponRules`·`ComebackRules`·`MailRules`, 화면 몫 `GoodsMe`·`EventMe`·`SeasonMe`·`AchieveMe`·`CodexMe`, `seasonAt`·`seasonKeep`·`goodsOpen`·`couponNorm`·`couponShape`, 켜질 때의 `checkLiveContent`. 내용 계약 `LiveContent`(이름 여덟, 기본값은 모두 빈 것) | 적지 않으면 아무것도 없다 |
+| 사건의 셈 | 틀의 사건 `counted(p, 종류, n)`: `g.daily.add`가 일일 임무를 센 뒤 알린다 (`kill`·`enhance`·`buy`와 게임의 종류) | 듣는 것이 없다 |
+| 상품 | `systems/goods.ts`(`g.goods`: `buy`·`count`·`left`·`me`, `giveNow`·`mergeRewards`), 명령 `goods`, 저장 `ext.goods`·월드 `goods`(`MODULE_SAVES`의 items), 개인 상태 `goods`. 지갑 `kindHave`·`takeKind`·`drainKind` | `GOODS`가 비면 시스템이 없다 |
+| 모듈 다섯 | `MODULE_TABLE` 끝에 `event`(daily·mail·economy), `season`(〃), `achieve`(daily·mail), `codex`(mail), `coupon`(mail). `LIVE_MODULES`, `RPG_MODULES`에서 뺀다. 서버 `systems/event.ts`·`season.ts`·`achieve.ts`·`codex.ts`·`coupon.ts`(`g.event`·`g.season`·`g.achieve`·`g.codex`·`g.coupon`), 명령 `season`·`title`·`coupon`, 메시지 `title`, 들어올 때의 정보 `ti`, 엔티티의 칸 `title`(achieve) | 없다 |
+| 우편 만료 | `MAIL_RULES`, `Mail.x`·`w`, `mailDays`, `g.mail.send(…, x?)`·`sendTo(…, x?)`·`expire`, 안내문 `mailExpired`·`mailExpSoon`. 운영 도구 `mail --all --lv --expire`, 서버의 `mailAll(…, { lv, x })` | 만료가 없다 |
+| 쿠폰의 저장 | SQLite 스키마의 끝 단계: `coupons`(코드 → 정의), `coupon_uses`(코드와 사람의 짝, 색인 owner). `CouponStore`·`hasCoupons`(메모리 저장소도) | 표는 생기지만 비어 있다 |
+| 화면 | `engine/client/hud/live.ts`(메뉴 탭 다섯, 우편 탭의 쿠폰 칸 `mailTop`, 상인 창의 `shopExtras`, 이름표의 칭호 `setTitle`), 문장 `engine/client/i18n/live.ts`, ko·en ui 28·fmt 17·msg 15, 우편 종류 일곱(`event`·`eventSwap`·`season`·`achieve`·`codex`·`coupon`·`comeback`), 스타일 끝 | 그 모듈의 탭이 없다 |
+| 관리자 | `net/livecmds.ts`: `events`·`season`·`coupon [list|show|add|del]`, 역할은 `roleFor`(events·season view, coupon의 만들기·지우기 full), `scripts/admin.mjs` 도움말, 웹 관리 화면의 '라이브' 탭(`admin-page.ts`의 탭 끝, 문장 `koAdminPage`·`enAdminPage` 끝) | 명령은 '쓰지 않습니다'를 답한다 |
+
+- **고친 것**: 재화의 종류를 세는 게임에서 모드의 '다른 쪽'(대역의 사냥, 뒤에서 잇는 단계)의 셈이 원인의 `:종류` 꼬리 때문에 0이 되던 것(`systems/modes.ts`: `baseWhy`). 메아리 계약이 울림 조각의 종류를 켜며 드러났다.
+- **예제**: 메아리 계약이 모듈 다섯과 칸을 켰다(모듈 스물다섯). 울림 조각의 종류(무상·이벤트), 울림 축제 2주, 상품 다섯, 시즌 2주·트랙 다섯, 업적 넷(칭호 셋), 도감 둘, 복귀 보상, 우편 만료. **등불지기는 켜지 않았다.**
+- **황금 실행**(`$TEMP/dg-work/live6-tools/golden.mts`, 바탕 `fdd2205`과 가지): 등불지기 sim 7,489,205바이트 `ba83af30d07f` 바이트까지 같다.
+- **시험**: 검사 2603 → 2633개(+30, 최신 main을 합친 뒤. typecheck 10개, npm test 두 번과 TZ=UTC, build:all 통과): `echopact/live` 30(가상 시계로 2주 축제와 시즌 하나를 도는 통합 시험 하나, 그 길의 상품·업적·도감·우편 만료·저장·복귀, 쿠폰 표 한 묶음, 관리자·역할·조건부 우편, SQLite의 쿠폰 표). 고친 시험: 모듈 표(`fx/modules`: 라이브 콘텐츠 셋은 일일 임무와 함께 뺀다, 상품의 저장 칸), 엔티티의 칸(`fx/parts`: `title`), 화면 모듈의 차례(`collect/client`), 등불지기 도감의 불러오는 파일(`i18n/live.ts`), 언어 견본(새 키만).
+- **실제 브라우저**: 헤드리스 크롬(GPU), 임시 서버 3015(메아리 계약, 임시 DB, 축제 기간을 원격 설정으로 지금에 맞춤), PC 1280×800·폰 390×844 × 한국어·영어: 이벤트 탭(기간·남은 때·축제 조각·환전 안내·임무·축제 상점에서 사기), 시즌 탭(받기·놓친 보상 안내), 업적 탭(칭호 달기 → 이름표 「사냥꾼」), 도감 탭(??? 칸), 우편 탭의 쿠폰 칸(fest-2026 → 받음, 줄마다 '…뒤 사라짐'), 상점 탭, 웹 관리 화면의 '라이브' 탭. 콘솔 오류 없음. 스크린샷 `$TEMP/dg-work/live6-shots/`.
+
+남은 것: 꾸미기 상품, 시즌의 순위(묶음 8), 같은 재화를 쓰는 이벤트의 동시 진행, 상태 업적(레벨·모은 수), 웹 관리 화면의 보상 칸은 CLI의 선택 글.
+
+사용자가 정할 것: 등불지기에 라이브 콘텐츠를 켤지와 그 수치(경제 변경), 우편 만료 일수(등불지기는 지금 만료 없음), 쿠폰을 어디에 배포할지, 시즌의 주기와 초기화 방식.
+
+합칠 때: SQLite 스키마는 목록 끝에 한 단계(`coupons`·`coupon_uses`)를 덧붙였다(묶음 7이 단계를 더했으면 그 뒤로. 시험은 `SCHEMA.length`). 공용 파일에는 끝에 덧붙였다: `MODULE_TABLE`(다섯)·`MODULE_SAVES`(player `goods`·`event`·`season`·`achieve`·`codex`·`back`, world `goods`)·`RPG_MODULES`의 거르기(`LIVE_MODULES`), 계약·기본값·content·defs의 끝, `messages.ts`·`protocol.ts`의 끝, i18n ko/en(ui·fmt·msg의 묶음 끝, `koAdminPage`·`enAdminPage` 끝), `engine/client/modules.ts`의 목록 끝, `scripts/admin.mjs` 도움말, `net/admin.ts`의 `roleFor`, `admin-page.ts`의 탭 끝, `net/server.ts`의 관리자 `extra`와 `mailAll`, `engine/server/index.ts`의 끝. 핵심 쪽은 `daily.ts`(사건 하나), `mail.ts`(만료), `wallet.ts`(종류의 몫 셋, `baseWhy`), `snapshot.ts`(`ti`), `entities.ts`(칭호), `shop.ts`·`menu/mail.ts`(덧붙이는 고리).
