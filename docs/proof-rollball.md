@@ -1,5 +1,7 @@
 # 증명 기록: 문서만 보고 RPG가 아닌 게임(팀 공놀이 "굴림공")을 만든다
 
+> **기록: 그때의 상태** (2026-11-26). 여기 적힌 빈틈은 [framework-status.md](framework-status.md) '빈틈 메우기'(가지 `feat/gaps`)에서 메웠다. 지금 대응하는 문서: [making-a-game.md](making-a-game.md) 6절 '팀과 점수판'·12절, [framework-status.md](framework-status.md), 문서 지도 [README.md](README.md).
+>
 > 이 게임은 2026-11-27에 저장소에서 지웠다. 코드는 커밋 `7e347c9`에 있다 (`git checkout 7e347c9 -- games/<이름>`). 이 기록은 틀을 검증한 기록으로 남긴다.
 
 처음 보는 개발자의 눈으로 `docs/making-a-game.md`를 처음부터 끝까지 읽고, 문서가 가리키는 본보기
