@@ -84,6 +84,8 @@
   --c-chat-party: #a9cdfa;
   --c-chat-whisper: #e3b5ff;
   --c-icon-bg: var(--icon-bg, rgba(255, 255, 255, .05));
+  --c-focus: #5cc8ff;                       /* 키보드 포커스 링 (금빛 단추 위에서도 보인다) */
+  --c-focus-halo: rgba(0, 0, 0, .7);
 
   /* ---- 등급 색 표 하나: 카드 테두리·뽑기 연출·이름표·장비 줄·3D 발밑 고리가 함께 쓴다 (hud/rarity.ts).
      영웅의 등급(HeroRarityDef.id)이 이 이름이면 이 색, 아니면 내용의 color. 장비의 등급 1·2·3은 uncommon·rare·epic ---- */
@@ -94,14 +96,14 @@
   --rar-legend: #f0b440;
   --rar-myth: #ff6a5a;
 
-  /* ---- 글자 크기 단계 (일곱. 이보다 작은 글은 없다: 폰에서 12px, 본문 14px) ---- */
-  --fs-xs: 12px;   /* 덧붙임 숫자·단축키·칩 */
-  --fs-sm: 13px;   /* 설명(.note)·보조 */
-  --fs-md: 14px;   /* 본문·목록 이름·단추 */
-  --fs-lg: 16px;   /* 작은 제목·강조 숫자 */
-  --fs-xl: 20px;   /* 창 제목·큰 단추 */
-  --fs-2xl: 24px;  /* 화면 제목·결과 '깸!' */
-  --fs-3xl: 30px;  /* 가장 큰 숫자 */
+  /* ---- 글자 크기 단계 (일곱. 이보다 작은 글은 없다: 폰에서 12px, 본문 14px). 설정의 '글자 크기'가 --fs-scale로 일곱 모두에 곱한다 (U4) ---- */
+  --fs-xs: calc(12px * var(--fs-scale, 1));   /* 덧붙임 숫자·단축키·칩 */
+  --fs-sm: calc(13px * var(--fs-scale, 1));   /* 설명(.note)·보조 */
+  --fs-md: calc(14px * var(--fs-scale, 1));   /* 본문·목록 이름·단추 */
+  --fs-lg: calc(16px * var(--fs-scale, 1));   /* 작은 제목·강조 숫자 */
+  --fs-xl: calc(20px * var(--fs-scale, 1));   /* 창 제목·큰 단추 */
+  --fs-2xl: calc(24px * var(--fs-scale, 1));  /* 화면 제목·결과 '깸!' */
+  --fs-3xl: calc(30px * var(--fs-scale, 1));  /* 가장 큰 숫자 */
   --lh: 1.45;
 
   /* ---- 간격 ---- */
@@ -148,6 +150,26 @@ body {
   --c-line-strong: var(--c-accent);           /* 고른 것·주 행동의 테두리 */
   --c-title: var(--c-accent);                 /* 창 제목 */
 }
+/* 고대비 (U4, 설정의 '고대비': engine/client/uiscale.ts가 data-contrast="1"을 단다). 토큰의 대체 세트: 창 바탕은 불투명, 글자는 흰색과 밝은 회색,
+   선은 밝게, 흐린 글(--c-text-3)도 4.5:1 위로. 게임이 :root·body[data-mode]에서 바꾼 색보다 이긴다(선택자가 더 세다). 색의 뜻(강조·좋음·나쁨)은 그대로 */
+:root[data-contrast="1"], :root[data-contrast="1"] body, :root[data-contrast="1"] body[data-mode] {
+  --c-text: #ffffff;
+  --c-text-2: #e4ece9;
+  --c-text-3: #b9c6c2;
+  --c-line: rgba(255, 255, 255, .72);
+  --c-line-strong: #ffffff;
+  --c-panel: rgb(var(--c-surface-rgb));
+  --c-fill-1: rgba(255, 255, 255, .1);
+  --c-fill-2: rgba(255, 255, 255, .18);
+  --c-sunk: rgba(0, 0, 0, .6);
+  --c-good: #9ff0a8;
+  --c-bad: #ffc4bb;
+  --c-warn: #ffd98a;
+  --c-focus: #ffffff;
+  --c-focus-halo: #000000;
+}
+:root[data-contrast="1"] :is(button, select, input, .chip) { border-color: var(--c-line); }
+:root[data-contrast="1"] .tag { text-shadow: 0 0 2px var(--c-black), 0 0 4px var(--c-black), 0 1px 3px var(--c-black); }
 /* 터치: 누르는 것은 44px 이상 (Apple HIG 44pt) */
 @media (pointer: coarse) { :root { --tap: 44px; } }
 /* 움직임 줄이기: 모든 움직임 시간이 거의 0. 기기의 '동작 줄이기'를 따르되, 설정 창의 '움직임 줄이기'가 정하면 그것이 이긴다

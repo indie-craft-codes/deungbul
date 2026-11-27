@@ -14,6 +14,7 @@ import { uiSound } from '../sound';
 import { S } from '../state';
 import { routeNotice } from './notify';
 import { openMenu } from './menu';
+import { toUi } from '../uiscale';
 
 export interface CelebrateOpts {
   /** 모양: level(금빛 빛살), reward(받음), unlock(새 기능) */
@@ -129,8 +130,8 @@ export function floatDelta(anchor: HTMLElement, d: number): void {
   f.textContent = (d > 0 ? '+' : '−') + Math.abs(d).toLocaleString(L().code);
   // 숫자의 오른쪽에서 떠오른다 (위에 놓으면 위 줄(체력 막대·이름)을 가렸다). 화면 오른쪽 끝이면 왼쪽으로
   const right = r.right + 6 + 72 > window.innerWidth;
-  f.style.left = `${Math.round(right ? r.left - 6 : r.right + 6)}px`;
-  f.style.top = `${Math.round(r.top + r.height / 2)}px`;
+  f.style.left = `${Math.round(toUi(right ? r.left - 6 : r.right + 6))}px`; // 화면 px → 배율을 건 좌표 (../uiscale.ts)
+  f.style.top = `${Math.round(toUi(r.top + r.height / 2))}px`;
   if (right) f.classList.add('left');
   if (r.top < 64) f.classList.add('sink'); // 화면 맨 위(재화 줄)에서는 아래로 흘러간다
   document.body.append(f);

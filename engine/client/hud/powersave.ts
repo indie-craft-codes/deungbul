@@ -18,6 +18,7 @@ import { POTIONS } from '../../shared/auto';
 import { dropScreen, openScreen } from './screens';
 import { myStage } from './stagebar';
 import { uiIcon } from './uiicons';
+import { toUi } from '../uiscale';
 
 /** 절전 중의 프레임 (요약은 1초마다 고친다) */
 export const POWER_SAVE_FPS = 5;
@@ -106,7 +107,7 @@ function slide(track: HTMLElement, knob: HTMLElement): void {
     knob.classList.add('drag');
     e.preventDefault();
   });
-  knob.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; dx = Math.max(0, Math.min(max, e.clientX - x0)); put(dx); });
+  knob.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; dx = Math.max(0, Math.min(max, toUi(e.clientX - x0))); put(dx); });
   const up = (e: PointerEvent) => {
     if (e.pointerId !== id) return;
     id = -1;

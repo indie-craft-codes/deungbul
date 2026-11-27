@@ -4,6 +4,7 @@ export { startClient, type ClientOptions } from './main';
 export { onFrame, onKey, onMsg, onSlow } from './bus';
 export { rules } from './rules';
 export { $, view } from './app';
+export { hudLeft, onUiScale, toUi, uiScale } from './uiscale';
 export { S, inDungeon } from './state';
 export { send } from './net';
 export { goToTown, moveTo, setTapHandler } from './actions';

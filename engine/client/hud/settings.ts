@@ -1,4 +1,4 @@
-// 설정 창: 메뉴의 '설정' 탭 (어느 게임에나 늘 맨 뒤에 보인다: MenuTab.always). 소리·음량, 그래픽 품질(그림자·해상도 상한·그리는 거리), 흔들림 끄기, 글자 크기,
+// 설정 창: 메뉴의 '설정' 탭 (어느 게임에나 늘 맨 뒤에 보인다: MenuTab.always). 소리·음량, 그래픽 품질(그림자·해상도 상한·그리는 거리), 흔들림 끄기, UI 크기·큰 화면에 맞춤·글자 크기·고대비(U4),
 // 단축키 재설정, 게임이 더한 칸(addSetting), 튜토리얼 다시 보기, 약관, 내 데이터(내보내기·삭제)를 한곳에 둔다.
 // 값은 이 기기에 둔다 (플랫폼 저장소의 'settings' 칸: 셈은 ./settingscalc.ts). 처음 값은 이 창이 생기기 전과 같다 (그림자 켬, 배율 2까지, 320m, 배율 1, 키 그대로).
 import { $, view } from '../app';
@@ -9,6 +9,7 @@ import { platform } from '../platform';
 import { hasMusic } from '../assets';
 import { onSoundChange, setSoundMix, setSoundOn, setUiSoundOn, setUiTapOn, soundMix, soundOn, uiSoundOn, uiTapOn } from '../sound';
 import { setStillMotion, stillMotion } from '../motion';
+import { setUiPrefs, uiScale } from '../uiscale';
 import { S } from '../state';
 import { legalRows, myDataRows, myDataSig } from './legal';
 import { addMenuTab, renderMenu } from './menu';
@@ -17,7 +18,7 @@ import { replayRows, tutorialSig } from './tutorial';
 import { socialRows, socialSig } from './social';
 import { supportRows, supportSig } from './support';
 import { hasModule } from '../mods';
-import { FAR_STEPS, PIXEL_STEPS, QUALITIES, RESERVED_KEYS, UI_STEPS, gfxOf, keyLabel, qualityOf, readSettings, writeSettings, type Quality, type Settings } from './settingscalc';
+import { FAR_STEPS, PIXEL_STEPS, QUALITIES, RESERVED_KEYS, TEXT_STEPS, UI_STEPS, gfxOf, keyLabel, qualityOf, readSettings, writeSettings, type Quality, type Settings } from './settingscalc';
 
 const STORE_KEY = 'settings';
 const cap = (): number => platform().display.pixelRatioCap();
@@ -51,17 +52,12 @@ export function settingValue(id: string): unknown {
 
 function save(): void { platform().storage.set(STORE_KEY, writeSettings(cur)); }
 
-/** 화면 배율을 걸 요소: 창과 단추들(#hud), 접속 화면, 직업 고르기, 튜토리얼 카드. 3D 화면과 이름표는 그대로 */
-const SCALED = ['hud', 'gate', 'classPick', 'tut', 'legal', 'keepSafe'];
-/** 지금 값을 화면에 건다 */
+/** 지금 값을 화면에 건다. 창·글자의 배율은 ../uiscale.ts가 문서 뿌리의 --ui-scale로 (3D 화면과 이름표 밖의 모든 창에 style.css가 건다) */
 function apply(): void {
   if (view) view.setQuality(cur.gfx, platform().display.pixelRatio());
   if (cur.calm !== null) setCalm(cur.calm);
   setStillMotion(cur.motion ?? null);
-  for (const id of SCALED) {
-    const e = $(id) as (HTMLElement & { style: CSSStyleDeclaration & { zoom?: string } }) | null;
-    if (e) e.style.zoom = cur.ui === 1 ? '' : String(cur.ui); // 배율 1이면 아무것도 걸지 않는다 (예전과 같다)
-  }
+  setUiPrefs({ size: cur.ui, fit: cur.fit ?? true, text: cur.text ?? 1, contrast: cur.contrast ?? false });
   setKeyMap(cur.keys);
 }
 function set(fn: (s: Settings) => void): void { fn(cur); save(); apply(); renderMenu(); }
@@ -111,7 +107,12 @@ function drawSettings(list: HTMLElement): void {
   list.append(row(t('setCalm'), '', [onOff(!calmNow, (v) => set((s) => { s.calm = !v; }))]));
   // 움직임 줄이기: 보상 연출의 빛살·숫자 굴리기·떠오르는 +n·돌림 (engine/client/motion.ts). 처음은 기기의 '동작 줄이기'
   list.append(row(t('setMotion'), '', [onOff(stillMotion(), (v) => set((s) => { s.motion = v; }))]));
-  list.append(row(t('setUi'), '', [chips(UI_STEPS.map((u) => ({ text: `${Math.round(u * 100)}%`, on: cur.ui === u, click: () => set((s) => { s.ui = u; }) })))]));
+  // 보기 (U4): UI 크기(작게·보통·크게·아주 크게) × 큰 화면에 맞춤(자동), 글자 크기, 고대비
+  const sizeName: UiKey[] = ['sizeS', 'sizeM', 'sizeL', 'sizeXL'];
+  list.append(row(t('setUi'), L().fmt.uiNow(Math.round(uiScale() * 100)), [chips(UI_STEPS.map((u, i) => ({ text: t(sizeName[i]), on: cur.ui === u, click: () => set((s) => { s.ui = u; }) })))], 'chips4'));
+  list.append(row(t('setFit'), t('setFitNote'), [onOff(cur.fit ?? true, (v) => set((s) => { s.fit = v; }))]));
+  list.append(row(t('setText'), '', [chips(TEXT_STEPS.map((u, i) => ({ text: t(sizeName[i]), on: (cur.text ?? 1) === u, click: () => set((s) => { s.text = u; }) })))], 'chips4'));
+  list.append(row(t('setContrast'), t('setContrastNote'), [onOff(cur.contrast ?? false, (v) => set((s) => { s.contrast = v; }))]));
   const fs = platform().display.fullscreen;
   if (platform().has('display.fullscreen')) list.append(row(t('setFullscreen'), '', [onOff(fs.is(), (v) => { void fs.set(v).then(() => renderMenu()); })]));
   // 단축키 (키보드가 있는 기기)
@@ -162,7 +163,7 @@ function captureKey(ev: KeyboardEvent): void {
 export function initSettings(): void {
   cur = readSettings(platform().storage.get(STORE_KEY), cap());
   apply();
-  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), uiSoundOn(), uiTapOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig(), supportSig()] });
+  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, uiScale(), soundOn(), uiSoundOn(), uiTapOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig(), supportSig()] });
   window.addEventListener('keydown', captureKey, { capture: true });
   onSoundChange(() => renderMenu());
   onLangChange(() => renderMenu());

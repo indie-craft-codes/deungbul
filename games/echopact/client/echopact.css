@@ -101,7 +101,7 @@ body[data-mode="tower"] #me { opacity: .92; }
 
 /* 보고 있지 않은 쪽의 작은 표시(상태 줄)와 바로 가기 (PC: 오른쪽 위 게임 바꾸기 단추 아래. 폰: 틀의 구역 배치가 위 왼쪽에 놓는다) */
 .pactSide { position: fixed; z-index: calc(var(--z-float) - 1); left: 50%; transform: translateX(-50%); top: calc(128px + env(safe-area-inset-top, 0px)); display: flex; gap: 6px; align-items: center;
-  max-width: calc(100vw - 24px); padding: 4px 6px 4px 10px; border-radius: var(--r-pill); background: var(--c-panel); color: var(--ep-mist); font-size: var(--fs-xs); pointer-events: auto; white-space: nowrap; }
+  max-width: calc(calc(var(--uvw, 1vw) * 100) - 24px); padding: 4px 6px 4px 10px; border-radius: var(--r-pill); background: var(--c-panel); color: var(--ep-mist); font-size: var(--fs-xs); pointer-events: auto; white-space: nowrap; }
 .pactSide[hidden] { display: none; }
 .pactSide span { overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .pactSide button { padding: 3px 9px; border-radius: var(--r-pill); font-size: var(--fs-xs); }
@@ -115,7 +115,7 @@ body[data-mode="tower"] #me { opacity: .92; }
 body.towerLobby #stageBar, body[data-mode="vale"] #stageBar { display: none !important; }
 body.towerLobby .pactSide, body[data-mode="vale"] .pactSide { top: calc(46px + env(safe-area-inset-top, 0px)); }
 /* 폰: 구역 안의 작은 표시는 줄을 바꿔 다 보인다 */
-#zones .pactSide { white-space: normal; flex-wrap: wrap; border-radius: var(--r-lg); max-width: min(260px, 62vw) !important; }
+#zones .pactSide { white-space: normal; flex-wrap: wrap; border-radius: var(--r-lg); max-width: min(260px, calc(var(--uvw, 1vw) * 62)) !important; }
 
 /* 탑의 싸움: 계약자는 싸우지 않으므로 내 체력·경험치 막대를 감춘다. 편성의 메아리들은 틀의 전투 화면(hud/battle.ts)의 초상 칸이 보인다 */
 body[data-mode="tower"] #me .bar.hp, body[data-mode="tower"] #me .bar.xp, body[data-mode="tower"] #hpt, body[data-mode="tower"] #buffs { display: none !important; }
@@ -162,8 +162,8 @@ body[data-mode="tower"] #stageGoBtn { display: none; }
 body[data-tower="battle"] #me { opacity: .85; }
 /* 폰의 탑: 내 정보·대화 창을 빼서 위를 전투 화면에게 (재화는 홈이 보인다, 대화는 울림골에서) */
 body[data-lay="portrait"][data-mode="tower"] #me, body[data-lay="landscape"][data-mode="tower"] #me, body[data-lay="portrait"][data-mode="tower"] #chat, body[data-lay="landscape"][data-mode="tower"] #chat { display: none !important; }
-#zones #stageBar { width: min(300px, calc(100vw - 24px)); max-width: none; }
+#zones #stageBar { width: min(300px, calc(calc(var(--uvw, 1vw) * 100) - 24px)); max-width: none; }
 /* 탑의 메뉴(뽑기·메아리·편성 …)는 큰 창으로, 홈·편성 확인 페이지 위에 */
-body[data-mode="tower"] #menu { width: min(760px, calc(100vw - 16px)); max-width: none; height: calc(var(--app-h, 100vh) - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); z-index: var(--z-menu); }
+body[data-mode="tower"] #menu { width: min(760px, calc(calc(var(--uvw, 1vw) * 100) - 16px)); max-width: none; height: calc(var(--app-h, calc(var(--uvh, 1vh) * 100)) - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); z-index: var(--z-menu); }
 /* 튜토리얼 키트 (묶음 D): 울림골이 열리기 전에는 '게임 바꾸기'와 다른 쪽 표시를 감춘다 */
 body.epNoVale .modeBtn, body.epNoVale .pactSide { display: none !important; }

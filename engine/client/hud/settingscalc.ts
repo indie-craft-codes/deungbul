@@ -15,8 +15,32 @@ export const QUALITIES: readonly Quality[] = ['high', 'mid', 'low'];
 /** 고를 수 있는 값들 */
 export const PIXEL_STEPS: readonly number[] = [1, 1.5, 2];
 export const FAR_STEPS: readonly number[] = [130, 200, 320];
-/** 글자 크기(화면 배율) */
+/** UI 크기 (창·단추·글자를 함께 키운다): 작게·보통·크게·아주 크게. 큰 화면에 맞춤(fit)의 배율에 곱한다 */
 export const UI_STEPS: readonly number[] = [0.9, 1, 1.15, 1.3];
+/** 글자 크기: 글자 크기 단계 일곱(tokens.css의 --fs-*)에 곱한다. 창의 너비는 그대로 (U4) */
+export const TEXT_STEPS: readonly number[] = [0.9, 1, 1.15, 1.3];
+
+/** 큰 화면에 맞춤의 기준: 창·글자는 이 크기(CSS px)에서 1배로 지었다. 더 큰 화면은 짧은 쪽의 비율만큼 키운다 (U4) */
+export const FIT_BASE = { w: 1600, h: 900, max: 2.5 } as const;
+/**
+ * 큰 화면에 맞춤의 배율: 1600×900 이하는 1, 1920×1080은 1.2, 2560×1440은 1.6, 3840×2160은 2.4, 3440×1440(울트라와이드)은 1.6.
+ * 폰(구역 배치를 쓰는 화면: hud/layout.ts의 layOf가 'pc'가 아닌 것)은 언제나 1. 0.05 단위로 내린다 (글자가 흐려지지 않게 잦은 값을 피한다)
+ */
+export function fitScale(w: number, h: number, pc = true): number {
+  if (!pc || !(w > 0) || !(h > 0)) return 1;
+  const k = Math.min(w / FIT_BASE.w, h / FIT_BASE.h);
+  return Math.max(1, Math.min(FIT_BASE.max, Math.floor(k * 20 + 1e-6) / 20));
+}
+/**
+ * HUD의 상자 (배율을 건 좌표): 화면이 16:9보다 많이 넓으면(울트라와이드, 2:1 넘게) HUD를 가운데 16:9 폭으로 모은다 — 창과 단추가 양 끝에 흩어지지 않게.
+ * 3D 화면은 그대로 꽉 찬다. 폰(pc가 아님)은 손대지 않는다 (노치·안전 영역은 구역 배치가 맡는다)
+ */
+export function hudBox(w: number, h: number, scale: number, pc = true): { w: number; x: number } {
+  const W = w / scale, H = h / scale;
+  if (!pc || W / H <= 2) return { w: W, x: 0 };
+  const hw = Math.round(H * 16 / 9);
+  return { w: hw, x: Math.round((W - hw) / 2) };
+}
 
 export interface Settings {
   gfx: Gfx;
@@ -24,8 +48,14 @@ export interface Settings {
   calm: boolean | null;
   /** 움직임 줄이기 (보상 연출·돌림·떠오르는 숫자). null이면 기기의 '동작 줄이기'를 따른다 (engine/client/motion.ts) */
   motion?: boolean | null;
-  /** 화면(창·단추·글자)의 배율 */
+  /** UI 크기(창·단추·글자)의 배율: UI_STEPS */
   ui: number;
+  /** 큰 화면에 맞춤 (자동, 처음은 켬): 켜면 fitScale을 ui에 곱한다 (U4) */
+  fit?: boolean;
+  /** 글자 크기: TEXT_STEPS (U4) */
+  text?: number;
+  /** 고대비 (U4): 바탕을 불투명하게, 글자·선을 밝게 (tokens.css의 :root[data-contrast="1"]) */
+  contrast?: boolean;
   /** 키 재설정: 기능(처음 키) → 고른 키 (engine/client/bus.ts의 setKeyMap) */
   keys: Record<string, string>;
   /** 게임이 더한 칸(addSetting)의 값: id → 값 */
@@ -52,6 +82,9 @@ export function readSettings(raw: string | null, cap = 2): Settings {
     calm: typeof o.calm === 'boolean' ? o.calm : null,
     ...(typeof (o as { motion?: unknown }).motion === 'boolean' ? { motion: (o as { motion: boolean }).motion } : {}),
     ui: near(o.ui, UI_STEPS, 1),
+    ...(typeof o.fit === 'boolean' ? { fit: o.fit } : {}),
+    ...(typeof o.text === 'number' ? { text: near(o.text, TEXT_STEPS, 1) } : {}),
+    ...(typeof o.contrast === 'boolean' ? { contrast: o.contrast } : {}),
     keys,
     extra: typeof o.extra === 'object' && o.extra !== null ? { ...(o.extra as Record<string, unknown>) } : {},
   };

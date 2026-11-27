@@ -2,7 +2,7 @@
 // 틀이 아는 재화는 'gold'(첫 번째 재화: 엔티티의 gold)와 'second'(두 번째 재화: sparks)다. 게임은 다른 칩(값을 돌려주는 함수)을 더할 수 있다.
 // 줄은 만들어 돌려줄 뿐이다: 붙일 곳은 부른 쪽이 정한다 (수집형 홈 키트의 위 띠, 게임의 페이지). 값은 0.25초마다 바뀐 것만 고친다.
 import { onSlow } from '../bus';
-import { L } from '../i18n';
+import { L, t } from '../i18n';
 import { S } from '../state';
 import { itemIcon } from './icons';
 import { uiIcon } from './uiicons';
@@ -59,6 +59,7 @@ export function currencyBar(chips: readonly (CurrencyId | CurrencyChip | (Partia
     if (chip.plus) {
       const p = document.createElement('button');
       p.type = 'button'; p.className = 'curplus'; p.textContent = '+';
+      p.setAttribute('aria-label', t('curPlus')); // 낭독기: '+'가 아니라 '더 얻기' (U4)
       const go = chip.plus;
       p.addEventListener('click', (e) => { e.stopPropagation(); go(); });
       el.append(p);

@@ -87,7 +87,7 @@
   #rightcol #quest { width: 230px; max-width: 100%; }
   /* 등탑·상점·대장간이 열려 있으면 퀘스트는 대화창 위에 한 줄로 줄여 보여 준다 */
   #rightcol #tower:not([hidden]) ~ #quest, #rightcol #shop:not([hidden]) ~ #quest, #rightcol #forge:not([hidden]) ~ #quest {
-    position: fixed; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 124px); top: calc(var(--app-h, 100vh) - 116px - env(safe-area-inset-bottom, 0px));
+    position: fixed; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 124px); top: calc(var(--app-h, calc(var(--uvh, 1vh) * 100)) - 116px - env(safe-area-inset-bottom, 0px));
     width: 210px; padding: 3px 8px;
   }
   #tower:not([hidden]) ~ #quest > .row, #shop:not([hidden]) ~ #quest > .row, #forge:not([hidden]) ~ #quest > .row,

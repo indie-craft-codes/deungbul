@@ -74,6 +74,8 @@ export function row(name: string | HTMLElement, note: string | HTMLElement, butt
   const acts = el('acts');
   acts.append(...buttons);
   r.append(what, acts);
+  // 낭독기 (U4): 글이 기호·숫자뿐인 단추(×1.5 · 100% · 키 이름 '1')는 줄의 이름을 붙여 읽는다 ('해상도 ×1.5')
+  if (typeof name === 'string') for (const b of acts.querySelectorAll('button')) if (!b.hasAttribute('aria-label') && !/\p{L}/u.test(b.textContent ?? '')) b.setAttribute('aria-label', `${name} ${b.textContent ?? ''}`.trim());
   return r;
 }
 export const rewardText = (r: Reward): string => L().fmt.reward(r.gold ?? 0, r.exp ?? 0, r.sparks ?? 0);
@@ -112,7 +114,7 @@ export function field(placeholder: string, max: number, label: string, on: (text
 /** 고르는 단추 한 줄 (화면, 거르는 종류). 켜진 것은 금색이다 */
 export function chips(items: { text: string; on?: boolean; off?: boolean; click: () => void }[]): HTMLDivElement {
   const box = el('mchips');
-  for (const x of items) { const b = button(x.text, x.click, x.off); b.classList.toggle('on', !!x.on); box.append(b); }
+  for (const x of items) { const b = button(x.text, x.click, x.off); b.classList.toggle('on', !!x.on); b.setAttribute('aria-pressed', String(!!x.on)); box.append(b); } // 고른 칩은 aria-pressed (낭독기)
   return box;
 }
 /** 고르는 상자. 단추 일곱 개를 늘어놓으면 폰에서 줄을 다 차지해서 물건이 안 보였다 */

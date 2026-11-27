@@ -2,6 +2,7 @@
 // 데스크톱(마우스)은 손대지 않는다: 브라우저의 title 툴팁이 예전처럼 뜬다. 그래서 화면의 코드는 지금처럼 title만 달면 된다 (아이템 이름, 기술 설명, 잠금 안내 …).
 // 길게 눌러 말풍선이 떴으면 손을 뗄 때의 누름(click)은 삼킨다: 설명을 보려다 단추가 눌리지 않게. 짧게 누르면 예전처럼 눌린다.
 // 글은 이미 i18n을 거친 title 그대로라 이 파일에는 문장이 없다.
+import { toUi } from '../uiscale';
 
 /** 이만큼 누르고 있으면 띄운다(ms) */
 export const LONG_PRESS_MS = 450;
@@ -25,9 +26,11 @@ export function showTip(text: string, near: DOMRect): void {
   }
   pop.textContent = text;
   pop.hidden = false;
-  const w = pop.offsetWidth, h = pop.offsetHeight, gap = 8, vw = document.documentElement.clientWidth;
-  const left = Math.max(4, Math.min(vw - w - 4, near.left + near.width / 2 - w / 2));
-  const top = near.top - h - gap >= 4 ? near.top - h - gap : near.bottom + gap;
+  // 말풍선은 배율(--ui-scale)을 건 좌표, near는 화면 px: 화면 px를 나눠 맞춘다 (../uiscale.ts)
+  const w = pop.offsetWidth, h = pop.offsetHeight, gap = 8, vw = toUi(document.documentElement.clientWidth);
+  const nl = toUi(near.left), nw = toUi(near.width), nt = toUi(near.top), nb = toUi(near.bottom);
+  const left = Math.max(4, Math.min(vw - w - 4, nl + nw / 2 - w / 2));
+  const top = nt - h - gap >= 4 ? nt - h - gap : nb + gap;
   pop.style.left = `${Math.round(left)}px`;
   pop.style.top = `${Math.round(top)}px`;
   clearTimeout(hideTimer);
