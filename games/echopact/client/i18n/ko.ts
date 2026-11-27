@@ -7,7 +7,7 @@ import type { ContentNames } from '@engine/client/i18n/names';
 
 /** 틀의 문장이 쓰는 내용의 이름표 */
 export const koNames: ContentNames = {
-  monsters: { mossling: '이끼둥이', thornboar: '가시멧돼지', stonehorn: '돌뿔소', wisp: '떠도는 울림', hollowkin: '빈껍데기', shadeshot: '그늘 사수', bellgolem: '종탑 골렘', echowarden: '메아리 수문장' },
+  monsters: { mossling: '이끼둥이', thornboar: '가시멧돼지', stonehorn: '돌뿔소', wisp: '떠도는 울림', hollowkin: '빈껍데기', shadeshot: '그늘 사수', bellgolem: '종탑 골렘', echowarden: '메아리 수문장', chimeling: '울림쇠', dirgecaster: '만가 술사', mirrorshade: '거울 그림자', knellwraith: '조종 망령', pactsovereign: '계약의 군주' },
   // bow: 활을 드는 직업(추적자)에게 보이는 이름
   items: {
     blade1: { name: '계약자의 검', bow: '계약자의 활', info: '처음 무기' },
@@ -80,6 +80,8 @@ export const koGame = {
     chatTagNear: '[같은 곳]', chatTabNear: '같은 곳',
     roleVanguard: '선봉', roleRanger: '사수', roleMystic: '비술', roleMender: '치유',
     bannerWell: '울림 샘', chapterPath: '속삭임 길', chapterRuins: '종소리 폐허', chapterSpire: '울림 첨탑',
+    chapterGallery: '빈 회랑', chapterBelfry: '깨진 종루', chapterMarsh: '거울 늪', chapterHush: '침묵의 골', chapterCrown: '계약의 정점',
+    towerAllDone: '탑을 모두 깼습니다', towerSoon: '다음 장은 곧 열립니다',
     // 라이브 콘텐츠 (묶음 6: shared/content의 EVENTS·GOODS·SEASON·ACHIEVES·CODEX)
     evEchofest: '울림 축제',
     evEchofestNote: '두 주 동안 임무를 채우면 축제 조각을 받습니다. 축제 조각은 축제 상점에서 쓰고, 뽑기에는 일반 조각을 다 쓴 뒤에 쓰입니다.',
@@ -137,6 +139,7 @@ export const koGame = {
     towerLive: (id: string) => `전투 중: ${id}`,
     towerPullHave: (cost: number, have: number) => `울림 조각 ${cost.toLocaleString('ko-KR')} / 가진 것 ${have.toLocaleString('ko-KR')}`,
     towerNext: (id: string) => `다음 도전 ${id}`,
+    towerStarGo: (id: string) => `별 모으기 ${id}`,
     towerPower: (n: number) => `편성 전투력 ${n.toLocaleString('ko-KR')}`,
     towerRec: (rec: number) => `권장 ${rec.toLocaleString('ko-KR')}`,
     towerBest: (id: string) => (id ? `가장 멀리 깬 단계 ${id}` : '아직 깬 단계가 없습니다'),

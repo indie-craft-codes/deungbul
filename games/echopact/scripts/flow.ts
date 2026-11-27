@@ -5,11 +5,12 @@
 //   함께(concurrent, 기본): B로 갈 때 탑의 싸움이 뒤에서 이어 가고(자동 진행), A로 갈 때 자동 사냥을 켠 채라 들판의 몸이 남아 사냥한다.
 //   번갈아(sequential): 보이지 않는 쪽은 멈춘다 (탑은 대기실로 나오고, 자동 사냥을 끄고 떠난다). 둘을 견주어 '함께'가 총량을 얼마나 키우는지 본다.
 //   탑에서 지면(자동 진행이 꺼짐) 다음에 탑에 올 때 가장 멀리 깬 단계의 다음을 다시 고른다.
-//   울림 조각이 100이 되면 처음 한 번은 1번 뽑기, 그 뒤로는 900이 모이면 10번 뽑기. 뽑으면 전투력 높은 넷으로 편성하고, 1분마다 골드로 편성의 레벨을 올리고 우편(임무 보상)을 받는다.
-// 실행: node node_modules/tsx/dist/cli.mjs --tsconfig games/echopact/tsconfig.json games/echopact/scripts/flow.ts [분=30] [씨앗=1] [seq]
+//   울림 조각이 100이 되면 처음 한 번은 1번 뽑기, 그 뒤로는 900이 모이면 10번 뽑기. 뽑으면 전투력 높은 넷으로 편성하고, 1분마다 골드로 편성의 레벨을 올리고(별의 상한에 닿은 메아리는 건너뛴다)
+//   모인 조각으로 별을 올리고 우편(임무 보상)을 받는다.
+// 실행: node node_modules/tsx/dist/cli.mjs --tsconfig games/echopact/tsconfig.json games/echopact/scripts/flow.ts [분=30] [씨앗=1] [seq] [끊은 분=0] [장=0: 장마다 닿은 때의 표만]
 // 시험(test/flow.test.ts)이 짧게 같은 함수를 부른다.
 import { Game, type Ent } from '@engine/server';
-import { heroDef, seededRng, STAGES } from '@engine/shared/defs';
+import { HERO_RULES, heroDef, seededRng, STAGES } from '@engine/shared/defs';
 import { BANNERS, CAMPS } from '../shared/content';
 import { MODE } from '../shared/content/pact';
 import { installEchopact } from '../server/echopact';
@@ -28,6 +29,8 @@ export interface FlowResult {
   morph: { id: string; hp: number; mul: number };
   /** 끝에 접속을 끊고 offMin분 동안 둔 것 (두 쪽 다 '자동'): 자리 비움 사냥이 모은 울림 조각·골드, 돌아왔을 때 단계의 오프라인 진행이 넘긴 단계와 보상 */
   off?: { min: number; fieldSparks: number; fieldGold: number; stages: number; stageSparks: number; from: string; to: string };
+  /** 단계마다 처음 깬 때(초)와 그때의 편성 전투력·레벨·별의 합 (장마다 닿는 때의 표) */
+  reach: Record<string, { s: number; power: number; lv: number; stars: number; pulls: number }>;
 }
 
 /** 원인(장부의 이름)을 시뮬레이션의 출처로 묶는다 */
@@ -51,7 +54,8 @@ function run(minutes: number, seed: number, concurrent: boolean, offMin: number)
 
   const p = g.players.spawn('시뮬', false, null, 'flow-sim-1');
   g.command(p, { t: 'class', id: 'warden' });
-  const out: FlowResult = { minutes: [], firstPullS: -1, firstTenS: -1, towerS: 0, valeS: 0, total, gold, morph: { id: '', hp: 0, mul: 1 } };
+  const out: FlowResult = { minutes: [], firstPullS: -1, firstTenS: -1, towerS: 0, valeS: 0, total, gold, morph: { id: '', hp: 0, mul: 1 }, reach: {} };
+  g.on('stageCleared', (_q, id, first) => { if (first && !out.reach[id]) out.reach[id] = { s: Math.round(t), power: g.squad.power(p), lv: p.squad.reduce((a, h) => a + (p.heroes[h]?.lv ?? 0), 0), stars: p.squad.reduce((a, h) => a + (p.heroes[h]?.stars ?? 0), 0), pulls: pulled }; });
   const camp = CAMPS[1];
   let t = 0, nextMin = 60, nextChores = 60, switchAt = 240, pulled = 0;
   const cmd = (m: Record<string, unknown>) => g.command(p, m);
@@ -59,8 +63,10 @@ function run(minutes: number, seed: number, concurrent: boolean, offMin: number)
 
   const rebuild = () => { cmd({ t: 'squad', ids: Object.keys(p.heroes).sort((a, b) => g.roster.power(p, b) - g.roster.power(p, a)).slice(0, 4) }); };
   const levelUp = () => {
+    // 별: 모인 조각으로 올릴 수 있는 만큼 (편성 밖의 메아리도: 나중에 편성에 들 수 있다)
+    for (const id of Object.keys(p.heroes)) while (g.roster.starUp(p, id));
     for (let k = 0; k < 40; k++) {
-      const cheapest = [...p.squad].sort((a, b) => p.heroes[a].lv * (heroDef(a).rarity + 1) - p.heroes[b].lv * (heroDef(b).rarity + 1))[0];
+      const cheapest = [...p.squad].filter((id) => p.heroes[id].lv < HERO_RULES.maxLv(p.heroes[id].stars)).sort((a, b) => p.heroes[a].lv * (heroDef(a).rarity + 1) - p.heroes[b].lv * (heroDef(b).rarity + 1))[0];
       if (!cheapest || p.gold < 60 || !g.roster.levelUp(p, cheapest)) break;
     }
   };
@@ -145,6 +151,15 @@ function run(minutes: number, seed: number, concurrent: boolean, offMin: number)
 if (process.argv[1]?.endsWith('flow.ts')) {
   const mins = Number(process.argv[2] ?? 30), seed = Number(process.argv[3] ?? 1), concurrent = process.argv[4] !== 'seq', off = Number(process.argv[5] ?? 0);
   const r = simulate(mins, seed, concurrent, off);
+  if (process.argv[6] === 'ch') {
+    // 장마다 닿은 때: 그 장의 첫 단계를 처음 깬 때와 우두머리(다섯째)를 처음 깬 때
+    console.log('단계 | 처음 깬 때(시:분) | 편성 전투력 | 권장 | 편성 레벨 합 | 편성 별 합 | 뽑은 수');
+    const hm = (s: number) => `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
+    for (const s of STAGES) { const x = r.reach[s.id]; if (x && (s.id.endsWith('-1') || s.id.endsWith('-5') || s.ch === STAGES.at(-1)!.ch)) console.log(`${s.id} | ${hm(x.s)} | ${x.power} | ${s.def.rec} | ${x.lv} | ${x.stars} | ${x.pulls}`); }
+    const last = r.minutes.at(-1);
+    console.log(`끝(${mins}분): 깬 단계 ${last?.best} · 전투력 ${last?.power} · 레벨 ${last?.lv} · 뽑은 수 ${last?.pulls} · 조각 ${JSON.stringify(r.total)} · 골드 ${JSON.stringify(r.gold)}`);
+    process.exit(0);
+  }
   console.log(`(${concurrent ? '함께' : '번갈아'}) 분 | 보던 곳 | 들판 | 탑 | 우편 | 가진 조각 | 뽑은 수 | 메아리 | 깬 단계 | 레벨 | 편성 전투력`);
   for (const m of r.minutes) console.log(`${m.min} | ${m.where} | ${m.got.field ?? 0} | ${m.got.stage ?? 0} | ${m.got.mail ?? 0} | ${m.have} | ${m.pulls} | ${m.echoes} | ${m.best || '-'} | ${m.lv} | ${m.power}`);
   console.log(JSON.stringify({ firstPullS: Math.round(r.firstPullS), firstTenS: Math.round(r.firstTenS), towerMin: +(r.towerS / 60).toFixed(1), valeMin: +(r.valeS / 60).toFixed(1), sparks: r.total, gold: r.gold, morph: r.morph, off: r.off }));

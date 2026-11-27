@@ -256,6 +256,11 @@ export interface StageRules {
   speed?: { max: number; unlock?: string };
   /** 일시정지 (전투 화면의 ‖, 전투 중 뒤로 가기): 그 사람의 단계 층의 시간을 멈춘다. maxS초(기본 600) 뒤 저절로 풀린다. 없으면 없다 */
   pause?: boolean | { maxS: number };
+  /**
+   * 마지막 단계를 자동 진행으로 깬 뒤: 'repeat'(기본, 없을 때도) 같은 단계를 되풀이한다 · 'stop' 되풀이하지 않고 대기실로 가며(뒤에서 잇던 회차는 닫는다) 그때마다 안내문 stageLastStop,
+   * 화면(결과 창·단계 정보 창)은 '마지막 단계까지 깼다 · 다음 장은 곧'과 별 모으기(소탕이 있으면 소탕)를 보인다
+   */
+  atLast?: 'repeat' | 'stop';
 }
 
 /** 방치 보상(idle 모듈)의 셈에 틀이 넘기는 것: 깬 단계의 수 (stages 모듈이 없으면 0) */

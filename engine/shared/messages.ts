@@ -160,6 +160,7 @@ export type MsgKey =
   | 'stageFail' // [단계 id, 까닭 0 쓰러짐 1 시간] 단계를 깨지 못했다 (깬 단계로 돌아간다)
   | 'stageLocked' // [단계 id] 아직 갈 수 없는 단계다 (앞 단계를 먼저 깬다)
   | 'stageLast' // [] 마지막 단계까지 깼다: 같은 단계를 되풀이한다
+  | 'stageLastStop' // [] 마지막 단계까지 깼다: 자동 진행이 여기서 멈춘다 (STAGE_RULES.atLast 'stop')
   | 'dungeonNoKeys' // [던전 id] 열쇠가 없다
   | 'dungeonKeyBought' // [던전 id, 가진 열쇠] 열쇠를 샀다
   | 'dungeonKeyLimit' // [던전 id] 오늘은 더 살 수 없다

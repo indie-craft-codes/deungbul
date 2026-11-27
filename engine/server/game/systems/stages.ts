@@ -16,6 +16,8 @@
 //   안내문 stageClear의 셋째 값으로 이번에 딴 별(비트)을 알린다. STAGE_RULES.sweep.allStars면 별을 다 딴 단계만 소탕할 수 있다.
 // 배속(STAGE_RULES.speed)·일시정지(STAGE_RULES.pause): 그 사람의 단계 층의 시간 배율(g.layerScale: ×2면 한 틱에 두 번, 멈추면 0)과 제한 시간·기다림을 함께 바꾼다.
 //   명령 { t: 'stage', a: 'speed', x } (unlock 단계를 깨야 ×2 이상), { a: 'pause', on }. 뒤에서 잇는 회차·대기실은 늘 ×1이고 멈추지 않는다. 일시정지는 maxS초 뒤 풀린다.
+// 마지막 단계(STAGE_RULES.atLast): 기본('repeat')은 자동 진행이 갈 곳이 없어 같은 단계를 되풀이한다(처음 깼을 때 안내문 stageLast). 'stop'이면 자동 진행으로 마지막 단계를 깼을 때
+//   되풀이하지 않고 대기실로 간다(뒤에서 잇던 회차는 닫는다). 그때마다 안내문 stageLastStop. 자동 진행이 꺼져 있으면(되풀이 파밍) 어느 쪽이든 되풀이한다.
 // 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }, 별을 땄으면 stars, 배속을 골랐으면 speed). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
 import { IDLE_VIEW, MONSTERS, allStarsOf, anyStars, stageStars, starMask, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
@@ -65,6 +67,8 @@ const heroesOnly = (r: { bg?: boolean }): boolean => !!r.bg || SQUAD_ONLY;
 const STARS = anyStars();
 /** 배속·일시정지의 규칙 (없으면 없다) */
 const SPEED = STAGE_RULE_VIEW.speed;
+/** 마지막 단계를 깬 뒤 자동 진행이 멈춘다 (STAGE_RULES.atLast 'stop'. 기본은 같은 단계를 되풀이) */
+const AT_LAST_STOP = STAGE_RULE_VIEW.atLast === 'stop';
 const PAUSE_MAX_S = STAGE_RULE_VIEW.pause ? (typeof STAGE_RULE_VIEW.pause === 'object' ? STAGE_RULE_VIEW.pause.maxS : 600) : 0;
 
 /** 단계가 없다는 알림을 이미 했다 (한 프로세스에 한 번: 시험은 게임을 여러 번 만든다) */
@@ -359,7 +363,8 @@ export class Stages {
       p.stage.stars = { ...(p.stage.stars ?? {}), [r.stage.id]: (p.stage.stars?.[r.stage.id] ?? 0) | mask };
       g.notify(p, 'stageClear', r.stage.id, first ? 1 : 0, mask);
     } else g.notify(p, 'stageClear', r.stage.id, first ? 1 : 0);
-    if (p.stage.auto && last && first) g.notify(p, 'stageLast');
+    // 마지막 단계: 되풀이(기본)는 처음 깼을 때만 stageLast, 멈춤(STAGE_RULES.atLast 'stop')은 자동 진행으로 깰 때마다 stageLastStop
+    if (p.stage.auto && last) { if (AT_LAST_STOP) g.notify(p, 'stageLastStop'); else if (first) g.notify(p, 'stageLast'); }
     g.fire('stageCleared', p, r.stage.id, first);
   }
 
@@ -436,6 +441,8 @@ export class Stages {
         if (r.wait > 0) continue;
         // 뒤에서 이어 가는 회차는 자동 진행이 꺼졌거나 실패했으면 멈춘다 (회차를 닫는다)
         if (r.bg && (r.state === 'fail' || !p.stage.auto)) { const why = r.state === 'fail' ? 1 : 0, at = r.stage.id; this.end(r); this.squadIn(p); this.g.notify(p, 'stageBgStop', at, why); continue; }
+        // 마지막 단계에서 멈춤 (STAGE_RULES.atLast 'stop'): 자동 진행으로 마지막 단계를 깼으면 되풀이하지 않고 대기실로 (뒤에서 잇던 회차는 닫는다. 알림은 깰 때의 stageLastStop)
+        if (AT_LAST_STOP && r.state === 'clear' && p.stage.auto && r.stage.i >= STAGES.length - 1) { if (r.bg) { this.end(r); this.squadIn(p); } else this.lobby(p); continue; }
         this.start(p, this.curIndex(p));
         continue;
       }

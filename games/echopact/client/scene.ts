@@ -78,6 +78,12 @@ const SPIRITS: Partial<Record<MonsterId, { color: number; size: number }>> = {
   shadeshot: { color: 0x4a4a6a, size: 0.95 },
   bellgolem: { color: 0xb08a50, size: 2.0 },
   echowarden: { color: 0x6a5aa0, size: 2.3 },
+  // 4장부터: 같은 몸통에 색과 크기만
+  chimeling: { color: 0xd0b060, size: 0.85 },
+  dirgecaster: { color: 0x3a6a6a, size: 1.0 },
+  mirrorshade: { color: 0xc8d8e8, size: 1.15 },
+  knellwraith: { color: 0x5a3a4a, size: 2.2 },
+  pactsovereign: { color: 0xe0c070, size: 2.6 },
 };
 function spirit(type: string): Model {
   const s = SPIRITS[type as MonsterId] ?? { color: 0x9a9aff, size: 1 }, root = new THREE.Group(), inner = new THREE.Group();

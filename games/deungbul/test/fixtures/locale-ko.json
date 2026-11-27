@@ -1879,6 +1879,13 @@
   "편성 전투력 1",
   "편성 전투력 2"
  ],
+ "fmt.stLastStarGo": [
+  "697edcced24de1c2",
+  "별 모으기 undefined",
+  "별 모으기 0",
+  "별 모으기 1",
+  "별 모으기 2"
+ ],
  "fmt.stPower": [
   "de289be7dfa5c404",
   "NaN / NaN",
@@ -3484,6 +3491,7 @@
   "2를 깨지 못했습니다 (시간 초과). 깬 단계로 돌아가고 자동 진행을 끕니다."
  ],
  "msg.stageLast": "마지막 단계까지 깼습니다. 같은 단계를 되풀이합니다.",
+ "msg.stageLastStop": "마지막 단계까지 깼습니다. 다음 장은 곧 열립니다: 자동 진행은 여기서 멈춥니다.",
  "msg.stageLocked": [
   "271bcfcae22355d9",
   "undefined은(는) 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요.",
@@ -4303,6 +4311,10 @@
  "ui.stEnemies": "적",
  "ui.stFirst": "처음 깬 보상",
  "ui.stGo": "출발",
+ "ui.stLastDone": "마지막 단계까지 깼습니다 · 다음 장은 곧 열립니다",
+ "ui.stLastInfo": "지금 열린 마지막 단계입니다 · 다음 장은 곧 열립니다",
+ "ui.stLastStars": "그동안 별 조건을 다 채우거나, 앞 단계를 되풀이하며 메아리를 키워 두세요.",
+ "ui.stLastSweep": "그동안 별을 모으거나, 깬 단계를 소탕해 보상을 모아 두세요.",
  "ui.stMine": "내 편성",
  "ui.stRec": "권장 전투력",
  "ui.stRepeat": "반복 보상",

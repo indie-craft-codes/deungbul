@@ -5,7 +5,7 @@ import type { ContentNames } from '@engine/client/i18n/names';
 import type { GameLocale } from './ko';
 
 export const enNames: ContentNames = {
-  monsters: { mossling: 'Mossling', thornboar: 'Thorn Boar', stonehorn: 'Stonehorn', wisp: 'Stray Echo', hollowkin: 'Hollowkin', shadeshot: 'Shade Archer', bellgolem: 'Belltower Golem', echowarden: 'Echo Warden' },
+  monsters: { mossling: 'Mossling', thornboar: 'Thorn Boar', stonehorn: 'Stonehorn', wisp: 'Stray Echo', hollowkin: 'Hollowkin', shadeshot: 'Shade Archer', bellgolem: 'Belltower Golem', echowarden: 'Echo Warden', chimeling: 'Chimeling', dirgecaster: 'Dirge Caster', mirrorshade: 'Mirror Shade', knellwraith: 'Knell Wraith', pactsovereign: 'Pact Sovereign' },
   items: {
     blade1: { name: 'Pactbinder Sword', bow: 'Pactbinder Bow', info: 'Starting weapon' },
     blade2: { name: 'Ringsteel Sword', bow: 'Ringsteel Bow' },
@@ -73,6 +73,8 @@ export const enGame: GameLocale = {
     chatTagNear: '[Here]', chatTabNear: 'Here',
     roleVanguard: 'Vanguard', roleRanger: 'Ranger', roleMystic: 'Mystic', roleMender: 'Mender',
     bannerWell: 'Echo Well', chapterPath: 'Whispering Path', chapterRuins: 'Bell Ruins', chapterSpire: 'Echo Spire',
+    chapterGallery: 'Hollow Gallery', chapterBelfry: 'Shattered Belfry', chapterMarsh: 'Mirror Marsh', chapterHush: 'Silent Hollow', chapterCrown: 'Pact Crown',
+    towerAllDone: 'Tower cleared', towerSoon: 'More chapters coming soon',
     evEchofest: 'Echo Festival',
     evEchofestNote: 'For two weeks, tasks give festival shards. Spend them in the festival shop; summoning only uses them after your normal shards run out.',
     evmHunt: 'Hunt 40 monsters in the Vale', evmClimb: 'Clear 10 tower stages', evmCall: 'Summon 5 echoes', evmShift: 'Morph 3 times',
@@ -125,6 +127,7 @@ export const enGame: GameLocale = {
     towerLive: (id) => `In battle: ${id}`,
     towerPullHave: (cost, have) => `${cost.toLocaleString('en-US')} shards / you have ${have.toLocaleString('en-US')}`,
     towerNext: (id) => `Next: ${id}`,
+    towerStarGo: (id) => `Earn stars: ${id}`,
     towerPower: (n) => `Squad power ${n.toLocaleString('en-US')}`,
     towerRec: (rec) => `Rec. ${rec.toLocaleString('en-US')}`,
     towerBest: (id) => (id ? `Furthest stage cleared: ${id}` : 'No stage cleared yet'),

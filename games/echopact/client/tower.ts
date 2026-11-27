@@ -8,7 +8,7 @@
 import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSideMe } from '@engine/shared/defs';
 import {
   $, addSetting, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
-  onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, switchMode, useStageScreens, type HomeKit,
+  onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, stagesDone, starGap, switchMode, useStageScreens, type HomeKit,
   setLoadingTips,
 } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
@@ -24,6 +24,10 @@ let view: View = 'home';
 const fighting = (): boolean => { const r = myStage()?.run; return !!r && r.state !== 'lobby'; };
 /** 다음에 도전할 단계 (열린 것 가운데 아직 깨지 않은 첫째, 다 깼으면 마지막) */
 const nextRow = () => { const rows = stageRows(myStage()); return rows.find((r) => r.open && !r.cleared) ?? rows[rows.length - 1]; };
+/** 탑의 마지막 단계까지 깼다 (STAGE_RULES.atLast 'stop': 자동 진행이 멈춘다). 다음 도전 대신 '다음 장은 곧'과 별 모으기 */
+const allDone = (): boolean => stagesDone(myStage());
+/** 다 깼을 때 갈 곳: 별을 다 따지 못한 첫 단계, 다 땄으면 마지막 단계의 정보 창 */
+const starNext = (): string => starGap(myStage()) ?? STAGES[STAGES.length - 1]?.id ?? '';
 let home: HomeKit;
 /** 카드 상세에서 '변신'을 눌러 울림골로 가는 중 (도착하면 변신 탭을 연다) */
 let morphNext = false;
@@ -82,9 +86,10 @@ function initHome(): void {
     },
     onLead: () => openMenu('heroes'),
     go: {
-      label: () => (fighting() ? t('towerWatch') : L().fmt.towerNext(nextRow()?.id ?? '')),
-      sub: () => { const r = myStage()?.run; if (fighting() && r) return L().fmt.towerLive(r.id); const n = nextRow(); return n ? L().fmt.towerRec(n.rec) : ''; },
-      onClick: () => { if (fighting()) { watchBattle(); return; } const n = nextRow(); if (n) openCheck(n.id); },
+      label: () => (fighting() ? t('towerWatch') : allDone() ? t('towerAllDone') : L().fmt.towerNext(nextRow()?.id ?? '')),
+      sub: () => { const r = myStage()?.run; if (fighting() && r) return L().fmt.towerLive(r.id); if (allDone()) return starGap(myStage()) ? L().fmt.towerStarGo(starNext()) : t('towerSoon'); const n = nextRow(); return n ? L().fmt.towerRec(n.rec) : ''; },
+      // 다 깼으면 별을 다 따지 못한 첫 단계(없으면 마지막 단계)의 정보 창: '다음 장은 곧'과 할 수 있는 것이 거기 있다
+      onClick: () => { if (fighting()) { watchBattle(); return; } if (allDone()) { openStageInfo(starNext()); return; } const n = nextRow(); if (n) openCheck(n.id); },
     },
     info: () => `${L().fmt.towerBest(myStage()?.best ?? '')}\n${L().fmt.towerPower(mySquad().power)}`,
     dock: [
@@ -126,9 +131,12 @@ function drawAdventure(): void {
   if (!S.me) return;
   const loc = L(), st = myStage(), rows = stageRows(st), next = nextRow(), power = mySquad().power;
   const quick = $('towerNext');
+  const done = allDone();
   quick.hidden = !next;
-  if (next) { quick.textContent = loc.fmt.towerNext(next.id); quick.dataset.id = next.id; }
-  $('towerWeak').hidden = !next || power >= next.rec || next.id === rows[0]?.id;
+  if (next) { quick.textContent = done ? loc.fmt.towerStarGo(starNext()) : loc.fmt.towerNext(next.id); quick.dataset.id = done ? starNext() : next.id; quick.dataset.done = done ? '1' : ''; }
+  // 다 깼다: 자동 진행이 멈춘 까닭 ('마지막 단계까지 깼습니다 · 다음 장은 곧')
+  $('towerEnd').hidden = !done;
+  $('towerWeak').hidden = done || !next || power >= next.rec || next.id === rows[0]?.id;
   $('taPower').textContent = loc.fmt.towerPower(power);
   const list = $('towerStages');
   list.textContent = '';
@@ -208,6 +216,7 @@ export function initTower(): void {
     <div id="towerAdv" class="tscreen tadv" hidden>
       <div class="tnav"><button type="button" id="taBack" data-i18n="scrBack"></button><h2 data-i18n="towerAdventure"></h2><button type="button" id="taHome" data-i18n="scrHome"></button></div>
       <p class="tpower" id="taPower"></p>
+      <p class="tend" id="towerEnd" hidden><b data-i18n="stLastDone"></b> <span data-i18n="stLastStars"></span></p>
       <button type="button" class="tgo" id="towerNext"></button>
       <p class="tweak" id="towerWeak" hidden><span data-i18n="towerWeak"></span> <button type="button" id="towerGrow" data-i18n="towerGrow"></button></p>
       <button type="button" class="tauto toggle" id="towerAuto" aria-pressed="false"></button>
@@ -221,7 +230,7 @@ export function initTower(): void {
   placeIn('tl', 'pactSide', 20);
   $('taBack').addEventListener('click', () => homeScreen());
   $('taHome').addEventListener('click', () => homeScreen());
-  $('towerNext').addEventListener('click', (e) => { const id = (e.currentTarget as HTMLElement).dataset.id; if (id) openCheck(id); });
+  $('towerNext').addEventListener('click', (e) => { const d = (e.currentTarget as HTMLElement).dataset; if (d.id) (d.done ? openStageInfo : openCheck)(d.id); });
   $('towerGrow').addEventListener('click', () => openMenu('heroes'));
   $('towerAuto').addEventListener('click', () => send({ t: 'stage', a: 'auto', on: !(myStage()?.auto ?? true) }));
   // 단계 정보 창·편성 확인·결과 창 (틀의 부품). '다음'은 자동 진행을 켜고, '다시'는 끈다 (예전 결과 창과 같다)

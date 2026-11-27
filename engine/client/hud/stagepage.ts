@@ -18,6 +18,7 @@ import { myHeroes, mySquad } from './collect';
 import { openMenu } from './menu';
 import { closeScreen, dropScreen, openScreen } from './screens';
 import { myStage } from './stagebar';
+import { starGap } from './collectcalc';
 
 export interface StageGrowPath { label: string; sub?: string; onClick: () => void }
 export interface StageScreenOpts {
@@ -85,6 +86,21 @@ function powerRow(rec: number): HTMLElement {
   bar.append(fill); row.append(bar);
   return row;
 }
+/** 자동 진행이 마지막 단계에서 멈추는 게임의 마지막 단계인가 (STAGE_RULES.atLast 'stop') */
+const lastStop = (s: StageRef): boolean => STAGE_RULE_VIEW.atLast === 'stop' && s.i === STAGES.length - 1;
+/**
+ * 마지막 단계의 안내 (결과 창·단계 정보 창): '마지막 단계까지 깼다 · 다음 장은 곧'(깼으면) 또는 '탑의 마지막 단계', 할 수 있는 것(소탕·별 모으기)과
+ * 별을 다 따지 못한 첫 단계로 가는 [별 모으기 n-m]. stars는 방금 딴 별까지 합친 것
+ */
+function lastNote(s: StageRef, done: boolean, stars: Record<string, number>, onStar: (id: string) => void): HTMLElement {
+  const box = mk('div', 'stlast');
+  box.append(mk('b', '', done ? t('stLastDone') : t('stLastInfo')));
+  if (!done) return box;
+  box.append(mk('p', '', STAGE_RULE_VIEW.sweep ? t('stLastSweep') : t('stLastStars')));
+  const me = myStage(), gap = starGap(me ? { ...me, best: s.id, stars } : null);
+  if (gap) box.append(btn('plain stlaststar', L().fmt.stLastStarGo(gap), () => onStar(gap)));
+  return box;
+}
 const section = (title: string, ...kids: HTMLElement[]): HTMLElement => { const s = mk('section', 'stsec'); s.append(mk('h4', '', title), ...kids); return s; };
 
 // ---------- 단계 정보 창 ----------
@@ -102,6 +118,7 @@ function drawInfo(): void {
   if (!cleared(s) && s.def.first) rw.append(...rewardChips(s.def.first, true));
   rw.append(...rewardChips(s.def.reward, false));
   box.append(section(cleared(s) || !s.def.first ? t('stRepeat') : `${t('stFirst')} · ${t('stRepeat')}`, rw));
+  if (lastStop(s)) box.append(lastNote(s, cleared(s), myStage()?.stars ?? {}, (id) => { closeScreen('stInfo'); openStageInfo(id); }));
   const btns = mk('div', 'stbtns');
   const sweep = STAGE_RULE_VIEW.sweep;
   if (sweep && stageSweepable(s) && cleared(s)) {
@@ -191,6 +208,8 @@ function showResult(id: string, win: boolean, first: boolean, mask: number): voi
   auto.hidden = true;
   box.append(auto);
   const next = win ? STAGES[s.i + 1] : undefined, o = opts;
+  // 마지막 단계를 깼다 (자동 진행이 멈추는 게임): [다음]이 없는 까닭과 할 수 있는 것
+  if (win && lastStop(s)) { const st = myStage()?.stars ?? {}; box.append(lastNote(s, true, { ...st, [id]: (st[id] ?? 0) | mask }, (to) => { hideResult(); openStageInfo(to); })); }
   const btns = mk('div', 'stbtns res');
   btns.append(btn('plain', t('resHome'), () => { hideResult(); o.home(); }));
   btns.append(btn(win ? 'plain' : 'stgo', win ? t('resAgain') : t('resRetry'), () => { hideResult(); (o.again ?? o.go)(id); }));

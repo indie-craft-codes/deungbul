@@ -1,7 +1,7 @@
 // 수집형·방치형 화면의 셈 (영웅 탭, 뽑기의 확률표, 편성, 단계 막대, 던전 열쇠): 화면 요소도 three.js도 읽지 않는다 (시험 engine/test/collect/client.test.ts가 그대로 읽는다).
 // 그리는 것은 hud/collect.ts(메뉴 탭과 영웅의 겉모습)와 hud/stagebar.ts(단계 막대). 확률은 서버와 같은 셈(engine/shared/defs/collect.ts)이다.
 import {
-  BANNER_TABLE, heroIds, HERO_RARITIES, HERO_RULES, STAGES, gearOn, growthOf, heroDef, heroFull, heroTradeShards, heroTrades, rarityDef, tradeFits, rarityOdds, waveCount, BANNER_IDS, effectiveOdds, pityKey, pityMates, pullOdds, stageSweepable, sweepMax,
+  BANNER_TABLE, heroIds, HERO_RARITIES, HERO_RULES, STAGES, gearOn, growthOf, heroDef, heroFull, heroTradeShards, heroTrades, rarityDef, tradeFits, rarityOdds, waveCount, BANNER_IDS, effectiveOdds, pityKey, pityMates, pullOdds, stageSweepable, sweepMax, STAGE_RULE_VIEW, allStarsOf, stageStars,
   type BannerDef, type HeroGearPiece, type HeroesMe, type Odds, type Reward, type StageMe, type StageRun, type GachaMe, type SweepRule,
 } from '../../shared/defs';
 import type { KeysMe } from '../../shared/defs/collect';
@@ -132,6 +132,14 @@ export function stageRows(me: StageMe | null): StageRow[] {
   const best = me ? STAGES.findIndex((s) => s.id === me.best) : -1;
   return STAGES.map((s) => ({ id: s.id, ch: s.ch, cleared: s.i <= best, open: s.i <= best + 1, now: !!me && s.id === (me.run?.id ?? me.cur), rec: s.def.rec, boss: !!s.def.boss, sweep: s.i <= best && stageSweepable(s) }));
 }
+
+/** 마지막 단계까지 깼고 자동 진행이 거기서 멈추는 게임인가 (STAGE_RULES.atLast 'stop': 화면이 '다음 장은 곧'을 보인다) */
+export const stagesDone = (me: StageMe | null): boolean => STAGE_RULE_VIEW.atLast === 'stop' && STAGES.length > 0 && !!me && me.best === STAGES[STAGES.length - 1].id;
+/** 별을 다 따지 못한 깬 단계 가운데 첫째 (별 모으기의 바로 가기. 없으면 undefined) */
+export const starGap = (me: StageMe | null): string | undefined => {
+  const best = me ? STAGES.findIndex((s) => s.id === me.best) : -1;
+  return STAGES.find((s) => s.i <= best && stageStars(s).length > 0 && !allStarsOf(s, me?.stars?.[s.id] ?? 0))?.id;
+};
 
 /**
  * 소탕 단추의 셈: 한 번의 값(무엇을 몇 개), 가진 것, 지금 할 수 있는 횟수(값·열쇠·한 번의 상한으로), 단추의 횟수들(×1과 할 수 있는 만큼).
