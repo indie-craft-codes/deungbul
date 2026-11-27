@@ -1003,6 +1003,8 @@ g.migrations.player.push({
 
 틀의 시험 도구(`engine/test/harness.ts`): `check(조건, 설명)`, `until(조건)`, `sleep`, `connect(포트, 이름, 토큰, onMsg)`(가짜 클라이언트).
 
+같은 검사를 언어마다·등급마다·몬스터마다 되풀이할 때는 항목마다 `check`를 하나씩 세지 말고 `checkEach(목록, 이름표, (항목, c) => { c(조건, 설명); … })`로 묶는다: 모든 항목의 n번째 `c`가 검사 하나로 세어지고, 실패하면 틀린 항목과 그 메시지가 모두 나온다(예: `games/deungbul/test/guide.test.ts`). 틀의 기능(이동, 상점의 거리, 레벨 업 …)은 틀의 시험(`engine/test/fx/`)이 보므로 게임의 시험은 그 게임의 내용과 규칙만 본다.
+
 규칙만 볼 때는 서버 없이 게임을 만들어 명령을 넣고 틱을 돌린다.
 
 ```ts games/sample/test/sample.test.ts
@@ -1276,7 +1278,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 
 | 접점 | 한 줄 설명 | 예제 |
 |---|---|---|
-| `harness.ts`의 `check`, `failures` | 검사 기록 | `test/sample.test.ts`, `test/all.ts` |
+| `harness.ts`의 `check`, `checkEach`, `failures` | 검사 기록 (`checkEach`: 항목마다 같은 검사를 하나로) | `test/sample.test.ts`, `test/all.ts` |
 | `harness.ts`의 `connect`, `until`, `sleep`, `settle` | 가짜 클라이언트(피어의 `youRaw`, `lines`: 스냅샷의 날것), 기다리기 | `test/sample.test.ts` |
 | `new Game({ plugins, now, modules })` | 서버 없이 규칙만 (모듈을 줄여 볼 수도 있다) | `test/sample.test.ts` |
 
