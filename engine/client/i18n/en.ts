@@ -1109,7 +1109,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       rankedWL: (w: number, l: number, d: number) => `${w}W ${l}L${d ? ` ${d}D` : ''}`,
       rankedBest: (tier: string) => `Season best ${tier}`,
       rankedSeasonEnd: (n: number, ms: number) => `${n ? `Season ${n}` : 'This season'} · ends in ${spanMs(ms, 'en')}`,
-      rankedDelta: (r: number, d: number, tier: string) => `Rating ${r.toLocaleString('en-US')} (${d >= 0 ? '+' : ''}${d})${tier ? ` · ${tier}` : ''}`,
+      rankedDelta: (r: number, d: number, tier: string) => `Rating ${r.toLocaleString('en-US')}${d ? ` (${d > 0 ? '+' : ''}${d})` : ''}${tier ? ` · ${tier}` : ''}`,
       queueBand: (def: string, waited: number, est: number, range: number, bots: boolean) => `Finding a ranked match · ${def} · ${clockText(waited)} · est. ${est < 0 ? 'unknown' : clockText(est)} · range ±${range}${bots ? ' · bots fill if short' : ''}`,
       queueBannedLeft: (min: number) => `Leaver penalty: no ranked matches for ${min} min`,
       replaySub: (names: string, at: number) => `${names} · ${whenText(at, 'en-US')}`,

@@ -1699,11 +1699,11 @@
   "시즌 최고 2"
  ],
  "fmt.rankedDelta": [
-  "8de4a2918a59d764",
+  "b71b01d27b292371",
   "(던짐) TypeError",
-  "레이팅 0 (undefined)",
-  "레이팅 1 (undefined)",
-  "레이팅 2 (undefined)"
+  "레이팅 0",
+  "레이팅 1",
+  "레이팅 2"
  ],
  "fmt.rankedPlacement": [
   "1d51c829371a85df",

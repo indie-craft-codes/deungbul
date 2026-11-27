@@ -83,6 +83,8 @@ export function roomSeatName(v: RoomView, i: number): string {
   return cpus > 1 ? L().fmt.roomCpuN(v.seats.slice(0, i).filter((x) => x.cpu && !x.name).length + 1) : t('roomCpu');
 }
 const defName = (id: string): string => look.defName?.(id) || L().fmt.roomDefName(id);
+/** 판의 이름 (RoomDef.id → 화면의 글: 게임의 setRoomLook의 defName, 없으면 fmt.roomDefName). 경쟁의 화면(큐 띠·사다리)이 쓴다 */
+export const roomDefLabel = defName;
 const optName = (k: string): string => look.optName?.(k) || L().fmt.roomOptName(k);
 const optValue = (k: string, v: string | number): string => look.optValue?.(k, v) || L().fmt.roomOptValue(k, v);
 

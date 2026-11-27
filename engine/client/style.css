@@ -1791,12 +1791,12 @@ a.cbLink { display: inline-flex; align-items: center; gap: 4px; color: var(--c-a
 #roomEnd .rrating { font-weight: 800; font-size: var(--fs-lg); }
 #roomEnd .rrating.up { color: var(--c-accent); }
 #roomEnd .rrating.down { color: var(--c-bad-strong); }
-#replay { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, calc(calc(var(--uvw, 1vw) * 100) - 24px)); max-height: calc(calc(var(--uvh, 1vh) * 100) - 24px); overflow: auto; z-index: var(--z-modal, 60); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+#replay { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, calc(calc(var(--uvw, 1vw) * 100) - 24px)); max-height: calc(calc(var(--uvh, 1vh) * 100) - 24px); overflow-x: hidden; overflow-y: auto; box-sizing: border-box; z-index: calc(var(--z-float) + 2); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
 #replay .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 #replayBox { min-height: 120px; background: var(--c-sunk); border-radius: var(--r-sm); padding: 10px; }
 #replayBox .replayRaw { white-space: pre-wrap; word-break: break-all; font-size: var(--fs-xs); margin: 0; }
 #replaySeek { width: 100%; }
 #replayBtns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-#replayBtns button { min-width: 44px; min-height: 44px; }
+#replayBtns button { min-width: 44px; min-height: 44px; padding: 4px 8px; }
 #replayBtns .rpick { display: flex; gap: 4px; margin-left: auto; }
-@media (max-width: 720px) { #queueBand { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 200px); width: calc(100% - 24px); } }
+@media (max-width: 720px) { #queueBand { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 200px); width: calc(100% - 24px); } body.in-queue #rightcol #roomLobby { display: none; } }

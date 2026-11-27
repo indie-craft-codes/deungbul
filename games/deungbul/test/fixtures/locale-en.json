@@ -1699,11 +1699,11 @@
   "Season best 2"
  ],
  "fmt.rankedDelta": [
-  "a93c76e19c55d749",
+  "08090bd1a4e9a80c",
   "(던짐) TypeError",
-  "Rating 0 (undefined)",
-  "Rating 1 (undefined)",
-  "Rating 2 (undefined)"
+  "Rating 0",
+  "Rating 1",
+  "Rating 2"
  ],
  "fmt.rankedPlacement": [
   "50c6646546745e25",

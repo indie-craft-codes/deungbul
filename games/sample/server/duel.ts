@@ -1,4 +1,4 @@
-// 별 겨루기: 둘이 두는 짧은 랭크 판 (판 모듈 rooms + 경쟁 묶음 8의 증명). 모닥불 옆 그루터기에 앉아 둔다.
+// 별 겨루기: 둘이 두는 짧은 랭크 판 (판 모듈 rooms + 경쟁 묶음 8의 증명). 야영지 서쪽 그루터기에 앉아 둔다.
 // 규칙: 가운데 솔방울 무더기(11~15개: 판의 난수 room.rng, 리플레이의 시드로 다시 나온다)에서 내 차례에 1~3개를 줍는다. 마지막 솔방울을 줍는 쪽이 이긴다.
 // 컴퓨터(큐가 채우는 봇)는 남은 수를 4의 배수로 만들 수 있으면 그만큼, 아니면 1~3 가운데 무작위로 줍는다.
 // 켠 것: 랭크(rated: 대기실의 빠른 대국 → 큐, 레이팅·배치·등급), 큐의 봇(queueBots), 판 기록(전적), 리플레이(시드·입력·프레임), 이탈·잠수 제재(COMPETE.leave).
@@ -12,8 +12,8 @@ export interface DuelView { pile: number; got: number[]; last: number[]; secret:
 /** 리플레이의 프레임 (끝난 뒤에만 보인다: 비밀 솔방울도 다 싣는다) */
 export interface DuelFrame { pile: number; got: number[]; last: number[]; secret: number[]; turn: number }
 export const DUEL = { min: 11, max: 15, turnS: 20, graceS: 30, botAfterS: 25, cpuMs: 900 };
-/** 그루터기 두 자리 (모닥불 북쪽) */
-const SEATS = [{ x: -3, z: -9, face: Math.PI / 2 }, { x: 3, z: -9, face: -Math.PI / 2 }];
+/** 그루터기 두 자리 (야영지 서쪽, 마주 보게) */
+const SEATS = [{ x: -8.5, z: 6, face: Math.PI / 2 }, { x: -3.5, z: 6, face: -Math.PI / 2 }];
 
 export function installDuel(g: Game): void {
   const take = (room: Room<Duel>, seat: number, n: number) => {

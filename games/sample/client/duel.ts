@@ -1,11 +1,11 @@
 // 별 겨루기의 화면 (서버는 ../server/duel.ts): 그루터기 곁에서만 보이는 대기실(랭크 대전 = 큐), 판 막대의 무더기 줄, 내 차례의 줍기 단추 셋, 리플레이 그리기.
 // 랭크·순위표·큐 띠·결과 창의 레이팅 변화·리플레이 재생기는 틀이 그린다 (engine/client/hud/compete.ts·replay.ts·rooms.ts).
-import { $, addMapPlaces, addPlace, mountPanel, myRoom, myRoomTurn, onMsg, onRoomChange, S, send, setReplayLook, setRoomLook } from '@engine/client';
+import { $, addMapPlaces, mountPanel, myRoom, myRoomTurn, onMsg, onRoomChange, S, send, setReplayLook, setRoomLook } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import type { DuelFrame, DuelView } from '../server/duel';
 
-/** 그루터기 자리 (서버의 SEATS 가운데)와 대기실이 보이는 거리 */
-export const STUMPS = { x: 0, z: -9, reach: 7 };
+/** 그루터기 자리 (서버의 SEATS 가운데)와 대기실이 보이는 거리 (야영지 안이면 보인다) */
+export const STUMPS = { x: -6, z: 6, reach: 14 };
 const near = (): boolean => !!S.me && Math.hypot(S.me.x - STUMPS.x, S.me.z - STUMPS.z) <= STUMPS.reach;
 
 export function mountDuel(): void {
@@ -24,10 +24,10 @@ export function initDuel(): void {
   setRoomLook({
     defName: (id) => (id === 'duel' ? t('duelName') : id),
     note: () => (mine && myRoom()?.st === 'play' ? L().fmt.duelNote(mine.pile, mine.got, mine.secret) : ''),
-    // 들판의 게임: 대기실은 그루터기 곁에서만
+    // 들판의 게임: 대기실은 그루터기 곁에서만. 좁은 화면에서 판 막대는 위로 (아래에 줍기 단추가 있다)
     lobbyWhen: near,
+    barAt: 'top',
   });
-  addPlace('duel', [STUMPS]);
   addMapPlaces(() => [{ x: STUMPS.x, z: STUMPS.z, name: t('duelName'), kind: 'other', info: t('duelInfo') }]);
   pad.addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-n]');
@@ -43,7 +43,7 @@ export function initDuel(): void {
   label();
 
   function draw(): void {
-    const r = myRoom(), on = !!r && r.def === 'duel' && r.st === 'play' && !r.watch && !!mine;
+    const r = myRoom(), on = !!r && (r.def ?? 'duel') === 'duel' && r.st === 'play' && !r.watch && !!mine; // 판이 하나뿐인 게임은 def가 오지 않는다
     pad.hidden = !on;
     if (!on || !mine) return;
     const turn = myRoomTurn();

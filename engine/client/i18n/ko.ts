@@ -1210,7 +1210,7 @@ export const koBase = (n: ContentNames) => {
       rankedWL: (w: number, l: number, d: number) => `${w}승 ${l}패${d ? ` ${d}무` : ''}`,
       rankedBest: (tier: string) => `시즌 최고 ${tier}`,
       rankedSeasonEnd: (n: number, ms: number) => `${n ? `시즌 ${n}` : '이번 시즌'} · 끝까지 ${spanMs(ms, 'ko')}`,
-      rankedDelta: (r: number, d: number, tier: string) => `레이팅 ${r.toLocaleString('ko-KR')} (${d >= 0 ? '+' : ''}${d})${tier ? ` · ${tier}` : ''}`,
+      rankedDelta: (r: number, d: number, tier: string) => `레이팅 ${r.toLocaleString('ko-KR')}${d ? ` (${d > 0 ? '+' : ''}${d})` : ''}${tier ? ` · ${tier}` : ''}`,
       queueBand: (def: string, waited: number, est: number, range: number, bots: boolean) => `랭크 매칭 찾는 중 · ${def} · ${clockText(waited)} · 예상 ${est < 0 ? '알 수 없음' : clockText(est)} · 범위 ±${range}${bots ? ' · 사람이 모자라면 봇' : ''}`,
       queueBannedLeft: (min: number) => `이탈 제재: ${min}분 동안 랭크 대전에 설 수 없습니다`,
       replaySub: (names: string, at: number) => `${names} · ${whenText(at, 'ko-KR')}`,

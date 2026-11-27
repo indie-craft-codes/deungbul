@@ -14,7 +14,7 @@ import { hasModule } from '../mods';
 import { addMenuTab } from './menu';
 import { button, el, emptyState, redraw } from './menu/parts';
 import { addNotices } from './notify';
-import { myRoom, onRoomChange } from './rooms';
+import { myRoom, onRoomChange, roomDefLabel } from './rooms';
 import { mountPanel } from './shell';
 
 let tabs: BoardTab[] = [];
@@ -30,7 +30,7 @@ let queueAt = 0;
 export function tierName(i: number): string { const d = competeRules()?.tiers?.[i]; return d ? uiText.get(d.name) : ''; }
 /** 순위표의 이름: 틀의 것(boardPower·boardRating, 사다리가 여럿이면 'boardRating:<사다리>'), 게임의 문장 키 */
 export function boardName(name: string): string {
-  if (name.startsWith('boardRating:')) return L().fmt.boardRatingOf(L().fmt.roomDefName(name.slice(12)));
+  if (name.startsWith('boardRating:')) return L().fmt.boardRatingOf(roomDefLabel(name.slice(12)));
   return uiText.get(name);
 }
 /** 순위표의 값 (fmt) */
@@ -50,7 +50,7 @@ const ask = (id?: string) => send({ t: 'board', ...(id ? { id } : {}) });
 function ratingCard(r: RatingMe, many: boolean): HTMLElement {
   const loc = L(), box = el('gbanner rcard');
   box.setAttribute('role', 'group');
-  const title = many ? loc.fmt.boardRatingOf(loc.fmt.roomDefName(r.id)) : t('rankedMine');
+  const title = many ? loc.fmt.boardRatingOf(roomDefLabel(r.id)) : t('rankedMine');
   box.setAttribute('aria-label', title);
   box.append(el('note', title));
   const big = r.n < r.need ? loc.fmt.rankedPlacement(r.n, r.need) : r.unsure ? t('rankedUnsure') : r.tier >= 0 ? tierName(r.tier) : t('rankedNoTier');
@@ -135,9 +135,12 @@ export function initRanked(): void {
 
   function renderBand(): void {
     band.hidden = !queue;
+    document.body.classList.toggle('in-queue', !!queue);
+    const quick = $('roomQuick') as HTMLButtonElement | null;
+    if (quick) quick.disabled = !!queue; // 큐에 서 있는 동안 (취소는 띠에서)
     if (!queue) return;
     const loc = L(), waited = queue.waited + Math.floor((performance.now() - queueAt) / 1000);
-    text.textContent = loc.fmt.queueBand(loc.fmt.roomDefName(queue.def), waited, queue.est, queue.range, !!queue.bots);
+    text.textContent = loc.fmt.queueBand(roomDefLabel(queue.def), waited, queue.est, queue.range, !!queue.bots);
   }
   /** 대기실의 내 등급 한 줄과 큐 금지 */
   function renderLobby(): void {
@@ -145,7 +148,7 @@ export function initRanked(): void {
     if (!box) return;
     const loc = L(), bits: string[] = [];
     for (const r of ratings) {
-      const name = ratings.length > 1 ? `${loc.fmt.roomDefName(r.id)}: ` : '';
+      const name = ratings.length > 1 ? `${roomDefLabel(r.id)}: ` : '';
       bits.push(name + (r.n < r.need ? loc.fmt.rankedPlacement(r.n, r.need) : r.unsure ? t('rankedUnsure') : `${r.tier >= 0 ? tierName(r.tier) + ' · ' : ''}${loc.fmt.boardRatingV(r.r)}`));
     }
     if (leave?.ban) bits.push(loc.fmt.queueBannedLeft(leave.ban));
