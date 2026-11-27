@@ -2686,12 +2686,15 @@ export const MODE_RULES: ModeRules = {
   - `fieldStay`: 들판을 떠날 때 자동 사냥(R)이 켜져 있으면 그 자리에 **대역**(엔티티 종류 `stand`: 그 사람의 이름·직업·무기·겉모습)이 남아 자리 비움 사냥과 같은 판단으로 사냥한다. 힘은 그 사람의 것(최대 체력, 주는 피해·받는 피해의 보정: 장비·변신), 물약은 그 사람의 가방에서. 처치 보상·일일 임무는 그 사람의 것이고(`g.rules.bodyOn`), 장부의 원인은 자리 비움 사냥(`huntAway`)이며 하루 한도(`AWAY.maxS`)도 함께 쓴다. 돌아오면 대역의 자리·체력을 이어받는다. 레벨 `AWAY.minLv` 이상, 직업이 있을 때만.
   - `stageStay`: 단계를 떠날 때 싸우는 중이면 그 회차가 **뒤에서 이어 간다**(`g.stages.detach`: 편성의 영웅만 싸운다). 깨면 보상, 자동 진행이 켜져 있으면 다음 단계로. 자동 진행이 꺼져 있거나 지면(영웅이 모두 쓰러지거나 시간) 회차를 닫고 안내문 `stageBgStop`. 돌아오면 그 싸움으로(`attach`). 들판에서 `stage leave`로 멈춘다.
   - 접속이 끊기면 대역은 그 사람 자신으로 돌아오고(자동 사냥이 켜져 있으면 틀의 자리 비움 사냥이 이어 간다), 뒤에서 잇던 회차는 닫힌다(돌아왔을 때 `STAGE_RULES.offline`이 맡는다).
+- 화면의 자동 사냥(R)은 들판의 모드에서만 움직인다(단계의 모드에서는 켜짐만 지킨다: 들판의 대역이 쓴다). 들판으로 돌아오면 자동 사냥의 닻을 그 자리로 다시 잡고, 서버가 자동 사냥을 끄면(안전장치·하루 한도) 개인 상태 `mode`의 `auto`로 화면도 끈다.
 - 화면(`engine/client/hud/modes.ts`): '게임 바꾸기' 단추(`#modeBtn`, 건너갈 모드의 이름 `fmt.modeTo`), 모드마다 메뉴 탭·감출 요소, 문서의 `body[data-mode]`·`data-mode-kind`(게임의 스타일이 두 게임의 겉모습을 가른다), 대역의 겉모습(`registerKind('stand')`). 게임이 쓸 것: `onModeChange((def, from) => …)`(장면의 하늘, 게임의 창), `onModeSide((s) => …)`(보이지 않는 쪽의 작은 표시), `switchMode(id?)`, `myMode()`, `myModeSide()`. 다른 쪽의 위험(`modeStandDown`·`stageBgStop`·`autoRetreat`·`autoNoPotion`·`autoDied`·`modeStandEnd`)은 틀의 가운데 알림으로 뜬다(게임이 `onMsg('sys')`로 '바로 가기' 단추를 더할 수 있다).
 
 ### 함께 쓰는 칸
 
 | 칸 | 무엇 | 기본 |
 |---|---|---|
+| `STAGE_RULES.squadOnly` | 단계는 편성의 영웅만 싸운다 (수집형 RPG처럼): 사람은 그 층에서 보기만 한다(`g.rules.ghost`: 이동·공격·기술·피해 없음). 모드의 단계 쪽 화면은 내 몸·이름표를 그리지 않고 걷지 않는다. 영웅이 모두 쓰러지면 진다 | `false` |
+| `setModeHome(id, open)` (화면) | 그 모드의 홈 화면(로비)을 연다: 그 모드로 올 때마다 `open`이 불린다. `openModeHome()`으로 다시. 화면 내용은 게임의 것 | 없음 |
 | `SQUAD_RULES.where: 'stage' \| 'all'` | 편성의 영웅이 나타나는 곳. `'stage'`면 단계의 회차(대기실 포함)에서만 (들판에는 동료가 없다) | `'all'` |
 | `MORPH_RULES.fromRoster` | 가진 변신 = 가진 영웅 ∩ 정의 (따로 저장·맞추기 없음. `grant`는 영웅을 준다) | 끔 |
 | `MORPH_RULES.stats(card)` | **능력치 대체**: 변신한 동안 기본 최대 체력과 기본 공격(직업의 기본 공격 한 번)을 카드에서 셈한 `{ hp, atk }`로 (장비·버프는 그 위에, 기술도 같은 비율). `card`는 `{ def, atk, hp, lv, stars, who: { lv } }`(영웅 탭의 카드와 같은 셈). 화면은 영웅 탭의 카드와 변신 탭에 같은 '변신 시 체력·공격'을 보인다(`morphCard`·`morphStats`) | 없음(보정 방식) |

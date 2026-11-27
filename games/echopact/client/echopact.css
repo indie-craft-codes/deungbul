@@ -78,3 +78,99 @@ body[data-mode="tower"] .towerHome { top: calc(80px + env(safe-area-inset-top, 0
   .towerHome .tstage small { font-size: 9px; }
   .pactAlert { bottom: auto; top: calc(40% + env(safe-area-inset-top, 0px)); flex-wrap: wrap; }
 }
+
+/* 탑의 싸움: 계약자는 싸우지 않으므로 내 체력·경험치 막대를 감추고, 아래에 편성의 메아리들(이름·체력)과 편성 전투력 */
+body[data-mode="tower"] #me .bar.hp, body[data-mode="tower"] #me .bar.xp, body[data-mode="tower"] #hpt, body[data-mode="tower"] #buffs { display: none !important; }
+/* 탑에서는 걷지 않는다: 조이스틱을 감추고, 폰에서는 흘러가는 안내를 감춰 아래를 편성의 메아리에게 (단계 막대가 깸·실패를 크게 보인다) */
+body[data-mode="tower"] #stick { display: none !important; }
+@media (max-width: 600px) { body[data-mode="tower"] #feed { display: none !important; } }
+.towerSquadBar { position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 6px; align-items: flex-end; pointer-events: none;
+  max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center; }
+.towerSquadBar[hidden] { display: none; }
+.towerSquadBar .tsq { min-width: 92px; padding: 6px 8px; border-radius: 10px; background: rgba(42, 33, 64, .9); border: 1px solid rgba(184, 160, 255, .5); color: #f0eaff; }
+.towerSquadBar .tsq b { display: block; font-size: 12px; white-space: nowrap; }
+.towerSquadBar .tsq i { display: block; height: 6px; margin-top: 4px; border-radius: 3px; background: rgba(0, 0, 0, .45); overflow: hidden; }
+.towerSquadBar .tsq i span { display: block; height: 100%; background: #e05a4a; transform-origin: left; }
+.towerSquadBar .tsq.down { opacity: .45; }
+.towerSquadBar small { width: 100%; text-align: center; font-size: 11px; color: #ffe6a8; text-shadow: 0 1px 2px #000; }
+.pactSide span { cursor: pointer; }
+/* 폰: '게임 바꾸기'와 작은 표시는 오른쪽 위 대화 창 아래에 (아래쪽의 안내 글·기술 단추와 겹치지 않게) */
+@media (max-width: 600px) {
+  .modeBtn { top: calc(136px + env(safe-area-inset-top, 0px)); bottom: auto; left: auto; right: 12px; }
+  .pactSide, body.towerLobby .pactSide, body[data-mode="vale"] .pactSide { top: calc(178px + env(safe-area-inset-top, 0px)); bottom: auto; left: auto; right: 12px; max-width: 58vw; }
+  body[data-mode="tower"] .towerHome { top: calc(220px + env(safe-area-inset-top, 0px)); max-height: calc(var(--app-h, 100vh) - 300px); }
+}
+
+/* ---------- 탑: 홈(로비)·모험의 전체 화면, 전투의 '홈' 단추, 결과 창 (client/tower.ts) — 폰 세로를 먼저 ---------- */
+.tscreen { position: fixed; inset: 0; z-index: 12; overflow: auto; pointer-events: auto; color: #f0eaff;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(ellipse at 50% 30%, rgba(90, 63, 138, .55), rgba(18, 14, 30, .97) 70%), #120e1e; }
+.tscreen[hidden], .tscreen.under { display: none; }
+.thome { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.thome .tbar { align-self: flex-start; display: flex; gap: 8px; }
+.thome .tcur { padding: 5px 12px; border-radius: 999px; background: rgba(0, 0, 0, .35); border: 1px solid rgba(184, 160, 255, .35); font-size: 14px; }
+.thome .tcur.spark { color: #9fd8ff; } .thome .tcur.gold { color: #ffd27a; }
+.thome .ttitle { margin: 4px 0 0; font-size: 26px; letter-spacing: .06em; color: #ffe6a8; }
+.thome .tlead { display: flex; flex-direction: column; align-items: center; }
+.thome .tlead img { width: min(220px, 56vw); height: auto; aspect-ratio: 240 / 300; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .55)); }
+.thome .tleadname { font-size: 20px; font-weight: 800; color: var(--rc, #fff); }
+.thome .tleadinfo { font-size: 13px; opacity: .85; }
+.tscreen .tgo { width: min(420px, 100%); padding: 15px 8px; border-radius: 14px; font-size: 22px; font-weight: 800; letter-spacing: .08em; background: linear-gradient(180deg, #ffd27a, #e0a040); color: #2a1a08; border: 0; box-shadow: 0 6px 18px rgba(224, 160, 64, .35); }
+.thome .tlive { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 10px; background: rgba(224, 90, 74, .25); border: 1px solid #e05a4a; }
+.thome .tbest { margin: 0; font-size: 12px; opacity: .75; }
+.thome .tring { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: min(460px, 100%); }
+.thome .tround { padding: 12px 4px; border-radius: 14px; font-size: 14px; font-weight: 700; background: #3a2e5e; color: #fff; border: 1px solid rgba(184, 160, 255, .55); }
+.tadv .tnav { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.tadv .tnav h2 { margin: 0; flex: 1; font-size: 22px; color: #ffe6a8; }
+.tadv .tnav span { font-size: 12px; color: #ffe6a8; }
+.tadv .tnav button { padding: 6px 12px; border-radius: 999px; }
+.tadv .tgo { display: block; margin: 0 auto 8px; }
+.tadv .tauto { display: block; margin: 6px auto; padding: 8px 14px; border-radius: 10px; background: #2a2440; color: #cfc4ff; border: 1px solid #6a5aa0; }
+.tadv .tauto.on { color: #ffe6a8; border-color: #ffd27a; }
+.tadv .tweak { font-size: 12px; color: #ffcf9a; text-align: center; }
+.tadv .tweak[hidden] { display: none; }
+.tadv h3 { margin: 12px 0 6px; font-size: 15px; color: #cfc4ff; }
+.tadv .tgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.tadv .tstage { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 2px; border-radius: 10px; background: #312a4a; color: #fff; border: 1px solid #4a4266; min-width: 0; }
+.tadv .tstage b { font-size: 17px; } .tadv .tstage small { font-size: 9px; opacity: .85; text-align: center; line-height: 1.2; }
+.tadv .tstage.done { background: #2e3a4a; border-color: #6a8ab0; }
+.tadv .tstage.now { background: #5a3f8a; border-color: #ffd27a; box-shadow: 0 0 0 2px rgba(255, 210, 122, .35); }
+.tadv .tstage.boss b { color: #ffb07a; } .tadv .tstage.locked { opacity: .45; }
+.tadv .thint { font-size: 12px; opacity: .75; text-align: center; }
+.tbattle { position: fixed; z-index: 13; left: 12px; top: calc(12px + env(safe-area-inset-top, 0px)); }
+.tbattle[hidden] { display: none; }
+.tbattle button { padding: 8px 16px; border-radius: 999px; font-weight: 800; background: #3a2e5e; color: #ffe6a8; border: 1px solid #b8a0ff; }
+.tresult { position: fixed; z-index: 14; left: 50%; top: 40%; transform: translate(-50%, -50%); width: min(340px, calc(100vw - 32px)); padding: 16px; border-radius: 16px; text-align: center;
+  background: linear-gradient(180deg, #3a2e5e, #1c1630); border: 2px solid #ffd27a; color: #fff; box-shadow: 0 12px 40px rgba(0, 0, 0, .6); }
+.tresult.lose { border-color: #e05a4a; }
+.tresult[hidden] { display: none; }
+.tresult h3 { margin: 0 0 6px; font-size: 24px; color: #ffe6a8; } .tresult.lose h3 { color: #ffb0a0; }
+.tresult .tbtns { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+.tresult button { flex: 1; padding: 10px 4px; border-radius: 10px; font-weight: 700; }
+.tresult #trNext[hidden] { display: none; }
+/* 탑: 홈·모험·전투 동안 틀의 내 정보·대화 창은 비켜 둔다 (홈이 재화를 보인다). 전투에서는 단계 막대의 '단계 선택'을 감춘다 (홈 단추가 대신한다) */
+body[data-tower="home"] #me, body[data-tower="adventure"] #me, body[data-tower="home"] #chat, body[data-tower="adventure"] #chat { visibility: hidden; }
+body[data-mode="tower"] #stageGoBtn { display: none; }
+body[data-tower="battle"] #me { opacity: .85; }
+/* 탑의 메뉴(뽑기·메아리·편성 …)는 큰 창으로 */
+body[data-mode="tower"] #menu { width: min(760px, calc(100vw - 16px)); max-width: none; height: calc(var(--app-h, 100vh) - 24px); z-index: 20; }
+/* 홈 위의 작은 표시와 '울림골 가기' (홈은 전체 화면이라 그 위에) */
+body[data-tower="home"] .pactSide, body[data-tower="adventure"] .pactSide { z-index: 29; }
+@media (max-width: 600px) {
+  body[data-tower] .modeBtn { top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; }
+  body[data-tower] .pactSide { top: calc(54px + env(safe-area-inset-top, 0px)); }
+  body[data-tower="home"] .thome { padding-top: calc(96px + env(safe-area-inset-top, 0px)); }
+  body[data-tower="adventure"] .tadv { padding-top: calc(96px + env(safe-area-inset-top, 0px)); }
+  .tadv .tstage small { font-size: 8px; }
+  /* 폰의 탑 전투: 내 정보·대화 창을 비켜 위를 단계 막대에게 (재화는 홈이 보인다, 대화는 울림골에서) */
+  body[data-tower="battle"] #me, body[data-mode="tower"] #chat { visibility: hidden; }
+  body[data-tower="battle"] #stageBar { position: fixed; left: 12px; right: 12px; top: calc(58px + env(safe-area-inset-top, 0px)); width: auto; }
+}
+@media (max-width: 600px) {
+  /* 폰: 편성의 메아리 줄은 두 칸씩, 탑의 메뉴는 '울림골 가기' 단추 아래부터 */
+  body[data-mode="tower"] .towerSquadBar { display: grid; grid-template-columns: 1fr 1fr; width: calc(100vw - 24px); }
+  body[data-mode="tower"] .towerSquadBar .tsq { min-width: 0; }
+  body[data-mode="tower"] .towerSquadBar .tsq b { overflow: hidden; text-overflow: ellipsis; }
+  body[data-mode="tower"] .towerSquadBar small { grid-column: 1 / -1; }
+  body[data-mode="tower"] #menu { top: calc(50% + 34px); height: calc(var(--app-h, 100vh) - 86px); }
+}

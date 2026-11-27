@@ -21,6 +21,20 @@ let resting = false;
  */
 let anchor: { x: number; z: number } | null = null;
 const setAnchor = (): void => { anchor = S.me ? { x: S.me.x, z: S.me.z } : null; };
+/** 이때(ms)가 지나면 그 자리를 새 닻으로 (자리를 옮긴 뒤: 서버가 옮긴 자리가 화면에 온 뒤에 잡는다) */
+let reanchorAt = 0;
+/** 자동 사냥이 지금 움직여도 되는가 (모드 modes의 단계 모드처럼 들판이 아닌 곳에서는 멈춰 있는다: 켜짐은 그대로 들판의 몸이 쓴다) */
+let gate: () => boolean = () => true;
+/** 자동 사냥이 움직여도 되는 때를 정한다 (틀의 모드 화면이 부른다). 켜고 끄는 것과 서버에 알리는 것은 그대로다 */
+export function setAutoGate(fn: () => boolean): void { gate = fn; }
+/** 자리를 옮겼다 (모드를 바꿔 들판의 다른 자리에서 이어 간다): 닻을 비우고, 조금 뒤 그 자리를 새 닻으로 잡는다. 노리던 것도 놓는다 */
+export function resetAutoAnchor(delayMs = 700): void { anchor = null; reanchorAt = performance.now() + delayMs; resting = false; }
+/** 서버가 자동 사냥을 껐다 (안전장치로 멈춤, 오늘의 시간을 다 씀): 화면의 켜짐도 끈다 (다시 알리지 않는다) */
+export function autoOffByServer(): void {
+  if (!S.auto) return;
+  S.auto = false; shown = false; resting = false;
+  btn.classList.toggle('on', false); btn.setAttribute('aria-pressed', 'false');
+}
 /** 자동 사냥이 스스로 고를 수 있는 몬스터인가: 필드 보스는 사람이 직접 고른 때만 (자동 사냥이 보스를 혼자 되풀이해 잡던 것, 검토 7) */
 const pickable = (r: { x: number; z: number; type: string }): boolean => {
   if (isMonsterId(r.type) && monsterDef(r.type).boss) return false;
@@ -45,8 +59,9 @@ function tick(): void {
   }
   const me = S.me;
   if (me && me.hp <= 0) resting = false; // 쓰러졌다: 일어나면 체력이 차 있으니 조용히 그친다 ('체력이 찼습니다'가 '쓰러졌습니다'보다 먼저 보였다)
-  if (!S.auto || !me || !me.cls || me.hp <= 0) return;
+  if (!S.auto || !me || !me.cls || me.hp <= 0 || !gate()) return;
   const now = performance.now();
+  if (!anchor && reanchorAt && now >= reanchorAt) { reanchorAt = 0; setAnchor(); }
   const ratio = me.hp / me.maxHp;
 
   if (now >= S.itemCdEnd && pickPotion(ratio, me.items)) usePotion();

@@ -49,6 +49,11 @@ interface Run {
   bg?: boolean;
 }
 
+/** 편성만 싸우는 단계 (STAGE_RULES.squadOnly) */
+const SQUAD_ONLY = !!(STAGE_RULES as { squadOnly?: boolean }).squadOnly;
+/** 영웅만 싸우는 회차인가: 뒤에서 이어 가거나, 편성만 싸우는 게임 */
+const heroesOnly = (r: { bg?: boolean }): boolean => !!r.bg || SQUAD_ONLY;
+
 /** 단계가 없다는 알림을 이미 했다 (한 프로세스에 한 번: 시험은 게임을 여러 번 만든다) */
 let warned = false;
 
@@ -80,6 +85,8 @@ export class Stages {
     }
     g.on('playerJoined', (p) => { if (STAGE_RULES.enterOnJoin && !p.bot && STAGES.length) this.start(p, this.curIndex(p)); });
     // 단계 안에서 쓰러지면 그 단계의 가운데에서 일어난다 (회차는 실패로 끝나고 잠시 뒤 다시 시작한다)
+    // 편성만 싸우는 단계: 단계의 층에 있는 사람은 보기만 한다
+    if (SQUAD_ONLY) { const ghost = g.rules.ghost; g.rules.ghost = (p) => this.inStage(p) || !!ghost?.(p); }
     const respawn = g.rules.respawn;
     this.fieldRespawn = respawn;
     g.rules.respawn = (p) => (this.inStage(p) ? { x: STAGE_RULES.arena.x, z: STAGE_RULES.arena.z, id: 'stage' } : respawn(p));
@@ -372,7 +379,9 @@ export class Stages {
       if (this.g.ents.get(p.id) !== p) { this.end(r); continue; }
       if (r.state === 'lobby') continue;
       // 뒤에서 이어 가는 회차: 영웅이 모두 쓰러졌으면 실패
-      if (r.bg && r.state === 'fight' && !this.anyHero(p)) { this.fail(r, 0); continue; }
+      if (heroesOnly(r) && r.state === 'fight' && !this.anyHero(p)) { this.fail(r, 0); continue; }
+      // 편성만 싸우는 게임: 보는 사람은 단계의 가운데에 묶인다 (화면의 눈이 싸움을 따라가게)
+      if (SQUAD_ONLY && !r.bg && (p.moving || p.targetId)) { p.moving = false; p.path = null; p.targetId = 0; }
       if (r.state === 'fight' || r.state === 'gap') {
         r.left -= dt;
         if (r.left <= 0) { this.fail(r, 1); continue; }
@@ -408,8 +417,8 @@ export class Stages {
   /** 대상이 없는 몬스터는 가장 가까운 사람 편(사람, 영웅)을 노린다. 사람도 맡겼으면 가장 가까운 몬스터를 친다 */
   private aim(r: Run, dt: number): void {
     const g = this.g, p = r.p;
-    const heroes = g.has('squad') ? g.squad.heroes(p).filter((e) => !e.dead && (!r.bg || e.layer === r.layer)) : [];
-    const friends = r.bg ? heroes : [p, ...heroes];
+    const heroes = g.has('squad') ? g.squad.heroes(p).filter((e) => !e.dead && (!heroesOnly(r) || e.layer === r.layer)) : [];
+    const friends = heroesOnly(r) ? heroes : [p, ...heroes];
     for (const id of r.mobs) {
       const m = g.ents.get(id);
       if (!m || m.dead || m.targetId) continue;
@@ -417,7 +426,7 @@ export class Stages {
       for (const f of friends) { const d = dist(m, f); if (d < bd) { bd = d; best = f; } }
       if (best) m.targetId = best.id;
     }
-    if (r.bg || !STAGE_RULES.leaderAuto || !g.has('combat') || p.hp <= 0) return;
+    if (heroesOnly(r) || !STAGE_RULES.leaderAuto || !g.has('combat') || p.hp <= 0) return;
     r.think -= dt;
     if (r.think > 0) return;
     r.think = 0.3;

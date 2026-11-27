@@ -220,9 +220,11 @@ export const SQUAD_RULES: SquadRules = { size: 4, seek: 12, leash: 20, reviveS: 
 // ---------- 장과 단계: 장 셋 × 다섯. 다섯째는 우두머리. 단계마다 몬스터가 45%씩 세진다 (메아리를 뽑고 키워야 나아간다) ----------
 const stage = (ch: number, n: number): StageDef => {
   const k = ch * 5 + n; // 0부터
-  const scale = Math.round((1 + k * 0.45) * 100) / 100;
+  // 편성만 싸운다(squadOnly): 처음 두 단계는 몬스터를 조금 약하게(0.8배), 그 뒤로 단계마다 40%씩
+  const scale = Math.round((k < 2 ? 0.8 : 1 + (k - 1) * 0.4) * 100) / 100;
   const mob: MonsterId = ch === 0 ? (n < 2 ? 'wisp' : 'hollowkin') : ch === 1 ? (n < 2 ? 'hollowkin' : 'shadeshot') : 'shadeshot';
-  const waves = [[{ type: mob, n: 4 + (n % 2) }], [{ type: mob, n: 3 }, { type: ch === 0 ? 'wisp' : 'hollowkin', n: 2 }]];
+  // 처음 두 단계는 몬스터 수도 적게 (처음 메아리 하나로 깬다)
+  const waves = k < 2 ? [[{ type: mob, n: 3 }], [{ type: mob, n: 2 }, { type: 'wisp' as MonsterId, n: 1 }]] : [[{ type: mob, n: 4 + (n % 2) }], [{ type: mob, n: 3 }, { type: ch === 0 ? 'wisp' : 'hollowkin', n: 2 }]];
   return {
     waves,
     ...(n === 4 ? { boss: { type: ch === 0 ? 'bellgolem' : 'echowarden' } } : {}),
@@ -243,7 +245,7 @@ export const CHAPTERS: readonly ChapterDef[] = [
  * 오프라인 진행: 자동 진행을 켜 둔 채 접속을 끊으면 돌아왔을 때 편성의 전투력으로 '그동안 깼을 단계'를 넘긴다 (단계마다 3분, 8시간·5단계까지, 권장 전투력 이상만)
  */
 export const STAGE_RULES: StageRules = {
-  arena: ARENA, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: false,
+  arena: ARENA, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: false, squadOnly: true,
   offline: { perStageS: 180, maxH: 8, maxStages: 5, need: 1, clearReward: true },
 };
 
