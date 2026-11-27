@@ -1,4 +1,6 @@
-> **기록 문서**: 틀과 게임을 가르기 전에 세운 계획이다. 파일 경로와 세부는 그때의 것이고, 계획은 0~13단계로 모두 이루어졌다. 지금의 상태와 남은 일은 [framework-status.md](framework-status.md)에, 새 게임을 만드는 법은 [making-a-game.md](making-a-game.md)에 있다(2026-11-25 현행화).
+> **기록: 그때의 상태** (틀과 게임을 가르기 전의 계획, 2026-11-23~24). 지금 대응하는 문서: [framework-status.md](framework-status.md), [making-a-game.md](making-a-game.md), 문서 지도 [README.md](README.md).
+>
+> 틀과 게임을 가르기 전에 세운 계획이다. 파일 경로와 세부는 그때의 것이고, 계획은 0~13단계로 모두 이루어졌다. 지금의 상태와 남은 일은 [framework-status.md](framework-status.md)에, 새 게임을 만드는 법은 [making-a-game.md](making-a-game.md)에 있다(2026-11-25 현행화).
 
 > **그 뒤 (2026-11-26, 가지 `feat/neutral`)**: 이 계획이 만든 틀은 "쿼터뷰 탭 타깃 RPG 전용 틀"이었다(계약의 이름이 모두 RPG 개념, 시스템 24개가 늘 돈다). 그 뒤 틀을 **장르와 무관한 핵심 + 선택 모듈 열여섯**으로 다시 짰다: 내용 계약을 핵심(MAP, MODULES)과 모듈마다의 선택 계약으로 쪼개고, 서버·화면이 고른 모듈만 만들고, 게임이 엔티티 종류를 등록한다. 아래의 '틀'은 그 전의 모양이다. 지금의 짜임은 [framework-status.md](framework-status.md)의 '장르 중립 틀'과 [making-a-game.md](making-a-game.md) 1절.
 

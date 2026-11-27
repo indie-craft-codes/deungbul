@@ -13,7 +13,7 @@
 
 ## 측정 방법
 
-`npm run load`로 다시 잴 수 있다 (`test/load.ts`, `test/load-clients.ts`).
+`npm run load`로 다시 잴 수 있다 (`games/deungbul/test/load.ts`, `games/deungbul/test/load-clients.ts`. 2026-11-23에는 뿌리의 `test/`에 있었다). 게임을 고르는 부하 도구는 `npm run load:game`(`scripts/load.mjs`, 아래 '부하와 장시간').
 
 - 서버는 측정 프로세스 안에서 띄우고, 가짜 접속자는 다른 프로세스에서 실제 WebSocket으로 붙는다.
 - 가짜 접속자는 1~3초마다 한 번 행동한다. 실제 사람보다 부지런하게 잡은 값이다.

@@ -1,5 +1,7 @@
 # 증명 노트: 수집형·방치형 RPG "달무리 원정대"를 문서만으로 만들기
 
+> **기록: 그때의 상태** (2026-11-26). 문서의 빈 곳과 틀의 빈 곳은 아래 '메운 것'에서 처리했다. 지금 대응하는 문서: [making-a-game.md](making-a-game.md) 13절, [framework-status.md](framework-status.md), 문서 지도 [README.md](README.md).
+>
 > 이 게임은 2026-11-27에 저장소에서 지웠다. 코드는 커밋 `7e347c9`에 있다 (`git checkout 7e347c9 -- games/<이름>`). 이 기록은 틀을 검증한 기록으로 남긴다.
 
 처음 보는 개발자로서 `docs/making-a-game.md`(전부, 특히 1절의 모듈 표와 13절)를 읽고 `games/dalmuri/`를 만들었다.

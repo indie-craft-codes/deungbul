@@ -1,5 +1,7 @@
 # 증명 노트: 넷이 두는 판 게임 "반딧불 연못"을 문서만으로 만들기
 
+> **기록: 그때의 상태** (2026-11-27). 문서의 빈 곳과 틀의 빈 곳은 아래 '메운 것'에서 처리했다. 지금 대응하는 문서: [making-a-game.md](making-a-game.md) 14절, [framework-status.md](framework-status.md), 문서 지도 [README.md](README.md).
+>
 > 이 게임은 2026-11-27에 저장소에서 지웠다. 코드는 커밋 `7e347c9`에 있다 (`git checkout 7e347c9 -- games/<이름>`). 이 기록은 틀을 검증한 기록으로 남긴다.
 
 처음 보는 개발자로서 `docs/making-a-game.md`(1~12절과 14절 '판으로 나뉘는 게임')와 앞의 기록(`docs/proof-stepstone.md`, `docs/proof-dalmuri.md`)을 읽고
