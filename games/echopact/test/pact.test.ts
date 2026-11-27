@@ -311,6 +311,8 @@ check(Object.values(DAILIES).filter((d) => 'period' in d && d.period === 'week')
   k.command(p, { t: 'enhance', uid: c.uid }); k.gear.random = Math.random;
   check(blocked && ENHANCE.dust(5, 1) === 4 && ENHANCE.dust(4, 3) === 0 && p.items[SALVAGE.item] === 6 && c.plus === 5 && p.gold === gold0 - ENHANCE.gold(5, 1),
     `+5 강화는 가루 ${ENHANCE.dust(5, 1)}(쓸 만한)와 골드 ${ENHANCE.gold(5, 1)}: 가루가 모자라면 아무것도 들지 않고, 실패해도 +5 그대로 (+4까지와 상점 장비는 가루가 들지 않는다)`);
+}
+
 // ---------- 스태미나 '계약의 숨결' (묶음 D: 내용은 꺼 두었다. 이 시험에서만 켜서 제안 수치로 돈다) ----------
 {
   let t = Date.UTC(2026, 10, 30, 9, 0, 0);
