@@ -1151,3 +1151,25 @@ PC(1280×800)와 폰(390×844, 터치, DPR 2), 한국어·영어 넷씩, 두 게
 - **사용자가 정할 것**: 큰 화면 기준(1600×900 = 1배: 1920은 120%, 4K는 240%)이 알맞은가, 울트라와이드에서 HUD를 가운데 16:9로 모으는 것(끄는 칸은 없다), 고대비의 색(지금은 흰 글자·불투명 창만: 게임마다 다른 세트는 없다), 들판의 F6(HUD 단추로)이라는 키.
 
 남은 것: 들판에서 Tab은 게임의 대상 고르기라 HUD는 F6으로, 메뉴 안 깊은 단추까지 Tab 10번 남짓, 3D 이름표의 대비, 맥 Safari의 `zoom`(큰 화면 확인 못 함), 폰에서 글자 '아주 크게'일 때 행동 단추 줄과 조이스틱의 작은 겹침.
+
+## 경쟁 (묶음 8, 2026-11-28, 가지 `feat/comp8`)
+
+[genre-features.md](genre-features.md) 5.8의 묶음 8. 쓰는 법은 [making-a-game.md](making-a-game.md) 31절. 모두 **기본 꺼짐**(모듈 `boards`·`ranked`와 `RoomDef`의 칸 `rated`·`queueBots`·`teamOf`·`replay`를 주지 않으면 예전과 같다).
+
+| 무엇 | 틀의 칸 |
+|---|---|
+| 레이팅·배치·등급 | `shared/defs/compete.ts`(`glicko`·`pairwise`·`idleRd`·`tierOf`·`seasonPull`), 서버 `systems/ranked.ts`(사다리마다 저장 키의 r·RD·σ, 반영 안 함: 모두 끊김·첫 수 전 이탈, 이탈은 패배), 개인 상태 `rating`, 안내문 `rankedPlaced`·`rankedTier`·`rankedVoid`, 월드 저장 `ranked` |
+| 레이팅 시즌 | `COMPETE.season`(주기, 당김, RD 올림, 시즌 최고 등급의 보상 우편 `'rankSeason'`: 접속하지 않은 사람도), 안내문 `rankedSeason` |
+| 순위표 | 모듈 `boards`(`systems/boards.ts`: `define`·`submit`·`adopt`, 기간 상시·날·주·달·시즌, 내 위아래, 동점 규칙, 지난 1~3등), 명령·답 `board`, 월드 저장 `boards`. `rank`의 줄은 작은 판 `Board`에 (명령·답·저장 그대로) |
+| 큐 | `systems/queue.ts`(빠른 대국 → 큐: `g.rooms.hooks.quick`, 넓어지는 범위, 예상 대기, 봇 `queueBots`·`botR`, `g.rooms.openWith`), 명령 `queue`, 개인 상태 `queue` |
+| 이탈 제재 | `COMPETE.leave`(잠수 = 시간 넘김이 이어짐, 단계 분, 감소 시간), 개인 상태 `leave`, 안내문 `leaveWarn`·`leavePenalty`·`queueBanned`·`afkOut`, 관리자 `leavers [이름]`·`leavers forgive 이름`·`rating 이름`·`boards`(`net/competecmds.ts`) |
+| 리플레이 | `RoomDef.replay`(`cmds`·`view`), `room.seed`·`room.rng`, SQLite 스키마의 끝 단계 `room_replays`, 명령·답 `replay`, 전적의 줄 `rp`, 보관 `COMPETE.replayDays` |
+| 화면 | `hud/compete.ts`(메뉴 '소식 › 순위표' 탭: 등급 카드·칩·기간·내 순위·위아래, 대기실의 내 등급 줄, 큐 띠, 결과 창의 레이팅 변화), `hud/replay.ts`(재생기: 재생·멈춤·한 칸·막대·배속, 키보드), `hud/rooms.ts`(랭크 대전 단추, [다시 큐]·[다시 보기], 봇 표시, `lobbyWhen`, `roomDefLabel`). 문장 ko·en 새 키 54 |
+
+- **예제(`games/sample`)**: '별 겨루기'(`server/duel.ts`·`client/duel.ts`: 둘이 솔방울 1~3개, 마지막을 줍는 쪽이 이김, 비밀 수 = 숨은 정보)에 랭크·큐·봇(25초)·리플레이·이탈·잠수 제재·달마다 시즌, 순위표(전투력·레이팅). 모듈에 `rooms`·`boards`·`ranked`. 수치는 임시값(아래 '사용자가 정할 것').
+- **메아리 계약**: 순위표 둘만(탑 최고 단계 주간·편성 전투력, `server/boards.ts`). 경쟁 판 없음. [proof-echopact.md](proof-echopact.md) '순위표'.
+- **등불지기**: 켜지 않았다. 전투력 순위의 줄이 `Board` 위로 옮겨졌을 뿐 명령 `rank`·답·저장·'순위' 탭이 같다. **황금 실행(sim) 7,489,205바이트 `ba83af30d07f` 그대로.**
+- **시험**: 검사 2622 → 2627(`engine/test/core/compete.test.ts` 다섯: Glicko-2 논문 예·쌍대 비교·쉼, 큐 → 랭크 판 → 배치·등급 → 순위표 → 리플레이, 봇 큐, 이탈·잠수·반영 안 함, 시즌 초기화·주간 순위표). 고친 기대값: 화면 모듈 목록의 끝(`initBoards`·`initRanked`), 예제의 공유·개인 상태 목록(판·경쟁 칸), 문서 조각(예제의 모듈·진입점·선언·탭). 언어 견본은 새 키 54(ko·en)만, 달라진 문장 0. `npm test` 두 번·`TZ=UTC npm test`·`npm run build:all`·타입 검사(설정 10) 통과.
+- **실제 브라우저**(헤드리스 크롬 GPU, 임시 서버 3015 예제·3016 메아리 계약, 상대 사람은 웹소켓 도구 `peer.mjs`): 예제를 PC 1920×1080 한국어·폰 세로 390×844 영어로 큐 → 띠 → 판(줍기 단추) → 결과(배치 1/3) → 리플레이(재생·4배속) → 다시 큐 → 둘째 판 → 다시 큐 → 봇 판 → 배치 끝(등급·레이팅) → 대기실의 내 등급 → 전적의 [다시 보기] → 순위표(레이팅·전투력), 폰 가로 844×390 한국어로 순위표·큐 띠. 메아리 계약 PC 한국어·폰 영어로 순위표 둘. 스크린샷 `$TEMP/dg-work/comp8-shots/`(`sp-pc1920-ko-*` 17장, `sp-ph-en-*` 17장, `sp-ls-ko-*` 3장, `ep-pc1920-ko-*`·`ep-ph-en-*` 3장씩). 콘솔 오류 0, 접근성 트리의 이름 없는 단추 0(결과 창·리플레이·순위표·큐 띠). 첫 시도에서 고친 것: 판이 하나인 게임에 줍기 단추가 안 뜸(`RoomView.def`가 없다), 큐 띠의 판 이름이 id 그대로, 리플레이가 결과 창 밑에 깔림, 폰에서 큐 띠·줍기 단추가 대기실·판 막대와 겹침, 그루터기 자리가 캐릭터 정의 진열과 겹침. 잠수 판정은 첫 시도(브라우저가 수를 두지 못함)에서 실제로 걸려 '잠수로 빠졌습니다 · 레이팅에 들지 않음 · 경고'가 떴다.
+
+남은 것: 일행으로 큐 서기·팀 판의 큐, 대회, 관전 지연의 랭크 판, 리플레이 공유 링크, 화면에서 시드·입력으로 다시 셈하기(지금은 서버가 적은 프레임), 실시간 판의 잠수, 봇과 시작할 때의 안내문이 '컴퓨터'라고 적힘(자리에는 '(봇)'), 폰 가로에서 큐 띠가 내 정보 창에 조금 겹침.

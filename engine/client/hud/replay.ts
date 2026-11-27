@@ -57,7 +57,7 @@ export function initReplay(): void {
     timer = window.setTimeout(() => { i++; draw(); step(); }, gap);
   };
   const go = (k: number) => { if (!rp) return; i = Math.max(0, Math.min(rp.frames.length - 1, k)); draw(); };
-  const close = () => { stop(); box.hidden = true; rp = null; };
+  const close = () => { stop(); box.hidden = true; rp = null; document.body.classList.remove('replay-on'); };
   $('replayClose').addEventListener('click', close);
   $('replayFirst').addEventListener('click', () => { stop(); go(0); });
   $('replayPrev').addEventListener('click', () => { stop(); go(i - 1); });
@@ -77,7 +77,7 @@ export function initReplay(): void {
     if (e.target instanceof HTMLInputElement) return;
     if (e.key === ' ') { e.preventDefault(); play.click(); } else if (e.key === 'ArrowLeft') { e.preventDefault(); stop(); go(i - 1); } else if (e.key === 'ArrowRight') { e.preventDefault(); stop(); go(i + 1); }
   });
-  onMsg('replay', (m) => { stop(); rp = m.s; i = 0; speed = 1; box.hidden = false; label(); });
+  onMsg('replay', (m) => { stop(); rp = m.s; i = 0; speed = 1; box.hidden = false; document.body.classList.add('replay-on'); label(); });
   onLangChange(label);
   label();
 

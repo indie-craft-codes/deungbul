@@ -1800,3 +1800,5 @@ a.cbLink { display: inline-flex; align-items: center; gap: 4px; color: var(--c-a
 #replayBtns button { min-width: 44px; min-height: 44px; padding: 4px 8px; }
 #replayBtns .rpick { display: flex; gap: 4px; margin-left: auto; }
 @media (max-width: 720px) { #queueBand { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 200px); width: calc(100% - 24px); } body.in-queue #rightcol #roomLobby { display: none; } }
+/* 리플레이를 보는 동안 결과 창은 뒤로 (닫으면 그대로 있다) */
+body.replay-on #roomEnd { visibility: hidden; }
