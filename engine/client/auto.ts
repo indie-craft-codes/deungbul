@@ -1,11 +1,11 @@
 // 자동 사냥: 가까운 몬스터를 골라 공격하고, 기술과 물약을 알아서 쓴다.
 // 직접 이동하거나 멈추면 꺼진다. 서버에는 사람이 누른 것과 같은 명령만 보낸다.
-import { AUTO, AWAY, pickPotion, pickSkill, restSpot, shouldRest } from '../shared/auto';
+import { AUTO, AWAY, pickPotion, pickSkill, pickTarget, prefsSafety, restSpot, roamOf, safetyStep, shouldRest, tidyPrefs, type AutoPrefs, type AwaySafety } from '../shared/auto';
 import { dungeonDef, isDungeonId, isMonsterId, monsterDef } from '../shared/defs';
-import { attack, autoWalk, monstersNear, usePotion, useSkill } from './actions';
+import { attack, autoWalk, monstersNear, moveTo, usePotion, useSkill } from './actions';
 import { $ } from './app';
 import { bindKey, onMsg } from './bus';
-import { feed } from './hud/notify';
+import { feed, notifySys } from './hud/notify';
 import { L, t } from './i18n';
 import { send } from './net';
 import { rules } from './rules';
@@ -35,11 +35,51 @@ export function autoOffByServer(): void {
   S.auto = false; shown = false; resting = false;
   btn.classList.toggle('on', false); btn.setAttribute('aria-pressed', 'false');
 }
-/** 자동 사냥이 스스로 고를 수 있는 몬스터인가: 필드 보스는 사람이 직접 고른 때만 (자동 사냥이 보스를 혼자 되풀이해 잡던 것, 검토 7) */
+/** 자동 사냥이 스스로 고를 수 있는 몬스터인가: 필드 보스는 사람이 직접 고른 때만 (자동 사냥이 보스를 혼자 되풀이해 잡던 것, 검토 7). 닻에서의 거리는 설정의 범위 */
 const pickable = (r: { x: number; z: number; type: string }): boolean => {
   if (isMonsterId(r.type) && monsterDef(r.type).boss) return false;
-  return !anchor || isDungeonId(S.dungeon.id) || Math.hypot(r.x - anchor.x, r.z - anchor.z) <= AWAY.roam;
+  return !anchor || isDungeonId(S.dungeon.id) || Math.hypot(r.x - anchor.x, r.z - anchor.z) <= roamOf(prefs);
 };
+
+// ---------- 자동 사냥 설정 (묶음 E: 서버가 저장하고 명령·메시지 autoPrefs로 오간다. 창은 hud/autoset.ts) ----------
+let prefs: AutoPrefs = tidyPrefs(null);
+let base: AutoPrefs = tidyPrefs(null);
+/** 게임이 켠 안전장치 (보이지 않을 때의 자동 사냥: 서버의 g.away.safety). 없으면 null */
+let safety: AwaySafety | null = null;
+/** 서버가 퀘스트 대상을 고를 수 있다고 알렸다 */
+let goalOk = false;
+const prefFns: (() => void)[] = [];
+/** 지금 설정·게임의 기본값·안전장치·퀘스트 대상을 고를 수 있는가 */
+export const autoPrefs = (): Readonly<AutoPrefs> => prefs;
+export const autoPrefsBase = (): Readonly<AutoPrefs> => base;
+export const autoSafety = (): Readonly<AwaySafety> | null => safety;
+export const autoGoalOk = (): boolean => goalOk && !!goalFn;
+/** 설정이 바뀌면 (서버의 답, 내가 바꿈) */
+export function onAutoPrefs(fn: () => void): void { prefFns.push(fn); }
+const changed = (): void => { for (const fn of prefFns) fn(); };
+/** 설정을 바꾼다 (준 칸만). 화면에 바로 걸고 서버에 보낸다: 서버가 다듬은 값으로 답한다 */
+export function setAutoPrefs(patch: Partial<AutoPrefs>): void {
+  prefs = tidyPrefs({ ...prefs, ...patch }, base);
+  send({ t: 'autoPrefs', p: patch });
+  changed();
+}
+/** 기본값으로 */
+export function resetAutoPrefs(): void { prefs = { ...base, skip: [...base.skip] }; send({ t: 'autoPrefs', reset: true }); changed(); }
+/** 안전장치를 바꾼다 (게임이 켰을 때만: 명령 autoSafe) */
+export function setAutoSafety(patch: Partial<AwaySafety>): void {
+  if (!safety) return;
+  safety = { ...safety, ...patch };
+  if (safety.retreatAt > safety.potionAt) safety.retreatAt = safety.potionAt;
+  send({ t: 'autoSafe', potion: safety.potionAt, retreat: safety.retreatAt, noPotion: safety.stopNoPotion, death: safety.stopOnDeath });
+  changed();
+}
+/** 지금 퀘스트가 잡으라는 몬스터와 그 자리 (게임의 퀘스트가 정한다: 대상 우선순위 'goal') */
+export interface AutoGoal { monsters: readonly string[]; at?: { x: number; z: number } }
+let goalFn: (() => AutoGoal | null) | null = null;
+/** 게임의 퀘스트를 자동 사냥에 잇는다. 설정에서 '퀘스트 대상 우선'을 고르면 그 몬스터를 먼저 잡고, 둘레에 없으면 그 자리로 걸어가 거기서 사냥한다 */
+export function setAutoGoal(fn: (() => AutoGoal | null) | null): void { goalFn = fn; changed(); }
+/** 설정을 바꾸지 않은 사람인가 (대상 고르기가 예전과 같다: 가장 가까운 것) */
+const plain = (): boolean => prefs.target === 'near' && prefs.skip.length === 0;
 
 export function toggleAuto(): void {
   if (!S.me) return;
@@ -64,7 +104,17 @@ function tick(): void {
   if (!anchor && reanchorAt && now >= reanchorAt) { reanchorAt = 0; setAnchor(); }
   const ratio = me.hp / me.maxHp;
 
-  if (now >= S.itemCdEnd && pickPotion(ratio, me.items)) usePotion();
+  if (now >= S.itemCdEnd && pickPotion(ratio, me.items, prefs.potionAt)) usePotion();
+  // 멈춤 조건 (안전장치가 없는 게임: 설정의 체력 %·물약 없음). 안전장치가 있는 게임은 보이지 않을 때만 서버가 본다 (예전과 같다)
+  const stopIf = safety ? null : prefsSafety(prefs);
+  const halt = stopIf ? safetyStep(ratio, me.items, stopIf, now >= S.itemCdEnd) : null;
+  if (halt && halt.do !== 'potion') {
+    if (halt.do === 'retreat') { const home = rules.home(); moveTo(home.x, home.z); notifySys('autoRetreat', [Math.round(ratio * 100)]); }
+    else { S.auto = false; notifySys('autoNoPotion'); }
+    resting = false;
+    tick();
+    return;
+  }
   const rest = shouldRest(ratio, me.items, resting);
   if (rest !== resting) { resting = rest; feed(t(rest ? 'autoRest' : 'autoResume')); }
 
@@ -78,8 +128,17 @@ function tick(): void {
   let target = S.others.get(me.attackId);
   if (resting && target && Math.hypot(target.x - me.x, target.z - me.z) > AUTO.restGuard) target = undefined;
   if (!target || target.kind !== 'm' || target.dying || target.gone) {
-    target = monstersNear(resting ? AUTO.restGuard : AUTO.seek).filter((r) => resting || pickable(r))[0];
-    if (target) attack(target.id);
+    const near = monstersNear(resting ? AUTO.restGuard : AUTO.seek).filter((r) => resting || pickable(r));
+    // 설정의 우선순위·제외 (바꾸지 않았으면 가장 가까운 것: 예전과 같다)
+    const goal = !resting && prefs.target === 'goal' ? goalFn?.() ?? null : null;
+    target = resting || plain() ? near[0] : pickTarget(near, (r) => ({ d: Math.hypot(r.x - me.x, r.z - me.z), type: r.type, weak: r.maxHp }), prefs, goal?.monsters ?? [], Infinity);
+    // 퀘스트 대상 우선: 둘레에 퀘스트 몬스터가 없고 퀘스트의 자리를 알면 그리로 걸어가 그 자리를 닻으로 (상용의 '퀘스트 자동 진행')
+    const far = goal && goal.at && goal.monsters.length && !isDungeonId(S.dungeon.id) && !(target && goal.monsters.includes(target.type)) ? goal.at : null;
+    if (far && Math.hypot(far.x - me.x, far.z - me.z) > 8) {
+      target = undefined;
+      if (!me.moving || Math.hypot(me.tx - far.x, me.tz - far.z) > 3) autoWalk(far.x, far.z);
+      anchor = { x: far.x, z: far.z };
+    } else if (target) attack(target.id);
     // 둘레에 몬스터가 없고 켠 자리에서 멀어졌으면 그리로 돌아간다 (쓰러져 등탑에서 일어났을 때 등)
     else if (!resting && anchor && !isDungeonId(S.dungeon.id) && !me.moving && Math.hypot(anchor.x - me.x, anchor.z - me.z) > 4) autoWalk(anchor.x, anchor.z);
     // 던전 안에서 보이는 적이 없으면 우두머리가 있는 곳으로 걸어간다 (졸개를 다 잡고 멈춰 서 있지 않게)
@@ -90,6 +149,7 @@ function tick(): void {
   }
   const dist = target ? Math.hypot(target.x - me.x, target.z - me.z) : Infinity;
 
+  if (!prefs.skills) return; // 설정: 기술을 저절로 쓰지 않는다
   const n = pickSkill(me.cls, ratio, dist, (i) => now >= S.cdEnd[i]);
   if (n >= 0) useSkill(n);
 }
@@ -106,5 +166,9 @@ export function initAuto(): void {
   bindKey('r', toggleAuto);
   btn.addEventListener('click', () => { toggleAuto(); btn.blur(); });
   setInterval(tick, 300);
-  onMsg('welcome', (m) => syncAuto(m.auto === true));
+  onMsg('welcome', (m) => { syncAuto(m.auto === true); send({ t: 'autoPrefs' }); });
+  // 서버의 답: 저장된 설정, 게임의 기본값, 안전장치, 퀘스트 대상을 고를 수 있는가
+  onMsg('autoPrefs', (m) => { prefs = tidyPrefs(m.s, m.base); base = tidyPrefs(m.base); safety = m.safety ? { ...m.safety } : null; goalOk = m.goal; changed(); });
+  // 서버가 자동 사냥을 멈췄다 (설정의 '가방이 가득 차면 멈춤'은 보고 있을 때도 서버가 본다)
+  onMsg('sys', (m) => { if (m.k === 'autoBagFull') autoOffByServer(); });
 }

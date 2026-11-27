@@ -21,6 +21,8 @@ export const AUTO = {
   /** 쉬는 동안 이 거리 안에 몬스터가 있으면 그 반대쪽으로 restStep만큼 물러난다 (적 사이에서 맞으며 쉬지 않게) */
   restClear: 10,
   restStep: 12,
+  /** 자동 사냥 설정의 '제자리' 범위(m): 켠 자리(닻)에서 이보다 먼 몬스터는 쫓지 않는다 ('현재 지역'은 AWAY.roam) */
+  spot: 15,
 };
 
 /** 자리 비움 사냥(켠 채 접속이 끊기면 서버가 이어서 사냥)의 조건. 서버와 화면의 안내가 같은 수를 쓴다 */
@@ -127,4 +129,60 @@ export function safetyStep(ratio: number, items: Record<string, number>, s: Away
   if (s.retreatAt > 0 && ratio < s.retreatAt) return { do: 'retreat' };
   if (s.stopNoPotion && ratio < s.potionAt && !potion && POTIONS.length) return { do: 'stop' };
   return null;
+}
+
+// ---------- 자동 사냥 설정 (묶음 E: 상용 모바일 MMORPG의 '자동 사냥 설정' 창) ----------
+/** 사냥 범위: 'spot' 제자리 둘레(AUTO.spot), 'area' 현재 지역(AWAY.roam: 예전과 같다) */
+export type AutoRange = 'area' | 'spot';
+/** 대상 우선순위: 'near' 가까운 것(예전과 같다), 'goal' 게임이 가리키는 지금 목표(등불지기는 퀘스트)의 몬스터 먼저, 'weak' 최대 체력이 낮은 것 먼저 */
+export type AutoTarget = 'near' | 'goal' | 'weak';
+/**
+ * 자동 사냥 설정 (사람마다. 서버가 저장 칸 'autoprefs'에 두고, 명령 { t: 'autoPrefs', … }로 바꾸고 같은 이름의 메시지로 돌려준다).
+ * 화면의 자동 사냥(engine/client/auto.ts)·자리 비움 사냥(server away.ts)·모드의 들판 대역(server modes.ts)이 같은 값을 따른다.
+ *   skip         잡지 않을 몬스터 종류
+ *   potionAt     체력이 이 비율 아래면 물약 (안전장치가 있는 게임에서는 보이지 않을 때 안전장치의 값이 먼저다)
+ *   skills       기술을 저절로 쓰는가
+ *   stopHpAt     물약을 마셔도 체력이 이 비율 아래면 멈추고 일어나는 곳 쪽으로 물러난다 (0이면 끔). 안전장치가 있는 게임은 안전장치의 retreatAt
+ *   stopNoPotion 마실 물약이 떨어지면 멈춘다. 안전장치가 있는 게임은 안전장치의 값
+ *   stopBag      장비 가방이 가득 차면 멈춘다
+ */
+export interface AutoPrefs { range: AutoRange; target: AutoTarget; skip: string[]; potionAt: number; skills: boolean; stopHpAt: number; stopNoPotion: boolean; stopBag: boolean }
+/** 틀의 기본값: 설정 창이 생기기 전의 동작과 같다 */
+export const AUTO_PREFS: Readonly<AutoPrefs> = { range: 'area', target: 'near', skip: [], potionAt: AUTO.potionAt, skills: true, stopHpAt: 0, stopNoPotion: false, stopBag: false };
+const RANGES: readonly AutoRange[] = ['area', 'spot'];
+const TARGETS: readonly AutoTarget[] = ['near', 'goal', 'weak'];
+/** 설정을 다듬는다 (믿지 않는 값: 모르는 칸은 base, 비율은 0~0.95, 물러남은 물약보다 낮게, 제외 목록은 글자 40개까지) */
+export function tidyPrefs(raw: Partial<AutoPrefs> | null | undefined, base: Readonly<AutoPrefs> = AUTO_PREFS): AutoPrefs {
+  const r = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(0.95, Math.max(0, v)) : d);
+  const b = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d);
+  const potionAt = r(raw?.potionAt, base.potionAt);
+  const skip = Array.isArray(raw?.skip) ? [...new Set(raw.skip.filter((x): x is string => typeof x === 'string' && x.length > 0 && x.length <= 40))].slice(0, 40) : [...base.skip];
+  return {
+    range: RANGES.includes(raw?.range as AutoRange) ? raw!.range as AutoRange : base.range,
+    target: TARGETS.includes(raw?.target as AutoTarget) ? raw!.target as AutoTarget : base.target,
+    skip, potionAt, skills: b(raw?.skills, base.skills),
+    stopHpAt: Math.min(potionAt, r(raw?.stopHpAt, base.stopHpAt)), stopNoPotion: b(raw?.stopNoPotion, base.stopNoPotion), stopBag: b(raw?.stopBag, base.stopBag),
+  };
+}
+/** 켠 자리(닻)에서 쫓는 거리 (설정이 없으면 예전과 같은 AWAY.roam) */
+export const roamOf = (p: Pick<AutoPrefs, 'range'> | null | undefined): number => (p?.range === 'spot' ? AUTO.spot : AWAY.roam);
+/** 설정의 멈춤 조건을 안전장치의 모양으로 (안전장치가 없는 게임: 물러남·물약 없음만. 쓰러지면 끝내기는 없다). 멈춤 조건이 없으면 null */
+export const prefsSafety = (p: AutoPrefs | null | undefined): AwaySafety | null =>
+  p && (p.stopHpAt > 0 || p.stopNoPotion) ? { potionAt: p.potionAt, retreatAt: p.stopHpAt, stopNoPotion: p.stopNoPotion, stopOnDeath: false } : null;
+
+/**
+ * 자동 사냥의 대상 고르기 (화면·자리 비움·대역이 함께 쓴다). look이 후보의 거리(d)·종류(type)·약함(weak: 작을수록 먼저)을 주고, 후보가 아니면 null.
+ * maxD보다 가까운(<) 것 가운데: 'near'(또는 설정 없음)는 가장 가까운 것, 'goal'은 게임이 가리키는 목표의 몬스터(goals)를 먼저, 'weak'는 약한 것을 먼저 (같으면 가까운 것).
+ * 같은 거리면 먼저 본 것 (설정이 없을 때 예전의 고르기와 똑같다: 황금 실행)
+ */
+export function pickTarget<T>(list: Iterable<T>, look: (m: T) => { d: number; type: string; weak: number } | null, prefs: AutoPrefs | null | undefined, goals: readonly string[], maxD: number): T | undefined {
+  let best: T | undefined, bk = Infinity, bd = maxD;
+  const tgt = prefs?.target ?? 'near', skip = prefs?.skip;
+  for (const m of list) {
+    const c = look(m);
+    if (!c || !(c.d < maxD) || (skip && skip.length && skip.includes(c.type))) continue;
+    const k = tgt === 'goal' ? (goals.includes(c.type) ? 0 : 1) : tgt === 'weak' ? c.weak : 0;
+    if (k < bk || (k === bk && c.d < bd)) { best = m; bk = k; bd = c.d; }
+  }
+  return best;
 }

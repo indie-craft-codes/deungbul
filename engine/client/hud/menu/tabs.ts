@@ -48,7 +48,7 @@ export interface MenuGroupDef { id: string; icon: string; tabs: readonly string[
  */
 export const MENU_GROUPS: readonly MenuGroupDef[] = [
   { id: 'grow', icon: 'growth', tabs: ['heroes', 'squad', 'hgear', 'gacha', 'stages', 'gear', 'build', 'morph'] },
-  { id: 'play', icon: 'mission', tabs: ['daily', 'event', 'season', 'achieve', 'goods'] },
+  { id: 'play', icon: 'mission', tabs: ['daily', 'event', 'season', 'achieve', 'goods', 'autoset'] },
   { id: 'social', icon: 'friends', tabs: ['mail', 'friends', 'guild', 'rank', 'market'] },
   { id: 'info', icon: 'codex', tabs: ['codex', 'odds'] },
   { id: 'sys', icon: 'settings', tabs: ['settings', 'device'] },

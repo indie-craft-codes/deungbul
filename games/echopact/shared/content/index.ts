@@ -50,8 +50,8 @@ export const MODULES: readonly ModuleId[] = [
 // 보고 있지 않은 쪽: 들판은 자동 사냥(R)을 켜 두었으면 몸이 남아 사냥하고(fieldStay), 탑은 싸우던 단계를 끝까지·자동 진행이 켜져 있으면 다음 단계로(stageStay)
 export const MODE_RULES: ModeRules = {
   list: [
-    { id: MODE.tower, name: 'modeTower', kind: 'stage', tabs: ['gacha', 'odds', 'heroes', 'squad', 'stages', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends'], hide: ['auto', 'attackNearest', 'worldMap', 'minimap', 'skills', 'hint', 'channel', 'bag'] },
-    { id: MODE.vale, name: 'modeVale', kind: 'field', tabs: ['morph', 'gear', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends'] },
+    { id: MODE.tower, name: 'modeTower', kind: 'stage', tabs: ['gacha', 'odds', 'heroes', 'squad', 'stages', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends', 'autoset'], hide: ['auto', 'attackNearest', 'worldMap', 'minimap', 'skills', 'hint', 'channel', 'bag'] },
+    { id: MODE.vale, name: 'modeVale', kind: 'field', tabs: ['morph', 'gear', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends', 'autoset'] },
   ],
   start: MODE.tower,
   switchCdS: 1,

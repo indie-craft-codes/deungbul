@@ -9,7 +9,7 @@
 // 다른 쪽의 상황은 개인 상태 'modeSide'(ModeSideMe), 위험(대역의 쓰러짐·물러남·멈춤, 단계의 멈춤)은 안내문으로 알린다 (화면이 '바로 가기'를 단다).
 // 접속이 끊기면 들판의 대역은 그 사람 자신으로 돌아오고(자동 사냥이 켜져 있으면 틀의 자리 비움 사냥이 이어 간다), 뒤에서 잇던 회차는 닫힌다(단계의 오프라인 진행이 맡는다).
 // 저장: 캐릭터의 ext 'mode' ({ id }: 처음 모드와 같으면 적지 않는다). 개인 상태 'mode'(ModeMe), 'modeSide'.
-import { AUTO, AWAY, pickPotion, pickSkill, shouldRest } from '../../../shared/auto';
+import { AUTO, AWAY, pickPotion, pickSkill, pickTarget, prefsSafety, roamOf, shouldRest } from '../../../shared/auto';
 import { ATTACK_CD, COMBAT, ECON_HUNT, STAGE_RULES, classOf, isItemId, isSkillId, itemDef, MODE_RULE_VIEW, modeDef, modeList, POTION_CD, RESPAWN_S, skillDef, startMode, backWorth, type FieldSide, type ModeBack, type ModeDef, type ModeMe, type ModeSideMe, type SideGot, type StageSide } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
@@ -293,29 +293,32 @@ export class Modes {
       e.hp += amount; o.itemCd = POTION_CD; s.pots++;
       g.emit(['heal', e.id, amount]);
     };
-    if (g.away.safety) {
-      const done = g.away.guard(o, e, drink, g.stages.fieldRespawn(o));
+    // 자동 사냥 설정 (묶음 E: 아무도 바꾸지 않았으면 null이고 아래는 예전과 같다). 안전장치가 없는 게임은 설정의 멈춤 조건을 같은 길로
+    const pr = g.away.prefsFor(o), safe = g.away.safety ? g.away.safetyOf(o) : prefsSafety(pr);
+    if (safe) {
+      const done = g.away.guard(o, e, drink, g.stages.fieldRespawn(o), safe);
       if (done === 'retreat') { if (s.state !== 'retreat') s.safe++; s.state = 'retreat'; return true; }
       if (done === 'stop') { if (s.state !== 'stop') s.safe++; s.state = 'stop'; return true; }
       if (done === 'potion') return false;
-    } else { const id = o.itemCd <= 0 ? pickPotion(ratio, items) : null; if (id) drink(id); }
+    } else { const id = o.itemCd <= 0 ? pickPotion(ratio, items, pr?.potionAt) : null; if (id) drink(id); }
     s.resting = shouldRest(ratio, items, s.resting);
     s.state = s.resting ? 'resting' : 'hunt';
     let t = g.ents.get(e.targetId);
     if (s.resting && t && dist(e, t) > AUTO.restGuard) { t = undefined; e.targetId = 0; }
     if (!t || t.dead || t.kind !== 'm' || t.layer !== e.layer) {
-      t = undefined; e.targetId = 0;
-      let nd = s.resting ? AUTO.restGuard : AUTO.seek;
-      for (const m of g.monstersIn(e.layer)) {
-        if (m.kind !== 'm' || m.dead || m.homing || m.layer !== e.layer || dist(s.at, m) > AWAY.roam) continue;
-        if (m.def?.boss && m.targetId !== e.id) continue; // 필드 보스는 스스로 고르지 않는다 (자리 비움 사냥과 같다)
-        const d = dist(e, m);
-        if (d < nd) { nd = d; t = m; }
-      }
+      e.targetId = 0;
+      // 설정의 범위·제외·우선순위 (설정이 없으면 가장 가까운 것: 예전과 같다)
+      const roam = roamOf(pr), goals = g.away.goalFor(o, pr);
+      t = pickTarget(g.monstersIn(e.layer), (m) => {
+        if (m.kind !== 'm' || m.dead || m.homing || m.layer !== e.layer || dist(s.at, m) > roam) return null;
+        if (m.def?.boss && m.targetId !== e.id) return null; // 필드 보스는 스스로 고르지 않는다 (자리 비움 사냥과 같다)
+        return { d: dist(e, m), type: m.type, weak: m.maxHp };
+      }, s.resting ? null : pr, goals, s.resting ? AUTO.restGuard : AUTO.seek);
       if (t) e.targetId = t.id;
       else if (!e.moving && dist(e, s.at) > 4) g.movement.goTo(e, s.at.x, s.at.z);
     }
-    // 기술: 자리 비움 사냥과 같은 고르기 (그 사람의 직업, 대역의 쿨다운)
+    // 기술: 자리 비움 사냥과 같은 고르기 (그 사람의 직업, 대역의 쿨다운). 설정에서 끄면 쓰지 않는다
+    if (pr && !pr.skills) return false;
     const skills = classOf(o.cls).skills, d = t ? dist(e, t) : Infinity;
     const n = pickSkill(o.cls, ratio, d, (i) => (e.cds[i] ?? 0) <= 0);
     if (n >= 0 && isSkillId(skills[n])) {

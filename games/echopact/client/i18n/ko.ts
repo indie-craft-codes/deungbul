@@ -143,12 +143,6 @@ export const koGame = {
     tutMorph: '메뉴[[ (M)|]]의 변신 탭에서 가진 메아리로 변신해 보세요. 탑에서 키운 카드의 능력치가 곧 변신한 동안의 능력치입니다.',
     tutAuto: '자동 사냥[[ (R)|]]을 켠 채 탑으로 가면 들판의 몸이 남아 사냥을 이어 갑니다.',
     setEchoTags: '이름표 보이기',
-    setSafeGroup: '보이지 않을 때의 자동 사냥',
-    setSafePotion: '물약을 마실 체력',
-    setSafeRetreat: '멈추고 물러날 체력',
-    setSafeNoPotion: '물약이 떨어지면 멈추기',
-    setSafeDeath: '쓰러지면 끝내기',
-    setSafeNote: '탑에 가 있는 동안 들판의 몸, 접속을 끊은 뒤의 자리 비움 사냥에 씁니다.',
   },
   fmt: {
     gachaNew: () => '새 메아리!',

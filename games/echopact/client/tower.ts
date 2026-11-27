@@ -7,7 +7,7 @@
 // 모드를 오가는 것·메뉴의 탭·감출 틀 요소·들판의 대역은 틀이 맡는다 (engine/client/hud/modes.ts). 문서의 body[data-mode]·[data-tower]로 스타일이 화면을 가른다.
 import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSideMe } from '@engine/shared/defs';
 import {
-  $, addSetting, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
+  $, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
   onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, stagesDone, starGap, switchMode, useStageScreens, type HomeKit,
   setLoadingTips, featureLock, featureOpen, tutNow, myMorph, charDefs, noticesNow, openNotices,
 } from '@engine/client';
@@ -240,17 +240,7 @@ function drawSide(s: Readonly<ModeSideMe> = myModeSide()): void {
 
 // 다른 쪽의 위험(대역의 쓰러짐·물러남, 뒤에서 잇던 단계의 멈춤)은 틀의 위험 알림이 한 곳에 띄운다 (hud/modes.ts: 글과 그쪽으로 가는 단추).
 
-// ---------- 안전장치의 설정 칸 (보이지 않을 때의 자동 사냥: 서버의 g.away.safety를 사람마다) ----------
-const safe = { potion: SAFETY.potionAt, retreat: SAFETY.retreatAt, noPotion: SAFETY.stopNoPotion, death: SAFETY.stopOnDeath };
-const sendSafe = (): void => { if (S.me) send({ t: 'autoSafe', ...safe }); };
-function initSafety(): void {
-  const group = () => t('setSafeGroup'), note = () => t('setSafeNote');
-  addSetting({ id: 'safePotion', group, note, label: () => t('setSafePotion'), kind: 'range', value: Math.round(SAFETY.potionAt * 100), min: 10, max: 80, step: 5, on: (v) => { safe.potion = v / 100; sendSafe(); } });
-  addSetting({ id: 'safeRetreat', group, label: () => t('setSafeRetreat'), kind: 'range', value: Math.round(SAFETY.retreatAt * 100), min: 0, max: 60, step: 5, on: (v) => { safe.retreat = v / 100; sendSafe(); } });
-  addSetting({ id: 'safeNoPotion', group, label: () => t('setSafeNoPotion'), kind: 'toggle', value: SAFETY.stopNoPotion, on: (v) => { safe.noPotion = v; sendSafe(); } });
-  addSetting({ id: 'safeDeath', group, label: () => t('setSafeDeath'), kind: 'toggle', value: SAFETY.stopOnDeath, on: (v) => { safe.death = v; sendSafe(); } });
-  onMsg('welcome', () => setTimeout(sendSafe, 0));
-}
+// 안전장치의 설정 칸(보이지 않을 때의 자동 사냥)은 틀의 자동 사냥 설정 창으로 옮겼다 (묶음 E: engine/client/hud/autoset.ts. 값은 서버에 남는다)
 
 export function initTower(): void {
   setLoadingTips(() => [t('loadTip1'), t('loadTip2'), t('loadTip3')]); // 첫 로딩의 팁 (U2)
@@ -318,5 +308,4 @@ export function initTower(): void {
     if (sig !== openSig) { openSig = sig; draw(); }
   });
   onLangChange(() => { draw(); drawSide(); });
-  initSafety();
 }

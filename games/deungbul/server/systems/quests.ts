@@ -29,6 +29,8 @@ export class Quests {
     const touched = g.rules.touched;
     g.rules.touched = (p) => p.qc > 0 || p.qs > 0 || p.qn > 0 || !!touched?.(p);
     g.ticks.push((dt) => this.tick(dt));
+    // 자동 사냥 설정의 '퀘스트 대상 우선' (묶음 E): 지금 단계가 몬스터 잡기면 그 몬스터. 고르는 것은 사람이다 (기본은 g.away.prefsBase)
+    if (g.has('away')) g.away.goalOf = (p) => { const goal = this.step(p)?.goal; return goal?.kind === 'kill' ? [goal.monster] : []; };
     g.on('monsterKilled', (m, hitters) => {
       for (const p of hitters) {
         const step = this.step(p);

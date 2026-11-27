@@ -76,8 +76,8 @@ function actionName(a: string, label?: () => string): string {
 }
 
 /** 켬·끔 단추 둘 */
-const onOff = (v: boolean, set: (v: boolean) => void): HTMLElement => chips([{ text: t('on'), on: v, click: () => set(true) }, { text: t('off'), on: !v, click: () => set(false) }]);
-function slider(label: string, value: number, min: number, max: number, step: number, input: (v: number) => void, done: (v: number) => void): HTMLInputElement {
+export const onOff = (v: boolean, set: (v: boolean) => void): HTMLElement => chips([{ text: t('on'), on: v, click: () => set(true) }, { text: t('off'), on: !v, click: () => set(false) }]);
+export function slider(label: string, value: number, min: number, max: number, step: number, input: (v: number) => void, done: (v: number) => void): HTMLInputElement {
   const r = document.createElement('input');
   r.type = 'range'; r.min = String(min); r.max = String(max); r.step = String(step); r.value = String(value);
   r.setAttribute('aria-label', label);

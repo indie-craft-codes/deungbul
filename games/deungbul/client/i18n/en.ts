@@ -89,6 +89,8 @@ export const enGame: GameLocale = {
     questGoal: 'Quest goal',
     mapLegend: '■ tower · ○ quest · green merchant',
     goingTown: 'Walking back to Firstlight Village.',
+    asTGoal: 'Quest targets',
+    asGoalNote: 'Hunts the monster your quest asks for first; if none are around, walks to the quest spot and hunts there. On steps with nothing to defeat, nearest first.',
     questNeedSparks: 'You have no sparks to offer. Defeat monsters to gather some.',
     tower: 'Lamp tower',
     offerVerb: 'Offer for light',

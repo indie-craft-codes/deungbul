@@ -66,7 +66,7 @@ export function initBonfire(): void {
       }
     },
   }, 'gear');
-  setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'rank']);
+  setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'rank', 'autoset', 'codex']);
   // 탭 묶음 (U3): 틀의 기본 묶음에 모닥불을 '활동'의 맨 앞으로
   setMenuGroups(MENU_GROUPS.map((g) => (g.id === 'play' ? { ...g, tabs: ['camp', ...g.tabs] } : g)));
 

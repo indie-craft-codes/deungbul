@@ -6,6 +6,7 @@ import { onMsg } from '../bus';
 import { setTitle } from '../entities';
 import { L, itemName, t } from '../i18n';
 import { heroName } from '../i18n/ko';
+import { addCodexSection, setCodexSeen } from './codexbook';
 import { achName, codexName, evName, goodsName, missionName, seasonName, titleName } from '../i18n/live';
 import { uiText } from '../i18n/names';
 import { send } from '../net';
@@ -188,7 +189,15 @@ export function initAchieve(): void {
   onMsg('title', (m) => setTitle(m.id, m.ti));
 }
 export function initCodex(): void {
-  addMenuTab({ id: 'codex', label: () => t('tabCodex'), draw: drawCodex, sig: () => codex });
+  // 도감 창(hud/codexbook.ts)의 맨 앞 칸 '모은 것'으로 (예전에는 따로 탭이었다: 탭 id 'codex'는 그대로 도감 창이다). 몬스터·아이템 칸에도 모은 것을 표시한다
+  addCodexSection({ id: 'collect', label: () => t('cbCollect'), draw: drawCodex, sig: () => codex }, true);
+  setCodexSeen((of) => {
+    if (!codex) return null;
+    const out = new Set<string>();
+    let any = false;
+    for (const gid of Object.keys(codex.ids)) if (codexDef(gid)?.of === of) { any = true; for (const id of codex.seen[gid] ?? []) out.add(id); }
+    return any ? out : null;
+  });
   onMsg('me', (m) => { if (m.k === 'codex') { codex = m.s as CodexMe & { ids: Record<string, string[]> }; redraw(true); } });
 }
 export function initCoupon(): void { mailTop.push(drawCoupon); }

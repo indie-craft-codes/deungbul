@@ -39,6 +39,9 @@ import { initSupport } from './hud/support';
 import { initOdds } from './hud/odds';
 import { initAchieve, initCodex, initCoupon, initEvent, initGoods, initSeason } from './hud/live';
 import { initStamina } from './hud/stamina';
+import { initAutoSet } from './hud/autoset';
+import { initPowerSave } from './hud/powersave';
+import { initCodexBook } from './hud/codexbook';
 
 /** 차례대로 init한다. 상점, 대장간, 직업 고르기가 앞이다: 가르기 전에 main.ts가 직접 부르던 차례(같은 메시지와 같은 주기 안에서 다른 모듈보다 먼저)를 지킨다 */
 const LIST: { init: () => void; mod?: ModuleId }[] = [
@@ -85,6 +88,10 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initKeepSafe },
   // 사회와 안전 (어느 게임에나: 서버 저장 차단, 대화 설정 칸, 연령 창은 AGE를 적은 게임만, 친구 탭은 friends 모듈): 설정 창 뒤에 (설정 칸의 저장된 값을 읽는다)
   { init: initSocial },
+  // 묶음 E: 도감 창(메뉴의 '도감': 어느 게임에나), 절전 화면, 자동 사냥 설정 창(away 모듈). 도감 창이 라이브 콘텐츠의 '모은 것'(codex 모듈)보다 먼저
+  { init: initCodexBook },
+  { init: initPowerSave },
+  { init: initAutoSet, mod: 'away' },
   // 운영 도구와 고객지원: 문의·제재 이의 (support 모듈: 설정 창의 '문의' 칸, 문의 창, 접속이 막혔을 때의 사유·이의). 맨 뒤에
   { init: initSupport, mod: 'support' },
   // 확률과 재화의 투명성 (odds 모듈: 메뉴의 '확률' 탭과 내 추첨 기록). 맨 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)
