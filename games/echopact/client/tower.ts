@@ -27,7 +27,8 @@ function drawHome(): void {
   go.hidden = !next;
   if (next) { go.textContent = loc.fmt.towerNext(next.id); go.dataset.id = next.id; }
   // 권장 전투력에 모자라면 무엇을 하면 되는지 (처음 20분 해 보기: 1-3에서 지고 1-1만 되풀이하던 것)
-  $('towerWeak').hidden = !next || power >= next.rec;
+  // (처음 단계는 계약자도 함께 싸우므로 묻지 않는다)
+  $('towerWeak').hidden = !next || power >= next.rec || next.id === rows[0]?.id;
   const list = $('towerStages');
   list.textContent = '';
   CHAPTERS.forEach((ch, c) => {
@@ -132,7 +133,13 @@ export function initTower(): void {
   onMsg('me', (m) => { if (m.k === 'stage' || m.k === 'squad') drawHome(); });
   onMsg('sys', (m) => alertOf(m.k, m.a ?? []));
   onMsg('stat', () => { if (!$('towerHome').hidden) $('towerHave').textContent = L().fmt.towerHave(S.me?.sparks ?? 0, S.me?.gold ?? 0, mySquad().power); });
-  onSlow(() => { if (!S.me) { $('towerHome').hidden = true; $('pactSide').hidden = true; } });
+  // 메뉴(뽑기·메아리·편성)나 뽑기 결과·확인 창이 열리면 첫 화면은 그 아래로 비켜 준다
+  onSlow(() => {
+    if (!S.me) { $('towerHome').hidden = true; $('pactSide').hidden = true; }
+    const open = (id: string) => { const el = document.querySelector<HTMLElement>(`#${id}`); return !!el && !el.hidden; };
+    const over = open('menu') || open('gachaPop') || open('spendAsk');
+    $('towerHome').classList.toggle('under', !!over);
+  });
   onLangChange(() => { drawHome(); drawSide(); });
   initSafety();
 }

@@ -21,7 +21,7 @@ body[data-mode="vale"] .modeBtn { background: #24402c; border-color: #9ad08a; co
 .towerHome { position: fixed; z-index: 12; left: 50%; top: calc(52px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(760px, calc(100vw - 24px));
   max-height: calc(var(--app-h, 100vh) - 140px); overflow: auto; pointer-events: auto; padding: 14px 16px 12px; border-radius: 14px;
   background: linear-gradient(180deg, rgba(42, 33, 64, .94), rgba(22, 18, 36, .94)); border: 1px solid rgba(184, 160, 255, .45); color: #f0eaff; box-shadow: 0 10px 40px rgba(0,0,0,.45); }
-.towerHome[hidden] { display: none; }
+.towerHome[hidden], .towerHome.under { display: none; }
 .towerHome .thead h2 { margin: 0; font-size: 22px; letter-spacing: .04em; color: #ffe6a8; }
 .towerHome .thead p { margin: 2px 0; font-size: 13px; opacity: .85; }
 .towerHome .thave { font-weight: 700; opacity: 1 !important; }
