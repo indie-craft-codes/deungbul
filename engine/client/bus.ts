@@ -37,13 +37,42 @@ const engineKeys = new Map<string, () => void>();
 const hotkeys = new Map<string, () => void>();
 /** 틀의 모듈이 단축키를 단다 (게임은 onKey) */
 export function bindKey(key: string, fn: () => void): void { engineKeys.set(key.toLowerCase(), fn); }
-/** 게임의 단축키 */
-export function onKey(key: string, fn: () => void): void { hotkeys.set(key.toLowerCase(), fn); }
+/** 게임의 단축키의 이름 (설정 창의 키 재설정에 보인다). 주지 않으면 '게임 키 X' */
+const hotLabels = new Map<string, () => string>();
+/** 게임의 단축키. label을 주면 설정 창의 키 재설정 목록에 그 이름으로 보인다 */
+export function onKey(key: string, fn: () => void, label?: () => string): void { hotkeys.set(key.toLowerCase(), fn); if (label) hotLabels.set(key.toLowerCase(), label); }
 /** 지금 틀이 쓰는 키 (시험과 안내에) */
 export const boundKeys = (): string[] => [...engineKeys.keys()];
+
+// ---- 키 재설정 (설정 창: hud/settings.ts) ----
+// 단축키는 처음 등록한 키(그 기능의 이름표 노릇)로 가리키고, 사람이 고른 키를 그 위에 얹는다: { 'm': 'k' }면 K가 메뉴를 열고 M은 아무것도 하지 않는다.
+/** 기능(처음 키) → 고른 키 */
+let custom = new Map<string, string>();
+/** 고른 키 → 기능 */
+let byNew = new Map<string, string>();
+/** 키 재설정을 바꾼다 (처음 키 → 고른 키). 같은 키를 두 기능에 고르면 뒤의 것이 이긴다 */
+export function setKeyMap(map: Readonly<Record<string, string>>): void {
+  custom = new Map(Object.entries(map).map(([a, k]): [string, string] => [a.toLowerCase(), k.toLowerCase()]).filter(([a, k]) => a && k && a !== k));
+  byNew = new Map([...custom].map(([a, k]) => [k, a]));
+}
+/** 그 기능(처음 키)에 지금 쓰는 키 */
+export const keyFor = (action: string): string => custom.get(action.toLowerCase()) ?? action.toLowerCase();
+/** 단축키 목록: 기능(처음 키), 지금 키, 틀의 것인가, 게임이 준 이름 */
+export function keyList(): { action: string; key: string; engine: boolean; label?: () => string }[] {
+  const out: { action: string; key: string; engine: boolean; label?: () => string }[] = [];
+  for (const a of engineKeys.keys()) out.push({ action: a, key: keyFor(a), engine: true });
+  for (const a of hotkeys.keys()) if (!engineKeys.has(a)) out.push({ action: a, key: keyFor(a), engine: false, label: hotLabels.get(a) });
+  return out;
+}
+/** 누른 키가 가리키는 기능 (재설정을 거친 뒤). 다른 키로 옮긴 기능의 처음 키는 아무것도 가리키지 않는다 */
+export function actionOf(key: string): string | null {
+  const k = key.toLowerCase();
+  return byNew.get(k) ?? (custom.has(k) ? null : k);
+}
 /** 그 키에 등록된 것이 있으면 부르고 참을 돌려준다 (틀의 것 먼저) */
 export function runKey(key: string): boolean {
-  const fn = engineKeys.get(key.toLowerCase()) ?? hotkeys.get(key.toLowerCase());
+  const a = actionOf(key);
+  const fn = a === null ? undefined : engineKeys.get(a) ?? hotkeys.get(a);
   if (fn) fn();
   return !!fn;
 }

@@ -14,3 +14,5 @@
 .bar.heat i { background: var(--gold); }
 /* 모닥불 창과 상점 창은 가까운 쪽 하나만 보인다 (틀의 hud/near.ts가 data-near를 적는다. 화면의 넓이와 상관없이) */
 #rightcol[data-near="bonfire"] #shop, #rightcol[data-near="shop"] #bonfire { display: none; }
+/* 설정 창의 '이름표 보이기'를 끄면 (client/tutorial.ts의 addSetting) */
+.noTags #tags { display: none; }

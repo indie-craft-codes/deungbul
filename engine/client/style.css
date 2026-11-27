@@ -821,3 +821,33 @@ body.room-still #stick { display: none; }
 @media (prefers-reduced-motion: reduce) { #opsRoll span { animation: none; padding: 0 8px; white-space: normal; } #opsRoll { white-space: normal; } }
 #gateOps { margin: 0; max-width: 320px; }
 .dhead { margin-top: 6px; }
+/* ---------- 웹 출시의 바탕 ---------- */
+/* 자리 비움(탭을 숨긴 사람): 이름표가 흐려지고 아래에 '자리 비움' (lifecycle.ts) */
+.tag.afk { opacity: .55; }
+.tag.afk::after { content: attr(data-afk); display: block; text-align: center; font-size: 10px; color: var(--dim); }
+/* 약관 동의 창·문서 보기 (hud/legal.ts): 화면 전체를 덮는다 */
+.modal {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(var(--cover-rgb), .6); z-index: 20;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
+}
+.modal[hidden] { display: none; }
+.modal .card { width: 420px; max-height: 100%; overflow-y: auto; }
+.modal h2 { margin: 0; font-size: 18px; color: var(--gold); }
+#legalDocBody { white-space: pre-wrap; font-size: 13px; line-height: 1.5; max-height: 60vh; overflow-y: auto; color: var(--dim); }
+.legalLinks { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; }
+.legalLinks a { color: var(--gold); }
+#menuList .legalLinks { padding-left: 10px; }
+/* 튜토리얼 카드와 강조 (hud/tutorial.ts) */
+#tut { position: fixed; left: 50%; top: 76px; transform: translateX(-50%); width: min(360px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 6px; z-index: 9; border-color: var(--gold); }
+#tut[hidden] { display: none; }
+/* 큰 창(메뉴, 전체 지도, 직업 고르기, 동의 창, 손님 진행 보호)이 열려 있는 동안에는 안내 카드를 숨긴다 (창을 덮지 않게) */
+body:has(#menu:not([hidden]), #wmap:not([hidden]), #classPick:not([hidden]), #keepSafe:not([hidden]), .modal:not([hidden])) #tut { display: none; }
+#tutText { font-size: 14px; }
+/* 폰 세로: 위는 내 정보 창이 차지한다. 기술 단추 위, 화면 가운데 아래에 */
+@media (max-width: 600px) { #tut { top: auto; bottom: 240px; } }
+.tutHi { outline: 2px solid var(--gold) !important; outline-offset: 2px; animation: tutPulse 1.2s ease-in-out infinite; }
+@keyframes tutPulse { 50% { outline-color: transparent; } }
+/* 손님 진행 보호 (hud/keepsafe.ts) */
+#keepSafe { position: fixed; left: 50%; top: 80px; transform: translateX(-50%); width: min(380px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 8px; z-index: 9; font-size: 13px; }
+#keepSafe[hidden] { display: none; }
+#menuList button.bad { background: var(--hp); color: #fff; }

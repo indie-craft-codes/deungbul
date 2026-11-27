@@ -22,6 +22,7 @@
 //   flag [이름 on|off]                                                   기능 깃발 (join, chat, market, mail, gacha와 게임의 FLAGS)
 //   notice [add [--popup] [--ticker] [--from 시각] [--to 시각 | --for 기간] --ko 글 [--en 글] | del id]   공지
 //   maint [plan 시각 | now] [--for 기간 | --until 시각] [--ko 글] [--en 글] | maint cancel | maint end [--gold n] [--sparks n] [--exp n] [--item id:n] [--days n] | maint allow|deny 이름   점검
+//   (웹 출시의 바탕, net/web.ts) errors [수] [--all] | errors clear 서명|all | erase [list|log [수]|ask 이름 [일수]|cancel 이름|now 이름|sweep]
 //   기간: 숫자(시간), 30m·12h·7d처럼 단위를 붙인 것, 또는 perm(영구)
 //   시각: now, +30m·+2h·+1d(지금부터), '2026-12-01 09:00'(초기화 시각 RESET의 시간대로 읽는다), 시간대가 붙은 ISO('2026-12-01T09:00+09:00')
 import { randomBytes, timingSafeEqual } from 'node:crypto';
@@ -74,6 +75,8 @@ export interface AdminHost {
   broadcast(msg: ServerMsg): void;
   /** 월드와 바뀐 캐릭터를 지금 저장한다 */
   save(): void;
+  /** 다른 쪽이 더하는 명령 (웹 출시의 바탕: errors, erase — net/web.ts). 틀의 명령과 같은 이름은 무시한다 */
+  extra?: () => Record<string, (a: string[], by: string) => string>;
   /** 저장된 캐릭터 모두에게 우편을 보낸다 (sinceMs를 주면 그 뒤에 저장된 캐릭터만). 보낸 수, 할 수 없으면 -1 (점검 보상) */
   mailAll?(reward: Reward, sinceMs: number): number;
 }
@@ -381,6 +384,9 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
   const cut = (s: string, max = 160): string => (s.length > max ? s.slice(0, max - 1) + '…' : s);
   /** 운영자가 적고 읽는 시각의 시간대 (초기화 시각 RESET의 것) */
   const tzLabel = (): string => (g.time.cal.tz === 'local' ? '서버 현지 시각' : g.time.cal.tz);
+
+  // 다른 쪽이 더한 명령 (명령표의 끝에)
+  for (const [k, fn] of Object.entries(host.extra?.() ?? {})) if (!Object.hasOwn(COMMANDS, k)) COMMANDS[k] = fn;
 
   function grant(a: string[], by: string, sign: 1 | -1): string {
     need(a.length >= 3, `${sign > 0 ? 'give' : 'take'} 이름 무엇(${CURS.join(', ')}, 아이템 id) 수`);

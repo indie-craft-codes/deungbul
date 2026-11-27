@@ -198,3 +198,5 @@ export const LIVE_KEYS: LiveKeys = {
   testKnob: { value: 3, check: liveRange(1, 9, true) },
 };
 export const FLAGS: readonly string[] = ['testGate'];
+// ---------- 약관·처리방침 (웹 출시의 바탕: engine/test/fx/web.test.ts가 동의를 시험한다) ----------
+export const LEGAL = { terms: 'https://example.invalid/terms', privacy: 'fxPrivacyText', version: 'fx-2' };

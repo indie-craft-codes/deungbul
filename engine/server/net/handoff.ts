@@ -12,6 +12,7 @@
 // 별칭과 물러난 토큰, 살아 있는 코드의 해시는 월드와 함께 저장한다 (game.worldSaves의 'handoff' 칸. codes는 살아 있는 코드가 있을 때만 적는다:
 // 코드가 없으면 칸의 모양이 예전과 같다. 칸을 더하기만 했으므로 저장 형식의 이전은 없다. 옛 서버는 모르는 칸 codes를 무시한다).
 import { createHash, randomBytes, randomInt } from 'node:crypto';
+import { personalData } from '../game/personal';
 import type { Game } from '../game/game';
 
 /** 코드에 쓰는 글자: 헷갈리는 0 O 1 I L을 뺐다 */
@@ -77,6 +78,20 @@ export class Handoff {
             this.codeOf.set(key, h);
           }
         }
+      },
+    });
+    // 내 데이터 삭제 (engine/server/game/personal.ts): 그 캐릭터를 가리키던 별칭과 살아 있는 코드를 지운다 (내보내기에는 해시를 싣지 않는다)
+    personalData(g).push({
+      name: 'handoff',
+      get: () => undefined,
+      erase: (key) => {
+        const h = this.owner.get(key);
+        if (h) this.alias.delete(h);
+        this.owner.delete(key);
+        const c = this.codeOf.get(key);
+        if (c) { this.codes.delete(c); this.plain.delete(c); }
+        this.codeOf.delete(key);
+        g.saveDirty = true;
       },
     });
   }

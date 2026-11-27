@@ -12,6 +12,7 @@ import type { LookRules } from '@engine/shared/defs/look';
 import type { MorphRules } from '@engine/shared/defs/morph';
 import type { LiveKeys, ResetRules } from '@engine/shared/defs/live';
 import { GEAR_BASE, liveRange } from '@engine/shared/defaults';
+import type { LegalDef } from '@engine/shared/defs/legal';
 import { BONFIRE } from './bonfire';
 
 
@@ -130,3 +131,7 @@ export const LIVE_KEYS: LiveKeys = {
 };
 // 이 게임의 기능 깃발: 관리자 명령 flag bonfire off로 장작 넣기를 막는다 (server/bonfire.ts의 g.live.gate)
 export const FLAGS: readonly string[] = ['bonfire'];
+// ---------- 약관·처리방침 (engine/shared/defs/legal.ts) ----------
+// 적으면 접속 화면과 설정 창에 링크가 생기고, 처음 들어올 때(와 버전을 올렸을 때) 동의를 묻는다. 값은 주소나 이 게임의 문장 키다.
+// 이 예제의 문서는 보기일 뿐이다: 실제로 내는 게임은 법률 검토를 거친 문서를 적는다
+export const LEGAL: LegalDef = { terms: 'legalTermsText', privacy: 'legalPrivacyText', version: '2026-11-27' };

@@ -20,6 +20,7 @@ import type { LookRules } from './defs/look';
 import type { CharRules } from './defs/chardef';
 import type { MorphRules } from './defs/morph';
 import type { LiveKeys, ResetRules } from './defs/live';
+import type { LegalDef, PrivacyRules } from './defs/legal';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -230,3 +231,8 @@ export const FLAGS: readonly string[] = [];
  */
 export const liveRange = (min: number, max: number, int = false) => (v: unknown): string | null =>
   typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max && (!int || Number.isInteger(v)) ? null : `${min}~${max} 사이의 ${int ? '정수' : '수'}여야 합니다`;
+// ---------- 웹 출시의 바탕: 약관·처리방침, 개인정보 권리 (engine/shared/defs/legal.ts) ----------
+/** 약관·처리방침: 없다 (화면에 링크도 첫 접속 고지도 없다) */
+export const LEGAL: LegalDef | null = null;
+/** 내 데이터 삭제: 요청하고 7일 뒤에 지운다 (그동안 취소할 수 있다) */
+export const PRIVACY: PrivacyRules = { eraseDays: 7 };

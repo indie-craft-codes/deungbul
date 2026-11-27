@@ -41,7 +41,16 @@ const HELP = `쓰는 법: npm run admin -- [게임] <명령> [인자 …]
   maint now [--for 기간] …       바로 점검 (모두 저장하고 관리자 말고 내보낸다)
   maint cancel                 예고 거두기
   maint end [--gold n] [--sparks n] [--exp n] [--item id:n] [--days n]   점검 끝 (보상을 적으면 저장된 캐릭터 모두에게 우편)
-  maint allow|deny 이름         점검 중(과 새 접속이 꺼졌을 때)에도 들어올 사람`;
+  maint allow|deny 이름         점검 중(과 새 접속이 꺼졌을 때)에도 들어올 사람
+웹 출시의 바탕:
+  errors [수] [--all]          화면 오류 묶음 (같은 오류는 한 줄, 최근 순. --all이면 스택 전부)
+  errors clear 서명|all         화면 오류 묶음을 지운다 (고친 뒤)
+  erase [list]                 기다리는 내 데이터 삭제 요청
+  erase log [수]               삭제 기록 (요청·취소·실행)
+  erase ask 이름 [일수]         대신 삭제 요청을 받는다 (메일 등으로 요청한 사람). 일수를 주지 않으면 게임의 PRIVACY.eraseDays
+  erase cancel 이름             삭제 요청을 거둔다
+  erase now 이름|키앞           유예 없이 곧바로 지운다
+  erase sweep                  때가 된 요청을 지금 실행한다 (서버가 1분마다 한다)`;
 
 const root = path.resolve(import.meta.dirname, '..');
 const argv = process.argv.slice(2);

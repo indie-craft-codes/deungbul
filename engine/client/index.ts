@@ -41,3 +41,12 @@ export { lookGeo, lookHumanoid, registerLookBody, registerLookHead, registerLook
 export { registerShot, type ShotLook } from './fx';
 // 판(rooms 모듈)의 모양: 화면에서 myRoom()·onRoomChange가 주는 것, 시험에서 개인 상태 room·공유 상태 rooms를 읽을 때
 export type { RoomLobby, RoomPhase, RoomRow, RoomSeatView, RoomView } from '../shared/defs/rooms';
+// 웹 출시의 바탕: 설정 창의 게임 칸, 튜토리얼, 손님 진행 보호, 탭 숨김, 재방문 캐시, 오류 알리기, 나중 묶음
+export { addSetting, settingValue, type SettingDef } from './hud/settings';
+export { addTutorial, onTutorial, replayTutorial, type TutorialCond, type TutorialDef, type TutorialEvent, type TutorialStep } from './hud/tutorial';
+export { remindGuestSave, setGuestReminder } from './hud/keepsafe';
+export { enableOfflineCache, isAfk, onReturn } from './lifecycle';
+export { reportError } from './errors';
+export { preloadLater } from './assets';
+// 플랫폼 접점 (engine/client/platform/): 데스크톱·모바일·포털 구현을 꽂는 자리, 광고 지점과 게임 구간, 인증
+export { adBreak, auth, gameplayStart, gameplayStop, guestAuth, memoryPlatform, onAd, onBreakPoint, platform, rewarded, setAuth, setPlatform, type AuthProvider, type Feature, type LifeEvent, type MemoryPlatform, type Platform, type RawError } from './platform';

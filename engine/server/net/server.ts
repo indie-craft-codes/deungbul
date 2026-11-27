@@ -19,11 +19,13 @@ import type { Reward } from '../../shared/defs';
 import { startBackups, type BackupOptions } from '../store/backup';
 import { isClean, mask, tidy } from '../text';
 import { CLOSE, createAdmin, type Admin, type AdminOptions } from './admin';
-import { Handoff, hashToken } from './handoff';
+import { Handoff } from './handoff';
 import { REPORT_GAP_MS, REPORT_LINES } from './moderation';
 import { OpsCounters, opsHandler, pushCapped } from './ops';
 import { buildFrame, snapshotFor } from './snapshot';
 import { serveStatic } from './static';
+import { guestServerAuth, type ServerAuth } from './auth';
+import { createWeb, type Web } from './web';
 import { startStatus, type StatusOptions } from './status';
 
 const MAX_CLIENTS = 300; // 기본 상한. 근거는 docs/infra.md의 측정 결과
@@ -121,6 +123,8 @@ export interface Options {
   admin?: AdminOptions;
   /** 사람별 제한(대화·이름 바꾸기·신고의 간격, 대화량의 통)이 읽는 시계(ms). 기본 Date.now. 시험이 시간을 직접 옮겨 벽시계 없이 간격을 본다 */
   now?: () => number;
+  /** 인증 접점 (./auth.ts): 접속 메시지에서 저장 키를 정한다. 주지 않으면 손님(기기 토큰의 해시: 예전과 같다) */
+  auth?: ServerAuth;
   /** 상태 페이지 (./status.ts): 이 폴더에 status.json과 status.html을 쓴다. 주지 않으면 쓰지 않는다 (틀의 runServer는 빌드된 화면의 폴더에 쓴다) */
   status?: StatusOptions | false;
 }
@@ -138,6 +142,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const ledgerStore = game.has('economy') && hasEcon(store) ? store : null;
   const econ = !!ledgerStore, awayOn = game.has('away');
   const handoff = new Handoff(game); // 기기 옮기기: 월드 저장에 자기 칸을 두므로 월드를 읽기 전에 만든다
+  const auth = opts.auth ?? guestServerAuth(handoff);
   const saved = store.loadWorld();
   if (saved) game.importWorld(saved);
   // 원격 설정·공지·점검과 시계의 마지막 경계 (저장소가 적을 수 있을 때만: store/types.ts의 LiveStore). 꺼져 있던 동안 지난 날·주·달의 경계는 여기서 한 번씩 알린다
@@ -213,7 +218,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (const so of sockets) openWire += so.bytesWritten;
     for (const c of clients) if (c.ent) online++;
     return { clients: online, away: away.size, entities: game.ents.size, openWire, backup: backups, compress };
-  }, (req, res) => { if (!admin?.route(req, res)) statics(req, res); }));
+  }, (req, res) => { if (!admin?.route(req, res) && !web?.route(req, res)) statics(req, res); }));
   // 압축은 작은 메시지(이동 한 번)에는 걸지 않는다: 줄어드는 것보다 드는 CPU가 크다. 압축은 libuv의 일꾼 스레드에서 돌아 틱의 스레드는 오히려 덜 쓴다
   const wss = new WebSocketServer({ server: httpServer, maxPayload: 1024, perMessageDeflate: compress ? { threshold: 256 } : false });
 
@@ -313,11 +318,11 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   econSnapshot(); // 켜질 때: 오늘의 스냅샷이 없으면 남긴다
 
   function join(c: Client, m: Record<string, unknown>): void {
-    // 토큰이 있으면 저장된 캐릭터를 이어받는다
-    const token = typeof m.token === 'string' && /^[A-Za-z0-9-]{16,64}$/.test(m.token) ? m.token : null;
+    // 토큰이 있으면 저장된 캐릭터를 이어받는다 (인증 접점 ./auth.ts: 손님은 토큰의 해시가 저장 키)
     // 다른 기기로 옮겨 간 토큰은 받지 않는다. 옮겨 온 기기의 토큰은 그 캐릭터의 저장 키를 가리킨다 (net/handoff.ts)
-    c.key = token && handoff.keyFor(hashToken(token));
-    if (token && !c.key) { send(c, sys('handedOff')); c.ws.close(CLOSE.handedOff, 'moved'); return; }
+    const key = auth.keyOf(m);
+    if (key === undefined) { c.key = null; send(c, sys('handedOff')); c.ws.close(CLOSE.handedOff, 'moved'); return; }
+    c.key = key;
     const ban = game.sanctions.banned(c.key, c.ip);
     if (ban) { send(c, sys('banned', Sanctions.minutesLeft(ban, game.now()))); c.ws.close(CLOSE.banned, 'banned'); c.key = null; return; }
     // 점검 중에는 관리자(점검 중 입장으로 적은 저장 키)만, 깃발 join이 꺼져 있으면 관리자 말고는 새로 들어오지 못한다
@@ -469,6 +474,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     else if (m.t === 'chat') chat(c, e, m.text);
     else if (m.t === 'report') report(c, e, m.id);
     else if (m.t === 'handoff') handoffMsg(c, m);
+    else if (web.handle(c, e, m)) { /* 탭 숨김·약관 동의·내 데이터 (./web.ts) */ }
     else game.command(e, m); // 나머지는 게임 명령
   }
 
@@ -477,6 +483,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (!clients.delete(c)) return;
     if (c.key && byKey.get(c.key) === c) byKey.delete(c.key);
     if (c.ent) {
+      web.left(c); // 자리 비움이었으면 풀렸다고 알린다
       game.fire('playerDropped', c.ent); // 던전 안이었으면 문 앞으로 나온 뒤에 저장한다
       saveTogether(); // 방금 한 거래가 월드에만(또는 캐릭터에만) 저장된 채로 남지 않게
       savePlayer(c);
@@ -508,6 +515,15 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     }
     return n;
   }
+  // 웹 출시의 바탕 (./web.ts): 탭 숨김, 약관 동의, 내 데이터, 화면 오류. 삭제 요청은 1분마다와 켜질 때 살핀다
+  const web: Web = createWeb({
+    game, store, now: clock, send, broadcast,
+    drop: (by, code, k, ...a) => dropBy(by, code, k, ...a),
+    clients: () => [...clients].filter((c) => c.ent),
+    save: () => { game.saveDirty = true; saveTogether(); },
+  });
+  const eraseTimer = setInterval(() => { try { web.sweep(); } catch (err) { log.error('[server] 삭제 요청 살피기 실패:', err); } }, 60_000);
+  setTimeout(() => { if (!stopped) try { web.sweep(); } catch (err) { log.error('[server] 삭제 요청 살피기 실패:', err); } }, 0);
   /** 점검이 시작됐다: 모두를 저장하고, 관리자 말고는 안내와 함께 끊는다. 자리 비움 사냥 중인 캐릭터도 저장하고 내보낸다 (자동 사냥은 켜 둔 채: 돌아오면 이어진다) */
   game.on('maintStarted', () => {
     const v = game.live.maintView();
@@ -547,6 +563,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       ...[...away].map(([key, e]) => ({ name: e.name, key, ip: awayIp.get(key) ?? '', ent: e, away: true })),
     ],
     drop: dropBy, broadcast, save: () => { game.saveDirty = true; saveTogether(); },
+    extra: () => web.admin,
   }, opts.admin);
 
   wss.on('connection', (ws, req) => {
@@ -726,7 +743,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         metrics,
         admin: admin!,
         close: () => new Promise<void>((ok) => {
-          stopped = true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(autosave); backups?.stop(); status?.stop(); status?.write('down');
+          stopped = true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(autosave); clearInterval(eraseTimer); web.close(); backups?.stop(); status?.stop(); status?.write('down');
           admin?.close();
           // 끄기 전에 전원과 월드를 한 묶음으로 저장한다.
           // 다시 켰을 때 이어서 사냥할 캐릭터를 적어 둔다: 자리 비움 사냥 중이던 것과, 자동 사냥을 켠 채 접속해 있던 것(재시작으로 끊긴다)

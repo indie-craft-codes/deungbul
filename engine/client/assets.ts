@@ -201,5 +201,20 @@ export const writeMix = (m: Mix): string => JSON.stringify({ sfx: unit(m.sfx, DE
 export function preloadList(): { models: string[]; sounds: string[] } {
   const models = new Set<string>([...MONSTER_FILES.values(), ...HUMAN_FILES.values(), ...WEAPON_FILES.values()].map((a) => a.url));
   const sounds = new Set<string>([...SOUND_FILES.values()].map((s) => s.url));
+  return { models: [...models].filter((u) => !LATER.has(u)), sounds: [...sounds].filter((u) => !LATER.has(u)) };
+}
+
+// ---------- 첫 장면 묶음과 나중 묶음 (자원 로딩 예산: docs/making-a-game.md '로딩 예산') ----------
+/** 접속 화면에서 기다리지 않고 들어간 뒤에 받는 파일 */
+const LATER = new Set<string>();
+/**
+ * 이 파일들은 첫 장면에 기다리지 않는다: 접속 화면을 걷은 뒤에 뒤에서 받고, 다 받으면 코드 모델·합성음 자리에 바꿔 끼운다.
+ * 첫 화면에 바로 보이지 않는 것(먼 지역의 몬스터, 드문 효과음)에 쓴다. 첫 다운로드 크기(포털 기준 8MB·20MB)를 줄인다
+ */
+export function preloadLater(...urls: string[]): void { for (const u of urls) LATER.add(u); }
+/** 나중 묶음: 등록한 것 가운데 preloadLater로 미룬 것 (모델, 소리) */
+export function laterList(): { models: string[]; sounds: string[] } {
+  const models = new Set<string>([...MONSTER_FILES.values(), ...HUMAN_FILES.values(), ...WEAPON_FILES.values()].map((a) => a.url).filter((u) => LATER.has(u)));
+  const sounds = new Set<string>([...SOUND_FILES.values()].map((s) => s.url).filter((u) => LATER.has(u)));
   return { models: [...models], sounds: [...sounds] };
 }

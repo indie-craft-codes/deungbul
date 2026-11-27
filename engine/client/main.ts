@@ -27,7 +27,9 @@ import { speak, updateFloats } from './hud/tags';
 import { applyDom, onLangChange, t } from './i18n';
 import { axis, initInput } from './input';
 import { connect, forgetToken, initNet, send } from './net';
-import { afterPreload, startPreload } from './preload';
+import { afterPreload, startLater, startPreload } from './preload';
+import { initErrors, watchCanvas } from './errors';
+import { initLifecycle } from './lifecycle';
 import { isBlocked } from './social';
 import type { Look } from './scene/view';
 import { S } from './state';
@@ -35,7 +37,7 @@ import { S } from './state';
 // ---------- 서버 메시지: 바탕이 되는 처리. 덧붙는 기능은 각 모듈이 bus.onMsg로 스스로 등록한다 ----------
 // 접속 화면은 등록한 에셋을 다 읽은 뒤에 걷는다 (에셋이 없는 게임은 바로: preload.ts). 그새 끊겼으면 걷지 않는다
 onMsg('welcome', (m) => {
-  spawnMe(m.id, m.name, m.x, m.z); setMyName(m.name); afterPreload(() => { if (S.me) hideGate(); });
+  spawnMe(m.id, m.name, m.x, m.z); setMyName(m.name); afterPreload(() => { if (S.me) hideGate(); startLater(); }); // 나중 묶음(preloadLater)은 들어간 뒤에 받는다
   // 성장 수치(stat)를 보내는 모듈이 하나도 없는 게임: 받을 수치가 없으니 들어온 때가 곧 준비된 때다
   if (S.me && !anyModule(['combat', 'growth', 'economy', 'items', 'classes'])) S.me.ready = true;
 });
@@ -79,6 +81,7 @@ function lost(code: number): void {
   if (code === 4002) { showGate('gateKicked', true); return; }
   if (code === 4003) { showGate('gateBanned', false); return; }
   if (opsLost(code)) return; // 점검(4004), 새 접속 막힘(4005): 까닭을 두고 1분마다 다시 접속해 본다 (hud/ops.ts)
+  if (code === 4010) { forgetToken(); showGate('gateErased', true); return; } // 요청한 대로 데이터를 지웠다 (engine/server/net/web.ts의 ERASED_CLOSE): 다음 접속은 새 캐릭터
   showGate('reconnecting', true);
   const again = () => {
     if (document.hidden) { document.addEventListener('visibilitychange', again, { once: true }); return; } // 화면이 꺼져 있으면 켜질 때까지 기다린다
@@ -154,7 +157,9 @@ export interface ClientOptions {
  * 같은 메시지·같은 주기 안에서 처리기는 등록한 차례대로 불리므로, 아래의 init 차례가 곧 그리는 차례다: 내 정보 창 → 게임의 모듈 → 틀의 덧붙는 모듈.
  */
 export function startClient(opts: ClientOptions = {}): void {
+  initErrors(); // 화면 오류 수집 (errors.ts): 무엇보다 먼저 (화면을 만들다 난 오류도 잡게)
   startApp(opts.look);
+  watchCanvas(view.renderer.domElement);
   bindCameraView(view);
   applyDom();
   onLangChange(relabel);
@@ -181,6 +186,7 @@ export function startClient(opts: ClientOptions = {}): void {
     opening: () => { clearEntities(); setParty([]); showGate('connecting', false); },
     closed: (code) => { clearEntities(); if (!stale) lost(code); },
   });
+  initLifecycle(); // 탭 숨김·돌아옴 (lifecycle.ts)
 
   // 내 정보 창의 높이를 재 둔다: 좁은 화면에서 대상 창을 그 바로 아래에 두는 데 쓴다 (style.css의 --me-h)
   new ResizeObserver(() => document.documentElement.style.setProperty('--me-h', `${$('me').offsetHeight}px`)).observe($('me'));

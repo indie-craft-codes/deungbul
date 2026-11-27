@@ -1,87 +1,63 @@
 // 서버 연결. 메시지를 주고받기만 하고, 내용 처리는 등록된 처리기가 맡는다.
+// 서버의 주소는 플랫폼(platform().server(): 웹은 빌드의 VITE_SERVER_URL → 옆의 server.json → 같은 출처), 접속 증표는 인증 접점(auth(): 지금은 손님의 기기 토큰)이 준다.
 import type { ClientMsg, ServerMsg } from '../shared/protocol';
 import { randomName } from './i18n';
+import { auth, platform } from './platform';
 
 let ws: WebSocket | null = null;
 let onMessage: (m: ServerMsg) => void = () => {};
 let onOpening: () => void = () => {};
 let onClosed: (code: number) => void = () => {};
+/** 보내는 메시지를 지켜보는 것들 (튜토리얼의 '명령' 조건: hud/tutorial.ts) */
+const watchers: ((m: ClientMsg) => void)[] = [];
 
 export function initNet(h: { message: (m: ServerMsg) => void; opening: () => void; closed: (code: number) => void }): void {
   onMessage = h.message; onOpening = h.opening; onClosed = h.closed;
 }
 
-function url(): string {
-  // 화면만 따로 올린 경우(GitHub Pages 같은 정적 호스팅): 빌드할 때 VITE_SERVER_URL로 게임 서버 주소를 정해 준다
-  const fixed = import.meta.env.VITE_SERVER_URL as string | undefined;
-  if (fixed) return fixed;
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  // 개발 중에는 Vite와 게임 서버가 따로 돈다. 빌드본은 서버가 같은 포트에서 함께 서비스한다.
-  // 게임 서버의 포트는 게임의 vite 설정이 VITE_DEV_PORT로 알려 준다 (없으면 3001): 게임마다 포트가 달라야 한 PC에서 남의 서버에 붙지 않는다
-  return import.meta.env.DEV ? `${proto}://${location.hostname}:${(import.meta.env.VITE_DEV_PORT as string | undefined) ?? '3001'}` : `${proto}://${location.host}`;
-}
+/** 내가 서버에 보내는 메시지를 지켜본다 (보낸 뒤에 불린다) */
+export function onSend(fn: (m: ClientMsg) => void): void { watchers.push(fn); }
 
-/**
- * 접속할 게임 서버의 주소. 화면만 따로 올린 곳(GitHub Pages)에서는 옆에 놓인 server.json({ "url": "wss://..." })을 읽는다:
- * 서버 주소가 바뀌어도 화면을 다시 빌드하지 않고 그 파일만 바꾸면 된다. 파일이 없으면 화면을 내보낸 곳이 곧 서버다.
- */
-async function serverUrl(): Promise<string> {
-  if (!import.meta.env.DEV && !import.meta.env.VITE_SERVER_URL) {
-    try {
-      const r = await fetch('./server.json', { cache: 'no-store' });
-      const j = r.ok ? ((await r.json()) as { url?: unknown }) : null;
-      if (j && typeof j.url === 'string' && /^wss?:\/\//.test(j.url)) return j.url;
-    } catch { /* 파일이 없다: 아래의 기본 주소를 쓴다 */ }
-  }
-  return url();
-}
-
-/** 무작위 비밀 값. randomUUID는 https나 localhost에서만 있어서(와이파이 주소로 들어오면 없다) 직접 만든다. */
-function newToken(): string {
-  const b = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
-}
-
-/** 이 브라우저의 캐릭터를 가리키는 비밀 값. 계정이 생기기 전까지 이것으로 이어받는다. */
-function token(): string | undefined {
-  try {
-    let t = localStorage.getItem('token');
-    if (!t) { t = newToken(); localStorage.setItem('token', t); }
-    return t;
-  } catch { return undefined; } // 저장소를 못 쓰면 손님으로 들어간다 (저장되지 않음)
+/** 지금 접속한(또는 접속할) 게임 서버의 http(s) 주소: 오류 묶음을 보내는 곳 (ws → http, wss → https) */
+export async function httpBase(): Promise<string> {
+  const to = await platform().server();
+  return to.replace(/^ws(s?):\/\//, 'http$1://').replace(/\/+$/, '');
 }
 
 /**
  * 기기 옮기기로 받은 새 토큰을 간직하고 곧바로 다시 접속한다 (hud/device.ts). 지금 연결은 버린다: 닫힘을 '끊김'으로 다루지 않게 먼저 놓는다.
  * 저장소를 못 쓰는 브라우저면 false (이어받을 수 없다)
  */
-export function adoptToken(t: string): boolean {
-  try { localStorage.setItem('token', t); } catch { return false; }
+export async function adoptToken(t: string): Promise<boolean> {
+  if (!(await auth().adopt(t))) return false;
   const old = ws;
   ws = null;
   old?.close();
   connect();
   return true;
 }
-/** 이 브라우저의 토큰을 지운다: 캐릭터가 다른 기기로 옮겨 가 이 토큰으로는 더 들어갈 수 없다. 다음 접속에 새 토큰이 생긴다 */
-export function forgetToken(): void {
-  try { localStorage.removeItem('token'); } catch { /* 저장소를 못 쓰는 환경 */ }
-}
+/** 이 브라우저의 토큰을 지운다: 캐릭터가 다른 기기로 옮겨 갔거나 지워져 이 토큰으로는 더 들어갈 수 없다. 다음 접속에 새 토큰이 생긴다 */
+export function forgetToken(): void { void auth().forget(); }
 
 export function send(m: ClientMsg): void {
-  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(m));
+    for (const fn of watchers) fn(m);
+  }
 }
+/** 연결이 열려 있는가 */
+export const online = (): boolean => !!ws && ws.readyState === WebSocket.OPEN;
 
 /** 접속한다. 이름을 주지 않으면 현재 언어로 만든 무작위 이름을 제안한다 (저장된 이름이 있으면 서버가 그것을 쓴다). */
 export function connect(name?: string): void {
   onOpening();
-  void serverUrl().then((to) => open(to, name));
+  void Promise.all([platform().server(), auth().token().catch(() => undefined)]).then(([to, token]) => open(to, token, name));
 }
 
-function open(to: string, name?: string): void {
+function open(to: string, token: string | undefined, name?: string): void {
   const sock = new WebSocket(to);
   ws = sock;
-  sock.onopen = () => send({ t: 'join', name: name || randomName(), token: token() });
+  sock.onopen = () => send({ t: 'join', name: name || randomName(), token });
   sock.onmessage = (ev) => {
     if (typeof ev.data !== 'string') return;
     let m: ServerMsg;

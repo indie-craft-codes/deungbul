@@ -112,6 +112,8 @@ export interface Hooks extends HooksExt {
   /** [핵심: 점검] 점검이 시작됐다 (통신 계층이 모두 저장하고 관리자 말고 내보낸다) / 끝났다 */
   maintStarted: () => void;
   maintEnded: () => void;
+  /** 탭·앱을 숨겼다(false) / 다시 보였다(true) (engine/server/net/web.ts). 실시간 판의 '숨긴 사람' 처리 같은 것을 게임이 건다 */
+  playerVisible: (p: Ent, on: boolean) => void;
 }
 
 /**

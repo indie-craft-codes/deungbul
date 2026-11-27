@@ -728,6 +728,41 @@
   "1 undefined",
   "2 undefined"
  ],
+ "fmt.keyGame": [
+  "5bdd62b18daf39af",
+  "Game key undefined",
+  "Game key 0",
+  "Game key 1",
+  "Game key 2"
+ ],
+ "fmt.keySkill": [
+  "e5887e864ec722d4",
+  "Skill undefined",
+  "Skill 0",
+  "Skill 1",
+  "Skill 2"
+ ],
+ "fmt.keyWas": [
+  "eedd9c6fd4a1d0df",
+  "default undefined",
+  "default 0",
+  "default 1",
+  "default 2"
+ ],
+ "fmt.legalAgreed": [
+  "94168bdadbaa5615",
+  "Accepted version: undefined",
+  "Accepted version: 0",
+  "Accepted version: 1",
+  "Accepted version: 2"
+ ],
+ "fmt.legalChanged": [
+  "b5ed6f784d21ed62",
+  "The terms have changed (undefined). To keep playing, please read and accept the updated Terms of Service and Privacy Policy.",
+  "The terms have changed (0). To keep playing, please read and accept the updated Terms of Service and Privacy Policy.",
+  "The terms have changed (1). To keep playing, please read and accept the updated Terms of Service and Privacy Policy.",
+  "The terms have changed (2). To keep playing, please read and accept the updated Terms of Service and Privacy Policy."
+ ],
  "fmt.level": [
   "7be2f6ffa034b5d9",
   "Lv undefined undefined",
@@ -743,18 +778,18 @@
   "2"
  ],
  "fmt.maintCountdown": [
-  "1cf6c3e551087101",
+  "0167f4baae786508",
   "Server maintenance starts in NaN:NaN",
   "Server maintenance starts in 0:00",
   "Server maintenance starts in 0:01",
   "Server maintenance starts in 0:02"
  ],
  "fmt.maintGate": [
-  "d75a8b3cb7c0ef49",
+  "7204c87badf90e58",
   "You will reconnect automatically when it is over.",
-  "Expected to end 1/1, 09:00 AM. You will reconnect automatically when it is over.",
-  "Expected to end 1/1, 09:20 AM. You will reconnect automatically when it is over.",
-  "1 · Expected to end 1/1, 09:00 AM. You will reconnect automatically when it is over."
+  "Expected to end 1/1, 12:00 AM. You will reconnect automatically when it is over.",
+  "Expected to end 1/1, 12:20 AM. You will reconnect automatically when it is over.",
+  "1 · Expected to end 1/1, 12:00 AM. You will reconnect automatically when it is over."
  ],
  "fmt.mapArrived": [
   "aace612ff226bb32",
@@ -938,6 +973,20 @@
   "1s left",
   "2s left"
  ],
+ "fmt.myDataDue": [
+  "83a62531493d3eb6",
+  "Deleting soon",
+  "Deleting in 1 day",
+  "Deleting in 2 days",
+  "Deleting in 5 days"
+ ],
+ "fmt.myDataInfo": [
+  "8c9473e850be7e3d",
+  "You can download this character's saved data as a file or ask us to delete it. Deletion runs undefined days after the request, and you can withdraw it until then.",
+  "You can download this character's saved data as a file or ask us to delete it. Deletion runs 0 days after the request, and you can withdraw it until then.",
+  "You can download this character's saved data as a file or ask us to delete it. Deletion runs 1 day after the request, and you can withdraw it until then.",
+  "You can download this character's saved data as a file or ask us to delete it. Deletion runs 2 days after the request, and you can withdraw it until then."
+ ],
  "fmt.needsResident": [
   "11cb893c029e2abb",
   "In stock once undefined returns",
@@ -965,6 +1014,13 @@
   "0 invited you to a party. Party members share rewards for kills.",
   "1 invited you to a party. Party members share rewards for kills.",
   "2 invited you to a party. Party members share rewards for kills."
+ ],
+ "fmt.pixelNow": [
+  "15f4a0081bb5ee8d",
+  "this device ×NaN",
+  "this device ×0",
+  "this device ×1",
+  "this device ×2"
  ],
  "fmt.potions": [
   "89393566891e05f4",
@@ -1458,6 +1514,13 @@
   "Tower: Steady undefined",
   "Tower: Bright undefined"
  ],
+ "fmt.tutStep": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
  "fmt.unblocked": [
   "2f59b11657b3db84",
   "You unmuted undefined.",
@@ -1806,6 +1869,15 @@
   "Enhancement failed, but your Ward Stone kept it at +1.",
   "Enhancement failed, but your Ward Stone kept it at +2."
  ],
+ "msg.eraseAsked": [
+  "750da2316249bc3a",
+  "Deletion requested. This character's data will be deleted in undefined days. You can withdraw it in Settings until then.",
+  "Deletion requested. This character's data will be deleted in 0 days. You can withdraw it in Settings until then.",
+  "Deletion requested. This character's data will be deleted in 1 day. You can withdraw it in Settings until then.",
+  "Deletion requested. This character's data will be deleted in 2 days. You can withdraw it in Settings until then."
+ ],
+ "msg.eraseCanceled": "Deletion request withdrawn.",
+ "msg.erased": "As requested, this character's data has been deleted.",
  "msg.featureOff": "flagOther is paused for now. Please check the notices.",
  "msg.forgeClosed": "Bram the Smith has not returned yet.",
  "msg.forgeFar": "Move closer to Bram the Smith to forge.",
@@ -2082,18 +2154,18 @@
  "msg.mailNew": "You have mail. Claim it under Menu[[ (M)|]] > Mail.",
  "msg.maintEnd": "Server maintenance is over.",
  "msg.maintSoon": [
-  "8f9980cfd3eabe32",
+  "4394d19b5f3166a4",
   "Server maintenance starts in undefined minutes. Your progress is saved automatically.",
   "Server maintenance starts in 0 minutes. Your progress is saved automatically.",
-  "Server maintenance starts in 1 minute. Expected to end 1/1, 09:00 AM. Your progress is saved automatically.",
-  "Server maintenance starts in 2 minutes. Expected to end 1/1, 09:00 AM. Your progress is saved automatically."
+  "Server maintenance starts in 1 minute. Expected to end 1/1, 12:00 AM. Your progress is saved automatically.",
+  "Server maintenance starts in 2 minutes. Expected to end 1/1, 12:00 AM. Your progress is saved automatically."
  ],
  "msg.maintStart": [
-  "9a8d89370690e5f3",
+  "85fcde16984fea70",
   "Server maintenance has started, so you are being disconnected.",
-  "Server maintenance has started, so you are being disconnected. Expected to end 1/1, 09:00 AM.",
-  "Server maintenance has started, so you are being disconnected. Expected to end 1/1, 09:20 AM.",
-  "Server maintenance has started, so you are being disconnected. Expected to end 1/1, 08:59 AM."
+  "Server maintenance has started, so you are being disconnected. Expected to end 1/1, 12:00 AM.",
+  "Server maintenance has started, so you are being disconnected. Expected to end 1/1, 12:20 AM.",
+  "Server maintenance has started, so you are being disconnected. Expected to end 12/31, 11:59 PM."
  ],
  "msg.marketBought": [
   "51a955b0aa9e30d3",
@@ -2175,6 +2247,14 @@
   "You are muted and cannot send messages. The mute lifts in 1 min.",
   "You are muted and cannot send messages. The mute lifts in 2 min.",
   "You are muted and cannot send messages. The mute lifts in 858 days."
+ ],
+ "msg.mydataGuest": "You are an unsaved guest, so there is no data to download or delete.",
+ "msg.mydataWait": [
+  "91f229f685f0a936",
+  "Please try again in a moment (undefineds).",
+  "Please try again in a moment (0s).",
+  "Please try again in a moment (1s).",
+  "Please try again in a moment (2s)."
  ],
  "msg.nameBad": "That name cannot be used.",
  "msg.nameTaken": "Someone online is already using that name.",
@@ -2586,6 +2666,7 @@
  "towers.crypt": "the crypt entrance",
  "towers.ember": "Emberfall Tower",
  "towers.first": "Firstlight Village Tower",
+ "ui.afkTag": "away",
  "ui.allReturned": "Everyone has returned",
  "ui.attackNearest": "Attack nearest",
  "ui.auto": "Auto-hunt",
@@ -2656,6 +2737,9 @@
  "ui.enhanceFailed": "Enhance failed · the gear is unchanged",
  "ui.enhanceMaxed": "Maxed",
  "ui.equip": "Equip",
+ "ui.farFar": "Far",
+ "ui.farMid": "Medium",
+ "ui.farNear": "Near",
  "ui.flagChat": "Chat",
  "ui.flagGacha": "Summoning",
  "ui.flagJoin": "Joining",
@@ -2687,6 +2771,7 @@
  "ui.gachaSelectHead": "Hero selector",
  "ui.gachaTen": "Summon ×10",
  "ui.gateBanned": "This character or address is blocked from connecting.",
+ "ui.gateErased": "As requested, this character's data has been deleted. Reconnect to start a new character.",
  "ui.gateHandedOff": "This character has moved to another device. If you reconnect, you will start a new character on this device.",
  "ui.gateHandoffDone": "Character transferred. Reconnecting…",
  "ui.gateJoinClosed": "New connections are paused right now. Please try again shortly.",
@@ -2750,8 +2835,18 @@
  "ui.idleBackLater": "Later (keep in mail)",
  "ui.idleBackTitle": "While you were away",
  "ui.intro": "In a land lost to mist, you keep the lamp towers lit. Hunt monsters for sparks and offer them at the tower to light the village.",
+ "ui.keepLater": "Got it",
+ "ui.keepOpen": "Open Device tab",
+ "ui.keepSafe": "This character is saved only in this browser. Clearing browser data or staying away for a long time can lose it. Get a transfer code from the Device tab in the menu to keep playing on another device.",
  "ui.keepersEmpty": "No one yet. Offer sparks or hold off a raid to be listed.",
  "ui.keepersToday": "Today's keepers",
+ "ui.keyAuto": "Auto hunt",
+ "ui.keyBag": "Bag",
+ "ui.keyHome": "Go home",
+ "ui.keyMap": "Map",
+ "ui.keyMenu": "Menu",
+ "ui.keyPotion": "Potion",
+ "ui.keyTarget": "Nearest target",
  "ui.kindBoss": "Bosses",
  "ui.kindDungeon": "Dungeons",
  "ui.kindForge": "Forges",
@@ -2761,6 +2856,13 @@
  "ui.kindShop": "Shops",
  "ui.kindTown": "Hubs",
  "ui.language": "Language",
+ "ui.legalAgree": "Accept and continue",
+ "ui.legalAsk": "To keep playing, please read and accept the Terms of Service and the Privacy Policy.",
+ "ui.legalHead": "Terms & privacy",
+ "ui.legalNeed": "You need to accept them to play.",
+ "ui.legalNo": "Decline",
+ "ui.legalPrivacy": "Privacy Policy",
+ "ui.legalTerms": "Terms of Service",
  "ui.loadingAssets": "Loading models and sounds",
  "ui.mailEmpty": "No mail to claim.",
  "ui.mapBossWarn": "Boss: too strong to face alone. Bring others.",
@@ -2805,18 +2907,32 @@
  "ui.morphNow": "Morphed",
  "ui.morphOffBtn": "Change back",
  "ui.morphOnBtn": "Morph",
+ "ui.myDataCancel": "Withdraw request",
+ "ui.myDataErase": "Request deletion",
+ "ui.myDataEraseHead": "Request deletion of this character's data",
+ "ui.myDataEraseSure": "Really delete? Click again",
+ "ui.myDataErasing": "Deletion requested",
+ "ui.myDataExport": "Download",
+ "ui.myDataExportHead": "Download my data (JSON file)",
+ "ui.myDataHead": "My data",
  "ui.noTargetNearby": "No targets nearby.",
  "ui.none": "None",
  "ui.noticeClose": "Close",
  "ui.noticeTitle": "Notice",
+ "ui.off": "Off",
  "ui.offerNote": "Lights the tower. A brighter tower holds out longer in a raid.",
  "ui.offerVerb": "Offer",
+ "ui.on": "On",
  "ui.owned": "Owned",
  "ui.party": "Party",
  "ui.partyAccept": "Accept",
  "ui.partyDecline": "Decline",
  "ui.partyInvite": "Invite to party",
  "ui.partyLeave": "Leave",
+ "ui.qCustom": "Custom",
+ "ui.qHigh": "High",
+ "ui.qLow": "Low",
+ "ui.qMid": "Medium",
  "ui.quest": "Quest",
  "ui.questAllDone": "You have finished the story so far.",
  "ui.questGo": "[[Click to walk there (F)|Tap to walk there]]",
@@ -2869,6 +2985,22 @@
  "ui.salvageAll": "Salvage many…",
  "ui.salvageCancel": "Cancel",
  "ui.salvageSource": "From salvaging gear",
+ "ui.setCalm": "Turn off screen shake",
+ "ui.setFar": "Draw distance",
+ "ui.setFullscreen": "Full screen",
+ "ui.setGame": "Game",
+ "ui.setGraphics": "Graphics",
+ "ui.setHelp": "Help",
+ "ui.setKeyWait": "Press a key…",
+ "ui.setKeys": "Hotkeys",
+ "ui.setKeysHint": "Click an action's key, then press the new key. Esc cancels. Movement (WASD, arrows) and Enter cannot be changed.",
+ "ui.setKeysReset": "Reset hotkeys",
+ "ui.setPixel": "Resolution cap",
+ "ui.setQuality": "Quality",
+ "ui.setScreen": "Screen",
+ "ui.setShadows": "Shadows",
+ "ui.setSound": "Sound",
+ "ui.setUi": "Text & panel size",
  "ui.shop": "Road Merchant",
  "ui.skillUpBtn": "Upgrade",
  "ui.skillUpHead": "Skill upgrades",
@@ -2911,6 +3043,7 @@
  "ui.tabMarket": "Market",
  "ui.tabMorph": "Morph",
  "ui.tabRank": "Rank",
+ "ui.tabSettings": "Settings",
  "ui.tabSquad": "Squad",
  "ui.tabStages": "Stages",
  "ui.teamBoard": "Scoreboard",
@@ -2924,6 +3057,10 @@
  "ui.tower": "Lamp tower",
  "ui.towerDark": "The lamp is out. Once everyone offers sparks to light it, you will rise here when you fall in this area.",
  "ui.towerOff": "Unlit",
+ "ui.tutName": "Tutorial",
+ "ui.tutNext": "Next",
+ "ui.tutReplay": "Replay",
+ "ui.tutSkip": "Skip",
  "ui.unblock": "Unmute",
  "ui.unequip": "Remove",
  "ui.volMusic": "Music",

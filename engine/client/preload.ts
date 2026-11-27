@@ -2,7 +2,7 @@
 // 등록한 것이 없는 게임은 아무것도 하지 않는다 (접속 화면도 예전과 같다). 접속이 먼저 끝나도 다 읽을 때까지(길어도 WAIT_MAX_MS) 접속 화면을 둔다:
 // 들어가자마자 코드 모델이 파일의 모델로 바뀌는 모습을 보이지 않게. 읽지 못한 파일은 건너뛴다 (그 자리는 코드 모델과 합성음).
 import { $ } from './app';
-import { preloadList } from './assets';
+import { laterList, preloadList } from './assets';
 import { t } from './i18n';
 import { preloadModel } from './scene/models';
 import { fetchSound } from './sound';
@@ -39,6 +39,16 @@ export function startPreload(): void {
   show();
   void Promise.all(jobs.map((job) => job().finally(() => { n++; show(); }))).then(finish);
   window.setTimeout(finish, WAIT_MAX_MS);
+}
+
+/** 나중 묶음(assets.ts의 preloadLater)을 뒤에서 받는다: 접속 화면을 걷은 뒤 (main.ts의 welcome) */
+let laterStarted = false;
+export function startLater(): void {
+  if (laterStarted) return;
+  laterStarted = true;
+  const { models, sounds } = laterList();
+  for (const u of models) void preloadModel(u);
+  for (const u of sounds) void fetchSound(u);
 }
 
 /** 미리 읽기가 끝나면 부른다 (끝났거나 읽을 것이 없으면 바로) */

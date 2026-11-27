@@ -116,3 +116,6 @@ export const MORPH_RULES = get('MORPH_RULES');
 export const RESET = get('RESET');
 export const LIVE_KEYS = get('LIVE_KEYS');
 export const FLAGS = get('FLAGS');
+// ---------- 웹 출시의 바탕 ----------
+export const LEGAL = get('LEGAL');
+export const PRIVACY = get('PRIVACY');

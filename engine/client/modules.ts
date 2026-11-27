@@ -29,6 +29,10 @@ import { initOps } from './hud/ops';
 import { initWorldMap } from './hud/worldmap';
 import { hasModule } from './mods';
 import { initSound } from './sound';
+import { initSettings } from './hud/settings';
+import { initLegal } from './hud/legal';
+import { initTutorial } from './hud/tutorial';
+import { initKeepSafe } from './hud/keepsafe';
 
 /** 차례대로 init한다. 상점, 대장간, 직업 고르기가 앞이다: 가르기 전에 main.ts가 직접 부르던 차례(같은 메시지와 같은 주기 안에서 다른 모듈보다 먼저)를 지킨다 */
 const LIST: { init: () => void; mod?: ModuleId }[] = [
@@ -66,6 +70,11 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   // 캐릭터 정의와 변신: 그 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)
   { init: initChars, mod: 'chars' },
   { init: initMorph, mod: 'morph' },
+  // 웹 출시의 바탕 (어느 게임에나): 설정 창(메뉴의 '설정' 탭: '기기' 탭 뒤), 약관·내 데이터, 튜토리얼(게임이 addTutorial을 불렀을 때만 보인다), 손님 진행 보호. 맨 뒤에
+  { init: initSettings },
+  { init: initLegal },
+  { init: initTutorial },
+  { init: initKeepSafe },
 ];
 
 export function initModules(): void {

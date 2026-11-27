@@ -174,6 +174,14 @@ export type ClientMsg =
   | { t: 'room'; a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again' | 'start'; id?: number }
   /** 변신 (morph 모듈): on 가진 캐릭터 정의(id)로 변신, off 풀기 */
   | { t: 'morph'; a: 'on' | 'off'; id?: string }
+  // ---- 웹 출시의 바탕 (engine/server/net/web.ts) ----
+  /** 탭·앱이 보이는가 (숨기면 false: 다른 사람에게 자리 비움으로 보인다) */
+  | { t: 'vis'; on: boolean }
+  /** 약관 동의: ask 내가 동의한 버전을 묻는다, agree 그 버전(LEGAL.version)에 동의한다 */
+  | { t: 'consent'; a: 'ask' }
+  | { t: 'consent'; a: 'agree'; v: string }
+  /** 내 데이터: export 내려받을 JSON을 달라, erase 삭제를 요청한다(유예 뒤 실행), cancel 요청을 거둔다, status 요청 상태를 묻는다 */
+  | { t: 'mydata'; a: 'export' | 'erase' | 'cancel' | 'status' }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -266,4 +274,12 @@ export type ServerMsg =
   | { t: 'maint'; off: true }
   /** 원격 설정으로 바뀐 칸 가운데 화면에도 보내는 것 (LIVE_KEYS의 client): set 덮어쓴 값, reset 소스의 값으로 돌아간 칸 */
   | { t: 'live'; set: Record<string, unknown>; reset?: string[] }
+  // ---- 웹 출시의 바탕 (engine/server/net/web.ts) ----
+  /** 자리 비움(탭을 숨김)이 된 사람(on: true)이나 돌아온 사람(on: false)의 엔티티 번호들 */
+  | { t: 'afk'; ids: number[]; on: boolean }
+  /** 이 저장 키가 동의한 약관 버전 (없으면 null) */
+  | { t: 'consent'; v: string | null }
+  /** 내 데이터: 내려받을 JSON / 삭제 요청의 상태 (due: 지우는 시각(ms), 요청이 없으면 null. days: 유예 일수) */
+  | { t: 'mydata'; a: 'export'; data: unknown }
+  | { t: 'mydata'; a: 'state'; due: number | null; days: number }
   | Added<ServerMsgs>;

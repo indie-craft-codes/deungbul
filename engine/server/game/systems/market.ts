@@ -5,6 +5,7 @@ import { ENHANCE, MAIL_MAX, MARKET, hasGoods, isItemId, itemCap, isMarketFilter,
 import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
+import { personalData } from '../personal';
 import { GearSys } from './gear';
 import { WHY } from './wallet';
 
@@ -50,6 +51,12 @@ export class Market {
     g.on('playerLeft', (id) => { this.asked.delete(id); });
     g.ticks.push((dt) => { this.since += dt; if (this.since >= MARKET.sweepS) { this.since = 0; this.sweep(); } });
     g.worldSaves.push({ name: 'market', save: () => ({ next: this.nextId, burned: this.burned, list: [...this.listings.values()] }), load: (d) => this.load(d) });
+    // 내 데이터 (engine/server/game/personal.ts): 내보내기는 내가 올려 둔 물건, 삭제는 그것을 내린다 (주인이 사라지므로 물건도 함께 없어진다. 이미 팔린 것은 산 사람의 것)
+    personalData(g).push({
+      name: 'market',
+      get: (pid) => { const list = this.own(pid); return list.length ? list.map((l) => ({ what: Market.what(l), n: l.n, price: l.price, until: l.until })) : undefined; },
+      erase: (pid) => { for (const l of this.own(pid)) this.listings.delete(l.id); g.saveDirty = true; },
+    });
   }
 
   private load(data: unknown): void {

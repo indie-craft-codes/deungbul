@@ -6,6 +6,7 @@ import { CHAT_MAX, NAME_MAX } from '../../../shared/world';
 import { isClean, mask, tidy } from '../../text';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
+import { personalData } from '../personal';
 import { WHY } from './wallet';
 
 interface Member { pid: string; name: string; lv: number; cls: string; gave: number }
@@ -47,6 +48,12 @@ export class Guild {
     // 길드 레벨만큼 경험치를 더 받는다
     g.mods.provide('exp', (p) => { const rec = p && this.of.get(p.pid); return rec ? this.level(rec) * GUILD.expPerLevel : 0; });
     g.worldSaves.push({ name: 'guilds', save: () => ({ next: this.nextId, list: [...this.guilds.values()] }), load: (d) => this.load(d) });
+    // 내 데이터 (engine/server/game/personal.ts): 내보내기는 내 길드와 내 줄, 삭제는 명단에서 뺀다 (길드장이면 가장 많이 기부한 사람이 잇고, 혼자였으면 길드가 사라진다. 길드의 경험치는 길드의 것이라 남는다)
+    personalData(g).push({
+      name: 'guild',
+      get: (pid) => { const rec = this.of.get(pid); const me = rec?.members.find((m) => m.pid === pid); return rec && me ? { guild: rec.name, leader: rec.leader === pid, gave: me.gave, lv: me.lv, cls: me.cls } : undefined; },
+      erase: (pid) => { const rec = this.of.get(pid); if (rec) { this.remove(rec, pid); g.saveDirty = true; } },
+    });
   }
 
   private load(data: unknown): void {
