@@ -407,6 +407,7 @@ export const koBase = (n: ContentNames) => {
       chatFold: '접기',
       // ---- 화면 쌓기·수집형 홈·단계 정보 창·편성 확인·결과 창 (묶음 A·B: hud/screens.ts, homekit.ts, stagepage.ts) ----
       scrBack: '뒤로', scrHome: '홈',
+      hkEvent: '이벤트', hkSeason: '시즌', hkSoon: '곧 시작',
       stEnemies: '적', stRec: '권장 전투력', stMine: '내 편성', stStars: '별 조건', stFirst: '처음 깬 보상', stRepeat: '반복 보상',
       stCheck: '편성 확인', stGo: '출발', stBoss: '우두머리', stSweepNeedStars: '별을 모두 따면 소탕할 수 있습니다',
       starClear: '깸', starAlive: '아무도 쓰러지지 않음',
@@ -992,6 +993,7 @@ export const koBase = (n: ContentNames) => {
       liveSpan: (from: number, to: number) => `${whenText(from, 'ko-KR')} ~ ${whenText(to, 'ko-KR')}`,
       /** 끝까지 남은 시간 */
       liveLeft: (ms: number) => `${spanMs(Math.max(0, ms), 'ko')} 남음`,
+      liveStarts: (ms: number) => `${spanMs(Math.max(0, ms), 'ko')} 뒤 시작`,
       /** 상품의 값 (ev면 이벤트 재화) */
       goodsPrice: (n: number, cur: string, ev: boolean) => `${num(n)} ${ev ? '이벤트 ' : ''}${curName(cur)}`,
       /** 사람마다의 한정: 이번 기간에 산 수 / 한도 */

@@ -1238,6 +1238,39 @@ button:disabled { cursor: not-allowed; }
 #chat.fold:has(#log > .echo:last-child) #log { display: none; }
 #chat.fold:has(#log > .echo:last-child) #chatBtn { display: block !important; padding: 4px 10px; }
 #zones #chat.fold:has(#log > .echo:last-child) { width: auto; padding: 0; background: none; border: 0; }
+/* ---------- 홈의 이벤트 배너 (hud/homekit.ts의 events): 코드로 그린 카드, 넘김·점. 아래에 작은 바로 가기 줄 ---------- */
+.homekit.hk-hasev { grid-template-columns: minmax(136px, 42%) minmax(0, 1fr); }
+.hk-events { display: flex; flex-direction: column; gap: 6px; }
+.hk-events[hidden] { display: none; }
+.hk-evcard { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 2px; text-align: left; overflow: hidden;
+  min-height: 150px; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); border: 1px solid var(--c-line); color: var(--c-white);
+  background: linear-gradient(160deg, var(--ev-from), var(--ev-to)); box-shadow: var(--shadow-1); touch-action: pan-y; font-weight: 400; }
+.hk-evcard.hk-evin { animation: hkEvIn var(--dur-slow) var(--ease-out); }
+@keyframes hkEvIn { from { opacity: 0; translate: 16px 0; } to { opacity: 1; translate: 0 0; } }
+.hk-evart { position: absolute; right: -6px; top: -10px; font-size: 76px; line-height: 1; opacity: .5; pointer-events: none; text-shadow: 0 4px 18px var(--c-sunk-2); }
+.hk-evtag { position: absolute; left: var(--sp-2); top: var(--sp-2); padding: 1px 8px; border-radius: var(--r-pill); background: var(--c-sunk-2); font-size: var(--fs-xs); font-weight: 700; color: var(--c-cur-gold); }
+.hk-evtitle { position: relative; font-size: var(--fs-lg); font-weight: 800; line-height: 1.2; text-shadow: 0 1px 4px var(--c-sunk-3); }
+.hk-evleft { position: relative; font-size: var(--fs-xs); opacity: .95; text-shadow: 0 1px 3px var(--c-sunk-3); }
+.hk-evdots { display: flex; justify-content: center; gap: 2px; }
+.hk-evdots[hidden] { display: none; }
+.hk-evdot { position: relative; width: 22px; height: 18px; min-width: 0 !important; min-height: 0 !important; padding: 0; background: none; border: 0; }
+.hk-evdot::after { content: ''; position: absolute; left: 7px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--c-text-3); }
+.hk-evdot.on::after { background: var(--c-accent); width: 14px; left: 4px; border-radius: var(--r-pill); }
+.hk-evdot::before { content: ''; position: absolute; inset: -13px -2px; }
+/* 작은 바로 가기 줄 (우편·확률·설정): 아이콘과 짧은 글, 두 칸씩 */
+.hk-banners { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.hk-banner { flex-direction: row; align-items: center; gap: 6px; min-height: var(--tap); padding: 4px 8px; border-radius: var(--r-md); font-size: var(--fs-xs); overflow: hidden; }
+.hk-banner b { font-size: var(--fs-xs); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hk-qicon { font-style: normal; flex: none; width: 20px; text-align: center; font-size: var(--fs-lg); }
+@media (orientation: landscape) {
+  .homekit.hk-hasev { grid-template-columns: minmax(160px, 220px) minmax(0, 1fr) minmax(220px, 34%); }
+  .hk-evcard { min-height: 130px; }
+}
+@media (orientation: landscape) and (max-height: 480px) {
+  .hk-evcard { min-height: 112px; }
+  .hk-evart { font-size: 60px; }
+  .hk-banner { min-height: var(--tap); }
+}
 @media (pointer: coarse) {
   /* 메뉴 탭: 글이 짧은 탭('장비')도 44px 너비 */
   #menuTabs > button { padding-left: 9px; padding-right: 9px; }

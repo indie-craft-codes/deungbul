@@ -8,7 +8,7 @@
 import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSideMe } from '@engine/shared/defs';
 import {
   $, addSetting, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
-  onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, S, send, setModeHome, stageRows, switchMode, tintRarity, useStageScreens, type HomeKit,
+  onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, S, send, setModeHome, stageRows, switchMode, tintRarity, useStageScreens, type HomeKit,
 } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { heroName, rarityName } from '@engine/client/i18n/ko';
@@ -24,6 +24,11 @@ const fighting = (): boolean => { const r = myStage()?.run; return !!r && r.stat
 /** 다음에 도전할 단계 (열린 것 가운데 아직 깨지 않은 첫째, 다 깼으면 마지막) */
 const nextRow = () => { const rows = stageRows(myStage()); return rows.find((r) => r.open && !r.cleared) ?? rows[rows.length - 1]; };
 let home: HomeKit;
+/** 이벤트 배너의 그림 (그림 파일 없이: 색 두 개(echopact.css의 토큰)와 큰 글자) */
+const EVENT_ART: Record<string, { from: string; to: string; glyph: string }> = {
+  echofest: { from: 'var(--ep-fest-a)', to: 'var(--ep-fest-b)', glyph: '♪' },
+  season: { from: 'var(--ep-season-a)', to: 'var(--ep-season-b)', glyph: '✦' },
+};
 
 /** 화면 쌓기를 보고 지금 화면을 정한다 */
 function syncView(ids: readonly string[]): void {
@@ -88,11 +93,23 @@ function initHome(): void {
       { id: 'daily', label: () => t('tabDaily'), onClick: () => openMenu('daily') },
       { id: 'vale', label: () => uiText.get('modeVale'), onClick: () => switchMode(MODE.vale) },
     ],
+    // 왼쪽 열의 이벤트 배너: 울림 축제(열렸거나 7일 안에 열림)와 메아리의 계절. 누르면 그 탭으로
+    events: () => liveBanners().map((b) => {
+      const now = Date.now(), loc = L(), art = EVENT_ART[b.kind === 'season' ? 'season' : b.id] ?? EVENT_ART.season;
+      return {
+        id: b.id, title: b.name, art,
+        tag: !b.open ? t('hkSoon') : b.kind === 'season' ? t('hkSeason') : t('hkEvent'),
+        left: b.open ? loc.fmt.liveLeft(b.to - now) : loc.fmt.liveStarts(b.from - now),
+        dot: b.kind === 'season' ? 'menu.season' : b.open ? 'menu.event' : undefined,
+        onClick: () => openMenu(b.kind === 'season' ? 'season' : 'event'),
+      };
+    }),
+    // 배너 아래 작은 바로 가기 (우편·확률·설정)
     banners: () => [
-      { id: 'mail', text: t('tabMail'), dot: 'menu.mail', onClick: () => openMenu('mail') },
-      { id: 'event', text: t('tabEvent'), dot: 'menu.event', onClick: () => openMenu('event') },
-      { id: 'odds', text: t('tabOdds'), onClick: () => openMenu('odds') },
-      { id: 'settings', text: t('tabSettings'), onClick: () => openMenu('settings') },
+      { id: 'mail', icon: '✉', text: t('tabMail'), dot: 'menu.mail', onClick: () => openMenu('mail') },
+      { id: 'odds', icon: '%', text: t('tabOdds'), onClick: () => openMenu('odds') },
+      { id: 'settings', icon: '⚙', text: t('tabSettings'), onClick: () => openMenu('settings') },
+      { id: 'achieve', icon: '★', text: t('tabAchieve'), onClick: () => openMenu('achieve') },
     ],
   });
   // 홈의 위: 보고 있지 않은 울림골의 작은 표시(누르면 그리로)
@@ -262,7 +279,7 @@ export function initTower(): void {
   $('pactSideStop').addEventListener('click', () => send({ t: 'stage', a: 'leave' }));
   onModeChange((def) => { if (def.id !== MODE.tower) { closeStageResult(); clearScreens(); } draw(); drawSide(); });
   onModeSide((s) => drawSide(s));
-  onMsg('me', (m) => { if (m.k === 'stage' || m.k === 'squad' || m.k === 'heroes' || m.k === 'chars') { if (view !== 'battle') draw(); else home.draw(); } });
+  onMsg('me', (m) => { if (m.k === 'stage' || m.k === 'squad' || m.k === 'heroes' || m.k === 'chars' || m.k === 'event' || m.k === 'season') { if (view !== 'battle') draw(); else home.draw(); } });
   onMsg('sys', (m) => onStageNews(m.k, m.a ?? []));
   onMsg('stat', () => home.draw());
   onSlow(() => {

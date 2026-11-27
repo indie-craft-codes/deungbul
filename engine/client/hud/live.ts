@@ -1,7 +1,7 @@
 // 라이브 콘텐츠의 화면 (묶음 6): 메뉴의 '상점'(GOODS)·'이벤트'(event)·'시즌'(season)·'업적'(achieve)·'도감'(codex) 탭, 우편 탭 머리의 쿠폰 칸(coupon),
 // 길 상인 창의 특별 상품(GOODS의 shop 'npc'), 이름표의 칭호. 서버의 짝은 engine/server/game/systems/goods.ts·event.ts·season.ts·achieve.ts·codex.ts·coupon.ts.
 // 사람마다의 상태는 개인 상태(me: goods, event, season, achieve, codex)로 온다. 표(이름·보상·값)는 내용에서 읽는다 (서버와 같은 내용).
-import { SEASON, codexDef, eventDef, goodsDef, goodsIds, goodsOpen, achieveDef, achieveIds, isMonsterId, isItemId, type AchieveMe, type CodexMe, type EventMe, type GoodsDef, type GoodsMe, type Reward, type SeasonMe } from '../../shared/defs';
+import { SEASON, codexDef, eventDef, eventIds, goodsDef, goodsIds, goodsOpen, achieveDef, achieveIds, isMonsterId, isItemId, type AchieveMe, type CodexMe, type EventMe, type GoodsDef, type GoodsMe, type Reward, type SeasonMe } from '../../shared/defs';
 import { onMsg } from '../bus';
 import { setTitle } from '../entities';
 import { L, itemName, t } from '../i18n';
@@ -145,6 +145,21 @@ function drawNpcGoods(list: HTMLElement): void {
   if (!ids.length) return;
   list.append(el('baghead', t('goodsNpc')));
   for (const id of ids) list.append(goodsRow(id, goodsDef(id)!));
+}
+
+/** 홈의 이벤트 배너에 보일 것 (수집형 홈 키트의 events): 열린 기간 이벤트, 7일 안에 열릴 이벤트, 지금 시즌. 차례: 열린 이벤트 → 시즌 → 곧 열릴 이벤트 */
+export interface LiveBanner { id: string; kind: 'event' | 'season'; name: string; from: number; to: number; open: boolean; /** 받을 보상이 있다 (시즌) */ ready?: boolean }
+export function liveBanners(now = Date.now()): LiveBanner[] {
+  const out: LiveBanner[] = [];
+  const open = new Set(events.map((e) => e.id));
+  for (const e of events) out.push({ id: e.id, kind: 'event', name: evName(e.id), from: e.from, to: e.to, open: true });
+  if (SEASON && season) out.push({ id: 'season', kind: 'season', name: L().fmt.seasonHead(seasonName(), season.n), from: typeof SEASON.period === 'object' ? season.to - SEASON.period.days * 86_400_000 : 0, to: season.to, open: true, ready: SEASON.track.some((x, i) => season!.pts >= x.pts && !season!.got.includes(i)) });
+  for (const id of eventIds()) {
+    const d = eventDef(id);
+    if (!d || open.has(id) || d.from <= now || d.from - now > 7 * 86_400_000) continue;
+    out.push({ id, kind: 'event', name: evName(id), from: d.from, to: d.to, open: false });
+  }
+  return out;
 }
 
 export function initGoods(): void {

@@ -351,6 +351,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       chatFold: 'Hide',
       // ---- Screen stack, collection home, stage info, squad check, result (bundles A·B) ----
       scrBack: 'Back', scrHome: 'Home',
+      hkEvent: 'Event', hkSeason: 'Season', hkSoon: 'Coming soon',
       stEnemies: 'Enemies', stRec: 'Recommended power', stMine: 'Your squad', stStars: 'Star goals', stFirst: 'First clear', stRepeat: 'Each clear',
       stCheck: 'Check squad', stGo: 'Start', stBoss: 'Boss', stSweepNeedStars: 'Earn every star to unlock sweeps',
       starClear: 'Clear', starAlive: 'Nobody falls',
@@ -904,6 +905,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       // Live content (bundle 6)
       liveSpan: (from: number, to: number) => `${whenText(from, 'en-US')} – ${whenText(to, 'en-US')}`,
       liveLeft: (ms: number) => `${spanMs(Math.max(0, ms), 'en')} left`,
+      liveStarts: (ms: number) => `Starts in ${spanMs(Math.max(0, ms), 'en')}`,
       goodsPrice: (n: number, cur: string, ev: boolean) => `${num(n)} ${ev ? 'event ' : ''}${curName(cur)}`,
       goodsLimit: (have: number, n: number, per: string) => `${per === 'day' ? 'Daily' : per === 'week' ? 'Weekly' : per === 'month' ? 'Monthly' : 'Per player'} ${have}/${n}`,
       goodsStock: (n: number) => `${num(n)} left`,

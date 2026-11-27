@@ -27,6 +27,11 @@
   --ep-violet-800a: rgba(42, 33, 64, .9);
   --ep-violet-line: rgba(184, 160, 255, .55);
   --ep-amber-glow: rgba(255, 210, 122, .35);
+  /* 홈의 이벤트 배너 (울림 축제 · 메아리의 계절) */
+  --ep-fest-a: #7a3fb8;
+  --ep-fest-b: #e0803a;
+  --ep-season-a: #2f5a9a;
+  --ep-season-b: #6a3f9a;
   --ep-page-bg: radial-gradient(ellipse at 50% 30%, rgba(90, 63, 138, .55), rgba(18, 14, 30, .97) 70%), var(--ep-night);
 
   /* 울림골(그리고 모드가 정해지기 전): 맑은 골짜기의 아침 */

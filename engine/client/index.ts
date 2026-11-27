@@ -28,6 +28,7 @@ export { openClasses } from './hud/classes';
 export { myTeam, myTeamScore, onTeamLook, setTeamBoardExtra, teamBoard } from './hud/teams';
 export { myHeroes, mySquad, onGachaResult, setHeroModel, type HeroModelInfo } from './hud/collect';
 export { rarityCss, rarityHex, tintRarity } from './hud/rarity';
+export { liveBanners, type LiveBanner } from './hud/live';
 export { onIdleBack } from './hud/idleback';
 export { myKeys } from './hud/dungeon';
 export { myHeroGear } from './hud/herogrow';
