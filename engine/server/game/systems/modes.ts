@@ -15,6 +15,7 @@ import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
+import { baseWhy } from './wallet';
 import { isField } from '../layers';
 
 const THINK_S = 0.3;
@@ -75,6 +76,7 @@ export class Modes {
     if (g.has('economy')) g.wallet.seen.push((p, cur, d, why) => {
       if (d <= 0) return;
       const s = this.stands.get(p.id);
+      why = baseWhy(why); // 재화의 종류를 세는 게임은 원인에 ':종류'가 붙는다
       if (s && why === ECON_HUNT.away) s.got[cur] += d;
       const l = this.logs.get(p.id);
       if (l && (why === 'stage' || why === ECON_HUNT.inst) && g.stages.runOf(p)?.bg) l.got[cur] += d;

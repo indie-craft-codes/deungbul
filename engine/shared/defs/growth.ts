@@ -234,7 +234,9 @@ export const buildStatDef = (k: BuildStat): { mod: StatMod; per: number } => (BU
  * 거래소: marketSold 팔린 값, marketExpired 기간이 지나 돌아온 물건, marketBought 산 물건(가방에 자리가 없었다), marketBack 내린 물건(가방에 자리가 없었다)
  * 운영: maint 점검 보상 (관리자 명령 maint end의 일괄 우편)
  */
-export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack' | 'maint' | /** 문의에 답이 왔다 [문의 번호] (support 모듈) */ 'support' | /** 운영 보상 (관리자 명령 mail: 사고 뒤 보상 같은 것) */ 'comp';
+export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack' | 'maint' | /** 문의에 답이 왔다 [문의 번호] (support 모듈) */ 'support' | /** 운영 보상 (관리자 명령 mail: 사고 뒤 보상 같은 것) */ 'comp'
+  // 라이브 콘텐츠 (묶음 6): 이벤트 임무 [이벤트, 임무], 이벤트 재화 환전 [이벤트, 바꾼 양], 시즌의 놓친 보상 [시즌 열쇠], 업적 [업적], 도감 [묶음, 모은 수], 쿠폰 [코드], 복귀 [쉰 날 수]
+  | 'event' | 'eventSwap' | 'season' | 'achieve' | 'codex' | 'coupon' | 'comeback';
 /** 보상. gear와 items는 우편에 붙는 물건이다: 낱개 장비(uid는 받을 때 새로 붙는다)와 아이템 id별 개수 */
 export interface Reward { gold?: number; exp?: number; sparks?: number; gear?: Gear[]; items?: Record<string, number> }
 export interface Mail {
@@ -243,6 +245,10 @@ export interface Mail {
   /** 제목에 넣을 값 (방치: 분, 출석: 며칠째, 일일: 임무 id, 던전: 던전 id, 거래소: 물건(아이템 id나 장비 칸), 수량, 값, 수수료) */
   a: (string | number)[];
   r: Reward;
+  /** 사라지는 때 (UTC ms, 없으면 사라지지 않는다: MAIL_RULES나 관리자의 일괄 발송 --expire. 묶음 6) */
+  x?: number;
+  /** 만료 전 알림을 했다 */
+  w?: 1;
 }
 const TRADE_MAILS: readonly string[] = ['marketSold', 'marketExpired', 'marketBought', 'marketBack'];
 /** 우편에 물건(장비, 아이템)이 붙어 있는가 */

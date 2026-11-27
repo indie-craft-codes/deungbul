@@ -3,9 +3,10 @@ import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow,
 import type { DrawQuery, OddsStore, OddsVersionRow } from './types';
 import type { DrawRow, OddsHistoryRow, OddsPlanRow } from '../../shared/defs/odds';
 import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
+import type { CouponRow, CouponStore } from './types';
 
 /** 시험용 저장소: 프로세스가 끝나면 사라진다. */
-export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OddsStore, OpsStore {
+export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OddsStore, OpsStore, CouponStore {
   private world: WorldSave | null = null;
   private players = new Map<string, PlayerSave>();
   loadWorld(): WorldSave | null { return this.world && structuredClone(this.world); }
@@ -146,4 +147,12 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore, Socia
   }
   pruneDraws(before: number): number { const n = this.drawRows.length; this.drawRows = this.drawRows.filter((r) => r.at >= before); return n - this.drawRows.length; }
   forgetDraws(owner: string): number { let n = 0; for (const r of this.drawRows) if (r.owner === owner || r.char === owner) { r.owner = '-'; r.char = '-'; n++; } return n; }
+  // ---- 라이브 콘텐츠: 쿠폰 ----
+  private couponRows = new Map<string, CouponRow>();
+  private couponUse = new Map<string, Map<string, number>>();
+  coupons(): CouponRow[] { return [...this.couponRows.values()].sort((a, b) => (a.code < b.code ? -1 : 1)).map((r) => ({ ...structuredClone(r), used: this.couponUse.get(r.code)?.size ?? 0 })); }
+  putCoupon(code: string, row: CouponRow | null): void { if (row) this.couponRows.set(code, structuredClone(row)); else this.couponRows.delete(code); }
+  useCoupon(code: string, owner: string, at: number): boolean { const m = this.couponUse.get(code) ?? new Map<string, number>(); if (m.has(owner)) return false; m.set(owner, at); this.couponUse.set(code, m); return true; }
+  couponUsesOf(owner: string): string[] { return [...this.couponUse].filter(([, m]) => m.has(owner)).map(([c]) => c); }
+  forgetCouponUses(owner: string): number { let n = 0; for (const m of this.couponUse.values()) if (m.delete(owner)) n++; return n; }
 }

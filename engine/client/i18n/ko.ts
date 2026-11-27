@@ -4,7 +4,7 @@
 // 틀의 문장이 내용의 이름을 넣어야 할 때(처치 안내의 몬스터 이름, 두 번째 재화의 이름)는 게임이 넘긴 이름표(ContentNames)에서 읽는다. 그래서 koBase는 이름표를 받는 함수다.
 // 이 파일은 게임의 파일을 import하지 않고, 게임의 낱말을 적지 않는다 (games/deungbul/test/split.test.ts가 검사한다).
 import type { BuildStat, ClassId, DailyId, GearSlot, HeroBonus, ItemDef, ItemId, MonsterId, Stat, StatMod } from '../../shared/defs';
-import { BANNER_TABLE, BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, heroDef, heroGearDef, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
+import { BANNER_TABLE, codexDef, BUILD, BUILD_STAT_IDS, CHAPTERS, pctText, ENHANCE, GUILD, heroDef, heroGearDef, HOME_KEY, ITEMS, MARKET, PARTY, SALVAGE, STAT_IDS, TEAMS, buildStatDef, isStat, rarityDef, statMod } from '../../shared/defs';
 import { AWAY } from '../../shared/auto';
 import type { MsgMap } from '../../shared/ext';
 import type { MsgArg, MsgKey } from '../../shared/messages';
@@ -14,6 +14,7 @@ import { anyModule } from '../../shared/picked';
 import { charName, knownChar, type CharErr } from '../../shared/defs/chardef';
 import type { MorphMods } from '../../shared/defs/morph';
 import { modeDef } from '../../shared/defs/modes';
+import { achName, codexName, evName, goodsName, missionName, seasonName, titleName } from './live';
 
 /** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
 export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
@@ -120,6 +121,8 @@ export const koBase = (n: ContentNames) => {
   const span = (m: MsgArg) => { const v = Number(m); return v < 60 ? `${v}분` : v < 1440 ? `${Math.ceil(v / 60)}시간` : `${Math.ceil(v / 1440)}일`; };
   /** 치르는 재화의 이름 (뽑기·영웅·열쇠): 'gold'면 첫 재화, 그 밖에는 두 번째 재화 */
   const curName = (c: MsgArg) => (c === 'gold' ? G.name : coin?.name ?? '재화');
+  /** 도감의 한 칸의 이름 (묶음의 종류: 영웅, 몬스터, 아이템) */
+  const codexEntry = (gid: MsgArg, id: MsgArg) => { const of = codexDef(String(gid))?.of; return of === 'hero' ? heroName(id) : of === 'monster' ? monsters[id as MonsterId] ?? String(id) : of === 'item' ? itemName(id) : String(id); };
   return {
     code: 'ko',
     label: '한국어',
@@ -583,6 +586,35 @@ export const koBase = (n: ContentNames) => {
       friendsEmpty: '아직 친구가 없습니다. 사람을 누르거나 이름을 적어 요청해 보세요.',
       // 확률과 재화의 투명성 (odds 모듈의 확률표 창·내 기록, 귀한 재화의 확인 단계)
       tabOdds: '확률',
+      // 라이브 콘텐츠 (묶음 6: hud/live.ts)
+      tabGoods: '상점',
+      tabEvent: '이벤트',
+      tabSeason: '시즌',
+      tabAchieve: '업적',
+      tabCodex: '도감',
+      goodsNone: '지금 파는 상품이 없습니다.',
+      goodsBuy: '사기',
+      goodsSoldOut: '품절',
+      goodsAllBought: '다 샀습니다',
+      goodsNpc: '상인의 특별 상품',
+      eventNone: '지금 열린 이벤트가 없습니다.',
+      eventMissions: '이벤트 임무',
+      eventShop: '이벤트 상점',
+      eventGone: '끝나면 남은 이벤트 재화는 사라집니다.',
+      seasonNone: '지금은 시즌이 없습니다.',
+      seasonTrack: '보상 트랙 (무료)',
+      seasonClaim: '받기',
+      seasonClaimAll: '받을 수 있는 것 모두 받기',
+      seasonNote: '점수는 사냥·임무 같은 활동으로 쌓입니다. 시즌이 끝날 때 받지 않은 보상은 우편으로 옵니다.',
+      achieveTitles: '칭호',
+      titleNone: '아직 단 칭호가 없습니다.',
+      titleUse: '달기',
+      titleOff: '떼기',
+      codexNote: '처음 얻은 것이 도감에 오릅니다. 모은 수에 따라 보상이 우편으로 옵니다.',
+      codexUnknown: '???',
+      couponHead: '쿠폰',
+      couponPh: '쿠폰 코드',
+      couponUse: '쓰기',
       oddsTables: '확률표',
       oddsMine: '내 추첨 기록',
       oddsMineNone: '아직 추첨 기록이 없습니다.',
@@ -712,7 +744,7 @@ export const koBase = (n: ContentNames) => {
       power: (n: number) => `전투력 ${num(n)}`,
       streak: (n: number) => `출석 ${n}일째`,
       reward: (gold: number, exp: number, second: number) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'maint' ? '점검 보상' : k === 'support' ? `문의 #${a[0]}에 답이 왔습니다 (설정 → 문의)` : k === 'comp' ? '운영 보상' : String(k)),
+      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'maint' ? '점검 보상' : k === 'support' ? `문의 #${a[0]}에 답이 왔습니다 (설정 → 문의)` : k === 'comp' ? '운영 보상' : k === 'event' ? `이벤트 임무: ${missionName(a[0], a[1])}` : k === 'eventSwap' ? `이벤트 '${evName(a[0])}'의 남은 재화 ${a[1]}을(를) 바꾼 것` : k === 'season' ? `${seasonName()}: 받지 않은 보상` : k === 'achieve' ? `업적 달성: ${achName(a[0])}` : k === 'codex' ? `도감 ${codexName(a[0])} ${a[1]}개 보상` : k === 'coupon' ? `쿠폰 ${a[0]}` : k === 'comeback' ? `돌아온 것을 환영합니다 (${a[0]}일 만)` : String(k)),
       status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
       itemDamage: (pct: number) => `공격 피해 +${pct}%`,
       itemGuard: (pct: number) => `받는 피해 -${pct}%`,
@@ -888,6 +920,31 @@ export const koBase = (n: ContentNames) => {
       /** 내 추첨 기록의 한 줄: 시각, 종류, 표의 버전 */
       oddsDrawHead: (at: number, kind: string, ver: number) => `${whenText(at, 'ko-KR')} · ${kind === 'gacha' ? '뽑기' : kind === 'enhance' ? '강화' : kind} · 표 v${ver}`,
       oddsVersion: (v: number) => `버전 ${v}`,
+      // 라이브 콘텐츠 (묶음 6)
+      /** 기간: 시작 ~ 끝 (지역 시각) */
+      liveSpan: (from: number, to: number) => `${whenText(from, 'ko-KR')} ~ ${whenText(to, 'ko-KR')}`,
+      /** 끝까지 남은 시간 */
+      liveLeft: (ms: number) => `${spanMs(Math.max(0, ms), 'ko')} 남음`,
+      /** 상품의 값 (ev면 이벤트 재화) */
+      goodsPrice: (n: number, cur: string, ev: boolean) => `${num(n)} ${ev ? '이벤트 ' : ''}${curName(cur)}`,
+      /** 사람마다의 한정: 이번 기간에 산 수 / 한도 */
+      goodsLimit: (have: number, n: number, per: string) => `${per === 'day' ? '하루' : per === 'week' ? '한 주' : per === 'month' ? '한 달' : '한 사람'} ${have}/${n}`,
+      goodsStock: (n: number) => `남은 수량 ${num(n)}`,
+      /** 이벤트 재화의 잔액 */
+      eventHave: (n: number, cur: string) => `이벤트 ${curName(cur)} ${num(n)}`,
+      eventSwap: (rate: number, to: string) => `끝나면 남은 이벤트 재화는 ${rate}배의 ${curName(to)}(으)로 바뀌어 우편으로 옵니다.`,
+      eventEv: (n: number) => `이벤트 재화 +${num(n)}`,
+      seasonHead: (name: string, n: number) => `${name}${n ? ` · 시즌 ${n}` : ''}`,
+      seasonPts: (n: number) => `점수 ${num(n)}`,
+      seasonTier: (i: number, pts: number) => `${i + 1}단계 · ${num(pts)}점`,
+      seasonReset: (r: string) => (r === 'keep' ? '다음 시즌에도 점수가 이어집니다.' : r === 'all' ? '다음 시즌에는 점수가 0부터 시작합니다.' : `다음 시즌에는 점수의 ${r}%가 남습니다.`),
+      achieveTitle: (name: string) => `칭호 「${name}」`,
+      /** 이름표에 붙는 칭호 */
+      titleTag: (name: string) => `「${name}」`,
+      codexCount: (have: number, total: number) => `${have} / ${total}`,
+      codexAt: (n: number) => `${n}개 모으면`,
+      /** 우편이 사라질 때까지 */
+      mailLeft: (ms: number) => `${spanMs(Math.max(0, ms), 'ko')} 뒤 사라짐`,
       // 운영 도구와 고객지원
       /** 제재가 끝나는 때 (UTC ms, 0이면 영구) */
       sanctionUntil: (until: number) => (until === 0 ? '영구' : `${whenText(until, 'ko-KR')}까지`),
@@ -1146,6 +1203,22 @@ export const koBase = (n: ContentNames) => {
       autoRetreat: (a) => `체력이 ${a[0]}%라 자동 사냥을 멈추고 물러났습니다.`,
       autoNoPotion: () => '물약이 떨어져 자동 사냥을 멈췄습니다.',
       autoDied: () => '쓰러져서 자동 사냥을 끝냈습니다.',
+      // 라이브 콘텐츠 (묶음 6)
+      mailExpired: (a) => `기한이 지난 우편 ${a[0]}통이 사라졌습니다.`,
+      mailExpSoon: (a) => `우편 ${a[0]}통이 ${a[1]}시간 안에 사라집니다. 메뉴의 우편에서 받아 두세요.`,
+      goodsGot: (a) => `${goodsName(a[0])}을(를) 샀습니다.`,
+      goodsNo: (a) => ['지금은 팔지 않는 상품입니다.', '이 상품은 더 살 수 없습니다 (한도).', '품절입니다.', '재화가 모자랍니다.', '가방에 자리가 없습니다.', '상인 곁에서만 살 수 있습니다.'][Number(a[0])] ?? '살 수 없습니다.',
+      eventStart: (a) => `이벤트 '${evName(a[0])}'이(가) 열렸습니다. 메뉴의 이벤트 탭을 보세요.`,
+      eventMission: (a) => `이벤트 임무 완료: ${missionName(a[0], a[1])}${Number(a[2]) ? ` (이벤트 재화 +${a[2]})` : ''}`,
+      eventEnd: (a) => `이벤트 '${evName(a[0])}'이(가) 끝났습니다.${Number(a[1]) ? (Number(a[2]) ? ` 남은 이벤트 재화 ${a[1]}을(를) ${a[2]}(으)로 바꿔 우편으로 보냈습니다.` : ` 남은 이벤트 재화 ${a[1]}은(는) 사라졌습니다.`) : ''}`,
+      seasonNew: (a) => `새 시즌이 시작했습니다${Number(a[0]) ? ` (시즌 ${a[0]})` : ''}.${Number(a[1]) ? ` 점수 ${a[1]}을(를) 이어 갑니다.` : ''}${Number(a[2]) ? ` 받지 않은 보상 ${a[2]}칸을 우편으로 보냈습니다.` : ''}`,
+      seasonGot: (a) => `시즌 보상 ${Number(a[0]) + 1}단계를 받았습니다.`,
+      achieveGot: (a) => `업적 달성: ${achName(a[0])}${titleName(a[0]) ? ` · 칭호 「${titleName(a[0])}」을(를) 달 수 있습니다` : ''}`,
+      titleSet: (a) => (a[0] ? `칭호 「${titleName(a[0])}」을(를) 달았습니다.` : '칭호를 뗐습니다.'),
+      codexNew: (a) => `도감에 새로 올랐습니다: ${codexName(a[0])} · ${codexEntry(a[0], a[1])}`,
+      couponOk: (a) => `쿠폰 ${a[0]}의 보상을 우편으로 보냈습니다.`,
+      couponNo: (a) => ['없는 쿠폰 코드입니다.', '이미 쓴 쿠폰입니다.', '쓸 수 있는 기간이 아닙니다.', '모두 쓰인 쿠폰입니다.', `틀린 코드를 여러 번 넣어 잠시 막혔습니다 (${a[1]}분).`, '저장되지 않는 손님은 쿠폰을 쓸 수 없습니다.', '코드는 영문과 숫자로 되어 있습니다.'][Number(a[0])] ?? '쿠폰을 쓸 수 없습니다.',
+      comeback: (a) => `${a[0]}일 만에 돌아오셨네요! 복귀 보상을 우편으로 보냈습니다.`,
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,
@@ -1385,4 +1458,16 @@ export const koAdminPage = {
   file: '백업 파일',
   cmdPh: '명령과 인자: who, flag market off, notice add --ko 점검 안내 …',
   cmdNote: 'CLI(npm run admin)의 명령과 같습니다. 역할에 따라 할 수 없는 명령은 거절됩니다.',
+  // 라이브 콘텐츠 (묶음 6: '라이브' 탭)
+  tabLive: '라이브',
+  liveEvents: '기간 이벤트',
+  liveGoods: '상품',
+  liveSeason: '시즌',
+  liveCoupons: '쿠폰',
+  liveMail: '일괄 우편',
+  liveNote: '이벤트의 기간은 원격 설정(명령 탭의 set EVENTS.<id>.to)으로 바꿉니다. 쿠폰은 사람마다 한 번, 보상은 우편으로 갑니다.',
+  stOpen: '열림', stSoon: '예정', stEnded: '끝',
+  from: '시작', to: '끝', shop: '판매처', price: '값', left: '남은 수', uses: '쓰임', code: '코드', reward: '보상', missions: '임무',
+  couponPh: '코드 (영문·숫자)', couponAdd: '만들기', couponDel: '지우기',
+  mailPh: '보낼 것 · --gold 100 --item 아이템id:2', mailLv: '레벨 범위 · 10-30', mailExpire: '며칠 뒤 사라짐', mailSend: '모두에게 보내기',
 };

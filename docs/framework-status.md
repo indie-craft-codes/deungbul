@@ -12,7 +12,7 @@
 
 ## 요약
 
-**틀**(`engine/`)은 장르와 무관한 **핵심**과 **선택 모듈 29개**다. 게임은 내용의 `MODULES` 한 곳에서 고르고(`engine/shared/modules.ts`의 `MODULE_TABLE`이 목록과 의존, 시작할 때 `checkModules`가 빠진 의존을 오류로), 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다. 끈 모듈의 저장 칸은 읽은 그대로 두었다가 다시 적는다(`MODULE_SAVES`). 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 `MAP`·`MODULES`와 모듈마다의 선택 계약, 이름 89개)뿐이고 `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/client/platform`, `@engine/testing`)로만 읽는다.
+**틀**(`engine/`)은 장르와 무관한 **핵심**과 **선택 모듈 35개**다. 게임은 내용의 `MODULES` 한 곳에서 고르고(`engine/shared/modules.ts`의 `MODULE_TABLE`이 목록과 의존, 시작할 때 `checkModules`가 빠진 의존을 오류로), 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다. 끈 모듈의 저장 칸은 읽은 그대로 두었다가 다시 적는다(`MODULE_SAVES`). 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 `MAP`·`MODULES`와 모듈마다의 선택 계약, 이름 89개)뿐이고 `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/client/platform`, `@engine/testing`)로만 읽는다.
 
 | 모듈 | 한 줄 | 의존 | 묶음 | 등불지기 | 예제 | 메아리 | 들어온 절 |
 |---|---|---|---|---|---|---|---|
@@ -49,6 +49,11 @@
 
 'RPG' 열여섯이 `RPG_MODULES`(등불지기는 `MODULES = RPG_MODULES`), '수집형'의 앞 넷이 `COLLECT_MODULES`다. 수집형·`teams`·`rooms`·`chars`·`morph`·`chat`·`friends`·`odds`는 `RPG_MODULES`에 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 | `modes` | 게임 안의 모드: 한 캐릭터로 두 게임(들판·단계)을 오가기, 보이지 않는 쪽 이어 가기(대역·뒤에서 잇는 단계) | stages | 그 밖 | | | ○ | [making-a-game.md](making-a-game.md) 21절 |
+| `event` | 기간 이벤트: 이벤트 임무·이벤트 재화(종류 event)·이벤트 상점, 끝나면 소멸·환전 | daily, mail, economy | 라이브 | | | ○ | 라이브 콘텐츠 (22절) |
+| `season` | 시즌과 무료 보상 트랙, 초기화 방식, 놓친 보상 | daily, mail, economy | 라이브 | | | ○ | 〃 |
+| `achieve` | 업적과 칭호 | daily, mail | 라이브 | | | ○ | 〃 |
+| `codex` | 도감(처음 얻은 것, 모은 수의 보상) | mail | 라이브 | | | ○ | 〃 |
+| `coupon` | 쿠폰 코드(사람당 1회, 남용 막기)와 복귀 보상 | mail | 라이브 | | | ○ | 〃 |
 
 'RPG' 열여섯이 `RPG_MODULES`(등불지기는 `MODULES = RPG_MODULES`), '수집형'의 앞 넷이 `COLLECT_MODULES`다. 수집형·`teams`·`rooms`·`chars`·`morph`·`chat`·`friends`·`modes`는 `RPG_MODULES`에 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
@@ -923,3 +928,30 @@ PC(1280×800)와 폰(390×844, 터치, DPR 2), 한국어·영어 넷씩, 두 게
 사용자가 정할 것: 등불지기에 공개 페이지·추첨 기록을 켤지(강화 재료를 유상으로 팔 때는 공개 의무), 추첨 기록의 보관 기간(틀의 기본 5년), 내 데이터 삭제 때 추첨 기록을 남길지(지금은 사람 칸만 지운다), 공개 페이지의 운영자 문구(상호·문의처·등급), 유상 재화를 둘지(결제 결정과 함께).
 
 합칠 때: SQLite 스키마는 목록 끝에 한 단계를 덧붙였다(다른 가지가 단계를 더했으면 그 뒤로 옮긴다. 시험은 번호를 쓰지 않는다). 공용 파일에는 끝에 덧붙였다: `MODULE_TABLE`(`odds`)·`MODULE_SAVES`(`purse`)·`RPG_MODULES`의 거르기, `scripts/admin.mjs`의 도움말, i18n ko/en(ui·fmt의 끝, 파일 끝의 `koOddsPage`·`enOddsPage`), `engine/client/modules.ts`의 목록 끝, `net/server.ts`의 HTTP 처리 고리와 관리자 `extra`, 계약·기본값·content·defs의 끝.
+
+## 라이브 콘텐츠 (2026-11-27, 가지 `feat/live6`)
+
+[genre-features.md](genre-features.md) 5.6절의 묶음 6. 쓰는 법은 [making-a-game.md](making-a-game.md) 22절, 예제의 수치는 [proof-echopact.md](proof-echopact.md) '라이브 콘텐츠'.
+
+| 무엇 | 틀의 칸 | 고르지 않으면 |
+|---|---|---|
+| 모양과 검사 | `engine/shared/defs/livecontent.ts`: `GoodsDef`·`EventDef`·`SeasonRules`·`AchieveDef`·`CodexDef`·`CouponRules`·`ComebackRules`·`MailRules`, 화면 몫 `GoodsMe`·`EventMe`·`SeasonMe`·`AchieveMe`·`CodexMe`, `seasonAt`·`seasonKeep`·`goodsOpen`·`couponNorm`·`couponShape`, 켜질 때의 `checkLiveContent`. 내용 계약 `LiveContent`(이름 여덟, 기본값은 모두 빈 것) | 적지 않으면 아무것도 없다 |
+| 사건의 셈 | 틀의 사건 `counted(p, 종류, n)`: `g.daily.add`가 일일 임무를 센 뒤 알린다 (`kill`·`enhance`·`buy`와 게임의 종류) | 듣는 것이 없다 |
+| 상품 | `systems/goods.ts`(`g.goods`: `buy`·`count`·`left`·`me`, `giveNow`·`mergeRewards`), 명령 `goods`, 저장 `ext.goods`·월드 `goods`(`MODULE_SAVES`의 items), 개인 상태 `goods`. 지갑 `kindHave`·`takeKind`·`drainKind` | `GOODS`가 비면 시스템이 없다 |
+| 모듈 다섯 | `MODULE_TABLE` 끝에 `event`(daily·mail·economy), `season`(〃), `achieve`(daily·mail), `codex`(mail), `coupon`(mail). `LIVE_MODULES`, `RPG_MODULES`에서 뺀다. 서버 `systems/event.ts`·`season.ts`·`achieve.ts`·`codex.ts`·`coupon.ts`(`g.event`·`g.season`·`g.achieve`·`g.codex`·`g.coupon`), 명령 `season`·`title`·`coupon`, 메시지 `title`, 들어올 때의 정보 `ti`, 엔티티의 칸 `title`(achieve) | 없다 |
+| 우편 만료 | `MAIL_RULES`, `Mail.x`·`w`, `mailDays`, `g.mail.send(…, x?)`·`sendTo(…, x?)`·`expire`, 안내문 `mailExpired`·`mailExpSoon`. 운영 도구 `mail --all --lv --expire`, 서버의 `mailAll(…, { lv, x })` | 만료가 없다 |
+| 쿠폰의 저장 | SQLite 스키마의 끝 단계: `coupons`(코드 → 정의), `coupon_uses`(코드와 사람의 짝, 색인 owner). `CouponStore`·`hasCoupons`(메모리 저장소도) | 표는 생기지만 비어 있다 |
+| 화면 | `engine/client/hud/live.ts`(메뉴 탭 다섯, 우편 탭의 쿠폰 칸 `mailTop`, 상인 창의 `shopExtras`, 이름표의 칭호 `setTitle`), 문장 `engine/client/i18n/live.ts`, ko·en ui 28·fmt 17·msg 15, 우편 종류 일곱(`event`·`eventSwap`·`season`·`achieve`·`codex`·`coupon`·`comeback`), 스타일 끝 | 그 모듈의 탭이 없다 |
+| 관리자 | `net/livecmds.ts`: `events`·`season`·`coupon [list|show|add|del]`, 역할은 `roleFor`(events·season view, coupon의 만들기·지우기 full), `scripts/admin.mjs` 도움말, 웹 관리 화면의 '라이브' 탭(`admin-page.ts`의 탭 끝, 문장 `koAdminPage`·`enAdminPage` 끝) | 명령은 '쓰지 않습니다'를 답한다 |
+
+- **고친 것**: 재화의 종류를 세는 게임에서 모드의 '다른 쪽'(대역의 사냥, 뒤에서 잇는 단계)의 셈이 원인의 `:종류` 꼬리 때문에 0이 되던 것(`systems/modes.ts`: `baseWhy`). 메아리 계약이 울림 조각의 종류를 켜며 드러났다.
+- **예제**: 메아리 계약이 모듈 다섯과 칸을 켰다(모듈 스물다섯). 울림 조각의 종류(무상·이벤트), 울림 축제 2주, 상품 다섯, 시즌 2주·트랙 다섯, 업적 넷(칭호 셋), 도감 둘, 복귀 보상, 우편 만료. **등불지기는 켜지 않았다.**
+- **황금 실행**(`$TEMP/dg-work/live6-tools/golden.mts`, 바탕 `fdd2205`과 가지): 등불지기 sim 7,489,205바이트 `ba83af30d07f` 바이트까지 같다.
+- **시험**: 검사 2603 → __TESTS__개(+__PLUS__): `echopact/live` 30(가상 시계로 2주 축제와 시즌 하나를 도는 통합 시험 하나, 그 길의 상품·업적·도감·우편 만료·저장·복귀, 쿠폰 표 한 묶음, 관리자·역할·조건부 우편, SQLite의 쿠폰 표). 고친 시험: 모듈 표(`fx/modules`: 라이브 콘텐츠 셋은 일일 임무와 함께 뺀다, 상품의 저장 칸), 엔티티의 칸(`fx/parts`: `title`), 화면 모듈의 차례(`collect/client`), 등불지기 도감의 불러오는 파일(`i18n/live.ts`), 언어 견본(새 키만).
+- **실제 브라우저**: 헤드리스 크롬(GPU), 임시 서버 3015(메아리 계약, 임시 DB, 축제 기간을 원격 설정으로 지금에 맞춤), PC 1280×800·폰 390×844 × 한국어·영어: 이벤트 탭(기간·남은 때·축제 조각·환전 안내·임무·축제 상점에서 사기), 시즌 탭(받기·놓친 보상 안내), 업적 탭(칭호 달기 → 이름표 「사냥꾼」), 도감 탭(??? 칸), 우편 탭의 쿠폰 칸(fest-2026 → 받음, 줄마다 '…뒤 사라짐'), 상점 탭, 웹 관리 화면의 '라이브' 탭. 콘솔 오류 없음. 스크린샷 `$TEMP/dg-work/live6-shots/`.
+
+남은 것: 꾸미기 상품, 시즌의 순위(묶음 8), 같은 재화를 쓰는 이벤트의 동시 진행, 상태 업적(레벨·모은 수), 웹 관리 화면의 보상 칸은 CLI의 선택 글.
+
+사용자가 정할 것: 등불지기에 라이브 콘텐츠를 켤지와 그 수치(경제 변경), 우편 만료 일수(등불지기는 지금 만료 없음), 쿠폰을 어디에 배포할지, 시즌의 주기와 초기화 방식.
+
+합칠 때: SQLite 스키마는 목록 끝에 한 단계(`coupons`·`coupon_uses`)를 덧붙였다(묶음 7이 단계를 더했으면 그 뒤로. 시험은 `SCHEMA.length`). 공용 파일에는 끝에 덧붙였다: `MODULE_TABLE`(다섯)·`MODULE_SAVES`(player `goods`·`event`·`season`·`achieve`·`codex`·`back`, world `goods`)·`RPG_MODULES`의 거르기(`LIVE_MODULES`), 계약·기본값·content·defs의 끝, `messages.ts`·`protocol.ts`의 끝, i18n ko/en(ui·fmt·msg의 묶음 끝, `koAdminPage`·`enAdminPage` 끝), `engine/client/modules.ts`의 목록 끝, `scripts/admin.mjs` 도움말, `net/admin.ts`의 `roleFor`, `admin-page.ts`의 탭 끝, `net/server.ts`의 관리자 `extra`와 `mailAll`, `engine/server/index.ts`의 끝. 핵심 쪽은 `daily.ts`(사건 하나), `mail.ts`(만료), `wallet.ts`(종류의 몫 셋, `baseWhy`), `snapshot.ts`(`ti`), `entities.ts`(칭호), `shop.ts`·`menu/mail.ts`(덧붙이는 고리).

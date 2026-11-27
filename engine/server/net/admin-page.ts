@@ -221,6 +221,29 @@ const TABS = {
     el.append(h('p', { cls: 'note' }, T('rbNote')), h('div', { cls: 'row' }, ni, h('button', { on: { click: () => ni.value.trim() && list() } }, T('rbList'))), box, pv);
     if (ni.value.trim()) await list();
   },
+  async live(el) {
+    const [ev, se, cp] = await Promise.all([api('events'), api('season'), api('coupon', ['list'])]);
+    el.append(h('p', { cls: 'note' }, T('liveNote')));
+    el.append(h('h2', null, T('liveEvents')));
+    const ST = { open: 'stOpen', soon: 'stSoon', ended: 'stEnded' };
+    if (ev.data) {
+      el.append(table([{ t: 'name', v: (e) => e.id }, { t: 'state', v: (e) => h('span', { cls: e.state === 'open' ? 'good' : e.state === 'soon' ? 'warn' : '' }, T(ST[e.state])) }, { t: 'from', v: (e) => when(e.from) }, { t: 'to', v: (e) => when(e.to) }, { t: 'missions', v: (e) => e.missions, num: true }, { t: 'cur', v: (e) => (e.cur ? e.cur + ' · ' + e.end : '') }], ev.data.events));
+      el.append(h('h2', null, T('liveGoods')));
+      el.append(table([{ t: 'name', v: (x) => x.id }, { t: 'shop', v: (x) => x.shop }, { t: 'price', v: (x) => x.price }, { t: 'limit', v: (x) => x.limit }, { t: 'left', v: (x) => (x.left === null ? '' : x.left), num: true }], ev.data.goods));
+    } else el.append(h('pre', null, ev.out));
+    el.append(h('h2', null, T('liveSeason')), h('pre', null, se.out));
+    el.append(h('h2', null, T('liveCoupons')));
+    const cbox = h('div');
+    if (Array.isArray(cp.data)) el.append(table([{ t: 'code', v: (r) => r.code }, { t: 'uses', v: (r) => r.used + (r.uses ? ' / ' + r.uses : ''), num: true }, { t: 'from', v: (r) => (r.from ? when(r.from) : '') }, { t: 'to', v: (r) => (r.to ? when(r.to) : '') }, { t: 'reward', v: (r) => JSON.stringify(r.r), wrap: true },
+      { t: 'run', v: (r) => h('button', { cls: 'bad', disabled: !can('full'), on: { click: () => act('coupon', ['del', r.code], cbox, () => show()) } }, T('couponDel')) }], cp.data));
+    else el.append(h('pre', null, cp.out));
+    const ci = h('input', { placeholder: T('couponPh'), size: 14 }), cr = h('input', { placeholder: T('mailPh'), style: 'flex:1;min-width:200px' });
+    const words = (s) => (s.trim().match(/"[^"]*"|\S+/g) || []).map((x) => x.replace(/^"|"$/g, ''));
+    el.append(h('div', { cls: 'row' }, ci, cr, h('button', { disabled: !can('full'), on: { click: () => ci.value.trim() && act('coupon', ['add', ci.value.trim()].concat(words(cr.value)), cbox, () => show()) } }, T('couponAdd'))), cbox);
+    el.append(h('h2', null, T('liveMail')));
+    const mr = h('input', { placeholder: T('mailPh'), style: 'flex:1;min-width:200px' }), ml = h('input', { placeholder: T('mailLv'), size: 10 }), mx = h('input', { placeholder: T('mailExpire'), size: 8 }), mbox = h('div');
+    el.append(h('div', { cls: 'row' }, mr, ml, mx, h('button', { disabled: !can('full'), on: { click: () => { const a = ['--all'].concat(words(mr.value)); if (ml.value.trim()) a.push('--lv', ml.value.trim()); if (mx.value.trim()) a.push('--expire', mx.value.trim()); act('mail', a, mbox); } } }, T('mailSend'))), mbox);
+  },
   async console(el) {
     const ci = h('input', { placeholder: T('cmdPh'), style: 'flex:1;min-width:200px' }), box = h('div');
     const go = () => { const w = ci.value.trim().match(/"[^"]*"|\S+/g) || []; if (w.length) act(w[0], w.slice(1).map((x) => x.replace(/^"|"$/g, '')), box); };
@@ -228,7 +251,7 @@ const TABS = {
     el.append(h('p', { cls: 'note' }, T('cmdNote')), h('div', { cls: 'row' }, ci, h('button', { on: { click: go } }, T('run'))), box);
   },
 };
-const ORDER = [['home', 'tabHome'], ['people', 'tabPeople'], ['stats', 'tabStats'], ['ledger', 'tabLedger'], ['tickets', 'tabTickets'], ['suspects', 'tabSuspects'], ['rollback', 'tabRollback'], ['console', 'tabConsole']];
+const ORDER = [['home', 'tabHome'], ['people', 'tabPeople'], ['stats', 'tabStats'], ['ledger', 'tabLedger'], ['tickets', 'tabTickets'], ['suspects', 'tabSuspects'], ['rollback', 'tabRollback'], ['console', 'tabConsole'], ['live', 'tabLive']];
 
 function chrome() {
   document.documentElement.lang = lang;

@@ -1,5 +1,6 @@
 // 저장 계층의 약속. 게임 규칙은 이 인터페이스만 알고, 실제 저장소는 갈아 끼운다.
 // 실시간 상태(체력, 몬스터)는 저장하지 않는다. 재시작을 넘어 남아야 하는 것만 적는다.
+import type { Reward } from '../../shared/defs/growth';
 import type { DrawRow, OddsHistoryRow, OddsPlanRow, OddsTableDef } from '../../shared/defs/odds';
 
 /**
@@ -254,3 +255,19 @@ export interface OpsStore {
 }
 /** 그 저장소가 운영 도구의 저장도 갖는가 */
 export const hasOps = (s: Store): s is Store & OpsStore => typeof (s as Partial<OpsStore>).addEvents === 'function';
+
+// ---------- 라이브 콘텐츠: 쿠폰 (묶음 6, coupon 모듈: engine/server/game/systems/coupon.ts) ----------
+/** 쿠폰 하나: 코드, 보상, 전체 쓰임 수의 한도(0이면 없음)와 지금 쓰인 수, 기간(UTC ms, 0이면 열림), 만든 때·사람, 메모 */
+export interface CouponRow { code: string; r: Reward; uses: number; used: number; from: number; to: number; at: number; by: string; note: string }
+export interface CouponStore {
+  coupons(): CouponRow[];
+  /** 쿠폰을 적는다 (row가 null이면 지운다. 쓴 기록은 남는다) */
+  putCoupon(code: string, row: CouponRow | null): void;
+  /** 그 사람이 그 쿠폰을 쓴 것으로 적는다. 이미 썼으면 false (코드와 사람이 짝으로 한 번) */
+  useCoupon(code: string, owner: string, at: number): boolean;
+  /** 그 사람이 쓴 코드들 (내 데이터) */
+  couponUsesOf(owner: string): string[];
+  /** 그 사람의 쓴 기록을 지운다 (내 데이터 삭제) */
+  forgetCouponUses(owner: string): number;
+}
+export const hasCoupons = (s: Store): s is Store & CouponStore => typeof (s as Partial<CouponStore>).useCoupon === 'function';

@@ -64,6 +64,15 @@ export const koGame = {
     chatTagNear: '[같은 곳]', chatTabNear: '같은 곳',
     roleVanguard: '선봉', roleRanger: '사수', roleMystic: '비술', roleMender: '치유',
     bannerWell: '울림 샘', chapterPath: '속삭임 길', chapterRuins: '종소리 폐허', chapterSpire: '울림 첨탑',
+    // 라이브 콘텐츠 (묶음 6: shared/content의 EVENTS·GOODS·SEASON·ACHIEVES·CODEX)
+    evEchofest: '울림 축제',
+    evEchofestNote: '두 주 동안 임무를 채우면 축제 조각을 받습니다. 축제 조각은 축제 상점에서 쓰고, 뽑기에는 일반 조각을 다 쓴 뒤에 쓰입니다.',
+    evmHunt: '울림골에서 몬스터 40마리 사냥', evmClimb: '탑에서 단계 10번 깨기', evmCall: '메아리 5번 부르기', evmShift: '변신 3번',
+    gFestTonic: '축제 샘물 약 3병', gFestShards: '울림 조각 100', gFestGold: '골드 주머니 300', gDayPack: '오늘의 꾸러미', gWellTonic: '샘물 약 5병 (상인 특가)',
+    seasonEcho: '메아리의 계절',
+    achHunter: '사냥꾼: 몬스터 100마리', achClimber: '탑 오르기: 단계 15번', achCaller: '부르는 자: 메아리 30번 부르기', achShifter: '천의 얼굴: 변신 10번',
+    titleHunter: '사냥꾼', titleClimber: '탑지기', titleCaller: '메아리를 부르는 자',
+    codexEchoes: '메아리', codexBeasts: '울림골의 짐승',
     // 탑의 첫 화면 (client/tower.ts)
     towerSub: '메아리를 불러 모으고, 편성해 단계를 깨는 곳',
     towerGo: '도전',

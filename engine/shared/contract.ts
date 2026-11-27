@@ -26,6 +26,7 @@ import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
 import type { OddsRules } from './defs/odds';
 import type { ModeRules } from './defs/modes';
+import type { AchieveDef, CodexDef, ComebackRules, CouponRules, EventDef, GoodsDef, MailRules, SeasonRules } from './defs/livecontent';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
 import * as content from '@game/shared/content';
@@ -256,8 +257,28 @@ export interface ModesContent {
   MODE_RULES: ModeRules;
 }
 
+/** 라이브 콘텐츠 (묶음 6: engine/shared/defs/livecontent.ts). 모두 선택이고 적지 않으면 지금과 같다 */
+export interface LiveContent {
+  /** 상품: 가격 재화·종류, 주는 것(묶음), 사람마다의 한정과 갱신 주기, 서버 전체의 수량, 기간, 이벤트 상점 (items 모듈). 비어 있으면 상품이 없다 */
+  GOODS: Readonly<Record<string, GoodsDef>>;
+  /** 기간 이벤트: 기간, 이벤트 임무, 이벤트 재화, 끝나면 소멸·환전 (event 모듈) */
+  EVENTS: Readonly<Record<string, EventDef>>;
+  /** 시즌과 무료 보상 트랙 (season 모듈). null이면 시즌이 없다 */
+  SEASON: SeasonRules | null;
+  /** 업적과 칭호 (achieve 모듈) */
+  ACHIEVES: Readonly<Record<string, AchieveDef>>;
+  /** 도감 (codex 모듈) */
+  CODEX: Readonly<Record<string, CodexDef>>;
+  /** 쿠폰 코드의 규칙 (coupon 모듈) */
+  COUPON: CouponRules;
+  /** 복귀 보상 (coupon 모듈). null이면 없다 */
+  COMEBACK: ComebackRules | null;
+  /** 우편의 만료와 만료 전 알림 (mail 모듈). 비어 있으면 만료가 없다 */
+  MAIL_RULES: MailRules;
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & OddsContent & ModesContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & OddsContent & ModesContent & LiveContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

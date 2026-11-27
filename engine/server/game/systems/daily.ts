@@ -81,5 +81,7 @@ export class Daily {
       p.metaDirty = true; p.unsaved = true;
       if (d.prog[id] >= def.n) { d.got.push(id); this.g.mail.send(p, 'daily', [id], def.r); }
     }
+    // 같은 사건을 이벤트 임무·시즌 점수·업적이 함께 센다 (묶음 6: 듣는 것이 없으면 아무 일도 없다)
+    this.g.fire('counted', p, kind, n);
   }
 }
