@@ -4,10 +4,13 @@
 //   morph  메뉴의 '변신' 탭: 가진 캐릭터마다 얼굴 그림(부품으로 그린 작은 그림), 이름·등급·소개·능력치·보정, 변신 단추. 변신 중이면 남은 시간과 풀기 단추
 // 게임이 더 할 수 있는 것: 정의가 바뀔 때 듣기(onChars), 내 변신 상태 읽기(myMorph).
 import * as THREE from 'three';
-import { addHeroDef, charHero, charStats, dropHeroDef, HERO_RARITIES, knownChar, morphMods, rarityDef, setKnownChars, type CharDef, type MorphMe } from '../../shared/defs';
+import { addHeroDef, charHero, charStats, charText, dropHeroDef, HERO_RARITIES, HERO_ROLES, knownChar, MORPH_RULE_VIEW, morphCard, morphMods, morphStats, rarityDef, setCharLang, setKnownChars, type CharDef, type HeroesMe, type MorphMe, type OwnedHero } from '../../shared/defs';
 import { teamCss } from '../../shared/defs/teams';
 import { onMsg } from '../bus';
-import { L, t } from '../i18n';
+import { relabel } from '../entities';
+import { L, onLangChange, t } from '../i18n';
+import { S } from '../state';
+import { myHeroes } from './collect';
 import { rarityName } from '../i18n/ko';
 import { uiText } from '../i18n/names';
 import { hasModule } from '../mods';
@@ -27,8 +30,13 @@ export const charDefs = (): readonly CharDef[] => defs;
 /** 내 변신 상태 (가진 캐릭터, 지금 변신한 것, 남은 시간, 다시 변신까지) */
 export const myMorph = (): Readonly<MorphMe> => me;
 
+/** 화면의 언어를 캐릭터 정의의 글(CharDef.text)에 알린다: 이름·소개가 그 언어로 (없는 언어는 정의의 글) */
+const syncLang = (): void => setCharLang(L().code);
+
 export function initChars(): void {
   const roster = hasModule('roster');
+  syncLang();
+  onLangChange(() => { syncLang(); portraits.clear(); redraw(true); });
   onMsg('me', (m) => {
     if (m.k !== 'chars') return;
     const old = defs;
@@ -37,8 +45,24 @@ export function initChars(): void {
     portraits.clear();
     if (roster) { for (const d of old) dropHeroDef(d.id); for (const d of defs) addHeroDef(d.id, charHero(d)); }
     for (const fn of fns) fn(defs);
+    // 정의보다 먼저 시야에 든 영웅의 이름표가 id로 그려져 있을 수 있다: 이름표를 다시 쓴다
+    relabel();
     redraw(true);
   });
+}
+
+/** 가진 영웅의 줄 (개인 상태 heroes: [레벨, 별, 조각, 기술 레벨?, 각성?])을 영웅의 상태로 */
+const ownedOf = (line: HeroesMe[string] | undefined): OwnedHero | undefined => (line ? { lv: line[0], stars: line[1], shards: line[2], ...(line[3] && line[3] > 1 ? { skill: line[3] } : {}), ...(line[4] ? { awaken: line[4] } : {}) } : undefined);
+/**
+ * 그 캐릭터로 변신했을 때의 능력치 (능력치 대체 방식: MORPH_RULES.stats. 아니면 null). 서버의 싸움과 같은 셈(morphCard → morphStats)이다:
+ * 영웅 탭의 카드와 변신 탭이 이것을 보인다
+ */
+export function morphStatsOf(id: string): { card: ReturnType<typeof morphCard>; s: { hp: number; atk: number } } | null {
+  const d = knownChar(id);
+  if (!d || !MORPH_RULE_VIEW.stats) return null;
+  const card = morphCard(d, hasModule('roster') ? ownedOf(myHeroes()[id]) : undefined, { lv: S.me?.lv ?? 1 });
+  const s = morphStats(card);
+  return s ? { card, s } : null;
 }
 
 // ---------- 얼굴 그림: 작은 그리기 하나를 두고 정의마다 한 번 그려 그림(data URL)으로 간직한다 ----------
@@ -78,6 +102,8 @@ function portrait(d: CharDef): string {
 
 // ---------- 변신 탭 ----------
 const tinted = <T extends HTMLElement>(e: T, r: number): T => { e.style.setProperty('--rc', teamCss(rarityDef(r).color)); return e; };
+/** 역할의 이름 (HERO_ROLES의 이름 키. 없는 역할은 id 그대로) */
+const roleName = (id: string): string => { const r = HERO_ROLES[id]; return r ? uiText.get(r.name) : id; };
 const statName = (k: string): string => { const s = charStats()[k]; return s?.name ? uiText.get(s.name) : k === 'atk' ? t('charAtk') : k === 'hp' ? t('charHp') : k; };
 
 function drawMorph(list: HTMLElement): void {
@@ -85,25 +111,31 @@ function drawMorph(list: HTMLElement): void {
   if (me.on) {
     const d = knownChar(me.on);
     const head = el('note morphNow');
-    head.append(span('mtag', t('morphNow')), ` ${d?.name ?? me.on} · ${loc.fmt.morphLeft(me.left)}`);
+    head.append(span('mtag', t('morphNow')), ` ${d ? charText(d).name : me.on} · ${loc.fmt.morphLeft(me.left)}`);
     list.append(row(head, '', [button(t('morphOffBtn'), () => send({ t: 'morph', a: 'off' }))], 'mrow morphHead'));
   } else if (me.cd > 0) list.append(el('note', loc.fmt.morphCd(me.cd)));
   if (!owned.length) { list.append(el('note', t('morphNone'))); return; }
   for (const d of owned) {
     const name = tinted(el('iname'), d.rarity), pic = portrait(d);
     if (pic) { const img = document.createElement('img'); img.className = 'morphPic'; img.src = pic; img.alt = ''; name.append(img); }
-    name.append(span('', d.name));
-    const note = el('note'), mods = loc.fmt.morphBonus(morphMods(d));
-    const role = d.role ? ` · ${d.role}` : '';
-    note.append(el('', `${HERO_RARITIES.length ? rarityName(d.rarity) : ''}${role}`), el('', Object.entries(d.stats).map(([k, v]) => `${statName(k)} ${v}`).join(' · ')), el('', mods || t('morphLookOnly')));
-    if (d.bio) note.append(el('morphBio', d.bio));
+    const text = charText(d);
+    name.append(span('', text.name));
+    const h = ownedOf(myHeroes()[d.id]), note = el('note'), mods = loc.fmt.morphBonus(morphMods(d, h ? { lv: h.lv, stars: h.stars } : undefined));
+    const role = d.role ? ` · ${roleName(d.role)}` : '';
+    note.append(el('', `${HERO_RARITIES.length ? rarityName(d.rarity) : ''}${role}`));
+    // 능력치 대체 방식: 카드(영웅 탭과 같은 수)와 변신 시 능력치. 아니면 정의의 능력치와 보정
+    const ms = morphStatsOf(d.id);
+    if (ms) note.append(el('', loc.fmt.morphCard(ms.card.lv, ms.card.stars, ms.card.atk, ms.card.hp)), el('mstat', loc.fmt.morphStats(ms.s.hp, ms.s.atk)));
+    else note.append(el('', Object.entries(d.stats).map(([k, v]) => `${statName(k)} ${v}`).join(' · ')));
+    if (mods || !ms) note.append(el('', mods || t('morphLookOnly')));
+    if (text.bio) note.append(el('morphBio', text.bio));
     const on = me.on === d.id;
     list.append(row(name, note, [button(on ? t('morphNow') : t('morphOnBtn'), () => send({ t: 'morph', a: 'on', id: d.id }), on || me.cd > 0)], 'mrow morphRow' + (on ? ' on' : '')));
   }
 }
 
 export function initMorph(): void {
-  addMenuTab({ id: 'morph', label: () => t('tabMorph'), draw: drawMorph, sig: () => [me, defs.length], mod: 'morph' });
+  addMenuTab({ id: 'morph', label: () => t('tabMorph'), draw: drawMorph, sig: () => [me, defs.length, hasModule('roster') ? myHeroes() : 0, S.me?.lv], mod: 'morph' });
   onMsg('me', (m) => { if (m.k === 'morph') { me = m.s as MorphMe; redraw(true); } });
   addNotices({ feed: ['morphOn', 'morphOff', 'morphEnd', 'morphGone', 'morphWait', 'morphFight', 'morphNone', 'charNew', 'charBad'] });
 }

@@ -4,7 +4,7 @@
 // 게임의 내용 파일(shared/content/)만은 '@engine/shared/defs/*'에서 타입을, '@engine/shared/defaults'에서 기본값을 읽는다: 통로를 값으로 읽으면 초기화 순서가 꼬인다.
 export type { ClientMsg, ServerMsg, WorldState } from './protocol';
 export type { MsgArg, MsgKey } from './messages';
-export { AUTO, AWAY, POTIONS, pickPotion, potionOrder } from './auto';
+export { AUTO, AWAY, POTIONS, pickPotion, potionOrder, type AwaySafety } from './auto';
 export { NavGrid, walk, type Walker } from './nav';
 export { PROTOCOL, protocolFits } from './protocol';
 export { ALL_MODULES, MODULE_TABLE, RPG_MODULES, checkModules, type ModuleId } from './modules';

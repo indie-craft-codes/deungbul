@@ -170,6 +170,11 @@ export interface SquadRules {
   rows?: SquadRowRules;
   /** 시너지: HeroDef.tag → 단마다의 덤 (없으면 시너지가 없다) */
   synergy?: Readonly<Record<string, SynergyDef>>;
+  /**
+   * 편성한 영웅이 나타나는 곳: 'all'(기본, 예전과 같다) 들판·던전·단계 어디서나 주인을 따라다닌다, 'stage' 단계 안(단계 모듈의 회차·대기실)에서만.
+   * 'stage'면 들판에서는 영웅이 없다 (수집형과 MMORPG를 한 캐릭터로 오가는 게임: 들판은 변신으로)
+   */
+  where?: 'stage' | 'all';
 }
 
 /** 단계 하나의 물결: 몬스터의 종류와 수 */
@@ -456,7 +461,8 @@ export interface PullGot { h: string; r: number; dup: boolean; n: number; pity: 
 /** 개인 상태 'squad': 편성한 영웅(자리의 차례)과 그 전투력의 합. 진형을 켠 게임은 뒷줄(back), 시너지를 켠 게임은 켜진 시너지(syn)도 */
 export interface SquadMe { ids: string[]; power: number; back?: string[]; syn?: SynergyMe[] }
 /** 단계 안의 진행 (개인 상태 'stage'의 run): 단계 id, 지금 물결(0부터, 우두머리는 마지막), 물결 수, 남은 적, 이 물결의 적, 남은 시간(초), 상태 */
-export interface StageRun { id: string; wave: number; waves: number; foes: number; total: number; left: number; state: 'fight' | 'gap' | 'clear' | 'fail'; boss: boolean }
+/** state 'lobby': 단계 안의 대기실 (g.stages.lobby: 몬스터 없이 단계의 자리에 서 있다. 모드(modes 모듈)의 단계 모드가 고르는 곳) */
+export interface StageRun { id: string; wave: number; waves: number; foes: number; total: number; left: number; state: 'fight' | 'gap' | 'clear' | 'fail' | 'lobby'; boss: boolean }
 /** 개인 상태 'stage': 지금 단계, 가장 멀리 깬 단계(없으면 ''), 자동 진행, 안에 있으면 그 진행 */
 export interface StageMe { cur: string; best: string; auto: boolean; run: StageRun | null }
 /** 개인 상태 'keys' (열쇠를 쓰는 던전이 있는 게임): 던전마다 가진 열쇠와 오늘 산 수 */

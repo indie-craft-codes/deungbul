@@ -8,6 +8,10 @@
 // 소탕(STAGE_RULES.sweep): 깬 단계를 싸우지 않고 바로 끝내 보통 보상을 받는다 ({ t: 'stage', a: 'sweep', id, n }. 값은 소탕권이나 재화: systems/sweep.ts).
 // 던전 뒤 단계로 돌아가기(STAGE_RULES.returnAfterDungeon): 던전을 끝내거나 스스로 나온 사람을 몇 초 뒤 지금 단계로 들여보낸다 (사건 dungeonExited).
 // 오프라인 단계 진행(STAGE_RULES.offline): 돌아온 사람이 자동 진행을 켜 두었으면 편성의 전투력과 권장 전투력으로 '그동안 깼을 단계'를 셈해 앞으로 옮긴다 (offlinePlan).
+// 대기실(lobby): 몬스터 없이 그 사람만의 층에서 단계의 자리에 서 있는 회차 (g.stages.lobby. 모드 modes의 단계 모드가 고르는 곳). 단계를 고르면(go·start) 그 층에서 시작한다.
+// 뒤에서 이어 가기(bg): 사람이 단계의 층을 떠나도(모드 modes로 들판에 감) 회차는 그 층에 남아 편성의 영웅만으로 싸운다 (detach / attach).
+//   지금 싸움은 끝까지(깸·실패) 하고, 자동 진행이 켜져 있으면 다음 단계로, 꺼져 있거나 실패했으면 회차를 닫는다(안내문 stageBgStop). 영웅이 모두 쓰러지면 실패다.
+//   그동안 사람은 그 층에 없으므로 대신 싸우지 않고, 몬스터는 영웅만 노리며, 쓰러진 자리·실패 사건은 회차와 상관없다.
 // 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
 import { IDLE_VIEW, MONSTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
@@ -16,6 +20,7 @@ import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, instanceLayer, isField } from '../layers';
 import { leaderFight } from './leader';
+import { SQUAD_RULES } from '../../../shared/defs';
 import { SWEEP_WHY, costCheck, costPay, costProblem, giveInto, sweepGot } from './sweep';
 import { CURS } from './wallet';
 
@@ -31,7 +36,7 @@ interface Run {
   mobs: Set<number>;
   /** 이 물결에 나온 적의 수 */
   total: number;
-  state: 'fight' | 'gap' | 'clear' | 'fail';
+  state: 'fight' | 'gap' | 'clear' | 'fail' | 'lobby';
   /** 다음 일까지 남은 시간(초): gap이면 다음 물결, clear면 다음 단계, fail이면 다시 하기 */
   wait: number;
   /** 남은 제한 시간(초) */
@@ -40,6 +45,8 @@ interface Run {
   back: { x: number; z: number; layer: number };
   /** 사람을 대신 싸우게 할 생각의 간격 */
   think: number;
+  /** 뒤에서 이어 가는 중 (사람이 이 층에 없다: detach) */
+  bg?: boolean;
 }
 
 /** 단계가 없다는 알림을 이미 했다 (한 프로세스에 한 번: 시험은 게임을 여러 번 만든다) */
@@ -49,6 +56,8 @@ export class Stages {
   private readonly runs = new Map<number, Run>();
   /** 층 → 그 층의 회차 */
   private readonly byLayer = new Map<number, Run>();
+  /** 단계와 상관없이 들판에서 일어나는 자리 (게임의 규칙 g.rules.respawn: 단계가 감싸기 전의 것. 다른 층에 있는 사람의 들판의 몸이 쓴다) */
+  fieldRespawn: (p: Ent) => { x: number; z: number; id: string } = (p) => this.g.rules.respawn(p);
   /** 던전에서 나와 단계로 돌아갈 사람 → 남은 초 (STAGE_RULES.returnAfterDungeon) */
   private readonly returning = new Map<number, number>();
 
@@ -60,7 +69,7 @@ export class Stages {
     g.saves.push({ name: 'stages', save: (p) => this.saveOf(p), load: (p, raw) => this.loadOf(p, raw) });
     g.personal.push({ name: 'stage', state: (p) => this.me(p) });
     g.on('monsterKilled', (m) => this.killed(m));
-    g.on('playerDied', (p) => { const r = this.runs.get(p.id); if (r && r.state !== 'fail') this.fail(r, 0); });
+    g.on('playerDied', (p) => { const r = this.runs.get(p.id); if (r && !r.bg && r.state !== 'fail' && r.state !== 'lobby') this.fail(r, 0); });
     g.on('playerDropped', (p) => this.leave(p, false));
     g.on('playerLeft', (id) => { const r = this.runs.get(id); if (r) this.end(r); });
     // 오프라인 진행: 방치 보상(idle)이 있으면 그 셈 안에서(깬 단계로 토막을 나눠 보상을 셈한다), 없으면 접속할 때 따로. 둘 다 단계로 들어가기(enterOnJoin)보다 먼저다
@@ -72,7 +81,8 @@ export class Stages {
     g.on('playerJoined', (p) => { if (STAGE_RULES.enterOnJoin && !p.bot && STAGES.length) this.start(p, this.curIndex(p)); });
     // 단계 안에서 쓰러지면 그 단계의 가운데에서 일어난다 (회차는 실패로 끝나고 잠시 뒤 다시 시작한다)
     const respawn = g.rules.respawn;
-    g.rules.respawn = (p) => (this.runs.has(p.id) ? { x: STAGE_RULES.arena.x, z: STAGE_RULES.arena.z, id: 'stage' } : respawn(p));
+    this.fieldRespawn = respawn;
+    g.rules.respawn = (p) => (this.inStage(p) ? { x: STAGE_RULES.arena.x, z: STAGE_RULES.arena.z, id: 'stage' } : respawn(p));
     if (g.has('idle')) g.idle.stageOf = (p) => this.cleared(p);
     // 던전 뒤 단계로 돌아가기: 던전을 끝냈거나 스스로 나온 사람 (접속이 끊겨 나온 것은 아니다)
     const back = STAGE_RULE_VIEW.returnAfterDungeon;
@@ -91,14 +101,45 @@ export class Stages {
   bestIndex(p: Ent): number { return stageIndex(p.stage.best); }
   /** 깬 단계의 수 (방치 보상의 셈) */
   cleared(p: Ent): number { return this.bestIndex(p) + 1; }
-  /** 진행 중인가 */
-  inStage(p: Ent): boolean { return this.runs.has(p.id); }
+  /** 사람이 단계의 층에 있는가 (대기실에 있어도 참. 뒤에서 이어 가는 회차만 있으면 거짓) */
+  inStage(p: Ent): boolean { const r = this.runs.get(p.id); return !!r && !r.bg; }
+  /** 그 사람의 회차 (대기실·뒤에서 이어 가는 것 포함): 층, 뒤에서 이어 가는가, 상태, 단계 id, 들어오기 전의 자리. 없으면 undefined */
+  runOf(p: Ent): { layer: number; bg: boolean; state: Run['state']; id: string; back: { x: number; z: number; layer: number } } | undefined {
+    const r = this.runs.get(p.id);
+    return r ? { layer: r.layer, bg: !!r.bg, state: r.state, id: r.stage.id, back: { ...r.back } } : undefined;
+  }
+  /**
+   * 사람이 단계의 층을 떠난다 (부른 쪽이 사람을 옮긴다). 싸우는 중이면 회차를 남겨 뒤에서 이어 가고(bg) true, 대기실이면 회차를 닫고 false.
+   * 사람의 자리는 바꾸지 않는다: 돌아갈 자리는 runOf(p).back
+   */
+  detach(p: Ent): boolean {
+    const r = this.runs.get(p.id);
+    if (!r) return false;
+    if (r.state === 'lobby') { this.end(r); this.squadIn(p); return false; }
+    r.bg = true;
+    for (const id of r.mobs) { const m = this.g.ents.get(id); if (m && m.targetId === p.id) m.targetId = 0; }
+    this.squadIn(p);
+    return true;
+  }
+  /** 뒤에서 이어 가던 회차로 사람이 돌아온다: 그 층의 단계의 자리에 선다 (싸움은 그대로 이어진다. 회차의 층 밖에 있으면 그 층으로). 회차가 없으면 false */
+  attach(p: Ent): boolean {
+    const r = this.runs.get(p.id);
+    if (!r) return false;
+    if (!r.bg && p.layer === r.layer) return true;
+    r.bg = false;
+    this.place(p, STAGE_RULES.arena.x, STAGE_RULES.arena.z + 3, r.layer);
+    if (this.g.has('combat')) { p.targetId = 0; p.hp = Math.max(1, p.hp); }
+    this.squadIn(p);
+    return true;
+  }
+  /** 대기실에 있는가 */
+  inLobby(p: Ent): boolean { return this.runs.get(p.id)?.state === 'lobby'; }
 
   private me(p: Ent): StageMe {
     const r = this.runs.get(p.id);
     return {
       cur: STAGES[this.curIndex(p)]?.id ?? '', best: p.stage.best, auto: p.stage.auto,
-      run: r ? { id: r.stage.id, wave: r.wave, waves: waveCount(r.stage.def), foes: r.mobs.size, total: r.total, left: Math.ceil(Math.max(0, r.state === 'fight' || r.state === 'gap' ? r.left : r.wait)), state: r.state, boss: r.wave >= r.stage.def.waves.length && !!r.stage.def.boss } : null,
+      run: r ? { id: r.stage.id, wave: r.wave, waves: waveCount(r.stage.def), foes: r.mobs.size, total: r.total, left: r.state === 'lobby' ? 0 : Math.ceil(Math.max(0, r.state === 'fight' || r.state === 'gap' ? r.left : r.wait)), state: r.state, boss: r.wave >= r.stage.def.waves.length && !!r.stage.def.boss } : null,
     };
   }
 
@@ -182,11 +223,42 @@ export class Stages {
     }
     r.stage = stage; r.wave = 0; r.left = stage.def.timeS ?? STAGE_RULES.timeS; r.state = 'fight'; r.wait = 0;
     p.stage.cur = stage.id; p.unsaved = true;
-    // 사람을 단계의 가운데로 (체력을 채운다: 앞 단계의 상처를 끌고 들어가지 않게)
-    this.place(p, STAGE_RULES.arena.x, STAGE_RULES.arena.z + 3, r.layer);
-    if (g.has('combat')) { p.hp = p.maxHp; p.targetId = 0; }
+    // 사람을 단계의 가운데로 (체력을 채운다: 앞 단계의 상처를 끌고 들어가지 않게). 뒤에서 이어 가는 회차는 사람이 이 층에 없다: 영웅만 가운데로
+    if (!r.bg) {
+      this.place(p, STAGE_RULES.arena.x, STAGE_RULES.arena.z + 3, r.layer);
+      if (g.has('combat')) { p.hp = p.maxHp; p.targetId = 0; }
+    }
     this.spawnWave(r);
+    this.squadIn(p);
   }
+
+  /**
+   * 대기실로: 그 사람만의 층에서 몬스터 없이 단계의 자리에 선다 (회차가 있으면 그 층에서 싸움을 그친다. 없으면 새 층을 받는다).
+   * 단계를 고르면(go·start) 그 층에서 시작한다. 던전 안에서는 하지 않는다
+   */
+  lobby(p: Ent): void {
+    const g = this.g;
+    if (p.kind !== 'p' || g.ents.get(p.id) !== p || p.bot) return;
+    let r = this.runs.get(p.id);
+    if (!r && !isField(p.layer)) return;
+    if (r) this.despawn(r);
+    else {
+      r = { p, layer: instanceLayer(g), stage: STAGES[this.curIndex(p)] ?? STAGES[0], wave: 0, mobs: new Set(), total: 0, state: 'lobby', wait: 0, left: 0, back: { x: p.x, z: p.z, layer: p.layer }, think: 0 };
+      this.runs.set(p.id, r);
+      this.byLayer.set(r.layer, r);
+    }
+    if (!r.stage) return;
+    r.state = 'lobby'; r.wave = 0; r.wait = 0; r.left = 0; r.total = 0;
+    this.place(p, STAGE_RULES.arena.x, STAGE_RULES.arena.z + 3, r.layer);
+    if (g.has('combat')) { p.hp = p.maxHp; p.targetId = 0; p.dead = false; }
+    this.squadIn(p);
+  }
+
+  /** 그 회차의 층에 살아 있는 영웅이 있는가 */
+  private anyHero(p: Ent): boolean { const r = this.runs.get(p.id); return !!r && this.g.has('squad') && this.g.squad.heroes(p).some((e) => !e.dead && e.layer === r.layer); }
+
+  /** 편성이 단계 안에서만 나타나는 게임(SQUAD_RULES.where 'stage'): 들고 날 때 영웅을 세우고 치운다 */
+  private squadIn(p: Ent): void { if (this.g.has('squad') && (SQUAD_RULES as { where?: string }).where === 'stage') this.g.squad.field(p); }
 
   /** 그 사람을 그 자리·층으로 옮긴다 (화면이 바로 옮기게 알린다) */
   private place(p: Ent, x: number, z: number, layer: number): void {
@@ -283,11 +355,14 @@ export class Stages {
   leave(p: Ent, notify: boolean): void {
     const r = this.runs.get(p.id);
     if (!r) return;
+    // 뒤에서 이어 가던 회차: 사람은 이미 다른 곳에 있다 (닫기만 한다)
+    if (r.bg) { this.end(r); this.squadIn(p); return; }
     this.end(r);
     const layer = isField(r.back.layer) ? r.back.layer : fieldLayer(1);
     this.place(p, r.back.x, r.back.z, layer);
     if (this.g.has('combat')) p.targetId = 0;
     if (notify) p.unsaved = true;
+    this.squadIn(p);
   }
 
   // ---------- 틱 ----------
@@ -295,6 +370,9 @@ export class Stages {
     for (const r of [...this.runs.values()]) {
       const p = r.p;
       if (this.g.ents.get(p.id) !== p) { this.end(r); continue; }
+      if (r.state === 'lobby') continue;
+      // 뒤에서 이어 가는 회차: 영웅이 모두 쓰러졌으면 실패
+      if (r.bg && r.state === 'fight' && !this.anyHero(p)) { this.fail(r, 0); continue; }
       if (r.state === 'fight' || r.state === 'gap') {
         r.left -= dt;
         if (r.left <= 0) { this.fail(r, 1); continue; }
@@ -302,7 +380,10 @@ export class Stages {
       if (r.state === 'gap') { r.wait -= dt; if (r.wait <= 0) { r.state = 'fight'; this.spawnWave(r); } continue; }
       if (r.state === 'clear' || r.state === 'fail') {
         r.wait -= dt;
-        if (r.wait <= 0) this.start(p, this.curIndex(p));
+        if (r.wait > 0) continue;
+        // 뒤에서 이어 가는 회차는 자동 진행이 꺼졌거나 실패했으면 멈춘다 (회차를 닫는다)
+        if (r.bg && (r.state === 'fail' || !p.stage.auto)) { const why = r.state === 'fail' ? 1 : 0; this.end(r); this.squadIn(p); this.g.notify(p, 'stageBgStop', p.stage.cur, why); continue; }
+        this.start(p, this.curIndex(p));
         continue;
       }
       this.aim(r, dt);
@@ -327,7 +408,8 @@ export class Stages {
   /** 대상이 없는 몬스터는 가장 가까운 사람 편(사람, 영웅)을 노린다. 사람도 맡겼으면 가장 가까운 몬스터를 친다 */
   private aim(r: Run, dt: number): void {
     const g = this.g, p = r.p;
-    const friends = [p, ...(g.has('squad') ? g.squad.heroes(p).filter((e) => !e.dead) : [])];
+    const heroes = g.has('squad') ? g.squad.heroes(p).filter((e) => !e.dead && (!r.bg || e.layer === r.layer)) : [];
+    const friends = r.bg ? heroes : [p, ...heroes];
     for (const id of r.mobs) {
       const m = g.ents.get(id);
       if (!m || m.dead || m.targetId) continue;
@@ -335,7 +417,7 @@ export class Stages {
       for (const f of friends) { const d = dist(m, f); if (d < bd) { bd = d; best = f; } }
       if (best) m.targetId = best.id;
     }
-    if (!STAGE_RULES.leaderAuto || !g.has('combat') || p.hp <= 0) return;
+    if (r.bg || !STAGE_RULES.leaderAuto || !g.has('combat') || p.hp <= 0) return;
     r.think -= dt;
     if (r.think > 0) return;
     r.think = 0.3;

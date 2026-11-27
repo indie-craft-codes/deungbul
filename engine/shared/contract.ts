@@ -24,6 +24,7 @@ import type { MorphRules } from './defs/morph';
 import type { LiveKeys, ResetRules } from './defs/live';
 import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
+import type { ModeRules } from './defs/modes';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
 import * as content from '@game/shared/content';
@@ -244,8 +245,13 @@ export interface SafetyContent {
   AGE: AgeRules | null;
 }
 
+/** 게임 안의 모드 (modes 모듈): 한 캐릭터로 오가는 '두 게임'(들판·단계)의 목록과 화면 (engine/shared/defs/modes.ts). 적지 않으면 모드가 없다 */
+export interface ModesContent {
+  MODE_RULES: ModeRules;
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & ModesContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

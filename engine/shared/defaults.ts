@@ -22,6 +22,7 @@ import type { MorphRules } from './defs/morph';
 import type { LiveKeys, ResetRules } from './defs/live';
 import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
+import type { ModeRules } from './defs/modes';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -248,3 +249,7 @@ export const BASIC_QUICK_CHAT = ['qcHello', 'qcThanks', 'qcSorry', 'qcGood', 'qc
 export const QUICK_CHAT: readonly string[] = [];
 /** 연령: 묻지 않는다 (제한 모드도 없다) */
 export const AGE: AgeRules | null = null;
+
+// ---------- 게임 안의 모드 (modes) ----------
+/** 모드가 없다 (한 게임: 예전과 같다) */
+export const MODE_RULES: ModeRules = { list: [] };

@@ -69,10 +69,11 @@ import { check } from '../harness';
   const order = [...src.matchAll(/\{ init: (\w+)(?:, mod: '(\w+)')? \}/g)].map((m) => `${m[1]}${m[2] ? ':' + m[2] : ''}`);
   // 웹 출시의 바탕(설정 창·약관·튜토리얼·손님 진행 보호: 어느 게임에나)은 그 뒤, 그리고 사회와 안전(설정 창의 칸을 더하므로 설정 창 뒤)이 맨 끝에 (고르지 않은 게임의 init 차례가 예전과 같게)
   const WEB = ['initSettings', 'initLegal', 'initTutorial', 'initKeepSafe', 'initSocial'];
-  const tail = order.slice(-13, -5).join();
+  const tail = order.slice(-14, -6).join();
   check(order.slice(-5).join() === WEB.join(), `웹 출시의 바탕의 화면 모듈 넷과 사회와 안전은 목록의 맨 끝에 (${order.slice(-5).join()})`);
   check(tail === 'initRoster:roster,initGacha:gacha,initSquad:squad,initStages:stages,initHeroGear:herogear,initIdleBack:idle,initChars:chars,initMorph:morph' && order.indexOf('initRoster:roster') > order.indexOf('initAutoName'),
     `수집형의 화면 모듈(과 영웅 장비, 돌아왔을 때의 창, 캐릭터 정의·변신)은 목록의 맨 뒤에, 저마다 자기 모듈을 고른 게임에서만 (${tail})`);
+  check(order[order.length - 6] === 'initModes:modes', `게임 안의 모드의 화면 모듈은 그 뒤에 (${order[order.length - 6]})`);
   const hud = fs.readFileSync(path.join(import.meta.dirname, '../../client/hud/collect.ts'), 'utf8') + fs.readFileSync(path.join(import.meta.dirname, '../../client/hud/stagebar.ts'), 'utf8');
   check(['heroes', 'gacha', 'squad', 'stages'].every((id) => hud.includes(`addMenuTab({ id: '${id}'`)) && !/\b(pay|purchase|checkout|iap|billing)\b/i.test(hud), '탭 넷은 addMenuTab으로 붙고, 결제·구매의 낱말이 화면 코드에 없다');
 }

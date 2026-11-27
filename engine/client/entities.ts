@@ -120,7 +120,7 @@ const UNKNOWN_KIND: KindLook = { model: () => makeBox() };
 
 /** 게임이 등록한 종류의 엔티티 (플레이어·몬스터가 아닌 것): kinds.ts의 모습으로 */
 function addThing(e: EnterInfo): void {
-  const look = kindLook(e.kind) ?? UNKNOWN_KIND, info: KindInfo = { id: e.id, type: e.type, name: e.name };
+  const look = kindLook(e.kind) ?? UNKNOWN_KIND, info: KindInfo = { id: e.id, type: e.type, name: e.name, ...(e.l ? { look: e.l } : {}) };
   const model = look.model(info);
   model.root.position.set(e.x, 0, e.z);
   model.root.rotation.y = e.face;

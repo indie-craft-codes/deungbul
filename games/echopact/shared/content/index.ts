@@ -1,8 +1,9 @@
 // 이 게임(메아리 계약)의 내용: 틀의 내용 계약(engine/shared/contract.ts)이 요구하는 이름들. 틀은 이 파일을 별칭 @game/shared/content로 읽는다.
-// 두 장르를 한 서버·한 캐릭터에 합친 예제다:
-//   MMORPG 쪽: 들판(울림골)의 사냥, 레벨·장비·물약·상점, 파티와 대화, 자동 사냥 (economy, growth, classes, combat, items, gear, mail, daily, idle, party, away)
-//   수집형 쪽: 메아리(영웅)를 울림 샘에서 뽑고(gacha: 공개 확률표·천장), 키우고(roster), 편성해(squad) 단계(stages)를 깬다
-//   잇는 다리: 메아리는 모두 캐릭터 정의(chars)다. 같은 정의가 수집형에서는 영웅(편성 동료)으로, 들판에서는 변신(morph)으로 쓰인다 (server/pact.ts)
+// 한 서버·한 캐릭터 안의 '두 게임'을 화면의 '게임 바꾸기'(틀의 modes 모듈)로 오가는 예제다:
+//   게임 A '계약의 탑'(모드 tower, 자리 stage): 메아리(영웅)를 뽑고(gacha: 공개 확률표·천장), 키우고(roster), 편성해(squad) 장·단계(stages)를 깬다. 편성의 메아리는 여기서만 싸운다
+//   게임 B '울림골'(모드 vale, 자리 field): 들판의 사냥, 레벨·장비·물약·상점, 파티와 대화, 자동 사냥 (MMORPG). 동료는 따라다니지 않고, 가진 메아리는 변신으로만 쓴다
+//   잇는 것: 메아리는 모두 캐릭터 정의(chars)다. 가진 영웅 = 변신 목록(MORPH_RULES.fromRoster), 탑에서 키운 카드의 능력치 = 변신한 동안의 능력치(MORPH_RULES.stats).
+//   B의 사냥이 뽑기 재화(울림 조각)를 주고, A의 성장이 B의 변신을 세게 한다. 보고 있지 않은 쪽도 '자동'이면 돈다 (MODE_RULES.fieldStay·stageStay)
 // 틀에서는 타입만 가져온다 (값은 기본값 묶음 defaults와 모듈의 목록 modules에서만).
 import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRoleDef, HeroRules, IdleCtx, SquadRules, StageDef, StageRules } from '@engine/shared/defs/collect';
 import type { CharRules } from '@engine/shared/defs/chardef';
@@ -17,17 +18,36 @@ import type { LookRules } from '@engine/shared/defs/look';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import type { MorphRules } from '@engine/shared/defs/morph';
-import { BASIC_QUICK_CHAT, GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
+import type { ModeRules } from '@engine/shared/defs/modes';
+import type { ChatRules } from '@engine/shared/defs/talk';
+import { BASIC_QUICK_CHAT, CHAT_RULES as BASE_CHAT_RULES, GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
 import type { ModuleId } from '@engine/shared/modules';
-import { ARENA, WELL } from './pact';
+import { ARENA, MODE, SPIRE, WELL, cardToMorph } from './pact';
 
 // ---------- 쓸 모듈 ----------
-// 들판(MMORPG)의 모듈(대화 채널·귓말·친구까지) + 수집형의 넷 + 캐릭터 정의와 변신. 길드·거래소·던전·영웅 장비는 쓰지 않는다
+// 들판(MMORPG)의 모듈(대화 채널·귓말·친구까지) + 수집형의 넷 + 캐릭터 정의와 변신 + 게임 안의 모드. 길드·거래소·던전·영웅 장비는 쓰지 않는다
 export const MODULES: readonly ModuleId[] = [
   'economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'away', 'chat', 'friends',
   'roster', 'gacha', 'squad', 'stages',
   'chars', 'morph',
+  'modes',
 ];
+
+// ---------- 두 게임: 계약의 탑(A, 단계)과 울림골(B, 들판) ----------
+// 처음 온 사람은 탑에서 시작한다(처음 메아리로 1-1을 깨며 뽑기 재화를 모은다). 바꾸기는 싸우는 중에도 바로 된다.
+// 보고 있지 않은 쪽: 들판은 자동 사냥(R)을 켜 두었으면 몸이 남아 사냥하고(fieldStay), 탑은 싸우던 단계를 끝까지·자동 진행이 켜져 있으면 다음 단계로(stageStay)
+export const MODE_RULES: ModeRules = {
+  list: [
+    { id: MODE.tower, name: 'modeTower', kind: 'stage', tabs: ['gacha', 'heroes', 'squad', 'stages', 'daily', 'mail', 'friends'], hide: ['auto', 'attackNearest', 'worldMap', 'minimap', 'skills', 'hint', 'channel', 'bag'] },
+    { id: MODE.vale, name: 'modeVale', kind: 'field', tabs: ['morph', 'gear', 'daily', 'mail', 'friends'] },
+  ],
+  start: MODE.tower,
+  switchCdS: 1,
+  fieldStay: true,
+  stageStay: true,
+};
+/** 대화: 근처 채널은 '같은 게임에 있는 사람 모두'(탑은 사람마다 층이 달라 근처가 비므로). 전체·귓말·파티·친구는 두 게임이 하나다 */
+export const CHAT_RULES: ChatRules = { ...BASE_CHAT_RULES, nearScope: 'mode' };
 export const GUEST_NAME = 'Pactbinder';
 /** 두 번째 재화(sparks)는 이 게임의 '울림 조각': 뽑기의 값이다. 들판의 사냥과 단계가 준다 (현금으로 살 길은 없다) */
 export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: false }, sparks: { tradable: false }, exp: { tradable: false } };
@@ -42,7 +62,8 @@ export const CAMPS: readonly { x: number; z: number; types: readonly MonsterId[]
   { x: 28, z: -26, types: ['stonehorn', 'thornboar'] },
 ];
 export const MAP: MapDef = {
-  areas: [{ id: 'vale', x0: -55, x1: 55, z0: -55, z1: 55 }],
+  // 0번이 들판(울림골), 1번이 계약의 탑(걸어서 갈 수 없는 따로 된 지역: 모드를 바꿔야 온다)
+  areas: [{ id: 'vale', x0: -55, x1: 55, z0: -55, z1: 55 }, { id: 'spire', ...SPIRE }],
   edge: 2,
   seed: 23,
   spawn: { x: 0, z: 2 },
@@ -51,8 +72,8 @@ export const MAP: MapDef = {
     { kind: 'tree', count: 80, x0: -64, x1: 64, pad: 12, s0: 0.8, s1: 0.7 },
     { kind: 'rock', count: 18, x0: -50, x1: 50, pad: -3, s0: 0.6, s1: 0.9 },
   ],
-  // 샘 둘레, 단계의 자리(사람마다의 층이지만 같은 맵의 나무가 선다), 무리의 자리는 비워 둔다
-  isFree: (x, z) => Math.hypot(x, z) > 14 && Math.hypot(x - ARENA.x, z - ARENA.z) > 15 && CAMPS.every((c) => Math.hypot(x - c.x, z - c.z) > 8),
+  // 샘 둘레와 무리의 자리는 비워 둔다 (나무는 들판 안에만 뿌린다: 탑의 지역은 비어 있다)
+  isFree: (x, z) => Math.hypot(x, z) > 14 && CAMPS.every((c) => Math.hypot(x - c.x, z - c.z) > 8),
   portals: {},
   portalClear: 0,
 };
@@ -148,18 +169,18 @@ export const CHAR_RULES: CharRules = {
   ],
   roles: ['vanguard', 'ranger', 'mystic', 'mender'],
   skills: ['bash', 'volley', 'flare', 'chant', 'rally'],
-  nameMax: 12, bioMax: 80,
+  nameMax: 20, bioMax: 120,
   banned: ['운영자', 'admin'],
 };
 /**
- * 변신: 5분 동안, 풀리고 30초 뒤에 다시, 맞은 지 4초 안에는 못 한다. 보정은 작게(정의의 능력치에서): 공격 → 주는 피해(상한 10%), 체력 → 받는 피해 감소(상한 8%).
- * 수집형 쪽에서 키운 만큼의 덤은 이 게임의 규칙이 따로 건다 (shared/content/pact.ts의 PACT_GROWTH, server/pact.ts).
- * 가질 수 있는 수는 넉넉히: 메아리를 뽑으면 같은 수만큼 변신을 갖는다 (둘이 같은 소유다)
+ * 변신: 가진 메아리(영웅) = 변신 목록(fromRoster: 따로 저장하지 않는다). 변신한 동안의 기본 체력·공격 = 그 메아리 카드의 능력치에서 셈한 값(stats: 틀의 능력치 대체 방식,
+ * 셈은 shared/content/pact.ts의 cardToMorph). 탑에서 카드를 키우면 들판의 변신이 그만큼 바로 세진다. 장비(무기·갑옷)의 덤은 그 위에 그대로.
+ * 스스로 풀 때까지 이어지고, 풀리고 10초 뒤에 다시, 맞은 지 4초 안에는 못 한다
  */
 export const MORPH_RULES: MorphRules = {
-  durationS: 300, cooldownS: 30, noFightS: 4, maxOwn: 60,
-  mods: (d) => ({ damage: (d.stats.atk ?? 0) / 400, guard: (d.stats.hp ?? 0) / 5000 }),
-  cap: { damage: 0.1, guard: 0.08 },
+  durationS: 0, cooldownS: 10, noFightS: 4, maxOwn: 60,
+  fromRoster: true,
+  stats: cardToMorph,
 };
 /** 겉모습의 부품: 모자에 '울림 고리'(머리 위에 뜬 고리)를 더한다. 그리는 법은 client/scene.ts */
 export const LOOK_RULES: LookRules = { add: { hat: ['halo'] } };
@@ -182,8 +203,8 @@ export const BANNERS: Readonly<Record<string, BannerDef>> = {
   },
 };
 export const GACHA_RULES: GachaRules = { history: 50 };
-/** 넷이 함께 싸운다 (단계에서도, 들판에서도 주인을 따라다닌다) */
-export const SQUAD_RULES: SquadRules = { size: 4, seek: 12, leash: 20, reviveS: 8, regen: 0.05, autoFill: true };
+/** 넷이 함께 싸운다. 탑(단계) 안에서만 나타난다: 들판에서는 따라다니지 않는다 (where: 'stage') */
+export const SQUAD_RULES: SquadRules = { size: 4, seek: 12, leash: 20, reviveS: 8, regen: 0.05, autoFill: true, where: 'stage' };
 
 // ---------- 장과 단계: 장 셋 × 다섯. 다섯째는 우두머리. 단계마다 몬스터가 45%씩 세진다 (메아리를 뽑고 키워야 나아간다) ----------
 const stage = (ch: number, n: number): StageDef => {
@@ -205,9 +226,13 @@ export const CHAPTERS: readonly ChapterDef[] = [
   { name: 'chapterRuins', stages: [0, 1, 2, 3, 4].map((n) => stage(1, n)) },
   { name: 'chapterSpire', stages: [0, 1, 2, 3, 4].map((n) => stage(2, n)) },
 ];
-/** 단계는 들판 북쪽(사람마다의 층)에서. 들판이 이 게임의 집이라 접속해도 단계로 들어가지 않는다 ('단계' 탭이나 막대의 '도전') */
+/**
+ * 단계는 계약의 탑(따로 된 지역, 사람마다의 층)에서. 탑에 오면 대기실(단계 선택)에 서고, 단계를 고르면 싸운다 (모드가 맡는다: enterOnJoin은 끈다).
+ * 오프라인 진행: 자동 진행을 켜 둔 채 접속을 끊으면 돌아왔을 때 편성의 전투력으로 '그동안 깼을 단계'를 넘긴다 (단계마다 3분, 8시간·5단계까지, 권장 전투력 이상만)
+ */
 export const STAGE_RULES: StageRules = {
   arena: ARENA, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: false,
+  offline: { perStageS: 180, maxH: 8, maxStages: 5, need: 1, clearReward: true },
 };
 
 // ---------- 사회: 정해진 문장(틀의 여덟. 받는 사람이 자기 언어로 읽는다). 연령은 묻지 않는다 ----------

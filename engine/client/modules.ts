@@ -25,6 +25,7 @@ import { initStages } from './hud/stagebar';
 import { initTeams } from './hud/teams';
 import { initRooms } from './hud/rooms';
 import { initChars, initMorph } from './hud/morph';
+import { initModes } from './hud/modes';
 import { initOps } from './hud/ops';
 import { initWorldMap } from './hud/worldmap';
 import { hasModule } from './mods';
@@ -71,6 +72,8 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   // 캐릭터 정의와 변신: 그 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)
   { init: initChars, mod: 'chars' },
   { init: initMorph, mod: 'morph' },
+  // 게임 안의 모드: 그 뒤에 (모드마다 메뉴의 탭을 고른다)
+  { init: initModes, mod: 'modes' },
   // 웹 출시의 바탕 (어느 게임에나): 설정 창(메뉴의 '설정' 탭: '기기' 탭 뒤), 약관·내 데이터, 튜토리얼(게임이 addTutorial을 불렀을 때만 보인다), 손님 진행 보호. 맨 뒤에
   { init: initSettings },
   { init: initLegal },

@@ -12,6 +12,8 @@ import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
 import { charName, type CharErr } from '../../shared/defs/chardef';
 import type { MorphMods } from '../../shared/defs/morph';
+import { modeDef } from '../../shared/defs/modes';
+import { uiText } from './names';
 
 /** Field names of a character definition (ko.ts의 charField와 같다) */
 const charField = (path: string): string => {
@@ -529,6 +531,9 @@ export const enBase = (n: ContentNames): EngineLocale => {
       friendsIn: 'Requests',
       friendsOut: 'Sent requests',
       friendsEmpty: 'No friends yet. Tap a person or type a name to send a request.',
+      modeBtn: 'Switch game',
+      modeToLobby: 'Stage select',
+      morphCardHead: 'Morph stats',
     },
     monsters,
     dungeons,
@@ -760,6 +765,10 @@ export const enBase = (n: ContentNames): EngineLocale => {
       ageOver: (n: number) => `${n} or older`,
       friendSeen: (ms: number) => { const m = Math.max(1, Math.floor(ms / 60_000)), h = Math.floor(ms / 3_600_000), d = Math.floor(ms / 86_400_000); return `Last seen ${ms < 3_600_000 ? `${m} min` : ms < 86_400_000 ? `${h} h` : `${d} day${d === 1 ? '' : 's'}`} ago`; },
       friendsHead: (n: number) => `Friends (${n})`,
+      modeTo: (name: string) => `To ${name}`,
+      chatMode: (name: string) => `[${name}]`,
+      morphStats: (hp: number, atk: number) => `As morph: HP ${num(hp)} · ATK ${num(atk)}`,
+      morphCard: (lv: number, stars: number, atk: number, hp: number) => `Card Lv ${lv} · ★${stars} · ATK ${num(atk)} · HP ${num(hp)}`,
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -981,6 +990,15 @@ export const enBase = (n: ContentNames): EngineLocale => {
       friendFull: (a) => `Your friends list is full (up to ${a[0]}).`,
       friendRemoved: (a) => `You removed ${a[0]} from your friends.`,
       friendOffline: (a) => `${a[0]} is not online right now.`,
+      modeOn: (a) => `Now in ${uiText.get(modeDef(String(a[0]))?.name ?? String(a[0]))}.`,
+      modeWait: (a) => `You can switch again in ${a[0]}s.`,
+      modeStandOn: () => 'Your body stays in the field and keeps auto-hunting.',
+      modeStandDown: () => 'Your body hunting in the field went down.',
+      modeStandEnd: () => "Today's auto-hunt time is used up, so field hunting stopped.",
+      stageBgStop: (a) => (Number(a[1]) === 1 ? `Lost at stage ${a[0]}: stage auto-progress stopped.` : `Stopped after stage ${a[0]} (auto-progress is off).`),
+      autoRetreat: (a) => `Health at ${a[0]}%: auto-hunt stopped and you fell back.`,
+      autoNoPotion: () => 'Out of potions: auto-hunt stopped.',
+      autoDied: () => 'You went down, so auto-hunt ended.',
     },
     nameA: n.nameA,
     nameB: n.nameB,

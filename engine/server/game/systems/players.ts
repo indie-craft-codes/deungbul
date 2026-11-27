@@ -175,7 +175,7 @@ export class Players {
   }
 
   /** 처치로 얻은 것의 원인 이름: 던전 인스턴스 안, 자리 비움 사냥 중, 접속 중. 지갑에 넘기는 이름과 장부가 처치의 앞뒤 차이(장비, 재료)에 붙이는 이름이 이것 하나다 */
-  huntWhy(p: Ent, m: Ent): string { return !isField(m.layer) ? ECON_HUNT.inst : this.g.has('away') && this.g.away.active(p) ? ECON_HUNT.away : ECON_HUNT.live; }
+  huntWhy(p: Ent, m: Ent): string { return !isField(m.layer) ? ECON_HUNT.inst : this.g.has('away') && (this.g.away.active(p) || this.g.away.proxied(p)) ? ECON_HUNT.away : ECON_HUNT.live; }
 
   /**
    * 경험치와 두 번째 재화를 준다 (지갑을 거친다). 레벨이 오르면 체력이 늘고 가득 찬다.

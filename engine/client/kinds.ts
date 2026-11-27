@@ -4,7 +4,7 @@
 import type { Model } from './scene/models';
 
 /** 화면이 아는 그 엔티티: 서버가 놓을 때 준 id, 종류 안의 type, 이름 */
-export interface KindInfo { id: number; type: string; name: string }
+export interface KindInfo { id: number; type: string; name: string; /** 부품 겉모습의 글자 (서버가 g.setLook으로 정한 것: 놓일 때의 값. 없으면 undefined) */ look?: string }
 
 export interface KindLook {
   /** 모델을 만든다. Model은 { root: THREE.Group } (engine/client의 part, mat, makeBlob로 만들거나 three.js로 직접) */

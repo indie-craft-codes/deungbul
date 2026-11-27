@@ -16,6 +16,11 @@ export interface ChatRules {
   burst: number; perS: number;
   /** 같은 말(편 모양이 같은 것)을 이만큼(초) 안에 되풀이하면 전하지 않는다 */
   sameS: number;
+  /**
+   * 근처 채널이 닿는 범위: 'layer'(기본) 같은 층의 nearM 안, 'mode' 같은 모드(modes 모듈)에 있는 사람 모두 (층을 넘는다: 단계 모드는 사람마다 층이 달라
+   * 'layer'면 근처에 아무도 없다). 전체·파티·귓말·길드와 친구는 본디 층과 상관없다
+   */
+  nearScope?: 'layer' | 'mode';
 }
 /** 친구의 규칙 (friends 모듈) */
 export interface FriendRules {

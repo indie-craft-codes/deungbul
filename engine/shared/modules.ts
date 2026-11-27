@@ -62,6 +62,8 @@ export const MODULE_TABLE = {
   chat: { needs: [] },
   /** 친구: 요청·수락·거절·삭제, 목록(접속 여부·마지막 접속·있는 곳), 상한(FRIENDS). 저장 키 단위로 저장한다 (DB의 friends 표) */
   friends: { needs: [] },
+  /** 게임 안의 모드: 한 캐릭터로 오가는 '두 게임'(들판의 MMORPG와 단계의 수집형). 화면의 '게임 바꾸기' 단추, 모드마다 메뉴의 탭·감출 요소 (MODE_RULES) */
+  modes: { needs: ['stages'] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
@@ -72,7 +74,7 @@ export type ModuleId = keyof typeof MODULE_TABLE;
  * 틀에 저장 칸을 가진 모듈을 더하면 여기에도 적는다 (engine/test/fx/modules.test.ts가 등록된 칸과 견준다)
  */
 export const MODULE_SAVES: { player: Readonly<Record<string, ModuleId>>; top: Readonly<Record<string, ModuleId>>; world: Readonly<Record<string, ModuleId>> } = {
-  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams', keys: 'dungeon', roster: 'roster', gacha: 'gacha', squad: 'squad', stages: 'stages', formation: 'squad', herogear: 'herogear', morph: 'morph' },
+  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams', keys: 'dungeon', roster: 'roster', gacha: 'gacha', squad: 'squad', stages: 'stages', formation: 'squad', herogear: 'herogear', morph: 'morph', mode: 'modes', autosafe: 'away' },
   top: { lv: 'growth', exp: 'growth', need: 'growth', maxHp: 'combat', sparks: 'economy', gold: 'economy', weapon: 'items', armor: 'items', items: 'items', cls: 'classes', auto: 'away' },
   world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams', chars: 'chars' },
 };
@@ -84,12 +86,13 @@ export const COLLECT_MODULES: readonly ModuleId[] = ['roster', 'gacha', 'squad',
  * 전통적인 탭 타깃 MMORPG가 쓰는 모듈 전부. 등불지기처럼 다 쓰는 게임은 `MODULES = RPG_MODULES`로 적어도 된다.
  * 팀(teams)은 들지 않는다: RPG가 아닌 놀이(공놀이, 깃발 뺏기)의 모듈이고, 이 목록을 쓰는 게임이 저절로 팀을 갖지 않게 한다.
  * 수집형의 넷(COLLECT_MODULES)과 영웅 장비(herogear)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 뽑기와 단계를 갖지 않게 한다.
+ * 게임 안의 모드(modes)도 들지 않는다: 한 게임인 게임은 모드가 없다.
  * herogear는 COLLECT_MODULES에도 들지 않는다: 그 목록을 쓰는 게임이 저절로 영웅 장비(아이템 모듈에 기댄다)를 갖지 않게, 고르는 게임이 따로 적는다.
  * 판(rooms)도 들지 않는다: 턴제·보드 게임의 모듈이고, 이 목록을 쓰는 게임이 저절로 대기실을 갖지 않게 한다.
  * 캐릭터 정의(chars)와 변신(morph)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 변신을 갖지 않게, 고르는 게임이 따로 적는다.
  * 대화 채널(chat)과 친구(friends)도 들지 않는다: 귓말·친구를 켤지는 게임이 정한다 (등불지기는 아직 켜지 않았다)
  */
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends');
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends' && m !== 'modes');
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).

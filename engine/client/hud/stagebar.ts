@@ -113,7 +113,9 @@ function render(): void {
   auto.classList.toggle('on', stage.auto);
   auto.setAttribute('aria-pressed', String(stage.auto));
   const go = $('stageGoBtn') as HTMLButtonElement;
-  go.textContent = run ? t('stageLeave') : t('stageStart');
+  const fighting = !!run && run.state !== 'lobby';
+  // 모드(modes)의 단계 모드에서는 '나가기'가 대기실(단계 선택)로 간다
+  go.textContent = fighting ? (document.body.dataset.modeKind === 'stage' ? t('modeToLobby') : t('stageLeave')) : t('stageStart');
 }
 
 export function initStages(): void {
@@ -126,7 +128,7 @@ export function initStages(): void {
       <div class="sbtns"><button type="button" class="plain" id="stageAuto" aria-pressed="true"></button><button type="button" class="plain" id="stageGoBtn"></button></div>
     </div>`);
   $('stageAuto').addEventListener('click', (e) => { send({ t: 'stage', a: 'auto', on: !(stage?.auto ?? true) }); (e.currentTarget as HTMLElement).blur(); });
-  $('stageGoBtn').addEventListener('click', (e) => { send({ t: 'stage', a: stage?.run ? 'leave' : 'start' }); (e.currentTarget as HTMLElement).blur(); });
+  $('stageGoBtn').addEventListener('click', (e) => { send({ t: 'stage', a: stage?.run && stage.run.state !== 'lobby' ? 'leave' : 'start' }); (e.currentTarget as HTMLElement).blur(); });
   // 소탕이 있으면 탭은 가진 소탕권·재화·열쇠가 바뀔 때도 다시 그린다
   const sweeps = !!STAGE_RULE_VIEW.sweep || anySweepDungeon();
   // 메뉴에서 들어가는 던전이 있으면 열쇠·레벨·던전 안인가가 바뀔 때도 다시 그린다

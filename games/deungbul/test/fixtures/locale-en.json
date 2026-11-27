@@ -119,6 +119,13 @@
   "Ch 2"
  ],
  "fmt.charErr": "The definition is malformed.",
+ "fmt.chatMode": [
+  "018dc67d5834ac65",
+  "[undefined]",
+  "[0]",
+  "[1]",
+  "[2]"
+ ],
  "fmt.chatTo": [
   "b572df8d88821fa1",
   "Whisper to undefined",
@@ -999,7 +1006,21 @@
   "Iron Scrap: dropped by Goblin",
   "idle: dropped by 35"
  ],
+ "fmt.modeTo": [
+  "54f1ee3aac8a073a",
+  "To undefined",
+  "To 0",
+  "To 1",
+  "To 2"
+ ],
  "fmt.morphBonus": "",
+ "fmt.morphCard": [
+  "2533b8664e3512c5",
+  "Card Lv undefined · ★undefined · ATK NaN · HP NaN",
+  "Card Lv 0 · ★undefined · ATK NaN · HP NaN",
+  "Card Lv 1 · ★undefined · ATK NaN · HP NaN",
+  "Card Lv 2 · ★undefined · ATK NaN · HP NaN"
+ ],
  "fmt.morphCd": [
   "94720af76e14a565",
   "Morph again in undefineds",
@@ -1013,6 +1034,13 @@
   "0s left",
   "1s left",
   "2s left"
+ ],
+ "fmt.morphStats": [
+  "b90992489ba4daa6",
+  "As morph: HP NaN · ATK NaN",
+  "As morph: HP 0 · ATK NaN",
+  "As morph: HP 1 · ATK NaN",
+  "As morph: HP 2 · ATK NaN"
  ],
  "fmt.myDataDue": [
   "83a62531493d3eb6",
@@ -1701,6 +1729,15 @@
   "A moderator removed Sparks ×3."
  ],
  "msg.alreadyBest": "You already have equal or better gear.",
+ "msg.autoDied": "You went down, so auto-hunt ended.",
+ "msg.autoNoPotion": "Out of potions: auto-hunt stopped.",
+ "msg.autoRetreat": [
+  "c57194adb8eb1e1a",
+  "Health at undefined%: auto-hunt stopped and you fell back.",
+  "Health at 0%: auto-hunt stopped and you fell back.",
+  "Health at 1%: auto-hunt stopped and you fell back.",
+  "Health at 2%: auto-hunt stopped and you fell back."
+ ],
  "msg.autoSalvaged": [
   "5b324cb0e8a18622",
   "Auto-salvaged undefined drops. Gear Dust +NaN",
@@ -2359,6 +2396,23 @@
   "The price must be a whole number from 2 to 1 gold.",
   "The price must be a whole number from 2 to 2 gold."
  ],
+ "msg.modeOn": [
+  "ebcb83112a755e00",
+  "Now in undefined.",
+  "Now in 0.",
+  "Now in 1.",
+  "Now in 2."
+ ],
+ "msg.modeStandDown": "Your body hunting in the field went down.",
+ "msg.modeStandEnd": "Today's auto-hunt time is used up, so field hunting stopped.",
+ "msg.modeStandOn": "Your body stays in the field and keeps auto-hunting.",
+ "msg.modeWait": [
+  "98773e83b7da77b0",
+  "You can switch again in undefineds.",
+  "You can switch again in 0s.",
+  "You can switch again in 1s.",
+  "You can switch again in 2s."
+ ],
  "msg.morphEnd": "Your morph wore off.",
  "msg.morphFight": "You cannot morph during a fight.",
  "msg.morphGone": "That character is gone, so your morph ended.",
@@ -2651,6 +2705,13 @@
   "While you were away: 0 → 0 (0 stages cleared)",
   "While you were away: 1 → 1 (1 stage cleared)",
   "While you were away: 2 → 3 (4 stages cleared)"
+ ],
+ "msg.stageBgStop": [
+  "48b3686a7007e974",
+  "Stopped after stage undefined (auto-progress is off).",
+  "Stopped after stage 0 (auto-progress is off).",
+  "Lost at stage 1: stage auto-progress stopped.",
+  "Stopped after stage 2 (auto-progress is off)."
  ],
  "msg.stageChanged": [
   "1be35710bcfe51c9",
@@ -3096,6 +3157,9 @@
  "ui.marketSortNew": "Newest",
  "ui.menu": "Menu",
  "ui.minimap": "Minimap",
+ "ui.modeBtn": "Switch game",
+ "ui.modeToLobby": "Stage select",
+ "ui.morphCardHead": "Morph stats",
  "ui.morphLookOnly": "Looks only",
  "ui.morphNone": "You have no characters yet.",
  "ui.morphNow": "Morphed",

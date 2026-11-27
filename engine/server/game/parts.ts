@@ -97,8 +97,11 @@ export interface HeroGearPart { hgear: HeroGearPiece[]; hgSeq: number }
  */
 export interface MorphPart { morph: { own: string[]; on: string; until: number; cdUntil: number } }
 
+/** [modes] 지금 모드의 id(''이면 처음 모드)와 다시 바꿀 수 있는 시각 (게임 시계. systems/modes.ts) */
+export interface ModesPart { mode: string; modeCd: number }
+
 /** 모듈의 칸 전부: Ent(./entity.ts)가 이어받는다. 칸은 그 모듈을 고른 게임의 엔티티에만 값이 있다 */
-export interface EntParts extends EconomyPart, GrowthPart, ClassesPart, CombatPart, ItemsPart, GearPart, MailPart, DailyPart, BuildPart, AwayPart, GuildPart, RosterPart, GachaPart, SquadPart, StagesPart, HeroGearPart, MorphPart {}
+export interface EntParts extends EconomyPart, GrowthPart, ClassesPart, CombatPart, ItemsPart, GearPart, MailPart, DailyPart, BuildPart, AwayPart, GuildPart, RosterPart, GachaPart, SquadPart, StagesPart, HeroGearPart, MorphPart, ModesPart {}
 
 /** 모듈의 칸 하나의 처음 값 채우기. hp는 Game.create가 받은 체력 */
 export interface Part {
@@ -134,6 +137,7 @@ export const PARTS: { readonly [M in ModuleId]?: Part } = {
   stages: { init: (e) => { e.stage = { cur: '', best: '', auto: true }; } },
   herogear: { init: (e) => { e.hgear = []; e.hgSeq = 0; } },
   morph: { init: (e) => { e.morph = { own: [], on: '', until: 0, cdUntil: 0 }; } },
+  modes: { init: (e) => { e.mode = ''; e.modeCd = 0; } },
 };
 
 export type PartKey = keyof EntParts;
