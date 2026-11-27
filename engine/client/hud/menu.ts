@@ -27,6 +27,7 @@ import { askRank, drawRank, rankTick } from './menu/rank';
 import { ENGINE_TAB_MODS, groupTabs, MENU_GROUPS, tabsForModules, visibleTabs, type MenuGroupDef, type MenuTab } from './menu/tabs';
 import { platform } from '../platform';
 import { uiIcon } from './uiicons';
+import { keepFocus } from './a11y';
 
 export { MENU_GROUPS, MENU_TABS, type EngineMenuTab, type MenuGroupDef, type MenuTab } from './menu/tabs';
 
@@ -100,7 +101,9 @@ let lastSig = '';
  * soft가 켜져 있으면(전투 중 초당 여러 번 오는 상태 메시지) 화면에 영향을 주는 값이 그대로일 때 다시 그리지 않는다.
  * 그 밖에는(단추를 눌렀을 때, 거래소·길드·순위 응답) 언제나 다시 그린다.
  */
-export function renderMenu(soft = false): void {
+export function renderMenu(soft = false): void { keepFocus(ui.panel, () => drawMenu(soft)); }
+/** 메뉴를 그린다 (renderMenu가 키보드 포커스를 지켜 부른다: hud/a11y.ts의 keepFocus) */
+function drawMenu(soft: boolean): void {
   const n = S.meta.mail.length;
   ui.btn.textContent = n ? `${t('menu')} ${n}` : t('menu');
   ui.btn.classList.toggle('alert', n > 0 || S.meta.build.left > 0 || !!S.guildInvite); // 받을 우편이나 찍을 점수가 있으면 눈에 띄게
@@ -127,6 +130,7 @@ export function renderMenu(soft = false): void {
     b.dataset.tab = x.id;
     if (lock?.why) { b.classList.add('locked'); b.prepend(uiIcon('lock', 'sm')); }
     b.classList.toggle('on', x === on);
+    b.setAttribute('aria-pressed', String(x === on)); // 낭독기: 고른 탭
     b.classList.toggle('dot', dotted(x));
     return b;
   };
@@ -143,6 +147,7 @@ export function renderMenu(soft = false): void {
       b.classList.add('mgroup'); b.dataset.group = g.id;
       b.append(uiIcon(def.icon), Object.assign(document.createElement('span'), { textContent: groupLabel(def) }));
       b.classList.toggle('on', g === onG);
+      b.setAttribute('aria-pressed', String(g === onG));
       b.classList.toggle('dot', g.tabs.some(dotted));
       b.classList.toggle('locked', g.tabs.every((x) => !!gateOf(x.id)?.why));
       ui.tabs.append(b);

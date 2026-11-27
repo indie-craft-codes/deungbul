@@ -1,7 +1,7 @@
 // 메인 퀘스트 표시: 지금 할 일, 진행 수치, 목적지 길잡이(빛기둥과 화면 가장자리 화살표).
 // 창을 누르면 목적지까지 걸어간다. 가는 것만 자동이고, 도착한 뒤의 일(전투, 구매, 바치기)은 직접 한다.
 import { QUESTS, goalCount, type QuestStep } from '../../shared/defs';
-import { $, inDungeon, moveTo, onFrame, S, setAutoGoal, uiIcon, view } from '@engine/client';
+import { $, inDungeon, moveTo, onFrame, S, setAutoGoal, toUi, uiIcon, view } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { goalBeam } from '../scene/scene';
 import { G } from '../state';
@@ -79,5 +79,6 @@ export function questFrame(now: number): void {
   const r = Math.min(view.width, view.height) * 0.3;
   const x = view.width / 2 + Math.cos(angle) * r, y = view.height / 2 + Math.sin(angle) * r;
   ui.arrow.hidden = false;
-  ui.arrow.style.transform = `translate(${(x - 11).toFixed(1)}px,${(y - 11).toFixed(1)}px) rotate(${(angle + Math.PI / 2).toFixed(3)}rad)`;
+  // 화살표는 배율(--ui-scale)을 건 HUD 안: 3D 화면 px를 그 좌표로
+  ui.arrow.style.transform = `translate(${(toUi(x) - 11).toFixed(1)}px,${(toUi(y) - 11).toFixed(1)}px) rotate(${(angle + Math.PI / 2).toFixed(3)}rad)`;
 }

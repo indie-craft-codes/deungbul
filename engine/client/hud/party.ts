@@ -9,6 +9,7 @@ import { hasModule } from '../mods';
 import { startWhisper } from './chat';
 import { S } from '../state';
 import { onMsg } from '../bus';
+import { toUi } from '../uiscale';
 
 const ui = {
   box: $('party'), list: $('partyList'),
@@ -76,9 +77,10 @@ export function showCard(id: number, name: string, sx: number, sy: number, line?
   if (gi) gi.hidden = !S.guild?.leader || S.gtags.has(id);
   ui.card.hidden = false;
   // 화면 밖으로 나가지 않게 한다
-  const w = ui.card.offsetWidth, h = ui.card.offsetHeight;
-  ui.card.style.left = `${Math.max(8, Math.min(window.innerWidth - w - 8, sx - w / 2))}px`;
-  ui.card.style.top = `${Math.max(8, Math.min(window.innerHeight - h - 8, sy - h - 34))}px`;
+  // 카드는 배율(--ui-scale)을 건 HUD 안에 있다: 화면 px(sx, sy, innerWidth)를 그 좌표로 (../uiscale.ts)
+  const w = ui.card.offsetWidth, h = ui.card.offsetHeight, x = toUi(sx), y = toUi(sy);
+  ui.card.style.left = `${Math.max(8, Math.min(toUi(window.innerWidth) - w - 8, x - w / 2))}px`;
+  ui.card.style.top = `${Math.max(8, Math.min(toUi(window.innerHeight) - h - 8, y - h - 34))}px`;
 }
 export function hideCard(): void { cardId = 0; cardName = ''; cardLine = undefined; ui.card.hidden = true; }
 

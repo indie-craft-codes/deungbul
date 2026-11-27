@@ -94,7 +94,10 @@ export function drawCardList(list: HTMLElement, get: () => CardData, redraw: () 
     const face = mk('div', 'cardface'), img = d.pic(r.id);
     if (img) { const i = document.createElement('img'); i.src = img; i.alt = ''; i.loading = 'lazy'; face.append(i); } else face.textContent = [...heroName(r.id)][0] ?? '?';
     if (r.inSquad) face.append(mk('span', 'cardsq', '◆'));
-    c.append(face, mk('b', 'cardname', heroName(r.id)), mk('small', 'cardmeta', r.owned ? `${stars(r.stars)} Lv${r.lv}` : t('heroNotOwned')));
+    // 등급은 테두리 색에 더해 글자로도 (색으로만 가르지 않는다: U4). 모서리에 등급 이름의 첫 글자, 낭독기는 등급 이름 전부
+    const rn = rarityName(r.rarity), rb = mk('span', 'cardrar', [...rn][0] ?? ''); rb.setAttribute('aria-hidden', 'true');
+    c.append(face, rb, mk('b', 'cardname', heroName(r.id)), mk('small', 'cardmeta', r.owned ? `${stars(r.stars)} Lv${r.lv}` : t('heroNotOwned')));
+    c.setAttribute('aria-label', `${heroName(r.id)} · ${rn} · ${r.owned ? `★${r.stars} Lv${r.lv}` : t('heroNotOwned')}`);
     if (r.canStar) c.classList.add('dot');
     cardCell(c, r, d.heroes);
     c.addEventListener('click', () => openCard(r.id));

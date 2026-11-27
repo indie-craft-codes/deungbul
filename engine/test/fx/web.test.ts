@@ -18,7 +18,7 @@ import { personalData } from '../../server/game/personal';
 import { MemoryStore, SqliteStore } from '../../server/store';
 import { SCHEMA } from '../../server/store/sqlite';
 import { check, connect, removeTemp, settle, until, type Peer } from '../harness';
-import { FAR_STEPS, QUALITY, defaultSettings, gfxOf, keyLabel, qualityOf, readSettings, writeSettings } from '../../client/hud/settingscalc';
+import { FAR_STEPS, QUALITY, defaultSettings, fitScale, gfxOf, hudBox, keyLabel, qualityOf, readSettings, writeSettings } from '../../client/hud/settingscalc';
 import { condMet, readProgress, writeProgress } from '../../client/hud/tutorialcalc';
 import { scrubLocal } from '../../client/errorscalc';
 import { actionOf, bindKey, keyFor, keyList, onKey, runKey, setKeyMap } from '../../client/bus';
@@ -52,6 +52,11 @@ const DAY = 86_400_000;
   const r = readSettings(JSON.stringify({ gfx: { shadows: false, pixelRatio: 9, far: 170 }, ui: 1.2, calm: true, keys: { M: 'K', bad: 5 }, extra: { tags: false } }), 1.5);
   check(!r.gfx.shadows && r.gfx.pixelRatio === 1.5 && r.gfx.far === 200 && r.ui === 1.15 && r.calm === true && r.keys.m === 'k' && !('bad' in r.keys) && r.extra.tags === false, '저장한 값을 읽을 때 가장 가까운 단계로, 상한까지, 이상한 키는 버린다');
   check(JSON.stringify(readSettings('{broken')) === JSON.stringify(d) && readSettings(writeSettings(r), 1.5).gfx.far === 200 && FAR_STEPS.includes(r.gfx.far), '깨진 글은 처음 값, 쓴 것은 그대로 읽힌다');
+  // U4 큰 화면 배율: 1600×900까지 1, 짧은 쪽 비율로 키우고(0.05 단위, 2.5까지), 폰은 1. 울트라와이드는 HUD를 가운데 16:9로. 글자 크기·고대비는 읽을 때 단계로
+  const r4 = readSettings(JSON.stringify({ ui: 1.3, fit: false, text: 1.2, contrast: true }));
+  check(fitScale(1440, 900) === 1 && fitScale(1920, 1080) === 1.2 && fitScale(2560, 1440) === 1.6 && fitScale(3840, 2160) === 2.4 && fitScale(3440, 1440) === 1.6 && fitScale(7680, 4320) === 2.5 && fitScale(1920, 1080, false) === 1
+    && JSON.stringify(hudBox(3440, 1440, 1.6)) === JSON.stringify({ w: 1600, x: 275 }) && hudBox(2560, 1440, 1.6).x === 0 && hudBox(844, 390, 1, false).x === 0
+    && r4.ui === 1.3 && r4.fit === false && r4.text === 1.15 && r4.contrast === true && !('fit' in readSettings(null)), '큰 화면 배율·울트라와이드 HUD 폭·보기 설정 읽기');
   check(keyLabel('m') === 'M' && keyLabel(' ') === 'Space' && keyLabel('tab') === 'Tab', '키 이름');
   check(condMet({ cmd: 'move' }, { kind: 'cmd', name: 'move' }) && !condMet({ cmd: 'move' }, { kind: 'cmd', name: 'attack' }) && condMet({ msg: 'sys:levelUp' }, { kind: 'msg', name: 'sys:levelUp' })
     && condMet({ key: 'm' }, { kind: 'key', name: 'M' }) && condMet({ test: () => true }, { kind: 'tick' }) && !condMet(undefined, { kind: 'tick' }), '튜토리얼의 조건: 명령, 안내문, 단축키, 물음');

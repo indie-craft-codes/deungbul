@@ -28,6 +28,7 @@ import { platform } from '../platform';
 import { S } from '../state';
 import { feed } from './notify';
 import { allLabels, allMarks, cssVar, paintWith } from './minimap';
+import { toUi } from '../uiscale';
 
 /** 장소의 갈래. 틀이 아는 것 여덟이고, 게임은 이 가운데 하나를 고른다 (목록의 묶음과 표식의 모양이 갈래를 따른다) */
 export type PlaceKind = 'goal' | 'town' | 'shop' | 'forge' | 'dungeon' | 'hunt' | 'boss' | 'other';
@@ -425,7 +426,8 @@ function placeAt(sx: number, sy: number): MapPlace | null {
 function initPointer(): void {
   const c = ui.canvas, pts = new Map<number, { x: number; y: number }>();
   let downAt: { x: number; y: number } | null = null, moved = false, pinch = 0;
-  const local = (ev: PointerEvent) => { const r = c.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
+  // 지도는 배율(--ui-scale)을 건 창 안에 있다: 화면 px의 거리를 캔버스의 css px로 (../uiscale.ts)
+  const local = (ev: PointerEvent) => { const r = c.getBoundingClientRect(); return { x: toUi(ev.clientX - r.left), y: toUi(ev.clientY - r.top) }; };
   c.addEventListener('pointerdown', (ev) => {
     try { c.setPointerCapture(ev.pointerId); } catch { /* 무시 */ }
     pts.set(ev.pointerId, local(ev));
@@ -469,7 +471,7 @@ function initPointer(): void {
   c.addEventListener('pointerup', up);
   c.addEventListener('pointercancel', (ev) => { pts.delete(ev.pointerId); pinch = 0; downAt = null; });
   c.addEventListener('pointerleave', () => { if (hover) { hover = null; ui.tip.hidden = true; draw(); } });
-  c.addEventListener('wheel', (ev) => { ev.preventDefault(); const r = c.getBoundingClientRect(); zoomAt(ev.deltaY < 0 ? 1.25 : 0.8, ev.clientX - r.left, ev.clientY - r.top); }, { passive: false });
+  c.addEventListener('wheel', (ev) => { ev.preventDefault(); const r = c.getBoundingClientRect(); zoomAt(ev.deltaY < 0 ? 1.25 : 0.8, toUi(ev.clientX - r.left), toUi(ev.clientY - r.top)); }, { passive: false });
 }
 
 // ---------- 열고 닫기 ----------

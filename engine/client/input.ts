@@ -9,12 +9,15 @@ import { clampZoom } from './camera';
 import { HOME_KEY } from '../shared/defs';
 import { blurChat, focusChat } from './hud/chat';
 import { S } from './state';
+import { toUi } from './uiscale';
 
 const keys = new Set<string>();
 const joy = { x: 0, y: 0 };
 
 /** 글자를 입력하는 중인가 (그동안은 단축키와 방향키를 받지 않는다) */
 export const typing = (): boolean => document.activeElement instanceof HTMLInputElement;
+/** 키보드 포커스가 누르는 것(단추·고르는 상자·링크·탭) 위에 있는가 */
+const onControl = (): boolean => { const a = document.activeElement; return a instanceof HTMLElement && a !== document.body && a.matches('button, select, a[href], summary, [role="button"], [role="tab"], [role="switch"]'); };
 
 /** 지금의 방향 입력. 화면 기준으로 x는 오른쪽, z는 아래쪽이 양수다. */
 export function axis(): { x: number; z: number } {
@@ -67,7 +70,7 @@ function initJoystick(): void {
     const d = Math.hypot(dx, dy), m = Math.min(d, R);
     if (d > 0) { dx = (dx / d) * m; dy = (dy / d) * m; }
     joy.x = dx / R; joy.y = dy / R;
-    knob.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`;
+    knob.style.transform = `translate(${toUi(dx).toFixed(1)}px,${toUi(dy).toFixed(1)}px)`; // 손잡이는 배율을 건 HUD 안 (./uiscale.ts)
   };
   const end = (ev: PointerEvent) => {
     if (ev.pointerId !== id) return;
@@ -83,6 +86,8 @@ function initKeyboard(): void {
   window.addEventListener('keydown', (ev) => {
     if (typing()) { if (ev.key === 'Escape') (document.activeElement as HTMLElement).blur(); return; }
     if (!S.me) return;
+    // 단추·고르는 상자에 키보드 포커스가 있으면 Enter·Space는 그것을 누른다 (대화 열기·게임의 키가 아니라: U4 키보드로만 하기)
+    if ((ev.key === 'Enter' || ev.key === ' ') && onControl()) return;
     if (ev.key === 'Enter') { ev.preventDefault(); focusChat(); return; }
     if (ev.key === 'Escape') { if (worldMapOpen()) closeWorldMap(); else stop(); return; }
     // 틀의 모듈이 단 키(bus.bindKey: 숫자·Tab은 전투, Q·B는 아이템, R은 자동 사냥, M·N·H는 핵심)와 게임의 키(bus.onKey)
