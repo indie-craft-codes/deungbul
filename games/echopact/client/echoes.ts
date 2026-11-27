@@ -33,6 +33,10 @@ export function initEchoes(): void {
       const hero = charHero(d);
       addHeroDef(d.id, Object.defineProperty(hero, 'label', { get: () => echoName(d), enumerable: true }));
     }
+    // 정의보다 먼저 시야에 든 메아리(접속하자마자 따라오는 편성)는 이름표가 id로 그려져 있다: 틀은 언어가 바뀔 때만 이름표를 다시 쓴다(틀의 빈 곳).
+    // 그 이름표의 글만 바꾼다 (이름표의 글 칸: engine/client/hud/tags.ts의 makeTag)
+    const byId = new Map(list.map((d) => [d.id, d]));
+    for (const el of document.querySelectorAll<HTMLElement>('#tags .tag.ally > div:not(.hpw)')) { const d = byId.get(el.textContent ?? ''); if (d) el.textContent = echoName(d); }
     if (placed || !list.length) return;
     placed = true;
     // 울림 샘의 북쪽 반원에 석상처럼, 샘을 바라보게

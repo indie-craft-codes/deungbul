@@ -33,7 +33,8 @@ export const GUEST_NAME = 'Pactbinder';
 export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: false }, sparks: { tradable: false }, exp: { tradable: false } };
 
 // ---------- 맵: 울림골 하나 (가운데 울림 샘, 네 귀퉁이에 무리, 북쪽이 단계의 자리) ----------
-export const SHOPS: readonly { x: number; z: number }[] = [{ x: 5, z: 1 }];
+// 상인은 처음 자리(0, 2)와 일어나는 자리(샘 앞)에서 조금 떨어진 서쪽에: 들어오자마자 상점 창이 화면을 덮지 않게 (폰)
+export const SHOPS: readonly { x: number; z: number }[] = [{ x: -10, z: 3 }];
 export const CAMPS: readonly { x: number; z: number; types: readonly MonsterId[] }[] = [
   { x: -24, z: 16, types: ['mossling', 'mossling', 'mossling', 'mossling'] },
   { x: 24, z: 18, types: ['mossling', 'thornboar', 'thornboar'] },

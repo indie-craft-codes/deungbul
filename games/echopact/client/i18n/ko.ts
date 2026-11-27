@@ -61,6 +61,8 @@ export const koGame = {
     mapLegend: '■ 울림 샘 · 초록 상인',
     goingTown: '울림 샘으로 걸어갑니다.',
     // 수집형의 이름 키: 역할·배너·장
+    // 틀의 '영웅' 탭을 이 게임의 말로
+    tabHeroes: '메아리',
     roleVanguard: '선봉', roleRanger: '사수', roleMystic: '비술', roleMender: '치유',
     bannerWell: '울림 샘', chapterPath: '속삭임 길', chapterRuins: '종소리 폐허', chapterSpire: '울림 첨탑',
     // 튜토리얼과 설정 칸 (client/tutorial.ts)

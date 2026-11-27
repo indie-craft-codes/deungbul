@@ -66,6 +66,7 @@ npx tsx test/all.ts boundary fx/shop deungbul/quests sample/docs   # 고른 시�
 |---|---|---|---|---|
 | 등불지기 `games/deungbul` | 운영 중인 쿼터뷰 로우폴리 MMORPG 검증판(영어 이름 Lampkeeper). 등탑에 불씨를 바치는 서버 공동 목표, 세 구역·던전·필드 보스·습격, 직업 셋, 파티·길드·거래소 | RPG 열여섯 | 3001 | [games/deungbul/README.md](games/deungbul/README.md) (게임 설명, 실행·환경 변수, 파일럿 배포, 도감, 경제 장부), [docs/economy.md](docs/economy.md) |
 | 예제 `games/sample` "모닥불 사냥터" | 같은 틀로 만든 아주 작은 두 번째 게임. 새 게임을 만들 때 베끼는 출발점이고, 문서의 코드 조각이 이 파일들과 같은지 시험이 본다 | RPG 일부 + `chars`·`morph`·`chat`·`friends` | 3002 | 아래 '예제 게임', [docs/making-a-game.md](docs/making-a-game.md) |
+| 예제 `games/echopact` "메아리 계약" | 두 장르를 한 서버·한 캐릭터에: 들판의 MMORPG(사냥·장비·파티)와 수집형(뽑기·편성·단계). 뽑은 캐릭터(정의)가 단계의 동료이자 들판의 변신이 된다 | RPG 일부 + 수집형 넷 + `chars`·`morph`·`chat`·`friends` | 3003 | [docs/proof-echopact.md](docs/proof-echopact.md) |
 
 2026-11-27에 시제품·증명 게임 일곱(버섯 동굴, 별가루 광산, 돌담 마을, 굴림공, 달무리 원정대, 징검돌 전술, 반딧불 연못)을 지웠다. 코드는 커밋 `7e347c9`에 있다(`git checkout 7e347c9 -- games/<이름>`). 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험(`engine/test/core`, `engine/test/collect`)이 지킨다. 증명 기록은 `docs/proof-*.md`.
 
@@ -93,10 +94,11 @@ engine/            틀: 게임을 모른다 (games/를 import하지 않는다)
   index.ts들       게임이 읽는 입구: @engine/shared, @engine/server, @engine/client, @engine/client/i18n, @engine/client/platform, @engine/testing
 games/deungbul/    등불지기 (틀을 @engine/…으로 읽는다)
 games/sample/      예제 게임
+games/echopact/    두 장르를 합친 예제 게임
 test/all.ts        모든 시험을 차례로 돌린다 (틀의 시험, 그리고 게임마다 그 게임의 test/all.ts를 따로 된 프로세스로)
 scripts/           game.mjs(게임 고르기), typecheck.mjs, deploy.mjs, restart.mjs·serve.mjs(감시자), admin.mjs(관리자 CLI), load.mjs(부하), budget.mjs(빌드 크기), pilot.mjs·publish.sh(등불지기 파일럿 배포)
 docs/              문서 (docs/README.md가 지도)
-data/, dist/, dist-sample/   저장 파일과 빌드 결과 (git에 넣지 않는다)
+data/, dist/, dist-sample/, dist-echopact/   저장 파일과 빌드 결과 (git에 넣지 않는다)
 ```
 
 원칙:
