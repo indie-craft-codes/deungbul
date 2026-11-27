@@ -1,0 +1,6 @@
+{
+  "port": 3003,
+  "db": "data/echopact/game.db",
+  "dist": "dist-echopact",
+  "bots": 0
+}

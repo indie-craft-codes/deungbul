@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@engine/*": ["../../engine/*"],
+      "@game/*": ["./*"]
+    }
+  },
+  "include": ["../../engine/shared", "../../engine/server", "../../engine/client", "."]
+}

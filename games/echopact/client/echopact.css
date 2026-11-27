@@ -1,0 +1,13 @@
+/* 이 게임(메아리 계약)의 스타일. 틀의 스타일(engine/client/style.css) 뒤에 읽혀 같은 무게의 규칙을 덮어쓴다 */
+/* 색: 틀의 색 변수를 덮어써 분위기를 정한다 (맑은 골짜기의 아침) */
+:root {
+  --sky: #b8d4e8;
+  --ink: #141a24;
+  --ink-rgb: 20, 26, 36;
+  --panel: rgba(var(--ink-rgb), .86);
+  --cover-rgb: 12, 16, 24;
+  --line: rgba(150, 200, 255, .3);
+  --gold: #ffd070;
+}
+/* 설정 창의 '이름표 보이기'를 끄면 (client/tutorial.ts의 addSetting) */
+.noTags #tags { display: none; }

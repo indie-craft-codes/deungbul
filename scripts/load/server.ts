@@ -37,6 +37,7 @@ const PLUGINS: Record<string, [string, string, boolean]> = {
   deungbul: ['games/deungbul/server/deungbul.ts', 'installDeungbul', true],
   collect: ['engine/test/collect/server/heath.ts', 'heath', false],
   sample: ['games/sample/server/sample.ts', 'installSample', false],
+  echopact: ['games/echopact/server/echopact.ts', 'installEchopact', false],
 };
 const [file, fn, takesCfg] = PLUGINS[cfg.game] ?? (() => { throw new Error(`모르는 게임: ${cfg.game}`); })();
 const mod = await imp(file);
