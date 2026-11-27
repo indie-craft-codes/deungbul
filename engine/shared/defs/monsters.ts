@@ -35,6 +35,8 @@ export interface MonsterDef {
    * 새 사냥터의 몬스터만 더 높은 장비를 떨어뜨리게 할 때 쓴다. 장비를 떨어뜨리는 곳(서버)과 도감은 gearLvOf로 읽는다
    */
   gearLv?: number;
+  /** 처치에 참여한 사람마다 장비를 떨어뜨릴 확률. 없으면 GEAR.dropChance (필드 보스는 늘 떨어뜨린다). 0이면 떨어뜨리지 않는다 */
+  gearChance?: number;
 }
 
 /** 'ranged' 몬스터의 기본 사거리(m) */

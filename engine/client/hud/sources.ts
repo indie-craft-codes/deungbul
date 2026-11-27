@@ -1,4 +1,4 @@
-// 재료가 어디서 나오는지: 어떤 몬스터가 떨어뜨리는지를 games/deungbul/shared/content/craft.ts의 DROPS에서 읽어 글로 만든다.
+// 재료가 어디서 나오는지: 어떤 몬스터가 떨어뜨리는지를 게임 내용의 DROPS(재료 드롭 표)에서 읽어 글로 만든다.
 // 문장에 몬스터 이름을 직접 적지 않으므로, 드롭 표가 바뀌면 가방과 대장간의 안내도 따라 바뀐다.
 import { DROPS, type ItemId, type MonsterId } from '../../shared/defs';
 import { L } from '../i18n';

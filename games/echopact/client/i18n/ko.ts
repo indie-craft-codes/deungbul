@@ -1,7 +1,10 @@
 // 한국어: 이 게임의 내용의 이름(koNames)과 이 게임의 문장(koGame). 틀의 문장(koBase)과 합쳐 한 언어 묶음이 된다 (index.ts).
 // 기준 언어다: en.ts는 이 파일과 같은 모양을 갖춰야 컴파일된다.
 import type { MsgArg, MsgKey } from '@engine/shared';
-import { charName } from '@engine/shared/defs';
+import { ENHANCE, charName } from '@engine/shared/defs';
+
+/** 강화에 울림 가루가 들기 시작하는 단계 (shared/content/gear.ts의 ENHANCE.dust에서) */
+export const DUST_FROM = Array.from({ length: ENHANCE.max }, (_, i) => i).find((n) => ENHANCE.dust(n, 0) > 0) ?? ENHANCE.max;
 import { keyHints } from '@engine/client/i18n/ko';
 import type { ContentNames } from '@engine/client/i18n/names';
 
@@ -15,6 +18,12 @@ export const koNames: ContentNames = {
     jerkin: { name: '누빈 조끼' },
     chain: { name: '사슬 갑옷' },
     tonic: { name: '샘물 약' },
+    // 울림골의 몬스터만 떨어뜨리는 장비와, 분해하면 나오는 가루 (shared/content/gear.ts)
+    valeblade: { name: '울림골 검', bow: '울림골 활' },
+    hornblade: { name: '돌뿔 검', bow: '돌뿔 활' },
+    valecoat: { name: '울림골 외투' },
+    hornmail: { name: '돌뿔 갑옷' },
+    echodust: { name: '울림 가루', info: '울림골 장비를 분해하면 나옵니다. +5부터의 강화에 씁니다.' },
   },
   classes: {
     warden: { name: '파수꾼', info: '검을 들고 가까이 붙어 싸웁니다. 체력이 많습니다.' },
@@ -141,6 +150,8 @@ export const koGame = {
     pct: (v: number) => `${Math.round(v * 100)}%`,
     /** 게임 바꾸기 단추: 틀의 '(으)로' 대신 */
     modeTo: (name: string) => `${name} 가기`,
+    /** 장비 탭의 강화 안내: 이 게임은 +5부터 울림 가루도 든다 (틀의 문장은 '골드만 듭니다') */
+    gearHint: (supplyMax: number, max: number) => `강화: 보급형(상점에서 산 것)은 +${supplyMax}까지, 주운 장비는 +${max}까지. 실패해도 장비는 그대로이고 골드와 울림 가루(+${DUST_FROM}부터)만 듭니다.`,
   },
   /** 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것 */
   msg: {

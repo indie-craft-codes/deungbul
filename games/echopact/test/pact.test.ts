@@ -1,12 +1,12 @@
 // 메아리 계약의 규칙 (서버 없이, 가상 시계): 메아리 정의가 규칙을 지나는가, 공개 확률표와 천장, 그리고 두 게임 —
 // 계약의 탑(A: 단계·뽑기·편성)과 울림골(B: 들판)을 '게임 바꾸기'로 오가며, 뽑은 메아리가 같은 소유로 (1) 탑의 편성 동료 (2) 들판의 변신이 되고,
 // 카드의 능력치가 곧 변신의 능력치이며, 보고 있지 않은 쪽(들판의 자동 사냥, 탑의 자동 진행)이 이어 가고, 저장과 예전 저장을 지나도 이어지는가.
-import { BANNERS, CHAPTERS, DAILIES, MODE_RULES, MODULES, SQUAD_RULES } from '../shared/content';
+import { BANNERS, CHAPTERS, DAILIES, ENHANCE, MODE_RULES, MODULES, MONSTERS, ODDS, SALVAGE, SQUAD_RULES } from '../shared/content';
 import { MODE, SAFETY, STARTER, STARTER_ECHO, cardToMorph } from '../shared/content/pact';
 import { installEchopact } from '../server/echopact';
 import { ECHO_DEFS } from '../server/echoes';
 import { type Ent, Game } from '@engine/server';
-import { charText, charWeight, classBaseAtk, encodeLook, heroDef, isHeroId, lookParts, morphCard, morphStats, pityOdds, poolOdds, rarityOdds, seededRng, starCount, validateCharDef } from '@engine/shared/defs';
+import { charText, charWeight, gearDropTables, classBaseAtk, encodeLook, heroDef, isHeroId, lookParts, morphCard, morphStats, pityOdds, poolOdds, rarityOdds, seededRng, starCount, validateCharDef } from '@engine/shared/defs';
 import { check } from '@engine/testing';
 
 // ---------- 메아리 정의와 뽑기의 표 ----------
@@ -269,4 +269,42 @@ check(Object.values(DAILIES).filter((d) => 'period' in d && d.period === 'week')
   const left2 = me().run?.left ?? 0;
   const saved = k.saves.find((x) => x.name === 'stages')!.save(p) as { speed?: number };
   check(me().speedMax === 2 && me().speed === 2 && k.layerScale.get(layer) === 2 && left1 - left2 >= 7 && saved.speed === 2, `1-5를 깨면 ×2: 4초에 제한 시간이 ${left1 - left2}초 줄고, 고른 배속이 저장된다`);
+}
+
+// ---------- 울림골의 장비: 드롭(몬스터마다의 확률, 탑은 없음) → 분해(울림 가루) → 가루를 쓰는 강화 (shared/content/gear.ts) ----------
+{
+  const k = new Game({ plugins: [installEchopact], now: () => clock });
+  const p = k.players.spawn('장비 시험', false, null, 'ep-gear');
+  k.fire('playerJoined', p); k.command(p, { t: 'class', id: 'warden' });
+  const mob = (type: string) => ({ ...[...k.ents.values()].find((e) => e.kind === 'm')!, type, def: MONSTERS[type as keyof typeof MONSTERS] }) as unknown as Ent;
+  const n0 = p.gear.length;
+  k.gear.random = () => 0; // 늘 떨어진다 (확률이 0인 몬스터만 빼고)
+  for (const m of ['wisp', 'hollowkin', 'bellgolem']) k.fire('monsterKilled', mob(m), [p]);
+  const tower = p.gear.length - n0;
+  k.gear.random = Math.random;
+  const horn = k.gear.roll(5, 0, 'weapon'), vale = k.gear.roll(1, 0, 'armor');
+  const tables = ODDS.drops ? gearDropTables() : [];
+  check(tower === 0 && horn.base === 'hornblade' && vale.base === 'valecoat' && tables.map((t) => t.id).join() === 'drop:mossling,drop:thornboar,drop:stonehorn'
+    && tables.every((t) => Math.abs(t.steps[0].outcomes.reduce((s, o) => s + o.p, 0) - 1) < 1e-12 && Math.abs(1 - t.steps[0].outcomes[0].p - (MONSTERS[t.id.slice(5) as 'mossling'].gearChance ?? 0)) < 1e-12),
+    `탑의 몬스터는 장비를 떨어뜨리지 않고(${tower}), 울림골의 것은 레벨대로 울림골·돌뿔의 바탕이며, 드롭 확률의 공개 표(셋)가 몬스터의 확률과 같다`);
+  // 분해: 평범한 1·쓸 만한 3, 낀 것은 안 된다, 자동 분해(평범한 이하)는 주운 자리에서 가루로
+  const a = k.gear.roll(1, 0, 'ring'), b = k.gear.roll(2, 1, 'charm');
+  k.gear.give(p, a); k.gear.give(p, b);
+  k.command(p, { t: 'salvage', uids: [p.worn.weapon!] });
+  k.command(p, { t: 'salvage', uids: [a.uid, b.uid] });
+  k.command(p, { t: 'autoSalvage', rar: 0 });
+  k.gear.random = () => 0; k.fire('monsterKilled', mob('mossling'), [p]); k.gear.random = Math.random;
+  const dust = p.items[SALVAGE.item] ?? 0, gearN = p.gear.length;
+  check(dust >= 4 && dust <= 5 && !p.gear.some((x) => x.uid === a.uid || x.uid === b.uid) && p.gear.some((x) => x.uid === p.worn.weapon) && k.notices.some((x) => x.id === p.id && x.k === 'salvageCant'),
+    `분해하면 울림 가루(평범한 1 + 쓸 만한 3, 자동 분해한 드롭 ${dust - 4}), 낀 무기는 분해되지 않는다 (가방 ${gearN}점)`);
+  // 강화: +5부터 가루 (단계−3) × (등급+1), 모자라면 골드도 받지 않는다. 실패해도 내려가지 않는다
+  const c = k.gear.roll(3, 1, 'amulet'); c.plus = 5; k.gear.give(p, c);
+  p.items[SALVAGE.item] = 3; k.wallet.add(p, 'gold', 5000, 'test');
+  const gold0 = p.gold;
+  k.command(p, { t: 'enhance', uid: c.uid });
+  const blocked = p.gold === gold0 && c.plus === 5 && p.items[SALVAGE.item] === 3;
+  p.items[SALVAGE.item] = 10; k.gear.random = () => 0.99;
+  k.command(p, { t: 'enhance', uid: c.uid }); k.gear.random = Math.random;
+  check(blocked && ENHANCE.dust(5, 1) === 4 && ENHANCE.dust(4, 3) === 0 && p.items[SALVAGE.item] === 6 && c.plus === 5 && p.gold === gold0 - ENHANCE.gold(5, 1),
+    `+5 강화는 가루 ${ENHANCE.dust(5, 1)}(쓸 만한)와 골드 ${ENHANCE.gold(5, 1)}: 가루가 모자라면 아무것도 들지 않고, 실패해도 +5 그대로 (+4까지와 상점 장비는 가루가 들지 않는다)`);
 }
