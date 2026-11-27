@@ -26,65 +26,66 @@ import {
 } from '../shared/defs';
 import { TOWERS, rng } from '../shared/world';
 import { BAG_UP, SALVAGE, bagSlots, dustFor, gearLvOf, isItemId, itemCap } from '../shared/defs';
-import { check } from '@engine/testing';
+import { check, checkEach } from '@engine/testing';
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
 const near = (got: number, want: number, ratio: number): boolean => Math.abs(got - want) <= Math.abs(want) * ratio;
+const langOf = (P: (typeof PACKS)[number]): string => P.L.code;
 
 // ---------- 빠진 항목이 없는가, 이름이 제대로 나오는가 (언어마다) ----------
-for (const P of PACKS) {
-  const lang = P.L.code, sections = buildGuide(P), tables = tablesOf(sections);
+checkEach(PACKS, langOf, (P, c) => {
+  const sections = buildGuide(P), tables = tablesOf(sections);
   const byId = new Map(tables.map((t) => [t.id, t]));
   const keys = (id: string): string[] => (byId.get(id)?.rows ?? []).map((r) => r.key);
   const firstCells = (id: string): Map<string, string> => new Map((byId.get(id)?.rows ?? []).map((r) => [r.key, r.cells[0]]));
 
-  check(new Set(tables.map((t) => t.id)).size === tables.length && new Set(sections.map((s) => s.id)).size === sections.length, `[${lang}] 구역과 표의 id가 겹치지 않는다`);
+  c(new Set(tables.map((t) => t.id)).size === tables.length && new Set(sections.map((s) => s.id)).size === sections.length, `구역과 표의 id가 겹치지 않는다`);
 
   const monsterIds = Object.keys(MONSTERS) as MonsterId[];
-  check(sameSet(keys('monsters'), monsterIds) && sameSet(keys('monsterRewards'), monsterIds), `[${lang}] 모든 몬스터가 전투 수치 표와 보상 표에 있다 (${monsterIds.length}종)`);
-  check(monsterIds.every((id) => firstCells('monsters').get(id) === P.L.monsters[id] && P.L.monsters[id] !== id), `[${lang}] 몬스터의 이름이 언어 파일의 것이다`);
+  c(sameSet(keys('monsters'), monsterIds) && sameSet(keys('monsterRewards'), monsterIds), `모든 몬스터가 전투 수치 표와 보상 표에 있다 (${monsterIds.length}종)`);
+  c(monsterIds.every((id) => firstCells('monsters').get(id) === P.L.monsters[id] && P.L.monsters[id] !== id), `몬스터의 이름이 언어 파일의 것이다`);
   const itemIds = Object.keys(ITEMS);
-  check(sameSet(keys('items'), itemIds), `[${lang}] 모든 아이템이 아이템 표에 있다 (${itemIds.length}종)`);
-  check(itemIds.every((id) => firstCells('items').get(id)?.startsWith(P.L.items[id as keyof typeof ITEMS].name)), `[${lang}] 아이템의 이름이 언어 파일의 것이다`);
-  check(sameSet(keys('shop'), SHOP_STOCK), `[${lang}] 상점의 물건이 모두 상점 표에 있다`);
+  c(sameSet(keys('items'), itemIds), `모든 아이템이 아이템 표에 있다 (${itemIds.length}종)`);
+  c(itemIds.every((id) => firstCells('items').get(id)?.startsWith(P.L.items[id as keyof typeof ITEMS].name)), `아이템의 이름이 언어 파일의 것이다`);
+  c(sameSet(keys('shop'), SHOP_STOCK), `상점의 물건이 모두 상점 표에 있다`);
   const skillIds = Object.keys(SKILL_DEFS);
-  check(sameSet(keys('skills'), skillIds) && skillIds.every((id) => firstCells('skills').get(id) === P.L.skills[id as keyof typeof SKILL_DEFS].name), `[${lang}] 모든 기술이 기술 표에 있다 (${skillIds.length}개)`);
-  check(sameSet(keys('classes'), CLASS_IDS) && CLASS_IDS.every((id) => firstCells('classes').get(id) === P.L.classes[id].name), `[${lang}] 모든 직업이 직업 표에 있다`);
-  check((byId.get('classHp')?.head.length ?? 0) === CLASS_IDS.length + 1, `[${lang}] 레벨별 체력 표에 모든 직업의 칸이 있다`);
-  check(QUESTS.every((ch) => sameSet(keys(`quest_${ch.id}`), ch.steps.map((_, i) => `${ch.id}:${i}`)) && byId.get(`quest_${ch.id}`)!.caption.startsWith(P.L.quests[ch.id].title)),
-    `[${lang}] 모든 퀘스트의 장과 단계가 있다 (${QUESTS.length}장, ${QUESTS.reduce((s, ch) => s + ch.steps.length, 0)}단계)`);
-  check(QUESTS.every((ch) => byId.get(`quest_${ch.id}`)!.rows.every((r, i) => r.cells[3] === num(ch.steps[i].reward.exp) && r.cells[4] === num(ch.steps[i].reward.sparks))), `[${lang}] 퀘스트 단계의 보상이 정의와 같다`);
-  check(DUNGEON_IDS.every((id) => byId.has(`dungeon_${id}`) && byId.has(`dungeonGear_${id}`)) && sections.find((s) => s.id === 'dungeons')!.blocks.filter((b) => b.t === 'h').length === DUNGEON_IDS.length, `[${lang}] 모든 던전이 있다`);
-  check(sameSet(keys('dailies'), DAILY_IDS) && DAILY_IDS.every((id) => firstCells('dailies').get(id) === P.L.gear.dailies[id]), `[${lang}] 모든 일일 임무가 있다`);
-  check(sameSet(keys('recipes'), RECIPES.map((r) => r.id)), `[${lang}] 모든 제작법이 있다`);
-  check(sameSet(keys('matDrops'), Object.keys(DROPS)), `[${lang}] 재료를 떨어뜨리는 몬스터가 모두 있다`);
-  check(keys('attend').length === ATTEND.length && keys('contrib').length === CONTRIB_TIERS.length && keys('camps').length === CAMPS.length, `[${lang}] 출석 보상, 기여 단계, 몬스터 무리가 모두 있다`);
-  check(sameSet(keys('residents'), RESIDENTS.map((r) => r.id)) && sameSet(keys('towers'), TOWERS.map((t) => t.id)), `[${lang}] 모든 주민과 등탑이 있다`);
-  check(sameSet(keys('rarities'), RARITIES.map((r) => r.id)) && sameSet(keys('buildStats'), BUILD_STAT_IDS) && keys('options').length === STAT_IDS.length * RARITIES.length, `[${lang}] 모든 등급, 능력치, 장비 옵션이 있다`);
-  check(keys('enhance').length === ENHANCE.max && keys('enhanceTotal').length === ENHANCE.max, `[${lang}] 강화 표에 모든 단계가 있다 (+${ENHANCE.max}까지)`);
+  c(sameSet(keys('skills'), skillIds) && skillIds.every((id) => firstCells('skills').get(id) === P.L.skills[id as keyof typeof SKILL_DEFS].name), `모든 기술이 기술 표에 있다 (${skillIds.length}개)`);
+  c(sameSet(keys('classes'), CLASS_IDS) && CLASS_IDS.every((id) => firstCells('classes').get(id) === P.L.classes[id].name), `모든 직업이 직업 표에 있다`);
+  c((byId.get('classHp')?.head.length ?? 0) === CLASS_IDS.length + 1, `레벨별 체력 표에 모든 직업의 칸이 있다`);
+  c(QUESTS.every((ch) => sameSet(keys(`quest_${ch.id}`), ch.steps.map((_, i) => `${ch.id}:${i}`)) && byId.get(`quest_${ch.id}`)!.caption.startsWith(P.L.quests[ch.id].title)),
+    `모든 퀘스트의 장과 단계가 있다 (${QUESTS.length}장, ${QUESTS.reduce((s, ch) => s + ch.steps.length, 0)}단계)`);
+  c(QUESTS.every((ch) => byId.get(`quest_${ch.id}`)!.rows.every((r, i) => r.cells[3] === num(ch.steps[i].reward.exp) && r.cells[4] === num(ch.steps[i].reward.sparks))), `퀘스트 단계의 보상이 정의와 같다`);
+  c(DUNGEON_IDS.every((id) => byId.has(`dungeon_${id}`) && byId.has(`dungeonGear_${id}`)) && sections.find((s) => s.id === 'dungeons')!.blocks.filter((b) => b.t === 'h').length === DUNGEON_IDS.length, `모든 던전이 있다`);
+  c(sameSet(keys('dailies'), DAILY_IDS) && DAILY_IDS.every((id) => firstCells('dailies').get(id) === P.L.gear.dailies[id]), `모든 일일 임무가 있다`);
+  c(sameSet(keys('recipes'), RECIPES.map((r) => r.id)), `모든 제작법이 있다`);
+  c(sameSet(keys('matDrops'), Object.keys(DROPS)), `재료를 떨어뜨리는 몬스터가 모두 있다`);
+  c(keys('attend').length === ATTEND.length && keys('contrib').length === CONTRIB_TIERS.length && keys('camps').length === CAMPS.length, `출석 보상, 기여 단계, 몬스터 무리가 모두 있다`);
+  c(sameSet(keys('residents'), RESIDENTS.map((r) => r.id)) && sameSet(keys('towers'), TOWERS.map((t) => t.id)), `모든 주민과 등탑이 있다`);
+  c(sameSet(keys('rarities'), RARITIES.map((r) => r.id)) && sameSet(keys('buildStats'), BUILD_STAT_IDS) && keys('options').length === STAT_IDS.length * RARITIES.length, `모든 등급, 능력치, 장비 옵션이 있다`);
+  c(keys('enhance').length === ENHANCE.max && keys('enhanceTotal').length === ENHANCE.max, `강화 표에 모든 단계가 있다 (+${ENHANCE.max}까지)`);
   // 분해로 나오는 가루의 표와 가방 넓히기의 값 표: 정의(SALVAGE, BAG_UP)를 따른다
   const salvageRows = byId.get('salvage')?.rows ?? [], bagUpRows = byId.get('bagUp')?.rows ?? [];
-  check(sameSet(keys('salvage'), RARITIES.map((r) => r.id)) && salvageRows.every((r, i) => r.cells.length === ENHANCE.max + 2 && r.cells.slice(1).every((c, plus) => c === num(dustFor({ rar: i, plus })))) && salvageRows[0].cells[1] === num(SALVAGE.dust[0]),
-    `[${lang}] 분해 표: 등급마다 +0부터 +${ENHANCE.max}까지의 가루가 정의의 식(dustFor)과 같다`);
-  check(bagUpRows.length === BAG_UP.prices.length && bagUpRows.every((r, i) => r.cells[1].includes(num(BAG_UP.prices[i])) && r.cells[2].includes(num(bagSlots(i + 1))) && r.cells[3].includes(num(BAG_UP.prices.slice(0, i + 1).reduce((s, n) => s + n, 0)))),
-    `[${lang}] 가방 넓히기 표: 차례마다의 값과 칸 수, 누적 골드가 정의(BAG_UP)와 같다`);
+  c(sameSet(keys('salvage'), RARITIES.map((r) => r.id)) && salvageRows.every((r, i) => r.cells.length === ENHANCE.max + 2 && r.cells.slice(1).every((c, plus) => c === num(dustFor({ rar: i, plus })))) && salvageRows[0].cells[1] === num(SALVAGE.dust[0]),
+    `분해 표: 등급마다 +0부터 +${ENHANCE.max}까지의 가루가 정의의 식(dustFor)과 같다`);
+  c(bagUpRows.length === BAG_UP.prices.length && bagUpRows.every((r, i) => r.cells[1].includes(num(BAG_UP.prices[i])) && r.cells[2].includes(num(bagSlots(i + 1))) && r.cells[3].includes(num(BAG_UP.prices.slice(0, i + 1).reduce((s, n) => s + n, 0)))),
+    `가방 넓히기 표: 차례마다의 값과 칸 수, 누적 골드가 정의(BAG_UP)와 같다`);
   const gearText = JSON.stringify(sections.find((s) => s.id === 'gear'));
-  check(gearText.includes(P.L.items[SALVAGE.item as keyof typeof ITEMS].name) && gearText.includes(num(itemCap(SALVAGE.item as keyof typeof ITEMS))) && gearText.includes(P.L.gear.rarities[RARITIES[SALVAGE.autoMaxRar].id]),
-    `[${lang}] 분해·잠금·자동 분해의 설명에 가루의 이름과 한도, 자동 분해의 가장 높은 등급이 정의에서 읽혀 들어간다`);
-  check(GEAR_SLOTS.every((s) => JSON.stringify(sections.find((x) => x.id === 'gear')).includes(P.L.gear.slots[s])), `[${lang}] 장비 칸의 이름이 모두 나온다`);
+  c(gearText.includes(P.L.items[SALVAGE.item as keyof typeof ITEMS].name) && gearText.includes(num(itemCap(SALVAGE.item as keyof typeof ITEMS))) && gearText.includes(P.L.gear.rarities[RARITIES[SALVAGE.autoMaxRar].id]),
+    `분해·잠금·자동 분해의 설명에 가루의 이름과 한도, 자동 분해의 가장 높은 등급이 정의에서 읽혀 들어간다`);
+  c(GEAR_SLOTS.every((s) => JSON.stringify(sections.find((x) => x.id === 'gear')).includes(P.L.gear.slots[s])), `장비 칸의 이름이 모두 나온다`);
 
   // 표의 모양: 머리와 줄의 칸 수가 같고, 빈 칸이 없다
-  check(tables.every((t) => t.head.length > 0 && t.rows.length > 0 && t.rows.every((r) => r.cells.length === t.head.length)), `[${lang}] 모든 표의 줄이 머리와 같은 수의 칸을 가진다 (표 ${tables.length}개)`);
+  c(tables.every((t) => t.head.length > 0 && t.rows.length > 0 && t.rows.every((r) => r.cells.length === t.head.length)), `모든 표의 줄이 머리와 같은 수의 칸을 가진다 (표 ${tables.length}개)`);
   const texts: string[] = sections.flatMap((s) => [s.title, ...s.blocks.flatMap((b) => (b.t === 'table' ? [b.table.caption, ...b.table.head, ...b.table.rows.flatMap((r) => r.cells)] : b.t === 'ul' ? b.items : [b.text]))]);
   const cells = tables.flatMap((t: Table) => [...t.head, ...t.rows.flatMap((r) => r.cells)]);
-  check(cells.every((c) => typeof c === 'string' && c.trim() !== ''), `[${lang}] 빈 칸이 없다`);
+  c(cells.every((c) => typeof c === 'string' && c.trim() !== ''), `빈 칸이 없다`);
   const bad = texts.filter((s) => /undefined|NaN|\[object|null|Infinity|function|=>/.test(s));
-  check(bad.length === 0, `[${lang}] undefined, NaN, [object 같은 글자가 없다${bad.length ? ': ' + bad[0] : ''}`);
+  c(bad.length === 0, `undefined, NaN, [object 같은 글자가 없다${bad.length ? ': ' + bad[0] : ''}`);
   // id가 그대로 보이면 안 된다: 칸이 id와 똑같거나, 밑줄·숫자가 든 id(sword1, shade_bram)가 문장에 들어 있는 경우
   const ids = [...monsterIds, ...itemIds, ...skillIds, ...CLASS_IDS, ...DAILY_IDS, ...DUNGEON_IDS, ...QUESTS.map((q) => q.id), ...RESIDENTS.map((r) => r.id), ...RARITIES.map((r) => r.id), ...STAT_IDS, ...BUILD_STAT_IDS, ...GEAR_SLOTS, ...TOWERS.map((t) => t.id)];
   const raw = ids.filter((id) => cells.includes(id) || (/[_\d]/.test(id) && texts.some((s) => new RegExp(`\\b${id}\\b`).test(s))));
-  check(raw.length === 0, `[${lang}] id가 그대로 보이는 곳이 없다${raw.length ? ': ' + raw.join(', ') : ''}`);
-}
+  c(raw.length === 0, `id가 그대로 보이는 곳이 없다${raw.length ? ': ' + raw.join(', ') : ''}`);
+});
 
 // ---------- 두 언어의 도감이 같은 모양인가 ----------
 {
@@ -120,11 +121,11 @@ for (const P of PACKS) {
 {
   const shares = rarityShares();
   check(Math.abs(shares.reduce((s, x) => s + x, 0) - 1) < 1e-9, '등급 확률의 합이 100%다');
-  for (const P of PACKS) {
+  checkEach(PACKS, langOf, (P, c) => {
     const t = tablesOf(buildGuide(P)).find((x) => x.id === 'rarities')!;
     const shown = t.rows.reduce((s, r) => s + parseFloat(r.cells[2]), 0);
-    check(Math.abs(shown - 100) < 0.011 && t.rows.every((r, i) => r.cells[2] === `${num(shares[i] * 100)}%`), `[${P.L.code}] 표에 적힌 등급 확률의 합이 100%다 (${shown}%)`);
-  }
+    c(Math.abs(shown - 100) < 0.011 && t.rows.every((r, i) => r.cells[2] === `${num(shares[i] * 100)}%`), `표에 적힌 등급 확률의 합이 100%다 (${shown}%)`);
+  });
   check(DUNGEON_IDS.every((id) => { const s = raritySharesFrom(DUNGEONS[id].dropRar); return Math.abs(s.reduce((a, x) => a + x, 0) - 1) < 1e-9 && s.slice(0, DUNGEONS[id].dropRar).every((x) => x === 0); }),
     '던전 완료 장비의 등급 확률은 합이 100%이고, 정해진 등급 아래는 0%다');
 }
@@ -137,7 +138,7 @@ for (const P of PACKS) {
   g.gear.random = rng(20261124);
 
   // 강화 +10까지의 기대 골드: 서버의 강화 명령으로 장비 여러 점을 +10까지 올려 본다 (+7부터는 실패하면 내려가서 한 점에 200번 넘게 굴린다. 가루는 넉넉히 준다)
-  for (const rar of [0, RARITIES.length - 1]) {
+  checkEach([0, RARITIES.length - 1], (r) => RARITIES[r].id, (rar, c) => {
     const RUNS = 8000;
     let spent = 0, tries = 0;
     for (let i = 0; i < RUNS; i++) {
@@ -150,14 +151,14 @@ for (const P of PACKS) {
       g.notices.length = 0; p.mail.length = 0; // 쌓이는 안내문과 우편은 버린다
     }
     const want = enhanceExpected(ENHANCE.max, rar), got = spent / RUNS;
-    check(near(got, want, 0.02), `강화 +${ENHANCE.max}까지의 기대 골드가 ${RUNS / 10000}만 번 굴린 평균과 2% 안에서 맞는다 (${RARITIES[rar].id}: 계산 ${Math.round(want)}, 실제 ${Math.round(got)})`);
-    check(near(tries / RUNS, enhanceTries(ENHANCE.max), 0.02), `강화 기대 시도 수도 맞는다 (${RARITIES[rar].id}: 계산 ${enhanceTries(ENHANCE.max).toFixed(2)}, 실제 ${(tries / RUNS).toFixed(2)})`);
-  }
+    c(near(got, want, 0.02), `강화 +${ENHANCE.max}까지의 기대 골드가 ${RUNS / 10000}만 번 굴린 평균과 2% 안에서 맞는다 (${RARITIES[rar].id}: 계산 ${Math.round(want)}, 실제 ${Math.round(got)})`);
+    c(near(tries / RUNS, enhanceTries(ENHANCE.max), 0.02), `강화 기대 시도 수도 맞는다 (${RARITIES[rar].id}: 계산 ${enhanceTries(ENHANCE.max).toFixed(2)}, 실제 ${(tries / RUNS).toFixed(2)})`);
+  });
   // 도감에 적힌 값이 그 계산에서 나온 것인가
-  for (const P of PACKS) {
+  checkEach(PACKS, langOf, (P, c) => {
     const t = tablesOf(buildGuide(P)).find((x) => x.id === 'enhanceTotal')!;
-    check(RARITIES.every((_, r) => t.rows[ENHANCE.max - 1].cells[2 + r].includes(num(Math.round(enhanceExpected(ENHANCE.max, r))))), `[${P.L.code}] 강화 표의 기대 골드가 계산값과 같다`);
-  }
+    c(RARITIES.every((_, r) => t.rows[ENHANCE.max - 1].cells[2 + r].includes(num(Math.round(enhanceExpected(ENHANCE.max, r))))), `강화 표의 기대 골드가 계산값과 같다`);
+  });
 
   // 등급의 비중과 옵션 값의 범위: 서버의 장비 굴림을 많이 돌려 본다
   const N = 100000, seen = RARITIES.map(() => 0);
@@ -207,12 +208,12 @@ for (const P of PACKS) {
     check(near(gold / KILLS, (def.gold[0] + def.gold[1]) / 2, 0.02), `${type}: 잡아서 얻은 골드의 평균이 도감의 기대값과 맞는다 (실제 ${(gold / KILLS).toFixed(2)})`);
   }
   // 필드 보스마다 (잿불 거상은 정의의 gearLv로 레벨 8: 도감도 같은 gearLvOf를 읽는다)
-  for (const boss of (Object.keys(MONSTERS) as MonsterId[]).filter((id) => (MONSTERS[id] as { boss?: boolean }).boss)) {
+  checkEach((Object.keys(MONSTERS) as MonsterId[]).filter((id) => (MONSTERS[id] as { boss?: boolean }).boss), (b) => b, (boss, c) => {
     p.gear = [];
     const m = g.monsters.spawn(boss, 0, 20);
     g.fire('monsterKilled', m, [p]);
-    check(p.gear.length === 1 && p.gear[0].lv === gearLvOf(MONSTERS[boss]) && monstersOfGearLv(p.gear[0].lv).includes(boss) && gearChance(MONSTERS[boss]) === 1, `${boss}: 필드 보스는 장비를 반드시 떨어뜨리고, 장비 레벨(${p.gear[0]?.lv})은 도감에 적힌 것과 같다`);
-  }
+    c(p.gear.length === 1 && p.gear[0].lv === gearLvOf(MONSTERS[boss]) && monstersOfGearLv(p.gear[0].lv).includes(boss) && gearChance(MONSTERS[boss]) === 1, `${boss}: 필드 보스는 장비를 반드시 떨어뜨리고, 장비 레벨(${p.gear[0]?.lv})은 도감에 적힌 것과 같다`);
+  });
 }
 
 // ---------- 서버 코드에서 내용 정의로 옮긴 수치: 도감의 표가 서버를 실제로 굴린 결과와 맞는가 ----------
@@ -235,11 +236,11 @@ for (const P of PACKS) {
     g.notices.length = 0;
   }
   check(early === 0 && wrongNeed === 0 && wrongTotal === 0 && p.lv === LEVEL_ROWS, `레벨 표의 필요 경험치만큼 주면 서버의 캐릭터가 정확히 그 지점에서 오른다 (Lv 1에서 ${LEVEL_ROWS}까지)`);
-  for (const P of PACKS) {
+  checkEach(PACKS, langOf, (P, c) => {
     const t = tableOf(P, 'levels');
-    check(t.rows.length === LEVEL_ROWS && t.rows.every((r, i) => r.key === String(i + 1) && r.cells[1] === num(needFor(i + 1)) && r.cells[2] === num(expUpTo(i + 1))) && t.rows[0].cells[1] === num(LEVEL.firstNeed) && t.rows[0].cells[2] === '0',
-      `[${P.L.code}] 레벨 표에 Lv 1부터 ${LEVEL_ROWS}까지의 필요 경험치와 누적이 있다`);
-  }
+    c(t.rows.length === LEVEL_ROWS && t.rows.every((r, i) => r.key === String(i + 1) && r.cells[1] === num(needFor(i + 1)) && r.cells[2] === num(expUpTo(i + 1))) && t.rows[0].cells[1] === num(LEVEL.firstNeed) && t.rows[0].cells[2] === '0',
+      `레벨 표에 Lv 1부터 ${LEVEL_ROWS}까지의 필요 경험치와 누적이 있다`);
+  });
 
   // 치명타: 기본 공격을 많이 쳐 본다 (난수를 정해 두고). 확률과 피해 배율이 도감의 값과 맞는가
   {
@@ -261,7 +262,7 @@ for (const P of PACKS) {
     g.remove(m.id);
     check(hits === 40000 && Math.abs(crits / hits - COMBAT.critChance) < 0.006, `기본 공격의 치명타 비율이 도감의 확률과 맞는다 (도감 ${num(COMBAT.critChance * 100)}%, 실제 ${(crits / hits * 100).toFixed(2)}%)`);
     check(maxPlain === cls[1] && maxCrit === Math.round(cls[1] * COMBAT.critMult) && minCrit === Math.round(cls[0] * COMBAT.critMult), `치명타의 피해는 기본 공격 피해에 도감의 배율을 곱한 값이다 (${minCrit}–${maxCrit})`);
-    for (const P of PACKS) check(cell(P, 'combat', 'critChance') === `${num(COMBAT.critChance * 100)}%` && cell(P, 'combat', 'critMult').includes(num(COMBAT.critMult)), `[${P.L.code}] 전투 표의 치명타 확률과 배율이 정의의 값이다`);
+    checkEach(PACKS, langOf, (P, c) => c(cell(P, 'combat', 'critChance') === `${num(COMBAT.critChance * 100)}%` && cell(P, 'combat', 'critMult').includes(num(COMBAT.critMult)), `전투 표의 치명타 확률과 배율이 정의의 값이다`));
   }
 
   // 자연 회복: 맞은 뒤 정해진 시간이 지나야 시작하고, 초당 회복량은 표의 값이다. 등탑이 환하면 배로 는다
@@ -273,8 +274,8 @@ for (const P of PACKS) {
     const bright = gain(COMBAT.regenAfterS + 0.01);
     g.tower.glows[0] = GLOW_BRIGHT - 1;
     check(before === 0 && plain === COMBAT.regenPerS && bright === COMBAT.regenPerS * GLOW_BRIGHT_REGEN, `자연 회복은 맞은 뒤 ${COMBAT.regenAfterS}초가 지나야 시작하고 초당 ${plain}, 환한 구역에서는 ${bright}이다`);
-    for (const P of PACKS) check(cell(P, 'combat', 'regenPerS').includes(num(plain)) && cell(P, 'combat', 'regenBright').includes(num(bright)) && cell(P, 'combat', 'regenAfter').includes(num(COMBAT.regenAfterS)) && cell(P, 'stages', '2', 3).includes(num(GLOW_BRIGHT_REGEN)),
-      `[${P.L.code}] 전투 표와 밝기 단계 표의 자연 회복이 서버의 결과와 같다`);
+    checkEach(PACKS, langOf, (P, c) => c(cell(P, 'combat', 'regenPerS').includes(num(plain)) && cell(P, 'combat', 'regenBright').includes(num(bright)) && cell(P, 'combat', 'regenAfter').includes(num(COMBAT.regenAfterS)) && cell(P, 'stages', '2', 3).includes(num(GLOW_BRIGHT_REGEN)),
+      `전투 표와 밝기 단계 표의 자연 회복이 서버의 결과와 같다`));
   }
 
   // 받는 피해 감소의 한도: 옵션을 아무리 쌓아도 한도까지만 듣는다
@@ -284,7 +285,7 @@ for (const P of PACKS) {
     g.gear.put(a, ring); g.gear.equip(a, ring.uid);
     const guard = g.mods.product('guard', a);
     check(Math.abs(guard - (1 - GEAR.guardCap / 100)) < 1e-9, `받는 피해 감소 옵션은 한도까지만 듣는다 (받는 피해 ×${guard.toFixed(2)})`);
-    for (const P of PACKS) check(cell(P, 'combat', 'guardCap') === `${num(GEAR.guardCap)}%`, `[${P.L.code}] 전투 표의 받는 피해 감소 한도가 정의의 값이다`);
+    checkEach(PACKS, langOf, (P, c) => c(cell(P, 'combat', 'guardCap') === `${num(GEAR.guardCap)}%`, `전투 표의 받는 피해 감소 한도가 정의의 값이다`));
 
     // 전투력: 도감의 점수표로 셈한 값이 서버가 내는 전투력과 같다
     a.lv = 17; a.skillLv = { smash: 3, whirl: 2 }; a.weapon = 'sword3'; a.armor = 'armor2';
@@ -311,19 +312,19 @@ for (const P of PACKS) {
     g.remove(m.id);
     check(near && !far, `몬스터는 대상이 ${MONSTER_AI.loseRange}m보다 멀어지면 놓는다`);
     check(m.homing && Math.abs(homeSpeed - MONSTERS.wolf.speed * MONSTER_AI.homeSpeed) < 0.2, `집으로 돌아가는 몬스터는 제 속도의 ${MONSTER_AI.homeSpeed}배로 걷는다 (초당 ${homeSpeed.toFixed(2)}m)`);
-    for (const P of PACKS) check(cell(P, 'monsterAi', 'loseRange').includes(num(MONSTER_AI.loseRange)) && cell(P, 'monsterAi', 'leash').includes(num(LEASH)) && cell(P, 'monsterAi', 'homeSpeed').includes(num(MONSTER_AI.homeSpeed)) && cell(P, 'monsterAi', 'wanderSpeed').includes(num(MONSTER_AI.wanderSpeed)),
-      `[${P.L.code}] 몬스터의 움직임 표가 정의의 값이다`);
+    checkEach(PACKS, langOf, (P, c) => c(cell(P, 'monsterAi', 'loseRange').includes(num(MONSTER_AI.loseRange)) && cell(P, 'monsterAi', 'leash').includes(num(LEASH)) && cell(P, 'monsterAi', 'homeSpeed').includes(num(MONSTER_AI.homeSpeed)) && cell(P, 'monsterAi', 'wanderSpeed').includes(num(MONSTER_AI.wanderSpeed)),
+      `몬스터의 움직임 표가 정의의 값이다`));
   }
 
   // 서버와 도감이 같은 함수를 쓰는 식: 표의 값이 그 함수의 값이고, 길드 레벨의 누적 기부는 실제로 그 레벨이 되는 지점이다
   check(Array.from({ length: GUILD.maxLevel }, (_, i) => i + 1).every((lv) => guildLevel(guildNeed(lv)) === lv && (lv === 1 || guildLevel(guildNeed(lv) - 1) === lv - 1)), '길드 레벨 표의 누적 기부는 그 레벨이 되는 가장 적은 기부다');
-  for (const P of PACKS) {
+  checkEach(PACKS, langOf, (P, c) => {
     const boss = (Object.keys(MONSTERS) as MonsterId[]).find((id) => (MONSTERS[id] as { boss?: boolean }).boss)!;
-    check(cell(P, 'bossHp', 3) === num(bossHp(MONSTERS[boss].hp, 3)) && cell(P, 'raidFoes', 2) === num(raidFoes(2)) && cell(P, 'raidTower', GLOW_MAX) === num(raidTowerHp(GLOW_MAX)) && cell(P, 'guildLevels', 3).includes(num(guildNeed(3)))
+    c(cell(P, 'bossHp', 3) === num(bossHp(MONSTERS[boss].hp, 3)) && cell(P, 'raidFoes', 2) === num(raidFoes(2)) && cell(P, 'raidTower', GLOW_MAX) === num(raidTowerHp(GLOW_MAX)) && cell(P, 'guildLevels', 3).includes(num(guildNeed(3)))
       && cell(P, 'away', 'roam').includes(num(AWAY.roam)) && cell(P, 'away', 'maxTime').includes(num(AWAY.maxS / 3600)) && cell(P, 'guild', 'noticeGap').includes(num(GUILD.noticeGapS)) && cell(P, 'guild', 'chatGap').includes(num(GUILD.chatGapS)),
-      `[${P.L.code}] 보스 체력, 습격 적의 수와 등탑 내구, 길드 레벨, 자리 비움, 길드 간격의 표가 서버와 같은 함수·정의에서 나온다`);
-    check(JSON.stringify(buildGuide(P).find((s) => s.id === 'tower')).includes(String(FULL_TOWER_OFFER)), `[${P.L.code}] 가득 찬 등탑이 한 번에 받는 불씨가 등탑 구역에 적혀 있다`);
-  }
+      `보스 체력, 습격 적의 수와 등탑 내구, 길드 레벨, 자리 비움, 길드 간격의 표가 서버와 같은 함수·정의에서 나온다`);
+    c(JSON.stringify(buildGuide(P).find((s) => s.id === 'tower')).includes(String(FULL_TOWER_OFFER)), `가득 찬 등탑이 한 번에 받는 불씨가 등탑 구역에 적혀 있다`);
+  });
 }
 
 // ---------- 게임 언어 파일의 문장: 정의의 값으로 만든 문장이 예전에 손으로 적어 둔 문장과 같은가 ----------
@@ -337,12 +338,12 @@ for (const P of PACKS) {
     en: ['The light is weak. No bonuses.', 'At 70 it turns bright: +10% move speed, 2x recovery', 'Bright: +10% move speed, 2x recovery'],
   };
   const left: Record<string, string> = { ko: '능력치 · 남은 점수 4 (레벨이 오를 때마다 3점)', en: 'Attributes · 4 points left (3 per level)' };
-  for (const P of PACKS) {
+  checkEach(PACKS, langOf, (P, c) => {
     const lang = P.L.code, ids = Object.keys(was[lang]) as (keyof typeof ITEMS)[];
     const bad = ids.filter((id) => itemInfo(P.L, id) !== was[lang][id]);
-    check(bad.length === 0 && (Object.keys(ITEMS) as (keyof typeof ITEMS)[]).every((id) => itemInfo(P.L, id) !== ''), `[${lang}] 아이템 설명(공격 피해, 받는 피해, 회복량)이 정의의 값으로 만들어지고 예전 문장과 같다${bad.length ? ': ' + bad.join(', ') : ''}`);
-    check([0, 1, 2].every((s) => P.L.fmt.stageNote(s, GLOW_BRIGHT, Math.round((GLOW_BRIGHT_SPEED - 1) * 100), GLOW_BRIGHT_REGEN) === stage[lang][s]) && P.L.fmt.statLeft(4, BUILD.pointsPerLevel) === left[lang], `[${lang}] 등탑 단계 안내와 능력치 안내가 정의의 값으로 만들어지고 예전 문장과 같다`);
-  }
+    c(bad.length === 0 && (Object.keys(ITEMS) as (keyof typeof ITEMS)[]).every((id) => itemInfo(P.L, id) !== ''), `아이템 설명(공격 피해, 받는 피해, 회복량)이 정의의 값으로 만들어지고 예전 문장과 같다${bad.length ? ': ' + bad.join(', ') : ''}`);
+    c([0, 1, 2].every((s) => P.L.fmt.stageNote(s, GLOW_BRIGHT, Math.round((GLOW_BRIGHT_SPEED - 1) * 100), GLOW_BRIGHT_REGEN) === stage[lang][s]) && P.L.fmt.statLeft(4, BUILD.pointsPerLevel) === left[lang], `등탑 단계 안내와 능력치 안내가 정의의 값으로 만들어지고 예전 문장과 같다`);
+  });
 }
 
 // ---------- 도감이 끌어오는 코드 ----------
@@ -385,14 +386,14 @@ for (const P of PACKS) {
 
   // 문장이 그대로인가: 견본(games/deungbul/test/fixtures/locale-*.json)은 언어 파일을 가르기 전의 문장에서 뜬 것이다. 키가 빠지거나 문장이 한 글자라도 달라지면 여기서 잡힌다.
   // 문장을 일부러 바꾸거나 더했으면 견본을 새로 뜬다: npx tsx games/deungbul/test/locale-snapshot.ts --write (바뀐 줄을 git diff로 확인한 뒤 함께 커밋)
-  for (const loc of LOCALES) {
+  checkEach(LOCALES, (l) => l.code, (loc, c) => {
     const was = readFixture(loc.code), d = compare(was, snapshotOf(loc));
     for (const k of d.missing) console.log(`  [${loc.code}] 빠진 키: ${k}`);
     for (const k of d.added) console.log(`  [${loc.code}] 새 키: ${k}`);
     for (const k of d.changed) console.log(`  [${loc.code}] 달라진 문장: ${k}`);
-    check(Object.keys(was).length > 400 && d.missing.length + d.added.length + d.changed.length === 0,
-      `[${loc.code}] 화면의 문장 ${Object.keys(was).length}개가 견본과 글자까지 같다 (빠진 키 ${d.missing.length}, 새 키 ${d.added.length}, 달라진 문장 ${d.changed.length})`);
-  }
+    c(Object.keys(was).length > 400 && d.missing.length + d.added.length + d.changed.length === 0,
+      `화면의 문장 ${Object.keys(was).length}개가 견본과 글자까지 같다 (빠진 키 ${d.missing.length}, 새 키 ${d.added.length}, 달라진 문장 ${d.changed.length})`);
+  });
   // 견본 비교가 실제로 잡아내는지: 문장 하나와 함수 꼴 문장 하나를 바꿔 보면 걸려야 한다
   const bent = compare(readFixture('ko'), snapshotOf({ ...ko, ui: { ...ko.ui, tower: '등 탑' }, msg: { ...ko.msg, kill: () => '처치' }, zones: [] }));
   check(bent.changed.includes('ui.tower') && bent.changed.includes('msg.kill') && bent.changed.includes('zones.length') && bent.missing.includes('zones[0]'), '견본 비교는 달라진 문장, 달라진 함수 꼴 문장, 빠진 키를 잡아낸다');
@@ -410,10 +411,10 @@ for (const P of PACKS) {
     'msg.bossUp', // 나타난 곳(잿빛 숲)을 말한다
     'msg.loot', 'msg.forgeFar', 'msg.forgeClosed', // 대장간의 주인(브람)을 말한다
   ];
-  for (const code of ['ko', 'en'] as const) {
+  checkEach(['ko', 'en'] as const, (x) => x, (code, c) => {
     const over = overlaps(base[code], game[code]);
-    check([...over].sort().join() === [...OVERRIDES].sort().join(), `[${code}] 게임이 덮어쓴 틀의 키는 정해 둔 ${OVERRIDES.length}개뿐이다 (${over.join(', ')})`);
-  }
+    c([...over].sort().join() === [...OVERRIDES].sort().join(), `게임이 덮어쓴 틀의 키는 정해 둔 ${OVERRIDES.length}개뿐이다 (${over.join(', ')})`);
+  });
   check(OVERRIDES.every((at) => { const [b, k] = at.split('.'); const pick = (l: object) => (l as Record<string, Record<string, unknown>>)[b][k]; return pick(ko) === pick(koGame) && pick(en) === pick(enGame) && pick(ko) !== pick(base.ko); }),
     '겹친 키는 합친 묶음에서 게임의 문장이다');
 

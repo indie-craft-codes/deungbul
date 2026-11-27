@@ -2,10 +2,8 @@
 // 단계 안에서 영웅이 싸워 적이 줄어드는 것, 단계에서 나오면 서로의 영웅이 보이는 것, 틀린 명령을 받지 않는 것, 다시 접속하면 이어지는 것.
 import type { GachaMe, HeroesMe, PullGot, SquadMe, StageMe } from '../../shared/defs';
 import type { ServerMsg } from '../../shared/protocol';
-import { startServer } from '../../server/net/server';
-import { MemoryStore } from '../../server/store';
-import { check, connect, settle, until, type Peer } from '../harness';
-import { heath } from './server/heath';
+import { check, settle, until, type Peer } from '../harness';
+import { heathServer, join, leave } from './netbench';
 
 interface Seen { heroes?: HeroesMe; gacha?: GachaMe; squad?: SquadMe; stage?: StageMe; pulls: PullGot[][]; stages: StageMe[] }
 const fresh = (): Seen => ({ pulls: [], stages: [] });
@@ -18,13 +16,11 @@ const listen = (s: Seen) => (m: ServerMsg) => {
   } else if (m.t === 'gacha') s.pulls.push(m.got);
 };
 
-const store = new MemoryStore();
-const server = await startServer(0, { store, game: { plugins: [heath] } });
-const g = server.game;
+const { server, g } = await heathServer();
 try {
   const sa = fresh(), sb = fresh();
-  const a: Peer = await connect(server.port, 'Ann', 'collect-net-token-a-001', listen(sa));
-  const b: Peer = await connect(server.port, 'Ben', 'collect-net-token-b-001', listen(sb));
+  const a: Peer = await join(server, 'Ann', 'collect-net-token-a-001', listen(sa));
+  const b: Peer = await join(server, 'Ben', 'collect-net-token-b-001', listen(sb));
   // 스냅샷은 Peer가 읽는다 (b.seen: 시야에 든 엔티티). 그 엔티티의 종류는 서버에서 본다
   await until(() => !!sa.stage?.run && !!sb.stage?.run && !!sa.heroes && !!sa.squad);
   check(Object.keys(sa.heroes ?? {}).sort().join() === 'ironwall,swiftarrow' && sa.squad?.ids.length === 2 && sa.stage?.run?.id === '1-1' && sb.stage?.run?.id === '1-1',
@@ -62,10 +58,9 @@ try {
   check([...b.seen.keys()].some((id) => g.ents.get(id)?.kind === 'hero' && g.ents.get(id)?.data.owner === a.id), '단계에서 나와 들판에 서면 다른 사람이 내 영웅(종류 hero)을 본다');
   // 다시 접속하면 영웅·뽑기 기록·단계가 이어진다
   const heroesBefore = JSON.stringify(sa.heroes);
-  a.ws.close();
-  await until(() => !g.ents.has(a.id));
+  await leave(server, a);
   const sa2 = fresh();
-  const a2 = await connect(server.port, 'Ann', 'collect-net-token-a-001', listen(sa2));
+  const a2 = await join(server, 'Ann', 'collect-net-token-a-001', listen(sa2));
   await until(() => !!sa2.heroes && !!sa2.gacha && !!sa2.stage?.run);
   check(JSON.stringify(sa2.heroes) === heroesBefore && sa2.gacha?.log.length === 10 && sa2.stage?.run?.id === sa.stage?.cur, '다시 접속하면 영웅, 뽑기 기록, 지금 단계가 이어진다');
   a2.ws.close(); b.ws.close();

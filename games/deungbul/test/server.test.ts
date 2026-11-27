@@ -1,5 +1,6 @@
 // 통합 테스트 (이 게임의 규칙): 등불지기의 서버를 띄우고 클라이언트를 붙여서 등탑, 메인 퀘스트, 습격, 그 저장을 확인한다.
-// 접속·이동·대화·전투·자리 비움 사냥처럼 틀의 것은 engine/test/server.test.ts가 본다. 여기서는 같은 차례로 준비만 하고(이름 바꾸기, 슬라임 한 마리) 이 게임의 것만 검사한다.
+// 접속·이동·이름 바꾸기·대화·전투·자리 비움 사냥, 다시 켜도 캐릭터(이름·레벨)가 남는 것처럼 틀의 것은 engine/test/fx/server.test.ts가 본다.
+// 여기서는 그 흐름을 되풀이하지 않고(걸어가 슬라임을 잡는 대신 서버에서 자리를 옮긴다) 이 게임의 것(등탑, 주민, 기여, 퀘스트, 습격)만 검사한다.
 import { createHash } from 'node:crypto';
 import { FORGE, GLOW_START, RAID, needFor, nextRaidAt, raidExp } from '../shared/defs';
 import { TOWER } from '../shared/world';
@@ -24,22 +25,15 @@ try {
 
   check(await until(() => a.glow === GLOW_START), '접속하면 등탑 밝기를 받는다');
 
-  // 준비 (검사는 engine/test/server.test.ts에 있다): 이름을 바꾸고, 슬라임 빈터로 가서 한 마리를 잡아 불씨를 얻는다
-  await until(() => a.seen.has(b.id) && b.seen.has(a.id));
-  a.send({ t: 'rename', name: '새이름' });
-  await until(() => b.seen.get(a.id)?.name === '새이름');
-  a.send({ t: 'move', x: -24, z: 22 });
-  await until(() => [...a.mons.values()].includes('slime'), 20000);
-  const slime = [...a.mons.entries()].find(([, type]) => type === 'slime')?.[0] ?? 0;
-  a.send({ t: 'attack', id: slime });
-  await until(() => a.sparks >= 6, 20000);
-
-  // 등탑: 멀리서는 못 바치고, 가까이 가서 바치면 밝기가 오른다
+  // 등탑: 멀리서는 못 바치고, 가까이 가서 바치면 밝기가 오른다 (자리는 서버에서 옮긴다: 걷기는 틀의 시험이 본다)
+  const aEnt0 = server.game.ents.get(a.id)!;
+  const placeA = (x: number, z: number) => { aEnt0.x = x; aEnt0.z = z; aEnt0.tx = x; aEnt0.tz = z; aEnt0.moving = false; };
+  await until(() => a.sparks === 5);
   const had = a.sparks;
+  placeA(-24, 22); // 슬라임 빈터: 등탑에서 멀다
   a.send({ t: 'offer', to: 'tower', n: 1 });
   check(await until(() => a.sys.some((s) => s === 'offerFar')) && a.glow === GLOW_START && a.sparks === had, '등탑에서 멀면 불씨를 바칠 수 없다');
-  a.send({ t: 'move', x: TOWER.x, z: TOWER.z + 3 });
-  check(await until(() => Math.hypot(a.you[0] - TOWER.x, a.you[1] - TOWER.z) < 5, 20000), 'A가 등탑으로 돌아온다');
+  placeA(TOWER.x, TOWER.z + 3);
   a.send({ t: 'offer', to: 'tower', n: 1 });
   check(await until(() => a.glow === GLOW_START + 1 && a.sparks === had - 1), '등탑에 바치면 밝기가 오르고 불씨가 줄어든다');
   a.send({ t: 'offer', to: 'resident', n: 2 });
@@ -78,9 +72,7 @@ try {
   place(TOWER.x, TOWER.z + 3);
   qEnt.sparks = 40;
   await settle(q, 1);
-  q.send({ t: 'offer', to: 'tower', n: 3 });
-  await settle(q, 2);
-  check(isAt(0, 4, 0)(), '주민에게 보태는 단계에서 등탑에 바친 불씨는 세지 않는다');
+  // 주민에게 보태는 단계에서 등탑에 바친 불씨를 세지 않는 것은 quests.test.ts가 본다 (같은 규칙)
   q.send({ t: 'offer', to: 'resident', n: 3 });
   check(await until(isAt(0, 4, 3)), '불씨를 일부만 바치면 그만큼만 진행된다');
   // 브람에게 남은 만큼(위에서 a가 보탠 2 + 3을 뺀 25)만 들어가고, 나머지는 다음 보태기로 미라에게 간다 (보태기 한 번은 한 주민에게만)
@@ -138,7 +130,7 @@ try {
   const a3 = await connect(server.port, undefined, TOKEN_A);
   // 주민 진행: 브람은 위의 보태기로 다 찼다(30)
   check(await until(() => a3.glow === glowEnd && a3.residents[0] === resEnd && resEnd === 30), '서버를 다시 켜도 등탑 밝기와 주민 진행이 남는다');
-  check(a3.name === '새이름' && (await until(() => a3.sparks === sparksEnd && a3.contrib === contribEnd && a3.lv >= 3)), '서버를 다시 켜도 캐릭터가 남는다');
+  check(await until(() => a3.sparks === sparksEnd && a3.contrib === contribEnd), '서버를 다시 켜도 이 게임의 캐릭터 칸(기여)과 불씨가 남는다 (이름·레벨은 틀의 시험)');
   a3.ws.close();
 } finally {
   await server.close();

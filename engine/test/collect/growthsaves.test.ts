@@ -5,6 +5,7 @@ import { MODULE_SAVES } from '../../shared/modules';
 import { HERO_RULES, heroGearRules, type HeroRules } from '../../shared/defs';
 import { Game } from '../../server/game/game';
 import { check } from '../harness';
+import { keepsThroughLean, resavesClean } from './savebench';
 
 const HR: HeroRules = HERO_RULES, GR = heroGearRules()!;
 const quiet = () => new Game({ plugins: [] });
@@ -77,7 +78,7 @@ const part = (x: { ext?: Record<string, unknown> }) => JSON.stringify(NEW.map((k
     `영웅 장비: 없는 장비와 깨진 줄은 버리고, 겹치거나 이상한 번호는 새 번호 (${[...uids].join(',')})`);
   check(p.hgear[0].lv === GR.enhance.max(1) && p.hgear[4].lv === 0 && p.hgear[2].hero === '' && p.hgear[3].hero === '' && p.hgear[0].hero === 'ironwall' && p.hgear[1].hero === 'ironwall',
     '강화는 상한까지, 한 칸에 둘째로 낀 것(비전 지팡이)과 가지지 않은 영웅(별읽는이)이 낀 것은 뺀다');
-  check(!JSON.stringify(g.players.export(p)).includes('null'), '깨진 저장을 읽고 다시 적어도 null(NaN)이 없다');
+  resavesClean(g, p);
 }
 
 // ---------- 모듈을 끈 게임은 그 칸을 지우지 않는다 ----------
@@ -90,14 +91,12 @@ const part = (x: { ext?: Record<string, unknown> }) => JSON.stringify(NEW.map((k
   g.herogear.give(p, 'vgplate'); g.herogear.equip(p, 1, 'ironwall');
   g.squad.set(p, p.squad, ['dawnpriest']);
   const save = g.players.export(p);
-  const lean = new Game({ plugins: [], modules: ['economy', 'items'] });
-  const q = lean.players.spawn('맡김', false, structuredClone(save), 'gs-5');
-  const kept = lean.players.export(q);
-  check(NEW.every((k) => JSON.stringify(kept.ext?.[k]) === JSON.stringify(save.ext?.[k])) && !('hgear' in q) && !('squadBack' in q), '영웅·편성·영웅 장비를 끈 게임이 읽고 다시 적어도 그 칸이 그대로 남는다');
+  keepsThroughLean({
+    save, name: '맡김', pid: 'gs-5', modules: ['economy', 'items'], keys: NEW, gone: ['hgear', 'squadBack'], what: '영웅·편성·영웅 장비',
+    resumed: (back) => back.hgear[0]?.hero === 'ironwall' && back.heroes.ironwall.skill === 2 && back.squadBack.join() === 'dawnpriest',
+  });
   const noGear = new Game({ plugins: [], modules: ['economy', 'growth', 'classes', 'combat', 'items', 'roster', 'squad'] });
   const r = noGear.players.spawn('맡김', false, structuredClone(save), 'gs-5');
   check(!('hgear' in r) && JSON.stringify(noGear.players.export(r).ext?.herogear) === JSON.stringify(save.ext?.herogear) && !noGear.commands.has('hgear') && !noGear.personal.some((x) => x.name === 'hgear'),
     'herogear만 끈 게임: 엔티티에 장비 칸·명령·개인 상태가 없고, 저장의 칸은 남는다');
-  const back = quiet().players.spawn('맡김', false, kept, 'gs-5');
-  check(back.hgear[0]?.hero === 'ironwall' && back.heroes.ironwall.skill === 2 && back.squadBack.join() === 'dawnpriest', '다시 켠 게임은 이어서 읽는다');
 }

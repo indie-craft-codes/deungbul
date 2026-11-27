@@ -32,6 +32,23 @@ export function check(ok: boolean, what: string): void {
   console.log(`${ok ? '통과' : '실패'}  ${what}`);
   if (ok) passed++; else failed++;
 }
+/**
+ * 항목마다(언어마다, 등급마다, 몬스터마다 …) 같은 검사를 되풀이할 때: 목록을 모두 돌고 검사 하나로 센다 (항목마다 하나씩 세지 않는다).
+ * body 안의 c(ok, what)는 부른 차례로 짝을 짓는다: 모든 항목의 n번째 c가 검사 하나다.
+ * 통과하면 메시지가 모두 같을 때 '[ko·en] 메시지'로, 다르면 항목마다 이어 적는다. 실패하면 틀린 항목과 그 항목의 메시지를 모두 적는다.
+ */
+export function checkEach<T>(list: readonly T[], label: (x: T) => string, body: (x: T, c: (ok: boolean, what: string) => void) => void): void {
+  const rows: { ok: boolean; what: string; who: string }[][] = [];
+  for (const x of list) {
+    let i = 0;
+    body(x, (ok, what) => { (rows[i++] ??= []).push({ ok, what, who: label(x) }); });
+  }
+  for (const r of rows) {
+    const bad = r.filter((x) => !x.ok), same = r.every((x) => x.what === r[0].what);
+    const shown = bad.length ? bad : same ? [{ ...r[0], who: r.map((x) => x.who).join('·') }] : r;
+    check(bad.length === 0 && r.length === list.length, shown.map((x) => `[${x.who}] ${x.what}`).join(' / ') + (r.length < list.length ? ` (${list.length - r.length}개 항목은 이 검사에 이르지 못했다)` : ''));
+  }
+}
 // npm test(test/all.ts)가 따로 된 프로세스로 돌릴 때: 끝날 때 검사의 수를 그 파일에 적어 모은 쪽이 합친다.
 // 이 프로세스가 다시 띄우는 자식(fx/crash.ts 같은 것)이 같은 파일을 덮지 않게 환경 변수는 읽자마자 지운다
 const reportTo = process.env.TEST_REPORT;

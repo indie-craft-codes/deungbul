@@ -2,7 +2,7 @@
 import { CAMPS, DROPS, FULL_TOWER_OFFER, GEAR, ITEMS, MONSTERS, QUESTS, RECIPES, gearLvOf, type MonsterDef } from '../shared/defs';
 import { MAP, MAX_X, TOWERS, ZONE_COUNT, ZONE_SPLIT, ZONE_SPLIT2, areaAt, buildWorld, isFree, onPath, zoneOf } from '../shared/world';
 import type { Ent, Game } from '@engine/server';
-import { check } from '@engine/testing';
+import { check, checkEach } from '@engine/testing';
 import { newGame } from './game';
 import { GEAR_LV_MAX, gearLevels, monstersOfGearLv } from '../client/guide/calc';
 
@@ -44,17 +44,17 @@ const mons = (g: Game, type: string) => [...g.ents.values()].filter((e) => e.kin
   const p = g.players.spawn('고원사냥꾼', false);
   p.lv = 20;
   g.gear.random = () => 0; // 장비가 반드시 떨어진다
-  for (const id of NEW) {
+  checkEach(NEW, (id) => id, (id, c) => {
     const m = mons(g, id)[0];
-    check(!!m && zoneOf(m.x) === 2, `${id}가 고원에 있다`);
+    c(!!m && zoneOf(m.x) === 2, `${id}가 고원에 있다`);
     const before = p.gear.length;
     at(p, m.x + 1, m.z);
     g.combat.damage(p, m, 1e7, false);
     const got = p.gear.slice(before);
     const want = id === 'ember_colossus' ? 8 : 7;
-    check(m.dead && got.length === 1 && got[0].lv === want, `${id}를 잡으면 레벨 ${want} 장비가 떨어진다 (${got.map((x) => x.lv).join(',')})`);
+    c(m.dead && got.length === 1 && got[0].lv === want, `${id}를 잡으면 레벨 ${want} 장비가 떨어진다 (${got.map((x) => x.lv).join(',')})`);
     p.gear = []; p.worn = {};
-  }
+  });
   // 보스는 respawn(600초) 뒤에 다시 나온다
   const boss = [...g.ents.values()].find((e) => e.kind === 'm' && e.type === 'ember_colossus')!;
   at(p, 0, 3);

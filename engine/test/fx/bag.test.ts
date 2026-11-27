@@ -1,9 +1,6 @@
 // 가방(g.bag): 아이템(재료, 물약)과 낱개 장비를 넣고 빼는 한 통로 (서버 없이 게임 규칙만 돌린다. 규칙 플러그인 없는 틀만의 게임이다). (시험용 내용 위에서)
 // 넣기·빼기·한도·깨진 값, 가방 칸 수, 장부와의 관계(가방이 원인을 직접 알린다, 가방 밖의 변화는 other·tick으로 드러난다),
 // 그리고 "아이템의 칸과 장비 목록을 직접 고치는 코드가 가방 밖에 없다"를 소스를 읽어 검사한다 (wallet.test.ts와 같은 방식).
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { FORGES, SHOPS } from '../../shared/defs';
 import { CAMPS, ECON_HUNT, ECON_LOST_FULL, GEAR, MAT_MAX, POTION_MAX, itemCap, type MarketItem } from '../../shared/defs';
 import type { Ent } from '../../server/game/entity';
@@ -12,6 +9,7 @@ import { gearCur, itemCur } from '../../server/game/systems/bag';
 import { WHY } from '../../server/game/systems/wallet';
 import type { EconRow } from '../../server/store';
 import { check } from '../harness';
+import { noUnknownCause, scanWrites } from './sourcescan';
 
 /** 시험용 내용의 상인과 대장간 */
 const SHOP = SHOPS[0], SMITHY = FORGES[0];
@@ -179,7 +177,7 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   check(p.gear.length === before && same(lost, [`gear:common ${ECON_HUNT.live} +1`, `gear:common ${ECON_LOST_FULL} -1`]) && g.notices.some((x) => x.id === p.id && x.k === 'gearFull'), '가득 찬 가방에 떨어진 장비는 버려지고, 장부에는 hunt로 생겼다가 lostFull로 사라진 것으로 적힌다');
   g.gear.random = () => 0.999;
   Math.random = rnd;
-  check(dropped.uid > 0 && g.ledger.rows().filter((r) => r.why === 'other' || r.why === 'tick').every((r) => ['item:ore', 'item:pelt', 'gear:epic'].includes(r.cur)), '이 흐름에서 원인을 가리지 못한 줄은 위에서 일부러 직접 고친 것뿐이다');
+  noUnknownCause(g.ledger.rows(), '이 흐름', ['item:ore', 'item:pelt', 'gear:epic'], dropped.uid > 0);
 }
 
 // ---------- 저장을 읽을 때의 한도 ----------
@@ -191,16 +189,8 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   check(p.items.ore === MAT_MAX && p.items.draught === POTION_MAX && !('blade2' in p.items), '아이템은 가방과 같은 한도(itemCap)로 자른다');
 }
 
-// ---------- 아이템의 칸과 장비 목록을 직접 고치는 코드가 가방 밖에 없다 (소스를 읽는다) ----------
+// ---------- 아이템의 칸과 장비 목록을 직접 고치는 코드가 가방 밖에 없다 (소스를 읽는다: 훑기와 검사는 sourcescan.ts, wallet.test.ts와 같은 도우미) ----------
 {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-  const rel = (f: string) => path.relative(root, f).replaceAll('\\', '/');
-  const walk = (dir: string): string[] => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : []);
-  // 서버와 공용 코드만 본다 (틀과 모든 게임). 화면(client)이 들고 있는 값은 서버가 보낸 것의 사본이고, 시험(test)은 준비로 직접 고친다
-  // 게임이 하나도 없는 저장소(틀만 떼어 낸 것)에서도 돈다: 그때는 틀의 소스만 본다
-  const games = fs.existsSync(path.join(root, 'games')) ? fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name) : [];
-  const dirs = ['engine/server', 'engine/shared', ...games.flatMap((n) => [`games/${n}/server`, `games/${n}/shared`])];
-  const files = dirs.flatMap((d) => walk(path.join(root, d))).map(rel).filter((f) => !/\.test\.ts$/.test(f));
   /**
    * 아이템의 칸이나 장비 목록에 값을 넣는 모양:
    *   .items[x] = / += / -= / ++ / --,  .items.x = …,  .items = …,  delete ….items…
@@ -208,14 +198,8 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
    * (견주기 ==, 화살표 =>는 아니다)
    */
   const SET = String.raw`\s*(?:[-+*/%]?=(?![=>])|\+\+|--)`;
-  const WRITE = new RegExp([
-    String.raw`\.items(?:\[[^\]]*\]|\.\w+)?${SET}`,
-    String.raw`\bdelete\s+[\w.]+\.items\b`,
-    String.raw`\.gear\.(?:push|splice|pop|shift|unshift|sort|reverse|fill)\(`,
-    String.raw`\.gear(?:\.length|\[[^\]]*\])?${SET}`,
-  ].join('|'));
   /** 직접 고쳐도 되는 곳: 파일, 그 줄의 모양, 까닭. 이 목록에 없는 곳에서 아이템의 칸이나 장비 목록을 고치면 실패한다 */
-  const ALLOWED: { file: string; line: RegExp; why: string }[] = [
+  const allowed: { file: string; line: RegExp; why: string }[] = [
     { file: 'engine/server/game/systems/players.ts', line: /p\.items = Shop\.readItems\(save\.items\)/, why: '저장을 읽는다 (spawn): 새로 생긴 아이템이 아니다' },
     { file: 'engine/server/game/systems/gear.ts', line: /p\.gear = \[\.\.\.all\.filter/, why: '저장을 읽는다 (장비 칸의 load): 그 캐릭터의 가방 칸 수로 자른다' },
     { file: 'engine/server/game/systems/mail.ts', line: /if \(gear\.length\) r\.gear = gear;/, why: '저장된 우편의 보상을 읽는다 (Reward.gear). 캐릭터의 가방이 아니다' },
@@ -240,30 +224,17 @@ const has = (p: Ent, id: string): number => p.items[id] ?? 0;
   ];
   /** 가방 자신 */
   const BAG = 'engine/server/game/systems/bag.ts';
-  const used = new Set<number>(), stray: string[] = [];
-  let writes = 0;
-  for (const f of files) {
-    const lines = fs.readFileSync(path.join(root, f), 'utf8').split(/\r?\n/);
-    lines.forEach((raw, i) => {
-      const line = /^\s*(\*|\/\*|\/\/)/.test(raw) ? '' : raw.replace(/\s\/\/ .*$/, ''); // 주석은 보지 않는다
-      if (!WRITE.test(line) || f === BAG) return;
-      writes++;
-      const k = ALLOWED.findIndex((a) => a.file === f && a.line.test(line));
-      if (k >= 0) used.add(k); else stray.push(`${f}:${i + 1}: ${raw.trim().slice(0, 110)}`);
-    });
-  }
-  for (const s of stray) console.log('      ' + s);
-  check(files.length >= 40 && files.includes(BAG) && files.includes('engine/server/game/systems/gear.ts') && (games.length === 0 || files.some((f) => f.startsWith('games/'))) && writes >= ALLOWED.length,
-    `서버와 공용 소스를 읽었다 (${files.length}개 파일: 틀과 게임 ${games.join(', ')})`);
-  check(stray.length === 0, `아이템의 칸(.items)과 장비 목록(.gear)을 직접 고치는 코드가 가방과 허용 목록 밖에 없다${stray.length ? ` (${stray.length}곳: 위)` : ''}`);
-  const unused = ALLOWED.filter((_, k) => !used.has(k));
-  check(unused.length === 0, `허용 목록의 줄이 모두 실제로 있다 (${ALLOWED.length}곳)${unused.length ? ': 없는 것 ' + unused.map((a) => `${a.file} ${a.line}`).join(', ') : ''}`);
-  // 검사가 실제로 잡아내는가
-  const hits = ['p.items[id] = (p.items[id] ?? 0) + 1;', 'p.items[mat] -= n;', 'p.items[id]--;', 'p.items.ore = 20', 'q.items = {}', 'delete p.items[id]', 'p.gear.push(it);', 'p.gear.splice(p.gear.indexOf(it), 1);', 'p.gear.length = 0', 'p.gear[0] = it', 'p.gear = []', 'e.gear.pop()'].filter((s) => WRITE.test(s));
-  const misses = ['if (p.items[id] > 0)', '(p.items[id] ?? 0) >= n', 'const n = p.items.ore;', '{ items: {}, gear: [] }', 'p.gear.length >= max', 'p.gear.find((x) => x.uid === uid)', 'p.gear.filter((x) => x.rar === 0)', 'g.gear.give(p, it)', 'this.g.gears.push({ id })', '(p) => p.items', 'p.gear.length === t.nGear', 'items: { ...p.items }'].filter((s) => WRITE.test(s));
-  check(hits.length === 12 && misses.length === 0, `검사의 모양: 값을 넣는 줄은 잡고, 읽거나 견주는 줄은 잡지 않는다${misses.length ? ' (잘못 잡은 것: ' + misses.join(' / ') + ')' : ''}`);
-  // 가방의 통로를 실제로 쓰고 있는가
-  const uses = files.filter((f) => f !== BAG && /\.bag\.(putItem|takeItem|giveGear|removeGear|lost)\(/.test(fs.readFileSync(path.join(root, f), 'utf8')));
   const want = ['gear', 'shop', 'craft', 'market', 'mail'].map((n) => `engine/server/game/systems/${n}.ts`);
-  check(want.every((f) => uses.includes(f)), `틀의 시스템 ${want.length}곳이 가방을 쓴다 (${uses.length}개 파일)`);
+  scanWrites({
+    what: '아이템의 칸(.items)과 장비 목록(.gear)', write: new RegExp([
+    String.raw`\.items(?:\[[^\]]*\]|\.\w+)?${SET}`,
+    String.raw`\bdelete\s+[\w.]+\.items\b`,
+    String.raw`\.gear\.(?:push|splice|pop|shift|unshift|sort|reverse|fill)\(`,
+    String.raw`\.gear(?:\.length|\[[^\]]*\])?${SET}`,
+  ].join('|')),
+    allowed, self: BAG, mustRead: 'engine/server/game/systems/gear.ts',
+    hits: ['p.items[id] = (p.items[id] ?? 0) + 1;', 'p.items[mat] -= n;', 'p.items[id]--;', 'p.items.ore = 20', 'q.items = {}', 'delete p.items[id]', 'p.gear.push(it);', 'p.gear.splice(p.gear.indexOf(it), 1);', 'p.gear.length = 0', 'p.gear[0] = it', 'p.gear = []', 'e.gear.pop()'],
+    misses: ['if (p.items[id] > 0)', '(p.items[id] ?? 0) >= n', 'const n = p.items.ore;', '{ items: {}, gear: [] }', 'p.gear.length >= max', 'p.gear.find((x) => x.uid === uid)', 'p.gear.filter((x) => x.rar === 0)', 'g.gear.give(p, it)', 'this.g.gears.push({ id })', '(p) => p.items', 'p.gear.length === t.nGear', 'items: { ...p.items }'],
+    uses: /\.bag\.(putItem|takeItem|giveGear|removeGear|lost)\(/, want,
+  });
 }
