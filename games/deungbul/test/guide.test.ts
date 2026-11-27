@@ -406,6 +406,7 @@ checkEach(PACKS, langOf, (P, c) => {
     'ui.forge', // 브람의 대장간
     'ui.shop', 'msg.shopFar', // 상인은 '길 상인'이다 (틀의 기본은 그냥 '상인')
     'ui.goingTown', // 돌아가는 곳(첫불 마을)을 말한다
+    'ui.asTGoal', 'ui.asGoalNote', // 자동 사냥 설정의 '목표 대상'은 이 게임에서 퀘스트다 (묶음 E)
     'fmt.swarmFoe', // 습격으로 온 적(몰려온 적)의 이름 앞에 '안개'를 붙인다 (틀의 기본은 이름 그대로)
     'msg.classFar', // 직업은 등탑 가까이에서 바꾼다
     'msg.bossUp', // 나타난 곳(잿빛 숲)을 말한다

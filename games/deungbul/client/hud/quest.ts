@@ -1,7 +1,7 @@
 // 메인 퀘스트 표시: 지금 할 일, 진행 수치, 목적지 길잡이(빛기둥과 화면 가장자리 화살표).
 // 창을 누르면 목적지까지 걸어간다. 가는 것만 자동이고, 도착한 뒤의 일(전투, 구매, 바치기)은 직접 한다.
 import { QUESTS, goalCount, type QuestStep } from '../../shared/defs';
-import { $, inDungeon, moveTo, onFrame, S, uiIcon, view } from '@engine/client';
+import { $, inDungeon, moveTo, onFrame, S, setAutoGoal, uiIcon, view } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { goalBeam } from '../scene/scene';
 import { G } from '../state';
@@ -27,6 +27,8 @@ export function initQuest(): void {
   // 폰: '▶ 가기' 단추 (U3: 창을 누르면 걸어간다는 안내가 PC에만 있었다). 누름은 창의 것과 같다 (창으로 올라가 한 번만 걷는다)
   onFrame(questFrame);
   onLangChange(renderQuest);
+  // 자동 사냥 설정의 '퀘스트 대상 우선' (묶음 E): 지금 단계가 몬스터 잡기면 그 몬스터와 그 자리. 서버의 짝은 server/systems/quests.ts (g.away.goalOf)
+  setAutoGoal(() => { const step = current(); return step?.goal.kind === 'kill' ? { monsters: [step.goal.monster], at: step.at } : null; });
 }
 
 /** 퀘스트 진행이나 언어가 바뀌었을 때 다시 쓴다. */

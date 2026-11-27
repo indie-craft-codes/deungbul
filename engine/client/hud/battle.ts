@@ -20,6 +20,7 @@ import { tintRarity } from './rarity';
 import { addUnlock } from './reward';
 import { heroDef } from '../../shared/defs';
 import { uiIcon } from './uiicons';
+import { powerSaveButton } from './powersave';
 
 export interface BattleOpts {
   /** 전투 화면을 보일 때인가 (게임의 화면 상태: 탑의 '전투 보기') */
@@ -140,7 +141,10 @@ export function useBattleScreen(o: BattleOpts): void {
   const time = mk('span', 'btlTime');
   const auto = mk('button', 'btlChip toggle btn-secondary') as HTMLButtonElement; auto.type = 'button'; auto.id = 'btlAuto';
   const speed = mk('button', 'btlChip btn-secondary') as HTMLButtonElement; speed.type = 'button'; speed.id = 'btlSpeed';
-  top.append(pause, info, time, auto, speed);
+  // 절전 (묶음 E: 단계를 자동으로 돌리는 동안만 보인다. 폰을 내려놓고 돌릴 때: hud/powersave.ts)
+  const save = powerSaveButton('btlChip btn-secondary btlSave');
+  save.id = 'btlSave';
+  top.append(pause, info, time, auto, speed, save);
   const squad = mk('div', 'btlSquad'); squad.id = 'btlSquad'; squad.hidden = true;
   const sheet = mk('div', 'panel stsheet btlPause'); sheet.id = 'btlPause'; sheet.hidden = true; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true');
   const head = mk('div', 'sthead'); head.append(mk('h3', ''));

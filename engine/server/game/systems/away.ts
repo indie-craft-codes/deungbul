@@ -1,11 +1,10 @@
 // 자리 비움 자동 사냥: 자동 사냥을 켠 채 접속이 끊기면(창을 닫음, 폰 화면이 꺼짐) 캐릭터가 월드에 남아 계속 사냥한다.
 // 다시 접속하면 그 캐릭터를 그대로 이어받는다. 판단은 클라이언트의 자동 사냥(engine/client/auto.ts)과 같고,
 // 사람이 누른 것과 같은 명령(g.command)만 내므로 전투 규칙은 그대로다.
-import { AUTO, AWAY, pickPotion, pickSkill, restSpot, safetyStep, shouldRest, tidySafety, type AwaySafety } from '../../../shared/auto';
+import { AUTO, AUTO_PREFS, AWAY, pickPotion, pickSkill, pickTarget, prefsSafety, restSpot, roamOf, safetyStep, shouldRest, tidyPrefs, tidySafety, type AutoPrefs, type AwaySafety } from '../../../shared/auto';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 
-const ROAM = AWAY.roam; // 자리를 비운 곳에서 이보다 먼 몬스터는 쫓지 않는다
 const THINK_S = 0.3;
 /**
  * 자리를 비운 채 사냥을 이어 가는 시간의 하루 한도(초). 다 쓰면 저장하고 월드에서 나가고, 그날은 끊겨도 캐릭터가 남지 않는다.
@@ -30,6 +29,15 @@ export class Away {
   private safe = new WeakMap<Ent, Partial<AwaySafety>>();
   /** 물약이 없어 쉬는 중인 플레이어 (AUTO.restAt ~ restUntil) */
   private resting = new Set<number>();
+  /**
+   * 자동 사냥 설정의 게임 기본값 (묶음 E: shared/auto.ts의 AutoPrefs). 비어 있으면(기본) 틀의 기본 AUTO_PREFS = 예전과 같은 동작.
+   * 게임의 규칙 플러그인이 정한다 (예: { target: 'goal' }). 사람마다 명령 autoPrefs로 바꾸고 저장 칸 'autoprefs'에 남는다
+   */
+  prefsBase: Partial<AutoPrefs> = {};
+  /** 지금 퀘스트가 잡으라는 몬스터 종류 (대상 우선순위 'goal'). 게임의 퀘스트 시스템이 정한다. 없으면(기본) 'goal'는 고를 수 없다 */
+  goalOf: ((p: Ent) => readonly string[]) | null = null;
+  /** 사람이 바꾼 자동 사냥 설정 (저장 칸 'autoprefs') */
+  private prefs = new WeakMap<Ent, Partial<AutoPrefs>>();
 
   constructor(private g: Game) {
     // 클라이언트가 자동 사냥을 켜고 끌 때마다 알려 준다
@@ -45,6 +53,18 @@ export class Away {
       if (!this.safety) return;
       this.safe.set(p, tidySafety({ potionAt: m.potion as number, retreatAt: m.retreat as number, stopNoPotion: m.noPotion as boolean, stopOnDeath: m.death as boolean }, this.safetyOf(p) ?? this.safety));
       p.unsaved = true;
+    });
+    // 자동 사냥 설정 (묶음 E): 준 칸만 바꾸고(빈 메시지는 묻기만), 지금 값을 그 사람에게 돌려준다. 바꾼 사람만 저장한다 (바꾸지 않은 사람의 저장·줄 위는 예전과 같다)
+    g.commands.set('autoPrefs', (p, m) => {
+      if (p.bot) return;
+      if (m.reset === true) { if (this.prefs.has(p)) { this.prefs.delete(p); p.unsaved = true; } }
+      else if (typeof m.p === 'object' && m.p !== null) { this.prefs.set(p, tidyPrefs({ ...this.prefsOf(p), ...(m.p as Partial<AutoPrefs>) }, this.base())); p.unsaved = true; }
+      g.out.push({ id: p.id, msg: { t: 'autoPrefs', s: this.prefsOf(p), base: this.base(), safety: this.safetyOf(p), goal: !!this.goalOf } });
+    });
+    g.saves.push({
+      name: 'autoprefs',
+      save: (p) => { const s = this.prefs.get(p); return s ? { ...s } : undefined; },
+      load: (p, raw) => { if (typeof raw === 'object' && raw !== null) this.prefs.set(p, tidyPrefs(raw as Partial<AutoPrefs>, this.base())); },
     });
     // 저장 칸: 사람이 바꾼 안전장치가 있을 때만 적는다 (켜지 않은 게임의 저장은 예전과 같다)
     g.saves.push({
@@ -75,13 +95,33 @@ export class Away {
 
   /** 그 사람의 안전장치 (게임이 켜지 않았으면 null) */
   safetyOf(p: Ent): AwaySafety | null { return this.safety ? tidySafety(this.safe.get(p), this.safety) : null; }
+  /** 게임의 기본 설정 (틀의 기본에 게임이 정한 칸을 덮는다. 'goal'는 퀘스트 시스템이 있을 때만) */
+  base(): AutoPrefs { const b = tidyPrefs(this.prefsBase, AUTO_PREFS); if (b.target === 'goal' && !this.goalOf) b.target = 'near'; return b; }
+  /** 그 사람의 자동 사냥 설정 */
+  prefsOf(p: Ent): AutoPrefs { const s = this.prefs.get(p); return s ? tidyPrefs(s, this.base()) : this.base(); }
+  /**
+   * 자동 사냥 판단에 쓸 설정: 사람도 게임도 아무것도 바꾸지 않았으면 null (예전과 똑같은 길: 황금 실행).
+   * 대상 고르기·물약·기술·멈춤 조건이 이것을 본다 (화면의 자동 사냥은 같은 값을 메시지 autoPrefs로 받는다)
+   */
+  prefsFor(p: Ent): AutoPrefs | null { return this.prefs.has(p) || Object.keys(this.prefsBase).length ? this.prefsOf(p) : null; }
+  /** 퀘스트 몬스터 (대상 우선순위가 'goal'일 때만 묻는다) */
+  goalFor(p: Ent, pr: AutoPrefs | null): readonly string[] { return pr?.target === 'goal' && this.goalOf ? this.goalOf(p) : []; }
+  /**
+   * 장비 가방이 가득 찼다 (gear 시스템이 장비를 넣은 뒤·넣지 못했을 때 부른다): 설정의 stopBag이 켜져 있으면 자동 사냥을 멈춘다.
+   * 보고 있을 때도 멈춘다 (화면은 안내문 autoBagFull을 받고 단추를 끈다)
+   */
+  bagFull(p: Ent): void {
+    if (!p.auto || !this.g.bag.full(p) || !this.prefsFor(p)?.stopBag) return;
+    p.auto = false; p.unsaved = true;
+    this.g.notify(p, 'autoBagFull');
+  }
 
   /**
    * 안전장치의 한 판단을 몸(body: 사람 자신이거나 대역)에 낸다: 물약은 그 사람의 가방에서, 물러남은 쓰러지는 자리 쪽으로 걸어가 멈춤.
    * 멈추면(물러남·물약 없음) 그 사람의 자동 사냥을 끄고 안내문(autoRetreat·autoNoPotion)을 보낸다. 무엇을 했는지 돌려준다 (안 했으면 null)
    */
-  guard(p: Ent, body: Ent, drink: (id: string) => void, home: { x: number; z: number } = this.g.rules.respawn(p)): 'potion' | 'retreat' | 'stop' | null {
-    const s = this.safetyOf(p), g = this.g;
+  guard(p: Ent, body: Ent, drink: (id: string) => void, home: { x: number; z: number } = this.g.rules.respawn(p), s: AwaySafety | null = this.safetyOf(p)): 'potion' | 'retreat' | 'stop' | null {
+    const g = this.g;
     if (!s || body.hp <= 0 || body.maxHp <= 0) return null;
     const r = safetyStep(body.hp / body.maxHp, g.field(p, 'items'), s, p.itemCd <= 0);
     if (!r) return null;
@@ -151,10 +191,14 @@ export class Away {
     p.wait = THINK_S;
     const ratio = p.hp / p.maxHp;
     if (p.hp <= 0) { this.resting.delete(p.id); return; } // 쓰러졌다: 일어나면 체력이 차 있다
+    // 자동 사냥 설정 (묶음 E). 아무도 바꾸지 않았으면 null: 아래는 예전과 똑같다
+    const pr = this.prefsFor(p);
     // 안전장치 (게임이 켰을 때만): 물약, 물러나 멈춤, 물약이 없어 멈춤
     if (this.safety) { const done = this.guard(p, p, (id) => g.command(p, { t: 'use', id })); if (done === 'potion') return; if (done) return; }
+    // 안전장치가 없는 게임: 설정의 멈춤 조건(체력 n% 아래면 물러나 멈춤, 물약이 떨어지면 멈춤)을 같은 길로
+    else if (prefsSafety(pr)) { if (this.guard(p, p, (id) => g.command(p, { t: 'use', id }), undefined, prefsSafety(pr))) return; }
 
-    const items = g.field(p, 'items'), potion = p.itemCd <= 0 ? pickPotion(ratio, items) : null;
+    const items = g.field(p, 'items'), potion = p.itemCd <= 0 ? pickPotion(ratio, items, pr?.potionAt) : null;
     if (potion) g.command(p, { t: 'use', id: potion });
     // 물약이 없으면 체력이 찰 때까지 쉬어 간다 (화면의 자동 사냥과 같은 규칙)
     if (shouldRest(ratio, items, this.resting.has(p.id))) this.resting.add(p.id); else this.resting.delete(p.id);
@@ -174,14 +218,13 @@ export class Away {
     let target = g.ents.get(p.targetId);
     if (resting && target && dist(p, target) > AUTO.restGuard) target = undefined;
     if (!target || target.dead) {
-      target = undefined;
-      let nd = resting ? AUTO.restGuard : AUTO.seek; // 쉬는 중이면 내게 붙은 것만 상대한다
-      for (const m of g.ents.values()) {
-        if (m.kind !== 'm' || m.dead || m.homing || m.layer !== p.layer || dist(s, m) > ROAM) continue;
-        if (m.def?.boss && m.targetId !== p.id) continue; // 필드 보스는 스스로 고르지 않는다 (자리 비움으로 보스를 되풀이해 잡던 것, 검토 7)
-        const d = dist(p, m);
-        if (d < nd) { nd = d; target = m; }
-      }
+      // 쉬는 중이면 내게 붙은 것만 상대한다. 설정의 범위(제자리·현재 지역)·제외·우선순위를 따른다 (설정이 없으면 가장 가까운 것: 예전과 같다)
+      const roam = roamOf(pr), goals = this.goalFor(p, pr);
+      target = pickTarget(g.ents.values(), (m) => {
+        if (m.kind !== 'm' || m.dead || m.homing || m.layer !== p.layer || dist(s, m) > roam) return null;
+        if (m.def?.boss && m.targetId !== p.id) return null; // 필드 보스는 스스로 고르지 않는다 (자리 비움으로 보스를 되풀이해 잡던 것, 검토 7)
+        return { d: dist(p, m), type: m.type, weak: m.maxHp };
+      }, resting ? null : pr, goals, resting ? AUTO.restGuard : AUTO.seek);
       if (target) g.command(p, { t: 'attack', id: target.id });
       else if (resting) { /* 쉬는 중이고 둘레에 몬스터가 없다: 그 자리에서 쉰다 */ }
       // 쓰러져 다시 일어나는 곳(g.rules.respawn)에서 일어났거나 멀리 끌려갔으면 자리를 비운 곳으로 돌아간다
@@ -189,6 +232,7 @@ export class Away {
     }
     const d = target ? dist(p, target) : Infinity;
 
+    if (pr && !pr.skills) return; // 설정: 기술을 저절로 쓰지 않는다
     const n = pickSkill(p.cls, ratio, d, (i) => p.cds[i] <= 0);
     if (n >= 0) g.command(p, { t: 'skill', n });
   }

@@ -1665,3 +1665,92 @@ html:lang(en) .hk-docklb { font-size: var(--fs-xs); }
 }
 /* 오른쪽 창(퀘스트·상점·등탑)이 구역 안에서 넘치면 아래를 흐리게 (스크롤된다는 표시: hud/layout.ts가 .hasMore를 단다) */
 #rightcol.hasMore { -webkit-mask-image: linear-gradient(180deg, var(--c-black) calc(100% - 28px), transparent); mask-image: linear-gradient(180deg, var(--c-black) calc(100% - 28px), transparent); }
+
+
+/* ---------- 묶음 E: 자동 사냥 설정 창 · 절전 화면 · 도감 창 (hud/autoset.ts, powersave.ts, codexbook.ts) ---------- */
+/* 자동 사냥 단추 곁의 톱니(설정 창)와 절전 단추 (절전은 사냥 중일 때만) */
+#autoSetBtn, #psaveBtn { pointer-events: auto; background: var(--c-panel); color: var(--c-text); border: 1px solid var(--c-line); font-weight: 400; padding: 6px 9px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+#autoSetBtn .uic { width: 1.25em; height: 1.25em; }
+#psaveBtn[hidden] { display: none; }
+@media (pointer: coarse) { #autoSetBtn, #psaveBtn { min-width: var(--tap); min-height: var(--tap); justify-content: center; } #psaveBtn span { display: none; } }
+/* 설정 창: 잡지 않을 몬스터는 여러 줄로, 고른 것(뺀 것)은 줄을 긋는다 */
+.mrow.asWide { flex-direction: column; align-items: stretch; }
+.mrow.asWide .acts { max-width: none; width: 100%; justify-content: flex-start; }
+.mrow.asWide .acts > .mchips { flex: 1 1 auto; }
+.mchips.asSkip { flex-wrap: wrap; }
+.mchips.asSkip button { flex: 0 1 auto; }
+.mchips.asSkip button.on { background: var(--c-bad-bg); color: var(--c-bad); border-color: var(--c-bad-line); text-decoration: line-through; font-weight: 400; }
+.mrow input[type="range"] { width: min(180px, 40vw); }
+.mrow.asHead .iname { color: var(--c-title); font-size: var(--fs-lg); }
+.mrow.asFoot { border-left: 0; justify-content: flex-end; }
+
+/* 절전 화면: 무엇보다 위, 어두운 바탕에 요약을 크게. 3D와 HUD는 감춘다 (합성할 것이 없다: 전지·발열) */
+body.psaveOn > :not(#psave) { visibility: hidden !important; }
+.psave {
+  position: fixed; inset: 0; z-index: var(--z-psave); background: var(--c-psave); color: var(--c-text);
+  display: flex; flex-direction: column; gap: var(--sp-4); overflow: auto;
+  padding: calc(var(--sp-5) + env(safe-area-inset-top, 0px)) max(var(--sp-4), env(safe-area-inset-right, 0px)) calc(var(--sp-5) + env(safe-area-inset-bottom, 0px)) max(var(--sp-4), env(safe-area-inset-left, 0px));
+  user-select: none; -webkit-user-select: none; touch-action: none;
+}
+.psave[hidden] { display: none; }
+.psave:focus { outline: none; }
+.ps-head { display: flex; justify-content: space-between; align-items: center; color: var(--c-text-2); font-size: var(--fs-lg); }
+.ps-title { display: flex; align-items: center; gap: var(--sp-2); }
+.ps-clock { font-size: var(--fs-2xl); font-variant-numeric: tabular-nums; color: var(--c-text); }
+.ps-state { text-align: center; font-size: var(--fs-xl); font-weight: 700; color: var(--c-good); }
+.ps-state.off { color: var(--c-warn); }
+.ps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-3); width: 100%; max-width: 880px; margin: 0 auto; }
+.ps-cell { background: var(--c-fill-1); border: 1px solid var(--c-line); border-radius: var(--r-lg); padding: var(--sp-3); min-width: 0; }
+.ps-label { display: flex; align-items: center; gap: var(--sp-1); color: var(--c-text-2); font-size: var(--fs-sm); }
+.ps-val { font-size: var(--fs-2xl); font-weight: 800; font-variant-numeric: tabular-nums; margin-top: var(--sp-1); overflow-wrap: anywhere; }
+.ps-hp.low .ps-val { color: var(--c-bad-strong); }
+.ps-bar { height: 8px; border-radius: var(--r-pill); background: var(--c-fill-2); margin-top: var(--sp-2); overflow: hidden; }
+.ps-bar i { display: block; height: 100%; background: var(--c-hp); }
+.ps-alerts { width: 100%; max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--sp-1); }
+.ps-ahead { color: var(--c-text-2); font-size: var(--fs-sm); }
+.ps-calm { color: var(--c-text-3); font-size: var(--fs-md); }
+.ps-alert { color: var(--c-bad); font-size: var(--fs-lg); font-weight: 700; background: var(--c-bad-bg); border: 1px solid var(--c-bad-line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
+.psave.danger { box-shadow: inset 0 0 0 3px var(--c-bad-line); }
+.ps-track { position: sticky; bottom: 0; margin: auto auto 0; width: min(100%, 420px); height: 64px; border-radius: var(--r-pill); background: var(--c-fill-1); border: 1px solid var(--c-line); flex: none; }
+.ps-slide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--c-text-2); font-size: var(--fs-lg); opacity: calc(1 - var(--ps-k, 0)); pointer-events: none; }
+.ps-knob { position: absolute; left: 4px; top: 4px; width: 56px; height: 56px; min-height: 0; border-radius: 50%; background: var(--c-accent); color: var(--c-on-accent); border: 0; display: flex; align-items: center; justify-content: center; touch-action: none; transition: transform var(--dur-base) var(--ease-out); }
+.ps-knob.drag { transition: none; }
+.ps-knob .uic { width: 26px; height: 26px; }
+.ps-keys { text-align: center; color: var(--c-text-3); font-size: var(--fs-xs); min-height: 1em; }
+@media (orientation: landscape) and (max-height: 520px) {
+  .psave { gap: var(--sp-2); padding-top: calc(var(--sp-3) + env(safe-area-inset-top, 0px)); padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px)); }
+  .ps-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-2); }
+  .ps-head { font-size: var(--fs-md); } .ps-clock { font-size: var(--fs-xl); } .ps-state { font-size: var(--fs-lg); }
+  .ps-alerts { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+  .ps-cell { padding: var(--sp-2); }
+  .ps-val { font-size: var(--fs-xl); }
+  .ps-track { height: 56px; } .ps-knob { width: 48px; height: 48px; }
+}
+
+/* 도감 창 */
+.mchips.cbTabs { flex-wrap: wrap; position: sticky; top: 0; z-index: 1; background: var(--c-surface); padding-bottom: var(--sp-1); }
+.mchips.cbTabs button { flex: 1 1 auto; }
+.cbBody { display: flex; flex-direction: column; gap: 6px; }
+.mrow.cbRow { justify-content: flex-start; }
+.mrow.cbRow .what { flex: 1; }
+.mrow.cbRow.boss { border-left-color: var(--c-boss); }
+.cbSeen { flex: none; display: inline-flex; width: 26px; justify-content: center; color: var(--c-text-3); }
+.cbSeen.on { color: var(--c-good); }
+.mrow.cbFoot { border-left: 0; }
+.mrow.cbFoot .acts { max-width: none; justify-content: flex-start; flex-wrap: wrap; }
+a.cbLink { display: inline-flex; align-items: center; gap: 4px; color: var(--c-accent); padding: 6px 10px; border: 1px solid var(--c-line); border-radius: var(--r-md); text-decoration: none; font-size: var(--fs-sm); }
+@media (pointer: coarse) { a.cbLink { min-height: var(--tap); } }
+.cbGuideSel { width: 100%; font-size: var(--fs-md); }
+@media (pointer: coarse) { .cbGuideSel { font-size: 16px; } }
+.cbGuideHead { margin: var(--sp-2) 0 0; color: var(--c-title); font-size: var(--fs-lg); }
+.cbBody h4 { margin: var(--sp-2) 0 0; font-size: var(--fs-md); color: var(--c-text); }
+.cbBody ul.note { margin: 0; padding-left: 1.2em; }
+.cbTable { margin: 0; }
+.cbTable figcaption { color: var(--c-text-2); font-size: var(--fs-sm); margin-bottom: 2px; }
+.cbScroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--c-line); border-radius: var(--r-sm); }
+.cbScroll table { border-collapse: collapse; font-size: var(--fs-sm); min-width: 100%; }
+.cbScroll th, .cbScroll td { padding: 4px 8px; border-bottom: 1px solid var(--c-fill-2); text-align: left; vertical-align: top; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cbScroll th { color: var(--c-accent); background: var(--c-fill-1); font-weight: 700; }
+.cbScroll td:last-child { white-space: normal; min-width: 12em; }
+/* 자동 사냥 단추를 감춘 모드·게임(탑의 전투 등)에서는 곁의 톱니·절전 단추도 함께 감춘다 (전투 화면에는 위 띠의 절전이 있다) */
+#autoBtn.modeOff ~ #autoSetBtn, #autoBtn.modeOff ~ #psaveBtn, #autoBtn.hudOff ~ #autoSetBtn, #autoBtn.hudOff ~ #psaveBtn { display: none; }

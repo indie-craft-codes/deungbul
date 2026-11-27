@@ -21,6 +21,9 @@ import './scene/look'; // 부품으로 된 사람형을 그리는 법 (models.ts
 /** 누가 기술을 썼다 (사건 's': 쓴 엔티티 id, 기술 id). 전투 화면의 초상 칸이 기술 준비를 셈한다 (hud/battle.ts) */
 const castFns: ((id: number, skill: string) => void)[] = [];
 export function onCast(fn: (id: number, skill: string) => void): void { castFns.push(fn); }
+const killFns: ((id: number, type: string) => void)[] = [];
+/** 내가 노리던 몬스터가 쓰러졌다 (내 처치: 절전 화면의 처치 수 같은 것) */
+export function onKill(fn: (id: number, type: string) => void): void { killFns.push(fn); }
 
 const INTERP_MS = 150; // 다른 엔티티는 이만큼 과거 시점을 그려서 스냅샷 사이를 부드럽게 잇는다
 const SWING_S = 0.3;
@@ -345,7 +348,7 @@ function onEvent(e: Ev, me: Me): void {
         r.dieS = r.dying;
         puff(r.x, r.h * 0.4, r.z, 12, 0xe8e2d0); burst(r.x, r.z, 2.4, 0xe8e2d0, 0.35);
       }
-      if (me.attackId === e[1]) { me.attackId = 0; shake(0.12); sfx.kill(); }
+      if (me.attackId === e[1]) { me.attackId = 0; shake(0.12); sfx.kill(); for (const fn of killFns) fn(e[1], r?.type ?? ''); }
       break;
     }
     case 'r': {

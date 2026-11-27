@@ -86,3 +86,9 @@ export { setLoadingTips } from './hud/conn';
 export { addUnlock, celebrate, floatDelta, showNumber, unlockHint, type CelebrateOpts, type UnlockDef } from './hud/reward';
 export { gachaSound, uiSound, uiSoundOn, setUiSoundOn, UI_SOUNDS, type UiSound } from './sound';
 export { stillMotion } from './motion';
+// 묶음 E (docs/making-a-game.md 29절): 자동 사냥 설정(퀘스트 대상을 잇기), 절전 화면, 도감 창의 칸·공개 페이지
+export { autoPrefs, onAutoPrefs, setAutoPrefs, setAutoGoal, type AutoGoal } from './auto';
+export { closePowerSave, openPowerSave, powerSaveActive, powerSaveOn, powerSaveStats } from './hud/powersave';
+export { addCodexSection, openCodex, setCodexPublic, type CodexSection } from './hud/codexbook';
+export { renderMenu } from './hud/menu';
+export { frameStats } from './framecap';

@@ -11,6 +11,7 @@ import type { BlockView, ChatCh, FriendView, TalkState } from './defs/talk';
 import type { DrawRow, OddsPublic } from './defs/odds';
 import type { ClientMsgs, ServerMsgs, WorldState as GameWorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
+import type { AutoPrefs, AwaySafety } from './auto';
 
 /** 판의 명령 (rooms 모듈: { t: 'room', a }) */
 export type RoomCmd = 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again' | 'start' | 'code' | 'watch' | 'privacy' | 'kick' | 'give' | 'ready' | 'opt' | 'vote' | 'ballot' | 'regroup' | 'stats';
@@ -219,6 +220,8 @@ export type ClientMsg =
   | { t: 'mode'; id: string }
   /** 자동 사냥의 안전장치 (게임이 g.away.safety를 켰을 때): 물약을 마실 비율, 물러날 비율, 물약이 떨어지면 멈춤, 쓰러지면 끝 */
   | { t: 'autoSafe'; potion?: number; retreat?: number; noPotion?: boolean; death?: boolean }
+  /** 자동 사냥 설정 (away 모듈, 묶음 E): 준 칸만 바꾼다(빈 메시지는 지금 값을 묻기만). reset이면 기본값으로. 서버는 같은 이름의 메시지로 지금 값을 돌려준다 */
+  | { t: 'autoPrefs'; p?: Partial<AutoPrefs>; reset?: boolean }
   // ---- 웹 출시의 바탕 (engine/server/net/web.ts) ----
   /** 탭·앱이 보이는가 (숨기면 false: 다른 사람에게 자리 비움으로 보인다) */
   | { t: 'vis'; on: boolean }
@@ -342,6 +345,8 @@ export type ServerMsg =
   | { t: 'gacha'; b: string; got: PullGot[] }
   /** 소탕의 결과 (stages·dungeon 모듈): 단계나 던전, 횟수, 받은 것의 합 */
   | { t: 'sweep'; got: SweepGot }
+  /** 자동 사냥 설정 (명령 autoPrefs의 답): 지금 값, 게임의 기본값, 안전장치(게임이 켰을 때만, 아니면 null), 퀘스트 대상을 고를 수 있는 게임인가 */
+  | { t: 'autoPrefs'; s: AutoPrefs; base: AutoPrefs; safety: AwaySafety | null; goal: boolean }
   /** 돌아왔을 때 받은 방치 보상 (idle 모듈, IDLE.popup을 켠 게임만): 화면이 창으로 알린다. 받기는 그 우편(mail)으로 */
   | ({ t: 'idleBack' } & IdleBack)
   /** 돌아옴 요약 (modes 모듈, MODE_RULES.backCard를 켠 게임만): 다른 모드에서 돌아왔을 때 그쪽에서 그동안 일어난 일 */

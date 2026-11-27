@@ -39,6 +39,7 @@ import { connIn, connLosing, connLost, connOpening, initConn } from './hud/conn'
 import { initCmdState } from './hud/cmdstate';
 import { initReward } from './hud/reward';
 import { closeWorldMap } from './hud/worldmap';
+import { frameCap, frameStats } from './framecap';
 import type { Look } from './scene/view';
 import { S } from './state';
 
@@ -127,8 +128,11 @@ function resize(): void {
 const NO_SHAKE = { x: 0, z: 0 };
 let last = performance.now();
 function frame(now: number): void {
-  requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000);
+  // 절전 화면(hud/powersave.ts)이 상한을 걸면 그 fps만큼만 돈다 (requestAnimationFrame을 부르지 않는다). 프레임이 성기면 한 프레임에 더 많이 나아간다
+  const cap = frameCap();
+  if (cap) setTimeout(() => frame(performance.now()), 1000 / cap.fps); else requestAnimationFrame(frame);
+  frameStats.frames++;
+  const dt = Math.min(cap ? 0.25 : 0.05, (now - last) / 1000);
   last = now;
 
   const a = axis();
@@ -143,7 +147,9 @@ function frame(now: number): void {
   runFrame(now, dt); // 내 정보 창의 막대, 물약 대기 표시, 게임의 모듈 (등록한 차례대로)
   updateFloats(dt);
   updateFx(dt);
+  if (cap && !cap.render) return;
   view.render();
+  frameStats.renders++;
 }
 
 // ---------- 시작 ----------

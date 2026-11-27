@@ -7,7 +7,7 @@ export interface LinkText {
 }
 /** 언어 코드별 글자. 게임에 언어를 더하면 여기에도 더한다 (없는 언어는 첫 번째 것을 쓴다) */
 export const LINK_TEXT: Record<string, LinkText> = {
-  ko: { label: '도감', title: '도감: 게임의 수치와 규칙을 모두 봅니다 (새 창)' },
-  en: { label: 'Codex', title: 'Codex: every number and rule in the game (opens in a new tab)' },
+  ko: { label: '도감', title: '도감: 몬스터·아이템과 게임의 수치·규칙을 봅니다' },
+  en: { label: 'Codex', title: 'Codex: monsters, items and every number and rule in the game' },
 };
 export const linkText = (code: string): LinkText => LINK_TEXT[code] ?? Object.values(LINK_TEXT)[0];

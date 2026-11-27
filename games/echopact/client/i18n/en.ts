@@ -128,12 +128,6 @@ export const enGame: GameLocale = {
     tutMorph: 'Take the form of an echo you own from the Morph tab in the menu[[ (M)|]]. The card stats you raised in the tower are your stats while morphed.',
     tutAuto: 'Turn on auto-hunt[[ (R)|]] and go to the tower: your body stays in the vale and keeps hunting.',
     setEchoTags: 'Show name tags',
-    setSafeGroup: 'Auto-hunt while you are away',
-    setSafePotion: 'Drink a tonic at health',
-    setSafeRetreat: 'Stop and fall back at health',
-    setSafeNoPotion: 'Stop when out of tonics',
-    setSafeDeath: 'End auto-hunt when down',
-    setSafeNote: 'Used by your body in the vale while you are in the tower, and by away-hunting after you disconnect.',
   },
   fmt: {
     gachaNew: () => 'New echo!',
