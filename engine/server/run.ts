@@ -11,6 +11,8 @@
 //   BACKUP_KEEP=20       남겨 둘 자동 백업 수
 //   BACKUP=0             자동 백업을 끈다
 //   COMPRESS=0           WebSocket 압축(perMessageDeflate)을 끈다 (기본 켬: docs/infra.md '압축')
+//   STATUS=0             상태 페이지(status.json, status.html)를 쓰지 않는다 (기본: 빌드된 화면의 폴더가 있으면 거기에 30초마다. DB=memory면 쓰지 않는다: engine/server/net/status.ts)
+//   STATUS_DIR=경로       상태 페이지를 쓸 폴더 (정적 호스팅에 올리는 폴더 같은 곳)
 // 서버는 저장 파일 옆에 자기 프로세스 번호를 server.pid로 적는다 (scripts/restart.mjs가 강제로 끌 때 쓴다). 꺼질 때 지운다.
 // 치명적 오류(처리되지 않은 예외): 적고, 저장을 시도하고, 코드 1로 끝낸다. 감시자(scripts/serve.mjs)가 다시 띄운다.
 import fs from 'node:fs';
@@ -38,7 +40,7 @@ export async function runServer(opts: RunOptions): Promise<Running> {
   const dbFile = process.env.DB ?? opts.db;
   if (dbFile !== 'memory') fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const store: Store = dbFile === 'memory' ? new MemoryStore() : new SqliteStore(dbFile);
-  const s = await startServer(port, { bots, store, staticDir: opts.dist, game: { plugins: opts.plugins ?? [] }, backup: backupFromEnv(), compress: process.env.COMPRESS === undefined || process.env.COMPRESS === '' ? undefined : process.env.COMPRESS !== '0' });
+  const s = await startServer(port, { bots, store, staticDir: opts.dist, game: { plugins: opts.plugins ?? [] }, backup: backupFromEnv(), compress: process.env.COMPRESS === undefined || process.env.COMPRESS === '' ? undefined : process.env.COMPRESS !== '0', status: statusFrom(dbFile, opts.dist) });
   const at = (process.env.DEV_SPAWN ?? '').split(',').map(Number);
   if (at.length === 2 && at.every(Number.isFinite)) s.game.players.devSpawn = { x: at[0], z: at[1] };
 
@@ -87,6 +89,16 @@ export async function runServer(opts: RunOptions): Promise<Running> {
   process.on('SIGTERM', () => shutdown(0));
   log.info(`[server] http://localhost:${s.port} 에서 대기 중 (봇 ${bots}명, 저장: ${dbFile}, pid ${process.pid})`);
   return s;
+}
+
+/**
+ * 상태 페이지를 쓸 곳 (engine/server/net/status.ts): STATUS=0이면 쓰지 않는다. STATUS_DIR이 있으면 거기,
+ * 없으면 빌드된 화면의 폴더가 있을 때 거기에. 저장하지 않는 서버(DB=memory: 시험·개발)는 STATUS_DIR을 주지 않으면 쓰지 않는다
+ */
+function statusFrom(dbFile: string, dist: string): { dir: string } | false {
+  if (process.env.STATUS === '0') return false;
+  if (process.env.STATUS_DIR) return { dir: process.env.STATUS_DIR };
+  return dbFile !== 'memory' && fs.existsSync(dist) ? { dir: dist } : false;
 }
 
 /** 환경 변수의 자동 백업 설정: BACKUP=0이면 끈다, BACKUP_EVERY_MIN, BACKUP_KEEP */

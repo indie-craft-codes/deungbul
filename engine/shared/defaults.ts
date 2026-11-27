@@ -19,6 +19,7 @@ import type { BannerDef, ChapterDef, GachaRules, HeroDef, HeroRarityDef, HeroRol
 import type { LookRules } from './defs/look';
 import type { CharRules } from './defs/chardef';
 import type { MorphRules } from './defs/morph';
+import type { LiveKeys, ResetRules } from './defs/live';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -215,3 +216,17 @@ export const LOOK_RULES: LookRules = {};
 export const CHAR_RULES: CharRules = {};
 /** 스스로 풀 때까지, 다시 변신까지 10초, 맞은 지 5초 안에는 못 한다, 보정 없음(겉모습만), 서른까지 가진다 */
 export const MORPH_RULES: MorphRules = { durationS: 0, cooldownS: 10, noFightS: 5, maxOwn: 30 };
+
+// ---------- 운영의 바탕 (핵심: 시계, 원격 설정, 기능 깃발) ----------
+/** 서버 PC의 현지 시각 자정에 날이 바뀌고, 주는 월요일에 시작한다 (예전의 '서버 현지 자정'과 같다) */
+export const RESET: ResetRules = { tz: 'local', dayAt: 0, weekStart: 1 };
+/** 원격 설정으로 덮어쓸 수 있는 칸: 없다 (모든 내용이 소스 그대로) */
+export const LIVE_KEYS: LiveKeys = {};
+/** 게임의 기능 깃발: 없다 (틀의 깃발 join, chat, market, mail, gacha만) */
+export const FLAGS: readonly string[] = [];
+/**
+ * 원격 설정 칸의 수 범위 검사 (게임의 LIVE_KEYS의 check에 쓴다: 내용 파일이 값으로 읽어도 되는 틀의 도우미).
+ * 예: 'GACHA_RULES.history': { check: liveRange(10, 200, true) }
+ */
+export const liveRange = (min: number, max: number, int = false) => (v: unknown): string | null =>
+  typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max && (!int || Number.isInteger(v)) ? null : `${min}~${max} 사이의 ${int ? '정수' : '수'}여야 합니다`;

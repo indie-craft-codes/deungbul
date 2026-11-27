@@ -3,12 +3,12 @@
 // 천장(BannerDef.pity): 사람마다·천장의 열쇠(pityKey: 배너 id, 무리 pityGroup가 있으면 'group:이름')마다 'pity.rarity 이상이 나오지 않은 뽑기의 수'를 세고, after번째 뽑기는 그 등급 이상의 칸에서만 뽑는다.
 // 10번 뽑기의 보장(BannerDef.tenAtLeast): 앞의 아홉에 그 등급 이상이 없으면 열째는 그 등급 이상에서.
 // 픽업(BannerDef.pickup)과 반반(fiftyFifty): 픽업의 등급이 나왔는데 픽업이 아니면 확정이 켜지고, 다음에 그 등급이 나오면 픽업이다. 확정도 천장의 열쇠마다 센다.
-// 기간(start, end): 서버의 시계(g.now)로 열려 있는 배너에서만 뽑는다.
+// 기간(start, end: UTC ms): 시계(g.time.open, engine/server/game/systems/clock.ts)로 열려 있는 배너에서만 뽑는다. 원격 설정(LIVE_KEYS에 'BANNERS.<id>.end' 같은 칸)으로 재시작 없이 늘리거나 당길 수 있다.
 // 선택권(GACHA_RULES.select): 선택권 아이템 하나를 쓰고 그 목록의 영웅 하나를 얻는다 ({ t: 'gacha', a: 'select', item, hero }).
 // 난수는 서버의 것이다(rng). 시험은 seededRng로 바꿔 끼워 같은 결과를 되풀이한다.
 // 저장: 캐릭터의 ext 'gacha' ({ pity: { 열쇠: 셈 }, log: 최근 기록, sure?: { 열쇠: 1 } }). 본인에게는 개인 상태 'gacha'와, 뽑을 때마다 메시지 { t: 'gacha', b, got }.
 import {
-  BANNER_IDS, BANNER_TABLE, GACHA_RULES, GACHA_RULE_VIEW, SELECT_TICKETS, bannerOpen, hasFiftyFifty, hasTimedBanners, heroDef, isBannerId, isHeroId, isItemId, nextSure, pickOdds, pityKey, poolOdds, pullOdds,
+  BANNER_IDS, BANNER_TABLE, GACHA_RULES, GACHA_RULE_VIEW, SELECT_TICKETS, hasFiftyFifty, hasTimedBanners, heroDef, isBannerId, isHeroId, isItemId, nextSure, pickOdds, pityKey, poolOdds, pullOdds,
   type BannerDef, type GachaMe, type PullGot, type PullLog,
 } from '../../../shared/defs';
 import { readInt, type Ent } from '../entity';
@@ -44,7 +44,7 @@ export class Gacha {
     const out: GachaMe = { pity: { ...p.pity }, log: p.pulls };
     if (this.timed) {
       const now = this.g.now();
-      out.open = Object.fromEntries(BANNER_IDS.filter((id) => bannerOpen(BANNER_TABLE[id], now)).map((id) => { const end = BANNER_TABLE[id].end; return [id, end === undefined ? -1 : Math.max(1, Math.ceil((end - now) / 60000))]; }));
+      out.open = Object.fromEntries(BANNER_IDS.filter((id) => this.g.time.open(BANNER_TABLE[id].start, BANNER_TABLE[id].end, now)).map((id) => { const end = BANNER_TABLE[id].end; return [id, end === undefined ? -1 : Math.max(1, Math.ceil((end - now) / 60000))]; }));
     }
     if (this.fifty) out.sure = { ...this.sure.get(p.id) };
     return out;
@@ -55,7 +55,7 @@ export class Gacha {
   /** 그 배너의 반반 확정이 켜져 있는가 (다음 픽업 등급은 픽업) */
   sureOf(p: Ent, banner: string): boolean { return !!this.sure.get(p.id)?.[pityKey(banner)]; }
   /** 지금(서버 시계) 열려 있는 배너인가 */
-  isOpen(banner: string): boolean { const b = BANNER_TABLE[banner]; return !!b && bannerOpen(b, this.g.now()); }
+  isOpen(banner: string): boolean { const b = BANNER_TABLE[banner]; return !!b && this.g.time.open(b.start, b.end); }
 
   /**
    * n번(1 또는 10) 뽑는다: 값을 치르고(모자라면 아무것도 하지 않는다), 영웅을 준다(roster.grant: 가진 것이면 조각).
@@ -64,7 +64,7 @@ export class Gacha {
   draw(p: Ent, id: string, n: 1 | 10): PullGot[] | null {
     const g = this.g, b: BannerDef | undefined = BANNER_TABLE[id];
     if (!b || p.bot) return null;
-    if (!bannerOpen(b, g.now())) { g.notify(p, 'bannerClosed', id); return null; }
+    if (!g.time.open(b.start, b.end)) { g.notify(p, 'bannerClosed', id); return null; }
     const normal = poolOdds(b.pool);
     if (!normal.length) return null;
     const cost = n === 10 ? b.ten : b.one;

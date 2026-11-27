@@ -29,7 +29,7 @@ export const enNames: ContentNames = {
   rarities: { common: 'Plain', uncommon: 'Fine', rare: 'Rare', epic: 'Radiant' },
   buildStats: { pow: 'Might', vit: 'Vigor', luck: 'Luck' },
   dungeons: {},
-  dailies: { kill20: 'Defeat 20 monsters', feed5: 'Feed 5 firewood to the bonfire' },
+  dailies: { kill20: 'Defeat 20 monsters', feed5: 'Feed 5 firewood to the bonfire', kill150: 'Defeat 150 monsters', feed40: 'Feed 40 firewood to the bonfire' },
   places: { bonfire: 'the bonfire' },
   nameA: ['Sleepy', 'Brave', 'Calm', 'Hungry', 'Quiet', 'Jolly'],
   nameB: ['Raccoon', 'Owl', 'Fox', 'Squirrel', 'Badger', 'Rover'],
@@ -50,6 +50,7 @@ export const enGame: GameLocale = {
     bonfireWarm: 'Health recovers faster while you stay by the fire.',
     feedOne: 'Feed firewood[[ (F)|]]',
     feedAll: 'Feed all',
+    flagBonfire: 'Feeding the bonfire',
   },
   fmt: {
     heat: (heat, max) => `Warmth ${heat} / ${max}`,

@@ -25,6 +25,7 @@ import { initStages } from './hud/stagebar';
 import { initTeams } from './hud/teams';
 import { initRooms } from './hud/rooms';
 import { initChars, initMorph } from './hud/morph';
+import { initOps } from './hud/ops';
 import { initWorldMap } from './hud/worldmap';
 import { hasModule } from './mods';
 import { initSound } from './sound';
@@ -49,6 +50,8 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initNear },
   { init: initSound },
   { init: initAutoName },
+  // 운영의 바탕 (핵심: 공지, 점검, 원격 설정의 화면 몫). 새 메시지 셋(notices, maint, live)만 받고 앞의 모듈과 겹치는 일이 없다
+  { init: initOps },
   // 판 (턴제·보드의 대기실과 차례)
   { init: initRooms, mod: 'rooms' },
   // 수집형·방치형: 맨 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)

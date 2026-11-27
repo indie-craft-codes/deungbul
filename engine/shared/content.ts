@@ -112,3 +112,7 @@ export const STAGE_RULES = get('STAGE_RULES');
 export const LOOK_RULES = get('LOOK_RULES');
 export const CHAR_RULES = get('CHAR_RULES');
 export const MORPH_RULES = get('MORPH_RULES');
+// ---------- 운영의 바탕 (시계, 원격 설정, 기능 깃발) ----------
+export const RESET = get('RESET');
+export const LIVE_KEYS = get('LIVE_KEYS');
+export const FLAGS = get('FLAGS');

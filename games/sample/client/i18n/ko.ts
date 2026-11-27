@@ -33,7 +33,7 @@ export const koNames: ContentNames = {
   rarities: { common: '평범한', uncommon: '쓸 만한', rare: '희귀한', epic: '빛나는' },
   buildStats: { pow: '힘', vit: '체력', luck: '행운' },
   dungeons: {},
-  dailies: { kill20: '몬스터 20마리 잡기', feed5: '모닥불에 장작 5개 넣기' },
+  dailies: { kill20: '몬스터 20마리 잡기', feed5: '모닥불에 장작 5개 넣기', kill150: '몬스터 150마리 잡기', feed40: '모닥불에 장작 40개 넣기' },
   places: { bonfire: '모닥불 앞' },
   nameA: ['졸린', '용감한', '느긋한', '배고픈', '조용한', '씩씩한'],
   nameB: ['너구리', '올빼미', '여우', '다람쥐', '오소리', '나그네'],
@@ -57,6 +57,8 @@ export const koGame = {
     bonfireWarm: '불 곁에 있는 동안 체력이 빨리 찹니다.',
     feedOne: '장작 넣기[[ (F)|]]',
     feedAll: '전부 넣기',
+    // 이 게임의 기능 깃발의 이름 (꺼졌을 때의 안내 featureOff: 틀이 flag<이름>을 찾는다)
+    flagBonfire: '장작 넣기',
   },
   /** 값이 들어가는 화면 문구 */
   fmt: {

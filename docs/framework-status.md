@@ -14,7 +14,7 @@
 - 코드는 틀(`engine/`)과 게임 둘(`games/deungbul/` 등불지기, 예제 `games/sample/`)이다. 방향은 게임 → 틀 하나다. **2026-11-27에 시제품·증명 게임 일곱(`cave`·`starmine`·`bastion`·`rollball`·`dalmuri`·`stepstone`·`pond`)을 지웠다**: 코드는 커밋 `7e347c9`에 남아 있고(`git checkout 7e347c9 -- games/<이름>`), 운영 데이터는 `data/backup/retired-<시각>/`로 옮겼다. 증명 기록([proof-rollball.md](proof-rollball.md), [proof-dalmuri.md](proof-dalmuri.md), [proof-stepstone.md](proof-stepstone.md), [proof-pond.md](proof-pond.md))은 틀을 검증한 기록으로 남긴다. 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험이 지킨다.
 - **틀은 장르와 무관한 핵심과 선택 모듈 스물다섯이다(2026-11-26, 아래 '장르 중립 틀'. 열일곱째 `teams`는 아래 '틀의 남은 한계 메우기', 수집형의 넷 `roster`·`gacha`·`squad`·`stages`는 아래 '수집형·방치형 모듈', 영웅 장비 `herogear`는 아래 '영웅의 성장', 판 `rooms`는 아래 '턴제의 빈 곳 메우기', 캐릭터 정의 `chars`와 변신 `morph`는 맨 아래 '캐릭터 정의와 변신')**. 게임은 내용의 `MODULES` 한 곳에서 쓸 모듈을 고른다. 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다.
 - 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 계약 `MAP`·`MODULES`와 모듈마다의 선택 계약)의 이름뿐이고, `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/testing`)로만 읽는다.
-- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 8개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 둘의 시험: 검사 2174개, 2026-11-27 판 모듈의 빈 곳 메우기와 캐릭터 정의·변신 뒤. 게임 정리 뒤 2070개) 모두 통과, `npm run build:all` 통과.
+- 확인: `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정, 모두 8개) 오류 0, `npm test`(틀의 경계 검사, 틀의 시험 `fx`, 핵심만의 시험 `core`, 수집형의 시험 `collect`, 게임 둘의 시험: 검사 2249개, 2026-11-27 운영의 바탕 뒤. 그 전 2174개는 판 모듈의 빈 곳 메우기와 캐릭터 정의·변신 뒤. 게임 정리 뒤 2070개) 모두 통과, `npm run build:all` 통과.
 - 틀의 시험은 게임 없이 돈다: 시험용 내용(`engine/test/fx/`) 위에서. `games/`를 지운 복사본에서도 틀의 타입 검사와 시험이 통과한다(2026-11-25에 확인).
 - 틀 수리 묶음 A~F(점검 보고의 31개 항목 가운데 문서로 남긴 것 말고 모두)가 끝났다(2026-11-25).
 - 그 뒤 틀에 더한 기능(2026-11-25, 아래 '틀에 더한 기능'): 전체 지도와 자동 이동, 손 모양·날아가는 것·사람형 모델 등록, 기술 효과 여섯 가지, 메뉴 탭 고르기.
@@ -295,6 +295,7 @@
 ## 0. 이어 갈 것
 
 0. **다음 후보: 웹 전용 부분 분리 (2026-11-27 설계, [platforms.md](platforms.md))**: 나중에 PC(데스크톱 앱)·모바일(앱)로도 낼 수 있게, 브라우저 기능(저장소·생명주기·서버 주소·오디오·링크 …, 웹 의존 52곳)을 `engine/client/platform/` 접점 뒤로 옮긴다. 추천 래퍼는 데스크톱 Electron, 모바일 Capacitor. 1단계(접점 만들기, 웹 동작은 그대로)는 비용 없이 할 수 있다. 고정 서버 주소·스토어 계정 비용·코드 서명·플랫폼 결제는 사용자 결정.
+0. **운영의 바탕(묶음 1): 끝(2026-11-27, 가지 `feat/ops2`)**: 맨 아래 '운영의 바탕'. 시계·초기화(`g.time`, `RESET`), 주간·월간 임무, 원격 설정(`g.live`, `LIVE_KEYS`), 기능 깃발(`g.flags`), 공지, 점검, 상태 페이지, 관리자 명령 `set`·`flag`·`notice`·`maint`. 검사 2174 → 2249개, 등불지기 황금 실행 같음, 운영 DB 복사본으로 점검 리허설. **사용자가 정할 것**: 등불지기의 초기화 시각(지금 서버 현지 자정, 예 `{ tz: 'Asia/Seoul', dayAt: 5 }`), 등불지기에서 원격 설정으로 열 칸, 주간 임무를 둘지. **다음**: 묶음 2(웹 출시의 바탕, 다른 가지 `web2`가 진행 중: 합칠 때 언어 파일·`messages.ts`·`protocol.ts`·`modules.ts`·`contract.ts`·`defaults.ts`·문서의 끝이 겹친다).
 0. **다음 후보: 장르 공통 기능의 빈 곳 (2026-11-27 조사, [genre-features.md](genre-features.md))**: 장르 10개와 상용 서비스·법 요건을 조사해 기능 238개를 우리 틀과 견줬다(있음 62, 기초 55, 흔적 14, 없음 107). 고도화는 묶음 여덟(1 운영의 바탕 → 2 웹 출시의 바탕 → 3 사회와 안전 → 4 확률과 재화의 투명성 → 5 운영 도구 → 6 라이브 콘텐츠 → 7 판의 공통화 → 8 경쟁) 순서를 제안한다. 계정·현금 결제·비용이 드는 외부 서비스는 사용자 결정이 필요하다(5.9절).
 0. **판 모듈의 빈 곳 메우기: 끝(2026-11-27, 가지 `feat/roomfix`)**: 위 '판 모듈의 빈 곳 메우기'. 반딧불 연못이 찾은 빈 곳(선 돌리기 `rotateFirst`·`roundEnd`·`skip`, 셋 이상의 빠진 자리 `outEnds`·`out`, 등수 `finish(room, 등수, 까닭, 점수)`·`rankOf`, 자리 수의 범위 `seats: { min, max }`·`startAfterS`·`cpuFill`·'지금 시작', 막대 자리 `barAt`·기권 확인, 컴퓨터 이름, 타입의 입구, 작은 문서 빈 곳)을 메우고 14절의 본보기를 틀의 시험의 '별 줍기'로 바꿨다. 검사 2070 → 2106개, 등불지기·sample 황금 실행 같음. **남은 것**: 판 구경(앉지 않고 보기), 대기실의 판 목록 넘기기, 자리 수를 판을 열 때 고르기(지금은 게임마다 하나의 범위), 3D 월드를 쓰지 않는 화면(카드 탁자), 좁은 화면에서 자리가 다섯 이상인 막대. **다음**: 문서(14절)만 보고 셋 이상의 다른 판 게임(카드)을 만드는 검증(별도 에이전트).
 0. **캐릭터 정의와 변신: 끝(2026-11-27, 가지 `feat/chardef`)**: 맨 아래 '캐릭터 정의와 변신'. 겉모습 부품(칸 여섯, 기본 부품 34, 굽기), 캐릭터 정의와 검증기(거절 코드 26, 예산, 금칙어 고리, 퍼징 6000), 모듈 `chars`(저장소를 바꿔 끼운다, `roster`와 함께면 영웅)·`morph`(변신, 남에게도 보인다, 기본은 겉모습만), 예제의 정의 넷, 문서 15절. **다음**(사용자 결정이 필요): AI 생성기(결과는 `g.chars.add`로만), 계정 공용 저장소(`useStore`), 소유의 싱크·거래·주간 한도·신고와 회수. 같은 때 다른 가지(`roomfix`: 판 모듈)가 공용 파일(언어 파일, `messages.ts`, `modules.ts`, 문서)의 끝을 함께 고친다: 합칠 때 겹친다.
@@ -612,3 +613,34 @@
 - 계정과 계정 공용 저장소: `g.chars.useStore(CharStore)`에 꽂는다. 소유의 싱크는 `g.morph.grant`·`take`(와 영웅이면 `g.roster.grant`)를 그 저장소에 맞춘다.
 - 거래와 수익 분배, 주간 한도, 신고·회수(회수는 `g.chars.remove`: 그것으로 변신한 사람이 풀리고 영웅의 표에서 빠진다).
 - 겉모습의 구운 모양은 종류만큼 쌓인다(같은 겉모습은 나눠 쓴다). 정의가 수천이 되면 오래 안 쓴 것을 버리는 길이 필요하다. 정의의 목록은 사람마다 개인 상태로 한 번에 간다(바뀔 때만): 수천이 되면 필요한 것만 묻는 길로.
+
+## 운영의 바탕 (2026-11-27, 가지 `feat/ops2`)
+
+[genre-features.md](genre-features.md) 5.1절의 묶음 1. 쓰는 법은 [making-a-game.md](making-a-game.md) 16절, 운영 절차는 [infra.md](infra.md) '운영의 바탕'. 모두 핵심(끌 수 없다)이고, 내용에 적지 않고 운영자가 명령하지 않으면 지금과 같다.
+
+| 무엇 | 틀의 칸 | 선택인가 |
+|---|---|---|
+| 시계·초기화 | 핵심 `g.time`(`engine/server/game/systems/clock.ts`), 달력 `makeCalendar`·`parseWhen`(`engine/shared/defs/live.ts`), 내용 `RESET: { tz, dayAt, weekStart }`, 사건 `dayReset`·`weekReset`·`monthReset`(새 열쇠, 옛 열쇠, 지난 수), 마지막 경계는 `live_meta`. 일일 임무·던전 하루 횟수·자리 비움 하루 몫·뽑기 배너 기간이 이 시계를 쓴다 | 기본 `{ tz: 'local', dayAt: 0, weekStart: 1 }` = 예전의 서버 현지 자정 |
+| 주간·월간 임무 | `DailyDef.period`, 저장 `daily.wk`·`mo`, `meta.daily.next`, 임무 창의 기간 머리와 '초기화까지' | 주간·월간 임무가 없으면 저장·줄 위가 예전 그대로 |
+| 원격 설정 | 핵심 `g.live`(`systems/live.ts`), 내용 `LIVE_KEYS`(이름 → `client`·`type`·`value`·`check`·`note`), `checkLive`·`applyLive`, `liveRange`(`defaults`), 메시지 `live`, 화면 `onLive`, SQLite 스키마 2(`live`·`live_log`·`live_meta`), 저장소 `LiveStore`·`hasLive` | 선언하지 않은 칸은 소스 그대로 |
+| 기능 깃발 | `g.flags.on`, 틀의 `join`·`chat`·`market`·`mail`·`gacha`, 내용 `FLAGS`, `g.live.gate`, 안내문 `featureOff`·`joinClosed`, 닫힘 4005 | 깃발이 없으면 켜짐 |
+| 공지 | `g.live.addNotice`·`delNotice`·`notices`, 메시지 `notices`, 화면의 창(`#noticePop`)과 띠(`#opsBand`) | 올리지 않으면 아무것도 없다 |
+| 점검 | `planMaint`·`startMaint`·`endMaint`·`setAdmin`, 사건 `maintStarted`·`maintEnded`, 메시지 `maint`, 안내문 `maintSoon`·`maintStart`·`maintEnd`, 닫힘 4004, 우편 종류 `maint`, 저장소의 `eachPlayerKey` | 명령하지 않으면 없다 |
+| 상태 페이지 | `engine/server/net/status.ts`(`status.json`·`status.html`), `Options.status`, 환경 변수 `STATUS`·`STATUS_DIR`, 문장 `koStatusPage`·`enStatusPage` | `runServer`가 빌드 폴더가 있으면 쓴다(DB=memory는 안 쓴다) |
+| 관리자 명령 | `set`·`flag`·`notice`·`maint`(`engine/server/net/admin.ts`, `scripts/admin.mjs`의 도움말) | |
+| 예제 | `games/sample`: `RESET`(기본과 같음), `LIVE_KEYS` 셋(`DAILIES.kill20.n` 화면에도, `MORPH_RULES.cooldownS`, 게임만의 `bonfireHeat`), 깃발 `bonfire`(장작 넣기), 주간 임무 `kill150`·월간 `feed40` | |
+
+확인:
+- `npm run typecheck` 설정 8개 오류 0. `npm test` 두 번 모두 통과(검사 2174 → 2249개: 틀의 `fx/liveops`, 예제의 `sample/ops`. 등불지기의 언어 견본에 틀의 새 문장 21개씩을 더했다: 빠지거나 달라진 문장 없음. `fx/modules`의 '틱 1개'를 핵심의 시계·원격 설정을 더한 3개로). `npm run build:all` 통과.
+- 황금 실행(`ops2-tools/golden.sh`, 바탕 `2d99d9a` 복제본과 이 가지): 등불지기(sim) **바이트까지 같다**(7,489,205바이트). 예제는 다르다: 주간·월간 임무 둘을 더했기 때문이다(그 둘만 뺀 가지의 예제는 바탕과 바이트까지 같았다: `LIVE_KEYS`·`FLAGS`·`RESET`·모닥불의 `g.live.get`·`gate`는 줄 위를 바꾸지 않는다).
+- 시계 시험(`fx/liveops`): 기본 달력 = 예전 `dayOf`(400개 시각), UTC 05:00·Asia/Seoul 05:00(UTC 20:00), 월·일요일 시작의 주, 1일의 달, 다음 경계, America/New_York 서머타임(23·25시간의 날, 봄에 없는 02:30은 03:00), 가을에 두 번 오는 01:30에도 사건 한 번, 가상 시계로 날→주(월요일)→달(1일), 시계 되감김에 다시 알리지 않음, 서버가 사흘 꺼졌다 켜지면 날·주·달 사건이 한 번씩(지난 수 3·1·1), 처음 켜는 서버는 알리지 않음.
+- 원격 설정 시험: 모양·범위·선언하지 않은 칸·함수 칸·무한대 거절, 반영(내용의 칸이 바뀐다)과 화면에도 보냄, undo·reset, 이력(누가·언제·전·후·버전), SQLite로 다시 켜도 값·깃발·이력이 남고 다시 적용, 저장된 값이 지금의 검사를 지나지 못하면 적용하지 않음.
+- 점검 리허설(운영 DB 복사본 `data/backup/auto-20261127-073656.db` → 임시 폴더, 임시 서버 3015, 헤드리스 Chrome GPU의 손님 브라우저 + 관리자 접속자 + 토큰 없는 접속 시도): 공지(창·띠) → 깃발 market·chat을 끄면 '잠시 꺼져 있습니다' → `maint plan +2m --for 30m` → 카운트다운 띠(1:59) → 2분·1분 전 안내 → 시각에 시작: 브라우저는 4004로 끊겨 점검 화면('서버 점검 중입니다 / 서버 옮기기 점검 · 예정 끝 …'), 관리자(`maint allow OpsAdmin`)는 남음(`who` 1명), `status.json`은 `maint`, 토큰 없는 새 접속은 점검 안내와 4004 → `maint end --gold 50 --item potion:2 --days 30`: 60명에게 보상 우편(관리자는 바로 받음), `status.json`은 `ok`, 브라우저는 1분 안에 저절로 다시 들어옴. 기록 `$TEMP/dg-work/ops2-tools/rehearsal.log`.
+- 화면(PC 1280×720·폰 390×844 × 한국어·영어, 콘솔 오류 없음): 공지 창과 띠, 꺼진 기능 안내, 점검 카운트다운, 점검 화면, 예제의 임무 창(일일·주간·월간과 '초기화까지'). `$TEMP/dg-work/ops2-shots/`.
+
+남은 것:
+- 등불지기의 `LIVE_KEYS`는 비어 있다(무엇을 열지는 사용자 결정). 초기화 시각도 그대로(서버 현지 자정).
+- 폰에서 점검 카운트다운 띠가 내 정보 창의 이름 줄을 조금 덮는다. 메뉴가 열려 있으면 꺼진 기능 안내(흘러가는 알림)가 메뉴 뒤에 가려진다(예전부터의 알림 자리).
+- 화면에만 보내는 원격 설정은 끊긴 동안 소스로 돌린 칸을 다시 접속해도 돌리지 않는다(새로고침하면 맞다).
+- 등불지기 언어 견본의 시각 문장(점검 예정 끝)은 이 PC의 시간대로 떠 있다: 다른 시간대의 PC에서 그 견본 시험이 달라질 수 있다.
+- 웹 관리 화면, 확률표의 공개·사전 공지(묶음 4), 패치 노트, A/B, 사람마다 다른 깃발, 상태 페이지를 다른 호스팅으로 올리기. 작은 수집형 증명 게임으로 16절 문서 검증.

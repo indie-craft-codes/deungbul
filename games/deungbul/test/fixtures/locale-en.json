@@ -742,6 +742,20 @@
   "1",
   "2"
  ],
+ "fmt.maintCountdown": [
+  "1cf6c3e551087101",
+  "Server maintenance starts in NaN:NaN",
+  "Server maintenance starts in 0:00",
+  "Server maintenance starts in 0:01",
+  "Server maintenance starts in 0:02"
+ ],
+ "fmt.maintGate": [
+  "d75a8b3cb7c0ef49",
+  "You will reconnect automatically when it is over.",
+  "Expected to end 1/1, 09:00 AM. You will reconnect automatically when it is over.",
+  "Expected to end 1/1, 09:20 AM. You will reconnect automatically when it is over.",
+  "1 · Expected to end 1/1, 09:00 AM. You will reconnect automatically when it is over."
+ ],
  "fmt.mapArrived": [
   "aace612ff226bb32",
   "Arrived at undefined.",
@@ -1037,6 +1051,12 @@
   "Reforged 2 of undefined · this one costs NaN gold and NaN Gear Dust. Tap an option twice to reroll it (its type and value both change)"
  ],
  "fmt.reforgeValueOnly": "Every option type is already on this gear, so only the value is rerolled.",
+ "fmt.resetIn": [
+  "13d34aaab7650f89",
+  "Resets in NaNm",
+  "Resets in 1m",
+  "Resets in 21m"
+ ],
  "fmt.residentHint": [
   "e4a837e818890cd5",
   "undefined has not returned yet. Add sparks at the lamp tower to bring them back (undefined to go).",
@@ -1786,6 +1806,7 @@
   "Enhancement failed, but your Ward Stone kept it at +1.",
   "Enhancement failed, but your Ward Stone kept it at +2."
  ],
+ "msg.featureOff": "flagOther is paused for now. Please check the notices.",
  "msg.forgeClosed": "Bram the Smith has not returned yet.",
  "msg.forgeFar": "Move closer to Bram the Smith to forge.",
  "msg.gearBagFull": "Your gear bag is full. Make room for the piece you take off (salvage, sell or expand the bag), then try again.",
@@ -2013,6 +2034,7 @@
   "Not enough Sparks (need 1, have 1).",
   "Not enough Sparks (need 3, have 4)."
  ],
+ "msg.joinClosed": "New connections are paused right now. Please try again shortly.",
  "msg.joined": [
   "9d24bb15d0f91008",
   "undefined joined.",
@@ -2058,6 +2080,21 @@
  ],
  "msg.mailLeft": "Some items did not fit and were left in your mail. Make room, then claim again.",
  "msg.mailNew": "You have mail. Claim it under Menu[[ (M)|]] > Mail.",
+ "msg.maintEnd": "Server maintenance is over.",
+ "msg.maintSoon": [
+  "8f9980cfd3eabe32",
+  "Server maintenance starts in undefined minutes. Your progress is saved automatically.",
+  "Server maintenance starts in 0 minutes. Your progress is saved automatically.",
+  "Server maintenance starts in 1 minute. Expected to end 1/1, 09:00 AM. Your progress is saved automatically.",
+  "Server maintenance starts in 2 minutes. Expected to end 1/1, 09:00 AM. Your progress is saved automatically."
+ ],
+ "msg.maintStart": [
+  "9a8d89370690e5f3",
+  "Server maintenance has started, so you are being disconnected.",
+  "Server maintenance has started, so you are being disconnected. Expected to end 1/1, 09:00 AM.",
+  "Server maintenance has started, so you are being disconnected. Expected to end 1/1, 09:20 AM.",
+  "Server maintenance has started, so you are being disconnected. Expected to end 1/1, 08:59 AM."
+ ],
  "msg.marketBought": [
   "51a955b0aa9e30d3",
   "Bought on the market. -NaN gold",
@@ -2594,8 +2631,11 @@
  "ui.count5": "5",
  "ui.countAll": "All",
  "ui.currentClass": "Current",
+ "ui.dailyDay": "Daily tasks",
  "ui.dailyDone": "Done",
+ "ui.dailyMonth": "Monthly tasks",
  "ui.dailyNote": "Finish a task and the reward arrives by mail. Tasks reset at midnight.",
+ "ui.dailyWeek": "Weekly tasks",
  "ui.deviceMake": "Get a code",
  "ui.deviceMoveHead": "Move to another device",
  "ui.deviceMoveInfo": "Get a code and enter it in the game on your other device to move this character there. Afterwards, this device can no longer open this character. A code works once, for 10 minutes. Anyone you share it with can take your character, so keep it to yourself.",
@@ -2616,6 +2656,12 @@
  "ui.enhanceFailed": "Enhance failed · the gear is unchanged",
  "ui.enhanceMaxed": "Maxed",
  "ui.equip": "Equip",
+ "ui.flagChat": "Chat",
+ "ui.flagGacha": "Summoning",
+ "ui.flagJoin": "Joining",
+ "ui.flagMail": "Claiming mail",
+ "ui.flagMarket": "The market",
+ "ui.flagOther": "This feature",
  "ui.forge": "Bram's Forge",
  "ui.full": "The server is full. Please try again shortly.",
  "ui.gachaAlways": "Permanent",
@@ -2643,7 +2689,9 @@
  "ui.gateBanned": "This character or address is blocked from connecting.",
  "ui.gateHandedOff": "This character has moved to another device. If you reconnect, you will start a new character on this device.",
  "ui.gateHandoffDone": "Character transferred. Reconnecting…",
+ "ui.gateJoinClosed": "New connections are paused right now. Please try again shortly.",
  "ui.gateKicked": "A moderator disconnected you.",
+ "ui.gateMaint": "The server is under maintenance.",
  "ui.gearEmpty": "No spare gear. Monsters drop some now and then.",
  "ui.gearLess": "Collapse",
  "ui.gearLockOff": "Unlock",
@@ -2759,6 +2807,8 @@
  "ui.morphOnBtn": "Morph",
  "ui.noTargetNearby": "No targets nearby.",
  "ui.none": "None",
+ "ui.noticeClose": "Close",
+ "ui.noticeTitle": "Notice",
  "ui.offerNote": "Lights the tower. A brighter tower holds out longer in a raid.",
  "ui.offerVerb": "Offer",
  "ui.owned": "Owned",

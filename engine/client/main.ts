@@ -19,6 +19,7 @@ import { shakeOffset, updateFx } from './fx';
 import { initChat, logChat } from './hud/chat';
 import { hideGate, initMe, renderTexts, setMyName, showGate } from './hud/me';
 import { notifySys } from './hud/notify';
+import { opsLost } from './hud/ops';
 import { setParty } from './hud/party';
 import { keyDiff, keysFor } from './keys';
 import { anyModule, hasModule } from './mods';
@@ -77,6 +78,7 @@ function lost(code: number): void {
   if (code === 4001) { forgetToken(); showGate('gateHandedOff', true); return; }
   if (code === 4002) { showGate('gateKicked', true); return; }
   if (code === 4003) { showGate('gateBanned', false); return; }
+  if (opsLost(code)) return; // 점검(4004), 새 접속 막힘(4005): 까닭을 두고 1분마다 다시 접속해 본다 (hud/ops.ts)
   showGate('reconnecting', true);
   const again = () => {
     if (document.hidden) { document.addEventListener('visibilitychange', again, { once: true }); return; } // 화면이 꺼져 있으면 켜질 때까지 기다린다

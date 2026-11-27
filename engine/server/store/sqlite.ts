@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { EconRow, EconStore, PlayerSave, ReportSave, Store, WorldSave } from './types';
+import type { EconRow, EconStore, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, Store, WorldSave } from './types';
 
 /**
  * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
  * 새 단계는 끝에 더한다. 적용한 단계는 고치지 않는다(이미 적용된 DB에는 다시 돌지 않는다).
  *   1: 처음의 표들. 번호가 생기기 전의 DB(user_version 0)에도 그대로 돈다: 모두 IF NOT EXISTS라 이미 있는 표는 건드리지 않는다
+ *   2: 원격 설정(live: 버전 있는 키-값, live_log: 변경 이력, live_meta: 이력 없는 운영 값). 옛 표는 건드리지 않는다
  */
 export const SCHEMA: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
@@ -14,10 +15,13 @@ export const SCHEMA: readonly string[] = [
    CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, target TEXT NOT NULL, data TEXT NOT NULL);
    CREATE TABLE IF NOT EXISTS econ_daily (day TEXT NOT NULL, cur TEXT NOT NULL, why TEXT NOT NULL, dir TEXT NOT NULL, amount REAL NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, cur, why, dir));
    CREATE TABLE IF NOT EXISTS econ_snapshot (day TEXT PRIMARY KEY, data TEXT NOT NULL);`,
+  `CREATE TABLE IF NOT EXISTS live (key TEXT PRIMARY KEY, value TEXT NOT NULL, ver INTEGER NOT NULL, at INTEGER NOT NULL, by TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS live_log (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL, ver INTEGER NOT NULL, before TEXT, after TEXT, at INTEGER NOT NULL, by TEXT NOT NULL, note TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS live_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`,
 ];
 
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
-export class SqliteStore implements Store, EconStore {
+export class SqliteStore implements Store, EconStore, LiveStore {
   private db: DatabaseSync;
   readonly file: string;
   /** 지금 열린 묶음의 깊이 (transaction의 SAVEPOINT 이름에 쓴다) */
@@ -112,6 +116,38 @@ export class SqliteStore implements Store, EconStore {
     const row = day === undefined ? this.db.prepare('SELECT day, data FROM econ_snapshot ORDER BY day DESC LIMIT 1').get() : this.db.prepare('SELECT day, data FROM econ_snapshot WHERE day = ?').get(day);
     const data = this.parse<unknown>(row?.data);
     return row && data !== null ? { day: String(row.day), data } : null;
+  }
+  eachPlayerKey(fn: (key: string, p: PlayerSave) => void): void {
+    const page = this.db.prepare('SELECT key, data FROM players WHERE key > ? ORDER BY key LIMIT 500');
+    for (let after = '', rows = page.all(after); rows.length; rows = page.all(after)) {
+      for (const row of rows) { const p = this.parse<PlayerSave>(row.data); if (p) fn(String(row.key), p); }
+      after = String(rows[rows.length - 1].key);
+    }
+  }
+  // ---- 원격 설정 (LiveStore) ----
+  liveRows(): LiveRow[] {
+    return this.db.prepare('SELECT key, value, ver, at, by FROM live ORDER BY key').all().map((r) => ({ key: String(r.key), value: this.parse<unknown>(r.value), ver: Number(r.ver), at: Number(r.at), by: String(r.by) }));
+  }
+  liveWrite(key: string, value: unknown, by: string, at: number, note = ''): number {
+    return this.transaction(() => {
+      const old = this.db.prepare('SELECT value FROM live WHERE key = ?').get(key) as { value?: string } | undefined;
+      const last = this.db.prepare('SELECT MAX(ver) AS v FROM live_log WHERE key = ?').get(key) as { v?: number | null } | undefined;
+      const ver = Number(last?.v ?? 0) + 1, after = value === null || value === undefined ? null : JSON.stringify(value);
+      if (after === null) this.db.prepare('DELETE FROM live WHERE key = ?').run(key);
+      else this.db.prepare('INSERT INTO live (key, value, ver, at, by) VALUES (?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, ver = excluded.ver, at = excluded.at, by = excluded.by').run(key, after, ver, at, by);
+      this.db.prepare('INSERT INTO live_log (key, ver, before, after, at, by, note) VALUES (?, ?, ?, ?, ?, ?, ?)').run(key, ver, old?.value ?? null, after, at, by, note);
+      return ver;
+    });
+  }
+  liveLog(key: string | null, limit: number): LiveLogRow[] {
+    const rows = key === null ? this.db.prepare('SELECT * FROM live_log ORDER BY id DESC LIMIT ?').all(limit) : this.db.prepare('SELECT * FROM live_log WHERE key = ? ORDER BY id DESC LIMIT ?').all(key, limit);
+    return rows.map((r) => ({ id: Number(r.id), key: String(r.key), ver: Number(r.ver), before: this.parse<unknown>(r.before), after: this.parse<unknown>(r.after), at: Number(r.at), by: String(r.by), note: String(r.note ?? '') }));
+  }
+  liveMeta(key: string): unknown {
+    return this.parse<unknown>(this.db.prepare('SELECT value FROM live_meta WHERE key = ?').get(key)?.value);
+  }
+  setLiveMeta(key: string, value: unknown): void {
+    this.db.prepare('INSERT INTO live_meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, JSON.stringify(value));
   }
   close(): void { this.db.close(); }
 }

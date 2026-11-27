@@ -731,6 +731,8 @@ export function installSample(g: Game): void {
     // 서버를 껐다 켜도 온기가 남는다
     g.worldSaves.push({ name: 'bonfire', save: () => ({ heat: this.heat }), load: (raw) => { this.heat = readInt((raw as { heat?: unknown } | null)?.heat, 0, BONFIRE.heatMax, 0); } });
     g.commands.set('feed', (p, m) => { if (typeof m.n === 'number') this.feed(p, m.n); });
+    // 기능 깃발 bonfire가 꺼져 있으면 장작 넣기를 받지 않는다 (내용의 FLAGS. 꺼진 동안 안내문 featureOff)
+    g.live.gate('feed', 'bonfire');
     g.ticks.push((dt) => this.cool(dt));
     // 틀의 규칙과 수치에 끼어든다: 일어나는 자리, 직업을 바꿀 수 있는 곳, 자연 회복의 배율
     g.rules.respawn = () => ({ x: BONFIRE.x, z: BONFIRE.z + 4, id: 'bonfire' });
@@ -751,7 +753,8 @@ export function installSample(g: Game): void {
     // 장작은 틀의 가방 통로로 뺀다: 장부가 어디로 나갔는지 적고, 아이템 칸을 고치는 곳이 가방 하나로 남는다
     g.bag.takeItem(p, 'log', n, 'cmd:feed');
     p.fed += n; p.dirty = true; p.unsaved = true;
-    this.heat = Math.min(BONFIRE.heatMax, this.heat + n * BONFIRE.heatPerLog);
+    // 장작 하나의 온기는 원격 설정으로 바꿀 수 있다 (내용의 LIVE_KEYS의 bonfireHeat: 처음 값은 BONFIRE.heatPerLog와 같다)
+    this.heat = Math.min(BONFIRE.heatMax, this.heat + n * this.g.live.get<number>('bonfireHeat'));
     g.stateDirty = true; g.saveDirty = true;
     if (cold) g.announce('bonfireLit', p.name);
     g.notify(p, 'fed', n, Math.ceil(this.heat));
@@ -2042,3 +2045,134 @@ placed = true;
 
 - 시험: `engine/test/collect/chardef.test.ts`(검증기의 규칙마다의 거절 코드, 금칙어 고리, 겉모습 글자, **퍼징**: 무작위·악의적인 정의 6000개가 예외 없이 거절·통과하고 통과한 것은 모두 예산 안, 예산을 넘긴 것은 언제나 거절, 영웅의 다리와 저장, 저장소 바꿔 끼우기), `engine/test/collect/morph.test.ts`(변신·풀기·대기·전투 중 금지, `EnterInfo.l`과 `look`, 저장, 회수), `games/sample/test/morph.test.ts`(예제의 정의와 세기, 실제 서버에서 남의 화면).
 - 남은 것(틀 밖, 사용자 결정이 필요한 것): AI 생성기(프롬프트 → 이 형식의 JSON: 결과는 `g.chars.add`로만 넣는다), 계정과 계정 공용 저장소(`useStore`에 꽂는다), 소유의 싱크(`morph.grant`·`take`), 거래와 수익 분배, 주간 한도, 요청 검사·신고·회수(회수는 `g.chars.remove`).
+
+## 16. 운영의 바탕: 시계·초기화, 원격 설정, 기능 깃발, 공지, 점검, 상태 페이지
+
+모두 **핵심**이다(끌 수 없다. 모든 게임이 저절로 갖는다). 그리고 모두 **적지 않으면 지금과 같다**: 내용에 아무것도 적지 않고 운영자가 명령을 내리지 않으면 줄 위의 글자·저장·날짜의 셈이 예전 그대로다(등불지기의 황금 실행이 바이트까지 같다). 서버 쪽은 `engine/server/game/systems/clock.ts`(`g.time`), `engine/server/game/systems/live.ts`(`g.live`, `g.flags`), 공용 셈은 `engine/shared/defs/live.ts`, 화면은 `engine/client/hud/ops.ts`, 관리자 명령은 `engine/server/net/admin.ts`, 상태 페이지는 `engine/server/net/status.ts`. 운영 절차(점검 하는 법 …)는 [infra.md](infra.md)의 '운영의 바탕'.
+
+| 무엇 | 내용의 칸 (선택) | 서버 | 화면 | 운영자 |
+|---|---|---|---|---|
+| 시계·초기화 | `RESET: { tz, dayAt, weekStart }` | `g.time`, 사건 `dayReset`·`weekReset`·`monthReset` | 임무 창의 '초기화까지' | — |
+| 주간·월간 임무 | `DAILIES`의 `period: 'week'`·`'month'` | `g.daily`가 기간마다 비운다 | 임무 창이 기간마다 묶인다 | — |
+| 원격 설정 | `LIVE_KEYS` | `g.live.get`·`set`·`reset`·`undo`·`log`, 사건 `liveChanged` | 화면에도 보내는 칸은 같은 칸에 적용, `onLive` | `set` |
+| 기능 깃발 | `FLAGS`(게임의 깃발 이름) | `g.flags.on(이름)`, `g.live.gate(명령, 깃발)` | 꺼진 기능을 쓰면 안내(`featureOff`) | `flag` |
+| 공지 | — | `g.live.addNotice`·`notices` | 접속 때 창, 흐르는 띠 | `notice` |
+| 점검 | — | `g.live.planMaint`·`startMaint`·`endMaint`, 사건 `maintStarted`·`maintEnded` | 카운트다운 띠, 점검 화면, 저절로 다시 접속 | `maint` |
+| 상태 페이지 | — | `status.json`·`status.html`을 정적 폴더에 | — | 브라우저로 `/status.html` |
+
+### 시계와 초기화 (`g.time`)
+
+모든 시각은 UTC의 ms(`g.now()`)로 저장하고 주고받는다. 날·주·달이 언제 바뀌는가만 내용의 `RESET`이 정한다.
+
+```ts games/sample/shared/content/index.ts
+// 초기화 시각: 서버 PC의 현지 자정, 주는 월요일에 (적지 않은 것과 같다. 한국 시각 새벽 5시로 하려면 { tz: 'Asia/Seoul', dayAt: 5, weekStart: 1 })
+export const RESET: ResetRules = { tz: 'local', dayAt: 0, weekStart: 1 };
+```
+
+- `tz`: `'local'`(서버 PC의 현지 시각: 기본, 예전의 '서버 현지 자정'), `'UTC'`, 또는 IANA 이름(`'Asia/Seoul'`, `'America/New_York'`: 서머타임도 따른다). 모르는 이름이면 서버가 뜨지 않고 알린다.
+- `dayAt`: 하루가 시작하는 시각(시, 0 이상 24 미만, 소수면 분: `4.5` = 04:30). 그 지역의 **벽시계**로 센다: 서머타임으로 하루가 23·25시간이어도 벽시계가 그 시각에 닿을 때 한 번 바뀐다(봄에 건너뛰는 시각이면 그 뒤의 첫 시각).
+- `weekStart`: 주가 시작하는 요일(0 일요일 … 6 토요일, 기본 1 월요일). 달은 1일의 `dayAt`에 바뀐다.
+- 서버(`g.time`): `dayOf(ms?)`('YYYY-MM-DD', 하루 시작 전이면 전날), `weekOf(ms?)`(주가 시작한 날), `monthOf(ms?)`('YYYY-MM'), `next('day' | 'week' | 'month', ms?)`(다음 경계, UTC ms), `upcoming()`([날, 주, 달]의 다음 경계), `open(start?, end?, ms?)`(기간 안인가: 기간 한정 배너·이벤트), `prevDay(day)`, `cal`(달력: `format(ms)` 등). 일일 임무·던전의 하루 횟수·자리 비움 사냥의 하루 몫·뽑기 배너의 `start`·`end`가 이 시계를 쓴다. 경제 장부의 날짜는 통계라 예전처럼 서버 현지 날짜다.
+- 사건 `dayReset(새 날, 옛 날, 지난 경계의 수)`, `weekReset`, `monthReset`: 경계를 넘을 때 한 번씩. **서버가 꺼져 있던 동안** 경계가 여럿 지났어도 켜질 때 한 번(지난 수와 함께)이다: 마지막으로 처리한 경계는 저장소의 `live_meta`에 있다. PC의 시계가 **뒤로 가도** 이미 알린 경계는 다시 알리지 않는다. 사람마다의 일(임무 비우기)은 사건에 기대지 말고 그 사람이 무엇을 할 때 열쇠를 견준다: 접속하지 않은 사람도 돌아오면 맞게 비워진다(`engine/server/game/systems/daily.ts`가 본보기).
+- 시험: `new Game({ now: () => T })`로 가상 시계를 주고 `T`를 옮긴 뒤 틱을 돌린다. 다른 시간대를 보려면 `new Clock(g, { tz: 'UTC' })`(`engine/test/fx/liveops.test.ts`).
+
+### 주간·월간 임무
+
+임무에 `period`를 적는다. 적지 않으면 날마다(`'day'`)다.
+
+```ts games/sample/shared/content/index.ts
+export const DAILIES = {
+kill20: { kind: 'kill', n: 20, r: { gold: 40, exp: 100 } },
+feed5: { kind: 'feed', n: 5, r: { gold: 30 } },
+kill150: { kind: 'kill', n: 150, r: { gold: 250, exp: 600 }, period: 'week' },
+feed40: { kind: 'feed', n: 40, r: { gold: 400 }, period: 'month' },
+} as const satisfies Record<string, DailyDef>;
+```
+
+- 같은 종류(`kind`)의 진행은 기간이 달라도 함께 센다(처치 하나가 일일·주간 사냥 임무에 모두 든다). 채우면 보상이 우편으로 온다(예전과 같다).
+- 주간·월간 임무가 **있는 게임만** 저장에 그 기간(`daily.wk`, `daily.mo`)이 생기고, 화면에 다음 초기화 시각(`meta.daily.next`)이 가고, 날 경계에 접속해 있는 사람의 임무를 바로 비운다. 없는 게임의 저장·줄 위는 예전 그대로다.
+- 화면: 메뉴의 일일 탭이 '일일 임무 · 초기화까지 n시간', '주간 임무 · 초기화까지 n일', '월간 임무 …'로 묶는다(문장 `ui.dailyDay`·`dailyWeek`·`dailyMonth`, `fmt.resetIn`). 일일 임무뿐인 게임은 예전처럼 머리 없이 보인다.
+
+### 원격 설정 (`LIVE_KEYS`, `g.live`)
+
+게임이 **덮어쓸 수 있는 칸을 이름으로 선언**한다. 선언하지 않은 칸은 소스 그대로다. 운영자는 관리자 명령 `set`으로 바꾸고, 재시작 없이 반영된다.
+
+```ts games/sample/shared/content/index.ts
+export const LIVE_KEYS: LiveKeys = {
+// 일일 사냥 임무의 마릿수: 화면의 임무 창도 같은 칸을 읽으므로 접속한 화면에도 보낸다
+'DAILIES.kill20.n': { client: true, check: liveRange(1, 500, true), note: '일일 사냥 임무의 마릿수' },
+// 변신의 재사용 대기(초): 서버만 읽는다
+'MORPH_RULES.cooldownS': { check: liveRange(0, 600, true), note: '변신의 재사용 대기(초)' },
+// 내용 계약에 없는 이 게임만의 값: 서버가 g.live.get('bonfireHeat')으로 읽는다 (server/bonfire.ts)
+bonfireHeat: { value: BONFIRE.heatPerLog, check: liveRange(1, 50, true), note: '장작 하나가 올리는 모닥불의 온기' },
+};
+```
+
+- **이름**은 내용의 칸을 가리키는 길이다(`'GACHA_RULES.history'`, `'BANNERS.pickup.end'`, `'DAILIES.kill20.n'`). 맨 앞은 내용 계약의 이름이고 그 **아래의 칸**을 바꾼다: 수 하나짜리 이름(`MAIL_MAX`)은 바꿀 수 없다. 함수로 된 칸(`ENHANCE.rate`)도 바꿀 수 없다. 그 칸을 읽는 코드가 **쓸 때마다** 읽어야 바뀐 값이 든다(서버가 켜질 때 한 번 베껴 두는 값은 바뀌지 않는다).
+- **`value`를 준 이름**은 내용에 없는 게임만의 값이다: 서버가 `g.live.get<number>('bonfireHeat')`으로 읽는다(처음 값이 `value`).
+- **검사**('믿지 않고 검증'): 선언된 칸인가 → JSON으로 옮길 수 있고 64KB 아래인가 → 처음 값과 같은 모양인가(수는 수, 목록의 원소, 묶음의 칸. 모든 값이 같은 모양인 표는 칸을 더하고 뺄 수 있다) → 처음 값이 없는 칸(선택 칸)은 `type` → 게임의 `check`(문제가 있으면 운영자가 읽을 까닭을 돌려준다). 수 범위는 `liveRange(min, max, int?)`(`@engine/shared/defaults`: 내용 파일이 값으로 읽어도 되는 틀의 도우미). 거절된 값은 반영되지 않고, 관리자 명령은 실패로 기록된다.
+- **화면에도 보내는 칸**(`client: true`): 바뀌면 접속한 모두에게 메시지 `live`가 가고, 화면이 같은 함수(`applyLive`)로 자기 내용의 같은 칸에 적용한다. 새로 들어온 사람은 접속할 때 받는다. 그 칸을 쓰는 창을 다시 그려야 하면 `onLive((names) => …)`(`engine/client/hud/ops.ts`).
+- 서버: `g.live.get(이름)`, `set(이름, 값, 누가)`(→ `{ ver }` 또는 `{ err }`), `reset(이름, 누가)`(소스의 값으로), `undo(이름, 누가)`(바로 앞 값으로), `log(열쇠?, 수)`(이력: 누가·언제·전·후·버전), `names()`, `row(이름)`, `original(이름)`. 사건 `liveChanged(열쇠)`(`cfg:이름`, `flag:이름`, `notice:id`, `maint`, `admins`).
+- 저장: SQLite의 표 `live`(열쇠·값·버전·때·사람)와 `live_log`(이력). 다시 켜면 읽어 내용에 다시 적용한다(그때의 검사를 지나지 못하는 값은 적용하지 않고 로그에 알린다: 소스가 바뀐 경우). 메모리 저장소도 같은 것을 갖는다(서버가 켜져 있는 동안만).
+
+### 기능 깃발·킬 스위치 (`g.flags`)
+
+```ts games/sample/server/bonfire.ts
+// 기능 깃발 bonfire가 꺼져 있으면 장작 넣기를 받지 않는다 (내용의 FLAGS. 꺼진 동안 안내문 featureOff)
+g.live.gate('feed', 'bonfire');
+```
+
+- `g.flags.on(이름)`: 깃발이 없거나 켜져 있으면 `true`(**적지 않으면 켜짐** = 지금과 같다).
+- 틀의 깃발: `join`(새 접속. 이미 들어와 있는 사람은 그대로, `maint allow`로 적은 관리자는 들어온다. 막힌 화면은 닫힘 4005와 안내), `chat`(전체·길드 대화), `market`(거래소의 모든 명령), `mail`(우편 받기), `gacha`(뽑기). 명령을 막는 것은 `Game.command` 한 곳이다(`engine/shared/defs/live.ts`의 `COMMAND_FLAGS`): 꺼진 명령은 처리하지 않고 그 사람에게 안내문 `featureOff`(흘러가는 알림)를 보낸다.
+- 게임의 깃발: 내용의 `FLAGS`에 이름을 적고, 명령은 `g.live.gate(명령, 깃발)`로, 그 밖의 자리는 `g.flags.on`으로 묻는다. 안내의 이름은 게임의 화면 문장 `flag<이름>`(예제의 `flagBonfire: '장작 넣기'`)이고, 없으면 '이 기능'.
+
+```ts games/sample/shared/content/index.ts
+// 이 게임의 기능 깃발: 관리자 명령 flag bonfire off로 장작 넣기를 막는다 (server/bonfire.ts의 g.live.gate)
+export const FLAGS: readonly string[] = ['bonfire'];
+```
+
+### 공지
+
+- 운영자가 `notice add`로 올린다: 보이는 기간(시작·끝, UTC로 저장), 접속 때 창(`--popup`), 흐르는 띠(`--ticker`, 둘 다 적지 않으면 둘 다), 언어마다의 글(`--ko`, `--en`: 둘 다 적거나 하나만. 화면은 지금 언어의 글, 없으면 있는 글).
+- 화면: 들어올 때 지금 보이는 공지를 받고(메시지 `notices`), 창은 그 화면에서 처음 본 공지만 한 번 띄운다. 띠는 보이는 동안 화면 위에서 흐른다(움직임을 줄이는 설정이면 흐르지 않는다). 예약한 공지는 시작 시각에, 끝난 공지는 끝 시각에 모두에게 목록이 다시 간다.
+- 서버: `g.live.addNotice({ text, from, to, popup?, ticker? }, 누가)`, `delNotice(id, 누가)`, `notices()`(지금 보이는 것), `noticeRows()`(모두). 즉시 한 줄 알림이 필요하면 예전처럼 `announce`.
+
+### 점검
+
+1. **예고**: `maint plan 시각 [--for 기간 | --until 시각] [--ko 글] [--en 글]`. 접속한 화면 위에 카운트다운 띠가 생기고(예정 끝 시각과 안내 글), 30·10·5·1분 전에 가운데 알림(`maintSoon`)이 간다. 바로 하려면 `maint now`.
+2. **시작**(시각이 되면 저절로): 사건 `maintStarted`. 통신 계층이 **모두 저장하고**, 관리자 말고는 안내(`maintStart`)와 함께 닫힘 **4004**로 끊는다. 자리 비움 사냥 중인 캐릭터도 저장하고 내보낸다(자동 사냥은 켠 채로: 돌아오면 이어진다). 끊긴 화면은 '서버 점검 중입니다'와 예정 끝 시각을 보이고 1분마다 저절로 다시 접속해 본다.
+3. **점검 중**: 관리자(`maint allow 이름`으로 적은 저장 키)만 들어온다. 관리자 판정은 저장 키(기기 토큰의 해시)다: 계정이 생기면 계정으로 옮긴다.
+4. **끝**: `maint end [--gold n] [--exp n] [--item id:n …] [--days n]`. 보상을 적으면 저장된 캐릭터 모두(또는 최근 n일 안에 저장된 캐릭터)에게 우편(종류 `maint`, 제목 '점검 보상')을 보낸다: 접속해 있지 않은 사람은 월드에 맡아 두었다가 접속할 때 넣는다(우편 모듈이 있는 게임만). 보상의 값이 이상하면 점검을 끝내지 않는다.
+
+점검의 상태는 저장소에 있다: 점검 중에 서버를 다시 켜도(배포) 점검 중으로 뜬다.
+
+### 상태 페이지
+
+- 틀의 `runServer`는 빌드된 화면의 폴더(정적 폴더)에 `status.json`(상태 `ok`·`maint`·`down`, 쓴 시각, 점검 예정, 접속자 수를 5명 단위로 둥글린 것)을 30초마다 쓰고, 그것을 읽는 `status.html`을 둔다. 브라우저로 `/status.html`. 페이지는 30초마다 다시 읽고, 마지막 시각이 오래되면 '응답 없음'으로 보인다(서버가 죽으면 파일이 더 바뀌지 않는다). 깨끗하게 끄면 `down`을 쓴다.
+- 환경 변수: `STATUS=0`(쓰지 않는다), `STATUS_DIR=폴더`(다른 곳: 게임 서버가 꺼져도 남는 정적 호스팅의 폴더). 저장하지 않는 서버(`DB=memory`)는 `STATUS_DIR`을 주지 않으면 쓰지 않는다. `startServer`를 직접 부르면 `status: { dir, everyS }`.
+- 페이지의 문장은 틀의 언어 파일(`koStatusPage`, `enStatusPage`)에서 넣는다. 바깥의 글꼴·스크립트를 읽지 않는다.
+
+### 관리자 명령
+
+9절의 '운영: 관리자 명령'과 같은 통로(`npm run admin -- [게임] <명령>`)다. 시각은 `now`, `+30m`·`+2h`·`+1d`(지금부터), `'2026-12-01 09:00'`(초기화 시각 `RESET`의 시간대로 읽는다: 기본은 서버 PC의 현지 시각), `'2026-12-01T09:00+09:00'`(시간대를 붙인 것). 여러 낱말의 글은 따옴표로 묶거나 그냥 이어 적는다.
+
+| 명령 | 하는 일 |
+|---|---|
+| `set` | 바꿀 수 있는 칸(LIVE_KEYS)과 지금 값, 소스의 값, 마지막으로 바꾼 사람 |
+| `set 이름 값` | 칸을 바꾼다. 값은 JSON(`0.1`, `[1,2,3]`, `{"a":1}`), 글은 따옴표 없이도. 검사에 걸리면 '거절: 까닭'으로 실패 |
+| `set 이름 --reset` / `set 이름 --undo` | 소스의 값으로 / 바로 앞 값으로 |
+| `set --log [이름] [수]` | 변경 이력 (누가·언제·전 → 후·버전). 이름 대신 `maint`, `admins`, `flag:market`, `notice:3`도 된다 |
+| `flag` / `flag 이름 on`·`off` | 깃발 목록 / 켜고 끄기 |
+| `notice` | 공지 목록 (예약·보이는 중·지남) |
+| `notice add [--popup] [--ticker] [--from 시각] [--to 시각 또는 --for 기간] --ko 글 [--en 글]` | 공지 올리기 (시작을 적지 않으면 지금, 끝을 적지 않으면 24시간) |
+| `notice del id` | 공지 내리기 |
+| `maint` | 점검 상태, 점검 중 입장(관리자) 목록 |
+| `maint plan 시각 [--for 기간 또는 --until 시각] [--ko 글] [--en 글]` / `maint now …` | 점검 예고 / 바로 점검 |
+| `maint cancel` | 예고 거두기 |
+| `maint end [--gold n] [--sparks n] [--exp n] [--item id:n] [--days n]` | 점검 끝 (보상 일괄 우편은 선택) |
+| `maint allow 이름` / `maint deny 이름` | 점검 중(과 새 접속이 꺼졌을 때)에도 들어올 사람 |
+
+### 시험과 남은 것
+
+- 시험: `engine/test/fx/liveops.test.ts`(달력: 시간대·하루 시작 시각·주의 시작 요일·서머타임·시각 읽기, 시계: 가상 시계로 날·주·달 경계, 사흘 꺼졌다 켜짐, 되감김, 가을의 같은 시각, 원격 설정: 거절·반영·화면에도·되돌리기·이력·SQLite로 재시작 뒤 유지, 깃발·공지·점검, 실제 서버와 관리자 명령: 4004·4005, 관리자만 입장, 보상 우편, 상태 페이지), `games/sample/test/ops.test.ts`(이 예제의 주간·월간 임무를 가상 시계로, 원격 설정·깃발이 모닥불 규칙에 닿는가).
+- 남은 것: 웹 관리 화면(묶음 5), 원격 설정으로 확률표를 바꿀 때의 공개 페이지·사전 공지(묶음 4의 `odds`), 공지의 대화창 한 줄과 패치 노트, A/B 시험, 깃발을 사람마다(연령·지역) 다르게, 상태 페이지를 다른 곳(정적 호스팅)으로 올리는 자동화.

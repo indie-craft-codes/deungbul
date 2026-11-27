@@ -4,7 +4,7 @@
 import { DUNGEON_TABLE, ECON_HUNT, PORTAL_REACH, clearRar, dungeonDef, dungeonSweepable, hasDungeonKeys, isDungeonId, menuDungeons, runKey, sweepMax, type DungeonDef, type DungeonId, type KeysMe } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { AREAS, areaAt } from '../../../shared/world';
-import { dayOf, dist, type Ent } from '../entity';
+import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 import { fieldLayer, instanceLayer, isField } from '../layers';
 import { leaderFight } from './leader';
@@ -140,7 +140,7 @@ export class Dungeon {
   }
   /** 날이 바뀌었으면 열쇠를 채운다: 하루가 지날 때마다 refill개, cap을 넘지 않게 (산 것으로 cap 위에 있으면 그대로). 산 수는 새로 센다 */
   private refill(p: Ent): void {
-    const today = dayOf(this.g.now());
+    const today = this.g.time.dayOf(this.g.now());
     for (const id of this.keyIds) {
       const k = this.keyState(p, id), def = dungeonDef(id).key!;
       if (k.day === today) continue;

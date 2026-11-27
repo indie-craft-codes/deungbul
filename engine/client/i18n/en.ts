@@ -6,6 +6,7 @@ import type { BuildStat, ClassId, GearSlot, HeroBonus, ItemId, MonsterId, Stat, 
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { bannerName, heroGearName, heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
+import { clockText, flagLabel, spanMs, whenText, type koStatusPage } from './ko';
 import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
@@ -395,6 +396,19 @@ export const enBase = (n: ContentNames): EngineLocale => {
       morphLookOnly: 'Looks only',
       charAtk: 'Attack',
       charHp: 'Health',
+      noticeTitle: 'Notice',
+      noticeClose: 'Close',
+      gateMaint: 'The server is under maintenance.',
+      gateJoinClosed: 'New connections are paused right now. Please try again shortly.',
+      dailyDay: 'Daily tasks',
+      dailyWeek: 'Weekly tasks',
+      dailyMonth: 'Monthly tasks',
+      flagJoin: 'Joining',
+      flagChat: 'Chat',
+      flagMarket: 'The market',
+      flagMail: 'Claiming mail',
+      flagGacha: 'Summoning',
+      flagOther: 'This feature',
     },
     monsters,
     dungeons,
@@ -489,7 +503,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       power: (n) => `Power ${num(n)}`,
       streak: (n) => `Day ${n} streak`,
       reward: (gold, exp, second) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)${a[2] ? ` · advanced ${a[1]} → ${a[2]}` : ''}` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : String(k)),
+      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)${a[2] ? ` · advanced ${a[1]} → ${a[2]}` : ''}` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : k === 'maint' ? 'Maintenance compensation' : String(k)),
       potions: (n) => `Potions ${n}`,
       distance: (m) => `${m} m`,
       num: (n) => num(n),
@@ -606,6 +620,9 @@ export const enBase = (n: ContentNames): EngineLocale => {
       morphLeft: (s) => (s < 0 ? 'Until you change back' : `${s >= 60 ? `${Math.floor(s / 60)}m ` : ''}${s % 60}s left`),
       morphCd: (s) => `Morph again in ${s}s`,
       morphBonus: (m) => morphModsEn(m ?? {}),
+      resetIn: (ms) => `Resets in ${spanMs(ms, 'en')}`,
+      maintCountdown: (sec, until) => `Server maintenance starts in ${clockText(sec)}${until ? ` · expected to end ${whenText(until, 'en-US')}` : ''}`,
+      maintGate: (until, text) => `${text ? `${text} · ` : ''}${until ? `Expected to end ${whenText(until, 'en-US')}. ` : ''}You will reconnect automatically when it is over.`,
     },
     msg: {
       joined: (a) => `${a[0]} joined.`,
@@ -794,6 +811,11 @@ export const enBase = (n: ContentNames): EngineLocale => {
       morphWait: (a) => `You can morph again in ${a[0]}s.`,
       morphFight: () => 'You cannot morph during a fight.',
       morphNone: () => 'You do not own that character.',
+      featureOff: (a) => `${flagLabel(a[0])} is paused for now. Please check the notices.`,
+      joinClosed: () => 'New connections are paused right now. Please try again shortly.',
+      maintSoon: (a) => `Server maintenance starts in ${count(a[0], 'minute')}.${Number(a[1]) ? ` Expected to end ${whenText(Number(a[1]), 'en-US')}.` : ''} Your progress is saved automatically.`,
+      maintStart: (a) => `Server maintenance has started, so you are being disconnected.${Number(a[0]) ? ` Expected to end ${whenText(Number(a[0]), 'en-US')}.` : ''}`,
+      maintEnd: () => 'Server maintenance is over.',
     },
     nameA: n.nameA,
     nameB: n.nameB,
@@ -802,3 +824,21 @@ export const enBase = (n: ContentNames): EngineLocale => {
 
 /** 재련 안내의 옵션 한 줄 (서버가 보여 줄 값을 보낸다) */
 const statLine = (id: unknown, v: unknown): string => (isStat(id) ? modText[statMod(id)](Number(v)) : String(id ?? ''));
+
+/** 상태 페이지의 문장 (ko.ts의 koStatusPage와 같은 모양) */
+export const enStatusPage: typeof koStatusPage = {
+  title: 'Server status',
+  ok: 'Online',
+  maint: 'Under maintenance',
+  planned: 'Maintenance planned',
+  down: 'Not responding',
+  checked: 'Last checked',
+  players: 'Players',
+  about: 'about {n}',
+  start: 'Starts',
+  until: 'Expected to end',
+  stale: 'The server has been silent for {n} minutes.',
+  missing: 'Could not read the status.',
+  note: 'This page refreshes every 30 seconds. Times are in your local time.',
+  game: 'Go to the game',
+};

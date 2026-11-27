@@ -196,4 +196,10 @@ export type MsgKey =
   | 'morphGone' // [] 그 캐릭터의 정의가 빠져 변신이 풀렸다
   | 'morphWait' // [남은 초] 아직 다시 변신할 수 없다
   | 'morphFight' // [] 싸우는 중이라 변신할 수 없다
-  | 'morphNone'; // [] 가지지 않았거나 없는 캐릭터다
+  | 'morphNone' // [] 가지지 않았거나 없는 캐릭터다
+  // ---- 운영의 바탕 (기능 깃발, 점검: engine/server/game/systems/live.ts, engine/server/net/server.ts) ----
+  | 'featureOff' // [깃발 이름 (join, chat, market, mail, gacha 또는 게임의 FLAGS)] 그 기능이 잠시 꺼져 있다
+  | 'joinClosed' // [] 지금은 새로 접속할 수 없다 (깃발 join이 꺼짐)
+  | 'maintSoon' // [남은 분, 예정 끝 시각(UTC ms, 없으면 0)] 곧 점검이 시작된다 (30·10·5·1분 전)
+  | 'maintStart' // [예정 끝 시각(UTC ms, 없으면 0)] 점검이 시작되어 접속이 끊긴다
+  | 'maintEnd'; // [] 점검이 끝났다 (점검 중에 들어와 있던 관리자에게)

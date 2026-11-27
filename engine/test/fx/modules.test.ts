@@ -48,7 +48,7 @@ async function probe(modules: readonly ModuleId[]): Promise<{ types: string[]; m
 // 틱: 전투를 뺀 게임에는 몬스터가 없고 틱도 돌지 않는다 (사람은 걷는다)
 {
   const g = new Game({ modules: ['economy', 'items'] });
-  check(![...g.ents.values()].some((e) => e.kind === 'm') && g.ticks.length === 1, `전투를 뺀 게임에는 몬스터가 놓이지 않고, 모듈의 틱이 없다 (틱 ${g.ticks.length}개: 채널)`);
+  check(![...g.ents.values()].some((e) => e.kind === 'm') && g.ticks.length === 3, `전투를 뺀 게임에는 몬스터가 놓이지 않고, 모듈의 틱이 없다 (틱 ${g.ticks.length}개: 핵심의 시계·원격 설정, 채널)`);
   const p = g.players.spawn('걷기', false);
   const x0 = p.x;
   g.movement.goTo(p, p.x + 5, p.z);
