@@ -1142,6 +1142,10 @@ body.pageOn #menu, body.pageOn #bag, body.pageOn #wmap { z-index: var(--z-menu);
 .stgrowbtn small { grid-column: 1; font-weight: 400; color: var(--c-text-2); }
 .stgrowbtn i { grid-column: 2; grid-row: 1 / span 2; font-style: normal; font-size: var(--fs-xl); color: var(--c-accent); }
 .stweak { margin: 0; font-size: var(--fs-sm); color: var(--c-bad); text-align: center; }
+.stlast { display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 8px 10px; border-radius: var(--r-md); background: var(--c-sunk); border: 1px dashed var(--c-accent); text-align: center; }
+.stlast b { color: var(--c-accent); font-size: var(--fs-md); }
+.stlast p { margin: 0; font-size: var(--fs-sm); color: var(--c-text-2); }
+.stlast .stlaststar { min-height: 44px; padding: 6px 16px; }
 .stsquad { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
 .stmate { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: var(--r-lg); background: var(--c-sunk); border: 2px solid var(--rc, var(--c-line)); text-align: center; }
 .stmate img { width: 100%; max-width: 96px; aspect-ratio: 4 / 5; object-fit: contain; }

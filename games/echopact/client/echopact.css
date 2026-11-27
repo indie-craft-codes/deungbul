@@ -131,6 +131,9 @@ body[data-mode="tower"].battleOn #zones #feed > div:nth-last-child(n+2) { displa
 .tadv .tauto.on { color: var(--ep-cream); border-color: var(--ep-amber); }
 .tadv .tweak { font-size: var(--fs-sm); color: var(--ep-peach); text-align: center; }
 .tadv .tweak[hidden] { display: none; }
+.tadv .tend { margin: 0 auto 8px; max-width: 420px; padding: 8px 10px; border-radius: var(--r-md); border: 1px dashed var(--c-accent); font-size: var(--fs-sm); text-align: center; color: var(--c-text-2); }
+.tadv .tend b { display: block; color: var(--c-accent); }
+.tadv .tend[hidden] { display: none; }
 .tadv h3 { margin: 12px 0 6px; font-size: var(--fs-lg); color: var(--ep-violet-200); }
 .tadv .tgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .tadv .tstage { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 2px; border-radius: var(--r-md); background: var(--ep-violet-650); color: var(--c-white); border: 1px solid var(--ep-violet-500); min-width: 0; min-height: 64px; }

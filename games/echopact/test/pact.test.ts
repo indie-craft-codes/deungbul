@@ -275,6 +275,23 @@ check(Object.values(DAILIES).filter((d) => 'period' in d && d.period === 'week')
   check(me().speedMax === 2 && me().speed === 2 && k.layerScale.get(layer) === 2 && left1 - left2 >= 7 && saved.speed === 2, `1-5를 깨면 ×2: 4초에 제한 시간이 ${left1 - left2}초 줄고, 고른 배속이 저장된다`);
 }
 
+// ---------- 장 여덟과 마지막 단계 (STAGE_RULES.atLast 'stop'): 3-5 다음은 4-1, 마지막 8-5를 자동 진행으로 깨면 되풀이하지 않고 대기실로 ----------
+{
+  let t = Date.UTC(2026, 10, 30, 7, 0, 0);
+  const k = new Game({ plugins: [installEchopact], now: () => t });
+  const step = (s: number) => { for (let i = 0; i < s * 20; i++) { k.tick(0.05); t += 50; } };
+  const p = k.players.spawn('끝 시험', false, null, 'ep-last');
+  k.fire('playerJoined', p); step(0.3);
+  // 물결과 우두머리를 차례로 쓰러뜨린다 (몬스터의 죽음은 전투의 것과 같은 사건으로)
+  const win = () => { for (let n = 0; n < 40 && k.stages.runOf(p)?.state !== 'clear'; n++) { for (const m of [...k.ents.values()]) if (m.kind === 'm' && m.layer === p.layer && !m.dead) { m.hp = 0; m.dead = true; k.fire('monsterKilled', m, []); } step(2); } };
+  p.stage.best = '3-4'; k.command(p, { t: 'stage', a: 'auto', on: true }); k.command(p, { t: 'stage', a: 'go', id: '3-5' }); step(0.5); win();
+  const after3 = p.stage.cur;
+  p.stage.best = '8-4'; k.command(p, { t: 'stage', a: 'go', id: '8-5' }); step(0.5); win(); step(5);
+  const r = k.stages.runOf(p), notes = k.notices.filter((n) => n.id === p.id && n.k === 'stageLastStop').length;
+  check(CHAPTERS.length === 8 && after3 === '4-1' && p.stage.best === '8-5' && r?.state === 'lobby' && p.stage.cur === '8-5' && notes === 1,
+    `장 여덟(40단계): 3-5를 깨면 자동 진행이 4-1로, 마지막 8-5를 깨면 되풀이하지 않고 대기실(${r?.state})로 가며 안내문 stageLastStop ${notes}번`);
+}
+
 // ---------- 울림골의 장비: 드롭(몬스터마다의 확률, 탑은 없음) → 분해(울림 가루) → 가루를 쓰는 강화 (shared/content/gear.ts) ----------
 {
   const k = new Game({ plugins: [installEchopact], now: () => clock });

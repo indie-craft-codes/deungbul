@@ -36,7 +36,7 @@ export { onIdleBack } from './hud/idleback';
 export { myKeys } from './hud/dungeon';
 export { myHeroGear } from './hud/herogrow';
 export { myStage } from './hud/stagebar';
-export { stageRows, type StageRow } from './hud/collectcalc';
+export { stageRows, stagesDone, starGap, type StageRow } from './hud/collectcalc';
 export { myRoom, myRoomTurn, onRoomChange, roomLeftMs, roomSeatName, roomSend, setRoomLook } from './hud/rooms';
 export { hudSlow } from './hud/me';
 export { charDefs, charPortrait, myMorph, onChars } from './hud/morph';

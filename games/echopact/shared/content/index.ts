@@ -130,6 +130,12 @@ export const MONSTERS = {
   shadeshot: { hp: 75, dmg: [4, 7], speed: 3.6, exp: 14, gold: [3, 6], aggro: 9, h: 1.7, behavior: 'ranged', range: 8, shot: 'arrow', gearChance: 0 },
   bellgolem: { hp: 850, dmg: [11, 16], speed: 3.0, exp: 110, gold: [40, 60], aggro: 9, h: 3.4, gearChance: 0 },
   echowarden: { hp: 1500, dmg: [15, 22], speed: 2.8, exp: 200, gold: [80, 110], aggro: 9, h: 3.8, gearChance: 0 },
+  // 4장부터 (탑의 위층): 빠른 근접·지팡이로 쏘는 것·단단한 것, 우두머리 둘 (모양은 단계의 울림 몸통에 색과 크기만: client/scene.ts의 SPIRITS)
+  chimeling: { hp: 100, dmg: [5, 8], speed: 4.6, exp: 16, gold: [3, 6], aggro: 9, h: 1.5, gearChance: 0 },
+  dirgecaster: { hp: 70, dmg: [6, 9], speed: 3.4, exp: 16, gold: [3, 6], aggro: 10, h: 1.7, behavior: 'ranged', range: 9, shot: 'bolt', gearChance: 0 },
+  mirrorshade: { hp: 140, dmg: [4, 7], speed: 3.2, exp: 18, gold: [4, 7], aggro: 8, h: 1.9, gearChance: 0 },
+  knellwraith: { hp: 1600, dmg: [14, 20], speed: 3.2, exp: 220, gold: [90, 120], aggro: 9, h: 3.6, gearChance: 0 },
+  pactsovereign: { hp: 1500, dmg: [16, 23], speed: 2.8, exp: 300, gold: [120, 160], aggro: 9, h: 4.2, gearChance: 0 },
 } as const satisfies Record<string, MonsterDef>;
 
 // ---------- 아이템과 상점: 무기 둘(손 모양마다 이름이 다르다), 갑옷 둘, 물약 하나. 떨어지기만 하는 무기·갑옷과 울림 가루는 gear.ts ----------
@@ -251,31 +257,44 @@ export const GACHA_RULES: GachaRules = { history: 50 };
 /** 넷이 함께 싸운다. 탑(단계) 안에서만 나타난다: 들판에서는 따라다니지 않는다 (where: 'stage') */
 export const SQUAD_RULES: SquadRules = { size: 4, seek: 12, leash: 20, reviveS: 8, regen: 0.05, autoFill: true, where: 'stage' };
 
-// ---------- 장과 단계: 장 셋 × 다섯. 다섯째는 우두머리. 단계마다 몬스터가 45%씩 세진다 (메아리를 뽑고 키워야 나아간다) ----------
+// ---------- 장과 단계: 장 여덟 × 다섯. 다섯째는 우두머리 (메아리를 뽑고 키워야 나아간다. docs/proof-echopact.md '장과 단계') ----------
+/**
+ * 장마다: 이름, 앞 두 단계의 몬스터, 뒤 셋의 몬스터, 둘째 물결에 섞이는 것, 우두머리. 1~3장은 예전 그대로이고 4장부터 새 몬스터(울림쇠·만가 술사·거울 그림자)와
+ * 새 우두머리(조종 망령·계약의 군주)
+ */
+const CH: readonly { name: string; early: MonsterId; late: MonsterId; mix: MonsterId; boss: MonsterId }[] = [
+  { name: 'chapterPath', early: 'wisp', late: 'hollowkin', mix: 'wisp', boss: 'bellgolem' },
+  { name: 'chapterRuins', early: 'hollowkin', late: 'shadeshot', mix: 'hollowkin', boss: 'echowarden' },
+  { name: 'chapterSpire', early: 'shadeshot', late: 'shadeshot', mix: 'hollowkin', boss: 'echowarden' },
+  { name: 'chapterGallery', early: 'chimeling', late: 'chimeling', mix: 'shadeshot', boss: 'knellwraith' },
+  { name: 'chapterBelfry', early: 'chimeling', late: 'dirgecaster', mix: 'hollowkin', boss: 'echowarden' },
+  { name: 'chapterMarsh', early: 'mirrorshade', late: 'dirgecaster', mix: 'chimeling', boss: 'echowarden' },
+  { name: 'chapterHush', early: 'mirrorshade', late: 'chimeling', mix: 'dirgecaster', boss: 'knellwraith' },
+  { name: 'chapterCrown', early: 'dirgecaster', late: 'mirrorshade', mix: 'chimeling', boss: 'pactsovereign' },
+];
+/** 1~3장(k 0~14)의 끝: 그 뒤로는 세기가 단계마다 LATE_STEP씩 (예전의 0.4보다 느리게: 카드의 성장이 레벨·별로 느려진다) */
+const EARLY_LAST = 14, LATE_GROW = 1.06;
 const stage = (ch: number, n: number): StageDef => {
-  const k = ch * 5 + n; // 0부터
-  // 편성만 싸운다(squadOnly): 처음 두 단계는 몬스터를 조금 약하게(0.8배), 그 뒤로 단계마다 40%씩
-  const scale = Math.round((k < 2 ? 0.8 : 1 + (k - 1) * 0.4) * 100) / 100;
-  const mob: MonsterId = ch === 0 ? (n < 2 ? 'wisp' : 'hollowkin') : ch === 1 ? (n < 2 ? 'hollowkin' : 'shadeshot') : 'shadeshot';
+  const k = ch * 5 + n, c = CH[ch], late = k > EARLY_LAST; // 0부터
+  // 편성만 싸운다(squadOnly): 처음 두 단계는 몬스터를 조금 약하게(0.8배), 그 뒤로 단계마다 40%씩, 4장부터 30%씩
+  const scale = Math.round((k < 2 ? 0.8 : late ? (1 + (EARLY_LAST - 1) * 0.4) * LATE_GROW ** (k - EARLY_LAST) : 1 + (k - 1) * 0.4) * 100) / 100;
+  const mob = n < 2 ? c.early : c.late;
   // 처음 두 단계는 몬스터 수도 적게 (처음 메아리 하나로 깬다)
-  const waves = k < 2 ? [[{ type: mob, n: 3 }], [{ type: mob, n: 2 }, { type: 'wisp' as MonsterId, n: 1 }]] : [[{ type: mob, n: 4 + (n % 2) }], [{ type: mob, n: 3 }, { type: ch === 0 ? 'wisp' : 'hollowkin', n: 2 }]];
+  const waves = k < 2 ? [[{ type: mob, n: 3 }], [{ type: mob, n: 2 }, { type: 'wisp' as MonsterId, n: 1 }]] : [[{ type: mob, n: 4 + (n % 2) }], [{ type: mob, n: 3 }, { type: c.mix, n: 2 }]];
   return {
     waves,
-    ...(n === 4 ? { boss: { type: ch === 0 ? 'bellgolem' : 'echowarden' } } : {}),
+    ...(n === 4 ? { boss: { type: c.boss } } : {}),
     scale,
-    reward: { gold: 30 + k * 10, exp: 25 + k * 12, sparks: 8 + k * 2 },
-    // 처음 깬 보상: 우두머리 150, 1-1은 60(1-1·1-2를 깨면 첫 뽑기 100이 모인다: 처음 메아리 하나로는 1-3에서 막히기 쉽다), 나머지 40
-    first: { sparks: n === 4 ? 150 : k === 0 ? 60 : 40 },
+    // 반복 보상의 울림 조각: 3장까지 단계마다 2씩, 4장부터는 두 단계에 1씩 (가장 높은 단계를 되풀이하는 것이 들판의 사냥보다 크게 낫지 않게)
+    reward: { gold: 30 + k * 10, exp: 25 + k * 12, sparks: 8 + Math.min(k, EARLY_LAST) * 2 + (late ? Math.floor((k - EARLY_LAST) / 2) : 0) },
+    // 처음 깬 보상: 우두머리 150, 1-1은 60(1-1·1-2를 깨면 첫 뽑기 100이 모인다: 처음 메아리 하나로는 1-3에서 막히기 쉽다), 나머지 40. 4장부터 우두머리 120·나머지 30
+    first: { sparks: n === 4 ? (late ? 120 : 150) : k === 0 ? 60 : late ? 30 : 40 },
     rec: Math.round(300 * scale * (n === 4 ? 1.5 : 1)),
     // 별 조건 셋: 깸 · 시간 안에(보통 45초, 우두머리 60초: 제한 90초의 절반·⅔) · 아무 메아리도 쓰러지지 않음 (docs/proof-echopact.md '별 조건')
     stars: [{ k: 'clear' }, { k: 'time', s: n === 4 ? 60 : 45 }, { k: 'alive' }],
   };
 };
-export const CHAPTERS: readonly ChapterDef[] = [
-  { name: 'chapterPath', stages: [0, 1, 2, 3, 4].map((n) => stage(0, n)) },
-  { name: 'chapterRuins', stages: [0, 1, 2, 3, 4].map((n) => stage(1, n)) },
-  { name: 'chapterSpire', stages: [0, 1, 2, 3, 4].map((n) => stage(2, n)) },
-];
+export const CHAPTERS: readonly ChapterDef[] = CH.map((c, ch) => ({ name: c.name, stages: [0, 1, 2, 3, 4].map((n) => stage(ch, n)) }));
 /**
  * 단계는 계약의 탑(따로 된 지역, 사람마다의 층)에서. 탑에 오면 대기실(단계 선택)에 서고, 단계를 고르면 싸운다 (모드가 맡는다: enterOnJoin은 끈다).
  * 오프라인 진행: 자동 진행을 켜 둔 채 접속을 끊으면 돌아왔을 때 편성의 전투력으로 '그동안 깼을 단계'를 넘긴다 (단계마다 3분, 8시간·5단계까지, 권장 전투력 이상만)
@@ -286,6 +305,8 @@ export const STAGE_RULES: StageRules = {
   // 전투 화면 (묶음 C): ×2 배속은 1-5를 깨면 열린다, 일시정지(전투 중 뒤로 가기)는 10분까지
   speed: { max: 2, unlock: '1-5' },
   pause: { maxS: 600 },
+  // 마지막 단계(8-5)를 자동 진행으로 깨면 되풀이하지 않고 멈춘다: 결과 창·단계 정보 창·홈이 '마지막 단계까지 깼습니다 · 다음 장은 곧'과 별 모으기를 보인다
+  atLast: 'stop',
 };
 
 // ---------- 스태미나 '계약의 숨결' (묶음 D): 꺼 둔다 (enabled: false). 켤지는 사용자 결정 ----------

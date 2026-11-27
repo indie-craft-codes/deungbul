@@ -106,7 +106,9 @@ function render(): void {
   $('stageWave').textContent = b.state === 'out' ? loc.fmt.stageRec(STAGES.find((s) => s.id === b.id)?.def.rec ?? 0, power()) : b.boss ? t('stageBoss') : loc.fmt.stageWave(b.wave, b.waves);
   $('stageFoes').textContent = run && run.state === 'fight' ? loc.fmt.stageFoes(run.foes, run.total) : run?.state === 'gap' ? t('stageWaveClear') : '';
   const big = $('stageBig');
-  big.textContent = run?.state === 'clear' ? `${t('stageClearBig')} ${loc.fmt.stageNext(run.left)}` : run?.state === 'fail' ? `${t('stageFailBig')} · ${loc.fmt.stageRetry(run.left)}` : '';
+  // 마지막 단계에서 자동 진행이 멈추는 게임(STAGE_RULES.atLast 'stop'): '다음 단계 n초' 대신 '다음 장은 곧'
+  const stop = STAGE_RULE_VIEW.atLast === 'stop' && stage.auto && run?.id === STAGES[STAGES.length - 1]?.id;
+  big.textContent = run?.state === 'clear' ? (stop ? `${t('stageClearBig')} · ${t('stLastDone')}` : `${t('stageClearBig')} ${loc.fmt.stageNext(run.left)}`) : run?.state === 'fail' ? `${t('stageFailBig')} · ${loc.fmt.stageRetry(run.left)}` : '';
   big.className = 'sbig' + (run?.state === 'fail' ? ' bad' : '');
   const auto = $('stageAuto');
   auto.textContent = t('stageAuto');
@@ -135,7 +137,7 @@ export function initStages(): void {
   const gos = goDungeons().length > 0;
   addMenuTab({ id: 'stages', label: () => t('tabStages'), draw: drawStages, sig: () => [...(sweeps ? [stage?.cur, stage?.best, stage?.run?.id, power(), S.me?.gold, S.me?.sparks, S.me?.items, myKeys()] : [stage?.cur, stage?.best, stage?.run?.id, power()]), ...(gos ? [myKeys(), S.me?.lv, S.dungeon.id] : [])], mod: 'stages' });
   onMsg('me', (m) => { if (m.k === 'stage') { stage = m.s as StageMe; render(); redraw(true); } });
-  addNotices({ banner: { stageFail: 'bad', stageLast: 'good', stageAway: 'good' }, feed: ['stageClear', 'stageLocked'] });
+  addNotices({ banner: { stageFail: 'bad', stageLast: 'good', stageLastStop: 'good', stageAway: 'good' }, feed: ['stageClear', 'stageLocked'] });
   if (gos) addNotices({ feed: ['dungeonNoKeys', 'dungeonNoRuns', 'dungeonLevel'] });
   if (sweeps) initSweep();
   onSlow(render);

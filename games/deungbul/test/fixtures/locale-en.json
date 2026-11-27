@@ -1971,6 +1971,13 @@
   "Squad power 1",
   "Squad power 2"
  ],
+ "fmt.stLastStarGo": [
+  "e4258a9653a8825c",
+  "Earn stars: undefined",
+  "Earn stars: 0",
+  "Earn stars: 1",
+  "Earn stars: 2"
+ ],
  "fmt.stPower": [
   "de289be7dfa5c404",
   "NaN / NaN",
@@ -3645,6 +3652,7 @@
   "Stage 2 failed (time ran out). Back to your cleared stage; auto advance is off."
  ],
  "msg.stageLast": "You cleared the last stage. It will repeat.",
+ "msg.stageLastStop": "You cleared the last stage. More chapters are coming soon; auto advance stops here.",
  "msg.stageLocked": [
   "fdf3c1237d839720",
   "Stage undefined is locked. Clear the stage before it first.",
@@ -4487,6 +4495,10 @@
  "ui.stEnemies": "Enemies",
  "ui.stFirst": "First clear",
  "ui.stGo": "Start",
+ "ui.stLastDone": "Last stage cleared · more chapters coming soon",
+ "ui.stLastInfo": "This is the last stage for now · more chapters coming soon",
+ "ui.stLastStars": "Meanwhile, earn the missing stars or replay earlier stages to grow your echoes.",
+ "ui.stLastSweep": "Meanwhile, earn the missing stars or sweep cleared stages for rewards.",
  "ui.stMine": "Your squad",
  "ui.stRec": "Recommended power",
  "ui.stRepeat": "Each clear",
