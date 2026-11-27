@@ -208,4 +208,26 @@ export type MsgKey =
   | 'eraseCanceled' // [] 삭제 요청을 거뒀다
   | 'erased' // [] 요청한 대로 이 캐릭터의 데이터를 지웠다 (연결을 끊는다)
   | 'mydataGuest' // [] 저장되지 않는 손님이라 내보내거나 지울 것이 없다
-  | 'mydataWait'; // [초] 너무 잦다: 그만큼 뒤에 다시
+  | 'mydataWait' // [초] 너무 잦다: 그만큼 뒤에 다시
+  // ---- 사회와 안전: 차단, 대화, 친구, 제한 모드 (engine/server/net/social.ts) ----
+  | 'blockedOn' // [이름] 차단했다 (그 사람의 대화·귓말·요청·초대가 오지 않는다)
+  | 'blockedOff' // [이름] 차단을 풀었다
+  | 'blockFull' // [상한] 더 차단할 수 없다
+  | 'chatSame' // [] 같은 말을 방금 했다 (도배 막기)
+  | 'chatQuickOnly' // [] 제한 모드라 정해진 문장만 쓸 수 있다
+  | 'chatNoParty' // [] 파티가 없어 파티 대화를 보낼 수 없다
+  | 'whisperOffline' // [이름] 지금 접속해 있지 않다
+  | 'whisperNoOne' // [이름] 그런 이름의 사람이 없다
+  | 'whisperNo' // [이름] 귓말을 받지 않는 사람이다
+  | 'limitedCant' // [] 제한 모드에서는 쓸 수 없는 기능이다
+  | 'friendGuest' // [] 저장되지 않는 손님은 친구를 맺을 수 없다
+  | 'friendWait' // [초] 요청은 잠시 뒤에
+  | 'friendNoOne' // [이름] 그런 이름의 사람이 없다
+  | 'friendAlready' // [이름] 이미 친구다
+  | 'friendAsked' // [이름] 친구 요청을 보냈다
+  | 'friendAskIn' // [이름] 친구 요청이 왔다
+  | 'friendNew' // [이름] 친구가 되었다
+  | 'friendNo' // [이름] 그 사람에게는 지금 요청할 수 없다 (요청을 받지 않음, 상한)
+  | 'friendFull' // [상한] 친구가 가득 찼다
+  | 'friendRemoved' // [이름] 친구를 끊었다
+  | 'friendOffline'; // [이름] 친구가 접속해 있지 않다

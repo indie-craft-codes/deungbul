@@ -36,9 +36,10 @@ export class Party {
   /** 그 사람의 파티원 id들 (자신 포함). 파티가 없으면 빈 배열 */
   membersOf(id: number): readonly number[] { return this.of.get(id)?.members ?? []; }
 
-  private invite(p: Ent, id: number): void {
+  /** 초대한다. far면 곁에 없어도 된다 (친구 목록에서 부르는 것: engine/server/net/social.ts) */
+  invite(p: Ent, id: number, far = false): void {
     const g = this.g, t = g.ents.get(id);
-    if (!t || t.kind !== 'p' || t === p || t.layer !== p.layer || dist(p, t) > PARTY.inviteRange) return;
+    if (!t || t.kind !== 'p' || t === p || (!far && (t.layer !== p.layer || dist(p, t) > PARTY.inviteRange))) return;
     // 같은 사람에게 이미 보낸 초대가 살아 있으면 다시 보내지 않는다 (초대 창 도배 방지)
     const sent = this.invites.get(t.id);
     if (sent && sent.from === p.id && sent.until > g.clock) return;
@@ -47,6 +48,8 @@ export class Party {
     const pending = this.invites.get(t.id);
     // 봇, 이미 파티가 있는 사람, 다른 초대를 받고 있는 사람은 초대할 수 없다
     if (t.bot || this.of.has(t.id) || (pending && pending.until > g.clock && pending.from !== p.id)) { g.notify(p, 'partyBusy', t.name); return; }
+    // 나를 차단한 사람에게는 초대가 가지 않는다 (차단을 알리지 않고 '초대할 수 없는 상대'로)
+    if (g.blocks(t, p)) { g.notify(p, 'partyBusy', t.name); return; }
     // 방금 거절당했거나 받지 않은 채 사라진 초대는 한동안 다시 보내지 못한다 (거절하자마자 다시 뜨는 초대 창 방지)
     if ((this.again.get(Party.pair(p, t)) ?? -Infinity) > g.clock) { g.notify(p, 'partyBusy', t.name); return; }
     this.invites.set(t.id, { from: p.id, until: g.clock + PARTY.inviteS });

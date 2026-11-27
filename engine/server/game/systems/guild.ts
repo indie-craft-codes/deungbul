@@ -118,7 +118,7 @@ export class Guild {
     if (!p.pid) { g.notify(p, 'guildGuest'); return; }
     if (this.of.has(p.pid)) return;
     if (g.field(p, 'lv') < GUILD.createLv) { g.notify(p, 'guildNeedLv', GUILD.createLv); return; }
-    if ([...name].length < GUILD.nameMin || !isClean(name)) { g.notify(p, 'guildNameBad'); return; }
+    if ([...name].length < GUILD.nameMin || !isClean(name, 'guild')) { g.notify(p, 'guildNameBad'); return; }
     if ([...this.guilds.values()].some((x) => x.name.toLowerCase() === name.toLowerCase())) { g.notify(p, 'guildNameTaken'); return; }
     if (!g.wallet.take(p, 'gold', GUILD.createGold, WHY.guildCreate)) { g.notify(p, 'noGold'); return; }
     p.dirty = true; p.unsaved = true;
@@ -137,7 +137,7 @@ export class Guild {
     if (rec.leader !== p.pid) { g.notify(p, 'guildNotLeader'); return; }
     // 파티 초대처럼 같은 층의 가까운 사람만 초대한다: 엔티티 번호만 알면 보이지도 않는 사람에게 초대 창을 띄울 수 있었다
     if (t.layer !== p.layer || dist(p, t) > PARTY.inviteRange) return;
-    if (!t.pid || this.of.has(t.pid)) { g.notify(p, 'guildBusy', t.name); return; }
+    if (!t.pid || this.of.has(t.pid) || g.blocks(t, p)) { g.notify(p, 'guildBusy', t.name); return; } // 나를 차단한 사람도 '초대할 수 없는 상대'로
     if (rec.members.length >= GUILD.maxMembers) { g.notify(p, 'guildFull'); return; }
     // 살아 있는 초대가 있으면 덮어쓰지 않는다: 초대 창 도배와, 비슷한 이름의 길드로 초대를 바꿔치기하는 것을 막는다
     const old = this.invites.get(t.id);
@@ -213,7 +213,7 @@ export class Guild {
     // 공지는 올릴 때마다 월드를 저장하므로 간격을 둔다
     if (this.g.clock - (this.lastNotice.get(rec.id) ?? -99) < GUILD.noticeGapS) return;
     this.lastNotice.set(rec.id, this.g.clock);
-    rec.notice = mask(s);
+    rec.notice = mask(s, 'notice');
     this.sync(rec);
   }
 

@@ -34,6 +34,20 @@
  "dungeons.crypt.name": "The Ash Crypt",
  "dungeons.crypt_deep.info": "Fight through grave hounds and crypt knights and bring down the awakened Lord. Drops level 7 gear. Go with a party.",
  "dungeons.crypt_deep.name": "The Crypt Depths",
+ "fmt.ageOver": [
+  "7a125d0d2fcfa9ea",
+  "undefined or older",
+  "0 or older",
+  "1 or older",
+  "2 or older"
+ ],
+ "fmt.ageUnder": [
+  "8123f66f1389f6e3",
+  "Under undefined",
+  "Under 0",
+  "Under 1",
+  "Under 2"
+ ],
  "fmt.autoOnEarly": [
   "6db475a79e329ece",
   "Auto-hunt on. Moving yourself turns it off. (It keeps going after you close the game only once you have a class and reach level undefined.)",
@@ -105,6 +119,20 @@
   "Ch 2"
  ],
  "fmt.charErr": "The definition is malformed.",
+ "fmt.chatTo": [
+  "b572df8d88821fa1",
+  "Whisper to undefined",
+  "Whisper to 0",
+  "Whisper to 1",
+  "Whisper to 2"
+ ],
+ "fmt.chatToTag": [
+  "43b3c9261ac0991a",
+  "[→ undefined]",
+  "[→ 0]",
+  "[→ 1]",
+  "[→ 2]"
+ ],
  "fmt.cmpArrow": [
   "f627618c9243d2de",
   "If you swap now: undefined",
@@ -314,6 +342,19 @@
   " · 0 Ward Stone",
   " · 1 Ward Stone",
   " · 2 Ward Stone"
+ ],
+ "fmt.friendSeen": [
+  "99286e30f4baea0f",
+  "Last seen NaN days ago",
+  "Last seen 1 min ago",
+  "Last seen 20 min ago"
+ ],
+ "fmt.friendsHead": [
+  "53a1e6f8820d6af4",
+  "Friends (undefined)",
+  "Friends (0)",
+  "Friends (1)",
+  "Friends (2)"
  ],
  "fmt.fxBuff": [
   "fad98f1a74809cb6",
@@ -1710,6 +1751,27 @@
   "1 is not open right now.",
   "2 is not open right now."
  ],
+ "msg.blockFull": [
+  "816690ecf1c921f3",
+  "You cannot block more players (up to undefined).",
+  "You cannot block more players (up to 0).",
+  "You cannot block more players (up to 1).",
+  "You cannot block more players (up to 2)."
+ ],
+ "msg.blockedOff": [
+  "25506654739c97db",
+  "You unblocked undefined.",
+  "You unblocked 0.",
+  "You unblocked 1.",
+  "You unblocked 2."
+ ],
+ "msg.blockedOn": [
+  "3906ff3dd6c32b60",
+  "You blocked undefined. Their chat, whispers, friend requests and invites will not reach you.",
+  "You blocked 0. Their chat, whispers, friend requests and invites will not reach you.",
+  "You blocked 1. Their chat, whispers, friend requests and invites will not reach you.",
+  "You blocked 2. Their chat, whispers, friend requests and invites will not reach you."
+ ],
  "msg.bossDown": [
   "b536eca0aa5a659b",
   "undefined has fallen.",
@@ -1762,6 +1824,9 @@
   "New character: 1!",
   "New character: 2!"
  ],
+ "msg.chatNoParty": "You are not in a party.",
+ "msg.chatQuickOnly": "Only quick phrases are available.",
+ "msg.chatSame": "You just said that. Please wait a moment before sending it again.",
  "msg.chatWait": "Chat is too busy, so your last message was not sent. Try again in a moment.",
  "msg.classChanged": [
   "45aca5b9a8cc44e5",
@@ -1881,6 +1946,77 @@
  "msg.featureOff": "flagOther is paused for now. Please check the notices.",
  "msg.forgeClosed": "Bram the Smith has not returned yet.",
  "msg.forgeFar": "Move closer to Bram the Smith to forge.",
+ "msg.friendAlready": [
+  "98f79f8c0355799f",
+  "You are already friends with undefined.",
+  "You are already friends with 0.",
+  "You are already friends with 1.",
+  "You are already friends with 2."
+ ],
+ "msg.friendAskIn": [
+  "bfb3d17af9aab9e7",
+  "undefined sent you a friend request. Open the Friends tab in the menu to answer.",
+  "0 sent you a friend request. Open the Friends tab in the menu to answer.",
+  "1 sent you a friend request. Open the Friends tab in the menu to answer.",
+  "2 sent you a friend request. Open the Friends tab in the menu to answer."
+ ],
+ "msg.friendAsked": [
+  "e58fd1bbbf5c965e",
+  "Friend request sent to undefined.",
+  "Friend request sent to 0.",
+  "Friend request sent to 1.",
+  "Friend request sent to 2."
+ ],
+ "msg.friendFull": [
+  "f57a48cae2941c2a",
+  "Your friends list is full (up to undefined).",
+  "Your friends list is full (up to 0).",
+  "Your friends list is full (up to 1).",
+  "Your friends list is full (up to 2)."
+ ],
+ "msg.friendGuest": "Unsaved guests cannot add friends.",
+ "msg.friendNew": [
+  "a05892208a53fcdd",
+  "You and undefined are now friends.",
+  "You and 0 are now friends.",
+  "You and 1 are now friends.",
+  "You and 2 are now friends."
+ ],
+ "msg.friendNo": [
+  "f19554c987b3005d",
+  "You cannot send undefined a friend request right now.",
+  "You cannot send 0 a friend request right now.",
+  "You cannot send 1 a friend request right now.",
+  "You cannot send 2 a friend request right now."
+ ],
+ "msg.friendNoOne": [
+  "3c52b2355339edad",
+  "There is no player named undefined.",
+  "There is no player named 0.",
+  "There is no player named 1.",
+  "There is no player named 2."
+ ],
+ "msg.friendOffline": [
+  "75295680f70829fe",
+  "undefined is not online right now.",
+  "0 is not online right now.",
+  "1 is not online right now.",
+  "2 is not online right now."
+ ],
+ "msg.friendRemoved": [
+  "fb842cd0b40f42b0",
+  "You removed undefined from your friends.",
+  "You removed 0 from your friends.",
+  "You removed 1 from your friends.",
+  "You removed 2 from your friends."
+ ],
+ "msg.friendWait": [
+  "096d6fa20c54d237",
+  "You can send another friend request in undefineds.",
+  "You can send another friend request in 0s.",
+  "You can send another friend request in 1s.",
+  "You can send another friend request in 2s."
+ ],
  "msg.gearBagFull": "Your gear bag is full. Make room for the piece you take off (salvage, sell or expand the bag), then try again.",
  "msg.gearDrop": [
   "510ea14824e07d86",
@@ -2136,6 +2272,7 @@
   "Level up! Lv 1 · +3 attribute points (Menu > Growth)",
   "Level up! Lv 2 · +3 attribute points (Menu > Growth)"
  ],
+ "msg.limitedCant": "This is not available in restricted mode.",
  "msg.loot": [
   "d8989e9af1210c96",
   "Picked up undefined. Bram can use it at the forge.",
@@ -2579,6 +2716,27 @@
   "1 is lit. You can now rise there when you fall.",
   "2 is lit. You can now rise there when you fall."
  ],
+ "msg.whisperNo": [
+  "7288b833295c89a3",
+  "undefined is not receiving whispers.",
+  "0 is not receiving whispers.",
+  "1 is not receiving whispers.",
+  "2 is not receiving whispers."
+ ],
+ "msg.whisperNoOne": [
+  "3c52b2355339edad",
+  "There is no player named undefined.",
+  "There is no player named 0.",
+  "There is no player named 1.",
+  "There is no player named 2."
+ ],
+ "msg.whisperOffline": [
+  "75295680f70829fe",
+  "undefined is not online right now.",
+  "0 is not online right now.",
+  "1 is not online right now.",
+  "2 is not online right now."
+ ],
  "nameA.length": "10",
  "nameA[0]": "Sleepy",
  "nameA[1]": "Brave",
@@ -2667,6 +2825,13 @@
  "towers.ember": "Emberfall Tower",
  "towers.first": "Firstlight Village Tower",
  "ui.afkTag": "away",
+ "ui.ageAskBand": "Please choose your age.",
+ "ui.ageAskYear": "Please choose the year you were born.",
+ "ui.ageHead": "Your age",
+ "ui.ageNote": "You cannot change this later. If you picked the wrong one, please contact the operator.",
+ "ui.ageOk": "OK",
+ "ui.agePick": "Choose",
+ "ui.ageYear": "Year of birth",
  "ui.allReturned": "Everyone has returned",
  "ui.attackNearest": "Attack nearest",
  "ui.auto": "Auto-hunt",
@@ -2683,7 +2848,9 @@
  "ui.bagPick": "[[Click|Tap]] a slot to see what it is.",
  "ui.bagPotions": "Potions",
  "ui.bagToGear": "View gear (Menu > Gear)",
- "ui.block": "Mute chat",
+ "ui.block": "Block",
+ "ui.blockHead": "Blocked players",
+ "ui.blockNone": "You have not blocked anyone. Blocking stops their chat, whispers, friend requests and invites from reaching you.",
  "ui.buffs": "Active buffs",
  "ui.changeClass": "Change class",
  "ui.channel": "Channel",
@@ -2692,8 +2859,18 @@
  "ui.charmOff": "Use ward stones: off",
  "ui.charmOn": "Use ward stones: on",
  "ui.chatLabel": "Chat message",
+ "ui.chatLimited": "Only quick phrases are available",
  "ui.chatOpen": "Chat",
  "ui.chatPlaceholder": "[[Press Enter to chat|Message]]",
+ "ui.chatTabAll": "All",
+ "ui.chatTabGuild": "Guild",
+ "ui.chatTabNear": "Near",
+ "ui.chatTabParty": "Party",
+ "ui.chatTabWhisper": "Whisper",
+ "ui.chatTagNear": "[Near]",
+ "ui.chatTagParty": "[Party]",
+ "ui.chatTagWhisper": "[Whisper]",
+ "ui.chatWhisperHow": "Whisper with \"/w name message\", or tap a person or a name in the chat.",
  "ui.chooseClass": "Choose your class",
  "ui.claim": "Claim",
  "ui.claimAll": "Claim all",
@@ -2747,6 +2924,23 @@
  "ui.flagMarket": "The market",
  "ui.flagOther": "This feature",
  "ui.forge": "Bram's Forge",
+ "ui.friendAccept": "Accept",
+ "ui.friendAdd": "Send",
+ "ui.friendAddHint": "Add a friend by name",
+ "ui.friendAsk": "Add friend",
+ "ui.friendCancel": "Cancel request",
+ "ui.friendDecline": "Decline",
+ "ui.friendDel": "Remove",
+ "ui.friendDelSure": "Really remove?",
+ "ui.friendIn": "Sent you a friend request",
+ "ui.friendInOff": "You are not receiving friend requests right now (settings or restricted mode).",
+ "ui.friendInst": "In a dungeon",
+ "ui.friendOff": "Offline",
+ "ui.friendOn": "Online",
+ "ui.friendOut": "Waiting for an answer",
+ "ui.friendsEmpty": "No friends yet. Tap a person or type a name to send a request.",
+ "ui.friendsIn": "Requests",
+ "ui.friendsOut": "Sent requests",
  "ui.full": "The server is full. Please try again shortly.",
  "ui.gachaAlways": "Permanent",
  "ui.gachaHistory": "Recent summons",
@@ -2933,6 +3127,15 @@
  "ui.qHigh": "High",
  "ui.qLow": "Low",
  "ui.qMid": "Medium",
+ "ui.qcBye": "See you!",
+ "ui.qcGo": "Let's go!",
+ "ui.qcGood": "Well done!",
+ "ui.qcHello": "Hello!",
+ "ui.qcHelp": "Help, please!",
+ "ui.qcOpen": "Phrases",
+ "ui.qcSorry": "Sorry.",
+ "ui.qcThanks": "Thanks!",
+ "ui.qcWait": "Wait a moment.",
  "ui.quest": "Quest",
  "ui.questAllDone": "You have finished the story so far.",
  "ui.questGo": "[[Click to walk there (F)|Tap to walk there]]",
@@ -2986,7 +3189,10 @@
  "ui.salvageCancel": "Cancel",
  "ui.salvageSource": "From salvaging gear",
  "ui.setCalm": "Turn off screen shake",
+ "ui.setChatShow": "Show chat",
+ "ui.setChatShowNote": "Turn off to hide the chat box and speech bubbles.",
  "ui.setFar": "Draw distance",
+ "ui.setFriendIn": "Receive friend requests",
  "ui.setFullscreen": "Full screen",
  "ui.setGame": "Game",
  "ui.setGraphics": "Graphics",
@@ -3000,7 +3206,9 @@
  "ui.setScreen": "Screen",
  "ui.setShadows": "Shadows",
  "ui.setSound": "Sound",
+ "ui.setTalk": "Chat",
  "ui.setUi": "Text & panel size",
+ "ui.setWhisperIn": "Receive whispers",
  "ui.shop": "Road Merchant",
  "ui.skillUpBtn": "Upgrade",
  "ui.skillUpHead": "Skill upgrades",
@@ -3035,6 +3243,7 @@
  "ui.tabBuild": "Growth",
  "ui.tabDaily": "Daily",
  "ui.tabDevice": "Device",
+ "ui.tabFriends": "Friends",
  "ui.tabGacha": "Summon",
  "ui.tabGear": "Gear",
  "ui.tabGuild": "Guild",
@@ -3047,6 +3256,7 @@
  "ui.tabSettings": "Settings",
  "ui.tabSquad": "Squad",
  "ui.tabStages": "Stages",
+ "ui.talkLimitedNote": "Restricted mode: you can use quick phrases only, and you do not receive whispers or friend requests.",
  "ui.teamBoard": "Scoreboard",
  "ui.teamMore": "More players",
  "ui.teamPickBalance": "You cannot join the team with more players.",
@@ -3062,12 +3272,13 @@
  "ui.tutNext": "Next",
  "ui.tutReplay": "Replay",
  "ui.tutSkip": "Skip",
- "ui.unblock": "Unmute",
+ "ui.unblock": "Unblock",
  "ui.unequip": "Remove",
  "ui.updateApp": "Update",
  "ui.volMusic": "Music",
  "ui.volSfx": "Effects",
  "ui.volume": "Volume",
+ "ui.whisper": "Whisper",
  "ui.worldMap": "Map",
  "ui.worldMapHint": "[[Click|Tap]] open ground to walk there, or a marker for details. Zoom with [[the wheel|two fingers]] or + and −, drag to move.[[ (N or Esc to close)|]]",
  "ui.zoneDark": "The lamp tower here is unlit. Monsters are strong and attack on sight. If you fall, you rise at the nearest lit tower.",

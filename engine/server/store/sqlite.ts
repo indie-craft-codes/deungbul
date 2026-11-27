@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { ClientErrorRow, EconRow, EconStore, EraseRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, Store, WebStore, WorldSave } from './types';
+import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, SocialStore, Store, WebStore, WorldSave } from './types';
 
 /**
  * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
@@ -9,6 +9,7 @@ import type { ClientErrorRow, EconRow, EconStore, EraseRow, LiveLogRow, LiveRow,
  *   1: 처음의 표들. 번호가 생기기 전의 DB(user_version 0)에도 그대로 돈다: 모두 IF NOT EXISTS라 이미 있는 표는 건드리지 않는다
  *   2: 원격 설정(live: 버전 있는 키-값, live_log: 변경 이력, live_meta: 이력 없는 운영 값). 옛 표는 건드리지 않는다
  *   3: 웹 출시의 바탕: 약관 동의(consents), 내 데이터 삭제 요청과 기록(erasures), 화면 오류 묶음(client_errors) (engine/server/net/web.ts)
+ *   4: 사회와 안전: 차단(blocks: owner 사람 → target 캐릭터), 친구(friends: 캐릭터 a·b), 대화 설정과 연령(social_prefs: owner 사람) (engine/server/net/social.ts)
  */
 export const SCHEMA: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
@@ -22,10 +23,15 @@ export const SCHEMA: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS consents (key TEXT PRIMARY KEY, version TEXT NOT NULL, at INTEGER NOT NULL);
    CREATE TABLE IF NOT EXISTS erasures (key TEXT PRIMARY KEY, name TEXT NOT NULL, asked INTEGER NOT NULL, due INTEGER NOT NULL, state TEXT NOT NULL, done INTEGER NOT NULL);
    CREATE TABLE IF NOT EXISTS client_errors (sig TEXT PRIMARY KEY, kind TEXT NOT NULL, msg TEXT NOT NULL, stack TEXT NOT NULL, place TEXT NOT NULL, build TEXT NOT NULL, ua TEXT NOT NULL, n INTEGER NOT NULL, first INTEGER NOT NULL, last INTEGER NOT NULL);`,
+  `CREATE TABLE IF NOT EXISTS blocks (owner TEXT NOT NULL, target TEXT NOT NULL, name TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (owner, target));
+   CREATE INDEX IF NOT EXISTS blocks_target ON blocks (target);
+   CREATE TABLE IF NOT EXISTS friends (a TEXT NOT NULL, b TEXT NOT NULL, state TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (a, b));
+   CREATE INDEX IF NOT EXISTS friends_b ON friends (b);
+   CREATE TABLE IF NOT EXISTS social_prefs (owner TEXT PRIMARY KEY, data TEXT NOT NULL, at INTEGER NOT NULL);`,
 ];
 
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
-export class SqliteStore implements Store, EconStore, LiveStore, WebStore {
+export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore {
   private db: DatabaseSync;
   readonly file: string;
   /** 지금 열린 묶음의 깊이 (transaction의 SAVEPOINT 이름에 쓴다) */
@@ -164,6 +170,9 @@ export class SqliteStore implements Store, EconStore, LiveStore, WebStore {
   deletePlayer(key: string): void {
     this.db.prepare('DELETE FROM players WHERE key = ?').run(key);
     this.db.prepare('DELETE FROM consents WHERE key = ?').run(key);
+    this.db.prepare('DELETE FROM blocks WHERE owner = ? OR target = ?').run(key, key);
+    this.db.prepare('DELETE FROM friends WHERE a = ? OR b = ?').run(key, key);
+    this.db.prepare('DELETE FROM social_prefs WHERE owner = ?').run(key);
   }
   private reportRows(): { id: number; r: ReportSave }[] {
     return this.db.prepare('SELECT id, data FROM reports ORDER BY id').all().map((row) => ({ id: Number(row.id), r: this.parse<ReportSave>(row.data) })).filter((x): x is { id: number; r: ReportSave } => x.r !== null);
@@ -206,6 +215,31 @@ export class SqliteStore implements Store, EconStore, LiveStore, WebStore {
   clearClientErrors(sig: string): number {
     const r = sig === 'all' ? this.db.prepare('DELETE FROM client_errors').run() : this.db.prepare('DELETE FROM client_errors WHERE sig LIKE ?').run(sig.replace(/[%_]/g, '') + '%');
     return Number(r.changes);
+  }
+  // ---- 사회와 안전 ----
+  blocksOf(owner: string): BlockRow[] {
+    return this.db.prepare('SELECT owner, target, name, at FROM blocks WHERE owner = ? ORDER BY at').all(owner).map((r) => ({ owner: String(r.owner), char: String(r.target), name: String(r.name), at: Number(r.at) }));
+  }
+  putBlock(r: BlockRow): void {
+    this.db.prepare('INSERT INTO blocks (owner, target, name, at) VALUES (?, ?, ?, ?) ON CONFLICT(owner, target) DO UPDATE SET name = excluded.name, at = excluded.at').run(r.owner, r.char, r.name, r.at);
+  }
+  delBlock(owner: string, char: string): void { this.db.prepare('DELETE FROM blocks WHERE owner = ? AND target = ?').run(owner, char); }
+  friendsOf(key: string): FriendRow[] {
+    return this.db.prepare('SELECT a, b, state, at FROM friends WHERE a = ? OR b = ? ORDER BY at').all(key, key).map((r) => ({ a: String(r.a), b: String(r.b), state: r.state === 'ok' ? 'ok' : 'ask', at: Number(r.at) }));
+  }
+  putFriend(r: FriendRow): void {
+    this.transaction(() => {
+      this.db.prepare('DELETE FROM friends WHERE a = ? AND b = ?').run(r.b, r.a);
+      this.db.prepare('INSERT INTO friends (a, b, state, at) VALUES (?, ?, ?, ?) ON CONFLICT(a, b) DO UPDATE SET state = excluded.state, at = excluded.at').run(r.a, r.b, r.state, r.at);
+    });
+  }
+  delFriend(a: string, b: string): void { this.db.prepare('DELETE FROM friends WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)').run(a, b, b, a); }
+  socialPrefs(owner: string): Record<string, unknown> | null {
+    const v = this.parse<unknown>(this.db.prepare('SELECT data FROM social_prefs WHERE owner = ?').get(owner)?.data);
+    return typeof v === 'object' && v !== null && !Array.isArray(v) ? v as Record<string, unknown> : null;
+  }
+  setSocialPrefs(owner: string, data: Record<string, unknown>, at: number): void {
+    this.db.prepare('INSERT INTO social_prefs (owner, data, at) VALUES (?, ?, ?) ON CONFLICT(owner) DO UPDATE SET data = excluded.data, at = excluded.at').run(owner, JSON.stringify(data), at);
   }
   close(): void { this.db.close(); }
 }

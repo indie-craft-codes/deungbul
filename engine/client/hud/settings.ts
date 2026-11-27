@@ -13,6 +13,7 @@ import { legalRows, myDataRows, myDataSig } from './legal';
 import { addMenuTab, renderMenu } from './menu';
 import { button, chips, el, row } from './menu/parts';
 import { replayRows, tutorialSig } from './tutorial';
+import { socialRows, socialSig } from './social';
 import { FAR_STEPS, PIXEL_STEPS, QUALITIES, RESERVED_KEYS, UI_STEPS, gfxOf, keyLabel, qualityOf, readSettings, writeSettings, type Quality, type Settings } from './settingscalc';
 
 const STORE_KEY = 'settings';
@@ -21,11 +22,11 @@ let cur: Settings = readSettings(null);
 /** 키를 기다리는 기능 (재설정 중) */
 let waitKey: string | null = null;
 
-/** 게임이 더하는 설정 칸 */
+/** 게임이 더하는 설정 칸. group을 주면 그 이름의 머리 아래에 모인다 (주지 않으면 '게임' 머리 아래) */
 export type SettingDef =
-  | { id: string; label: () => string; note?: () => string; kind: 'toggle'; value: boolean; on: (v: boolean) => void }
-  | { id: string; label: () => string; note?: () => string; kind: 'select'; value: string; options: readonly { value: string; label: () => string }[]; on: (v: string) => void }
-  | { id: string; label: () => string; note?: () => string; kind: 'range'; value: number; min: number; max: number; step: number; on: (v: number) => void };
+  | { id: string; label: () => string; note?: () => string; group?: () => string; kind: 'toggle'; value: boolean; on: (v: boolean) => void }
+  | { id: string; label: () => string; note?: () => string; group?: () => string; kind: 'select'; value: string; options: readonly { value: string; label: () => string }[]; on: (v: string) => void }
+  | { id: string; label: () => string; note?: () => string; group?: () => string; kind: 'range'; value: number; min: number; max: number; step: number; on: (v: number) => void };
 const extras: SettingDef[] = [];
 
 /**
@@ -114,10 +115,12 @@ function drawSettings(list: HTMLElement): void {
     }
     if (Object.keys(cur.keys).length) list.append(button(t('setKeysReset'), () => set((s) => { s.keys = {}; })));
   }
-  // 게임이 더한 칸
-  if (extras.length) {
-    list.append(el('baghead', t('setGame')));
-    for (const d of extras) {
+  // 게임이 더한 칸: 머리(group)마다 모아서, 머리가 처음 나온 차례로
+  const heads: string[] = [];
+  for (const d of extras) { const h = d.group?.() ?? t('setGame'); if (!heads.includes(h)) heads.push(h); }
+  for (const h of heads) {
+    list.append(el('baghead', h));
+    for (const d of extras.filter((x) => (x.group?.() ?? t('setGame')) === h)) {
       const v = settingValue(d.id);
       const put = (x: unknown) => set((s) => { s.extra[d.id] = x; });
       if (d.kind === 'toggle') list.append(row(d.label(), d.note?.() ?? '', [onOff(v === true, (x) => { put(x); d.on(x); })]));
@@ -125,6 +128,7 @@ function drawSettings(list: HTMLElement): void {
       else list.append(row(d.label(), d.note?.() ?? '', [slider(d.label(), Number(v), d.min, d.max, d.step, (x) => d.on(x), (x) => { put(x); d.on(x); })]));
     }
   }
+  socialRows(list);
   replayRows(list);
   legalRows(list);
   myDataRows(list);
@@ -148,7 +152,7 @@ function captureKey(ev: KeyboardEvent): void {
 export function initSettings(): void {
   cur = readSettings(platform().storage.get(STORE_KEY), cap());
   apply();
-  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length] });
+  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig()] });
   window.addEventListener('keydown', captureKey, { capture: true });
   onSoundChange(() => renderMenu());
   onLangChange(() => renderMenu());

@@ -1,42 +1,4 @@
 // 글 다듬기와 금칙어 가리기. 통신 계층(대화, 이름)과 게임 규칙(길드 이름과 공지)이 함께 쓰므로 어느 쪽에도 속하지 않는 자리에 둔다.
-// 금칙어 목록은 시작용의 짧은 목록이다(한국어, 영어). 게임은 addBannedWords로 자기 언어와 자기 세계의 낱말을 더한다. 규모가 커지면 외부 필터로 바꾼다.
-
-const WORDS: string[] = [
-  // 한국어
-  '씨발', '시발', '씨팔', '시팔', 'ㅅㅂ', '병신', 'ㅂㅅ', '좆', '개새끼', '개새', '지랄', '니애미', '느금마', '창녀', '걸레년',
-  // 영어
-  'fuck', 'shit', 'bitch', 'asshole', 'cunt', 'nigger', 'nigga', 'faggot', 'retard', 'whore',
-];
-/** 글자 사이에 끼워 넣어 피하는 것(공백, 점, 별표 등)을 건너뛰며 찾는다 */
-// 건너뛰는 글자는 점·별표처럼 낱말 안에 끼워 넣는 것만이다. 공백, 물음표, 쉼표, 하이픈, 숫자까지 건너뛰면
-// '시 발표', '혹시?발견', '즉시-발송', '택시2발' 같은 정상 문장이 가려진다
-const GAP = '[.*_~^]*';
-const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const build = (): RegExp => new RegExp(WORDS.map((w) => [...w].map(esc).join(GAP)).join('|'), 'giu');
-let PATTERN = build();
-
-/** 금칙어를 더한다 (게임의 서버 진입점이나 규칙 플러그인에서). 빈 낱말과 이미 있는 낱말은 건너뛴다. 다듬기(tidy)를 거친 모양으로 견주므로 낱말도 다듬어 넣는다 */
-export function addBannedWords(words: readonly string[]): void {
-  for (const w of words.map((x) => tidy(x).trim().toLowerCase())) if (w && !WORDS.includes(w)) WORDS.push(w);
-  PATTERN = build();
-}
-
-/**
- * 글자를 한 가지 모양으로 다듬는다: 전각 글자와 꾸밈 글자를 보통 글자로(NFKC), 눈에 보이지 않는 글자(폭 없는 공백, 방향 뒤집기,
- * 한글 채움 문자)는 지운다. 이런 글자로 금칙어를 피하거나 남의 이름을 흉내 내지 못하게 한다.
- */
-export function tidy(text: string): string {
-  // 낱글자 자모(ㅋ, ㅠ, ㅅㅂ)는 그대로 둔다: NFKC는 이것을 조합용 자모로 바꿔서 화면에서 깨져 보이고 금칙어 목록과도 어긋난다
-  return [...text].map((ch) => (/[\u3130-\u318f]/.test(ch) ? ch : ch.normalize('NFKC'))).join('').replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff\u00ad\u115f\u1160\u3164\uffa0]/g, '');
-}
-
-/** 금칙어를 같은 길이의 별표로 가린다. */
-export function mask(text: string): string {
-  return tidy(text).replace(PATTERN, (m) => '*'.repeat([...m].length));
-}
-
-/** 금칙어가 없는가 (이름처럼 가려서 쓸 수 없는 것을 검사할 때) */
-export function isClean(text: string): boolean {
-  PATTERN.lastIndex = 0;
-  return !PATTERN.test(tidy(text));
-}
+// 정규화와 목록·거르개 고리는 engine/shared/textfilter.ts에 있다 (캐릭터 정의의 검증도 같은 것을 쓴다): 여기는 그것을 다시 내보낸다.
+// 금칙어 목록은 시작용의 짧은 목록이다(한국어, 영어). 게임은 addBannedWords로 자기 언어와 자기 세계의 낱말을, addTextFilter로 거르개(외부 검열 같은 것)를 더한다.
+export { addAllowedWords, addBannedWords, addTextFilter, bannedWords, clearTextFilters, filterKey, isClean, mask, tidy, type TextFilter, type TextWhere } from '../shared/textfilter';

@@ -89,6 +89,8 @@
 | `rooms` | 판: 판마다의 인스턴스 층, 대기실·짝짓기(컴퓨터 상대), 차례와 기한, 끊긴 사람의 자리, 판의 저장 (14절) | | 대기실 창(오른쪽 위), 판의 막대와 초읽기(가운데 위), 결과 창 | |
 | `chars` | 캐릭터 정의: 바깥(AI·사람)이 만든 정의를 검증해 두고(월드 저장, 바꿔 끼우는 저장소) 화면에 보낸다. `roster`와 함께면 정의가 영웅이 된다 (15절) | | 없음(정의를 받아 둔다: `onChars`) | |
 | `morph` | 변신: 가진 캐릭터 정의의 겉모습(남에게도)과 게임이 정한 보정, 지속 시간·재사용 대기·전투 중 금지 (15절) | chars | 메뉴의 변신 탭 | |
+| `chat` | 대화 채널: 귓말(이름으로)·근처·파티 채널, 모든 채널을 합친 도배 막기 (18절) | | 대화창의 채널 탭, 사람 카드의 귓말 | |
+| `friends` | 친구: 요청·수락·거절·삭제, 목록(접속·있는 곳·마지막 접속), 상한 (18절) | | 메뉴의 친구 탭, 사람 카드의 친구 요청 | |
 
 ```ts engine/test/core/shared/content/index.ts
 /** 쓸 모듈: 없다 (핵심만) */
@@ -97,7 +99,7 @@ export const MODULES: readonly ModuleId[] = [];
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends'];
 ```
 
 모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`, `chars`, `morph`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
@@ -230,7 +232,7 @@ if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키�
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends'];
 export const GUEST_NAME = 'Camper';
 ```
 
@@ -2334,3 +2336,75 @@ setGuestReminder({ afterMin: 20 });
 ### 시험
 
 `engine/test/fx/web.test.ts`: 오류의 개인정보 빼기·묶기·끝점의 제한, 자리 비움, 동의, 내보내기·삭제의 흐름과 얽힌 데이터, SQLite 스키마 2, 설정·튜토리얼·키 재설정의 셈, 플랫폼 접점(memory)·인증 접점. 화면은 실제 브라우저로 확인했다([framework-status.md](framework-status.md) '웹 출시의 바탕').
+
+## 18. 사회와 안전: 차단, 대화 채널·귓말, 정해진 문장, 금칙어, 연령과 제한 모드, 친구, 신고의 문맥
+
+[genre-features.md](genre-features.md) 5.3절의 묶음 3. 서버 쪽은 `engine/server/net/social.ts`, 화면은 `engine/client/social.ts`(데이터)·`hud/social.ts`(설정 칸·연령 창·친구 탭)·`hud/chat.ts`(대화창), 금칙어는 `engine/shared/textfilter.ts`, 모양은 `engine/shared/defs/talk.ts`. **적지 않거나 고르지 않으면 지금과 같다**: 등불지기에 새로 보이는 것은 설정 창의 '대화' 칸(대화 보이기)과 '차단한 사람' 목록뿐이다.
+
+| 무엇 | 핵심/선택 | 내용 칸·모듈 | 기본값 |
+|---|---|---|---|
+| 서버 저장 차단 | 핵심 | 없음 | 켜짐. 차단한 사람의 대화(모든 채널)·귓말·친구 요청·파티와 길드 초대가 오지 않는다 |
+| 금칙어 정규화 | 핵심 | `addBannedWords`, `addAllowedWords`, `addTextFilter` (서버 진입점) | 틀의 짧은 목록(한·영) |
+| 신고의 문맥 | 핵심 | 없음 | 대화 줄을 눌러 신고하면 앞 6줄·뒤 4줄(신고한 사람이 본 줄만) |
+| 대화 보이기(끄기) | 핵심 (기기 설정) | 없음 | 켬 |
+| 대화 채널·귓말 | 선택 | 모듈 `chat`, `CHAT_RULES` | 고르지 않음 (전체·길드만) |
+| 친구 | 선택 | 모듈 `friends`, `FRIENDS` | 고르지 않음 |
+| 정해진 문장 | 핵심, 선택 칸 | `QUICK_CHAT` (i18n 문장 키) | 빈 목록 (단추 없음) |
+| 연령·제한 모드 | 핵심, 선택 칸 | `AGE` | `null` (묻지 않음) |
+
+**단위 (계정이 없을 때와 생긴 뒤).** 지금은 기기 토큰 → 저장 키 하나 = 캐릭터 하나다. 그래도 코드와 저장은 둘로 나눠 부른다(`social.ts`의 `ownerKey`·`charKey`): **사람(지금은 저장 키, 나중에 계정)** 의 것 — 연령·제한 모드, 약관 동의, 본인 설정(귓말·친구 요청 받기), 차단 목록의 '주인', 도배 막기. **캐릭터** 의 것 — 친구 관계, 귓말 대상, 차단의 '대상', 대화 줄을 말한 이, 신고의 대상. 대상은 이름이 아니라 캐릭터의 저장 키로 가리키므로 이름을 바꿔도 이어진다. 저장도 그 모양이다(`blocks(owner, target)`, `friends(a, b)` = 캐릭터 둘, `social_prefs(owner)`): 계정이 생기면 주인 칸만 계정으로 옮기면 계정의 모든 캐릭터에 걸린다. 화면에는 저장 키를 보내지 않고 짧은 표(`r`)로 가리킨다.
+
+예제(모닥불 사냥터)는 다 켰다:
+
+```ts games/sample/shared/content/index.ts
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends'];
+```
+
+```ts games/sample/shared/content/index.ts
+export const QUICK_CHAT: readonly string[] = [...BASIC_QUICK_CHAT];
+```
+
+```ts games/sample/shared/content/index.ts
+export const AGE: AgeRules = { limit: 14, ask: 'year', restrict: [] };
+```
+
+### 차단 (핵심)
+
+사람 카드(사람이나 대화 줄의 이름을 누른다)의 '차단'은 서버에 저장된다(SQLite 스키마 4의 `blocks`). 서버가 거르므로 다른 기기에서 들어와도, 상대가 이름을 바꿔도 이어진다. 상대에게는 알리지 않는다: 귓말은 '귓말을 받지 않는다', 친구 요청은 '보냈다', 초대는 '초대할 수 없는 상대'로 보인다. 풀기는 설정 창의 '차단한 사람'. 상한 200명(`BLOCK_MAX`). 예전 화면이 브라우저에 이름으로 적어 둔 목록(`blocked`)은 처음 접속 때 서버로 옮기고 지운다(그 이름의 저장된 캐릭터를 찾은 것만). 게임 규칙이 차단을 물을 때는 `g.blocks(받는 사람, 보낸 사람)`(서버 없이 도는 시험에서는 늘 false).
+
+### 대화 채널·귓말 (`chat` 모듈)
+
+대화창 위에 탭(전체·근처·파티·길드·귓말)이 생기고 탭이 곧 보내는 곳이다. 명령: `/w 이름 내용`(귓말: 지금 접속한 사람만. 없으면 '없는 이름', 접속하지 않았으면 '접속해 있지 않다'), `/r 내용`(마지막 귓말 상대에게), `/p`(파티: `party` 모듈), `/n`(근처: 같은 층 `CHAT_RULES.nearM`m 안), `/g`(길드: `guild` 모듈, 예전과 같다), `/a`(전체). 도배 막기는 모든 채널을 합쳐 사람마다(`CHAT_RULES.burst`줄, 그 뒤 초당 `perS`줄)와 같은 말 되풀이(`sameS`초)다. 예전의 사람마다 0.7초 간격, 주소마다·서버 전체의 통은 그대로 걸린다. 받기 끄기는 설정 창의 '귓말 받기'. 모듈이 없으면 채널을 붙인 말(귓말 따위)은 받지 않는다(몰래 하려던 말이 모두에게 가지 않게).
+
+### 정해진 문장 (`QUICK_CHAT`)
+
+i18n 문장 키의 목록이다. 서버는 키만 보내고 받는 화면이 자기 언어로 읽는다(한국어로 고른 사람과 영어로 고른 사람이 같은 문장을 각자의 말로 본다). 틀이 문장을 갖춘 여덟이 `BASIC_QUICK_CHAT`(`engine/shared/defaults.ts`: 내용 파일이 읽어도 되는 곳)이고, 게임은 자기 키를 더해 자기 언어 파일에 문장을 적는다. 대화창 옆 '문장' 단추로 지금 탭에 보낸다.
+
+### 연령과 제한 모드 (`AGE`)
+
+적으면 처음 들어온 저장 키에 태어난 해(`ask: 'year'`) 또는 나이 구간(`'band'`: '만 n세 미만'과 '만 n세 이상'을 같은 모양으로 나란히)을 묻는다. 미리 골라 둔 값이 없고(확인 단추는 고르기 전까지 잠김), 어느 답이 무엇을 여는지 보이지 않는다(중립 입력, 유도 금지). 한 번 답하면 바꿀 수 없고(뒤로 가서 다시 고르지 못하게), 관리자만 지운다(`age 이름 reset`). 태어난 해만 알면 생일이 아직이라고 보고 한 살 적게 센다. 답하기 전과 `limit` 미만은 **제한 모드**다(아동 채팅 기본 꺼짐): 자유 대화(모든 채널, 길드 대화 포함)가 막히고 정해진 문장만 된다, 귓말과 친구 요청을 받지 않는다, `restrict`에 적은 게임 명령(거래소 `'market'` 같은 것)을 쓸 수 없다. 게임 규칙에서 따로 막을 것이 있으면 이 칸에 명령 이름을 적는다. 보호자 동의·본인확인은 없다(결정이 필요하다: [genre-features.md](genre-features.md) 5.9).
+
+### 금칙어 (`engine/shared/textfilter.ts`)
+
+대화·귓말·이름(접속과 바꾸기)·길드 이름·길드 공지·캐릭터 정의의 이름과 소개가 모두 같은 고리를 지난다. 견주기 전에 펴는 것: 보이지 않는 글자, 전각·꾸밈 글자, 대소문자, 악센트, 키릴·그리스 닮은꼴, 한글 음절 → 자모(그래서 `ㅅㅣ발`, `ㅆ ㅣ ㅂ ㅏ ㄹ`도 걸린다), 겹모음·겹받침, 늘인 소리(`씨이발`), 되풀이한 글자·음절(`fuuuck`, `병신신`), 로마자 곁의 숫자·기호(`sh1t`, `a$$hole`: 글자로 읽은 것과 띄어쓰기로 읽은 것 둘 다), 한글을 영문 자판으로 친 것(`tlqkf`), 끼운 띄어쓰기·기호·숫자(`씨.발`, `씨1발`, `f u c k`). 잘못 막지 않게: 걸린 곳은 음절의 처음에서 시작해 끝에서 끝나야 하고(`조직`의 ㅈㅗㅈ은 아니다), 자모만으로 된 낱말(`ㅅㅂ`)은 따로 친 자모에만 걸리고(`깃발`·`밥상`은 아니다), 대화에서는 띄어쓰기를 건너 걸린 것이 덩어리의 처음에서 시작해 끝에서 끝나야 한다(`시 발표`, `다시 발사`, `this hit`은 아니다). 이름·길드 이름·캐릭터 이름은 경계를 보지 않는다(엄격). 금칙어를 품은 보통 낱말은 `addAllowedWords`(`시발점` 같은 것). 게임의 낱말은 서버 진입점에서 `addBannedWords`, 외부 검열은 `addTextFilter((글, 자리) => 걸리면 true)`(대화는 걸리면 말 전체를 가린다, 예외를 던지면 걸린 것으로 본다). 운영 중에는 관리자 `words`([infra.md](infra.md)).
+
+```ts
+import { addBannedWords, addTextFilter } from '@engine/server';
+addBannedWords(['우리세계의욕']);
+addTextFilter((text, where) => where === 'chat' && /https?:\/\//i.test(text)); // 대화의 주소 막기 (예)
+```
+
+### 친구 (`friends` 모듈)
+
+사람 카드의 '친구 요청', 또는 메뉴의 친구 탭에서 이름으로. 받은 사람은 알림과 탭의 점을 보고 수락·거절(·차단)한다. 서로 요청하면 곧바로 친구가 된다. 목록은 접속 중(채널, 던전 안)·마지막 접속(저장된 시각)을 보이고 귓말(`chat` 모듈)·파티 초대(`party` 모듈: 곁에 없어도 된다)·끊기가 있다. 상한은 `FRIENDS.max`(50), 받아 둔 요청 `pending`(20), 요청 간격 `askGapS`(5초). 받지 않는 사람(설정의 '친구 요청 받기' 끔, 제한 모드, 상한)에게는 '보낼 수 없다'. 저장은 캐릭터 둘의 한 줄(`friends`), 손님(저장 키 없음)은 친구를 맺지 못한다.
+
+### 신고의 문맥
+
+사람 카드의 '신고'는 예전처럼 그 사람의 최근 말 8줄을 적고, 서버가 기억한 대화 줄(30분, 400줄) 가운데 **신고한 사람이 본 줄만**으로 앞뒤를 붙인다: 대화 줄의 이름을 눌러 신고하면 그 줄의 앞 6줄·뒤 4줄(그 줄에 ▶), 사람을 눌러 신고하면 그 사람의 마지막 말의 앞뒤. 남의 귓말·다른 파티의 말은 들지 않는다. 신고 기록(`ReportSave`)에 `ctx`(시각·채널·이름·원문, 신고당한 사람의 말 표시)와 `ch`(채널)가 붙는다. 관리자는 `reports`(문맥 세 줄)와 `report 신고id`(전부)로 본다.
+
+### 메시지와 저장
+
+- 화면 → 서버: `chat`의 `ch`(n·p·w)·`to`·`q`, `report`의 `n`(줄 번호), `block`(add·del·list·import), `friend`(ask·accept·decline·cancel·del·invite·list), `talk`(state·age·prefs).
+- 서버 → 화면: `chat`의 `ch`·`n`(줄 번호)·`q`·`to`, `blocks`, `friends`, `talk`(제한 모드·물어야 하는가·받기 설정. 연령을 묻거나 `chat`·`friends`를 고른 게임만). 안내문 21가지(`blockedOn` …, `engine/shared/messages.ts`).
+- 저장: SQLite 스키마 4 (`blocks`, `friends`, `social_prefs`). 3인 DB를 열면 더한다. 내 데이터 내보내기에 `social`(차단한 사람, 친구, 설정)이 들고, 지우면 그 저장 키의 줄을 모두 지운다(차단한 것과 당한 것).
+- 설정 칸은 `addSetting`의 `group`(새 칸)으로 '대화' 머리 아래에 모인다. 게임의 칸도 `group`을 주면 그 머리로 간다.

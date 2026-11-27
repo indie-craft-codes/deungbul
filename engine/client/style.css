@@ -854,3 +854,42 @@ body:has(#menu:not([hidden]), #wmap:not([hidden]), #classPick:not([hidden]), #ke
 /* 터치에서 길게 눌러 보는 툴팁 (hud/tip.ts): 데스크톱은 브라우저의 title 툴팁 그대로 */
 #tipPop { position: fixed; z-index: 60; max-width: min(300px, calc(100vw - 8px)); padding: 6px 10px; background: var(--ink); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; font-size: 13px; line-height: 1.4; white-space: pre-line; pointer-events: none; box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
 #tipPop[hidden] { display: none; }
+
+/* ---------- 사회와 안전: 대화 채널 탭, 정해진 문장, 대화 끄기, 연령 창, 친구 탭 (hud/chat.ts, hud/social.ts) ---------- */
+#chatTabs { display: flex; flex-wrap: wrap; gap: 3px; }
+#chatTabs button { padding: 1px 7px; font-size: 11px; }
+#chatTabs button.on { border-color: var(--gold); color: var(--gold); }
+#chatTabs button.new::after { content: '•'; color: var(--gold); margin-left: 2px; }
+#chatForm.ext { display: flex; gap: 4px; }
+#chatForm.ext input { flex: 1 1 auto; min-width: 0; }
+#qcBtn { flex: none; padding: 2px 8px; font-size: 12px; }
+#qcList { position: absolute; left: 0; bottom: 100%; margin-bottom: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 150px; max-height: 50vh; overflow-y: auto; }
+#qcList[hidden] { display: none; }
+#qcList button { text-align: left; padding: 6px 10px; font-size: 13px; }
+#chatInput:disabled { opacity: .65; }
+#log .who.pick { cursor: pointer; }
+#log .who.pick:hover { text-decoration: underline; }
+#log .cn .who { color: #c9e6a0; }
+#log .cp .who, #log .cp { color: #a9cdfa; }
+#log .cw .who, #log .cw { color: #e3b5ff; }
+#log .qc { font-style: italic; }
+#chat.typing #log { pointer-events: auto; }
+body.chatOff #chat { display: none; }
+body.chatOff .tag .say { display: none !important; }
+#agePick { display: flex; gap: 8px; margin: 10px 0 4px; }
+#agePick button { flex: 1 1 0; padding: 9px 6px; }
+#agePick button.on { border-color: var(--gold); color: var(--gold); }
+#agePick select { font: inherit; color: var(--fg); background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; width: 100%; }
+.mrow.foff .iname { color: var(--dim); }
+.mrow.fon .iname::before { content: '● '; color: #7fd88a; font-size: 10px; }
+@media (pointer: coarse) {
+  #chatForm.ext { display: none; }
+  #chat.typing #chatForm.ext { display: flex; }
+  #agePick select { font-size: 16px; }
+  /* 터치: 대화창이 오른쪽 위에 있다. 탭은 한 줄로(넘치면 옆으로 민다), 정해진 문장 목록은 대화창 아래로 펼친다 */
+  #chatTabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  #chatTabs button { flex: none; padding: 0 6px; font-size: 11px; }
+  #qcList { top: 100%; bottom: auto; left: auto; right: 0; margin: 6px 0 0; z-index: 6; }
+}
+/* 사람 카드는 대화 줄에서도 열린다 (터치: 대화창이 오른쪽 위라 상점·퀘스트 창과 겹친다): 그 위에 */
+#pcard { z-index: 7; }

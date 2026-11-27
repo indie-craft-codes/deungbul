@@ -339,6 +339,11 @@ export class Game {
   readonly live: Live;
   /** [핵심] 기능 깃발: g.flags.on('market'). 깃발이 없으면 켜짐 (g.live의 것) */
   readonly flags: { on: (name: string) => boolean };
+  /**
+   * [핵심] to가 from을 차단했는가: 파티·길드 초대가 묻는다. 통신 계층의 사회와 안전(engine/server/net/social.ts)이 서버 저장 차단 목록으로 바꿔 건다.
+   * 서버 없이 도는 게임(시험, 황금 실행)은 아무도 차단하지 않는다
+   */
+  blocks: (to: Ent, from: Ent) => boolean = () => false;
 
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;

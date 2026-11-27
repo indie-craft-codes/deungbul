@@ -258,7 +258,7 @@ try {
     mid.close();
     const s2 = new SqliteStore(file2);
     s2.setConsent('k9', 'v', 1);
-    check(v2 === 2 && s2.schemaVersion() === 3 && SCHEMA.length === 3 && s2.liveRows().length === 1 && s2.consent('k9')?.v === 'v', `스키마 2(원격 설정)까지 올린 DB를 열면 3(웹)을 더하고 원격 설정은 그대로 (${v2} → ${s2.schemaVersion()})`);
+    check(v2 === 2 && s2.schemaVersion() === SCHEMA.length && SCHEMA.length >= 3 && s2.liveRows().length === 1 && s2.consent('k9')?.v === 'v', `스키마 2(원격 설정)까지 올린 DB를 열면 3(웹)부터 끝(${SCHEMA.length})까지 더하고 원격 설정은 그대로 (${v2} → ${s2.schemaVersion()})`);
     s2.close();
   } finally { removeTemp(dir); }
 }

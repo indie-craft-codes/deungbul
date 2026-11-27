@@ -23,6 +23,7 @@ import type { CharRules } from './defs/chardef';
 import type { MorphRules } from './defs/morph';
 import type { LiveKeys, ResetRules } from './defs/live';
 import type { LegalDef, PrivacyRules } from './defs/legal';
+import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
 import * as content from '@game/shared/content';
@@ -231,8 +232,20 @@ export interface WebContent {
   PRIVACY: PrivacyRules;
 }
 
+/** 사회와 안전: 대화 채널(chat 모듈), 친구(friends 모듈), 정해진 문장과 연령·제한 모드(핵심, 선택 칸) (engine/shared/defs/talk.ts). 적지 않으면 지금과 같다 */
+export interface SafetyContent {
+  /** 대화 채널의 규칙: 근처의 거리, 도배 막기 (chat 모듈을 고른 게임에만) */
+  CHAT_RULES: ChatRules;
+  /** 친구의 상한과 요청 간격 (friends 모듈) */
+  FRIENDS: FriendRules;
+  /** 정해진 문장의 키(i18n 문장 키). 빈 목록(기본)이면 정해진 문장이 없다. 제한 모드의 사람은 이것만 쓴다 */
+  QUICK_CHAT: readonly string[];
+  /** 연령 입력과 제한 모드. null(기본)이면 묻지 않는다 */
+  AGE: AgeRules | null;
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

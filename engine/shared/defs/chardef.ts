@@ -8,6 +8,7 @@
 import { CHAR_RULES, HERO_RARITIES, HERO_ROLES, HEROES, SKILL_DEFS } from '../content';
 import type { HeroDef } from './collect';
 import { checkLook, type Look, type LookIssue } from './look';
+import { isClean } from '../textfilter';
 
 /** 정의 형식의 버전 */
 export const CHAR_V = 1;
@@ -106,6 +107,8 @@ let budgetCache: readonly CharBudget[] | null = null;
 export const charBudgets = (): readonly CharBudget[] => CHAR_RULE_VIEW.budget ?? (budgetCache ??= budgetFromHeroes());
 
 // ---------- 금칙어 고리 ----------
+// 캐릭터 정의의 이름·소개는 세 가지를 다 지나야 한다: CHAR_RULES.banned(아래 banKey로, 글자 사이의 모든 것을 무시하고), addCharFilter의 거르개,
+// 그리고 대화·이름과 같은 공통 고리(engine/shared/textfilter.ts의 isClean: 틀의 목록, addBannedWords의 낱말, addTextFilter의 거르개). 게임은 공통 고리에 꽂으면 한 번으로 모두에 걸린다.
 /** 금칙어 견주기의 바탕: 호환 문자를 펴고(NFKC) 소문자로, 글자와 숫자만 남긴다 (띄어쓰기·문장 부호로 피하지 못하게) */
 export const banKey = (s: string): string => s.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 /** 게임이 꽂는 거르개: 걸리면 true (이름과 소개 모두에 불린다) */
@@ -130,7 +133,9 @@ function checkText(raw: unknown, field: 'name' | 'bio', min: number, max: number
   if (s !== s.trim() || /\s{2,}/.test(s)) { out.push({ code: 'space', path: field }); return ''; }
   const key = banKey(s);
   const hit = (CHAR_RULE_VIEW.banned ?? []).some((w) => { const k = banKey(w); return !!k && key.includes(k); })
-    || filters.some((f) => { try { return f(s, field); } catch { return true; } });
+    || filters.some((f) => { try { return f(s, field); } catch { return true; } })
+    // 대화·이름과 같은 금칙어 고리 (engine/shared/textfilter.ts: 틀의 목록, 게임이 addBannedWords로 더한 낱말, addTextFilter의 거르개). 우회 표기를 펴서 견준다
+    || !isClean(s, field === 'name' ? 'charName' : 'charBio');
   if (hit) { out.push({ code: 'banned', path: field }); return ''; }
   return s;
 }

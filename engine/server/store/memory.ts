@@ -1,8 +1,8 @@
 import { anonymize } from './sqlite';
-import type { ClientErrorRow, EconRow, EconStore, EraseRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, Store, WebStore, WorldSave } from './types';
+import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, SocialStore, Store, WebStore, WorldSave } from './types';
 
 /** 시험용 저장소: 프로세스가 끝나면 사라진다. */
-export class MemoryStore implements Store, EconStore, LiveStore, WebStore {
+export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore {
   private world: WorldSave | null = null;
   private players = new Map<string, PlayerSave>();
   loadWorld(): WorldSave | null { return this.world && structuredClone(this.world); }
@@ -46,7 +46,7 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore {
   setLiveMeta(key: string, value: unknown): void { this.meta.set(key, structuredClone(value)); }
   transaction<T>(fn: () => T): T {
     // 들어갈 때의 모든 것을 떠 두고, 예외가 나면 그것으로 되돌린다 (시험용이라 통째로 떠도 된다). 안에서 다시 불러도 같다
-    const before = { world: this.world, players: new Map(this.players), reportList: [...this.reportList], econRows: new Map([...this.econRows].map(([k, r]) => [k, { ...r }])), snapshots: new Map(this.snapshots), live: new Map(this.live), liveLogRows: [...this.liveLogRows], meta: new Map(this.meta), consents: new Map(this.consents), erasures: new Map(this.erasures), errors: new Map(this.errors) };
+    const before = { world: this.world, players: new Map(this.players), reportList: [...this.reportList], econRows: new Map([...this.econRows].map(([k, r]) => [k, { ...r }])), snapshots: new Map(this.snapshots), live: new Map(this.live), liveLogRows: [...this.liveLogRows], meta: new Map(this.meta), consents: new Map(this.consents), erasures: new Map(this.erasures), errors: new Map(this.errors), blocks: [...this.blocks], friends: [...this.friends], prefs: new Map(this.prefs) };
     try { return fn(); } catch (err) { Object.assign(this, before); throw err; }
   }
   // ---- 웹 출시의 바탕 ----
@@ -55,7 +55,12 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore {
   private errors = new Map<string, ClientErrorRow>();
   consent(key: string): { v: string; at: number } | null { const c = this.consents.get(key); return c ? { ...c } : null; }
   setConsent(key: string, v: string, at: number): void { this.consents.set(key, { v, at }); }
-  deletePlayer(key: string): void { this.players.delete(key); this.consents.delete(key); }
+  deletePlayer(key: string): void {
+    this.players.delete(key); this.consents.delete(key);
+    this.blocks = this.blocks.filter((r) => r.owner !== key && r.char !== key);
+    this.friends = this.friends.filter((r) => r.a !== key && r.b !== key);
+    this.prefs.delete(key);
+  }
   anonymizeReports(key: string): number {
     let n = 0;
     this.reportList = this.reportList.map((r) => { if (r.byKey !== key && r.targetKey !== key) return r; n++; return anonymize(r, key); });
@@ -79,5 +84,17 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore {
     for (const k of [...this.errors.keys()]) if (k.startsWith(sig)) { this.errors.delete(k); n++; }
     return n;
   }
+  // ---- 사회와 안전 ----
+  private blocks: BlockRow[] = [];
+  private friends: FriendRow[] = [];
+  private prefs = new Map<string, Record<string, unknown>>();
+  blocksOf(owner: string): BlockRow[] { return this.blocks.filter((r) => r.owner === owner).map((r) => ({ ...r })); }
+  putBlock(r: BlockRow): void { this.blocks = this.blocks.filter((x) => !(x.owner === r.owner && x.char === r.char)); this.blocks.push({ ...r }); }
+  delBlock(owner: string, char: string): void { this.blocks = this.blocks.filter((x) => !(x.owner === owner && x.char === char)); }
+  friendsOf(key: string): FriendRow[] { return this.friends.filter((r) => r.a === key || r.b === key).map((r) => ({ ...r })); }
+  putFriend(r: FriendRow): void { this.delFriend(r.a, r.b); this.friends.push({ ...r }); }
+  delFriend(a: string, b: string): void { this.friends = this.friends.filter((x) => !((x.a === a && x.b === b) || (x.a === b && x.b === a))); }
+  socialPrefs(key: string): Record<string, unknown> | null { const v = this.prefs.get(key); return v ? structuredClone(v) : null; }
+  setSocialPrefs(key: string, data: Record<string, unknown>): void { this.prefs.set(key, structuredClone(data)); }
   close(): void { /* 할 일 없음 */ }
 }

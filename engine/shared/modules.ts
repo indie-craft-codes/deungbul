@@ -58,6 +58,10 @@ export const MODULE_TABLE = {
   chars: { needs: [] },
   /** 변신: 가진 캐릭터 정의의 겉모습(남에게도 보인다)과 게임이 정한 보정으로 바뀐다. 지속 시간·재사용 대기·전투 중 금지 (MORPH_RULES) */
   morph: { needs: ['chars'] },
+  /** 대화 채널: 귓말(이름으로), 파티(party를 고른 게임)·근처 채널, 화면의 채널 탭·거르기, 모든 채널을 합친 도배 막기 (규칙은 CHAT_RULES). 고르지 않으면 대화는 전체와 길드뿐(예전과 같다) */
+  chat: { needs: [] },
+  /** 친구: 요청·수락·거절·삭제, 목록(접속 여부·마지막 접속·있는 곳), 상한(FRIENDS). 저장 키 단위로 저장한다 (DB의 friends 표) */
+  friends: { needs: [] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
@@ -82,9 +86,10 @@ export const COLLECT_MODULES: readonly ModuleId[] = ['roster', 'gacha', 'squad',
  * 수집형의 넷(COLLECT_MODULES)과 영웅 장비(herogear)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 뽑기와 단계를 갖지 않게 한다.
  * herogear는 COLLECT_MODULES에도 들지 않는다: 그 목록을 쓰는 게임이 저절로 영웅 장비(아이템 모듈에 기댄다)를 갖지 않게, 고르는 게임이 따로 적는다.
  * 판(rooms)도 들지 않는다: 턴제·보드 게임의 모듈이고, 이 목록을 쓰는 게임이 저절로 대기실을 갖지 않게 한다.
- * 캐릭터 정의(chars)와 변신(morph)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 변신을 갖지 않게, 고르는 게임이 따로 적는다
+ * 캐릭터 정의(chars)와 변신(morph)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 변신을 갖지 않게, 고르는 게임이 따로 적는다.
+ * 대화 채널(chat)과 친구(friends)도 들지 않는다: 귓말·친구를 켤지는 게임이 정한다 (등불지기는 아직 켜지 않았다)
  */
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph');
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends');
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).
