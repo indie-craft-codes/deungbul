@@ -1330,6 +1330,13 @@
   "장비 가루를 더 들 수 없습니다 (남은 자리 1). 수를 줄여 분해하세요.",
   "장비 가루를 더 들 수 없습니다 (남은 자리 2). 수를 줄여 분해하세요."
  ],
+ "fmt.sanctionUntil": [
+  "f15a21f66a935c38",
+  "Invalid Date까지",
+  "영구",
+  "1. 1. 오전 12:00까지",
+  "1. 1. 오전 12:20까지"
+ ],
  "fmt.sellConfirm": [
   "4d5ecbc6a231a30e",
   "확인 · NaN골드",
@@ -1490,6 +1497,20 @@
   "출석 0일째",
   "출석 1일째",
   "출석 2일째"
+ ],
+ "fmt.supportCount": [
+  "4999ce3b9275687a",
+  "undefined / undefined자",
+  "0 / undefined자",
+  "1 / undefined자",
+  "2 / undefined자"
+ ],
+ "fmt.supportTicket": [
+  "0aed57d15e6a5048",
+  "#undefined · undefined · Invalid Date",
+  "#0 · undefined · Invalid Date",
+  "#1 · undefined · Invalid Date",
+  "#2 · undefined · Invalid Date"
  ],
  "fmt.swarmFoe": [
   "93c2c822c7413ad8",
@@ -2586,6 +2607,7 @@
   "등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 1 (처치 경험치 2배)",
   "등탑에 맡겨 둔 등불이 쉬는 동안 빛을 모았습니다. 휴식 보너스 2 (처치 경험치 2배)"
  ],
+ "msg.rolledBack": "운영자가 이 캐릭터를 앞의 시점으로 되돌렸습니다. 다시 접속해 주세요.",
  "msg.roomAgainWait": "다른 사람이 다시 하기를 누르기를 기다립니다.",
  "msg.roomBack": "두던 판으로 돌아왔습니다.",
  "msg.roomBusy": "이미 판에 앉아 있습니다.",
@@ -2711,6 +2733,45 @@
  ],
  "msg.statNone": "찍을 능력치 점수가 없습니다. 레벨이 오르면 3점씩 받습니다.",
  "msg.statReset": "능력치를 모두 돌려받았습니다. 다시 찍을 수 있습니다.",
+ "msg.supportAnswered": [
+  "7e11281516752170",
+  "문의 #undefined에 답이 왔습니다. 설정의 '문의' 칸에서 볼 수 있습니다.",
+  "문의 #0에 답이 왔습니다. 설정의 '문의' 칸에서 볼 수 있습니다.",
+  "문의 #1에 답이 왔습니다. 설정의 '문의' 칸에서 볼 수 있습니다.",
+  "문의 #2에 답이 왔습니다. 설정의 '문의' 칸에서 볼 수 있습니다."
+ ],
+ "msg.supportAppealed": "이 제재에는 이미 이의를 냈습니다. 답을 기다려 주세요.",
+ "msg.supportFull": [
+  "886217a5680a4e07",
+  "답을 기다리는 문의가 많습니다 (최대 undefined건). 답이 온 뒤에 보내 주세요.",
+  "답을 기다리는 문의가 많습니다 (최대 0건). 답이 온 뒤에 보내 주세요.",
+  "답을 기다리는 문의가 많습니다 (최대 1건). 답이 온 뒤에 보내 주세요.",
+  "답을 기다리는 문의가 많습니다 (최대 2건). 답이 온 뒤에 보내 주세요."
+ ],
+ "msg.supportGuest": "저장되지 않는 손님은 문의할 수 없습니다.",
+ "msg.supportNoSanction": "이의를 낼 제재가 없습니다.",
+ "msg.supportOff": "지금은 문의를 받지 않습니다.",
+ "msg.supportSent": [
+  "77f4d577d132ec6e",
+  "문의 #undefined을(를) 받았습니다. 답이 오면 알려 드립니다.",
+  "문의 #0을(를) 받았습니다. 답이 오면 알려 드립니다.",
+  "문의 #1을(를) 받았습니다. 답이 오면 알려 드립니다.",
+  "문의 #2을(를) 받았습니다. 답이 오면 알려 드립니다."
+ ],
+ "msg.supportShort": [
+  "f4fa20cbc91620df",
+  "조금 더 자세히 적어 주세요 (undefined자 이상).",
+  "조금 더 자세히 적어 주세요 (0자 이상).",
+  "조금 더 자세히 적어 주세요 (1자 이상).",
+  "조금 더 자세히 적어 주세요 (2자 이상)."
+ ],
+ "msg.supportWait": [
+  "7b34773910d25bd0",
+  "문의는 undefined초 뒤에 다시 보낼 수 있습니다.",
+  "문의는 0초 뒤에 다시 보낼 수 있습니다.",
+  "문의는 1초 뒤에 다시 보낼 수 있습니다.",
+  "문의는 2초 뒤에 다시 보낼 수 있습니다."
+ ],
  "msg.sweepLocked": [
   "e791115a4bee32de",
   "undefined은(는) 아직 소탕할 수 없습니다. 먼저 깨세요.",
@@ -2919,6 +2980,10 @@
  "ui.agePick": "고르기",
  "ui.ageYear": "태어난 해",
  "ui.allReturned": "모두 돌아왔습니다",
+ "ui.appealBtn": "이의 신청",
+ "ui.appealDone": "이의를 냈습니다. 운영자가 살펴보고 답합니다.",
+ "ui.appealHint": "이 제재가 왜 잘못되었다고 생각하는지 적어 주세요.",
+ "ui.appealWait": "이의를 보내는 중…",
  "ui.attackNearest": "가까운 대상 공격",
  "ui.auto": "자동 사냥",
  "ui.autoOff": "자동 사냥을 껐습니다.",
@@ -3286,6 +3351,13 @@
  "ui.salvageAll": "일괄 분해…",
  "ui.salvageCancel": "취소",
  "ui.salvageSource": "장비를 분해하면 나옵니다",
+ "ui.sanctionBan": "접속 차단",
+ "ui.sanctionHead": "걸린 제재",
+ "ui.sanctionMute": "말 막기",
+ "ui.sanctionNoWhy": "운영자가 사유를 적지 않았습니다.",
+ "ui.sanctionPerm": "영구",
+ "ui.sanctionSpan": "기간",
+ "ui.sanctionWhy": "사유",
  "ui.setCalm": "화면 흔들림 끄기",
  "ui.setChatShow": "대화 보이기",
  "ui.setChatShowNote": "끄면 대화창과 말풍선이 보이지 않습니다.",
@@ -3332,6 +3404,23 @@
  "ui.staleApp": "새 버전이 필요합니다. 게임을 업데이트해 주세요.",
  "ui.stickLabel": "이동 조이스틱",
  "ui.stunned": "기절",
+ "ui.supportAnswer": "운영자의 답",
+ "ui.supportAppeal": "제재 이의",
+ "ui.supportAsk": "질문",
+ "ui.supportBug": "오류 신고",
+ "ui.supportGuestNote": "손님(저장되지 않는 캐릭터)은 답을 받을 곳이 없어 문의할 수 없습니다.",
+ "ui.supportHead": "문의",
+ "ui.supportHint": "무엇이 궁금한지, 어떤 일이 있었는지 적어 주세요.",
+ "ui.supportKind": "종류",
+ "ui.supportMine": "내 문의",
+ "ui.supportNew": "문의하기",
+ "ui.supportNone": "보낸 문의가 없습니다.",
+ "ui.supportNote": "궁금한 것이나 겪은 오류를 보내면 운영자가 답합니다. 답은 여기와 우편으로 옵니다. 이름·연락처 같은 개인정보는 적지 마세요.",
+ "ui.supportSend": "보내기",
+ "ui.supportStAnswered": "답변",
+ "ui.supportStClosed": "닫힘",
+ "ui.supportStOpen": "답을 기다림",
+ "ui.supportText": "내용",
  "ui.sweepDungeons": "던전 소탕",
  "ui.sweepHead": "소탕",
  "ui.sweepInfo": "이미 깬 곳을 싸우지 않고 바로 끝내 보통 보상을 받습니다 (처음 깬 보상은 없습니다).",

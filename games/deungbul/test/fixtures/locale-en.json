@@ -1330,6 +1330,13 @@
   "You cannot hold that much Gear Dust (room for 1). Salvage fewer pieces.",
   "You cannot hold that much Gear Dust (room for 2). Salvage fewer pieces."
  ],
+ "fmt.sanctionUntil": [
+  "f290c5254265c48d",
+  "Until Invalid Date",
+  "Permanent",
+  "Until 1/1, 12:00 AM",
+  "Until 1/1, 12:20 AM"
+ ],
  "fmt.sellConfirm": [
   "8643198b4dde2768",
   "Confirm · NaN gold",
@@ -1490,6 +1497,20 @@
   "Day 0 streak",
   "Day 1 streak",
   "Day 2 streak"
+ ],
+ "fmt.supportCount": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.supportTicket": [
+  "b455c4384fc8d234",
+  "#undefined · undefined · Invalid Date",
+  "#0 · undefined · Invalid Date",
+  "#1 · undefined · Invalid Date",
+  "#2 · undefined · Invalid Date"
  ],
  "fmt.swarmFoe": [
   "90dfb7fa104d73d2",
@@ -2586,6 +2607,7 @@
   "Your lamp gathered light at the tower while you were away. Rested bonus 1 (double exp from kills)",
   "Your lamp gathered light at the tower while you were away. Rested bonus 2 (double exp from kills)"
  ],
+ "msg.rolledBack": "An operator restored this character to an earlier point. Please reconnect.",
  "msg.roomAgainWait": "Waiting for the other player to press Play again.",
  "msg.roomBack": "You are back at your table.",
  "msg.roomBusy": "You are already at a table.",
@@ -2711,6 +2733,45 @@
  ],
  "msg.statNone": "No attribute points to spend. You get 3 each level.",
  "msg.statReset": "All attribute points refunded. You can spend them again.",
+ "msg.supportAnswered": [
+  "1286f012fbd0a156",
+  "Your request #undefined has a reply. See Settings → Support.",
+  "Your request #0 has a reply. See Settings → Support.",
+  "Your request #1 has a reply. See Settings → Support.",
+  "Your request #2 has a reply. See Settings → Support."
+ ],
+ "msg.supportAppealed": "You already appealed this sanction. Please wait for a reply.",
+ "msg.supportFull": [
+  "57e6212d7858a37b",
+  "You have many requests waiting (up to undefined). Please wait for a reply first.",
+  "You have many requests waiting (up to 0). Please wait for a reply first.",
+  "You have many requests waiting (up to 1). Please wait for a reply first.",
+  "You have many requests waiting (up to 2). Please wait for a reply first."
+ ],
+ "msg.supportGuest": "Guests (unsaved characters) cannot contact support.",
+ "msg.supportNoSanction": "There is no sanction to appeal.",
+ "msg.supportOff": "Support requests are closed right now.",
+ "msg.supportSent": [
+  "ce20d9218aa73be3",
+  "We received your request #undefined. We will let you know when we reply.",
+  "We received your request #0. We will let you know when we reply.",
+  "We received your request #1. We will let you know when we reply.",
+  "We received your request #2. We will let you know when we reply."
+ ],
+ "msg.supportShort": [
+  "28751f03ec264b1f",
+  "Please write a little more (at least undefined characters).",
+  "Please write a little more (at least 0 characters).",
+  "Please write a little more (at least 1 characters).",
+  "Please write a little more (at least 2 characters)."
+ ],
+ "msg.supportWait": [
+  "e61e6b2b3522070b",
+  "You can send another request in undefined s.",
+  "You can send another request in 0 s.",
+  "You can send another request in 1 s.",
+  "You can send another request in 2 s."
+ ],
  "msg.sweepLocked": [
   "6af8fc6ec523db12",
   "undefined can't be swept yet. Clear it first.",
@@ -2919,6 +2980,10 @@
  "ui.agePick": "Choose",
  "ui.ageYear": "Year of birth",
  "ui.allReturned": "Everyone has returned",
+ "ui.appealBtn": "Appeal",
+ "ui.appealDone": "Your appeal was sent. An operator will review it and reply.",
+ "ui.appealHint": "Tell us why you think this sanction is wrong.",
+ "ui.appealWait": "Sending your appeal…",
  "ui.attackNearest": "Attack nearest",
  "ui.auto": "Auto-hunt",
  "ui.autoOff": "Auto-hunt off.",
@@ -3286,6 +3351,13 @@
  "ui.salvageAll": "Salvage many…",
  "ui.salvageCancel": "Cancel",
  "ui.salvageSource": "From salvaging gear",
+ "ui.sanctionBan": "Connection block",
+ "ui.sanctionHead": "Active sanction",
+ "ui.sanctionMute": "Chat mute",
+ "ui.sanctionNoWhy": "The operator did not give a reason.",
+ "ui.sanctionPerm": "Permanent",
+ "ui.sanctionSpan": "Duration",
+ "ui.sanctionWhy": "Reason",
  "ui.setCalm": "Turn off screen shake",
  "ui.setChatShow": "Show chat",
  "ui.setChatShowNote": "Turn off to hide the chat box and speech bubbles.",
@@ -3332,6 +3404,23 @@
  "ui.staleApp": "A new version is required. Please update the game.",
  "ui.stickLabel": "Movement joystick",
  "ui.stunned": "Stunned",
+ "ui.supportAnswer": "Reply from the team",
+ "ui.supportAppeal": "Appeal a sanction",
+ "ui.supportAsk": "Inquiry",
+ "ui.supportBug": "Bug report",
+ "ui.supportGuestNote": "Guests (unsaved characters) cannot contact support because there is nowhere to send the reply.",
+ "ui.supportHead": "Support",
+ "ui.supportHint": "Tell us what you want to know or what happened.",
+ "ui.supportKind": "Type",
+ "ui.supportMine": "My requests",
+ "ui.supportNew": "Contact us",
+ "ui.supportNone": "You have not sent any requests.",
+ "ui.supportNote": "Send us what you want to know or a problem you ran into and an operator will reply. Replies appear here and in your mail. Do not include personal details such as your real name or contacts.",
+ "ui.supportSend": "Send",
+ "ui.supportStAnswered": "Answered",
+ "ui.supportStClosed": "Closed",
+ "ui.supportStOpen": "Waiting for reply",
+ "ui.supportText": "Message",
  "ui.sweepDungeons": "Dungeon sweep",
  "ui.sweepHead": "Sweep",
  "ui.sweepInfo": "Finish a place you already cleared instantly, without fighting, for its normal reward (not the first-clear reward).",

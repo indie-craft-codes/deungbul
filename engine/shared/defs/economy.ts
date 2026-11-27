@@ -15,7 +15,7 @@ export interface CurrencyDef {
   /** 가질 수 있는 상한. 없으면 한도가 없다 */
   max?: number;
   /**
-   * 재화의 종류 (선택, 묶음 4: docs/making-a-game.md 19절). 적으면 이 재화를 종류(유상·무상·이벤트·귀속)마다 따로 세고, 쓸 때는 spend의 차례로 꺼낸다.
+   * 재화의 종류 (선택, 묶음 4: docs/making-a-game.md 20절). 적으면 이 재화를 종류(유상·무상·이벤트·귀속)마다 따로 세고, 쓸 때는 spend의 차례로 꺼낸다.
    * 엔티티의 칸(p.gold, p.sparks)은 그대로 합이다. 장부의 원인에 종류가 붙는다('cmd:gacha:free'). 적지 않으면 지금과 같다 (지갑이 종류를 세지 않는다)
    */
   kinds?: CurrencyKinds;

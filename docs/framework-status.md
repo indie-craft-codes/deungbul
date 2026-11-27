@@ -12,7 +12,7 @@
 
 ## 요약
 
-**틀**(`engine/`)은 장르와 무관한 **핵심**과 **선택 모듈 28개**다. 게임은 내용의 `MODULES` 한 곳에서 고르고(`engine/shared/modules.ts`의 `MODULE_TABLE`이 목록과 의존, 시작할 때 `checkModules`가 빠진 의존을 오류로), 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다. 끈 모듈의 저장 칸은 읽은 그대로 두었다가 다시 적는다(`MODULE_SAVES`). 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 `MAP`·`MODULES`와 모듈마다의 선택 계약, 이름 89개)뿐이고 `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/client/platform`, `@engine/testing`)로만 읽는다.
+**틀**(`engine/`)은 장르와 무관한 **핵심**과 **선택 모듈 29개**다. 게임은 내용의 `MODULES` 한 곳에서 고르고(`engine/shared/modules.ts`의 `MODULE_TABLE`이 목록과 의존, 시작할 때 `checkModules`가 빠진 의존을 오류로), 고르지 않은 모듈은 서버의 시스템·명령·틱·저장 칸·전송도, 화면의 창·탭·키도 없다. 끈 모듈의 저장 칸은 읽은 그대로 두었다가 다시 적는다(`MODULE_SAVES`). 틀이 게임에서 읽는 것은 내용 계약(`engine/shared/contract.ts`: 핵심 `MAP`·`MODULES`와 모듈마다의 선택 계약, 이름 89개)뿐이고 `engine/shared/content.ts` 한 곳에서 별칭 `@game/shared/content`로 읽는다(적지 않은 이름은 `defaults.ts`). 게임은 틀을 입구(`@engine/shared`, `@engine/server`, `@engine/client`, `@engine/client/i18n`, `@engine/client/platform`, `@engine/testing`)로만 읽는다.
 
 | 모듈 | 한 줄 | 의존 | 묶음 | 등불지기 | 예제 | 메아리 | 들어온 절 |
 |---|---|---|---|---|---|---|---|
@@ -44,13 +44,14 @@
 | `morph` | 변신: 가진 정의의 겉모습(남에게도)과 보정 | chars | 그 밖 | | ○ | ○ | 〃 |
 | `chat` | 대화 채널: 귓말·근처·파티, 채널 탭과 거르기, 도배 막기(`CHAT_RULES`). 고르지 않으면 전체와 길드뿐 | — | 그 밖 | | ○ | ○ | 사회와 안전 |
 | `friends` | 친구: 요청·수락·삭제, 목록(접속·있는 곳), 상한(`FRIENDS`) | — | 그 밖 | | ○ | ○ | 〃 |
+| `support` | 문의·제재 이의: 티켓(열림·답변·닫힘), 관리자의 답(알림·우편), 말 막기·차단의 사유·기간·이의 | — | 그 밖 | ○ | ○ | | 운영 도구와 고객지원 |
 | `odds` | 확률 공개: 확률표의 버전·이력·사전 공지, 공개 페이지(`odds.json`·`odds.html`), 추첨 기록과 내 기록 창, 관리자 `odds`·`draws`. 굴림은 모듈과 상관없이 표에서(`engine/shared/defs/odds.ts`) | — | 그 밖 | | | ○ | 확률과 재화의 투명성 |
 
 'RPG' 열여섯이 `RPG_MODULES`(등불지기는 `MODULES = RPG_MODULES`), '수집형'의 앞 넷이 `COLLECT_MODULES`다. 수집형·`teams`·`rooms`·`chars`·`morph`·`chat`·`friends`·`odds`는 `RPG_MODULES`에 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
 - **게임**: 셋. 등불지기(`games/deungbul/`, 운영, 포트 3001), 예제(`games/sample/` "모닥불 사냥터", 3002), 두 장르를 합친 예제(`games/echopact/` "메아리 계약", 3003: 들판의 MMORPG + 뽑기·편성·단계의 수집형, 같은 캐릭터 정의가 동료와 변신으로. [proof-echopact.md](proof-echopact.md)). 방향은 게임 → 틀 하나다. **2026-11-27에 시제품·증명 게임 일곱(`cave`·`starmine`·`bastion`·`rollball`·`dalmuri`·`stepstone`·`pond`)을 지웠다**: 코드는 커밋 `7e347c9`에 남아 있고(`git checkout 7e347c9 -- games/<이름>`), 운영 데이터는 `data/backup/retired-<시각>/`로 옮겼다. 증명 기록([proof-rollball.md](proof-rollball.md), [proof-dalmuri.md](proof-dalmuri.md), [proof-stepstone.md](proof-stepstone.md), [proof-pond.md](proof-pond.md))은 틀을 검증한 기록으로 남긴다. 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험(`engine/test/core`의 공 마당·별 줍기, `engine/test/collect`의 영웅 들판)이 지킨다.
-- **확인**(2026-11-27, 확률과 재화의 투명성 `feat/odds4`, 바탕 `d5884f0`): `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정 둘씩, 모두 10개) 오류 0, `npm test`(틀의 경계 검사 `boundary`, 틀의 시험 `fx`, 핵심만 `core`, 수집형 `collect`, 게임 셋) **검사 2488개**(바탕 2435 + 확률 공개 53) 모두 통과(`TZ=UTC`도), `npm run build:all` 통과. 틀의 시험은 게임 없이 돈다(시험용 내용 위에서. `games/`를 지운 복사본에서도 통과: 2026-11-25에 확인).
-- **등불지기**: 플레이와 저장 형식은 틀을 가르고 다시 짜는 동안 바뀌지 않았다(묶음마다 '황금 실행': 정해진 시뮬레이션의 줄 위 바이트 7,489,205바이트가 같다). 프로토콜은 3, SQLite 스키마는 5(1 처음의 표 → 2 원격 설정 → 3 웹: 동의·삭제 요청·화면 오류 → 4 사회: 차단·친구·사회 설정 → 5 확률 공개: 표의 버전·이력·사전 공지·추첨 기록. 5는 다른 가지와 합칠 때 번호가 바뀔 수 있다). 등불지기의 강화 확률은 확률표(`engine/shared/defs/odds.ts`)에서 읽는다(값 그대로).
+- **확인**(2026-11-27, 묶음 5(`feat/ops5`)와 묶음 4(`feat/odds4`)를 합친 뒤, 바탕 `f2f0b5f`): `npm run typecheck`(`scripts/typecheck.mjs`: 틀의 설정 다섯과 게임마다의 설정 둘씩, 모두 10개) 오류 0, `npm test`(틀의 경계 검사 `boundary`, 틀의 시험 `fx`, 핵심만 `core`, 수집형 `collect`, 게임 셋) **검사 2567개**(묶음 5까지 2513 + 확률 공개 54) 모두 통과(`TZ=UTC`도), `npm run build:all` 통과. 틀의 시험은 게임 없이 돈다(시험용 내용 위에서. `games/`를 지운 복사본에서도 통과: 2026-11-25에 확인).
+- **등불지기**: 플레이와 저장 형식은 틀을 가르고 다시 짜는 동안 바뀌지 않았다(묶음마다 '황금 실행': 정해진 시뮬레이션의 줄 위 바이트 7,489,205바이트가 같다). 프로토콜은 3, SQLite 스키마는 5(1 처음의 표 → 2 원격 설정 → 3 웹: 동의·삭제 요청·화면 오류 → 4 사회: 차단·친구·사회 설정 → 5 운영 도구: 분석 사건·문의·롤백 보관 → 6 확률 공개: 표의 버전·이력·사전 공지·추첨 기록). 등불지기의 강화 확률은 확률표(`engine/shared/defs/odds.ts`)에서 읽는다(값 그대로).
 
 **최근 묶음** (2026-11-27, 아래 날짜가 붙은 절에 자세히):
 
@@ -67,7 +68,8 @@
 | 플랫폼 분리 1단계 | `feat/plat1` | 브라우저 직접 호출을 `engine/client/platform/` 뒤로, 버전 범위, 서버의 정적 파일 끄기·Origin, 길게 누르기 툴팁, 경계 시험 | → 2339 |
 | 문서 현행화 | `feat/docs5` | 뿌리 README를 틀 + 게임의 안내로, 등불지기 설명을 [../games/deungbul/README.md](../games/deungbul/README.md)로, 문서 지도 [README.md](README.md), 이 요약 | 2393 (묶음 3과 합친 뒤) |
 | 두 장르를 합친 예제 | `feat/hybrid` | 새 예제 `games/echopact` "메아리 계약"(3003): 들판의 MMORPG + 뽑기·편성·단계, 캐릭터 정의 하나가 단계의 동료이자 들판의 변신. 틀은 고치지 않았다. 틀의 빈 곳 열은 [proof-echopact.md](proof-echopact.md) | 2393 → 2435 |
-| 확률과 재화의 투명성 (묶음 4) | `feat/odds4` | 확률표 단일 원본(뽑기·강화가 표에서만 굴림), 모듈 `odds`(스물여덟째: 버전·이력·사전 공지, 공개 페이지, 추첨 기록, 확률 탭), 재화의 종류(`CURRENCIES.kinds`), 확인 단계(`CURRENCIES.confirm`). 예제는 메아리 계약 | 2435 → 2488 |
+| 운영 도구와 고객지원 (묶음 5) | `feat/ops5` | 분석 사건 `g.track`·집계(D1/D7/D30·일별 활성·퍼널), 웹 관리 화면과 역할 셋, 모듈 `support`(스물여덟째: 문의·제재 이의), 계정 단위 롤백, 봇 의심 점수, 경보(웹훅), 운영 보상 우편. 사고 리허설 시험 | 2435 → 2513 |
+| 확률과 재화의 투명성 (묶음 4) | `feat/odds4` | 확률표 단일 원본(뽑기·강화가 표에서만 굴림), 모듈 `odds`(스물아홉째: 버전·이력·사전 공지, 공개 페이지, 추첨 기록, 확률 탭), 재화의 종류(`CURRENCIES.kinds`), 확인 단계(`CURRENCIES.confirm`). 예제는 메아리 계약 | 합쳐 2513 → 2567 |
 
 그 전(2026-11-24~26)의 묶음은 아래 '0. 이어 갈 것' 끝의 '요약에서 내린 줄'에 한 줄씩 있다. 다음 후보와 사용자가 정할 것도 '0. 이어 갈 것'에 모았다.
 ## 두 장르를 합친 예제 (2026-11-27, 가지 `feat/hybrid`)
@@ -359,8 +361,8 @@
 2. **플랫폼 분리 2단계: 데스크톱 시제품** ([platforms.md](platforms.md) 4절): `apps/desktop/`(Electron main·preload, 사용자 정의 프로토콜 `app://`로 dist-sample, `autoplayPolicy`, F11 전체 화면, 바깥 링크는 `shell.openExternal`), `platform/desktop.ts`(preload의 storage·openUrl·copy·saveFile·version), 게임패드 이동·기술, 단축키를 `input.keyName`(ev.code)으로, 실제 Origin 머리말 기록. 비용 0(서명·Steam 없이). 그 뒤 3단계 모바일 시제품(Capacitor, Android 먼저).
 3. **웹 출시의 바탕(묶음 2)의 남은 것**: ② 정적 서버의 캐시 머리말(이름에 해시가 든 빌드 파일은 오래 캐시: 지금은 매번 다시 받는다) ③ 판 모듈이 `Platform.invite`를 부르기(묶음 7과 함께) ④ 캐주얼·.io 증명 게임으로 포털 요건을 다시 확인 ⑤ 실제 크롬의 숨김 탭(헤드리스가 아닌 창)에서 5분 ⑥ 약한 기기에서 품질 단계의 값 ⑦ 내보내기에 게임의 개인 데이터 칸(등불지기의 월드에 둔 몫이 있으면 `personalData`에) ⑧ 새 외부 요청이 생기지 않는지 보는 빌드 검사. (① 옛 브라우저 직접 호출을 접점으로 옮기기는 플랫폼 분리 1단계에서 끝났다.)
 4. **판 모듈(묶음 7과 겹침)**: 판 구경(앉지 않고 보기), 대기실의 판 목록 넘기기, 자리 수를 판을 열 때 고르기, 3D 월드를 쓰지 않는 화면(카드 탁자), 좁은 화면에서 자리가 다섯 이상인 막대. 문서(14절)만 보고 셋 이상의 다른 판 게임(카드)을 만드는 검증(별도 에이전트)에 방 코드·관전·여러 규칙을 함께.
-5. **고도화 묶음 5~8** ([genre-features.md](genre-features.md) 5절): 5 운영 도구와 고객지원 → 6 라이브 콘텐츠 → 7 판의 공통화 → 8 경쟁. (4 확률과 재화의 투명성은 끝: 남은 것은 아래 9)
-6. **운영의 바탕(묶음 1)의 남은 것**: 웹 관리 화면(묶음 5), 패치 노트, A/B, 사람마다 다른 깃발, 상태 페이지를 다른 호스팅으로. 작은 수집형 증명 게임으로 16절 문서 검증. 폰에서 점검 띠가 내 정보 창의 이름 줄을 조금 덮는 것.
+5. **고도화 묶음 6~8** ([genre-features.md](genre-features.md) 5절): 6 라이브 콘텐츠 → 7 판의 공통화 → 8 경쟁. (4 확률과 재화의 투명성은 끝: 남은 것은 아래 8. 5 운영 도구와 고객지원도 끝: 아래 '운영 도구와 고객지원'. 그 남은 것은 [making-a-game.md](making-a-game.md) 19절 '남은 것')
+6. **운영의 바탕(묶음 1)의 남은 것**: 패치 노트, A/B, 사람마다 다른 깃발, 상태 페이지를 다른 호스팅으로. 작은 수집형 증명 게임으로 16절 문서 검증. 폰에서 점검 띠가 내 정보 창의 이름 줄을 조금 덮는 것.
 7. **사회와 안전(묶음 3)의 남은 것**: 파티 저장·파티 찾기, 프로필 카드 칸, 핑·이모트, 판·채널(층)·거래 채널, 관리자 `allow`(허용 낱말) 명령, 영문 자판 + 띄어쓰기를 겹친 금칙어 우회, 같은 주소의 손님끼리 한 사람으로 묶이는 것(아래 '사회와 안전').
 8. **확률과 재화의 투명성(묶음 4)의 남은 것**: 한정 수량을 서버가 세기, 귀속 재화를 거래소·우편이 막기, 화면의 종류별 잔액, 광고의 '확률형 아이템 포함' 칸, 공개 페이지의 과거 버전 전체, 별표 3의2(표시 방법) 원문 대조 (아래 '확률과 재화의 투명성').
 9. **작은 것**: 부하의 제안(한 전송의 메시지를 한 프레임으로, 남의 영웅을 좁은 시야·낮은 빈도로), 캐릭터 정의가 수천일 때(오래 안 쓴 구운 겉모습 버리기, 필요한 정의만 묻기), 달무리에서 본 월식 소환 뒤의 배너, 떠는 시험 `collect/growth`의 '앞줄을 먼저 친다'(가끔 실패), 아래 '3. 남은 일'.
@@ -382,6 +384,7 @@
 | 등불지기의 자동 사냥을 출시판에 둘지 | 있음(테스트 편의로 넣었다) | [../games/deungbul/README.md](../games/deungbul/README.md) |
 | 가지 `wip/rift` 안개 균열 시제품(반쯤 된 채 멈춤, 지우지 않는다), [ideas.md](ideas.md)의 아이디어(AI 채팅 루틴·정보 조회, 사용자 코스튬) | 보류: 사용자가 다시 말할 때까지 | [modes.md](modes.md), [ideas.md](ideas.md) |
 | 문서 검증을 독립 에이전트에게 맡길지 직접 할지 | 지금까지는 독립 에이전트 | 아래 '끝난 것'의 문서 검증 |
+| 경보를 받을 곳(웹훅 서비스: Slack·Discord 같은 것), 분석 사건의 보관 기간과 처리방침의 문구, 관리 화면을 이 PC 밖(다른 기기)에서도 열지, 운영자마다 역할 토큰을 나눌지 | 웹훅 없음(재기만), 180일, 이 PC에서만, 토큰 셋(전체·운영·보기) | 아래 '운영 도구와 고객지원' |
 | 등불지기에 확률 공개(`odds`: 공개 페이지·추첨 기록)를 켤지, 추첨 기록 보관 기간(기본 5년), 내 데이터 삭제 때 추첨 기록(지금은 사람만 지움), 공개 페이지의 운영자 문구, 유상 재화 | 등불지기는 끔(강화 확률을 표에서 읽기만), 예제(메아리 계약)만 켬 | 아래 '확률과 재화의 투명성' |
 
 ### 끝난 것 (최근 것부터)
@@ -852,24 +855,43 @@ PC(1280×800)와 폰(390×844, 터치, DPR 2), 한국어·영어 넷씩, 두 게
 - **퍼징**(`$TEMP/dg-work/social3-tools/fuzz.ts`): 금칙어 변형 6,000개 — 놓침 25(0.42%, 영문 자판·숫자 치환에 띄어쓰기를 겹친 것), 예외 0. 보통 문장 2,456개 — 대화로 잘못 막음 5(0.20%), 이름으로 13(0.53%).
 - **실제 브라우저**(헤드리스 크롬, GPU, 3017 예제·3018 등불지기(운영 DB 복사본)): 예제 PC·폰 × 한국어·영어로 연령 창(미리 고른 값 없음, 확인 잠김), 제한 모드(잠긴 입력·정해진 문장 목록·보냄, 상대의 귓말·친구 요청이 오지 않음), 어른(채널 탭, 근처·귓말 줄, 귓말 보내기와 가리기, 사람 카드의 귓말·친구 요청·차단·신고, 친구 탭의 요청 → 수락 → 접속 중·채널), 설정의 '대화' 칸. 등불지기: 브라우저에 `blocked: ["Blockme", "없는사람"]`를 넣고 접속 → 서버로 옮겨지고(찾은 1명) 브라우저의 칸이 지워지고, 그 사람의 대화가 오지 않음. 콘솔 오류 0(처음 한 번 연령 창이 없는 게임에서 예외가 났던 것을 고쳤다). 고친 화면: 폰에서 정해진 문장 목록이 화면 위로 나가던 것(대화창 아래로), 사람 카드가 상점 창 아래에 깔리던 것. 스크린샷 `$TEMP/dg-work/social3-shots/`.
 
+## 운영 도구와 고객지원 (2026-11-27, 가지 `feat/ops5`)
+
+[genre-features.md](genre-features.md) 5.5절의 묶음 5. 쓰는 법과 사고 대응 순서는 [making-a-game.md](making-a-game.md) 19절, 운영 절차는 [infra.md](infra.md) '운영 도구와 고객지원'.
+
+- **분석 사건**: 핵심 `g.track(이름, 속성, 누가)`(`engine/server/game/systems/analytics.ts`, `g.analytics`). 서버에서만 적고, 통신 계층이 저장 주기에 가져가 캐릭터·월드 저장과 같은 묶음으로 `events` 표에 얹는다. 속성은 수·참거짓·짧은 표만(자유 문장은 빼고 센다). 기본 사건 `session_start`·`session_end`(`sec`)·`first_join`(저장 키마다 한 번: 사건 표로 가린다)·`level_up`(`players.ts`의 `levelUp`). 가져가는 쪽이 없으면(시험·황금 실행) 2만 줄에서 오래된 반을 버린다. 보관 `analytics.keepDays`(180일, 한 시간마다 정리), 내 데이터 삭제가 지운다. 집계 `engine/server/net/stats.ts`(UTC 날): 관리자 `stats`, `npm run stats`(`scripts/stats.ts`: 저장 파일을 읽기 전용으로).
+- **웹 관리 화면**: `net/admin.ts`에 `GET /admin/ui`(페이지 `net/admin-page.ts`: 빌드 없는 HTML 한 장, 문장은 틀의 언어 파일의 `koAdminPage`·`enAdminPage`)와 `POST /admin/api`. CLI와 같은 명령표·같은 기록·같은 권한 검사(`roleFor`). 문: 루프백 연결, 터널·프록시의 머리 없음, Host가 루프백 이름, Origin·Sec-Fetch-Site가 같은 출처, JSON 본문, CSP·frame-ancestors·X-Frame-Options. 토큰은 `#` 뒤 → 탭의 sessionStorage. 역할 셋(토큰 파일 `admin.token`·`admin-ops.token`·`admin-view.token`), 명령은 글과 값(`{ out, data }`)을 함께 돌려준다(`who`, `flag`, 운영 도구의 명령). `npm run admin -- ui [view|ops|full]`이 주소를 찍는다. `admin.web: false`로 끈다.
+- **문의·제재 이의**: 선택 모듈 `support`(`MODULE_TABLE`의 끝, `RPG_MODULES`에 들지 않는다. 등불지기·예제가 골랐다). 서버 `net/support.ts`, 화면 `hud/support.ts`(설정 창의 '문의' 칸, 문의 창, 접속 화면의 사유·이의), `tickets` 표. 차단된 사람의 이의는 접속 메시지의 `appeal`(따로 된 연결 하나). 프로토콜 번호는 그대로 3(새 메시지만 더했다: 옛 화면은 모르는 메시지를 무시한다).
+- **계정 단위 롤백**: `net/rollback.ts`(관리자 `rollback`), `store/sqlite.ts`의 `readBackupPlayer`(백업 파일을 읽기 전용으로), `store/backup.ts`의 `Backups.dir`, `player_stash` 표. 장부 `systems/ledger.ts`가 통로 밖의 변화를 사람과 함께 남긴다(`strayList`, 최근 500건, 서버가 켜져 있는 동안). 되돌린 재화는 장부에 `rollback`.
+- **봇·매크로 의심 점수**: `net/suspect.ts`. 통신 계층이 게임 명령마다 `see`. 관리자 `suspects`. 막지 않는다.
+- **경보**: `net/alerts.ts`(`startServer`의 `alerts`, `runServer`는 `ALERT_WEBHOOK`·`ALERT_REPEAT_MIN`). `net/ops.ts`의 지표를 줄 목록으로 나눠(`metricRows`, `metricValues`) 덧붙는 줄(`OpsNow.extra`)을 받는다: `game_econ_stray_total`, `game_analytics_rejected_total`, `game_tickets_open`.
+- **그 밖**: 관리자 `mail`(운영 보상 우편, 우편 종류 `comp`), `ledger`, `metrics`, `whoami`. 새 안내문 10가지(`supportSent` … `rolledBack`), 우편 종류 `support`·`comp`.
+- **저장**: SQLite 스키마 목록의 끝에 한 단계(`events`, `tickets`, `player_stash`). 시험은 번호를 적지 않고 목록의 길이(`SCHEMA.length`)로 본다(사회와 안전의 시험도 그렇게 고쳤다).
+- **시험**: `engine/test/fx/opstools.test.ts` — 1 분석 사건(속성 검사, 서버의 기본 사건이 SQLite에, 보관·삭제), 2 집계(잔존·일별·퍼널의 셈, 부하 도구의 봇 접속자 6명 → 다음 날 3명 = D1 50%), 3 역할과 웹 관리 화면의 문(Host·Origin·Sec-Fetch-Site·터널의 머리·JSON, 끄기), 4 문의·이의(길이·빈도·금칙어·답·우편·말 막기 이의·차단된 사람의 이의·모듈이 없는 게임), 5 의심 점수, 6 경보(가짜 웹훅 수신기: 이어 넘기·되풀이 억제·아직·풀림·늘어난 양), 7 사고 리허설(아래), 8 스키마. `collect/client`의 화면 모듈 차례 검사는 사회와 안전까지를 보고 문의가 그 뒤인지를 더 본다. 검사 2435 → 2513개.
+- **사고 리허설**(시험 7번, 진짜 서버·SQLite·자동 백업): 켜질 때 백업 → 지갑을 거치지 않고 골드를 늘리는 명령(복제 버그 흉내) → `ledger`가 그 사람과 `gold +5000 (other)`를 잡고 지표 `game_econ_stray_total`이 오른다(따로 된 서버에서 웹훅 경보 `econ_stray`까지) → `flag market off`·`flag mail off`(꺼진 거래소는 `featureOff`) → `rollback list` → `preview`(바뀌는 것, 그 사이의 통로 밖 변화, 확인 코드) → 틀린 코드·운영 역할은 거절 → `apply`(접속 중인 그 사람을 먼저 끊고 `rolledBack`, 골드 100으로, 5100은 보관, 다른 사람은 그대로, 장부에 `rollback −5000`) → 다시 들어오면 되돌린 상태 → `mail --all --gold 200`(받으면 장부에 `mail:comp`) → 공지 → 거래 다시 엶 → `rollback undo`로 되돌리기를 되돌림 → 모든 단계가 관리자 기록에.
+- **황금 실행**(`$TEMP/dg-work/ops5-tools/golden.mts`: 앞 가지들과 같은 도구): 등불지기 sim 7,489,205바이트 sha256 `ba83af30d07f`, 예제 3,431,368바이트 `3e0b697f49ed`, 둘 다 바탕과 바이트까지 같다(분석 사건은 게임의 상태·난수·전송을 바꾸지 않는다. `support` 모듈은 게임 계층에 시스템이 없다).
+- **실제 브라우저**(헤드리스 크롬 GPU, 포트 3017 등불지기(임시 DB `tmp/shot`), 사람 셋을 붙여 문의·말 막기·차단을 만든 뒤): 관리 화면 PC·폰 × 한국어·영어(개요·사람·분석·장부·문의 답 쓰기·의심 점수·롤백 미리보기·명령), 등불지기 PC·폰 × 한국어·영어(설정 창의 '문의' 칸과 걸린 말 막기, 문의 창, 이의 창), 차단된 사람의 접속 화면(사유·기간·이의 신청 → 보냄 → '이의를 냈습니다'). 콘솔 오류 0. 고친 것: 경보 표의 긴 소수, 문의 상세의 머리 줄 간격, 문의 창의 칸 간격. 스크린샷 `$TEMP/dg-work/ops5-tools/shots/`.
+- **남은 것**: [making-a-game.md](making-a-game.md) 19절 '남은 것'(명령 결과 글은 한국어뿐, 롤백은 캐릭터 저장만, 통로 밖 변화의 '누구'는 켜져 있는 동안만, 의심 점수는 간단한 통계, 분석의 날은 UTC, 경보 규칙은 코드의 옵션). 사용자가 정할 것은 위 '사용자가 정할 것'의 마지막 줄.
+- **합칠 때**: 공용 파일은 끝에 덧붙이기만 했다 — `SCHEMA`(끝 단계 하나), `MODULE_TABLE`(끝에 `support`)과 `RPG_MODULES`의 거르기, `scripts/admin.mjs`(도움말 끝, `ui`), `net/admin.ts`(역할·웹 길·`CmdOut`. 기존 명령 `who`·`flag`가 값을 함께 돌려준다), i18n ko·en(ui·fmt·msg의 끝, 파일 끝의 `koAdminPage`·`enAdminPage`, `mailTitle`의 두 갈래), `messages.ts`·`protocol.ts`의 끝, 문서. 다른 가지가 스키마 단계를 더했으면 순서만 맞추면 된다(시험은 길이로 본다).
+
 ## 확률과 재화의 투명성 (2026-11-27, 가지 `feat/odds4`)
 
-[genre-features.md](genre-features.md) 5.4절의 묶음 4. 쓰는 법은 [making-a-game.md](making-a-game.md) 19절, 법의 배경은 genre-features 7절 5번·18번.
+[genre-features.md](genre-features.md) 5.4절의 묶음 4. 쓰는 법은 [making-a-game.md](making-a-game.md) 20절, 법의 배경은 genre-features 7절 5번·18번.
 
 | 무엇 | 틀의 칸 | 고르지 않으면 |
 |---|---|---|
 | 확률표 단일 원본 | `engine/shared/defs/odds.ts`: 표 `OddsTableDef`(`id`, `kind`: capsule·enhance·combine·ceiling, `steps[]`, `pity?`, `ten?`, `limited?`, `guard?`, `cost?`) + 서버의 `version`, 굴림 `rollStep`, 검사 `checkTables`(거부 코드 `ODDS_ERRORS` 11가지), 자동 표 `enhanceTable`·`enhanceStep`·`bannerTable`·`pullStep`, `allTables`, `tableSig`, `tableChanges`, 내용 칸 `ODDS`(`tables`, `keepDays`, `names`, `operator`, `title`, `hide`) | 굴림은 모듈과 상관없이 표에서(`gacha`, `gear`). 표를 주지 않으면 값·난수의 차례가 예전과 같다 |
-| 버전·이력·사전 공지·추첨 기록 | 선택 모듈 `odds`(스물여덟째, 의존 없음): `engine/server/game/systems/odds.ts`(`g.odds`: `refresh`·`versionOf`·`tables`·`history`·`plan`·`setPlan`·`record`·`draws`·`roll`·`prune`·`publicView`·`names`·`onChange`), 메시지 `odds`(tables·mine), 개인 데이터 `draws` | 없다 |
+| 버전·이력·사전 공지·추첨 기록 | 선택 모듈 `odds`(스물아홉째, 의존 없음): `engine/server/game/systems/odds.ts`(`g.odds`: `refresh`·`versionOf`·`tables`·`history`·`plan`·`setPlan`·`record`·`draws`·`roll`·`prune`·`publicView`·`names`·`onChange`), 메시지 `odds`(tables·mine), 개인 데이터 `draws` | 없다 |
 | 공개 페이지 | `engine/server/net/odds.ts`(`createOddsWeb`, `oddsFile`, `oddsHtml`): 정적 폴더의 `odds.json`·`odds.html`, `GET /odds.json`·`/odds.html`(읽기만), `startServer({ odds })`, 문장 `koOddsPage`·`enOddsPage` | 없다 |
 | 확률표 창 | `engine/client/hud/odds.ts`(메뉴의 '확률' 탭, `always`), 문장 ui 13·fmt 4·`oddsPage` | 없다 |
 | 관리자 명령 | `odds`(show·log·check·plan·plans·publish), `draws`(이름·`--table`·`--n`·`--since`, `stats`): `scripts/admin.mjs` 도움말 | 없다 |
-| 저장 | SQLite 스키마의 끝 단계(이 가지에서는 5): `odds_tables`, `odds_history`, `odds_plans`, `draws`(색인 둘). `OddsStore`·`hasOdds`(메모리 저장소도) | 표는 생기지만 비어 있다 |
+| 저장 | SQLite 스키마의 끝 단계(묶음 5와 합친 뒤 6): `odds_tables`, `odds_history`, `odds_plans`, `draws`(색인 둘). `OddsStore`·`hasOdds`(메모리 저장소도) | 표는 생기지만 비어 있다 |
 | 재화의 종류 | `CurrencyDef.kinds`(`spend`, `earn?`, `days?`), `CUR_KINDS`, 지갑 `add(…, kind?)`·`balance`·`lots`·`kindsOf`·`expire`·`lastTake`, 저장 `ext.purse`(`MODULE_SAVES`의 economy) | 적지 않으면 주머니가 없다(저장에 칸이 생기지 않는다) |
 | 확인 단계 | `CurrencyDef.confirm`(`at`, `price`), `needsConfirm`, 화면 `engine/client/hud/confirm.ts`(`confirmSpend`, `spendAsking`: 입구 `@engine/client`), 뽑기 단추가 거친다 | 적지 않으면 묻지 않는다 |
 
 - **예제**: 메아리 계약(`games/echopact`)이 `odds`를 켰다(모듈 스물). 울림 조각 900 이상은 확인 단계, `LIVE_KEYS`에 `BANNERS.well.pity.after`, `ODDS.names`(울림 샘·울림 조각), 메뉴 탭 목록에 `odds`. 등불지기는 켜지 않았다(강화 확률을 표에서 읽기만 한다. 켤지는 사용자 결정).
 - **황금 실행**(`$TEMP/dg-work/odds4-tools/golden.mts`, 바탕 `d5884f0`과 가지): 등불지기 sim 7,489,205바이트 `ba83af30d07f`, sample 3,431,368바이트 `3e0b697f49ed` 둘 다 바이트까지 같다.
-- **시험**: 검사 2435 → 2488개(+53): `collect/odds` 44(거부 코드, 단일 원본, 20만 번 굴림의 분포, 서버의 실제 뽑기 3,000번의 분포 = 공개 JSON = 게임 안 표, 추첨 기록, 원격 설정으로 바꾼 버전·이력·화면·파일, 사전 공지, 관리자 명령, 내 데이터, SQLite의 다시 켜기·`boot`·보관 기간·스키마, 재화의 종류, 확인 단계), `deungbul/odds` 4(강화 표 = `ENHANCE`, 10만 번 굴림, 공개 JSON), `echopact/odds` 5, `collect/client`의 화면 모듈 차례 1. 고친 시험: `collect/client`(서버의 뽑기 소스가 `bannerTable`·`rollStep`을 쓰는가, 화면 모듈 차례에서 뒤의 묶음을 뺀다), `fx/social`(스키마 번호 대신 `SCHEMA.length`). 등불지기 문장 견본에 새 문장 99개씩(달라진 문장 0).
+- **시험**: 검사 2435 → 2488개(+53, 묶음 5와 합친 뒤 2513 → 2567: 관리자 역할 검사 하나를 더함): `collect/odds` 44(거부 코드, 단일 원본, 20만 번 굴림의 분포, 서버의 실제 뽑기 3,000번의 분포 = 공개 JSON = 게임 안 표, 추첨 기록, 원격 설정으로 바꾼 버전·이력·화면·파일, 사전 공지, 관리자 명령, 내 데이터, SQLite의 다시 켜기·`boot`·보관 기간·스키마, 재화의 종류, 확인 단계), `deungbul/odds` 4(강화 표 = `ENHANCE`, 10만 번 굴림, 공개 JSON), `echopact/odds` 5, `collect/client`의 화면 모듈 차례 1. 고친 시험: `collect/client`(서버의 뽑기 소스가 `bannerTable`·`rollStep`을 쓰는가, 화면 모듈 차례에서 뒤의 묶음을 뺀다), `fx/social`(스키마 번호 대신 `SCHEMA.length`). 등불지기 문장 견본에 새 문장 99개씩(달라진 문장 0).
 - **실제 브라우저**(헤드리스 크롬 GPU, 임시 서버 3015(메아리 계약, 임시 DB), PC 1280×800·폰 390×844 × 한국어·영어): 뽑기의 10번 단추 → 확인 1단계('울림 조각 900만큼 씁니다', [그만두기][계속]) → 2단계(단추 자리가 바뀌고 0.4초 잠김) → 결과, '확률' 탭(예정된 변경, 장비 강화 +0 ~ +9, 울림 샘 v2의 평소·천장(35번째)·10번 보장·실효 확률, 변경 이력), 내 추첨 기록, 공개 페이지(위·배너·이력, 메아리 이름). 관리자 `set BANNERS.well.pity.after 35`로 v2, `odds plan`의 사전 공지, 서버를 다시 켜도 버전 그대로(boot로 오르지 않음). 콘솔 오류 0. 스크린샷 `$TEMP/dg-work/odds4-shots/`.
 
 남은 것:

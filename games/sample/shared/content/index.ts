@@ -20,7 +20,7 @@ import { BONFIRE } from './bonfire';
 // ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
 // 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다. 캐릭터 정의(chars)와 변신(morph), 대화 채널(chat: 귓말·근처·파티)과 친구(friends)를 쓴다
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
 export const GUEST_NAME = 'Camper';
 
 // ---------- 맵: 지역 하나 ----------

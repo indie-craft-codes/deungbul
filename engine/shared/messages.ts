@@ -230,4 +230,15 @@ export type MsgKey =
   | 'friendNo' // [이름] 그 사람에게는 지금 요청할 수 없다 (요청을 받지 않음, 상한)
   | 'friendFull' // [상한] 친구가 가득 찼다
   | 'friendRemoved' // [이름] 친구를 끊었다
-  | 'friendOffline'; // [이름] 친구가 접속해 있지 않다
+  | 'friendOffline' // [이름] 친구가 접속해 있지 않다
+  // ---- 운영 도구와 고객지원 (support 모듈: engine/server/net/support.ts, 롤백: engine/server/net/rollback.ts) ----
+  | 'supportSent' // [번호] 문의를 받았다
+  | 'supportAnswered' // [번호] 문의에 답이 왔다
+  | 'supportShort' // [가장 짧은 글자 수] 글이 너무 짧다
+  | 'supportWait' // [초] 문의는 잠시 뒤에
+  | 'supportFull' // [열린 문의의 상한] 답을 기다리는 문의가 많다 (하루 상한도 이것)
+  | 'supportAppealed' // [] 이 제재에는 이미 이의를 냈다
+  | 'supportGuest' // [] 저장되지 않는 손님은 답을 받을 곳이 없어 문의할 수 없다
+  | 'supportNoSanction' // [] 이의를 낼 제재가 없다
+  | 'supportOff' // [] 지금은 문의를 받지 않는다
+  | 'rolledBack'; // [] 운영자가 이 캐릭터를 앞의 시점으로 되돌렸다 (연결을 끊는다: 다시 들어오면 되돌린 상태)

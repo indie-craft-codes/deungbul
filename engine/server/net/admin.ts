@@ -24,7 +24,16 @@
 //   maint [plan 시각 | now] [--for 기간 | --until 시각] [--ko 글] [--en 글] | maint cancel | maint end [--gold n] [--sparks n] [--exp n] [--item id:n] [--days n] | maint allow|deny 이름   점검
 //   (웹 출시의 바탕, net/web.ts) errors [수] [--all] | errors clear 서명|all | erase [list|log [수]|ask 이름 [일수]|cancel 이름|now 이름|sweep]
 //   (사회와 안전, net/social.ts) words [test 글 | add 낱말… | del 낱말…] | age 이름 [reset] | blocks 이름
+//   (운영 도구와 고객지원) stats · ledger · suspects · alerts · mail · rollback · tickets · ticket · answer · tclose · treopen · whoami · metrics (net/opstools.ts, net/support.ts, net/rollback.ts)
 //   기간: 숫자(시간), 30m·12h·7d처럼 단위를 붙인 것, 또는 perm(영구)
+//
+// 역할 (운영 도구): 토큰이 셋이다. admin.token은 전체(full), admin-ops.token은 운영(ops), admin-view.token은 보기 전용(view). 명령마다 필요한 역할은 roleFor 한 곳에서 정한다:
+//   view  읽기만 하는 것 (목록, 조회, 분석, 장부, 미리보기)
+//   ops   사람과 공지를 다루는 것 (내보내기, 말 막기, 차단, 공지, 점검, 깃발, 문의 답변)
+//   full  재화와 저장을 바꾸는 것 (지급·회수, 원격 설정 값, 데이터 삭제, 금칙어 바꾸기, 롤백 실행, 보상 우편). 표에 없는 명령도 full
+// 웹 관리 화면 (GET /admin/ui, POST /admin/api): 같은 명령을 브라우저에서. 1·2와 토큰은 같고, 3 대신 아래를 본다 (같은 PC에서 연 그 페이지만 부르게):
+//   Host가 127.0.0.1·localhost·[::1]이고, Origin이 있으면 그 Host와 같은 출처, Sec-Fetch-Site가 있으면 same-origin(페이지를 열 때는 none도). 본문은 application/json(다른 출처면 미리 묻는 요청이 필요한데 여기는 답하지 않는다)
+//   페이지는 바깥의 것을 아무것도 읽지 않고(CSP), 다른 페이지 안에 넣을 수 없다(frame-ancestors). 토큰은 주소의 # 뒤로 받아 그 탭의 sessionStorage에만 둔다 (npm run admin -- ui)
 //   시각: now, +30m·+2h·+1d(지금부터), '2026-12-01 09:00'(초기화 시각 RESET의 시간대로 읽는다), 시간대가 붙은 ISO('2026-12-01T09:00+09:00')
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
@@ -39,9 +48,12 @@ import { CURS } from '../game/systems/wallet';
 import type { ReportLine, ReportSave, Store } from '../store/types';
 import { isItemId, liveDef, parseWhen, type Reward } from '../../shared/defs';
 import { langText } from '../game/systems/live';
+import { adminPage } from './admin-page';
 
 /** 토큰 파일과 기록 파일의 이름 (저장 파일과 같은 폴더) */
 export const TOKEN_FILE = 'admin.token';
+/** 역할마다의 토큰 파일 (전체는 TOKEN_FILE) */
+export const ROLE_FILES = { view: 'admin-view.token', ops: 'admin-ops.token' } as const;
 export const AUDIT_FILE = 'admin-audit.log';
 /** CLI가 토큰을 싣는 머리 */
 export const TOKEN_HEADER = 'x-admin-token';
@@ -57,6 +69,41 @@ export interface AdminOptions {
   dir?: string;
   /** 토큰을 정해 준다 (시험). 없으면 켜질 때마다 무작위로 만든다 */
   token?: string;
+  /** 보기 전용·운영 역할의 토큰을 정해 준다 (시험). 없으면 무작위 */
+  tokens?: { view?: string; ops?: string };
+  /** 웹 관리 화면(/admin/ui, /admin/api)을 연다. 기본 켬 (같은 PC에서만 열린다) */
+  web?: boolean;
+}
+/** 관리자의 역할 (낮은 것부터) */
+export type Role = 'view' | 'ops' | 'full';
+const RANK: Record<Role, number> = { view: 0, ops: 1, full: 2 };
+/** 명령의 답: 글(CLI가 찍는다)과, 웹 관리 화면이 표로 그릴 값(있으면) */
+export type CmdOut = string | { out: string; data: unknown };
+/** 읽기만 하는 명령 (인자와 상관없이) */
+const VIEW_CMDS = new Set(['who', 'find', 'reports', 'report', 'audit', 'blocks', 'stats', 'ledger', 'suspects', 'tickets', 'ticket', 'whoami', 'metrics']);
+/** 사람과 공지를 다루는 명령 */
+const OPS_CMDS = new Set(['kick', 'mute', 'unmute', 'ban', 'unban', 'banip', 'unbanip', 'announce', 'resolve', 'maint', 'answer', 'tclose', 'treopen']);
+/**
+ * 그 명령에 필요한 역할 (권한 검사는 이 한 곳: CLI와 웹 관리 화면이 함께 지난다). 인자에 따라 읽기만 하는 것은 view로 내린다
+ */
+export function roleFor(cmd: string, a: readonly string[]): Role {
+  if (VIEW_CMDS.has(cmd)) return 'view';
+  if (OPS_CMDS.has(cmd)) return cmd === 'maint' && (!a.length || a[0] === 'status') ? 'view' : 'ops';
+  switch (cmd) {
+    case 'set': return !a.length || a[0] === '--log' || a.length === 1 ? 'view' : 'full';
+    case 'flag': return a.length ? 'ops' : 'view';
+    case 'notice': return !a.length || a[0] === 'list' ? 'view' : 'ops';
+    case 'errors': return a[0] === 'clear' ? 'ops' : 'view';
+    case 'erase': return !a.length || a[0] === 'list' || a[0] === 'log' ? 'view' : 'full';
+    case 'words': return !a.length || a[0] === 'test' ? 'view' : 'full';
+    case 'age': return a.includes('reset') ? 'full' : 'view';
+    case 'alerts': return a[0] === 'test' ? 'ops' : 'view';
+    case 'rollback': return a[0] === 'apply' || a[0] === 'undo' ? 'full' : 'view';
+    // 확률 공개 (odds 모듈, net/odds.ts): 표·이력·사전 공지 목록과 추첨 기록은 보기, 사전 공지를 적고 거두는 것·버전 올리기·다시 쓰기는 전체
+    case 'odds': return !a.length || ['list', 'show', 'log', 'plans'].includes(a[0]) ? 'view' : 'full';
+    case 'draws': return 'view';
+    default: return 'full';
+  }
 }
 
 /**
@@ -76,8 +123,8 @@ export interface AdminHost {
   broadcast(msg: ServerMsg): void;
   /** 월드와 바뀐 캐릭터를 지금 저장한다 */
   save(): void;
-  /** 다른 쪽이 더하는 명령 (웹 출시의 바탕: errors, erase — net/web.ts). 틀의 명령과 같은 이름은 무시한다 */
-  extra?: () => Record<string, (a: string[], by: string) => string>;
+  /** 다른 쪽이 더하는 명령 (웹 출시의 바탕: errors, erase — net/web.ts, 운영 도구: net/opstools.ts …). 틀의 명령과 같은 이름은 무시한다 */
+  extra?: () => Record<string, (a: string[], by: string) => CmdOut>;
   /** 저장된 캐릭터 모두에게 우편을 보낸다 (sinceMs를 주면 그 뒤에 저장된 캐릭터만). 보낸 수, 할 수 없으면 -1 (점검 보상) */
   mailAll?(reward: Reward, sinceMs: number): number;
 }
@@ -88,10 +135,12 @@ export const CLOSE = { handedOff: 4001, kicked: 4002, banned: 4003, maint: 4004,
 export interface Admin {
   /** 이 요청이 관리자 통로의 것이면 처리하고 true. 아니면 false (정적 파일로 넘긴다) */
   route(req: http.IncomingMessage, res: http.ServerResponse): boolean;
-  /** 명령을 처리한다 (HTTP를 거치지 않고: 시험). 기록은 똑같이 남는다 */
-  run(cmd: string, args: string[], by: string, from: string): { ok: boolean; out: string };
-  /** 지금 토큰 (시험) */
+  /** 명령을 처리한다 (HTTP를 거치지 않고: 시험). 기록은 똑같이 남는다. role을 주지 않으면 전체(full) */
+  run(cmd: string, args: string[], by: string, from: string, role?: Role): { ok: boolean; out: string; data?: unknown };
+  /** 지금 토큰 (시험): 전체 역할의 것 */
   readonly token: string;
+  /** 역할마다의 토큰 (시험, npm run admin -- ui) */
+  readonly tokens: Readonly<Record<Role, string>>;
   close(): void;
 }
 
@@ -124,13 +173,16 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
   const g = host.game, store = host.store, S = g.sanctions;
   const dir = opts.dir ?? defaultDir;
   const token = opts.token ?? randomBytes(24).toString('hex');
+  const tokens: Record<Role, string> = { full: token, ops: opts.tokens?.ops ?? randomBytes(24).toString('hex'), view: opts.tokens?.view ?? randomBytes(24).toString('hex') };
   let tokenFile = '';
   let auditFile = '';
+  const roleFiles: string[] = [];
   if (dir) {
     try {
       fs.mkdirSync(dir, { recursive: true });
       tokenFile = path.join(dir, TOKEN_FILE);
       fs.writeFileSync(tokenFile, token + '\n', { mode: 0o600 });
+      for (const r of ['view', 'ops'] as const) { const f = path.join(dir, ROLE_FILES[r]); fs.writeFileSync(f, tokens[r] + '\n', { mode: 0o600 }); roleFiles.push(f); }
       auditFile = path.join(dir, AUDIT_FILE);
     } catch (err) { console.error('[admin] 관리자 토큰 파일을 만들지 못했습니다. 관리자 통로를 닫습니다:', err); tokenFile = ''; }
   }
@@ -156,11 +208,12 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
   const short = (key: string | null): string => (key ? key.slice(0, 10) : '손님');
   const need = (cond: boolean, msg: string): void => { if (!cond) throw new Usage(msg); };
 
-  const COMMANDS: Record<string, (a: string[], by: string) => string> = {
+  const COMMANDS: Record<string, (a: string[], by: string) => CmdOut> = {
     who: () => {
       const list = host.people();
-      if (!list.length) return '접속한 사람이 없습니다.';
-      return [`${list.length}명`, ...list.map((x) => `  ${x.name}  Lv${g.field(x.ent, 'lv')} ${g.field(x.ent, 'cls') || '-'}  ${x.away ? '(자리 비움 사냥) ' : ''}주소 ${x.ip || '-'}  키 ${short(x.key)}${S.muted(x.key, x.ip) ? '  [말 막힘]' : ''}`)].join('\n');
+      const data = list.map((x) => ({ name: x.name, lv: g.field(x.ent, 'lv'), cls: g.field(x.ent, 'cls') || '', away: x.away, ip: x.ip, key: short(x.key), muted: !!S.muted(x.key, x.ip) }));
+      if (!list.length) return { out: '접속한 사람이 없습니다.', data };
+      return { out: [`${list.length}명`, ...list.map((x) => `  ${x.name}  Lv${g.field(x.ent, 'lv')} ${g.field(x.ent, 'cls') || '-'}  ${x.away ? '(자리 비움 사냥) ' : ''}주소 ${x.ip || '-'}  키 ${short(x.key)}${S.muted(x.key, x.ip) ? '  [말 막힘]' : ''}`)].join('\n'), data };
     },
     find: (a) => {
       need(a.length >= 1, 'find 이름');
@@ -307,7 +360,7 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
       return `${name} = ${cut(js(v))} (v${r.ver}${liveDef(name)?.client ? ', 접속한 화면에도 보냄' : ''})`;
     },
     flag: (a, by) => {
-      if (!a.length) return g.live.flagList().map((f) => `  ${f.name}  ${f.on ? '켜짐' : '꺼짐'}${f.row ? `  (${f.row.by}, ${when(f.row.at)})` : ''}`).join('\n');
+      if (!a.length) { const list = g.live.flagList(); return { out: list.map((f) => `  ${f.name}  ${f.on ? '켜짐' : '꺼짐'}${f.row ? `  (${f.row.by}, ${when(f.row.at)})` : ''}`).join('\n'), data: list.map((f) => ({ name: f.name, on: f.on, by: f.row?.by ?? '', at: f.row?.at ?? 0 })) }; }
       need(a.length >= 2 && /^(on|off)$/i.test(a[1]), 'flag 이름 on|off (flag만 치면 목록)');
       const on = a[1].toLowerCase() === 'on', r = g.live.setFlag(a[0], on, by);
       if ('err' in r) throw new Refused(r.err);
@@ -426,16 +479,18 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
     return `${t.name}은(는) 접속해 있지 않습니다. 다음 접속 때 ${what} ${sign > 0 ? '+' : '-'}${n}을(를) 적용합니다 (거둘 때는 가진 만큼만).`;
   }
 
-  function run(cmd: string, args: string[], by: string, from: string): { ok: boolean; out: string } {
+  function run(cmd: string, args: string[], by: string, from: string, role: Role = 'full'): { ok: boolean; out: string; data?: unknown } {
     const at = Date.now(), who = safe(by || '?', 40), src = safe(from || '?', 60), clean = args.slice(0, 40).map((x) => safe(String(x), 200));
     const name = safe(cmd, 20);
     // 처리하기 전에 기록 파일에 먼저 적는다. 적지 못하면 하지 않는다
-    if (!write({ at, by: who, from: src, cmd: name, args: clean, phase: 'start' })) return { ok: false, out: '관리자 기록을 적지 못해 명령을 처리하지 않았습니다.' };
-    let ok = true, out: string;
+    if (!write({ at, by: who, from: src, cmd: name, args: clean, phase: 'start', ...(role !== 'full' ? { role } : {}) })) return { ok: false, out: '관리자 기록을 적지 못해 명령을 처리하지 않았습니다.' };
+    let ok = true, out: string, data: unknown;
     const fn = Object.hasOwn(COMMANDS, name) ? COMMANDS[name] : undefined;
+    const needs = roleFor(name, clean);
     if (!fn) { ok = false; out = `모르는 명령입니다: ${name} (${Object.keys(COMMANDS).join(', ')})`; }
+    else if (RANK[role] < RANK[needs]) { ok = false; out = `권한이 없습니다: ${name}에는 '${needs}' 역할이 필요합니다 (지금 '${role}').`; }
     else {
-      try { out = fn(clean, who); }
+      try { const r = fn(clean, who); if (typeof r === 'string') out = r; else { out = r.out; data = r.data; } }
       catch (err) { ok = false; out = err instanceof Usage ? `쓰는 법: ${err.message}` : err instanceof Refused ? err.message : `처리 중 오류: ${String(err)}`; if (!(err instanceof Usage) && !(err instanceof Refused)) console.error('[admin] 명령 처리 중 예외:', err); }
     }
     const row: AuditRow = { at, by: who, from: src, cmd: name, args: clean, ok, out: safe(out.split('\n')[0], 400) };
@@ -443,29 +498,55 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
     S.audit(row);
     console.log(`[admin] ${who}@${src} ${name} ${clean.join(' ')} → ${row.out}`);
     try { host.save(); } catch (err) { console.error('[admin] 저장 실패:', err); }
-    return { ok, out };
+    return data === undefined ? { ok, out } : { ok, out, data };
   }
 
-  const tokenBuf = Buffer.from(token);
-  const goodToken = (v: unknown): boolean => {
-    if (typeof v !== 'string') return false;
+  const tokenBufs = (['full', 'ops', 'view'] as const).map((r) => [r, Buffer.from(tokens[r])] as const);
+  /** 그 토큰의 역할 (맞지 않으면 null). 셋 모두와 견준다 */
+  const roleOf = (v: unknown): Role | null => {
+    if (typeof v !== 'string') return null;
     const b = Buffer.from(v);
-    return b.length === tokenBuf.length && timingSafeEqual(b, tokenBuf);
+    let hit: Role | null = null;
+    for (const [r, t] of tokenBufs) if (b.length === t.length && timingSafeEqual(b, t) && !hit) hit = r;
+    return hit;
   };
   const reply = (res: http.ServerResponse, status: number, body?: unknown) => {
     if (body === undefined) { res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8' }).end(status === 404 ? 'not found' : ''); return; }
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }).end(JSON.stringify(body));
   };
 
+  /** 웹 관리 화면의 요청이 같은 PC에서 연 그 페이지의 것인가: Host가 루프백 이름, Origin·Sec-Fetch-Site가 같은 출처 */
+  function samePage(h: http.IncomingHttpHeaders, page: boolean): boolean {
+    const host = String(h.host ?? '');
+    if (!/^(127\.0\.0\.1|localhost|\[::1\])(:\d{1,5})?$/i.test(host)) return false;
+    if (h.origin !== undefined && h.origin !== `http://${host}`) return false;
+    const site = h['sec-fetch-site'];
+    if (site !== undefined && site !== 'same-origin' && !(page && site === 'none')) return false;
+    return true;
+  }
+  const webOn = opts.web !== false;
+
   function route(req: http.IncomingMessage, res: http.ServerResponse): boolean {
     const p = (req.url ?? '').split('?')[0];
-    if (p !== '/admin' && p !== '/admin/') return false;
+    const ui = p === '/admin/ui' || p === '/admin/ui/', api = p === '/admin/api';
+    if (p !== '/admin' && p !== '/admin/' && !ui && !api) return false;
     const addr = req.socket.remoteAddress ?? '';
     const local = addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
     const h = req.headers;
-    // 바깥(터널, 프록시, 브라우저)에서 온 것은 이 주소가 없는 것처럼 답한다
-    if (!open || !local || FORWARD_HEADERS.some((k) => k in h) || BROWSER_HEADERS.some((k) => k in h) || req.method !== 'POST') { req.resume(); reply(res, 404); return true; }
-    if (!goodToken(h[TOKEN_HEADER])) { req.resume(); console.warn(`[admin] 토큰이 맞지 않는 요청을 거절했습니다 (${addr})`); reply(res, 401, { ok: false, out: '관리자 토큰이 맞지 않습니다.' }); return true; }
+    // 바깥(터널, 프록시, 다른 출처의 페이지)에서 온 것은 이 주소가 없는 것처럼 답한다. CLI의 길(/admin)은 브라우저의 머리도 거절한다
+    if (ui || api) {
+      if (!open || !webOn || !local || FORWARD_HEADERS.some((k) => k in h) || !samePage(h, ui) || req.method !== (ui ? 'GET' : 'POST')) { req.resume(); reply(res, 404); return true; }
+      if (ui) {
+        req.resume();
+        res.writeHead(200, {
+          'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-frame-options': 'DENY', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer',
+          'content-security-policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+        }).end(adminPage());
+        return true;
+      }
+    } else if (!open || !local || FORWARD_HEADERS.some((k) => k in h) || BROWSER_HEADERS.some((k) => k in h) || req.method !== 'POST') { req.resume(); reply(res, 404); return true; }
+    const role = roleOf(h[TOKEN_HEADER]);
+    if (!role) { req.resume(); console.warn(`[admin] 토큰이 맞지 않는 요청을 거절했습니다 (${addr})`); reply(res, 401, { ok: false, out: '관리자 토큰이 맞지 않습니다.' }); return true; }
     if (!String(h['content-type'] ?? '').startsWith('application/json')) { req.resume(); reply(res, 415, { ok: false, out: 'application/json으로 보내 주세요.' }); return true; }
     let size = 0, over = false;
     const parts: Buffer[] = [];
@@ -475,17 +556,20 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
       let body: { cmd?: unknown; args?: unknown; by?: unknown };
       try { body = JSON.parse(Buffer.concat(parts).toString('utf8')) as typeof body; } catch { reply(res, 400, { ok: false, out: '본문이 JSON이 아닙니다.' }); return; }
       const args = Array.isArray(body.args) ? body.args.map(String) : [];
-      reply(res, 200, run(typeof body.cmd === 'string' ? body.cmd : '', args, typeof body.by === 'string' ? body.by : '?', addr));
+      // 웹 관리 화면은 이름(by)을 받지 않는다: 'web:역할'로 적는다 (기록에 웹과 역할이 남는다)
+      const by = api ? `web:${role}` : typeof body.by === 'string' ? body.by : '?';
+      reply(res, 200, { ...run(typeof body.cmd === 'string' ? body.cmd : '', args, by, api ? `${addr} web` : addr, role), role });
     });
     req.on('error', () => { /* 끊긴 요청은 버린다 */ });
     return true;
   }
 
   return {
-    route, run, token,
+    route, run, token, tokens,
     close: () => {
       // 다음에 켜질 때 새 토큰을 만든다: 꺼진 서버의 토큰을 남겨 두지 않는다 (같은 서버가 쓴 것일 때만 지운다)
       try { if (tokenFile && fs.readFileSync(tokenFile, 'utf8').trim() === token) fs.rmSync(tokenFile, { force: true }); } catch { /* 이미 없다 */ }
+      for (const f of roleFiles) { try { const v = fs.readFileSync(f, 'utf8').trim(); if (v === tokens.view || v === tokens.ops) fs.rmSync(f, { force: true }); } catch { /* 이미 없다 */ } }
     },
   };
 }

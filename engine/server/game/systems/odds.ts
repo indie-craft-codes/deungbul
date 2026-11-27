@@ -60,7 +60,7 @@ export class OddsSys {
       this.refresh(this.why);
     });
     g.ticks.push((dt) => this.tick(dt));
-    // 내 데이터: 내보내기에 내 추첨 기록, 지우기는 사람만 지운다 (줄은 입증 자료로 남는다: docs/making-a-game.md 19절)
+    // 내 데이터: 내보내기에 내 추첨 기록, 지우기는 사람만 지운다 (줄은 입증 자료로 남는다: docs/making-a-game.md 20절)
     personalData(g).push({
       name: 'draws',
       get: (pid) => { const rows = this.draws({ owner: pid, limit: 10_000 }); return rows.length ? rows : undefined; },

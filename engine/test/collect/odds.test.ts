@@ -14,6 +14,7 @@ import type { ServerMsg } from '../../shared/protocol';
 import { Game } from '../../server/game/game';
 import { personalData } from '../../server/game/personal';
 import { startServer } from '../../server/net/server';
+import { roleFor } from '../../server/net/admin';
 import { MemoryStore, SqliteStore } from '../../server/store';
 import { SCHEMA } from '../../server/store/sqlite';
 import { check, connect, removeTemp, settle, until, type Peer } from '../harness';
@@ -322,3 +323,8 @@ try {
   const def: CurrencyDef = { tradable: false, confirm: { at: 900, price: null } };
   check(needsConfirm(def, 900) && !needsConfirm(def, 899) && !needsConfirm({ tradable: false }, 1e9) && !needsConfirm(undefined, 1e9), '확인 단계: confirm.at 이상을 쓸 때만 묻는다 (적지 않은 재화는 묻지 않는다)');
 }
+
+// ---------- 8. 관리자 역할: 보기 전용은 표·이력·추첨 기록을 읽고, 사전 공지·버전 올리기·다시 쓰기는 전체 ----------
+check(roleFor('odds', []) === 'view' && roleFor('odds', ['show', 'enhance']) === 'view' && roleFor('odds', ['log']) === 'view' && roleFor('odds', ['plans']) === 'view' && roleFor('draws', ['stats', 'banner:dawn']) === 'view' && roleFor('draws', ['Ann']) === 'view'
+  && roleFor('odds', ['plan', 'banner:dawn', '+1d']) === 'full' && roleFor('odds', ['plan', 'cancel', '1']) === 'full' && roleFor('odds', ['check']) === 'full' && roleFor('odds', ['publish']) === 'full',
+  '관리자 역할: odds(목록·show·log·plans)·draws·draws stats는 보기, odds plan·check·publish는 전체');

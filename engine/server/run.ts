@@ -18,6 +18,10 @@
 //   ORIGIN_NONE=0        ORIGINS를 줄 때, Origin 머리말이 없는 연결(네이티브 앱의 소켓, 부하 도구)을 받지 않는다 (기본 받음)
 //   PROTOCOL_MIN=n       이 번호 ~ 지금 번호의 옛 화면도 받는다 (앱의 호환 기간). 없으면 같은 번호만
 //   STORE_URL=주소        옛 화면에 업데이트할 곳으로 알릴 주소 (앱 스토어 페이지)
+//   ALERT_WEBHOOK=주소    경보를 이 웹훅(http·https)에 보낸다 (engine/server/net/alerts.ts). 없으면 재기만 한다 (기본)
+//   ALERT_REPEAT_MIN=60  넘은 채로 있는 경보를 다시 알리는 간격(분). 0이면 다시 알리지 않는다
+//   ANALYTICS=0          분석 사건을 적지 않는다 (engine/server/game/systems/analytics.ts)
+//   ANALYTICS_KEEP_DAYS=180  분석 사건의 보관 일수
 // 서버는 저장 파일 옆에 자기 프로세스 번호를 server.pid로 적는다 (scripts/restart.mjs가 강제로 끌 때 쓴다). 꺼질 때 지운다.
 // 치명적 오류(처리되지 않은 예외): 적고, 저장을 시도하고, 코드 1로 끝낸다. 감시자(scripts/serve.mjs)가 다시 띄운다.
 import fs from 'node:fs';
@@ -52,6 +56,8 @@ export async function runServer(opts: RunOptions): Promise<Running> {
     origins: origins.length ? { list: origins, allowNone: process.env.ORIGIN_NONE !== '0' } : undefined,
     protocolMin: protocolMin !== undefined && Number.isInteger(protocolMin) ? protocolMin : undefined,
     storeUrl: process.env.STORE_URL || undefined,
+    alerts: { webhook: process.env.ALERT_WEBHOOK || undefined, ...(process.env.ALERT_REPEAT_MIN ? { repeatMin: Math.max(0, Number(process.env.ALERT_REPEAT_MIN) || 0) } : {}) },
+    analytics: process.env.ANALYTICS === '0' ? false : { keepDays: Math.max(1, Number(process.env.ANALYTICS_KEEP_DAYS ?? 180) || 180) },
   });
   const at = (process.env.DEV_SPAWN ?? '').split(',').map(Number);
   if (at.length === 2 && at.every(Number.isFinite)) s.game.players.devSpawn = { x: at[0], z: at[1] };
