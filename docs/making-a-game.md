@@ -576,21 +576,21 @@ export function initScene(): void {
 - 사람 모델(플레이어, 상인, NPC, 사람형 몬스터 모두)을 바꾸려면 `setHumanoidBody((look) => Model)`. `look`은 옷 색(`cloth`), 손 모양(`hand`), 살갗(`skin`)이다. 옷 색은 틀이 정한다(나는 붉은 옷, 남은 id마다 열 가지 가운데 하나): 사람마다 게임이 정하려면(팀 색) 6절 '사람마다의 값과 겉모습'의 `setPlayerLook`. 조금만 바꾸려면 위처럼 `defaultHumanoid(look)`을 불러 고치고(`m.head` 머리, `m.rig` 팔다리), 몸을 처음부터 짜려면 팔다리 넷 `rig`(`{ ll, rl, la, ra }`, `limb`으로 만든다)을 두고 손은 `attachHand(look.hand, { root, rig, cloth: 재질 })`로 붙인다(틀의 검·활·지팡이와 게임이 등록한 손 모양이 그대로 붙는다). 무기의 겉모습은 돌려준 `blade`로 따라간다.
 - 모델을 등록하지 않은 몬스터는 눈 달린 덩어리로 뜬다. 먼저 띄우고 나중에 꾸며도 된다.
 - 모델의 약속: 발이 원점, +Z를 바라본다. `{ root, legs }`를 돌려주면 네발 걸음(`legs`는 `limb()`가 돌려준 다리 묶음 넷의 배열: 앞왼, 앞오른, 뒤왼, 뒤오른), `{ root, rig }`면 사람 걸음(`rig`는 팔다리 넷 `{ ll, rl, la, ra }`), `{ root, blob }`이면 통통 튀는 동작을 틀이 입힌다(`blob`은 묶음이 아니라 **메시 하나**: `part(…)`가 돌려준 것). 크기를 바꾸려면 안쪽 묶음에 준다(틀이 쓰러지는 연출에서 `root`의 크기를 바꾼다).
-- 창의 색은 css 변수로 정한다. 게임의 css는 틀의 것 뒤에 읽혀 덮어쓴다(모듈에서 `import './sample.css'`).
+- 창의 색은 css의 **디자인 토큰**으로 정한다(24절). 게임의 css는 틀의 것 뒤에 읽혀 덮어쓴다(모듈에서 `import './sample.css'`).
 
 ```css games/sample/client/sample.css
 :root {
   --sky: #d9b48a;
-  --ink: #1d1712;
-  --ink-rgb: 29, 23, 18;
-  --panel: rgba(var(--ink-rgb), .86);
-  --cover-rgb: 20, 14, 9;
-  --line: rgba(255, 190, 120, .3);
-  --gold: #ffb057;
+  --c-bg: #d9b48a;
+  --c-surface: #1d1712;
+  --c-surface-rgb: 29, 23, 18;
+  --c-overlay-rgb: 20, 14, 9;
+  --c-line: rgba(255, 190, 120, .3);
+  --c-accent: #ffb057;
 }
 ```
 
-- 틀의 색 변수: `--sky`(문서 바탕), `--ink`와 `--ink-rgb`(창의 바탕색. 둘을 같은 색으로: 반투명한 바탕들이 `--ink-rgb`를 쓴다), `--panel`, `--cover-rgb`(화면을 덮는 막), `--line`, `--fg`, `--dim`, `--gold`, `--on-gold`(금빛 단추 위의 글자), `--good`·`--bad`·`--ally`(좋음·나쁨·파티원), `--hp`, `--xp`, `--icon-bg`(그림 칸의 바탕), `--font`, `--mono`. 기본값과 뜻은 `engine/client/style.css`의 맨 위.
+- 토큰(전체 목록과 기본값은 `engine/client/tokens.css`): 색 `--c-bg`(문서 바탕), `--c-surface`와 `--c-surface-rgb`(창의 바탕색. 둘을 같은 색으로: 반투명한 바탕들이 `-rgb`를 쓴다), `--c-overlay-rgb`(화면을 덮는 막), `--c-line`, `--c-text`·`--c-text-2`·`--c-text-3`(본문·보조·흐림), `--c-accent`·`--c-on-accent`(주 행동과 그 위의 글자), `--c-good`·`--c-bad`·`--c-warn`·`--c-ally`, `--c-hp`·`--c-xp`, 등급 색 `--rar-*`, 글자 크기 `--fs-xs`~`--fs-3xl`, 모서리 `--r-sm`·`--r-md`·`--r-lg`, 층 `--z-*`, 움직임 `--dur-*`. 예전 이름(`--sky`·`--ink`·`--ink-rgb`·`--panel`·`--cover-rgb`·`--line`·`--fg`·`--dim`·`--gold`·`--on-gold`·`--good`·`--bad`·`--ally`·`--hp`·`--xp`·`--icon-bg`)도 남아 있어 새 토큰의 기본값이 그것을 읽는다: 예전 이름만 적은 게임도 그대로 보인다. `--sky`는 문서 바탕(`--c-bg`)의 예전 이름이라 둘을 함께 적었다.
 
 ### 카메라 (선택)
 

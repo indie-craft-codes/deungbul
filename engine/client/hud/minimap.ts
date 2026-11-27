@@ -75,7 +75,7 @@ function draw(): void {
   c.save();
   c.clearRect(0, 0, SIZE, SIZE);
   c.beginPath(); c.arc(HALF, HALF, HALF - 1, 0, Math.PI * 2); c.clip();
-  c.fillStyle = cssVar('--ink', COLOR.out); c.fillRect(0, 0, SIZE, SIZE);
+  c.fillStyle = cssVar('--c-surface', COLOR.out); c.fillRect(0, 0, SIZE, SIZE);
   // 바탕: 땅과 물은 게임이 칠한다 (setMapPaint)
   paint({
     quad: (x0, z0, x1, z1, color) => quad(c, x0, z0, x1, z1, color),

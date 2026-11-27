@@ -3,42 +3,48 @@
    이 창들의 마크업은 markup.ts가 틀의 빈 자리에 붙인다 */
 /* 이 게임의 색: 틀의 색 변수를 덮어써 분위기를 정한다 */
 :root {
+  /* 틀의 기본값(tokens.css)과 같은 색이지만, 이 게임의 색으로 못박아 둔다 (틀의 기본이 바뀌어도 등불지기는 그대로) */
   --sky: #a9cdd0;
-  --ink: #0e2227;
-  --panel: rgba(14, 34, 39, .86);
-  --line: rgba(233, 214, 160, .3);
-  --fg: #eef3ee;
-  --dim: #a9bdb8;
-  --gold: #f0bb55;
-  --hp: #dc5a4c;
-  --xp: #a98bea;
+  --c-bg: #a9cdd0;
+  --c-surface: #0e2227;
+  --c-surface-rgb: 14, 34, 39;
+  --c-line: rgba(233, 214, 160, .3);
+  --c-text: #eef3ee;
+  --c-text-2: #a9bdb8;
+  --c-accent: #f0bb55;
+  --c-hp: #dc5a4c;
+  --c-xp: #a98bea;
+  /* 이 게임의 색 */
+  --db-glow: rgba(255, 200, 90, .55);
+  --db-glow-low: rgba(255, 200, 90, .2);
+  --db-swarm: #d9c2ff;
 }
 #tower {
   right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); width: 250px;
   display: flex; flex-direction: column; gap: 6px;
 }
-.bar.glow i { background: var(--gold); }
+.bar.glow i { background: var(--c-accent); }
 /* 터치 화면: 등탑 창의 단추가 손가락에 작았다(플레이어 재검토). 말을 윗줄로 올리고 단추를 키운다 */
 @media (pointer: coarse) {
   #tower .btns { flex-wrap: wrap; }
   #tower .btns .blabel { flex-basis: 100%; }
-  #tower .btns button { min-height: 38px; font-size: 14px; }
+  #tower .btns button { min-height: var(--tap); font-size: var(--fs-md); }
   #tower .row { flex-wrap: wrap; column-gap: 8px; }
   #tower .num { white-space: nowrap; margin-left: auto; }
 }
 /* 퀘스트가 가리키는 '보태기' 단추 */
-#resBtns.hint button { box-shadow: 0 0 0 1px var(--gold), 0 0 8px rgba(255, 200, 90, .55); animation: hintPulse 1.6s ease-in-out infinite; }
-@keyframes hintPulse { 50% { box-shadow: 0 0 0 1px var(--gold), 0 0 2px rgba(255, 200, 90, .2); } }
-.bar.res i { background: #7fd68a; }
-.spark { color: var(--gold); font-weight: 700; font-size: 12px; }
+#resBtns.hint button { box-shadow: 0 0 0 1px var(--c-accent), 0 0 8px var(--db-glow); animation: hintPulse 1.6s ease-in-out infinite; }
+@keyframes hintPulse { 50% { box-shadow: 0 0 0 1px var(--c-accent), 0 0 2px var(--db-glow-low); } }
+.bar.res i { background: var(--c-good); }
+.spark { color: var(--c-accent); font-weight: 700; font-size: var(--fs-xs); }
 /* 'Sparks 120'이 두 줄로 꺾이지 않게 (검토 7, 영어 폰) */
 #sparks { white-space: nowrap; }
 /* 불씨는 이 게임의 표시(#sparks)로 그린다: 틀의 두 번째 재화 표시는 감춘다 */
 #coin { display: none; }
-#raid { width: 300px; max-width: 100%; display: flex; flex-direction: column; gap: 5px; text-align: center; border-color: var(--gold); }
-#raid.active { border-color: var(--hp); }
-#raid .rtext { font-weight: 700; color: var(--gold); }
-#raid.active .rtext { color: #ffd9d2; }
+#raid { width: 300px; max-width: 100%; display: flex; flex-direction: column; gap: 5px; text-align: center; border-color: var(--c-accent); }
+#raid.active { border-color: var(--c-hp); }
+#raid .rtext { font-weight: 700; color: var(--c-accent); }
+#raid.active .rtext { color: var(--c-foe); }
 #raid .rhp { display: flex; flex-direction: column; gap: 3px; }
 #keepBox, #villageBox { display: flex; flex-direction: column; gap: 4px; }
 #villageBox { gap: 6px; }
@@ -46,18 +52,18 @@
 #quest { right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); width: 250px; display: flex; flex-direction: column; gap: 4px; }
 /* 등탑 창이 뜨면 그 아래로 내려간다 */
 #tower:not([hidden]) ~ #quest { top: calc(308px + env(safe-area-inset-top, 0px)); }
-#questStep { font-size: 12.5px; }
+#questStep { font-size: var(--fs-sm); }
 #quest { cursor: pointer; }
-#quest:hover { border-color: var(--gold); }
-#questGo { color: var(--gold); }
+#quest:hover { border-color: var(--c-accent); }
+#questGo { color: var(--c-accent); }
 #goalArrow {
   position: fixed; left: 0; top: 0; width: 0; height: 0; pointer-events: none;
-  border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 22px solid var(--gold);
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .7));
+  border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 22px solid var(--c-accent);
+  filter: drop-shadow(0 1px 2px var(--c-sunk-3));
 }
-.tag.swarm { color: #d9c2ff; } /* 습격으로 몰려온 적 (틀의 이름표 클래스 swarm) */
-.tag.swarm .hpw i { background: #a98bea; }
-#townBtn { pointer-events: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
+.tag.swarm { color: var(--db-swarm); } /* 습격으로 몰려온 적 (틀의 이름표 클래스 swarm) */
+.tag.swarm .hpw i { background: var(--c-xp); }
+#townBtn { pointer-events: auto; background: var(--c-panel); color: var(--c-text); border: 1px solid var(--c-line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
 @media (pointer: coarse) {
   /* 등탑·상점·대장간이 열려도 대화와 퀘스트는 남긴다: 창은 설명을 빼서 줄이고, 퀘스트는 할 일만 보여 준다 */
   #tower > .note, #resNote, #keepBox { display: none; }
@@ -88,7 +94,7 @@
   #tower > .note, #resNote, #keepBox { display: none; }
   #villageBox { grid-column: 2; grid-row: 1 / span 3; }
   #classBtn { grid-column: 1 / -1; padding: 3px 8px; }
-  #tower .ttitle { font-size: 12.5px; }
+  #tower .ttitle { font-size: var(--fs-sm); }
   #tower .num { white-space: nowrap; }
   #tower .row { flex-wrap: wrap; gap: 0 8px; }
 }
@@ -106,7 +112,7 @@
 #questDist, #contrib { white-space: nowrap; flex: none; }
 /* 던전 안: 퀘스트 창은 할 일만 보여 준다 (들판의 목적지까지 걸어갈 수 없다) */
 #quest.away { cursor: default; }
-#quest.away:hover { border-color: var(--line); }
+#quest.away:hover { border-color: var(--c-line); }
 #quest.away #questGo { display: none; }
 /* 등탑·상점·대장간 창은 가장 가까운 것 하나만 보인다 (hud/near.ts가 data-near를 적는다. 화면의 넓이와 상관없이). 상점과 대장간끼리의 짝은 틀의 스타일에 있다 */
 #rightcol[data-near="tower"] #shop, #rightcol[data-near="tower"] #forge,

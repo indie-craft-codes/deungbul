@@ -5,8 +5,8 @@
 // 기간이 있는 배너는 서버가 열려 있다고 보낸 것(GachaMe.open)만 보인다. 영웅 선택권(GACHA_RULES.select)이 있으면 뽑기 탭 끝에 고르는 줄이 붙는다.
 // 게임이 더 할 수 있는 것: 뽑기 결과를 받기(onGachaResult: 연출, 소리), 내 영웅·편성 읽기(myHeroes, mySquad).
 import * as THREE from 'three';
-import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, rarityDef, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
-import { teamCss } from '../../shared/defs/teams';
+import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
+import { rarityHex, tintRarity } from './rarity';
 import { $ } from '../app';
 import { onMsg } from '../bus';
 import { registerKind } from '../kinds';
@@ -51,7 +51,7 @@ let heroModel: ((h: HeroModelInfo) => Model | null | undefined) | null = null;
 export function setHeroModel(fn: (h: HeroModelInfo) => Model | null | undefined): void { heroModel = fn; }
 
 /** 등급의 색을 입힌 요소 */
-function tinted<T extends HTMLElement>(e: T, r: number): T { e.style.setProperty('--rc', teamCss(rarityDef(r).color)); return e; }
+const tinted = tintRarity;
 const money = (cur: Coin) => (S.me ? (cur === 'gold' ? S.me.gold : S.me.sparks) : 0);
 const stars = (n: number) => '★'.repeat(Math.max(0, Math.min(9, n)));
 const roleName = (id: string) => uiText.get(heroRole(id).name);
@@ -237,7 +237,7 @@ function heroLook(): void {
       const parts = d?.look, hl: HumanoidLook = { cloth: parts?.colors.cloth ?? cloth, hand: hand === false ? '' : hand, skin: parts?.colors.skin ?? 0xf0c9a0, hero: e.type, rarity: r, ...(parts ? { look: parts } : {}) };
       const m = heroModel?.({ id: e.type, rarity: r, look: hl }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, undefined, { hero: e.type, rarity: r }, parts);
       let mat = rings.get(r);
-      if (!mat) rings.set(r, mat = new THREE.MeshBasicMaterial({ color: rarityDef(r).color, transparent: true, opacity: 0.85 }));
+      if (!mat) rings.set(r, mat = new THREE.MeshBasicMaterial({ color: rarityHex(r), transparent: true, opacity: 0.85 }));
       const ring = new THREE.Mesh(ringGeo, mat);
       ring.position.y = 0.04;
       m.root.add(ring);

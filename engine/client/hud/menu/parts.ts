@@ -18,11 +18,26 @@ export function el(cls: string, text = ''): HTMLDivElement {
   d.textContent = text;
   return d;
 }
-export function button(text: string, on: () => void, disabled = false): HTMLButtonElement {
+/**
+ * 단추 하나 (보조 단추 모양: .plain = .btn-secondary). why: 흐릴 때(disabled) 그 까닭 한 줄 — 단추 아래 작은 글과 툴팁(길게 누르면 폰에서도)으로 보인다.
+ * 이유가 있는 흐린 단추는 글이 읽히게 덜 흐리다 (tokens.css의 .has-why)
+ */
+export function button(text: string, on: () => void, disabled = false, why = ''): HTMLButtonElement {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'plain'; b.textContent = text; b.disabled = disabled;
+  if (disabled && why) whyOf(b, why);
   b.addEventListener('click', on);
   return b;
+}
+/** 흐린 단추에 까닭을 단다 (단추 안의 작은 줄 + title). 까닭이 빈 글이면 떼어 낸다 */
+export function whyOf(b: HTMLButtonElement, why: string): void {
+  b.querySelector(':scope > .why')?.remove();
+  b.classList.toggle('has-why', !!why);
+  if (!why) { b.removeAttribute('title'); return; }
+  const s = document.createElement('small');
+  s.className = 'why'; s.textContent = why;
+  b.append(s);
+  b.title = why;
 }
 /** 한 줄: 왼쪽에 이름과 설명, 오른쪽에 단추들. 이름과 설명은 글이거나 미리 만든 요소다 */
 export function row(name: string | HTMLElement, note: string | HTMLElement, buttons: HTMLElement[] = [], cls = ''): HTMLDivElement {

@@ -55,9 +55,10 @@ export function logChat(who: string, text: string, guild = false): void {
 }
 
 /** 안내문 (이미 현재 언어로 된 문장) */
-export function logText(text: string): void {
+export function logText(text: string, echo = false): void {
   const d = document.createElement('div');
-  d.className = 'sys';
+  // echo: 가운데 알림·위험 알림으로 이미 뜬 줄 (기록에는 남기되 접힌 대화의 한 줄 미리 보기에는 되풀이하지 않는다: hud/notify.ts의 알림 규칙)
+  d.className = echo ? 'sys echo' : 'sys';
   d.textContent = text;
   line(d, 's');
 }

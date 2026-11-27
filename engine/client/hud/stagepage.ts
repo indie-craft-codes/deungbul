@@ -6,7 +6,8 @@
 // 게임은 useStageScreens(opts)로 켠다: 출발·홈·강해지는 길·초상이 게임의 것. 켜지 않으면 아무것도 붙지 않는다 (예전과 같다).
 // 셋 다 화면 쌓기에 든다: 뒤로 가기가 결과 창 → 편성 확인 → 단계 정보 창 차례로 닫는다.
 import { $ } from '../app';
-import { CHAPTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, allStarsOf, heroDef, rarityDef, stageIndex, stageStars, stageSweepable, teamCss, type Reward, type StageRef, type StarCond } from '../../shared/defs';
+import { CHAPTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, allStarsOf, heroDef, stageIndex, stageStars, stageSweepable, type Reward, type StageRef, type StarCond } from '../../shared/defs';
+import { tintRarity } from './rarity';
 import { onMsg, onSlow } from '../bus';
 import { L, onLangChange, t } from '../i18n';
 import { heroName } from '../i18n/ko';
@@ -133,7 +134,7 @@ function drawCheck(force = false): void {
   const grid = mk('div', 'stsquad'), heroes = myHeroes();
   for (const id of sq.ids) {
     const d = heroDef(id), h = heroes[id], c = mk('div', 'stmate');
-    if (d) c.style.setProperty('--rc', teamCss(rarityDef(d.rarity).color));
+    if (d) tintRarity(c, d.rarity);
     const url = opts.heroPic?.(id);
     if (url) { const img = document.createElement('img'); img.src = url; img.alt = ''; c.append(img); }
     c.append(mk('b', '', heroName(id)), mk('small', '', `Lv ${h?.[0] ?? 1} · ${'★'.repeat(h?.[1] ?? 1)}`));

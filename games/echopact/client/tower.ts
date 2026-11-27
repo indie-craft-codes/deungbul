@@ -3,12 +3,12 @@
 //   → 모험(장·단계 고르기 페이지) → 단계 정보 창(적·권장 전투력·별 조건·보상) → 편성 확인 → 전투(편성의 메아리만 싸운다) → 결과 창(별·보상, 홈·다시·다음) → 홈
 //   홈의 '다음 도전'은 곧장 다음 단계의 편성 확인으로 (자주 하는 사람의 '이어서'). 지면 결과 창에 '강해지는 길'(메아리 키우기·뽑기·편성·울림골).
 // 홈은 틀의 모드 홈 칸(setModeHome)으로 등록한다: 탑에 올 때마다 홈이 먼저 열린다. 화면 사이의 뒤로 가기(폰 브라우저의 뒤로 포함)는 틀의 화면 쌓기가 맡는다.
-// 보고 있지 않은 쪽의 작은 표시, 다른 쪽의 위험 알림, 안전장치의 설정 칸도 여기. 폰에서는 작은 표시·위험 알림·전환 단추를 틀의 구역(placeIn)에 등록한다.
+// 보고 있지 않은 쪽의 작은 표시(상태 줄), 안전장치의 설정 칸도 여기. 다른 쪽의 위험 알림은 틀(hud/modes.ts)의 것. 폰에서는 작은 표시·전환 단추를 틀의 구역(placeIn)에 등록한다.
 // 모드를 오가는 것·메뉴의 탭·감출 틀 요소·들판의 대역은 틀이 맡는다 (engine/client/hud/modes.ts). 문서의 body[data-mode]·[data-tower]로 스타일이 화면을 가른다.
-import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, MODE_RULE_VIEW, STAGES, knownChar, rarityDef, teamCss, type ModeSideMe } from '@engine/shared/defs';
+import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSideMe } from '@engine/shared/defs';
 import {
   $, addSetting, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
-  onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, S, send, setModeHome, stageRows, switchMode, useStageScreens, type HomeKit,
+  onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, S, send, setModeHome, stageRows, switchMode, tintRarity, useStageScreens, type HomeKit,
 } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { heroName, rarityName } from '@engine/client/i18n/ko';
@@ -70,7 +70,7 @@ function initHome(): void {
       const id = mySquad().ids[0] ?? Object.keys(myHeroes())[0], def = id ? knownChar(id) : undefined;
       if (!def) return null;
       const h = myHeroes()[def.id];
-      return { img: charPortrait(def, 240, 300), name: heroName(def.id), color: teamCss(rarityDef(def.rarity).color),
+      return { img: charPortrait(def, 240, 300), name: heroName(def.id), color: rarityCss(def.rarity),
         info: `${HERO_RARITIES.length ? rarityName(def.rarity) + ' · ' : ''}Lv ${h?.[0] ?? 1} · ${'★'.repeat(h?.[1] ?? 1)}` };
     },
     onLead: () => openMenu('heroes'),
@@ -140,6 +140,7 @@ function drawAdventure(): void {
   const auto = $('towerAuto');
   auto.textContent = st?.auto ? t('towerAutoOn') : t('towerAutoOff');
   auto.classList.toggle('on', !!st?.auto);
+  auto.setAttribute('aria-pressed', String(!!st?.auto));
 }
 
 // ---------- 전투: 편성의 메아리들 (탑에서는 계약자가 싸우지 않는다) ----------
@@ -159,7 +160,7 @@ function drawSquadBar(): void {
     const c = document.createElement('div');
     c.className = 'tsq' + (r.hp <= 0 || r.dying ? ' down' : '');
     const d = knownChar(r.type);
-    if (d) c.style.setProperty('--rc', teamCss(rarityDef(d.rarity).color));
+    if (d) tintRarity(c, d.rarity);
     const n = document.createElement('b'); n.textContent = heroName(r.type);
     const hp = document.createElement('i'), fill = document.createElement('span');
     fill.style.transform = `scaleX(${r.maxHp > 0 ? Math.max(0, Math.min(1, r.hp / r.maxHp)) : 0})`;
@@ -196,22 +197,7 @@ function drawSide(s: Readonly<ModeSideMe> = myModeSide()): void {
   hs.classList.toggle('danger', danger);
 }
 
-// ---------- 다른 쪽의 위험: 눈에 띄는 알림과 바로 가기 ----------
-const DANGER: Partial<Record<MsgKey, string>> = { modeStandDown: MODE.vale, autoRetreat: MODE.vale, autoNoPotion: MODE.vale, autoDied: MODE.vale, modeStandEnd: MODE.vale, stageBgStop: MODE.tower };
-let alertTimer = 0;
-function alertOf(k: MsgKey, a: MsgArg[]): void {
-  onStageNews(k, a);
-  const where = DANGER[k];
-  if (!where || myMode()?.id === where) return; // 그 게임을 보고 있으면 틀의 알림으로 충분하다
-  const make = L().msg[k];
-  $('pactAlertText').textContent = make ? make(a) : k;
-  const btn = $('pactAlertGo');
-  btn.textContent = `${t('alertGo')}: ${uiText.get(MODE_RULE_VIEW.list.find((m) => m.id === where)?.name ?? where)}`;
-  btn.dataset.to = where;
-  $('pactAlert').hidden = false;
-  clearTimeout(alertTimer);
-  alertTimer = window.setTimeout(() => { $('pactAlert').hidden = true; }, 12000);
-}
+// 다른 쪽의 위험(대역의 쓰러짐·물러남, 뒤에서 잇던 단계의 멈춤)은 틀의 위험 알림이 한 곳에 띄운다 (hud/modes.ts: 글과 그쪽으로 가는 단추).
 
 // ---------- 안전장치의 설정 칸 (보이지 않을 때의 자동 사냥: 서버의 g.away.safety를 사람마다) ----------
 const safe = { potion: SAFETY.potionAt, retreat: SAFETY.retreatAt, noPotion: SAFETY.stopNoPotion, death: SAFETY.stopOnDeath };
@@ -232,19 +218,18 @@ export function initTower(): void {
       <p class="tpower" id="taPower"></p>
       <button type="button" class="tgo" id="towerNext"></button>
       <p class="tweak" id="towerWeak" hidden><span data-i18n="towerWeak"></span> <button type="button" id="towerGrow" data-i18n="towerGrow"></button></p>
-      <button type="button" class="tauto" id="towerAuto"></button>
+      <button type="button" class="tauto toggle" id="towerAuto" aria-pressed="false"></button>
       <div class="tstages" id="towerStages"></div>
       <p class="thint" data-i18n="towerHint"></p>
     </div>
     <div id="towerBattle" class="tbattle" hidden><button type="button" id="tbHome" data-i18n="towerHomeBtn"></button></div>
     <div id="pactSide" class="pactSide" hidden><span id="pactSideText"></span><button type="button" id="pactSideStop" data-i18n="sideStopTower" hidden></button></div>
     <div id="towerSquadBar" class="towerSquadBar" hidden></div>
-    <div id="pactAlert" class="pactAlert" role="alert" hidden><span id="pactAlertText"></span><button type="button" id="pactAlertGo"></button></div>`);
+`);
   initHome();
   // 폰: 작은 표시는 위 왼쪽(내 정보 아래), 위험 알림은 가운데 위의 알림 띠, 편성의 메아리 줄은 아래 가운데 (틀의 구역 배치)
   placeIn('tl', 'towerBattle', -1);
   placeIn('tl', 'pactSide', 20);
-  placeIn('tc', 'pactAlert', 0);
   placeIn('bc', 'towerSquadBar', 20);
   $('taBack').addEventListener('click', () => homeScreen());
   $('taHome').addEventListener('click', () => homeScreen());
@@ -275,11 +260,10 @@ export function initTower(): void {
   onScreens(syncView);
   $('pactSideText').addEventListener('click', () => switchMode());
   $('pactSideStop').addEventListener('click', () => send({ t: 'stage', a: 'leave' }));
-  $('pactAlertGo').addEventListener('click', (e) => { const to = (e.currentTarget as HTMLElement).dataset.to; $('pactAlert').hidden = true; if (to && myMode()?.id !== to) switchMode(to); });
-  onModeChange((def) => { if (def.id !== MODE.tower) { closeStageResult(); clearScreens(); } draw(); drawSide(); $('pactAlert').hidden = true; });
+  onModeChange((def) => { if (def.id !== MODE.tower) { closeStageResult(); clearScreens(); } draw(); drawSide(); });
   onModeSide((s) => drawSide(s));
   onMsg('me', (m) => { if (m.k === 'stage' || m.k === 'squad' || m.k === 'heroes' || m.k === 'chars') { if (view !== 'battle') draw(); else home.draw(); } });
-  onMsg('sys', (m) => alertOf(m.k, m.a ?? []));
+  onMsg('sys', (m) => onStageNews(m.k, m.a ?? []));
   onMsg('stat', () => home.draw());
   onSlow(() => {
     drawSquadBar();

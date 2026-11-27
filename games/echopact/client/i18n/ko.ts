@@ -103,7 +103,6 @@ export const koGame = {
     sideStopTower: '탑 멈추기',
     sideHunt: '사냥 중', sideRest: '쉬는 중', sideRetreat: '물러남', sideStop: '멈춤', sideDown: '쓰러짐',
     sideFight: '싸우는 중', sideGap: '다음 물결', sideClear: '깸', sideFail: '실패', sideLobby: '쉬는 중',
-    alertGo: '바로 가기',
     // 튜토리얼과 설정 칸 (client/tutorial.ts)
     tutPact: '계약의 첫걸음',
     tutStage: '계약의 탑의 홈입니다. 오른쪽 아래 "다음 도전"을 누르고 "출발"로 1-1에 도전해 보세요. 탑에서는 편성한 메아리(카드)만 싸웁니다. 처음 깨면 울림 조각을 받습니다.',
