@@ -5,6 +5,7 @@
 // 서버의 짝은 engine/server/game/systems/odds.ts, 표의 모양과 굴림은 engine/shared/defs/odds.ts. 문장은 i18n의 ui·fmt와 oddsPage(공개 페이지와 같은 문장).
 import { oddsPct, outcomeLabel, type DrawRow, type OddsPublic, type OddsTable, type OddsWhen } from '../../shared/defs';
 import { onMsg } from '../bus';
+import { hasModule } from '../mods';
 import { L, t } from '../i18n';
 import { heroName, rarityName } from '../i18n/ko';
 import { uiText } from '../i18n/names';
@@ -79,7 +80,9 @@ function drawTables(list: HTMLElement): void {
     for (const p of pub.plans) { const tb = pub.tables.find((x) => x.id === p.table); list.append(el('note', `${tb ? tableName(tb) : p.table} · ${fill(w.planAt, { at: new Date(p.at).toISOString().slice(0, 16).replace('T', ' ') + ' UTC', local: new Date(p.at).toLocaleString() })} · ${p.text[L().code] ?? p.text.ko ?? Object.values(p.text)[0] ?? ''}`)); }
   }
   if (!pub.tables.length) list.append(el('note', w.none));
-  pub.tables.forEach((tb, i) => drawTable(list, tb, i === 0));
+  // 뽑기가 있는 게임은 뽑기(상자·천장형)의 표를 먼저 (강화의 표가 맨 위에 와서 뽑기 확률이 아래로 밀렸다). 뽑기가 없으면 예전 차례
+  const first = (k: string): number => (hasModule('gacha') && k !== 'capsule' && k !== 'ceiling' ? 1 : 0);
+  [...pub.tables].sort((a, b) => first(a.kind) - first(b.kind)).forEach((tb, i) => drawTable(list, tb, i === 0));
   list.append(el('baghead', t('oddsHistory')));
   if (!pub.history.length) list.append(el('note', w.noHistory));
   for (const h of pub.history.slice(0, 10)) {

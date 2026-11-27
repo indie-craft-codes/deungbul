@@ -144,7 +144,16 @@ export interface GachaRules {
 /** 소탕의 값: 게임 안의 재화(cur) 또는 가방의 아이템(item, 소탕권) n개. 한 번 소탕할 때마다 */
 export type SweepCost = { cur: Coin; n: number } | { item: string; n: number };
 /** 소탕: 이미 깬 단계·던전을 싸우지 않고 바로 끝내 보통 보상(처음 깬 보상이 아니다)을 받는다. cost는 한 번마다의 값(없으면 공짜), max는 한 번에 할 수 있는 횟수(기본 10) */
-export interface SweepRule { cost?: SweepCost; max?: number }
+export interface SweepRule {
+  cost?: SweepCost; max?: number;
+  /** 별을 다 딴(조건을 모두 채운) 단계만 소탕할 수 있다 (별 조건이 있는 단계만 해당. 기본 false: 깬 단계 모두) */
+  allStars?: boolean;
+}
+/**
+ * 단계의 별 조건 하나 (StageDef.stars, STAGE_RULES.stars): 깨면 조건마다 별 하나.
+ *   clear 깸 · time 제한 s초 안에 깸 · alive 아무도 쓰러지지 않음(편성의 영웅, 편성만 싸우지 않으면 사람도)
+ */
+export type StarCond = { k: 'clear' } | { k: 'time'; s: number } | { k: 'alive' };
 /**
  * 오프라인 단계 진행: 접속하지 않은 동안 서버가 '얼마나 더 깼을까'를 셈한다 (자동 진행을 켜 둔 사람만).
  * 가장 멀리 깬 단계의 다음부터, 편성의 전투력이 권장 전투력 × need(기본 1) 이상인 단계를 perStageS초에 하나씩 깬 것으로 친다.
@@ -196,6 +205,8 @@ export interface StageDef {
   timeS?: number;
   /** false면 이 단계는 소탕할 수 없다 (STAGE_RULES.sweep이 있을 때. 기본은 깬 단계 모두) */
   sweep?: boolean;
+  /** 별 조건 (보통 셋). 없으면 STAGE_RULES.stars, 그것도 없으면 별이 없다 (예전과 같다) */
+  stars?: readonly StarCond[];
 }
 
 /** 장 하나: 이름의 문장 키와 단계들 (단계의 id는 '장 번호-단계 번호', 1부터) */
@@ -215,6 +226,8 @@ export interface StageRules {
   enterOnJoin: boolean;
   /** 소탕(깬 단계를 바로 끝내기)의 값과 한 번에 하는 수. 없으면 소탕이 없다 */
   sweep?: SweepRule;
+  /** 단계에 별 조건(StageDef.stars)이 없을 때 쓰는 별 조건. 없으면 별이 없다 */
+  stars?: readonly StarCond[];
   /** 오프라인 단계 진행. 없으면 하지 않는다 (방치 보상의 수치만 깬 단계로 커진다) */
   offline?: OfflineRules;
   /**
@@ -417,6 +430,21 @@ export const sweepMax = (r: SweepRule | undefined): number => Math.max(1, Math.f
 /** 그 단계를 소탕할 수 있는 단계인가 (깼는가는 따로 본다) */
 export const stageSweepable = (s: StageRef | undefined): boolean => !!STAGE_RULE_VIEW.sweep && !!s && s.def.sweep !== false;
 
+/** 그 단계의 별 조건 (단계의 것, 없으면 규칙의 것, 없으면 빈 목록) */
+export const stageStars = (s: StageRef | undefined): readonly StarCond[] => (s ? s.def.stars ?? STAGE_RULE_VIEW.stars ?? [] : []);
+/** 별 조건이 있는 단계가 하나라도 있는가 */
+export const anyStars = (): boolean => STAGES.some((s) => stageStars(s).length > 0);
+/** 별의 셈: 조건마다 비트 하나 (조건의 차례). usedS 걸린 초, lost 누가 쓰러졌는가 */
+export function starMask(conds: readonly StarCond[], usedS: number, lost: boolean): number {
+  let m = 0;
+  conds.forEach((c, i) => { if (c.k === 'clear' || (c.k === 'time' && usedS <= c.s) || (c.k === 'alive' && !lost)) m |= 1 << i; });
+  return m;
+}
+/** 딴 별의 수 */
+export const starCount = (mask: number): number => { let n = 0; for (let m = mask; m; m &= m - 1) n++; return n; };
+/** 그 단계의 별을 다 땄는가 (별 조건이 없으면 참) */
+export const allStarsOf = (s: StageRef | undefined, mask: number): boolean => { const n = stageStars(s).length; return n === 0 || (mask & ((1 << n) - 1)) === (1 << n) - 1; };
+
 /**
  * 오프라인 단계 진행의 셈 (서버가 돌아온 사람에게, 시험과 화면이 같은 셈을 쓴다). 아무것도 바꾸지 않는다.
  * best: 가장 멀리 깬 단계의 번호(-1이면 없음), power: 편성의 전투력, ms: 비운 시간.
@@ -469,7 +497,11 @@ export interface SquadMe { ids: string[]; power: number; back?: string[]; syn?: 
 /** state 'lobby': 단계 안의 대기실 (g.stages.lobby: 몬스터 없이 단계의 자리에 서 있다. 모드(modes 모듈)의 단계 모드가 고르는 곳) */
 export interface StageRun { id: string; wave: number; waves: number; foes: number; total: number; left: number; state: 'fight' | 'gap' | 'clear' | 'fail' | 'lobby'; boss: boolean }
 /** 개인 상태 'stage': 지금 단계, 가장 멀리 깬 단계(없으면 ''), 자동 진행, 안에 있으면 그 진행 */
-export interface StageMe { cur: string; best: string; auto: boolean; run: StageRun | null }
+export interface StageMe {
+  cur: string; best: string; auto: boolean; run: StageRun | null;
+  /** 단계마다 딴 별(비트, starMask). 별 조건이 있는 게임만 온다 */
+  stars?: Record<string, number>;
+}
 /** 개인 상태 'keys' (열쇠를 쓰는 던전이 있는 게임): 던전마다 가진 열쇠와 오늘 산 수 */
 export type KeysMe = Record<string, { n: number; bought: number; won?: boolean }>;
 /** 소탕의 결과 (메시지 sweep): 단계·던전, id, 횟수, 받은 것의 합: 재화(cur: 재화 id → 양), 아이템(goods: 아이템 id → 수), 장비의 수(equip) */

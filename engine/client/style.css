@@ -971,3 +971,263 @@ body.chatOff .tag .say { display: none !important; }
 .codexCell.on { opacity: 1; }
 .couponRow { align-items: center; gap: 6px; }
 .couponRow input { flex: 1 1 8em; min-width: 0; text-transform: uppercase; }
+
+/* ---------- 화면 쌓기·구역 배치·재화 줄·알림 점 (묶음 A: hud/screens.ts, hud/layout.ts, hud/currency.ts, hud/dots.ts) ---------- */
+/* 알림 점: 묶인 요소의 오른쪽 위 모서리 (메뉴의 탭은 위의 #menuTabs 규칙이 덮는다) */
+.dot { position: relative; }
+.dot::after { content: ''; position: absolute; right: -3px; top: -3px; width: 9px; height: 9px; border-radius: 50%; background: #e5483a; box-shadow: 0 0 0 2px rgba(0, 0, 0, .35); pointer-events: none; }
+.dot[data-dot]::after { content: attr(data-dot); width: auto; min-width: 16px; height: 16px; padding: 0 4px; right: -6px; top: -7px; border-radius: 8px; font: 700 10.5px/16px var(--font); color: #fff; text-align: center; }
+/* 재화 줄: 칩마다 그림·수·'+' */
+.curbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.curchip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px 3px 9px; border-radius: 999px; background: rgba(0, 0, 0, .38); border: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+.curchip > i { font-style: normal; }
+.curchip.cur-gold { color: #ffe08a; } .curchip.cur-second { color: #9fd8ff; }
+.curchip .icon.sm { margin-right: 0; }
+.curchip .curplus { min-width: 24px; height: 24px; padding: 0; border-radius: 50%; font-size: 15px; line-height: 22px; margin-left: 2px; }
+.curchip:not(:has(.curplus)) { padding-right: 10px; }
+
+/* 구역: PC에서는 쓰지 않는다 (요소는 제자리). 폰 세로·가로에서만 구역이 요소를 쌓는다 */
+#zones { display: none; }
+body[data-lay="portrait"] #zones, body[data-lay="landscape"] #zones { display: contents; }
+.zone { position: absolute; display: flex; flex-direction: column; gap: 6px; pointer-events: none; min-width: 0; z-index: 3; }
+.zone:empty { display: none; }
+/* 구역 안의 요소는 구역이 놓는다: 요소마다의 자리(top·left·fixed)를 지운다 (게임의 스타일보다 앞서게 !important) */
+.zone > * { position: relative !important; inset: auto !important; transform: none !important; max-width: 100%; flex: none; }
+.zone > .panel { pointer-events: auto; }
+#zone-tl { left: max(8px, env(safe-area-inset-left, 0px)); top: calc(8px + env(safe-area-inset-top, 0px)); align-items: flex-start; }
+#zone-tr { right: max(8px, env(safe-area-inset-right, 0px)); top: calc(8px + env(safe-area-inset-top, 0px)); align-items: flex-end;
+  max-height: calc(var(--app-h, 100vh) - var(--zb-h, 200px) - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+#zone-bl { left: max(8px, env(safe-area-inset-left, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); align-items: flex-start; }
+#zone-br { right: max(8px, env(safe-area-inset-right, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); align-items: flex-end; }
+#zone-bc { left: 50%; transform: translateX(-50%); bottom: calc(var(--zb-h, 140px) + 14px + env(safe-area-inset-bottom, 0px)); width: min(360px, calc(100% - 24px)); align-items: center; z-index: 4; }
+#zone-tc { left: 50%; transform: translateX(-50%); top: 30%; width: min(360px, calc(100% - 24px)); align-items: center; z-index: 6; }
+/* 위 오른쪽: 단추 줄(가방·메뉴) · 게임의 전환 단추 · 대화 · 오른쪽 창(넘치면 그 안에서 스크롤) */
+#hudBtns { display: flex; gap: 6px; pointer-events: auto; }
+#hudBtns:empty { display: none; }
+#hudBtns button { min-height: 36px; min-width: 44px; padding: 4px 10px; font-size: 14px; }
+#zone-tr > #rightcol { flex: 0 1 auto; min-height: 0; max-height: none; overflow-y: auto; width: 200px; pointer-events: auto; }
+#zone-tr > #chat { width: 200px; }
+/* 아래 오른쪽: 행동 단추. 흘러가는 알림은 아래 가운데 구역으로 갔다 */
+#zone-br > #bottom { align-items: flex-end; width: auto; }
+/* 아래 가운데: 안내 글은 단추와 겹치지 않는 자리에 세 줄까지, 한 줄은 두 줄까지 */
+#zone-bc > #feed { position: static; width: 100%; align-items: center; margin: 0; }
+#zone-bc #feed > div { max-width: 100%; text-align: center; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+#zone-bc #feed > div:nth-last-child(n+4) { display: none; }
+
+/* 내 정보: 폰에서는 한 줄로 줄인다. 가방·메뉴 단추는 위 오른쪽으로, 채널·언어는 메뉴 창의 머리로 갔다 */
+body[data-lay="portrait"] #me, body[data-lay="landscape"] #me { width: 176px; min-width: 0; padding: 6px 8px; gap: 3px; }
+body[data-lay="portrait"] #me .row:has(> #status), body[data-lay="landscape"] #me .row:has(> #status) { display: none; }
+body[data-lay="portrait"] #me .name, body[data-lay="landscape"] #me .name { font-size: 14px; }
+body[data-lay="portrait"] #me .row, body[data-lay="landscape"] #me .row { flex-wrap: nowrap; }
+body[data-lay="portrait"] #me .row:has(> #gold) { flex-wrap: nowrap; }
+body[data-lay="portrait"] #me #coin, body[data-lay="landscape"] #me #coin { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#menuHead #channel, #menuHead #lang { flex: none; max-width: 6.5em; }
+/* 대화: 폰에서는 접혀 시작한다 (마지막 말 한 줄). 누르면 펼치고, '접기'로 다시 접는다 */
+#chatFold { display: none; }
+body[data-lay="portrait"] #chat:not(.fold) #chatFold, body[data-lay="landscape"] #chat:not(.fold) #chatFold { display: block; align-self: flex-end; padding: 2px 10px; font-size: 12px; }
+#chat.fold { padding: 4px 8px; gap: 0; cursor: pointer; pointer-events: auto; }
+#chat.fold #chatTabs, #chat.fold #chatForm, #chat.fold #chatBtn, #chat.fold #qcList { display: none !important; }
+#chat.fold #log { height: auto; max-height: 1.6em; overflow: hidden; -webkit-mask-image: none; mask-image: none; }
+#chat.fold #log > div:not(:last-child) { display: none; }
+#chat.fold #log > div:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#chat.fold:has(#log:empty) #chatBtn { display: block !important; padding: 4px 10px; }
+body[data-lay="portrait"] #chat:not(.fold) #log, body[data-lay="landscape"] #chat:not(.fold) #log { height: 96px; }
+/* 폰 가로: 높이가 모자라다. 아래 가운데 안내 글은 조이스틱과 행동 단추 사이에, 위 오른쪽은 좁게 */
+body[data-lay="landscape"] #zone-bc { left: calc(max(8px, env(safe-area-inset-left, 0px)) + var(--zbl-w, 110px) + 12px); right: calc(max(8px, env(safe-area-inset-right, 0px)) + var(--zbr-w, 300px) + 12px);
+  width: auto; transform: none; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+body[data-lay="landscape"] #zone-tr { max-height: calc(var(--app-h, 100vh) - var(--zb-h, 160px) - 20px - env(safe-area-inset-bottom, 0px)); }
+body[data-lay="landscape"] #zone-tr > #rightcol { width: 230px; }
+
+/* 화면 쌓기: 전체 화면 페이지가 열리면 들판 HUD를 감춘다. 큰 창(sheet)이 열리면 폰에서는 창이 구역 위에 그려진다 */
+body.pageOn #zones, body.pageOn #me, body.pageOn #chat, body.pageOn #stick, body.pageOn #bottom, body.pageOn #rightcol, body.pageOn #topmid, body.pageOn #mapBox, body.pageOn #tags { visibility: hidden; }
+body[data-lay="portrait"] #menu, body[data-lay="landscape"] #menu, body[data-lay="portrait"] #bag, body[data-lay="landscape"] #bag, body[data-lay="portrait"] #wmap, body[data-lay="landscape"] #wmap { z-index: 53; }
+body[data-lay="portrait"] #menu { width: calc(100% - 16px); max-width: none; height: calc(var(--app-h, 100vh) - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); top: calc(50% + (env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 2); }
+body[data-lay="landscape"] #menu { height: calc(var(--app-h, 100vh) - 16px - env(safe-area-inset-bottom, 0px)); max-width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 16px); }
+/* 탭이 많으면 여러 줄로 (가로에서도: 옆으로 밀어 넘기는 줄은 끝의 탭이 가려졌다) */
+body[data-lay="landscape"] #menuTabs { flex-wrap: wrap; overflow: visible; }
+body[data-lay="landscape"] #menuTabs > button { flex: 1 0 auto; padding: 4px 6px; }
+.banner, #opsBand { z-index: 55; }
+#gachaPop, #sweepPop { z-index: 56; }
+#spendAsk { z-index: 60; }
+
+/* ---------- 수집형 홈 키트 (묶음 B: hud/homekit.ts). 게임은 --hk-bg(바탕), --hk-accent(진행 단추), --hk-ink(글자)로 색을 준다 ---------- */
+/* 페이지가 열려 있으면 틀의 창은 페이지 위에 */
+body.pageOn #menu, body.pageOn #bag, body.pageOn #wmap { z-index: 53; }
+.homekit { position: fixed; inset: 0; z-index: 12; pointer-events: auto; overflow: auto; overscroll-behavior: contain; color: var(--hk-ink, var(--fg));
+  width: var(--app-w, 100%); height: var(--app-h, 100%);
+  background: var(--hk-bg, radial-gradient(ellipse at 50% 35%, rgba(var(--ink-rgb), .55), rgba(var(--cover-rgb), .97) 70%));
+  padding: calc(8px + env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  display: grid; gap: 8px; grid-template-columns: minmax(84px, 112px) minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(150px, 1fr) auto auto;
+  grid-template-areas: "top top" "status status" "title title" "side lead" "act act" "dock dock"; }
+.homekit[hidden] { display: none; }
+.hk-top { grid-area: top; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hk-top .curbar { flex: 1 1 auto; min-width: 0; }
+.hk-corner { display: flex; gap: 6px; align-items: center; flex: none; }
+.hk-corner > * { position: static !important; transform: none !important; }
+.hk-status { grid-area: status; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.hk-status:empty { display: none; }
+.hk-status > * { position: static !important; transform: none !important; max-width: 100% !important; }
+.hk-title { grid-area: title; margin: 0; text-align: center; font-size: 22px; letter-spacing: .06em; color: var(--hk-title, var(--gold)); }
+.hk-side { grid-area: side; display: flex; flex-direction: column; gap: 6px; min-height: 0; min-width: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; }
+.hk-banners { display: flex; flex-direction: column; gap: 6px; }
+.hk-banner { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; padding: 8px; border-radius: 10px; font-size: 12px; background: rgba(0, 0, 0, .35); color: var(--hk-ink, var(--fg)); border: 1px solid var(--line); }
+.hk-banner b { font-size: 13px; }
+.hk-banner small { opacity: .8; font-weight: 400; }
+.hk-sideslot { display: flex; flex-direction: column; gap: 6px; }
+.hk-sideslot:empty { display: none; }
+.hk-lead { grid-area: lead; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; background: none; border: 0; padding: 0; color: inherit; font-weight: 400; }
+.hk-lead:disabled { cursor: default; }
+.hk-lead img { flex: 1 1 auto; min-height: 0; max-height: 46vh; max-width: 100%; object-fit: contain; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .55)); }
+.hk-name { font-size: 19px; font-weight: 800; color: var(--rc, var(--fg)); }
+.hk-info { font-size: 12.5px; opacity: .85; }
+.hk-act { grid-area: act; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.hk-goinfo { font-size: 12px; opacity: .85; white-space: pre-line; min-width: 0; }
+/* 진행 단추: 오른쪽 아래(엄지 자리), 가장 크고 밝다 */
+.hk-go { flex: 0 1 230px; min-height: 64px; padding: 10px 14px; border-radius: 16px; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: var(--hk-accent, linear-gradient(180deg, #ffd27a, #e0a040)); color: var(--hk-on-accent, #2a1a08); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.hk-go b { font-size: 20px; letter-spacing: .04em; }
+.hk-go small { font-size: 12px; font-weight: 700; opacity: .85; }
+.hk-dock { grid-area: dock; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+.hk-dockbtn { min-height: 48px; padding: 6px 2px; border-radius: 12px; font-size: 13px; font-weight: 700; background: rgba(0, 0, 0, .4); color: var(--hk-ink, var(--fg)); border: 1px solid var(--line); overflow-wrap: anywhere; line-height: 1.15; }
+.hk-dockbtn.locked { opacity: .45; }
+/* 가로 화면(폰 가로·PC): 대표를 왼쪽, 진행 단추와 띠를 오른쪽 아래(엄지 자리)에. 높이가 모자라도 단추가 화면 안에 남는다 */
+@media (orientation: landscape) {
+  .homekit { grid-template-columns: minmax(110px, 170px) minmax(0, 1fr) minmax(220px, 34%);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "top top top" "side lead status" "side lead act" "side lead dock"; }
+  .hk-title { display: none; }
+  .hk-status { align-self: start; }
+  .hk-act { flex-direction: column; align-items: stretch; justify-content: flex-end; }
+  .hk-go { flex: none; }
+  .hk-dock { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hk-lead img { max-height: calc(var(--app-h, 100vh) - 130px); }
+}
+@media (orientation: landscape) and (max-height: 480px) {
+  .homekit { gap: 6px; }
+  .hk-go { min-height: 54px; }
+  .hk-go b { font-size: 18px; }
+  .hk-dockbtn { min-height: 40px; font-size: 12px; }
+  .hk-name { font-size: 16px; }
+}
+@media (orientation: landscape) and (min-height: 481px) {
+  .homekit { padding-left: max(24px, calc((100% - 1100px) / 2)); padding-right: max(24px, calc((100% - 1100px) / 2)); }
+}
+
+/* ---------- 단계 정보 창·편성 확인·결과 창 (묶음 B: hud/stagepage.ts) ---------- */
+.stsheet { position: fixed; left: 50%; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(460px, calc(100% - 16px));
+  max-height: calc(var(--app-h, 100vh) - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain;
+  z-index: 52; background: var(--ink); display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 14px; border-color: var(--gold); box-shadow: 0 -8px 30px rgba(0, 0, 0, .5); animation: stUp .2s ease-out; }
+.stsheet[hidden], .stpage[hidden] { display: none; }
+@keyframes stUp { from { transform: translate(-50%, 24px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+.stpage { position: fixed; left: 0; top: 0; z-index: 51; overflow-y: auto; overscroll-behavior: contain; width: var(--app-w, 100%); height: var(--app-h, 100%);
+  background: var(--hk-bg, rgba(var(--cover-rgb), .97)); color: var(--hk-ink, var(--fg)); display: flex; flex-direction: column; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); }
+.stpage > * { width: min(560px, 100%); margin-left: auto; margin-right: auto; flex: none; }
+.sthead { display: flex; align-items: center; gap: 8px; }
+.sthead h3 { margin: 0; flex: 1; font-size: 18px; color: var(--gold); }
+.stclose { min-width: 40px; min-height: 36px; font-size: 18px; }
+.stback { min-height: 36px; }
+.stsec h4, .stgrow h4 { margin: 0 0 4px; font-size: 12px; color: var(--dim); font-weight: 700; }
+.stfoes { display: flex; flex-wrap: wrap; gap: 5px; }
+.stfoe { padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-size: 12.5px; }
+.stfoe.boss { background: rgba(224, 96, 58, .25); color: #ffc0a0; font-weight: 700; }
+.stfoe i { font-style: normal; font-size: 10.5px; margin-right: 4px; border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; }
+.stpower { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 12.5px; align-items: baseline; }
+.stpower b { font-size: 15px; color: var(--good); }
+.stpower.low b { color: var(--bad); }
+.stpbar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: rgba(0, 0, 0, .45); overflow: hidden; }
+.stpbar span { display: block; height: 100%; background: var(--good); transform-origin: left; }
+.stpower.low .stpbar span { background: var(--hp); }
+.ststars { display: flex; flex-direction: column; gap: 3px; }
+.ststar { display: flex; gap: 8px; align-items: center; font-size: 13px; opacity: .7; }
+.ststar b { font-size: 18px; color: var(--dim); width: 1.2em; text-align: center; }
+.ststar.on { opacity: 1; }
+.ststar.on b { color: var(--gold); }
+.ststars.anim .ststar { animation: stPop .35s ease-out both; animation-delay: calc(.2s + var(--i, 0) * .3s); }
+@keyframes stPop { from { opacity: 0; transform: scale(1.6); } to { transform: none; } }
+.strws { display: flex; flex-wrap: wrap; gap: 6px; }
+.strw { position: relative; padding: 6px 10px; border-radius: 8px; background: rgba(0, 0, 0, .35); border: 1px solid var(--line); font-size: 13px; font-weight: 700; }
+.strw.cur-second { color: #9fd8ff; }
+.strw.cur-gold { color: #ffe08a; }
+.strw.exp { color: #cdb8ff; }
+.strfirst { font-style: normal; font-size: 10px; margin-left: 5px; padding: 0 4px; border-radius: 3px; background: var(--gold); color: var(--on-gold); vertical-align: 1px; }
+.strws.anim .strw { animation: stFlip .4s ease-out both; animation-delay: calc(.2s + var(--i, 0) * .18s); }
+@keyframes stFlip { from { opacity: 0; transform: rotateY(90deg); } to { transform: none; } }
+.stbtns { display: flex; gap: 8px; align-items: stretch; }
+.stbtns > button { min-height: 44px; flex: 1 1 0; }
+.stbtns .stgo { flex: 2 1 0; font-size: 17px; font-weight: 800; border-radius: 12px; }
+.stresult { text-align: center; bottom: auto; top: 50%; transform: translate(-50%, -50%); animation: none; border-width: 2px; }
+.stresult.lose { border-color: var(--hp); }
+.stbig { margin: 0; font-size: 26px; color: var(--gold); }
+.stresult.lose .stbig { color: var(--bad); }
+.stresult .ststars { align-items: center; }
+.stresult .strws { justify-content: center; }
+.stauto { margin: 0; font-size: 12.5px; color: var(--dim); display: flex; gap: 8px; align-items: center; justify-content: center; }
+.stauto[hidden] { display: none; }
+.stauto button { padding: 3px 10px; }
+.stgrow { display: flex; flex-direction: column; gap: 5px; text-align: left; }
+.stgrowbtn { display: grid; grid-template-columns: 1fr auto; align-items: center; text-align: left; padding: 8px 12px; min-height: 44px; background: rgba(255, 255, 255, .06); color: var(--fg); border: 1px solid var(--line); font-weight: 700; }
+.stgrowbtn small { grid-column: 1; font-weight: 400; color: var(--dim); }
+.stgrowbtn i { grid-column: 2; grid-row: 1 / span 2; font-style: normal; font-size: 20px; color: var(--gold); }
+.stweak { margin: 0; font-size: 12.5px; color: var(--bad); text-align: center; }
+.stsquad { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.stmate { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 10px; background: rgba(0, 0, 0, .35); border: 2px solid var(--rc, var(--line)); text-align: center; }
+.stmate img { width: 100%; max-width: 96px; aspect-ratio: 4 / 5; object-fit: contain; }
+.stmate b { font-size: 13px; color: var(--rc, var(--fg)); }
+.stmate small { font-size: 11.5px; opacity: .85; }
+.stmate.empty { opacity: .5; border-style: dashed; padding: 22px 4px; }
+.stpage .stbtns { margin-top: auto; }
+@media (orientation: landscape) and (max-height: 480px) {
+  .stresult { top: calc(50% + (env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 2); width: min(520px, calc(100% - 32px)); gap: 6px; padding: 10px 14px; }
+  .stbig { font-size: 22px; }
+  .stresult .ststars { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px 12px; }
+  .stsquad { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .stmate img { max-height: 90px; }
+}
+@media (prefers-reduced-motion: reduce) { .ststars.anim .ststar, .strws.anim .strw, .stsheet { animation: none; } }
+/* 접힌 대화에 아직 말이 없으면 '대화하기' 단추 하나만 작게 */
+#zones #chat.fold:has(#log:empty) { width: auto; padding: 0; background: none; border: 0; }
+#zones #chat.fold:has(#log:empty) #chatBtn { min-height: 36px; font-size: 14px; }
+/* 화면 쌓기: 위에 다른 페이지나 장면 보기가 있는 페이지는 감춘다 (전투를 보는 동안 홈) */
+.scrUnder { visibility: hidden !important; }
+/* 폰: 메뉴 창의 머리에 채널·언어가 더해지므로 넘치면 두 줄로 (제목·재화는 꺾지 않는다) */
+body[data-lay="portrait"] #menuHead, body[data-lay="landscape"] #menuHead { flex-wrap: wrap; row-gap: 6px; }
+body[data-lay="portrait"] #menuHead .ttitle, body[data-lay="portrait"] #menuGold, body[data-lay="landscape"] #menuHead .ttitle, body[data-lay="landscape"] #menuGold { white-space: nowrap; }
+/* 튜토리얼 카드: 머리에 단계 수와 작은 '건너뛰기', '다음'이 없는 단계는 단추 줄을 접는다. 강조한 요소를 덮으면 반대쪽으로 비킨다 (hud/tutorial.ts) */
+#tut .tutHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#tut #tutSkip { padding: 4px 8px; font-size: 12px; min-height: 32px; white-space: nowrap; }
+#tut .btns:has(> #tutNext[hidden]:only-child) { display: none; }
+#tut.tutUp { position: fixed !important; top: calc(70px + env(safe-area-inset-top, 0px)) !important; bottom: auto !important; left: 50% !important; transform: translateX(-50%) !important; width: min(360px, calc(100% - 32px)) !important; z-index: 49; }
+#tut.tutDown { position: fixed !important; top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; left: 50% !important; transform: translateX(-50%) !important; width: min(360px, calc(100% - 32px)) !important; z-index: 49; }
+/* 보이는 단추는 눌린다: 누르기를 받지 않는 HUD 층(#hud) 안에 붙은 단추·입력도 (게임이 .panel이 아닌 상자에 붙여도) */
+#hud button, #hud a[href], #hud input, #hud select, #hud textarea, #hud [role="button"] { pointer-events: auto; }
+.ghave { font-weight: 700; color: var(--gold); }
+/* 결과 창이 떠 있는 동안 가운데 알림과 단계 막대의 큰 글('깸·n초 뒤')은 띄우지 않는다 (세 겹이 되지 않게) */
+body:has(#stResult:not([hidden])) .banner, body:has(#stResult:not([hidden])) #stageBar .sbig { display: none !important; }
+/* 폰: 튜토리얼 카드는 구역 밖(페이지 위에도 보이게), 아래 구역 위에. 대상을 덮으면 비킨다 (#tut.tutUp·tutDown) */
+body[data-lay="portrait"] #tut, body[data-lay="landscape"] #tut { top: auto; bottom: calc(var(--zb-h, 140px) + 24px + env(safe-area-inset-bottom, 0px)); z-index: 49; }
+body.pageOn #tut { z-index: 49; }
+/* 결과 창의 단추 줄은 창이 넘쳐 스크롤되어도 아래에 붙어 있다. 폰 가로: 강해지는 길은 두 칸씩 */
+.stresult .stbtns.res { position: sticky; bottom: -12px; margin: 0 -14px -12px; padding: 8px 14px 12px; background: var(--ink); }
+@media (orientation: landscape) and (max-height: 480px) {
+  .stgrow { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 8px; }
+  .stgrow h4 { grid-column: 1 / -1; margin: 0; }
+  .stgrowbtn { min-height: 44px; padding: 5px 10px; }
+  .stbtns > button { min-height: 44px; }
+}
+/* 단계 정보 창의 단추 줄도 창이 넘치면 아래에 붙는다. 폰 가로: 별 조건을 한 줄로 */
+.stsheet:not(.stresult) > .stbtns:last-child { position: sticky; bottom: -12px; margin: 0 -14px -12px; padding: 8px 14px 12px; background: var(--ink); }
+@media (orientation: landscape) and (max-height: 480px) {
+  .stsheet:not(.stresult) { width: min(620px, calc(100% - 32px)); gap: 6px; padding-top: 8px; }
+  .stsheet .ststars { flex-direction: row; flex-wrap: wrap; gap: 2px 14px; }
+}
+/* 가운데 위 알림 띠: 틀의 가운데 알림(.banner, 위쪽) 아래에. 폰 가로는 조이스틱과 행동 단추 사이 */
+#zone-tc { top: 50%; }
+body[data-lay="landscape"] #zone-tc { top: 48%; left: calc(max(8px, env(safe-area-inset-left, 0px)) + var(--zbl-w, 110px) + 12px); right: calc(max(8px, env(safe-area-inset-right, 0px)) + var(--zbr-w, 300px) + 12px); width: auto; transform: none; }
+/* 홈의 글은 낱말 중간에서 꺾지 않는다 ('Advent/ure', '1-/1'). 영어의 아래 띠는 조금 작게 */
+.homekit { overflow-wrap: normal; }
+.hk-dockbtn { overflow-wrap: normal; word-break: keep-all; padding-left: 0; padding-right: 0; }
+html:lang(en) .hk-dockbtn { font-size: 11px; letter-spacing: -.02em; }
+/* 탭이 열 개 이상이면 PC에서도 여러 줄로 (옆으로 밀어 넘기는 줄은 끝의 탭이 창 밖에 숨었다: 메아리 계약의 열세 탭) */
+#menuTabs:has(> button:nth-child(10)) { flex-wrap: wrap; overflow: visible; }

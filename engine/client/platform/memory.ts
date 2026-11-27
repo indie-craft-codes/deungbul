@@ -21,6 +21,10 @@ export interface MemoryPlatform extends Platform {
   size: { w: number; h: number };
   /** 기기 언어 (app.language) */
   lang: string;
+  /** 뒤로 가기의 자리를 잡아 두었는가 (nav.arm) */
+  readonly navArmed: boolean;
+  /** 사람이 뒤로 간다 (자리를 잡아 두었으면 onBack에 알리고 true) */
+  pressBack(): boolean;
 }
 
 export function memoryPlatform(features: readonly Feature[] = ['files.save', 'link.external', 'errors']): MemoryPlatform {
@@ -28,7 +32,8 @@ export function memoryPlatform(features: readonly Feature[] = ['files.save', 'li
   const subs = new Map<LifeEvent, Set<() => void>>();
   const errs: ((e: RawError) => void)[] = [];
   const params = new Map<string, string>(), inputSubs = new Set<(k: InputKind) => void>();
-  let visible = true, kind: InputKind = 'mouse';
+  let visible = true, kind: InputKind = 'mouse', armed = false;
+  const backs = new Set<() => void>();
   const me: MemoryPlatform = {
     id: 'test', data, did, reports, params, size: { w: 1280, h: 720 }, lang: '',
     setInput: (k) => { if (kind === k) return; kind = k; for (const fn of inputSubs) fn(k); },
@@ -72,6 +77,9 @@ export function memoryPlatform(features: readonly Feature[] = ['files.save', 'li
       adBreak: (w) => { did.push('ads:adBreak:' + w); return Promise.resolve(); }, rewarded: (w) => { did.push('ads:rewarded:' + w); return Promise.resolve(false); },
     },
     invite: (room) => { did.push('invite:' + room.code); },
+    get navArmed() { return armed; },
+    pressBack: () => { if (!armed) return false; armed = false; for (const fn of [...backs]) fn(); return true; },
+    nav: { arm: () => { armed = true; }, disarm: () => { armed = false; }, onBack: (fn) => { backs.add(fn); return () => { backs.delete(fn); }; } },
     server: () => Promise.resolve('ws://127.0.0.1:0'),
     app: {
       version: () => 'test', build: () => 0, page: () => '/', requireUpdate: (store) => { did.push(store ? 'update:' + store : 'update'); },

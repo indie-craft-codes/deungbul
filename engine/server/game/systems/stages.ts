@@ -12,8 +12,10 @@
 // 뒤에서 이어 가기(bg): 사람이 단계의 층을 떠나도(모드 modes로 들판에 감) 회차는 그 층에 남아 편성의 영웅만으로 싸운다 (detach / attach).
 //   지금 싸움은 끝까지(깸·실패) 하고, 자동 진행이 켜져 있으면 다음 단계로, 꺼져 있거나 실패했으면 회차를 닫는다(안내문 stageBgStop). 영웅이 모두 쓰러지면 실패다.
 //   그동안 사람은 그 층에 없으므로 대신 싸우지 않고, 몬스터는 영웅만 노리며, 쓰러진 자리·실패 사건은 회차와 상관없다.
-// 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
-import { IDLE_VIEW, MONSTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
+// 별(StageDef.stars·STAGE_RULES.stars, 없으면 별이 없다): 깰 때 조건(깸·n초 안·아무도 쓰러지지 않음)마다 별 하나. 단계마다 가장 많이 딴 별을 남기고(stars),
+//   안내문 stageClear의 셋째 값으로 이번에 딴 별(비트)을 알린다. STAGE_RULES.sweep.allStars면 별을 다 딴 단계만 소탕할 수 있다.
+// 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }, 별을 땄으면 stars). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
+import { IDLE_VIEW, MONSTERS, allStarsOf, anyStars, stageStars, starMask, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -47,12 +49,16 @@ interface Run {
   think: number;
   /** 뒤에서 이어 가는 중 (사람이 이 층에 없다: detach) */
   bg?: boolean;
+  /** 이번 판에 편성(또는 사람)이 쓰러진 적이 있다 (별 조건 alive) */
+  lost?: boolean;
 }
 
 /** 편성만 싸우는 단계 (STAGE_RULES.squadOnly) */
 const SQUAD_ONLY = !!(STAGE_RULES as { squadOnly?: boolean }).squadOnly;
 /** 영웅만 싸우는 회차인가: 뒤에서 이어 가거나, 편성만 싸우는 게임 */
 const heroesOnly = (r: { bg?: boolean }): boolean => !!r.bg || SQUAD_ONLY;
+/** 별 조건이 있는 게임 (없으면 별을 셈하지도 알리지도 않는다: 예전과 같다) */
+const STARS = anyStars();
 
 /** 단계가 없다는 알림을 이미 했다 (한 프로세스에 한 번: 시험은 게임을 여러 번 만든다) */
 let warned = false;
@@ -74,7 +80,7 @@ export class Stages {
     g.saves.push({ name: 'stages', save: (p) => this.saveOf(p), load: (p, raw) => this.loadOf(p, raw) });
     g.personal.push({ name: 'stage', state: (p) => this.me(p) });
     g.on('monsterKilled', (m) => this.killed(m));
-    g.on('playerDied', (p) => { const r = this.runs.get(p.id); if (r && !r.bg && r.state !== 'fail' && r.state !== 'lobby') this.fail(r, 0); });
+    g.on('playerDied', (p) => { const r = this.runs.get(p.id); if (r && !r.bg && r.state !== 'fail' && r.state !== 'lobby') { r.lost = true; this.fail(r, 0); } });
     g.on('playerDropped', (p) => this.leave(p, false));
     g.on('playerLeft', (id) => { const r = this.runs.get(id); if (r) this.end(r); });
     // 오프라인 진행: 방치 보상(idle)이 있으면 그 셈 안에서(깬 단계로 토막을 나눠 보상을 셈한다), 없으면 접속할 때 따로. 둘 다 단계로 들어가기(enterOnJoin)보다 먼저다
@@ -146,6 +152,7 @@ export class Stages {
     const r = this.runs.get(p.id);
     return {
       cur: STAGES[this.curIndex(p)]?.id ?? '', best: p.stage.best, auto: p.stage.auto,
+      ...(STARS ? { stars: { ...(p.stage.stars ?? {}) } } : {}),
       run: r ? { id: r.stage.id, wave: r.wave, waves: waveCount(r.stage.def), foes: r.mobs.size, total: r.total, left: r.state === 'lobby' ? 0 : Math.ceil(Math.max(0, r.state === 'fight' || r.state === 'gap' ? r.left : r.wait)), state: r.state, boss: r.wave >= r.stage.def.waves.length && !!r.stage.def.boss } : null,
     };
   }
@@ -176,7 +183,7 @@ export class Stages {
     const g = this.g, rule = STAGE_RULE_VIEW.sweep, i = stageIndex(id), s = STAGES[i];
     if (!rule || p.bot || !s) return null;
     if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > sweepMax(rule)) return null;
-    if (!stageSweepable(s) || i > this.bestIndex(p)) { g.notify(p, 'sweepLocked', 'stage', id); return null; }
+    if (!stageSweepable(s) || i > this.bestIndex(p) || (rule.allStars && !allStarsOf(s, p.stage.stars?.[id] ?? 0))) { g.notify(p, 'sweepLocked', 'stage', id); return null; }
     if (!costCheck(g, p, rule.cost, n) || !costPay(g, p, rule.cost, n, 'cmd:stage:sweep')) return null;
     const got = sweepGot('stage', id, n);
     for (let k = 0; k < n; k++) giveInto(g, p, s.def.reward, SWEEP_WHY, got);
@@ -228,13 +235,15 @@ export class Stages {
       this.runs.set(p.id, r);
       this.byLayer.set(r.layer, r);
     }
-    r.stage = stage; r.wave = 0; r.left = stage.def.timeS ?? STAGE_RULES.timeS; r.state = 'fight'; r.wait = 0;
+    r.stage = stage; r.wave = 0; r.left = stage.def.timeS ?? STAGE_RULES.timeS; r.state = 'fight'; r.wait = 0; r.lost = false;
     p.stage.cur = stage.id; p.unsaved = true;
     // 사람을 단계의 가운데로 (체력을 채운다: 앞 단계의 상처를 끌고 들어가지 않게). 뒤에서 이어 가는 회차는 사람이 이 층에 없다: 영웅만 가운데로
     if (!r.bg) {
       this.place(p, STAGE_RULES.arena.x, STAGE_RULES.arena.z + 3, r.layer);
       if (g.has('combat')) { p.hp = p.maxHp; p.targetId = 0; }
     }
+    // 영웅만 싸우는 회차: 앞 판에서 쓰러져 다시 일어나기를 기다리는 영웅을 세운다 (기다리는 동안 '살아 있는 영웅이 없다'로 곧바로 다시 졌다: 다시 하기 4초 < 일어나기 8초)
+    if (heroesOnly(r) && g.has('squad')) for (const e of g.squad.heroes(p)) if (e.dead) { e.dead = false; e.hp = e.maxHp; e.respawn = 0; }
     this.spawnWave(r);
     this.squadIn(p);
   }
@@ -320,7 +329,13 @@ export class Stages {
     const last = r.stage.i >= STAGES.length - 1;
     if (p.stage.auto && !last) p.stage.cur = STAGES[r.stage.i + 1].id;
     p.unsaved = true;
-    g.notify(p, 'stageClear', r.stage.id, first ? 1 : 0);
+    const conds = stageStars(r.stage);
+    if (conds.length) {
+      // 별: 걸린 시간(제한 시간 − 남은 시간)과 쓰러짐으로 셈하고, 가장 많이 딴 것을 남긴다 (비트를 합친다: 따로 딴 별도 남는다)
+      const mask = starMask(conds, (r.stage.def.timeS ?? STAGE_RULES.timeS) - r.left, !!r.lost);
+      p.stage.stars = { ...(p.stage.stars ?? {}), [r.stage.id]: (p.stage.stars?.[r.stage.id] ?? 0) | mask };
+      g.notify(p, 'stageClear', r.stage.id, first ? 1 : 0, mask);
+    } else g.notify(p, 'stageClear', r.stage.id, first ? 1 : 0);
     if (p.stage.auto && last && first) g.notify(p, 'stageLast');
     g.fire('stageCleared', p, r.stage.id, first);
   }
@@ -383,6 +398,8 @@ export class Stages {
       // 편성만 싸우는 게임: 보는 사람은 단계의 가운데에 묶인다 (화면의 눈이 싸움을 따라가게)
       if (SQUAD_ONLY && !r.bg && (p.moving || p.targetId)) { p.moving = false; p.path = null; p.targetId = 0; }
       if (r.state === 'fight' || r.state === 'gap') {
+        // 별 조건 alive: 이 판의 층에서 편성의 영웅이 쓰러졌다
+        if (STARS && !r.lost && this.g.has('squad') && this.g.squad.heroes(p).some((e) => e.dead && e.layer === r.layer)) r.lost = true;
         r.left -= dt;
         if (r.left <= 0) { this.fail(r, 1); continue; }
       }
@@ -434,9 +451,10 @@ export class Stages {
   }
 
   // ---------- 저장 ----------
-  private saveOf(p: Ent): { cur: string; best: string; auto: boolean } | undefined {
+  private saveOf(p: Ent): { cur: string; best: string; auto: boolean; stars?: Record<string, number> } | undefined {
     const s = p.stage;
-    return s.cur || s.best || !s.auto ? { cur: s.cur, best: s.best, auto: s.auto } : undefined;
+    const stars = s.stars && Object.keys(s.stars).length ? { stars: { ...s.stars } } : {};
+    return s.cur || s.best || !s.auto || stars.stars ? { cur: s.cur, best: s.best, auto: s.auto, ...stars } : undefined;
   }
   private loadOf(p: Ent, raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return;
@@ -447,5 +465,11 @@ export class Stages {
     // 지금 단계는 깬 단계의 다음을 넘지 않는다 (내용이 바뀌어 단계가 줄었을 때)
     if (stageIndex(cur) > stageIndex(best) + 1) cur = STAGES[stageIndex(best) + 1]?.id ?? best;
     p.stage = { cur, best, auto: d.auto !== false };
+    // 별: 있는 단계의 0~255 정수만
+    const st = (d as { stars?: unknown }).stars;
+    if (st && typeof st === 'object') {
+      const keep = Object.entries(st as Record<string, unknown>).filter(([k, v]) => stageIndex(k) >= 0 && Number.isInteger(v) && (v as number) > 0 && (v as number) < 256);
+      if (keep.length) p.stage.stars = Object.fromEntries(keep) as Record<string, number>;
+    }
   }
 }

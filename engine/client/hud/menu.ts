@@ -14,6 +14,7 @@ import { hasModule } from '../mods';
 import { L, onLangChange, t } from '../i18n';
 import { S } from '../state';
 import { addNotices } from './notify';
+import { bindDot, dotOf, setDot } from './dots';
 import { drawBuild } from './menu/build';
 import { drawDaily } from './menu/daily';
 import { act, drawGear, onEnhanceResult, onGearResult } from './menu/gear';
@@ -37,6 +38,8 @@ const ENGINE_TABS: MenuTab[] = [
 ];
 /** 탭 모두 (틀의 것 가운데 고른 모듈의 것 + 게임이 더한 것), 그리고 게임이 고른 보일 탭의 차례 (null이면 모두, 더한 차례대로) */
 const allTabs: MenuTab[] = tabsForModules(ENGINE_TABS, hasModule);
+/** 탭의 점을 알림 점의 원천으로 (hud/dots.ts): 'menu.<탭 id>', 지금 보이는 탭만, 메뉴 단추('menu')로 번진다 */
+function tabDot(x: MenuTab): void { const fn = x.dot; if (fn) setDot(`menu.${x.id}`, () => tabs().some((v) => v.id === x.id) && fn(), 'menu'); }
 let order: string[] | null = null;
 /** 일일 임무도 출석도 없는 게임: 일일 탭을 숨긴다 */
 const noDaily = (): boolean => DAILY_IDS.length === 0 && ATTEND.length === 0;
@@ -51,6 +54,7 @@ export function setMenuTabs(ids: readonly string[]): void { order = [...ids]; la
 export function addMenuTab(def: MenuTab, after?: string): void {
   const at = after ? allTabs.findIndex((x) => x.id === after) : -1;
   allTabs.splice(at < 0 ? allTabs.length : at + 1, 0, def);
+  tabDot(def);
   lastSig = '';
 }
 /** 지금 고른 탭의 id */
@@ -85,7 +89,7 @@ export function renderMenu(soft = false): void {
     const b = button(x.label(), () => { const moved = cur !== x.id; cur = x.id; x.open?.(); renderMenu(); if (moved) ui.list.scrollTop = 0; });
     b.classList.toggle('on', x === on);
     // 찍을 점수나 받을 우편이 있으면 점(•)을 찍는다. 점은 단추 모서리에 얹어서(style.css) 생겨도 탭의 너비가 바뀌지 않는다
-    b.classList.toggle('dot', !!x.dot?.());
+    b.classList.toggle('dot', dotOf(`menu.${x.id}`) > 0 || !!x.dot?.());
     ui.tabs.append(b);
   });
   ui.tabs.scrollLeft = left;
@@ -119,6 +123,8 @@ export function toggleMenu(): void {
 
 export function initMenu(): void {
   bindKey('m', toggleMenu);
+  for (const x of allTabs) tabDot(x);
+  bindDot(ui.btn, 'menu');
   ui.btn.addEventListener('click', (e) => { toggleMenu(); (e.currentTarget as HTMLElement).blur(); });
   // 분해·잠금·가방 넓히기의 안내문을 어디에 띄울지: 한 일의 결과는 흘러가는 알림, 자리를 비운 동안의 장비 소식은 가운데 알림
   addNotices({ banner: { awayGear: '' }, feed: ['salvaged', 'salvageCant', 'salvageFull', 'gearLocked', 'autoSalvaged', 'bagUpDone', 'bagUpMax'] });

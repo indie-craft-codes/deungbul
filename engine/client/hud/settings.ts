@@ -103,7 +103,8 @@ function drawSettings(list: HTMLElement): void {
   // 화면
   list.append(el('baghead', t('setScreen')));
   const calmNow = cur.calm ?? (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  list.append(row(t('setCalm'), '', [onOff(calmNow, (v) => set((s) => { s.calm = v; }))]));
+  // '화면 흔들림 [켬][끔]': 켬이 흔들림이 있는 것 (예전 '흔들림 끄기 [켬]'은 이중 부정이었다). 저장 값 calm은 그대로 (켬 = calm false)
+  list.append(row(t('setCalm'), '', [onOff(!calmNow, (v) => set((s) => { s.calm = !v; }))]));
   list.append(row(t('setUi'), '', [chips(UI_STEPS.map((u) => ({ text: `${Math.round(u * 100)}%`, on: cur.ui === u, click: () => set((s) => { s.ui = u; }) })))]));
   const fs = platform().display.fullscreen;
   if (platform().has('display.fullscreen')) list.append(row(t('setFullscreen'), '', [onOff(fs.is(), (v) => { void fs.set(v).then(() => renderMenu()); })]));

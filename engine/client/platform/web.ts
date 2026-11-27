@@ -46,6 +46,28 @@ function baseUrl(): string {
   return import.meta.env.DEV ? `${proto}://${location.hostname}:${(import.meta.env.VITE_DEV_PORT as string | undefined) ?? '3001'}` : `${proto}://${location.host}`;
 }
 
+/**
+ * 뒤로 가기의 자리 (Platform.nav): history에 항목 하나를 더해 두고, popstate를 '뒤로'로 받는다.
+ * 거둘 때(disarm)는 history.back을 부르고 그 popstate는 알리지 않는다. 거두는 중에 다시 잡으면(arm) 그 popstate가 온 뒤에 잡는다
+ * (history.back은 비동기라 바로 pushState하면 거둔 자리가 엉킨다)
+ */
+function webNav(): Platform['nav'] {
+  let armed = false, skip = 0, again = false;
+  const fns = new Set<() => void>();
+  const push = () => { try { history.pushState({ dgNav: 1 }, ''); armed = true; } catch { /* 주소를 바꿀 수 없는 곳 */ } };
+  window.addEventListener('popstate', () => {
+    if (skip > 0) { skip--; if (again && skip === 0) { again = false; push(); } return; }
+    if (!armed) return; // 게임의 자리가 아닌 뒤로 (주소의 #이 바뀐 것 따위)
+    armed = false;
+    for (const fn of [...fns]) fn();
+  });
+  return {
+    arm: () => { if (armed) return; if (skip > 0) { again = true; return; } push(); },
+    disarm: () => { again = false; if (!armed) return; armed = false; skip++; try { history.back(); } catch { skip--; } },
+    onBack: (fn) => { fns.add(fn); return () => { fns.delete(fn); }; },
+  };
+}
+
 export function webPlatform(): Platform {
   const has = (f: Feature): boolean => {
     switch (f) {
@@ -162,6 +184,7 @@ export function webPlatform(): Platform {
     auth: { providers: () => ['guest'], proof: () => Promise.resolve(null) },
     ads: { gameplayStart: () => {}, gameplayStop: () => {}, adBreak: () => Promise.resolve(), rewarded: () => Promise.resolve(false) },
     invite: () => {},
+    nav: webNav(),
     server: async () => {
       // 화면만 따로 올린 곳(GitHub Pages): 옆에 놓인 server.json({ "url": "wss://..." })을 읽는다. 없으면 화면을 내보낸 곳이 곧 서버다
       if (!import.meta.env.DEV && !import.meta.env.VITE_SERVER_URL) {

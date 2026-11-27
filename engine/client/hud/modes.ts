@@ -21,6 +21,7 @@ import { S } from '../state';
 import { setMenuTabs } from './menu';
 import { redraw } from './menu/parts';
 import { addNotices } from './notify';
+import { placeIn } from './layout';
 import { mountPanel } from './shell';
 
 let mode: ModeMe = { id: '', cd: 0 };
@@ -78,6 +79,8 @@ function label(): void {
 
 export function initModes(): void {
   mountPanel('hud', '<button type="button" id="modeBtn" class="modeBtn" hidden></button>');
+  // 폰: 위 오른쪽 구역의 단추 줄 아래 (hud/layout.ts)
+  placeIn('tr', 'modeBtn', 20);
   $('modeBtn').addEventListener('click', (e) => { switchMode(); (e.currentTarget as HTMLElement).blur(); });
   onMsg('me', (m) => {
     if (m.k === 'mode') {

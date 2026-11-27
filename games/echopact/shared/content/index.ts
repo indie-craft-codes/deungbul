@@ -233,6 +233,8 @@ const stage = (ch: number, n: number): StageDef => {
     // 처음 깬 보상: 우두머리 150, 1-1은 60(1-1·1-2를 깨면 첫 뽑기 100이 모인다: 처음 메아리 하나로는 1-3에서 막히기 쉽다), 나머지 40
     first: { sparks: n === 4 ? 150 : k === 0 ? 60 : 40 },
     rec: Math.round(300 * scale * (n === 4 ? 1.5 : 1)),
+    // 별 조건 셋: 깸 · 시간 안에(보통 45초, 우두머리 60초: 제한 90초의 절반·⅔) · 아무 메아리도 쓰러지지 않음 (docs/proof-echopact.md '별 조건')
+    stars: [{ k: 'clear' }, { k: 'time', s: n === 4 ? 60 : 45 }, { k: 'alive' }],
   };
 };
 export const CHAPTERS: readonly ChapterDef[] = [
