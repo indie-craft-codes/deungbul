@@ -34,8 +34,8 @@ export { myStage } from './hud/stagebar';
 export { stageRows, type StageRow } from './hud/collectcalc';
 export { myRoom, myRoomTurn, onRoomChange, roomLeftMs, roomSeatName, roomSend, setRoomLook } from './hud/rooms';
 export { hudSlow } from './hud/me';
-export { charDefs, myMorph, onChars } from './hud/morph';
-export { myMode, myModeSide, onModeChange, onModeSide, switchMode } from './hud/modes';
+export { charDefs, charPortrait, myMorph, onChars } from './hud/morph';
+export { myMode, myModeSide, onModeChange, onModeSide, openModeHome, setModeHome, switchMode } from './hud/modes';
 export type { Look, Mood } from './scene/view';
 export { attachHand, cueAnim, defaultHumanoid, limb, makeBall, makeBlob, makeBox, makeHumanoid, mat, part, registerArmor, registerBlade, registerHand, registerMonsterModel, setHumanoidBody, setHumanoidDeco, type ArmorLook, type BladeLook, type HandBuilder, type HumanoidLook, type Model, type MonsterBuilder, type Rig } from './scene/models';
 // 부품으로 된 겉모습 (engine/shared/defs/look.ts): 게임이 부품을 더 그린다

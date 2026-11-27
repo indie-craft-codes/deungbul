@@ -65,7 +65,12 @@ export const koGame = {
     roleVanguard: '선봉', roleRanger: '사수', roleMystic: '비술', roleMender: '치유',
     bannerWell: '울림 샘', chapterPath: '속삭임 길', chapterRuins: '종소리 폐허', chapterSpire: '울림 첨탑',
     // 탑의 첫 화면 (client/tower.ts)
-    towerSub: '메아리를 불러 모으고, 편성해 단계를 깨는 곳',
+    towerAdventure: '모험',
+    towerWatch: '전투 보기',
+    towerHomeBtn: '홈',
+    towerAgain: '다시',
+    towerNextBtn: '다음 단계',
+    towerLoseHint: '편성 전투력이 모자랍니다. 메아리를 키우거나 뽑아서 편성을 바꿔 보세요.',
     towerGo: '도전',
     towerPull: '뽑기',
     towerEchoes: '메아리',
@@ -86,7 +91,7 @@ export const koGame = {
     alertGo: '바로 가기',
     // 튜토리얼과 설정 칸 (client/tutorial.ts)
     tutPact: '계약의 첫걸음',
-    tutStage: '계약의 탑입니다. "다음 도전"을 눌러 1-1에 도전해 보세요. 탑에서는 편성한 메아리(카드)만 싸웁니다. 처음 깨면 울림 조각을 받습니다.',
+    tutStage: '계약의 탑의 홈입니다. "모험"에서 "다음 도전"을 눌러 1-1에 도전해 보세요. 탑에서는 편성한 메아리(카드)만 싸웁니다. 처음 깨면 울림 조각을 받습니다.',
     tutPull: '울림 조각 100개가 모이면 뽑기에서 메아리를 불러 보세요. 확률은 \'확률 보기\'에 모두 공개됩니다.',
     tutSwitch: '위의 \'울림골로\' 단추를 눌러 다른 게임(들판)으로 가 보세요. 싸우는 중이어도 바로 바뀌고, 탑의 단계는 끝까지 이어집니다.',
     tutMove: '울림골입니다. 땅을 눌러[[ (또는 WASD로)|]] 걸어 보세요.',
@@ -104,7 +109,10 @@ export const koGame = {
   fmt: {
     potions: (n: number) => `샘물 약 ${n}`,
     /** 탑의 첫 화면: 가진 것과 편성의 전투력 */
-    towerHave: (sparks: number, gold: number, power: number) => `울림 조각 ${sparks.toLocaleString('ko-KR')} · 골드 ${gold.toLocaleString('ko-KR')} · 편성 전투력 ${power.toLocaleString('ko-KR')}`,
+    towerLive: (id: string) => `전투 중: ${id}`,
+    towerWin: (id: string) => `${id} 깸!`,
+    towerLose: (id: string) => `${id} 실패`,
+    towerGot: (sparks: number, gold: number, first: boolean) => `${first ? '처음 깬 보상 포함 · ' : ''}울림 조각 +${sparks} · 골드 +${gold}`,
     towerNext: (id: string) => `다음 도전 ${id}`,
     towerPower: (n: number) => `편성 전투력 ${n.toLocaleString('ko-KR')}`,
     towerRec: (rec: number) => `권장 ${rec.toLocaleString('ko-KR')}`,

@@ -26,6 +26,15 @@ import { mountPanel } from './shell';
 let mode: ModeMe = { id: '', cd: 0 };
 let side: ModeSideMe = { field: null, stage: null };
 const modeFns: ((def: ModeDef, from: string) => void)[] = [];
+/** 모드마다의 홈 화면 (게임이 등록한다: 그 모드로 오면 먼저 연다) */
+const homes = new Map<string, () => void>();
+/**
+ * 그 모드의 홈 화면을 등록한다 (수집형의 로비 같은 것: 화면의 내용은 게임의 것). 그 모드로 올 때마다 open이 불린다 (처음 접속해 그 모드일 때도).
+ * 등록하지 않은 모드는 홈이 없다 (예전과 같다)
+ */
+export function setModeHome(id: string, open: () => void): void { homes.set(id, open); }
+/** 지금 모드의 홈 화면을 연다 (게임의 '홈' 단추). 없으면 아무것도 하지 않는다 */
+export function openModeHome(): void { homes.get(mode.id || startMode())?.(); }
 const sideFns: ((s: Readonly<ModeSideMe>) => void)[] = [];
 
 /** 지금 모드 (서버가 알려 주기 전이면 처음 모드) */
@@ -54,6 +63,7 @@ function apply(def: ModeDef, from: string): void {
   if (from && def.kind === 'field' && hasModule('away')) resetAutoAnchor();
   label();
   for (const fn of modeFns) fn(def, from);
+  homes.get(def.id)?.();
   redraw(true);
 }
 

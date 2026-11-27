@@ -68,26 +68,33 @@ export function morphStatsOf(id: string): { card: ReturnType<typeof morphCard>; 
 // ---------- 얼굴 그림: 작은 그리기 하나를 두고 정의마다 한 번 그려 그림(data URL)으로 간직한다 ----------
 const portraits = new Map<string, string>();
 let shot: { r: THREE.WebGLRenderer; scene: THREE.Scene; cam: THREE.PerspectiveCamera } | null | undefined;
-function portrait(d: CharDef): string {
-  const have = portraits.get(d.id);
+/**
+ * 캐릭터 정의의 서 있는 그림 (부품으로 그린 모습, data URL. 그릴 수 없는 곳이면 빈 글자). 크기를 주면 그 크기로 (게임의 큰 그림: 홈 화면의 대표 캐릭터).
+ * 정의·크기마다 한 번 그려 간직한다
+ */
+export function charPortrait(d: CharDef, w = 96, h = 112): string { return portrait(d, w, h); }
+function portrait(d: CharDef, w = 96, h = 112): string {
+  const key = w === 96 && h === 112 ? d.id : `${d.id}@${w}x${h}`;
+  const have = portraits.get(key);
   if (have !== undefined) return have;
   let url = '';
   try {
     if (shot === undefined) {
       const canvas = document.createElement('canvas');
       const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
-      r.setSize(96, 112, false);
+      r.setSize(w, h, false);
       const scene = new THREE.Scene();
       scene.add(new THREE.HemisphereLight(0xffffff, 0x8a7a66, 2.2));
       const sun = new THREE.DirectionalLight(0xffffff, 1.6);
       sun.position.set(2, 4, 3);
       scene.add(sun);
-      const cam = new THREE.PerspectiveCamera(32, 96 / 112, 0.1, 30);
+      const cam = new THREE.PerspectiveCamera(32, w / h, 0.1, 30);
       cam.position.set(1.8, 2.1, 5.4);
       cam.lookAt(0, 1.25, 0);
       shot = { r, scene, cam };
     }
     if (shot) {
+      shot.r.setSize(w, h, false); shot.cam.aspect = w / h; shot.cam.updateProjectionMatrix();
       const m = makeHumanoid(d.look.colors.cloth ?? 0x8a8a8a, false, d.look.colors.skin ?? 0xf0c9a0, undefined, undefined, d.look);
       m.root.rotation.y = 0.35;
       shot.scene.add(m.root);
@@ -96,7 +103,7 @@ function portrait(d: CharDef): string {
       url = shot.r.domElement.toDataURL('image/png');
     }
   } catch { shot = null; } // 그릴 수 없는 곳 (WebGL이 없다): 그림 없이 글만
-  portraits.set(d.id, url);
+  portraits.set(key, url);
   return url;
 }
 
