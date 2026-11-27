@@ -14,7 +14,7 @@ import { anyModule } from '../../shared/picked';
 import { charName, knownChar, type CharErr } from '../../shared/defs/chardef';
 import type { MorphMods } from '../../shared/defs/morph';
 import { modeDef } from '../../shared/defs/modes';
-import { achName, codexName, evName, goodsName, missionName, seasonName, titleName } from './live';
+import { achName, codexName, evName, goodsName, missionName, seasonName, tierText, titleName } from './live';
 
 /** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
 export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
@@ -750,6 +750,11 @@ export const koBase = (n: ContentNames) => {
       roomStatsBtn: '전적',
       roomStatsNone: '아직 기록이 없습니다.',
       roomStatsRecent: '최근 판',
+      // 경쟁 (묶음 8: hud/compete.ts·replay.ts·rooms.ts)
+      tabBoards: '순위표', boardPower: '전투력', boardRating: '레이팅', boardEmpty: '아직 순위가 없습니다.', boardLoading: '불러오는 중…', boardNotIn: '아직 이 순위표에 오르지 않았습니다.',
+      rankedMine: '내 등급', rankedUnsure: '등급 숨김 (오래 쉬었습니다: 한 판 두면 다시 보입니다)', rankedNoTier: '등급 없음', rankedVoidNote: '이 판은 레이팅에 들지 않았습니다.',
+      queueCancel: '취소', roomRanked: '랭크 대전', roomRankedTag: '랭크', roomRequeue: '다시 큐', roomReplay: '다시 보기', roomBot: '봇',
+      replayTitle: '리플레이', replayFirst: '처음으로', replayPrev: '앞 칸', replayNext: '다음 칸', replayPlay: '재생', replayPause: '멈춤', replaySeek: '재생 위치', replaySpeed: '배속',
       roomClose: '닫기',
       roomPrev: '이전',
       roomNext: '다음',
@@ -916,7 +921,7 @@ export const koBase = (n: ContentNames) => {
       resAuto: (s: number, id: string) => `자동 진행: ${s}초 뒤 ${id}`,
       enemyN: (name: string, n: number) => (n > 1 ? `${name} ×${n}` : name),
       reward: (gold: number, exp: number, second: number) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'maint' ? '점검 보상' : k === 'support' ? `문의 #${a[0]}에 답이 왔습니다 (설정 → 문의)` : k === 'comp' ? '운영 보상' : k === 'event' ? `이벤트 임무: ${missionName(a[0], a[1])}` : k === 'eventSwap' ? `이벤트 '${evName(a[0])}'의 남은 재화 ${josa(`${a[1]}`, '을', '를')} 바꾼 것` : k === 'season' ? `${seasonName()}: 받지 않은 보상` : k === 'achieve' ? `업적 달성: ${achName(a[0])}` : k === 'codex' ? `도감 ${codexName(a[0])} ${a[1]}개 보상` : k === 'coupon' ? `쿠폰 ${a[0]}` : k === 'comeback' ? `돌아온 것을 환영합니다 (${a[0]}일 만)` : k === 'stamina' ? `넘친 ${uiText.get(STAMINA_RULE_VIEW.name)} ${a[0]}` : String(k)),
+      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'maint' ? '점검 보상' : k === 'support' ? `문의 #${a[0]}에 답이 왔습니다 (설정 → 문의)` : k === 'comp' ? '운영 보상' : k === 'event' ? `이벤트 임무: ${missionName(a[0], a[1])}` : k === 'eventSwap' ? `이벤트 '${evName(a[0])}'의 남은 재화 ${josa(`${a[1]}`, '을', '를')} 바꾼 것` : k === 'season' ? `${seasonName()}: 받지 않은 보상` : k === 'achieve' ? `업적 달성: ${achName(a[0])}` : k === 'codex' ? `도감 ${codexName(a[0])} ${a[1]}개 보상` : k === 'coupon' ? `쿠폰 ${a[0]}` : k === 'comeback' ? `돌아온 것을 환영합니다 (${a[0]}일 만)` : k === 'stamina' ? `넘친 ${uiText.get(STAMINA_RULE_VIEW.name)} ${a[0]}` : k === 'rankSeason' ? `레이팅 시즌 ${a[0]} 보상: ${tierText(a[1])}` : String(k)),
       status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
       itemDamage: (pct: number) => `공격 피해 +${pct}%`,
       itemGuard: (pct: number) => `받는 피해 -${pct}%`,
@@ -1193,6 +1198,25 @@ export const koBase = (n: ContentNames) => {
       roomTally: (n: number, win: number, lose: number, draw: number) => `${n}판 ${win}승 ${lose}패${draw ? ` ${draw}무` : ''}`,
       roomRecentRow: (def: string, res: number, rank: number, n: number, at: number) => `${def} · ${rank > 0 && n > 2 ? `${n}명 중 ${rank}등` : res === 0 ? '이김' : res === 1 ? '짐' : '비김'} · ${whenText(at, 'ko-KR')}`,
       roomStatsTitle: (name: string) => `${name} 님의 전적`,
+      // 경쟁 (묶음 8)
+      boardRatingOf: (def: string) => `레이팅 · ${def}`,
+      boardRatingV: (v: number) => `${Math.round(v).toLocaleString('ko-KR')}`,
+      boardStage: (ch: number, st: number) => `${ch}-${st}`,
+      boardNum: (v: number) => v.toLocaleString('ko-KR'),
+      boardPeriod: (p: string, ms: number) => (p === 'ever' ? '상시 순위표' : `${p === 'day' ? '오늘' : p === 'week' ? '이번 주' : p === 'month' ? '이번 달' : '이번 시즌'}${ms ? ` · 초기화까지 ${spanMs(ms, 'ko')}` : ''}`),
+      boardMine: (rank: number, v: string, n: number) => `내 순위 ${rank}위 (${n}명 중) · ${v}`,
+      boardPrev: (text: string) => `지난 기간: ${text}`,
+      rankedPlacement: (n: number, need: number) => `배치 경기 ${n}/${need}`,
+      rankedWL: (w: number, l: number, d: number) => `${w}승 ${l}패${d ? ` ${d}무` : ''}`,
+      rankedBest: (tier: string) => `시즌 최고 ${tier}`,
+      rankedSeasonEnd: (n: number, ms: number) => `${n ? `시즌 ${n}` : '이번 시즌'} · 끝까지 ${spanMs(ms, 'ko')}`,
+      rankedDelta: (r: number, d: number, tier: string) => `레이팅 ${r.toLocaleString('ko-KR')} (${d >= 0 ? '+' : ''}${d})${tier ? ` · ${tier}` : ''}`,
+      queueBand: (def: string, waited: number, est: number, range: number, bots: boolean) => `랭크 매칭 찾는 중 · ${def} · ${clockText(waited)} · 예상 ${est < 0 ? '알 수 없음' : clockText(est)} · 범위 ±${range}${bots ? ' · 사람이 모자라면 봇' : ''}`,
+      queueBannedLeft: (min: number) => `이탈 제재: ${min}분 동안 랭크 대전에 설 수 없습니다`,
+      replaySub: (names: string, at: number) => `${names} · ${whenText(at, 'ko-KR')}`,
+      replayAt: (i: number, n: number) => `${i} / ${n}`,
+      replayResult: (winner: string, why: string) => `${winner ? `${winner} 승리` : '비김'}${why ? ` (${why})` : ''}`,
+      roomBotName: (name: string, n: number) => `${name || `봇 ${n}`} (봇)`,
       // ---- U2 피드백·상태 ----
       connRetry: (n: number, s: number) => `다시 잇는 중 · ${n}번째 · ${s}초 뒤`,
       connTrying: (n: number) => `다시 잇는 중… (${n}번째)`,
@@ -1496,6 +1520,18 @@ export const koBase = (n: ContentNames) => {
       roomWatching: (a) => (Number(a[0]) ? `판을 구경합니다 (${a[0]}초 늦게).` : '판을 구경합니다.'),
       roomWatchFull: () => '구경하는 사람이 너무 많습니다.',
       roomMidJoin: (a) => `${a[0]} 님이 판 중간에 들어왔습니다.`,
+      replayNone: () => '그 리플레이는 볼 수 없습니다 (보관 기간이 지났습니다).',
+      rankedVoid: (a): string => (Number(a[0]) ? '누군가 첫 수 전에 떠나 이 판은 레이팅에 들지 않습니다.' : '모두 끊겨 이 판은 레이팅에 들지 않습니다.'),
+      rankedPlaced: (a) => `배치 경기를 마쳤습니다: ${tierText(a[0]) || '등급 없음'} (레이팅 ${a[1]})`,
+      rankedTier: (a) => `등급이 ${Number(a[1]) ? '올랐' : '내려갔'}습니다: ${tierText(a[0])}`,
+      rankedSeason: (a) => `레이팅 시즌 ${a[0]}이 시작했습니다. 레이팅이 기준 쪽으로 조금 당겨졌습니다.${Number(a[1]) >= 0 && tierText(a[1]) ? ` 지난 시즌 최고: ${tierText(a[1])}` : ''}`,
+      queueOn: () => '랭크 매칭을 찾습니다.',
+      queueOff: () => '랭크 매칭을 그만두었습니다.',
+      queueFound: (a) => `상대를 찾았습니다!${Number(a[1]) ? ` (봇 ${a[1]})` : ''}`,
+      queueBanned: (a) => `이탈 제재로 ${a[0]}분 동안 랭크 대전에 설 수 없습니다.`,
+      leaveWarn: () => '랭크 판을 떠났습니다: 경고입니다. 다시 떠나면 랭크 대전이 잠시 막힙니다.',
+      leavePenalty: (a) => `랭크 판을 떠나 ${a[0]}분 동안 랭크 대전에 설 수 없습니다.`,
+      afkOut: (a) => `${a[0]} 님이 잠수로 판에서 빠졌습니다.`,
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

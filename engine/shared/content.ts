@@ -139,3 +139,5 @@ export const CODEX = get('CODEX');
 export const COUPON = get('COUPON');
 export const COMEBACK = get('COMEBACK');
 export const MAIL_RULES = get('MAIL_RULES');
+// ---------- 경쟁 (묶음 8) ----------
+export const COMPETE = get('COMPETE');

@@ -6,7 +6,7 @@ import type { DrawQuery, OddsStore, OddsVersionRow } from './types';
 import type { DrawRow, OddsHistoryRow, OddsPlanRow, OddsTableDef } from '../../shared/defs/odds';
 import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
 import type { CouponRow, CouponStore } from './types';
-import type { RoomRecordRow, RoomStore } from './types';
+import type { ReplayRow, RoomRecordRow, RoomStore } from './types';
 
 /**
  * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
@@ -21,6 +21,7 @@ import type { RoomRecordRow, RoomStore } from './types';
  *        다른 가지와 합칠 때 번호가 바뀔 수 있어 번호를 적지 않는다: 시험은 SCHEMA.length로 본다
  *   (끝) 라이브 콘텐츠: 쿠폰(coupons: 코드 → 정의), 쓴 기록(coupon_uses: 코드와 사람(owner 저장 키)이 짝으로 한 번) (engine/server/game/systems/coupon.ts)
  *   (끝) 판의 기록: 끝난 판의 한 사람 몫(room_records: key 캐릭터, 판의 이름, 결과 data) (engine/server/game/systems/rooms.ts의 RoomDef.record). 번호는 적지 않는다
+ *   (끝) 리플레이: 끝난 판의 시드·입력·프레임(room_replays: keys 앉았던 사람의 저장 키들(쉼표), data JSON) (RoomDef.replay, 묶음 8). 보관 기간이 지나면 지운다
  */
 export const SCHEMA: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
@@ -56,6 +57,8 @@ export const SCHEMA: readonly string[] = [
    CREATE INDEX IF NOT EXISTS coupon_uses_owner ON coupon_uses (owner);`,
   `CREATE TABLE IF NOT EXISTS room_records (n INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL, at INTEGER NOT NULL, def TEXT NOT NULL, data TEXT NOT NULL);
    CREATE INDEX IF NOT EXISTS room_records_key ON room_records (key, n);`,
+  `CREATE TABLE IF NOT EXISTS room_replays (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, def TEXT NOT NULL, keys TEXT NOT NULL, data TEXT NOT NULL);
+   CREATE INDEX IF NOT EXISTS room_replays_at ON room_replays (at);`,
 ];
 
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
@@ -372,16 +375,24 @@ export class SqliteStore implements Store, EconStore, LiveStore, WebStore, Socia
   // ---- 판의 기록 (rooms 모듈) ----
   addRoomRecords(rows: readonly RoomRecordRow[]): void {
     const st = this.db.prepare('INSERT INTO room_records (key, at, def, data) VALUES (?, ?, ?, ?)');
-    for (const r of rows) st.run(r.key, r.at, r.def, JSON.stringify({ res: r.res, rank: r.rank, n: r.n, why: r.why, ...(r.score !== undefined ? { score: r.score } : {}) }));
+    for (const r of rows) st.run(r.key, r.at, r.def, JSON.stringify({ res: r.res, rank: r.rank, n: r.n, why: r.why, ...(r.score !== undefined ? { score: r.score } : {}), ...(r.rp ? { rp: r.rp } : {}) }));
   }
   roomRecords(key: string, limit: number): RoomRecordRow[] {
     const rows = this.db.prepare('SELECT key, at, def, data FROM room_records WHERE key = ? ORDER BY n DESC LIMIT ?').all(key, Math.max(1, Math.floor(limit))) as { key: string; at: number; def: string; data: string }[];
     return rows.map((r) => {
       const d = this.parse<Partial<RoomRecordRow>>(r.data) ?? {};
-      return { key: r.key, at: Number(r.at), def: r.def, res: d.res === 0 || d.res === 1 ? d.res : 2, rank: Number(d.rank) || 0, n: Number(d.n) || 0, why: String(d.why ?? ''), ...(typeof d.score === 'number' ? { score: d.score } : {}) };
+      return { key: r.key, at: Number(r.at), def: r.def, res: d.res === 0 || d.res === 1 ? d.res : 2, rank: Number(d.rank) || 0, n: Number(d.n) || 0, why: String(d.why ?? ''), ...(typeof d.score === 'number' ? { score: d.score } : {}), ...(typeof d.rp === 'number' ? { rp: d.rp } : {}) };
     });
   }
   forgetRoomRecords(key: string): number { return Number(this.db.prepare('DELETE FROM room_records WHERE key = ?').run(key).changes); }
+  // ---- 리플레이 (묶음 8) ----
+  addReplay(row: Omit<ReplayRow, 'id'>): number { return Number(this.db.prepare('INSERT INTO room_replays (at, def, keys, data) VALUES (?, ?, ?, ?)').run(row.at, row.def, row.keys.join(','), row.data).lastInsertRowid); }
+  replay(id: number): ReplayRow | null {
+    const r = this.db.prepare('SELECT id, at, def, keys, data FROM room_replays WHERE id = ?').get(id) as { id: number; at: number; def: string; keys: string; data: string } | undefined;
+    return r ? { id: Number(r.id), at: Number(r.at), def: r.def, keys: r.keys ? r.keys.split(',') : [], data: r.data } : null;
+  }
+  pruneReplays(before: number): number { return Number(this.db.prepare('DELETE FROM room_replays WHERE at < ?').run(before).changes); }
+  forgetReplays(key: string): number { return Number(this.db.prepare("DELETE FROM room_replays WHERE ',' || keys || ',' LIKE ?").run(`%,${key.replace(/[%_,]/g, '')},%`).changes); }
 }
 
 /** 백업 파일(SqliteStore.backup이 만든 것)에서 캐릭터 한 명의 저장만 읽는다 (계정 단위 롤백: engine/server/net/rollback.ts). 파일은 읽기 전용으로 열고 곧 닫는다. 없으면 null */

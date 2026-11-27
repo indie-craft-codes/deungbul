@@ -14,7 +14,7 @@ import { charName, type CharErr } from '../../shared/defs/chardef';
 import type { MorphMods } from '../../shared/defs/morph';
 import { modeDef } from '../../shared/defs/modes';
 import { uiText } from './names';
-import { achName, codexName, evName, goodsName, missionName, seasonName, titleName } from './live';
+import { achName, codexName, evName, goodsName, missionName, seasonName, tierText, titleName } from './live';
 import { codexDef } from '../../shared/defs';
 import { rarityDef } from '../../shared/defs/collect';
 
@@ -689,6 +689,11 @@ export const enBase = (n: ContentNames): EngineLocale => {
       roomStatsBtn: 'Record',
       roomStatsNone: 'No matches yet.',
       roomStatsRecent: 'Recent matches',
+      // Competition (pack 8)
+      tabBoards: 'Leaderboards', boardPower: 'Power', boardRating: 'Rating', boardEmpty: 'No rankings yet.', boardLoading: 'Loading…', boardNotIn: 'You are not on this leaderboard yet.',
+      rankedMine: 'My rank', rankedUnsure: 'Rank hidden (inactive for a while: play a match to show it again)', rankedNoTier: 'No tier', rankedVoidNote: 'This match did not count toward rating.',
+      queueCancel: 'Cancel', roomRanked: 'Ranked match', roomRankedTag: 'Ranked', roomRequeue: 'Queue again', roomReplay: 'Replay', roomBot: 'Bot',
+      replayTitle: 'Replay', replayFirst: 'To start', replayPrev: 'Step back', replayNext: 'Step forward', replayPlay: 'Play', replayPause: 'Pause', replaySeek: 'Playback position', replaySpeed: 'Speed',
       roomClose: 'Close',
       roomPrev: 'Prev',
       roomNext: 'Next',
@@ -864,7 +869,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       resAuto: (s: number, id: string) => `Auto: ${id} in ${s}s`,
       enemyN: (name: string, n: number) => (n > 1 ? `${name} ×${n}` : name),
       reward: (gold, exp, second) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `Exp ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)${a[2] ? ` · advanced ${a[1]} → ${a[2]}` : ''}` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : k === 'maint' ? 'Maintenance compensation' : k === 'support' ? `Reply to your request #${a[0]} (Settings → Support)` : k === 'comp' ? 'Compensation from the team' : k === 'event' ? `Event task: ${missionName(a[0], a[1])}` : k === 'eventSwap' ? `Exchanged ${a[1]} leftover currency from “${evName(a[0])}”` : k === 'season' ? `${seasonName()}: unclaimed rewards` : k === 'achieve' ? `Feat unlocked: ${achName(a[0])}` : k === 'codex' ? `Codex ${codexName(a[0])}: ${a[1]} collected` : k === 'coupon' ? `Coupon ${a[0]}` : k === 'comeback' ? `Welcome back (after ${a[0]} days)` : k === 'stamina' ? `Overflow ${uiText.get(STAMINA_RULE_VIEW.name)} ${a[0]}` : String(k)),
+      mailTitle: (k, a) => (k === 'idle' ? `Gathered while you were away (${a[0]} min)${a[2] ? ` · advanced ${a[1]} → ${a[2]}` : ''}` : k === 'attend' ? `Day ${a[0]} check-in reward` : k === 'dungeon' ? `${dungeonName(a[0])} clear reward` : k === 'daily' ? `Daily task done: ${dailies[a[0] as keyof typeof dailies] ?? a[0]}` : k === 'marketSold' ? `Market sale: ${tradeWhat(a)} (price ${num(a[2])}, fee ${num(a[3])})` : k === 'marketExpired' ? `Market listing expired: ${tradeWhat(a)} returned` : k === 'marketBought' ? `Market purchase: ${tradeWhat(a)} (no room, held in mail)` : k === 'marketBack' ? `Market listing taken down: ${tradeWhat(a)} (no room, held in mail)` : k === 'maint' ? 'Maintenance compensation' : k === 'support' ? `Reply to your request #${a[0]} (Settings → Support)` : k === 'comp' ? 'Compensation from the team' : k === 'event' ? `Event task: ${missionName(a[0], a[1])}` : k === 'eventSwap' ? `Exchanged ${a[1]} leftover currency from “${evName(a[0])}”` : k === 'season' ? `${seasonName()}: unclaimed rewards` : k === 'achieve' ? `Feat unlocked: ${achName(a[0])}` : k === 'codex' ? `Codex ${codexName(a[0])}: ${a[1]} collected` : k === 'coupon' ? `Coupon ${a[0]}` : k === 'comeback' ? `Welcome back (after ${a[0]} days)` : k === 'stamina' ? `Overflow ${uiText.get(STAMINA_RULE_VIEW.name)} ${a[0]}` : k === 'rankSeason' ? `Rating season ${a[0]} reward: ${tierText(a[1])}` : String(k)),
       potions: (n) => `Potions ${n}`,
       distance: (m) => `${m} m`,
       num: (n) => num(n),
@@ -1092,6 +1097,25 @@ export const enBase = (n: ContentNames): EngineLocale => {
       roomTally: (n, win, lose, draw) => `${count(n, 'match')}: ${win}W ${lose}L${draw ? ` ${draw}D` : ''}`,
       roomRecentRow: (def, res, rank, n, at) => `${def} · ${rank > 0 && n > 2 ? `${ordinal(rank)} of ${n}` : res === 0 ? 'won' : res === 1 ? 'lost' : 'draw'} · ${whenText(at, 'en-US')}`,
       roomStatsTitle: (name) => `${name}'s record`,
+      // Competition (pack 8)
+      boardRatingOf: (def: string) => `Rating · ${def}`,
+      boardRatingV: (v: number) => `${Math.round(v).toLocaleString('en-US')}`,
+      boardStage: (ch: number, st: number) => `${ch}-${st}`,
+      boardNum: (v: number) => v.toLocaleString('en-US'),
+      boardPeriod: (p: string, ms: number) => (p === 'ever' ? 'All-time leaderboard' : `${p === 'day' ? 'Today' : p === 'week' ? 'This week' : p === 'month' ? 'This month' : 'This season'}${ms ? ` · resets in ${spanMs(ms, 'en')}` : ''}`),
+      boardMine: (rank: number, v: string, n: number) => `You are #${rank} of ${n} · ${v}`,
+      boardPrev: (text: string) => `Last period: ${text}`,
+      rankedPlacement: (n: number, need: number) => `Placement ${n}/${need}`,
+      rankedWL: (w: number, l: number, d: number) => `${w}W ${l}L${d ? ` ${d}D` : ''}`,
+      rankedBest: (tier: string) => `Season best ${tier}`,
+      rankedSeasonEnd: (n: number, ms: number) => `${n ? `Season ${n}` : 'This season'} · ends in ${spanMs(ms, 'en')}`,
+      rankedDelta: (r: number, d: number, tier: string) => `Rating ${r.toLocaleString('en-US')} (${d >= 0 ? '+' : ''}${d})${tier ? ` · ${tier}` : ''}`,
+      queueBand: (def: string, waited: number, est: number, range: number, bots: boolean) => `Finding a ranked match · ${def} · ${clockText(waited)} · est. ${est < 0 ? 'unknown' : clockText(est)} · range ±${range}${bots ? ' · bots fill if short' : ''}`,
+      queueBannedLeft: (min: number) => `Leaver penalty: no ranked matches for ${min} min`,
+      replaySub: (names: string, at: number) => `${names} · ${whenText(at, 'en-US')}`,
+      replayAt: (i: number, n: number) => `${i} / ${n}`,
+      replayResult: (winner: string, why: string) => `${winner ? `${winner} wins` : 'Draw'}${why ? ` (${why})` : ''}`,
+      roomBotName: (name: string, n: number) => `${name || `Bot ${n}`} (bot)`,
       // ---- U2 feedback and states ----
       connRetry: (n, s) => `Reconnecting · attempt ${n} · in ${s}s`,
       connTrying: (n) => `Reconnecting… (attempt ${n})`,
@@ -1392,6 +1416,18 @@ export const enBase = (n: ContentNames): EngineLocale => {
       roomWatching: (a) => (Number(a[0]) ? `Watching (${a[0]}s behind).` : 'Watching.'),
       roomWatchFull: () => 'Too many people are watching.',
       roomMidJoin: (a) => `${a[0]} joined mid-match.`,
+      replayNone: () => 'That replay is no longer available.',
+      rankedVoid: (a) => (Number(a[0]) ? 'Someone left before the first move, so this match does not count toward rating.' : 'Everyone disconnected, so this match does not count toward rating.'),
+      rankedPlaced: (a) => `Placement complete: ${tierText(a[0]) || 'no tier'} (rating ${a[1]})`,
+      rankedTier: (a) => `${Number(a[1]) ? 'Promoted' : 'Demoted'} to ${tierText(a[0])}`,
+      rankedSeason: (a) => `Rating season ${a[0]} has begun. Ratings were pulled slightly toward the baseline.${Number(a[1]) >= 0 && tierText(a[1]) ? ` Last season best: ${tierText(a[1])}` : ''}`,
+      queueOn: () => 'Looking for a ranked match.',
+      queueOff: () => 'Stopped looking for a ranked match.',
+      queueFound: (a) => `Match found!${Number(a[1]) ? ` (${a[1]} bot${Number(a[1]) > 1 ? 's' : ''})` : ''}`,
+      queueBanned: (a) => `Leaver penalty: you cannot queue for ranked for ${a[0]} min.`,
+      leaveWarn: () => 'You left a ranked match: this is a warning. Leaving again will block ranked queue for a while.',
+      leavePenalty: (a) => `You left a ranked match and cannot queue for ranked for ${a[0]} min.`,
+      afkOut: (a) => `${a[0]} was removed from the match for being idle.`,
     },
     nameA: n.nameA,
     nameB: n.nameB,

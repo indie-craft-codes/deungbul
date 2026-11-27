@@ -81,6 +81,11 @@ export const MODULE_TABLE = {
   codex: { needs: ['mail'] },
   /** 쿠폰 코드(관리자가 만든다, 사람당 1회, 틀린 횟수 제한)와 복귀 보상 (COUPON, COMEBACK). 쿠폰은 DB의 coupons·coupon_uses 표 */
   coupon: { needs: ['mail'] },
+  // ---------- 경쟁 (묶음 8: engine/shared/defs/compete.ts, docs/making-a-game.md 31절) ----------
+  /** 순위표: 이름 붙은 순위표 여럿(게임이 g.boards.define으로: 전투력·레이팅·탑 최고 층 …), 기간(상시·날·주·달·시즌)의 초기화, 내 순위·위아래, 휴면 빼기, 동점 규칙, 메뉴의 '순위표' 탭. rank 모듈을 함께 고르면 전투력 순위표가 그 위의 한 판이 된다 */
+  boards: { needs: [] },
+  /** 랭크 대전: 판(RoomDef.rated)의 Glicko-2 레이팅·배치·등급, 레이팅 시즌의 부분 초기화와 보상, 큐(넓어지는 범위·예상 대기·봇), 이탈·잠수의 단계 제재 (COMPETE) */
+  ranked: { needs: ['rooms', 'boards'] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
@@ -93,7 +98,7 @@ export type ModuleId = keyof typeof MODULE_TABLE;
 export const MODULE_SAVES: { player: Readonly<Record<string, ModuleId>>; top: Readonly<Record<string, ModuleId>>; world: Readonly<Record<string, ModuleId>> } = {
   player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams', keys: 'dungeon', roster: 'roster', gacha: 'gacha', squad: 'squad', stages: 'stages', formation: 'squad', herogear: 'herogear', morph: 'morph', purse: 'economy', mode: 'modes', autosafe: 'away', autoprefs: 'away', goods: 'items', event: 'event', season: 'season', achieve: 'achieve', codex: 'codex', back: 'coupon', stamina: 'stamina' },
   top: { lv: 'growth', exp: 'growth', need: 'growth', maxHp: 'combat', sparks: 'economy', gold: 'economy', weapon: 'items', armor: 'items', items: 'items', cls: 'classes', auto: 'away' },
-  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams', chars: 'chars', goods: 'items' },
+  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams', chars: 'chars', goods: 'items', boards: 'boards', ranked: 'ranked' },
 };
 /** 모든 모듈 (표의 차례) */
 export const ALL_MODULES = Object.keys(MODULE_TABLE) as ModuleId[];
@@ -114,7 +119,9 @@ export const COLLECT_MODULES: readonly ModuleId[] = ['roster', 'gacha', 'squad',
  * 라이브 콘텐츠의 다섯(LIVE_MODULES)도 들지 않는다: 이벤트·시즌·업적·도감·쿠폰을 켤지는 게임이 정한다 (등불지기는 켜지 않았다: 경제·콘텐츠 변경은 사용자 승인)
  */
 export const LIVE_MODULES: readonly ModuleId[] = ['event', 'season', 'achieve', 'codex', 'coupon'];
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends' && m !== 'odds' && m !== 'support' && m !== 'modes' && m !== 'stamina' && !LIVE_MODULES.includes(m));
+/** 경쟁의 둘(묶음 8): 들지 않는다. 순위표 창·랭크 대전을 켤지는 게임이 정한다 (등불지기는 켜지 않았다: 전투력 순위는 rank 모듈 그대로) */
+export const COMPETE_MODULES: readonly ModuleId[] = ['boards', 'ranked'];
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends' && m !== 'odds' && m !== 'support' && m !== 'modes' && m !== 'stamina' && !LIVE_MODULES.includes(m) && !COMPETE_MODULES.includes(m));
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).

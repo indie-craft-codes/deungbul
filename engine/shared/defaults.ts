@@ -26,6 +26,7 @@ import type { OddsRules } from './defs/odds';
 import type { ModeRules } from './defs/modes';
 import type { StaminaRules } from './defs/stamina';
 import type { AchieveDef, CodexDef, ComebackRules, CouponRules, EventDef, GoodsDef, MailRules, SeasonRules } from './defs/livecontent';
+import type { CompeteRules } from './defs/compete';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -281,3 +282,7 @@ export const COUPON: CouponRules = { min: 4, max: 20, tries: 5, lockMin: 10 };
 export const COMEBACK: ComebackRules | null = null;
 /** 우편의 만료 (mail 모듈): 비어 있으면 만료가 없다 */
 export const MAIL_RULES: MailRules = {};
+
+// ---------- 경쟁 (묶음 8: engine/shared/defs/compete.ts) ----------
+/** 레이팅·큐·이탈이 없다 (ranked 모듈을 골라도 없는 것과 같다) */
+export const COMPETE: CompeteRules | null = null;

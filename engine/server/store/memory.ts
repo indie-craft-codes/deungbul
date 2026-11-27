@@ -1,7 +1,7 @@
 import { anonymize } from './sqlite';
 import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, SocialStore, Store, WebStore, WorldSave } from './types';
 import type { DrawQuery, OddsStore, OddsVersionRow } from './types';
-import type { RoomRecordRow, RoomStore } from './types';
+import type { ReplayRow, RoomRecordRow, RoomStore } from './types';
 import type { DrawRow, OddsHistoryRow, OddsPlanRow } from '../../shared/defs/odds';
 import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
 import type { CouponRow, CouponStore } from './types';
@@ -161,4 +161,11 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore, Socia
   addRoomRecords(rows: readonly RoomRecordRow[]): void { for (const r of rows) this.roomRows.push(structuredClone(r)); }
   roomRecords(key: string, limit: number): RoomRecordRow[] { return this.roomRows.filter((r) => r.key === key).slice(-Math.max(1, Math.floor(limit))).reverse().map((r) => structuredClone(r)); }
   forgetRoomRecords(key: string): number { const n = this.roomRows.length; this.roomRows = this.roomRows.filter((r) => r.key !== key); return n - this.roomRows.length; }
+  // ---- 리플레이 (묶음 8) ----
+  private replayRows: ReplayRow[] = [];
+  private replaySeq = 0;
+  addReplay(row: Omit<ReplayRow, 'id'>): number { const id = ++this.replaySeq; this.replayRows.push({ ...structuredClone(row), id }); return id; }
+  replay(id: number): ReplayRow | null { const r = this.replayRows.find((x) => x.id === id); return r ? structuredClone(r) : null; }
+  pruneReplays(before: number): number { const n = this.replayRows.length; this.replayRows = this.replayRows.filter((r) => r.at >= before); return n - this.replayRows.length; }
+  forgetReplays(key: string): number { const n = this.replayRows.length; this.replayRows = this.replayRows.filter((r) => !r.keys.includes(key)); return n - this.replayRows.length; }
 }

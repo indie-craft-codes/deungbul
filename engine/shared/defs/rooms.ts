@@ -19,6 +19,8 @@ export interface RoomSeatView {
   again: 0 | 1;
   /** 준비 완료 1 (방장이 있는 판: RoomDef.lead) */
   ready?: 0 | 1;
+  /** 큐가 채운 봇 1 (컴퓨터 자리: 화면이 '봇'이라고 적는다. 묶음 8) */
+  bot?: 0 | 1;
 }
 
 /** 판의 공개 설정 (방 코드를 쓰는 판: RoomDef.codes): public 목록에 보임, private 코드로만, friends 방장의 친구만, password 비밀번호 */
@@ -96,6 +98,11 @@ export interface RoomView {
   rt?: 0 | 1;
   /** 결과 창에서 '같은 무리로 다음 판'을 할 수 있으면 1 */
   regroup?: 0 | 1;
+  // ---- 경쟁 (묶음 8) ----
+  /** 큐가 짝지은 랭크 판이면 1 (레이팅에 든다: 결과 창은 다시 하기 대신 '다시 큐') */
+  rated?: 0 | 1;
+  /** 끝난 판의 리플레이 id (RoomDef.replay: 없으면 0) */
+  rp?: number;
 }
 
 /**
@@ -117,6 +124,9 @@ export interface RoomDefView {
   rt: 0 | 1;
   record: 0 | 1;
   opts: Record<string, readonly (string | number)[]>;
+  /** 랭크 큐가 있는 판 (RoomDef.rated, ranked 모듈)이면 1, 리플레이를 남기면 1 (묶음 8) */
+  rated?: 0 | 1;
+  replay?: 0 | 1;
 }
 
 /** 전적 (명령 room a:'stats'의 답 roomStats): 이름, 모든 판과 판의 이름마다의 판 수·이김·짐·비김, 최근 판 (최근부터) */
@@ -128,7 +138,7 @@ export interface RoomStatsView {
   all: RoomTally;
   defs: Record<string, RoomTally>;
   /** 최근 판: 때(UTC ms), 판의 이름, 결과(0 이김 1 짐 2 비김), 등수(등수로 끝냈으면, 아니면 0), 자리 수, 까닭 */
-  recent: { at: number; def: string; res: 0 | 1 | 2; rank: number; n: number; why: string }[];
+  recent: { at: number; def: string; res: 0 | 1 | 2; rank: number; n: number; why: string; rp?: number }[];
 }
 
 /** 공유 상태 rooms: 대기실이 보는 판의 목록과 판의 규칙 몇 (화면의 단추) */

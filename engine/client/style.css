@@ -1768,3 +1768,35 @@ a.cbLink { display: inline-flex; align-items: center; gap: 4px; color: var(--c-a
 .cbScroll td:last-child { white-space: normal; min-width: 12em; }
 /* 자동 사냥 단추를 감춘 모드·게임(탑의 전투 등)에서는 곁의 톱니·절전 단추도 함께 감춘다 (전투 화면에는 위 띠의 절전이 있다) */
 #autoBtn.modeOff ~ #autoSetBtn, #autoBtn.modeOff ~ #psaveBtn, #autoBtn.hudOff ~ #autoSetBtn, #autoBtn.hudOff ~ #psaveBtn { display: none; }
+/* 경쟁 (묶음 8: hud/compete.ts·replay.ts): 순위표 탭, 등급 카드, 큐 띠, 결과 창의 레이팅, 리플레이 재생기 */
+.boardChips { flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.boardChips button { padding: 6px 10px; font-size: var(--fs-xs); min-height: 36px; }
+.boardPeriod { margin: 2px 0 6px; }
+.boardMe { font-weight: 700; margin-bottom: 6px; }
+.brow.mine { background: var(--c-sunk); outline: 1px solid var(--c-accent); border-radius: var(--r-sm); }
+.brow.top1 .iname { color: var(--c-accent); font-weight: 800; }
+.brow .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.boardGap { text-align: center; }
+.boardPrev { margin-top: 8px; }
+.rcard { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+.rcard .rtier { font-size: var(--fs-xl); font-weight: 800; color: var(--c-accent); }
+#roomCompete { font-size: var(--fs-xs); font-weight: 700; color: var(--c-accent); }
+#roomCompete[hidden], #queueBand[hidden], #replay[hidden], #roomEndRating[hidden] { display: none; }
+#queueBand { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 64px); transform: translateX(-50%); z-index: var(--z-float); display: flex; align-items: center; gap: 10px; padding: 8px 12px; max-width: calc(calc(var(--uvw, 1vw) * 100) - 24px); font-size: var(--fs-sm); }
+#queueBand #queueText { flex: 1 1 auto; min-width: 0; }
+#queueBand button { flex: none; min-height: 36px; padding: 4px 12px; }
+#queueBand .qdot { width: 10px; height: 10px; border-radius: 50%; background: var(--c-accent); flex: none; animation: qpulse 1.2s ease-in-out infinite; }
+@keyframes qpulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { #queueBand .qdot { animation: none; } }
+#roomEnd .rrating { font-weight: 800; font-size: var(--fs-lg); }
+#roomEnd .rrating.up { color: var(--c-accent); }
+#roomEnd .rrating.down { color: var(--c-bad-strong); }
+#replay { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, calc(calc(var(--uvw, 1vw) * 100) - 24px)); max-height: calc(calc(var(--uvh, 1vh) * 100) - 24px); overflow: auto; z-index: var(--z-modal, 60); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+#replay .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+#replayBox { min-height: 120px; background: var(--c-sunk); border-radius: var(--r-sm); padding: 10px; }
+#replayBox .replayRaw { white-space: pre-wrap; word-break: break-all; font-size: var(--fs-xs); margin: 0; }
+#replaySeek { width: 100%; }
+#replayBtns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#replayBtns button { min-width: 44px; min-height: 44px; }
+#replayBtns .rpick { display: flex; gap: 4px; margin-left: auto; }
+@media (max-width: 720px) { #queueBand { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 200px); width: calc(100% - 24px); } }

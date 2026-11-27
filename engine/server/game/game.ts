@@ -71,6 +71,8 @@ import { Live } from './systems/live';
 import { Goods, hasGoodsDefs } from './systems/goods';
 import { EventSys } from './systems/event';
 import { SeasonSys } from './systems/season';
+import { Boards } from './systems/boards';
+import { Ranked } from './systems/ranked';
 import { AchieveSys } from './systems/achieve';
 import { CodexSys } from './systems/codex';
 import { CouponSys } from './systems/coupon';
@@ -367,6 +369,8 @@ export class Game {
   /** [items] 상품 (GOODS가 비어 있으면 만들지 않는다: 자리표) */ readonly goods: Goods;
   /** [event] 기간 이벤트 */ readonly event: EventSys;
   /** [season] 시즌과 무료 보상 트랙 */ readonly season: SeasonSys;
+  /** [boards] 순위표 여럿: 기간·내 순위·휴면 빼기 (묶음 8) */ readonly boards: Boards;
+  /** [ranked] 랭크 대전: 레이팅·배치·등급·시즌 초기화·큐·이탈 제재 (묶음 8) */ readonly ranked: Ranked;
   /** [achieve] 업적과 칭호 */ readonly achieve: AchieveSys;
   /** [codex] 도감 */ readonly codex: CodexSys;
   /** [coupon] 쿠폰 코드와 복귀 보상 */ readonly coupon: CouponSys;
@@ -461,6 +465,9 @@ export class Game {
     this.achieve = has('achieve') ? new AchieveSys(this) : off('achieve', 'achieve');
     this.codex = has('codex') ? new CodexSys(this) : off('codex', 'codex');
     this.coupon = has('coupon') ? new CouponSys(this) : off('coupon', 'coupon');
+    // 경쟁 (묶음 8): 그 뒤에 (고르지 않은 게임의 등록 차례가 예전과 같게)
+    this.boards = has('boards') ? new Boards(this) : off('boards', 'boards');
+    this.ranked = has('ranked') ? new Ranked(this) : off('ranked', 'ranked');
     this.sanctions = new Sanctions(this);
     new Status(this); // 본인에게 보내는 성장 수치(stat)와 장비·우편(meta): 그 칸의 모듈을 고른 게임만
     for (const fn of this.ready) fn();
