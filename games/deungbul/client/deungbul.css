@@ -128,3 +128,13 @@
   #questGo { display: none; }
   #quest { gap: 2px; }
 }
+
+/* 퀘스트의 '▶ 가기' 단추 (U3): 폰에만 (PC는 '누르면 목적지로 걸어갑니다 (F)' 안내가 있다). 던전 안에서는 없다 */
+#questGoBtn { display: none; }
+@media (pointer: coarse) {
+  #quest .row { align-items: center; }
+  #questGoBtn:not([hidden]) { display: inline-flex; align-items: center; gap: 2px; flex: none; margin-left: auto; padding: 0 10px; border-radius: var(--r-pill); font-size: var(--fs-sm); }
+  #questDist { margin-left: auto; }
+  #questDist + #questGoBtn { margin-left: 6px; }
+}
+#quest.away #questGoBtn { display: none; }

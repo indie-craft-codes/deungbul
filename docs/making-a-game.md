@@ -2879,7 +2879,7 @@ export const CODEX = { echoes: { name: 'codexEchoes', of: 'hero', rewards: [{ n:
 
 ### 수집형 홈 키트 (`engine/client/hud/homekit.ts`)
 
-`makeHome(opts)` → `{ el, open, close, draw, slot, shown }`. 홈은 화면 쌓기의 바탕 페이지다(`open`).
+`makeHome(opts)` → `{ el, open, close, draw, slot, shown }`. 홈은 화면 쌓기의 바탕 페이지다(`open`). **U3(2026-11-28)에서 상용 로비 구조로 넓혔다**: 프로필·세로 아이콘 열·대표 고르기·장면 배경·독의 아이콘은 28절. 아래 표의 칸은 그대로 쓴다(`banners`는 오른쪽 열이 없을 때 오른쪽 열로 보인다).
 
 | 칸 | 무엇 |
 |---|---|
@@ -3234,3 +3234,130 @@ backCard: { minS: 10 },
 
 - **누름 소리**: 사용자 결정(11-27)으로 누를 때마다의 '톡'(`ui.tap`)은 기본 끔, 설정의 **누름 소리 [켬][끔]**(플랫폼 저장소 `uiTap`)으로 켠다. 다른 화면 효과음(`ui.*`)은 기본 켬, 음량 0.35배 그대로.
 - **폰의 오른쪽 창**: 폰 세로의 상점 창, 폰 가로의 등탑 창처럼 구역보다 긴 창은 창 안이 스크롤되고 창 밖(3D)이 눌리지 않는다 ([framework-status.md](framework-status.md) '묶음 D').
+
+## 28. 상용 로비·메뉴 묶음·그림 자리: 프로필, 세로 아이콘 열, 대표 고르기, 탭 묶음, 화면 아이콘, 그림 넣기 (U3)
+
+[ux-review.md](ux-review.md) 4절의 순서 5(U3 정보 구조)와 사용자 말 "UI/UX 그림을 만들어 채울까, 구조도 상용 게임처럼 맞춰 줘"의 **구조** 몫. 그림 파일이 하나도 없어도 상용 구조가 완성돼 보이게, 그림을 넣으면 그 그림이 이기게 했다. 쓰지 않으면 예전과 같다(묶음을 고르지 않은 게임은 탭 한 줄, 그림을 등록하지 않은 게임은 3D 초상).
+
+### 상용 로비 (`makeHome`, `engine/client/hud/homekit.ts`)
+
+23절의 홈 키트에 더한 칸:
+
+| 칸 | 무엇 |
+|---|---|
+| `scene` | 장면 배경의 이름. 그림 `bg:<장면>`(세로·가로 따로 `bg:<장면>@portrait`·`@landscape`)이 있으면 그 그림을 가득, 없으면 css의 대체(게임이 `--hk-scene-a`·`--hk-scene-b`·`--hk-glow`로 색, `#<홈 id> .hk-scene:not(.hk-art)`로 무늬) |
+| `profile` | 위 왼쪽 `{ name(), level(), pic?(), rows?(), actions?() }`: 초상(없으면 사람 아이콘)·레벨·이름. 누르면 프로필 창(줄 `[이름, 값]`과 단추. '대표 바꾸기'는 `leadPick`이 있으면 틀이 더한다) |
+| `lead()` | 23절의 칸에 `lines`: 대표를 누르면 하나를 골라 말풍선(3초)과 작은 반응(튐). 같은 줄을 잇달아 고르지 않는다 |
+| `leadPick` | 대표 고르기 `{ list(), current(), pick(id) }`: 이름판의 [대표 바꾸기] → 초상 격자 창. 메아리 계약은 서버에 남긴다(명령 `{ t: 'squad', lead }`, 저장 `formation.lead`, 개인 상태 `squad.lead`: 고른 때만 실리므로 고르지 않은 사람의 저장·상태는 예전과 같다) |
+| `leftRail()`, `rightRail()` | 왼쪽·오른쪽 세로 아이콘 열 `{ id, icon, label, dot?, locked?, hidden?, onClick }`. 상용의 자리: 왼쪽 임무·시즌·업적, 오른쪽 우편·공지·이벤트·상점·확률 |
+| `dock[].icon` | 아래 독의 큰 아이콘(화면 아이콘의 이름). 잠긴 칸은 자물쇠 아이콘 + '언제 열리는지' |
+| `openProfile()`, `openLeadPick()` | 홈 키트가 돌려주는 것에 더해졌다 |
+
+배치(`.homekit`의 격자):
+
+- **폰 세로**: 위 띠(프로필 | 재화 줄) → 상태 줄 → 가운데 대표(양옆에 세로 열이 대표 위에 얹힌다) → 아래 왼쪽 이벤트 배너 | 아래 오른쪽 진행 단추(엄지) → 독. 배너가 없으면 진행 단추 줄이 가득.
+- **폰 가로·PC**: 위 띠 → (왼쪽 열 | 대표 | 오른쪽 위 상태 줄·배너·진행 단추 | 오른쪽 열) → 독(가운데, 760px까지). PC(높이 600 이상)는 칸을 키우고 1440px 안에 모은다.
+- 배너 카드는 1200×500 비율이고 대표를 가리지 않는다. 프로필·대표 고르기 창은 화면 쌓기의 창(뒤로 가기로 닫힌다).
+
+메아리 계약의 홈(`games/echopact/client/tower.ts`): 장면은 밤하늘의 별·멀리 선 탑의 그림자(SVG 마스크: 색은 토큰)·바닥의 빛, 대표는 고른 메아리(없으면 편성의 첫째), 독은 모험·메아리·편성·뽑기·울림골, 왼쪽 열은 임무·시즌·업적, 오른쪽 열은 우편·공지(걸린 공지가 있을 때: 틀의 `openNotices()`)·이벤트·상점·확률.
+
+```ts games/echopact/client/tower.ts
+scene: 'tower',
+…
+leftRail: () => [railTab('daily', 'mission'), railTab('season', 'season', 'menu.season'), railTab('achieve', 'achieve')],
+```
+
+### 메뉴의 탭 묶음 (`setMenuGroups`, `engine/client/hud/menu.ts`)
+
+탭이 열 개를 넘으면(메아리 계약 열세 개, 영어는 세 줄) 상용 모바일처럼 **위 줄은 묶음, 아래 줄은 그 묶음의 탭**으로. `setMenuGroups()`(인자 없이)는 틀의 기본 묶음 다섯 `MENU_GROUPS`:
+
+| 묶음 | 이름(ko/en) | 탭 |
+|---|---|---|
+| `grow` | 성장·수집 / Growth | 메아리(영웅)·편성·영웅 장비·뽑기·단계·장비·성장·변신 |
+| `play` | 활동 / Activities | 일일·이벤트·시즌·업적·상점 |
+| `social` | 소식 / Social | 우편·친구·길드·순위·거래소 |
+| `info` | 정보 / Info | 도감·확률 |
+| `sys` | 설정 / Settings | 설정·기기 |
+
+- 묶음 안의 탭 차례는 `setMenuTabs`의 차례를 따른다. 어느 묶음에도 없는 탭(게임이 더한 탭)은 첫 묶음에 든다. 보이는 탭이 없는 묶음은 빠진다(등불지기에는 정보 묶음이 없다). 탭이 하나뿐인 묶음은 아래 줄이 없다.
+- **최근 탭 기억**: 묶음마다 마지막에 본 탭과 마지막 탭을 기기에 적는다(플랫폼 저장소 `menuLast`). 묶음을 누르면 그 묶음에서 마지막에 본 탭으로, 메뉴를 다시 열면 마지막 탭으로.
+- 묶음의 점은 그 안의 탭 점 하나라도 있으면, 잠김은 그 안의 탭이 모두 잠겼을 때. 자기 묶음은 `{ id, icon, tabs, label? }` 목록으로(`null`이면 묶음 없이 예전처럼). 탭 단추에는 `data-tab`, 묶음 단추에는 `data-group`이 있다(화면 시험·도구가 누른다).
+- 세 게임 모두 쓴다. 등불지기는 탭 이름·기능 그대로 묶음만(성장: 장비·성장 / 활동: 일일 / 소식: 우편·거래소·길드·순위 / 설정). 예제는 모닥불을 '활동'의 맨 앞으로:
+
+```ts games/sample/client/bonfire.ts
+setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'rank']);
+// 탭 묶음 (U3): 틀의 기본 묶음에 모닥불을 '활동'의 맨 앞으로
+setMenuGroups(MENU_GROUPS.map((g) => (g.id === 'play' ? { ...g, tabs: ['camp', ...g.tabs] } : g)));
+```
+
+### 화면 아이콘 (`engine/client/hud/uiicons.ts`)
+
+코드로 그린 SVG 아이콘 51개: 24px 격자, 선 굵기 1.8 하나, 둥근 끝, 색은 글자 색(`currentColor`). 이모지 아이콘(✉ ⚙ 🔒 ◆ ● ⚡ …)은 기기마다 모양·색이 달라 이것으로 바꿨다(홈의 독·세로 열·프로필, 메뉴 묶음, 재화 칩의 대체 그림, 빈 상태의 그림, 잠김 표시, 장비 잠금 단추, 배속 잠김, 카드의 잠금 표시).
+
+| 무리 | 이름 |
+|---|---|
+| 길 | `home` `back` `close` `plus` `check` `info` `menu` |
+| 소식·활동 | `mail` `notice` `event` `gift` `mission` `season` `achieve` `rank` |
+| 사람 | `profile` `friends` `chat` `guild` |
+| 수집·성장 | `heroes` `squad` `gacha` `adventure` `sword` `codex` `odds` `growth` `morph` |
+| 장비 | `bag` `gear` `enhance` `salvage` `exchange` `shop` |
+| 상태 | `lock` `unlock` `star` `auto` `speed` `pause` `play` `sweep` |
+| 재화 | `coin` `shard` `stamina` |
+| 곳·전환 | `map` `tower` `field` `swap` `settings` `device` |
+
+- `uiIcon(name, cls?)` → `<i class="uic">`(크기는 글자의 1.25배, css로 바꾼다). 모르는 이름이면 그 글자를 그대로 보인다(게임이 글자 하나를 아이콘으로 쓰던 곳이 깨지지 않게). `iconSvg(name)`은 SVG 글, `ICON_PATHS`는 표.
+- `emptyState(icon, …)`·재화 칩의 `glyph`·홈의 `icon` 칸은 아이콘 이름을 받는다.
+- css만으로 그리는 자리(`::before`)는 마스크로: `--ic-lock`(잠김 띠 `.lockBand`, 잠김 표 `.stLock`, 메아리 계약의 잠긴 단계 칸).
+
+### 그림 자리 (`engine/client/art.ts`)
+
+| 열쇠 | 쓰이는 곳 | 없을 때(대체) |
+|---|---|---|
+| `portrait:<캐릭터 id>` | 카드 격자·카드 상세·뽑기 공개·편성 칸·전투 초상·홈의 대표·대표 고르기 | `charPortrait`(3D 모델을 찍은 그림). 등급 테두리는 그대로 |
+| `bg:<장면>`, `bg:<장면>@portrait`, `bg:<장면>@landscape` | 홈(로비)의 배경 (`makeHome`의 `scene`) | css 그라디언트·무늬 |
+| `banner:<id>` | 홈의 이벤트 배너 카드 (`HomeEvent.id`) | 색 두 개 + 큰 아이콘 + 글 (그림이 있으면 글은 감추고 머리표만) |
+| `icon:<이름>` | 화면 아이콘 (위의 이름) | 코드로 그린 SVG |
+
+- `registerArt(table, base?)`: 열쇠 → 파일. 맞지 않는 열쇠는 건너뛰고 콘솔에 알린다. `portraitArt(id)`·`artPick(kind, id, orient?)`·`artUrl(key)`·`onArt(fn)`.
+- `charPortrait(def)`가 먼저 `portrait:<id>`를 보므로, 초상을 쓰는 화면(카드·뽑기·편성·전투·홈)은 고칠 것 없이 그림을 쓴다. `setHeroPic`으로 정한 초상 함수도 등록된 그림이 이긴다.
+
+```ts games/echopact/client/main.ts
+setLocales(LOCALES);
+// 그림 자리 (U3): 넣은 그림(초상·로비 배경·배너·아이콘)을 등록한다. 표는 scripts/art-import.mjs가 만든다. 비어 있으면 틀이 대신 그린다 (3D 초상·css 배경·SVG 아이콘)
+registerArt(ART);
+```
+
+### 그림 넣기
+
+그림 파일(AI로 만든 것이든 손으로 그린 것이든)을 넣는 길. **이번 작업에서는 그림을 넣지 않았다**(사용자가 원본 화질로 따로 받아 넣는다): 넣기 전에도 위의 대체로 화면이 완성돼 있다.
+
+1. 그림을 권장 크기·형식으로 맞춘다(크기를 바꾸는 것은 그림 도구로: 저장소에는 그림을 다시 그리는 의존성이 없다).
+
+   | 종류 | 파일 이름 | 권장 크기 | 형식·무게 |
+   |---|---|---|---|
+   | 캐릭터 초상 | `portrait-<캐릭터 id>.webp` | 512×512 (정사각형, 캐릭터가 가운데·발끝까지, 배경 투명) | webp(투명), 400KB 아래 |
+   | 로비 배경 (세로) | `bg-<장면>@portrait.webp` | 1080×1920 | webp, 1.5MB 아래 |
+   | 로비 배경 (가로) | `bg-<장면>@landscape.webp` | 1920×1080 | webp, 1.5MB 아래 |
+   | 로비 배경 (하나로) | `bg-<장면>.webp` | 둘 중 하나 (가운데를 잘라 쓴다) | webp |
+   | 이벤트 배너 | `banner-<이벤트 id>.webp` | 1200×500 (글은 그림에 넣지 않는다: 틀이 머리표를 얹는다) | webp, 500KB 아래 |
+   | 화면 아이콘 | `icon-<이름>.svg` | SVG `viewBox="0 0 24 24"`, 선은 `currentColor` | svg (png·webp도 된다) |
+
+   `<종류>/<id>.webp`처럼 폴더로 나눠도 된다. 메아리 계약의 캐릭터 id는 `games/echopact/shared/content/`의 캐릭터 정의, 장면은 `tower`, 배너 id는 라이브 콘텐츠의 이벤트 id(`echofest`)와 시즌(`liveBanners()`의 `id`).
+2. 넣는다:
+
+   ```
+   node scripts/art-import.mjs echopact <그림 폴더> --dry   # 무엇을 할지만 (크기·무게 경고)
+   node scripts/art-import.mjs echopact <그림 폴더>         # games/echopact/client/public/art/ 로 옮기고 artlist.ts를 쓴다
+   ```
+
+   스크립트는 node 내장만 쓴다: 파일 머리(PNG·WebP)에서 크기를 읽어 권장과 다르면 경고하고(그래도 넣는다), 이름이 맞지 않는 파일은 건너뛴다. 표는 있던 것에 더하고(같은 열쇠는 새 것), `--replace`면 새로 쓴다.
+3. 게임의 진입점이 `registerArt(ART)`를 부르는지(메아리 계약은 이미), 게임의 `vite.config.ts`의 `publicDir`가 `client/public`인지 본다(메아리 계약은 이미). 그리고 `npm run build:all`.
+4. 폰 세로·가로·PC에서 홈·카드 목록·뽑기를 본다. 그림이 없는 캐릭터는 3D 초상 그대로이므로 몇 장만 넣어도 된다.
+
+### 함께 고친 것 (ux-review.md의 U3 항목)
+
+- 장비 탭: 강화 규칙 글(보급형·내려가는 단계·부적·귀속)을 '강화 규칙' 한 줄로 접는다(펼친 것은 기억). 부적 쓰기 단추는 늘 보인다.
+- 폰의 대화 탭은 고르는 칸 하나(200px 창에서 끝의 '귓말'이 잘렸다). 안내문(시스템 줄)은 10초 뒤 접힌 대화의 한 줄 미리 보기에서 빠진다(펼치면 다 보인다).
+- 오른쪽 창(퀘스트·상점·등탑)이 구역 안에서 넘치면 아래가 흐려진다(스크롤된다는 표시).
+- 숫자는 본문 글꼴 + 같은 너비 숫자(`tabular-nums`). 고정폭 글꼴은 단축키 표시에만.
+- 등불지기: 등탑 창의 낱말 '바치기 / 보태기' → '밝기에 바치기 / 주민에게 보태기'(뜻 그대로, 목적을 낱말에), 폰의 퀘스트 창에 '▶ 가기' 단추(창을 누르는 것과 같다).

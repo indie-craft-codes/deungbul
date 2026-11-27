@@ -6,6 +6,7 @@
 // 나타나는 곳 SQUAD_RULES.where: 'all'(기본) 어디서나 주인을 따라다닌다, 'stage' 주인의 단계 회차(stages: 대기실 포함)가 있을 때만 그 층에 선다.
 //   'stage'에서 주인이 단계를 떠나 회차가 뒤에서 이어 가면(stages.detach) 영웅은 그 층의 단계 자리를 주인 대신 기준으로 삼아 싸운다 (anchor).
 // 저장: 캐릭터의 ext 'squad' (영웅 id의 목록). 본인에게는 개인 상태 'squad' ({ ids, power }).
+// 대표 캐릭터 (U3 로비): 홈 가운데에 설 가진 영웅 하나. 명령 { t: 'squad', lead }, 저장은 'formation'의 lead, 개인 상태 squad의 lead (고른 때만).
 // 화면은 종류 'hero'를 역할의 겉모습으로 그린다 (engine/client/hud/collect.ts의 registerKind). 상태 줄의 값은 [별, 레벨].
 // 선택 칸 (내용이 적어야 켜진다: engine/shared/defs/herogrow.ts):
 //   진형 SQUAD_RULES.rows  앞줄은 주인 앞에, 뒷줄은 뒤에 선다. 앞줄 영웅은 둘레(taunt)에서 주인이나 뒷줄을 노리는 몬스터를 자기에게 돌리고, 줄마다의 덤(받는 피해·주는 피해)을 받는다.
@@ -36,6 +37,8 @@ const THINK_S = 0.25;
 export class Squad {
   /** 주인(엔티티 id) → 그 영웅들(엔티티) */
   private readonly out = new Map<number, Ent[]>();
+  /** 홈의 대표 캐릭터 (고른 사람만. 엔티티의 칸이 아니라 여기에: 저장은 'formation'의 lead) */
+  private readonly lead = new WeakMap<Ent, string>();
 
   constructor(private g: Game) {
     g.defineKind('hero', {
@@ -50,16 +53,16 @@ export class Squad {
       // 받는 피해: 진형·장비·시너지의 덤 (없으면 1: 전투가 그대로 둔다)
       guard: (e) => Number(e.data.gd ?? 1),
     });
-    g.commands.set('squad', (p, m) => { if (Array.isArray(m.ids)) this.set(p, m.ids, Array.isArray(m.back) ? m.back : undefined); });
+    g.commands.set('squad', (p, m) => { if (typeof m.lead === 'string') this.setLead(p, m.lead); else if (Array.isArray(m.ids)) this.set(p, m.ids, Array.isArray(m.back) ? m.back : undefined); });
     g.saves.push({ name: 'squad', save: (p) => (p.squad.length ? [...p.squad] : undefined), load: (p, raw) => this.loadOf(p, raw) });
     // 뒷줄 (진형을 켠 게임에서 뒷줄에 둔 영웅이 있을 때만)
-    g.saves.push({ name: 'formation', save: (p) => (p.squadBack.length ? { back: [...p.squadBack] } : undefined), load: (p, raw) => this.loadRows(p, raw) });
+    g.saves.push({ name: 'formation', save: (p) => (p.squadBack.length || this.lead.get(p) ? { ...(p.squadBack.length ? { back: [...p.squadBack] } : {}), ...(this.lead.get(p) ? { lead: this.lead.get(p) } : {}) } : undefined), load: (p, raw) => this.loadRows(p, raw) });
     const syn = !!SQUAD_RULES.synergy;
     g.personal.push({
       name: 'squad',
       state: (p): SquadMe => {
         const v = this.view(p);
-        return { ids: [...p.squad], power: v.power, ...(ROWS ? { back: [...p.squadBack] } : {}), ...(syn ? { syn: v.syn } : {}) };
+        return { ids: [...p.squad], power: v.power, ...(ROWS ? { back: [...p.squadBack] } : {}), ...(syn ? { syn: v.syn } : {}), ...(this.lead.get(p) ? { lead: this.lead.get(p) } : {}) };
       },
     });
     g.on('playerJoined', (p) => this.field(p));
@@ -280,7 +283,16 @@ export class Squad {
     if (ROWS) p.squadBack = arrangeRows(p.squad, p.squadBack);
   }
   /** 뒷줄: 편성에 든 영웅만 (편성은 먼저 읽힌다). 진형을 끈 게임은 그대로 지켜 둔다 (다시 켜면 이어진다) */
+  /** 대표 캐릭터를 고른다 (가진 영웅만. 빈 글이면 고르지 않음: 편성의 첫째) */
+  setLead(p: Ent, id: string): boolean {
+    if (id && (!isHeroId(id) || !this.g.roster.owned(p, id))) return false;
+    if (id) this.lead.set(p, id); else this.lead.delete(p);
+    p.unsaved = true;
+    return true;
+  }
   private loadRows(p: Ent, raw: unknown): void {
+    const lead = (raw as { lead?: unknown } | null)?.lead;
+    if (typeof lead === 'string' && isHeroId(lead)) this.lead.set(p, lead);
     const back = (raw as { back?: unknown } | null)?.back;
     if (!Array.isArray(back)) return;
     const ids = [...new Set(back.filter((x): x is string => isHeroId(x) && p.squad.includes(x)))];

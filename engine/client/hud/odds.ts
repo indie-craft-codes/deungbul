@@ -101,7 +101,7 @@ function drawTables(list: HTMLElement): void {
 
 function drawMine(list: HTMLElement): void {
   if (mine === null) { list.append(el('note', t('oddsLoading'))); return; }
-  if (!mine.length) { list.append(emptyState('⟳', t('oddsMineNone'))); return; }
+  if (!mine.length) { list.append(emptyState('odds', t('oddsMineNone'))); return; }
   const loc = L();
   for (const r of mine) {
     const tb = pub?.tables.find((x) => x.id === r.table) ?? { kind: r.kind === 'enhance' ? 'enhance' as const : 'capsule' as const };

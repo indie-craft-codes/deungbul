@@ -13,6 +13,7 @@ import { send } from '../net';
 import { S } from '../state';
 import { confirmAsk } from './confirm';
 import { button, el, span } from './menu/parts';
+import { uiIcon } from './uiicons';
 import { addNotices, routeNotice } from './notify';
 import { celebrate } from './reward';
 import type { HeroRow } from './collectcalc';
@@ -77,7 +78,7 @@ function askFuse(r: number, heroes: HeroesMe): void {
 export function cardCell(c: HTMLElement, r: HeroRow, heroes: HeroesMe): void {
   if (!cardsOn() || !r.owned) return;
   const h = heroes[r.id];
-  if (locked(h)) { const m = span('cglock', '🔒'); m.setAttribute('aria-label', t('cgLocked')); c.querySelector('.cardface')?.append(m); }
+  if (locked(h)) { const m = span('cglock', ''); m.append(uiIcon('lock')); m.setAttribute('aria-label', t('cgLocked')); c.querySelector('.cardface')?.append(m); }
   // 성장 점: 별(틀이 이미 단다), 바꿀 넘친 조각, 가진 범용 조각을 더하면 별을 올릴 수 있다
   // (레벨은 점을 달지 않는다: 골드가 넉넉하면 편성의 카드마다 늘 켜져 점이 뜻을 잃는다)
   if (canConvert(h) || (!r.canStar && r.starNeed > 0 && r.shards + wildFor(r.rarity) >= r.starNeed)) c.classList.add('dot');

@@ -61,6 +61,8 @@ export function logText(text: string, echo = false): void {
   d.className = echo ? 'sys echo' : 'sys';
   d.textContent = text;
   line(d, 's');
+  // 안내문은 10초 뒤 접힌 대화의 한 줄 미리 보기에서 빠진다 (U3: 레벨 업·도감 같은 줄이 몇 분 동안 대화 칸을 차지했다). 대화 창을 펼치면 다 보인다
+  setTimeout(() => d.classList.add('stale'), 10000);
 }
 
 /** 정해진 문장의 글 (받는 화면의 언어로) */
@@ -150,6 +152,12 @@ function drawTabs(): void {
     b.addEventListener('click', () => { tab = ch; drawTabs(); render(); place(); });
     tabsEl.append(b);
   }
+  // 폰(좁은 대화 창)에서는 탭 단추 대신 고르는 칸 하나 (U3: 200px 창에 탭 넷이면 끝의 '귓말'이 잘렸다). 어느 쪽을 보일지는 css
+  const sel = document.createElement('select');
+  sel.className = 'chatTabSel'; sel.setAttribute('aria-label', t('chatTabAll'));
+  for (const [ch, key] of list) { const o = document.createElement('option'); o.value = ch; o.textContent = t(key); o.selected = ch === tab; sel.append(o); }
+  sel.addEventListener('change', () => { tab = sel.value as Tab; drawTabs(); render(); place(); });
+  tabsEl.append(sel);
 }
 /** 입력 칸의 안내 (제한 모드, 귓말 상대) */
 function place(): void {

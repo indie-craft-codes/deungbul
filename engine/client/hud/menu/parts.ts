@@ -3,8 +3,9 @@
 import type { Reward } from '../../../shared/defs';
 import { $ } from '../../app';
 import { L } from '../../i18n';
+import { uiIcon } from '../uiicons';
 
-export const ui = { panel: $('menu'), tabs: $('menuTabs'), list: $('menuList'), gold: $('menuGold'), btn: $('menuBtn') };
+export const ui = { panel: $('menu'), tabs: $('menuTabs'), sub: $('menuSub'), list: $('menuList'), gold: $('menuGold'), btn: $('menuBtn') };
 
 let render: (soft: boolean) => void = () => {};
 /** 메뉴를 다시 그린다 (menu.ts의 renderMenu) */
@@ -41,11 +42,12 @@ export function whyOf(b: HTMLButtonElement, why: string): void {
 }
 /**
  * 빈 상태 (U2): 목록이 비었을 때 그림 하나 + 안내 한 줄 + 할 수 있는 일 단추 (주지 않으면 단추 없이).
- * 예: emptyState('✉', t('mailEmpty'), { label: t('emptyToDaily'), onClick: () => openMenu('daily') })
+ * icon은 화면 아이콘의 이름(hud/uiicons.ts: 'mail'·'heroes' …. 모르는 이름이면 그 글자).
+ * 예: emptyState('mail', t('mailEmpty'), { label: t('emptyToDaily'), onClick: () => openMenu('daily') })
  */
 export function emptyState(icon: string, text: string, action?: { label: string; onClick: () => void }): HTMLDivElement {
   const box = el('empty');
-  const i = el('emptyIcon', icon); i.setAttribute('aria-hidden', 'true');
+  const i = el('emptyIcon'); i.append(uiIcon(icon)); i.setAttribute('aria-hidden', 'true');
   const p = document.createElement('p'); p.textContent = text;
   box.append(i, p);
   if (action) { const b = button(action.label, action.onClick); b.className = 'btn-primary'; box.append(b); }

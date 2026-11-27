@@ -39,7 +39,7 @@ function goodsRow(id: string, def: GoodsDef): HTMLElement {
 function drawGoods(list: HTMLElement): void {
   const now = Date.now();
   const ids = goodsIds().filter((id) => { const d = goodsDef(id)!; return !d.event && d.shop !== 'npc' && goodsOpen(d, now); });
-  if (!ids.length) { list.append(emptyState('✧', t('goodsNone'))); return; }
+  if (!ids.length) { list.append(emptyState('shop', t('goodsNone'))); return; }
   // shop 이름표마다 묶는다 (기본 'shop'은 머리 없이)
   const groups = new Map<string, string[]>();
   for (const id of ids) { const k = goodsDef(id)!.shop ?? 'shop'; groups.set(k, [...(groups.get(k) ?? []), id]); }
@@ -51,7 +51,7 @@ function drawGoods(list: HTMLElement): void {
 
 function drawEvents(list: HTMLElement): void {
   const loc = L(), now = Date.now();
-  if (!events.length) { list.append(emptyState('✧', t('eventNone'))); return; }
+  if (!events.length) { list.append(emptyState('event', t('eventNone'))); return; }
   for (const ev of events) {
     const def = eventDef(ev.id);
     if (!def) continue;
@@ -78,7 +78,7 @@ function drawEvents(list: HTMLElement): void {
 
 function drawSeason(list: HTMLElement): void {
   const loc = L(), s = SEASON;
-  if (!s || !season) { list.append(emptyState('✧', t('seasonNone'))); return; }
+  if (!s || !season) { list.append(emptyState('season', t('seasonNone'))); return; }
   const me = season, box = el('gbanner liveEv');
   box.append(el('ttitle', loc.fmt.seasonHead(seasonName(), me.n)), el('note', `${loc.fmt.liveLeft(me.to - Date.now())}`), el('liveHave', loc.fmt.seasonPts(me.pts)));
   const r = s.reset ?? 'all';

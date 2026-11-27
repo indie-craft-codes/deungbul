@@ -29,7 +29,7 @@ export function socialRows(list: HTMLElement): void {
   const blocks = blockList();
   list.append(el('baghead', t('blockHead')));
   if (talkState().limited) list.append(el('note', t('talkLimitedNote')));
-  if (!blocks.length) { list.append(emptyState('⦸', t('blockNone'))); return; }
+  if (!blocks.length) { list.append(emptyState('lock', t('blockNone'))); return; }
   for (const b of blocks) list.append(row(b.name, '', [button(t('unblock'), () => unblock(b.r))]));
 }
 /** 설정 창을 다시 그릴지 가르는 값 */
@@ -102,7 +102,7 @@ function drawFriends(list: HTMLElement): void {
   const ins = all.filter((f) => f.st === 'in'), outs = all.filter((f) => f.st === 'out'), oks = all.filter((f) => f.st === 'ok');
   if (ins.length) { list.append(el('baghead', t('friendsIn'))); for (const f of ins) list.append(friendRow(f)); }
   list.append(el('baghead', L().fmt.friendsHead(oks.length)));
-  if (!oks.length) list.append(emptyState('☺', t('friendsEmpty')));
+  if (!oks.length) list.append(emptyState('friends', t('friendsEmpty')));
   // 접속한 친구가 위로, 그다음 마지막 접속이 가까운 차례
   for (const f of [...oks].sort((a, b) => Number(b.id !== undefined) - Number(a.id !== undefined) || (b.seen ?? 0) - (a.seen ?? 0))) list.append(friendRow(f));
   if (outs.length) { list.append(el('baghead', t('friendsOut'))); for (const f of outs) list.append(friendRow(f)); }

@@ -19,6 +19,7 @@ import { myStage } from './stagebar';
 import { tintRarity } from './rarity';
 import { addUnlock } from './reward';
 import { heroDef } from '../../shared/defs';
+import { uiIcon } from './uiicons';
 
 export interface BattleOpts {
   /** 전투 화면을 보일 때인가 (게임의 화면 상태: 탑의 '전투 보기') */
@@ -76,7 +77,8 @@ function draw(): void {
   const max = st?.speedMax ?? 1, x = st?.speed ?? 1;
   ui.speed.hidden = !SPEED || SPEED.max <= 1;
   const locked = max <= 1;
-  ui.speed.textContent = locked ? `${loc.fmt.btlSpeed(SPEED?.max ?? 2)} 🔒` : loc.fmt.btlSpeed(x);
+  ui.speed.textContent = locked ? loc.fmt.btlSpeed(SPEED?.max ?? 2) : loc.fmt.btlSpeed(x);
+  if (locked) ui.speed.append(uiIcon('lock', 'sm'));
   ui.speed.classList.toggle('locked', locked);
   ui.speed.classList.toggle('on', !locked && x > 1);
   ui.speed.title = locked && SPEED?.unlock ? loc.fmt.btlSpeedLocked(SPEED.unlock) : '';

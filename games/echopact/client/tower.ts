@@ -9,7 +9,7 @@ import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSide
 import {
   $, addSetting, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
   onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, stagesDone, starGap, switchMode, useStageScreens, type HomeKit,
-  setLoadingTips, featureLock, featureOpen, tutNow,
+  setLoadingTips, featureLock, featureOpen, tutNow, myMorph, charDefs, noticesNow, openNotices,
 } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { heroName, rarityName } from '@engine/client/i18n/ko';
@@ -31,10 +31,10 @@ const starNext = (): string => starGap(myStage()) ?? STAGES[STAGES.length - 1]?.
 let home: HomeKit;
 /** 카드 상세에서 '변신'을 눌러 울림골로 가는 중 (도착하면 변신 탭을 연다) */
 let morphNext = false;
-/** 이벤트 배너의 그림 (그림 파일 없이: 색 두 개(echopact.css의 토큰)와 큰 글자) */
+/** 이벤트 배너의 그림: 그림 'banner:<id>'(art.ts)가 없을 때의 대체 (색 두 개(echopact.css의 토큰)와 큰 아이콘) */
 const EVENT_ART: Record<string, { from: string; to: string; glyph: string }> = {
-  echofest: { from: 'var(--ep-fest-a)', to: 'var(--ep-fest-b)', glyph: '♪' },
-  season: { from: 'var(--ep-season-a)', to: 'var(--ep-season-b)', glyph: '✦' },
+  echofest: { from: 'var(--ep-fest-a)', to: 'var(--ep-fest-b)', glyph: 'event' },
+  season: { from: 'var(--ep-season-a)', to: 'var(--ep-season-b)', glyph: 'season' },
 };
 
 /** 화면 쌓기를 보고 지금 화면을 정한다 */
@@ -72,22 +72,57 @@ function draw(): void {
   drawSide();
 }
 
-// ---------- 홈 (틀의 수집형 홈 키트) ----------
+// ---------- 홈 (틀의 수집형 홈 키트: 상용 로비 구조) ----------
+/** 대표 메아리: 사람이 고른 것(서버의 저장), 없으면 편성의 첫째, 없으면 가진 것의 첫째 */
+const leadId = (): string => { const s = mySquad(), own = myHeroes(); return (s.lead && own[s.lead] ? s.lead : '') || s.ids[0] || Object.keys(own)[0] || ''; };
+/** 메뉴의 탭으로 가는 세로 열 칸 (점진 공개로 아직 닫힌 것은 감춘다). 이름은 그 탭의 이름 */
+const RAIL_LABEL: Record<string, () => string> = {
+  daily: () => t('tabDaily'), season: () => t('tabSeason'), achieve: () => t('tabAchieve'), mail: () => t('tabMail'), event: () => t('tabEvent'), goods: () => t('tabGoods'), odds: () => t('tabOdds'),
+};
+const railTab = (id: string, icon: string, dot?: string) => ({ id, icon, label: RAIL_LABEL[id], dot, hidden: () => !featureOpen(id), onClick: () => openMenu(id) });
 function initHome(): void {
   home = makeHome({
     id: 'towerHome',
     title: () => t('modeTower'),
+    // 장면 배경: 그림 'bg:tower'(art.ts)가 있으면 그 그림, 없으면 echopact.css의 밤하늘·탑 무늬
+    scene: 'tower',
+    // 위 왼쪽: 계약자 (초상은 지금 변신한 메아리, 아니면 사람 아이콘). 누르면 프로필 창
+    profile: {
+      name: () => S.me?.name ?? '',
+      level: () => S.me?.lv ?? 1,
+      pic: () => { const on = myMorph().on, d = on ? knownChar(on) : undefined; return d ? charPortrait(d, 96, 96) : undefined; },
+      rows: () => {
+        const own = Object.keys(myHeroes()).length, lead = leadId();
+        return [
+          [t('profPower'), mySquad().power.toLocaleString(L().code)],
+          [t('profBest'), myStage()?.best || '—'],
+          [t('profEchoes'), `${own} / ${charDefs().length}`],
+          [t('profLead'), lead ? heroName(lead) : '—'],
+        ];
+      },
+      actions: () => [
+        ...(featureOpen('codex') ? [{ label: t('tabCodex'), icon: 'codex', onClick: () => openMenu('codex') }] : []),
+        { label: t('tabSettings'), icon: 'settings', onClick: () => openMenu('settings') },
+      ],
+    },
     // 울림 조각의 '+': 울림골에서 사냥하면 모인다
     // 계약의 숨결(스태미나)은 서버가 켠 때만 보인다 (STAMINA_RULES.enabled: 사용자 결정)
     currencies: ['stamina', { id: 'second', plus: () => switchMode(MODE.vale) }, 'gold'],
     lead: () => {
-      const id = mySquad().ids[0] ?? Object.keys(myHeroes())[0], def = id ? knownChar(id) : undefined;
+      const id = leadId(), def = id ? knownChar(id) : undefined;
       if (!def) return null;
       const h = myHeroes()[def.id];
-      return { img: charPortrait(def, 240, 300), name: heroName(def.id), color: rarityCss(def.rarity),
-        info: `${HERO_RARITIES.length ? rarityName(def.rarity) + ' · ' : ''}Lv ${h?.[0] ?? 1} · ${'★'.repeat(h?.[1] ?? 1)}` };
+      return { img: charPortrait(def, 480, 600), name: heroName(def.id), color: rarityCss(def.rarity),
+        info: `${HERO_RARITIES.length ? rarityName(def.rarity) + ' · ' : ''}Lv ${h?.[0] ?? 1} · ${'★'.repeat(h?.[1] ?? 1)}`,
+        lines: [t('leadSay1'), t('leadSay2'), t('leadSay3'), t('leadSay4'), t('leadSay5')] };
     },
-    onLead: () => openMenu('heroes'),
+    // 대표 고르기: 가진 메아리 가운데 (서버에 저장: 다른 기기에서도 같다)
+    leadPick: {
+      list: () => Object.keys(myHeroes()).map((id) => knownChar(id)).filter((d) => !!d).sort((a, b) => b!.rarity - a!.rarity)
+        .map((d) => ({ id: d!.id, name: heroName(d!.id), img: heroPic(d!.id), color: rarityCss(d!.rarity) })),
+      current: leadId,
+      pick: (id) => send({ t: 'squad', lead: id }),
+    },
     go: {
       label: () => (fighting() ? t('towerWatch') : allDone() ? t('towerAllDone') : L().fmt.towerNext(nextRow()?.id ?? '')),
       sub: () => { const r = myStage()?.run; if (fighting() && r) return L().fmt.towerLive(r.id); if (allDone()) return starGap(myStage()) ? L().fmt.towerStarGo(starNext()) : t('towerSoon'); const n = nextRow(); return n ? L().fmt.towerRec(n.rec) : ''; },
@@ -95,16 +130,25 @@ function initHome(): void {
       onClick: () => { if (fighting()) { watchBattle(); return; } if (allDone()) { openStageInfo(starNext()); return; } const n = nextRow(); if (n) openCheck(n.id); },
     },
     info: () => `${L().fmt.towerBest(myStage()?.best ?? '')}\n${L().fmt.towerPower(mySquad().power)}`,
-    // 아래 띠: 아직 열리지 않은 기능은 🔒와 언제 열리는지 (튜토리얼 키트의 점진 공개: client/tutorial.ts의 useUnlocks)
+    // 아래 독: 아직 열리지 않은 기능은 자물쇠와 언제 열리는지 (튜토리얼 키트의 점진 공개: client/tutorial.ts의 useUnlocks)
     dock: [
-      { id: 'adv', label: () => t('towerAdventure'), locked: () => featureLock('adv'), onClick: openAdventure },
-      { id: 'heroes', label: () => t('towerEchoes'), dot: 'menu.heroes', locked: () => featureLock('heroes'), onClick: () => openMenu('heroes') },
-      { id: 'squad', label: () => t('towerSquad'), locked: () => featureLock('squad'), onClick: () => openMenu('squad') },
-      { id: 'gacha', label: () => t('towerPull'), dot: 'menu.gacha', locked: () => featureLock('gacha'), onClick: () => openMenu('gacha') },
-      { id: 'daily', label: () => t('tabDaily'), locked: () => featureLock('daily'), onClick: () => openMenu('daily') },
-      { id: 'vale', label: () => uiText.get('modeVale'), locked: () => featureLock('vale'), onClick: () => switchMode(MODE.vale) },
+      { id: 'adv', icon: 'adventure', label: () => t('towerAdventure'), locked: () => featureLock('adv'), onClick: openAdventure },
+      { id: 'heroes', icon: 'heroes', label: () => t('towerEchoes'), dot: 'menu.heroes', locked: () => featureLock('heroes'), onClick: () => openMenu('heroes') },
+      { id: 'squad', icon: 'squad', label: () => t('towerSquad'), locked: () => featureLock('squad'), onClick: () => openMenu('squad') },
+      { id: 'gacha', icon: 'gacha', label: () => t('towerPull'), dot: 'menu.gacha', locked: () => featureLock('gacha'), onClick: () => openMenu('gacha') },
+      { id: 'vale', icon: 'field', label: () => uiText.get('modeVale'), locked: () => featureLock('vale'), onClick: () => switchMode(MODE.vale) },
     ],
-    // 왼쪽 열의 이벤트 배너: 울림 축제(열렸거나 7일 안에 열림)와 메아리의 계절. 누르면 그 탭으로
+    // 왼쪽 세로 열: 임무·시즌·업적 (1-4 또는 레벨 6에 열린다)
+    leftRail: () => [railTab('daily', 'mission'), railTab('season', 'season', 'menu.season'), railTab('achieve', 'achieve')],
+    // 오른쪽 세로 열: 우편·공지(걸린 공지가 있을 때)·이벤트·상점·확률
+    rightRail: () => [
+      railTab('mail', 'mail', 'menu.mail'),
+      { id: 'notice', icon: 'notice', label: () => t('noticeTitle'), hidden: () => !noticesNow().length, onClick: () => { openNotices(); } },
+      railTab('event', 'event', 'menu.event'),
+      railTab('goods', 'shop'),
+      railTab('odds', 'odds'),
+    ],
+    // 이벤트 배너: 울림 축제(열렸거나 7일 안에 열림)와 메아리의 계절. 누르면 그 탭으로
     events: () => (featureOpen('event') ? liveBanners() : []).map((b) => {
       const now = Date.now(), loc = L(), art = EVENT_ART[b.kind === 'season' ? 'season' : b.id] ?? EVENT_ART.season;
       return {
@@ -115,13 +159,6 @@ function initHome(): void {
         onClick: () => openMenu(b.kind === 'season' ? 'season' : 'event'),
       };
     }),
-    // 배너 아래 작은 바로 가기 (우편·확률·설정)
-    banners: () => [
-      { id: 'mail', icon: '✉', text: t('tabMail'), dot: 'menu.mail', onClick: () => openMenu('mail') },
-      { id: 'odds', icon: '%', text: t('tabOdds'), onClick: () => openMenu('odds') },
-      { id: 'settings', icon: '⚙', text: t('tabSettings'), onClick: () => openMenu('settings') },
-      { id: 'achieve', icon: '★', text: t('tabAchieve'), onClick: () => openMenu('achieve') },
-    ].filter((x) => featureOpen(x.id)),
   });
   // 홈의 위: 보고 있지 않은 울림골의 작은 표시(누르면 그리로)
   const side = document.createElement('button');
