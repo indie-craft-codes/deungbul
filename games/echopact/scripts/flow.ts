@@ -9,7 +9,7 @@
 // 실행: node node_modules/tsx/dist/cli.mjs --tsconfig games/echopact/tsconfig.json games/echopact/scripts/flow.ts [분=30] [씨앗=1] [seq]
 // 시험(test/flow.test.ts)이 짧게 같은 함수를 부른다.
 import { Game, type Ent } from '@engine/server';
-import { heroDef, seededRng, STAGES } from '@engine/shared/defs';
+import { ECON_LOST_FULL, dustFor, heroDef, sellPrice, seededRng, STAGES } from '@engine/shared/defs';
 import { BANNERS, CAMPS } from '../shared/content';
 import { MODE } from '../shared/content/pact';
 import { installEchopact } from '../server/echopact';
@@ -28,6 +28,8 @@ export interface FlowResult {
   morph: { id: string; hp: number; mul: number };
   /** 끝에 접속을 끊고 offMin분 동안 둔 것 (두 쪽 다 '자동'): 자리 비움 사냥이 모은 울림 조각·골드, 돌아왔을 때 단계의 오프라인 진행이 넘긴 단계와 보상 */
   off?: { min: number; fieldSparks: number; fieldGold: number; stages: number; stageSparks: number; from: string; to: string };
+  /** 떨어진 장비 (울림골): 수, 등급별 수, 모두 팔았다면 받았을 골드, 모두 분해했다면 받았을 울림 가루, 가방이 차 버려진 수. 사람은 팔지도 분해하지도 않는다 (골드·조각의 흐름은 그대로) */
+  gear: { drops: number; byRar: number[]; sellGold: number; dust: number; lost: number };
 }
 
 /** 원인(장부의 이름)을 시뮬레이션의 출처로 묶는다 */
@@ -51,7 +53,11 @@ function run(minutes: number, seed: number, concurrent: boolean, offMin: number)
 
   const p = g.players.spawn('시뮬', false, null, 'flow-sim-1');
   g.command(p, { t: 'class', id: 'warden' });
-  const out: FlowResult = { minutes: [], firstPullS: -1, firstTenS: -1, towerS: 0, valeS: 0, total, gold, morph: { id: '', hp: 0, mul: 1 } };
+  const out: FlowResult = { minutes: [], firstPullS: -1, firstTenS: -1, towerS: 0, valeS: 0, total, gold, morph: { id: '', hp: 0, mul: 1 }, gear: { drops: 0, byRar: [], sellGold: 0, dust: 0, lost: 0 } };
+  // 떨어진 장비를 센다 (이 게임에서 장비를 굴리는 곳은 몬스터의 처치뿐이다)
+  const roll = g.gear.roll.bind(g.gear);
+  g.gear.roll = (...a) => { const it = roll(...a), o = out.gear; o.drops++; o.byRar[it.rar] = (o.byRar[it.rar] ?? 0) + 1; o.sellGold += sellPrice(it); o.dust += dustFor(it); return it; };
+  g.bag.seen.push((_p, _cur, d, why) => { if (d < 0 && why === ECON_LOST_FULL) out.gear.lost++; });
   const camp = CAMPS[1];
   let t = 0, nextMin = 60, nextChores = 60, switchAt = 240, pulled = 0;
   const cmd = (m: Record<string, unknown>) => g.command(p, m);
@@ -147,5 +153,5 @@ if (process.argv[1]?.endsWith('flow.ts')) {
   const r = simulate(mins, seed, concurrent, off);
   console.log(`(${concurrent ? '함께' : '번갈아'}) 분 | 보던 곳 | 들판 | 탑 | 우편 | 가진 조각 | 뽑은 수 | 메아리 | 깬 단계 | 레벨 | 편성 전투력`);
   for (const m of r.minutes) console.log(`${m.min} | ${m.where} | ${m.got.field ?? 0} | ${m.got.stage ?? 0} | ${m.got.mail ?? 0} | ${m.have} | ${m.pulls} | ${m.echoes} | ${m.best || '-'} | ${m.lv} | ${m.power}`);
-  console.log(JSON.stringify({ firstPullS: Math.round(r.firstPullS), firstTenS: Math.round(r.firstTenS), towerMin: +(r.towerS / 60).toFixed(1), valeMin: +(r.valeS / 60).toFixed(1), sparks: r.total, gold: r.gold, morph: r.morph, off: r.off }));
+  console.log(JSON.stringify({ firstPullS: Math.round(r.firstPullS), firstTenS: Math.round(r.firstTenS), towerMin: +(r.towerS / 60).toFixed(1), valeMin: +(r.valeS / 60).toFixed(1), sparks: r.total, gold: r.gold, morph: r.morph, off: r.off, gear: r.gear }));
 }

@@ -3,7 +3,7 @@
 // 게임 밖의 공개 페이지(engine/server/net/odds.ts의 odds.json·odds.html)가 모두 이 파일의 함수로 표를 만든다: 셋이 어긋날 수 없다.
 //
 // 표 하나 (OddsTable):
-//   id      표의 이름. 자동 표는 'enhance'(장비 강화)와 'banner:<배너 id>'(뽑기). 게임이 ODDS.tables로 직접 주는 표는 게임이 짓는다
+//   id      표의 이름. 자동 표는 'enhance'(장비 강화), 'banner:<배너 id>'(뽑기), 'drop:<몬스터 id>'(장비 드롭: ODDS.drops를 켠 게임). 게임이 ODDS.tables로 직접 주는 표는 게임이 짓는다
 //   kind    capsule(뽑기·상자: 하나가 나온다) | enhance(강화: 성공·유지·하락·파괴) | combine(합성) | ceiling(천장형: 정해진 횟수 뒤 확정)
 //   steps   단계마다의 결과와 확률. 강화는 강화 단계(+0, +1 …)마다, 뽑기는 평소·천장·10번 보장·반반 확정마다 한 단계
 //   pity    천장(보정): after번째 뽑기는 r 등급 이상(그 단계의 표)에서. 10번 보장은 ten
@@ -12,7 +12,7 @@
 // 굴림: rollStep(단계, r) 하나. r은 0 이상 1 미만의 서버 난수. 결과를 차례로 더해 r보다 커지는 첫 결과 (뽑기의 pickOdds와 같은 셈, 강화의 random() < 확률과 같은 셈)
 // 검사: checkTables(표들)가 합 100%, 음수·숫자 아님, 겹친 id, 빈 단계, 강화 단계의 빠짐을 거부 코드(ODDS_ERRORS)로 돌려준다. 서버가 켜질 때 하나라도 있으면 멈춘다.
 // 게임이 표를 주지 않으면 지금의 정의(ENHANCE, BANNERS)에서 저절로 만든 표가 원본이다: 값이 예전과 글자까지 같다 (등불지기의 강화 확률도 그대로).
-import { ENHANCE, ODDS } from '../content';
+import { ENHANCE, GEAR, MONSTERS, ODDS, RARITIES } from '../content';
 import { BANNER_IDS, BANNER_TABLE, effectiveOdds, heroDef, pullOdds, type BannerDef, type Odds } from './collect';
 import { fuseTables } from './cardgrow';
 import type { LangText } from './live';
@@ -68,6 +68,11 @@ export interface OddsRules {
   names?: Readonly<Record<string, LangText>>;
   /** 자동 표를 공개하지 않는다 (강화: enhance, 뽑기: banners). 굴림은 그래도 그 표로 한다 */
   hide?: { enhance?: boolean; banners?: boolean };
+  /**
+   * 몬스터마다 '처치 한 번의 장비' 표를 자동으로 공개한다 (gear 모듈): 떨어지지 않음 + 등급마다. 서버의 굴림(systems/gear.ts: 몬스터의 확률, 그다음 등급의 무게)과 같은 값에서 만든다.
+   * 표 id·이름은 'drop:<몬스터 id>', 결과는 'gear:none'과 'gear:<등급 id>' — 이름은 게임이 names에 준다. 기본은 꺼짐 (켜지 않은 게임의 공개 표는 전과 같다)
+   */
+  drops?: boolean;
 }
 export const ODDS_RULES: OddsRules = ODDS;
 
@@ -167,6 +172,23 @@ export function enhanceTable(): OddsTableDef {
   return { id: ENHANCE_TABLE, kind: 'enhance', name: 'oddsEnhanceName', steps, ...(ENHANCE.charm ? { guard: ENHANCE.charm } : {}) };
 }
 
+// ---------- 장비 드롭 (gear 모듈, ODDS.drops) ----------
+/** 그 몬스터가 처치에 참여한 사람마다 장비를 떨어뜨릴 확률: 필드 보스는 늘, 아니면 몬스터의 gearChance, 없으면 GEAR.dropChance (서버의 systems/gear.ts와 같은 규칙) */
+export const gearChanceOf = (def: { boss?: boolean; gearChance?: number }): number => (def.boss ? 1 : def.gearChance ?? GEAR.dropChance);
+/** 장비 드롭 표의 결과 id */
+export const dropOutcome = (rar: number | null): string => (rar === null ? 'gear:none' : `gear:${RARITIES[rar].id}`);
+/** 몬스터마다(확률이 0보다 큰 것) 장비 드롭의 표 */
+export function gearDropTables(): OddsTableDef[] {
+  const total = RARITIES.reduce((s, r) => s + r.weight, 0), out: OddsTableDef[] = [];
+  for (const [id, def] of Object.entries(MONSTERS as Readonly<Record<string, { boss?: boolean; gearChance?: number }>>)) {
+    const c = gearChanceOf(def);
+    if (!(c > 0)) continue;
+    const outcomes: OddsOutcome[] = [...(c < 1 ? [{ id: dropOutcome(null), p: 1 - c }] : []), ...RARITIES.map((r, i) => ({ id: dropOutcome(i), p: (c * r.weight) / total }))];
+    out.push({ id: `drop:${id}`, kind: 'capsule', name: `drop:${id}`, steps: [{ key: 'base', when: [{ k: 'base' }], outcomes }] });
+  }
+  return out;
+}
+
 // ---------- 뽑기 (gacha 모듈) ----------
 /** 배너의 표 id */
 export const bannerTableId = (banner: string): string => `banner:${banner}`;
@@ -210,13 +232,15 @@ export function pullStep(t: OddsTableDef, floor: number, sure: boolean): OddsSte
 
 // ---------- 모든 표 ----------
 /**
- * 지금 공개하는 표 모두 (버전은 0: 서버가 붙인다): 게임이 준 표, 장비 강화(gear 모듈), 배너마다(gacha 모듈), 카드 합성(roster 모듈의 HERO_RULES.cards.fuse). has는 고른 모듈을 묻는다.
+ * 지금 공개하는 표 모두 (버전은 0: 서버가 붙인다): 게임이 준 표, 장비 강화(gear 모듈), 배너마다(gacha 모듈), 장비 드롭(gear 모듈, ODDS.drops), 카드 합성(roster 모듈의 HERO_RULES.cards.fuse). has는 고른 모듈을 묻는다.
  * 원격 설정이나 캐릭터 정의로 내용이 바뀌면 다시 부르면 된다 (표는 부를 때마다 지금의 내용으로 만든다)
  */
 export function allTables(has: (m: 'gear' | 'gacha' | 'roster') => boolean, withEffective = true): OddsTableDef[] {
   const out: OddsTableDef[] = ODDS_RULES.tables.filter((t) => t.id !== ENHANCE_TABLE || has('gear'));
   if (has('gear') && !givenTable(ENHANCE_TABLE) && !ODDS_RULES.hide?.enhance) out.push(enhanceTable());
   if (has('gacha') && !ODDS_RULES.hide?.banners) for (const id of BANNER_IDS) { const t = bannerTable(id, withEffective); if (t) out.push(t); }
+  // 장비 드롭은 뽑기 뒤에: 확률 탭이 뽑기(캡슐형)를 먼저 펼치므로, 드롭 표가 울림 샘 같은 배너를 아래로 밀지 않게
+  if (has('gear') && ODDS_RULES.drops) out.push(...gearDropTables());
   // 카드 합성 (HERO_RULES.cards.fuse: engine/shared/defs/cardgrow.ts)
   if (has('roster')) out.push(...fuseTables());
   return out;

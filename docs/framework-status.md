@@ -1059,3 +1059,5 @@ PC(1280×800)와 폰(390×844, 터치, DPR 2), 한국어·영어 넷씩, 두 게
 - **실제 브라우저**(헤드리스 크롬 GPU, 임시 서버 3020·3021, 폰 390×844·가로 844×390·PC 1280×720, 한국어·영어): 스크린샷 `$TEMP/dg-work/card-shots/`(`<ph|ls|pc>-<ko|en>-<번호>-<무엇>.png`). 단추는 CDP의 진짜 터치·마우스로 눌렀고 누르기 전에 가운데의 `elementFromPoint`가 그 단추인지 보았다(가린 단추 0). 폰의 새 단추는 모두 44px 이상.
 
 남은 것: 레벨 공유(공명), 합성 재료를 손으로 고르기, 합성의 무게, 인연·호감도, 장비 비교([collect-gaps.md](collect-gaps.md) 3절).
+
+- 2026-11-27 `feat/salv`: 메아리 울림골의 장비 드롭(몬스터마다 `gearChance`, 탑은 없음)·분해(울림 가루)·가루 강화(+5부터). 틀은 `MonsterDef.gearChance`·`gearChanceOf`·`gearDropTables`(`ODDS.drops`)·확률 탭의 `ODDS.names` 이름만 더했다 (docs/proof-echopact.md '장비 드롭과 분해').

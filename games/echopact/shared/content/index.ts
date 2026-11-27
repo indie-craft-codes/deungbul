@@ -25,6 +25,9 @@ import type { ChatRules } from '@engine/shared/defs/talk';
 import { BASIC_QUICK_CHAT, CHAT_RULES as BASE_CHAT_RULES, GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
 import type { ModuleId } from '@engine/shared/modules';
 import { ARENA, MODE, SPIRE, WELL, cardToMorph } from './pact';
+import { DROP_NAMES, GEAR_ITEMS, armorFor, weaponFor } from './gear';
+// 울림골 장비의 강화·분해 (shared/content/gear.ts)
+export { ENHANCE, SALVAGE } from './gear';
 
 // ---------- 쓸 모듈 ----------
 // 들판(MMORPG)의 모듈(대화 채널·귓말·친구까지) + 수집형의 넷 + 캐릭터 정의와 변신 + 게임 안의 모드. 길드·거래소·던전·영웅 장비는 쓰지 않는다
@@ -112,25 +115,26 @@ export const CLASSES = {
 } as const satisfies Record<string, ClassDef>;
 export const DEFAULT_CLASS: ClassId = 'warden';
 
-// ---------- 몬스터: 들판의 셋은 울림 조각(sparks)을 조금 떨어뜨린다. 단계의 것은 주지 않는다 (단계의 보상이 준다) ----------
+// ---------- 몬스터: 들판의 셋은 울림 조각(sparks)을 조금, 장비를 낮은 확률로(gearChance) 떨어뜨린다. 단계의 것은 주지 않는다 (단계의 보상이 준다) ----------
 export const MONSTERS = {
-  mossling: { hp: 50, dmg: [2, 4], speed: 3.6, exp: 10, gold: [2, 4], sparks: [1, 2], aggro: 0, h: 1.2, behavior: 'flee' },
-  thornboar: { hp: 120, dmg: [6, 9], speed: 4.4, exp: 24, gold: [5, 9], sparks: [2, 3], aggro: 6, h: 1.7 },
-  stonehorn: { hp: 300, dmg: [10, 15], speed: 3.6, exp: 65, gold: [14, 22], sparks: [3, 5], aggro: 7, h: 2.6 },
-  wisp: { hp: 60, dmg: [3, 5], speed: 3.0, exp: 8, gold: [2, 4], aggro: 0, h: 1.3 },
-  hollowkin: { hp: 95, dmg: [5, 8], speed: 3.8, exp: 14, gold: [3, 6], aggro: 6, h: 1.7 },
-  shadeshot: { hp: 75, dmg: [4, 7], speed: 3.6, exp: 14, gold: [3, 6], aggro: 9, h: 1.7, behavior: 'ranged', range: 8, shot: 'arrow' },
-  bellgolem: { hp: 850, dmg: [11, 16], speed: 3.0, exp: 110, gold: [40, 60], aggro: 9, h: 3.4 },
-  echowarden: { hp: 1500, dmg: [15, 22], speed: 2.8, exp: 200, gold: [80, 110], aggro: 9, h: 3.8 },
+  mossling: { hp: 50, dmg: [2, 4], speed: 3.6, exp: 10, gold: [2, 4], sparks: [1, 2], aggro: 0, h: 1.2, behavior: 'flee', gearChance: 0.03 },
+  thornboar: { hp: 120, dmg: [6, 9], speed: 4.4, exp: 24, gold: [5, 9], sparks: [2, 3], aggro: 6, h: 1.7, gearChance: 0.05 },
+  stonehorn: { hp: 300, dmg: [10, 15], speed: 3.6, exp: 65, gold: [14, 22], sparks: [3, 5], aggro: 7, h: 2.6, gearChance: 0.08 },
+  wisp: { hp: 60, dmg: [3, 5], speed: 3.0, exp: 8, gold: [2, 4], aggro: 0, h: 1.3, gearChance: 0 },
+  hollowkin: { hp: 95, dmg: [5, 8], speed: 3.8, exp: 14, gold: [3, 6], aggro: 6, h: 1.7, gearChance: 0 },
+  shadeshot: { hp: 75, dmg: [4, 7], speed: 3.6, exp: 14, gold: [3, 6], aggro: 9, h: 1.7, behavior: 'ranged', range: 8, shot: 'arrow', gearChance: 0 },
+  bellgolem: { hp: 850, dmg: [11, 16], speed: 3.0, exp: 110, gold: [40, 60], aggro: 9, h: 3.4, gearChance: 0 },
+  echowarden: { hp: 1500, dmg: [15, 22], speed: 2.8, exp: 200, gold: [80, 110], aggro: 9, h: 3.8, gearChance: 0 },
 } as const satisfies Record<string, MonsterDef>;
 
-// ---------- 아이템과 상점: 무기 둘(손 모양마다 이름이 다르다), 갑옷 둘, 물약 하나 ----------
+// ---------- 아이템과 상점: 무기 둘(손 모양마다 이름이 다르다), 갑옷 둘, 물약 하나. 떨어지기만 하는 무기·갑옷과 울림 가루는 gear.ts ----------
 export const ITEMS = {
   blade1: { kind: 'weapon', price: 0, damage: 1, tier: 1 },
   blade2: { kind: 'weapon', price: 90, damage: 1.25, tier: 2 },
   jerkin: { kind: 'armor', price: 80, guard: 0.88, tier: 1 },
   chain: { kind: 'armor', price: 200, guard: 0.8, tier: 2 },
   tonic: { kind: 'potion', price: 12, heal: 80 },
+  ...GEAR_ITEMS,
   // 카드의 공통 손질 (HERO_RULES.cards): 메아리 결정(다 키운 메아리의 넘친 조각이 바뀐 것)과 범용 조각(등급마다, 그 등급의 메아리 조각 하나). 결정 상점(GOODS의 shop 'gShopCrystal')에서 바꾼다
   echoCrystal: { kind: 'mat', price: 0, max: 9999 },
   wildCommon: { kind: 'mat', price: 0, max: 999 },
@@ -142,7 +146,7 @@ export const SHOP_STOCK: readonly ItemId[] = ['tonic', 'blade2', 'jerkin', 'chai
 export const DROPS: Partial<Record<MonsterId, { id: ItemId; chance: number }>> = {};
 export const FORGES: readonly ForgeDef[] = [];
 export const RECIPES: readonly Recipe[] = [];
-export const GEAR = { ...GEAR_BASE, weaponFor: (lv: number): ItemId => (lv >= 3 ? 'blade2' : 'blade1'), armorFor: (): ItemId => 'jerkin' };
+export const GEAR = { ...GEAR_BASE, weaponFor, armorFor };
 
 // ---------- 일일·주간 임무와 출석: 들판·수집형·다리(변신)를 고루 하게 ----------
 // kind: kill(틀이 센다), pull·stage·morph(이 게임이 센다: server/pact.ts)
@@ -293,14 +297,17 @@ export const LIVE_KEYS: LiveKeys = {
   'EVENTS.echofest.to': { client: true, check: liveRange(0, 4e12, true), note: '울림 축제의 끝 (UTC ms)' },
 };
 
-// ---------- 확률 공개 (odds 모듈): 자동 표(울림 샘, 장비 강화)만 쓴다. 공개 페이지(서버가 쓴다)의 이름표 ----------
+// ---------- 확률 공개 (odds 모듈): 자동 표(울림 샘, 장비 강화, 울림골 몬스터마다의 장비 드롭). 공개 페이지(서버가 쓴다)의 이름표 ----------
 export const ODDS: OddsRules = {
   tables: [],
+  // 울림골 몬스터마다 장비 드롭의 표 (틀이 MONSTERS의 gearChance와 RARITIES에서 만든다). 이름은 아래 names (gear.ts의 DROP_NAMES)
+  drops: true,
   keepDays: 1825,
   names: {
     bannerWell: { ko: '울림 샘', en: 'Echo Well' },
     'cur:sparks': { ko: '울림 조각', en: 'Echo Shards' },
     'cur:gold': { ko: '골드', en: 'Gold' },
+    ...DROP_NAMES,
     cardFuse0: { ko: '메아리 합성 (일반 → 희귀)', en: 'Echo fusion (Common → Rare)' },
     cardFuse1: { ko: '메아리 합성 (희귀 → 전설)', en: 'Echo fusion (Rare → Legendary)' },
   },

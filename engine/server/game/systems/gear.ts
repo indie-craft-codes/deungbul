@@ -1,10 +1,10 @@
 // 장비: 낱개 장비(등급, 무작위 옵션, 강화 단계)를 줍고, 끼고, 팔고, 강화한다. 무기와 갑옷도 여기서 다룬다.
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
-// 수치는 games/deungbul/shared/content/growth.ts에 있다.
+// 수치(STATS, RARITIES, GEAR, ENHANCE, REFORGE, SALVAGE, 몬스터의 gearChance)는 게임의 내용에 있다 (@game/shared/content).
 // 강화의 성공·하락 확률은 확률표의 단일 원본(engine/shared/defs/odds.ts의 enhanceStep)에서 읽고 그 단계에서 굴린다: 게임이 'enhance' 표를 주지 않으면 ENHANCE에서 만든 표(값이 예전과 같다).
 // odds 모듈을 고른 게임은 강화할 때마다 추첨 기록이 남는다.
-import { ENHANCE, enhanceMax, enhanceStep, enhanceTable, rollStep, GEAR, gearLvOf, GEAR_SLOTS, ITEMS, RARITIES, REFORGE, SALVAGE, STAT_IDS, isGearSlot, isItemId, isStat, optValue, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+import { ENHANCE, enhanceMax, gearChanceOf, enhanceStep, enhanceTable, rollStep, GEAR, gearLvOf, GEAR_SLOTS, ITEMS, RARITIES, REFORGE, SALVAGE, STAT_IDS, isGearSlot, isItemId, isStat, optValue, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { WHY } from './wallet';
@@ -34,7 +34,7 @@ export class GearSys {
       const def = m.def;
       if (!def) return;
       for (const p of hitters) {
-        if (p.bot || (!def.boss && this.random() >= GEAR.dropChance)) continue;
+        if (p.bot || (!def.boss && this.random() >= gearChanceOf(def))) continue; // 몬스터마다의 확률(MonsterDef.gearChance, 없으면 GEAR.dropChance): 공개 표와 같은 셈 (defs/odds.ts)
         // 떨어진 장비: 자동 분해를 켜 둔 등급이면 가방에 넣지 않고 그 자리에서 가루로 바꾼다 (systems/salvage.ts)
         const it = this.roll(gearLvOf(def)), why = g.players.huntWhy(p, m);
         if (!g.salvage.auto(p, it, why)) this.give(p, it, why);
