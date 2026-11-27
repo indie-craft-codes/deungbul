@@ -51,6 +51,14 @@ export const koNames: ContentNames = {
 
 export const koGame = {
   ui: {
+    // 틀 문장의 '영웅'을 이 게임의 말 '메아리'로 (뽑기 결과·편성·영웅 목록)
+    heroNone: '아직 메아리가 없습니다. 울림 샘에서 메아리를 불러 보세요.',
+    gachaRatesHero: '메아리별 확률',
+    squadHead: '함께 싸울 메아리',
+    squadNone: '편성할 메아리가 없습니다. 울림 샘에서 메아리를 불러 보세요.',
+    heroBack: '← 메아리 목록',
+    heroNoSkill: '이 메아리의 역할에는 기술이 없습니다.',
+    synNone: '같은 진영의 메아리를 함께 넣으면 시너지가 켜집니다.',
     title: '메아리 계약',
     intro: '계약자가 되어 두 곳을 오갑니다. 계약의 탑에서 옛 영웅의 메아리를 불러 모으고 편성해 단계를 깨고, 울림골 들판에서는 모은 메아리의 모습으로 변신해 사냥합니다.',
     classHint: '직업은 울림골(들판)에서 싸우는 계약자의 것입니다. 나중에 울림 샘 곁에서 바꿀 수 있습니다. 탑에서는 편성한 메아리만 싸웁니다.',
@@ -77,9 +85,7 @@ export const koGame = {
     towerAdventure: '모험',
     towerWatch: '전투 보기',
     towerHomeBtn: '홈',
-    towerAgain: '다시',
-    towerNextBtn: '다음 단계',
-    towerLoseHint: '편성 전투력이 모자랍니다. 메아리를 키우거나 뽑아서 편성을 바꿔 보세요.',
+    towerGrowLv: '메아리 레벨 올리기', towerGrowPull: '울림 샘에서 뽑기', towerGrowSquad: '편성 바꾸기', towerGrowVale: '울림골에서 조각 모으기',
     towerGo: '도전',
     towerPull: '뽑기',
     towerEchoes: '메아리',
@@ -100,9 +106,9 @@ export const koGame = {
     alertGo: '바로 가기',
     // 튜토리얼과 설정 칸 (client/tutorial.ts)
     tutPact: '계약의 첫걸음',
-    tutStage: '계약의 탑의 홈입니다. "모험"에서 "다음 도전"을 눌러 1-1에 도전해 보세요. 탑에서는 편성한 메아리(카드)만 싸웁니다. 처음 깨면 울림 조각을 받습니다.',
+    tutStage: '계약의 탑의 홈입니다. 오른쪽 아래 "다음 도전"을 누르고 "출발"로 1-1에 도전해 보세요. 탑에서는 편성한 메아리(카드)만 싸웁니다. 처음 깨면 울림 조각을 받습니다.',
     tutPull: '울림 조각 100개가 모이면 뽑기에서 메아리를 불러 보세요. 확률은 \'확률 보기\'에 모두 공개됩니다.',
-    tutSwitch: '위의 \'울림골로\' 단추를 눌러 다른 게임(들판)으로 가 보세요. 싸우는 중이어도 바로 바뀌고, 탑의 단계는 끝까지 이어집니다.',
+    tutSwitch: '홈 아래 띠의 "울림골"(전투 중에는 위의 "울림골 가기")을 눌러 다른 게임(들판)으로 가 보세요. 싸우는 중이어도 바로 바뀌고, 탑의 단계는 끝까지 이어집니다.',
     tutMove: '울림골입니다. 땅을 눌러[[ (또는 WASD로)|]] 걸어 보세요.',
     tutAttack: '들판의 몬스터를 눌러 공격해 보세요. 들판의 몬스터는 울림 조각을 떨어뜨립니다.',
     tutMorph: '메뉴[[ (M)|]]의 변신 탭에서 가진 메아리로 변신해 보세요. 탑에서 키운 카드의 능력치가 곧 변신한 동안의 능력치입니다.',
@@ -116,18 +122,19 @@ export const koGame = {
     setSafeNote: '탑에 가 있는 동안 들판의 몸, 접속을 끊은 뒤의 자리 비움 사냥에 씁니다.',
   },
   fmt: {
+    gachaNew: () => '새 메아리!',
+    gachaSameRatio: (rarity: string) => `${rarity} 이상의 메아리끼리의 비율은 평소와 같습니다.`,
     potions: (n: number) => `샘물 약 ${n}`,
     /** 탑의 첫 화면: 가진 것과 편성의 전투력 */
     towerLive: (id: string) => `전투 중: ${id}`,
-    towerWin: (id: string) => `${id} 깸!`,
-    towerLose: (id: string) => `${id} 실패`,
-    towerGot: (sparks: number, gold: number, first: boolean) => `${first ? '처음 깬 보상 포함 · ' : ''}울림 조각 +${sparks} · 골드 +${gold}`,
+    towerPullHave: (cost: number, have: number) => `울림 조각 ${cost.toLocaleString('ko-KR')} / 가진 것 ${have.toLocaleString('ko-KR')}`,
     towerNext: (id: string) => `다음 도전 ${id}`,
     towerPower: (n: number) => `편성 전투력 ${n.toLocaleString('ko-KR')}`,
     towerRec: (rec: number) => `권장 ${rec.toLocaleString('ko-KR')}`,
     towerBest: (id: string) => (id ? `가장 멀리 깬 단계 ${id}` : '아직 깬 단계가 없습니다'),
     /** 보고 있지 않은 들판·탑의 작은 표시 */
     sideVale: (state: string, hp: number, max: number, kills: number, sparks: number) => `울림골: ${state} · 체력 ${hp}/${max} · ${kills}마리 · 조각 +${sparks}`,
+    sideStuck: (failed: string, now: string) => `탑: ${failed}에서 막힘 · 편성이 약함 · ${now} 되풀이`,
     sideTower: (id: string, state: string, cleared: number, sparks: number, auto: boolean) => `탑: ${id} ${state} · 깬 수 ${cleared} · 조각 +${sparks}${auto ? ' · 자동 진행' : ''}`,
     pct: (v: number) => `${Math.round(v * 100)}%`,
     /** 게임 바꾸기 단추: 틀의 '(으)로' 대신 */

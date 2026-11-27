@@ -156,7 +156,7 @@ export type MsgKey =
   | 'hgEnhance' // [영웅 장비 id, 강화, 성공 1 실패 0] 영웅 장비를 강화했다
   | 'hgEnhanceMax' // [영웅 장비 id] 더 강화할 수 없다
   | 'hgSalvaged' // [분해한 수] 영웅 장비를 분해했다
-  | 'stageClear' // [단계 id, 처음 깼으면 1] 단계를 깼다
+  | 'stageClear' // [단계 id, 처음 깼으면 1, (별 조건이 있는 단계면) 딴 별의 비트] 단계를 깼다
   | 'stageFail' // [단계 id, 까닭 0 쓰러짐 1 시간] 단계를 깨지 못했다 (깬 단계로 돌아간다)
   | 'stageLocked' // [단계 id] 아직 갈 수 없는 단계다 (앞 단계를 먼저 깬다)
   | 'stageLast' // [] 마지막 단계까지 깼다: 같은 단계를 되풀이한다

@@ -61,3 +61,6 @@ export { backScreen, clearScreens, closeScreen, dropScreen, homeScreen, onScreen
 export { layOf, myLay, onLay, placeIn, type Lay, type Zone } from './hud/layout';
 export { currencyBar, type CurrencyChip, type CurrencyId } from './hud/currency';
 export { bindDot, dotOf, dotParent, setDot } from './hud/dots';
+// 장르별 기본 화면 묶음 B: 수집형 홈 키트, 단계 정보 창·편성 확인·결과 창 (docs/making-a-game.md '수집형 홈과 단계 화면')
+export { makeHome, type HomeBanner, type HomeButton, type HomeKit, type HomeLead, type HomeOpts } from './hud/homekit';
+export { closeStageResult, openCheck, openStageInfo, useStageScreens, type StageGrowPath, type StageScreenOpts } from './hud/stagepage';

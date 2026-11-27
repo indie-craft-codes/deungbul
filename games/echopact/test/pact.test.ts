@@ -6,7 +6,7 @@ import { MODE, SAFETY, STARTER, STARTER_ECHO, cardToMorph } from '../shared/cont
 import { installEchopact } from '../server/echopact';
 import { ECHO_DEFS } from '../server/echoes';
 import { type Ent, Game } from '@engine/server';
-import { charText, charWeight, classBaseAtk, encodeLook, heroDef, isHeroId, lookParts, morphCard, morphStats, pityOdds, poolOdds, rarityOdds, seededRng, validateCharDef } from '@engine/shared/defs';
+import { charText, charWeight, classBaseAtk, encodeLook, heroDef, isHeroId, lookParts, morphCard, morphStats, pityOdds, poolOdds, rarityOdds, seededRng, starCount, validateCharDef } from '@engine/shared/defs';
 import { check } from '@engine/testing';
 
 // ---------- 메아리 정의와 뽑기의 표 ----------
@@ -72,6 +72,13 @@ check(said(p, 'costShort').length === 1 && p.pulls.length === 0, '울림 조각�
   }
   for (let i = 0; i < 20 * 90 && p.stage.best === ''; i++) { g.tick(0.05); clock += 50; }
   check(p.stage.best === '1-1' && p.sparks >= CHAPTERS[0].stages[0].first!.sparks!, `단계 1-1을 깬다 (처음 깬 보상 울림 조각 ${CHAPTERS[0].stages[0].first!.sparks})`);
+  // 별 조건 셋(깸·45초 안·아무 메아리도 쓰러지지 않음): 깬 별이 단계마다 남고, 안내문 stageClear의 셋째 값·개인 상태·저장이 같다
+  {
+    const m = p.stage.stars?.['1-1'] ?? 0, a = said(p, 'stageClear').at(-1)?.a ?? [];
+    const st = g.personal.find((x) => x.name === 'stage')!.state(p) as { stars?: Record<string, number> };
+    const saved = (g.saves.find((x) => x.name === 'stages')!.save(p) as { stars?: Record<string, number> } | undefined)?.stars?.['1-1'];
+    check((m & 1) === 1 && a[2] === m && st.stars?.['1-1'] === m && saved === m, `1-1을 깨 별 ${starCount(m)}개 (비트 ${m}): 안내문·개인 상태·저장이 같다`);
+  }
   g.command(p, { t: 'stage', a: 'leave' });
   run(0.2);
   check(g.stages.inLobby(p) && g.modes.of(p) === MODE.tower, '탑의 \'나가기\'는 단계 선택(대기실)으로 간다 (들판으로 나가지 않는다)');
