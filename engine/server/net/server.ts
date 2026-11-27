@@ -14,7 +14,7 @@ import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
 import { Sanctions, normIp } from '../game/systems/sanctions';
 import { log } from '../log';
-import { MemoryStore, hasEcon, hasLive, hasOdds, type PlayerSave, type Store, type WorldSave } from '../store';
+import { MemoryStore, hasEcon, hasLive, hasOdds, hasRoomStore, type PlayerSave, type Store, type WorldSave } from '../store';
 import type { Reward } from '../../shared/defs';
 import { startBackups, type BackupOptions } from '../store/backup';
 import { isClean, tidy } from '../text';
@@ -189,6 +189,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   if (hasLive(store)) { game.live.attach(store); game.time.attach(store); }
   // 확률표의 버전·이력·추첨 기록 (odds 모듈): 원격 설정을 적용한 뒤에 붙인다 (적용된 값이 이전 실행의 표와 같으면 버전이 오르지 않는다)
   if (game.has('odds') && hasOdds(store)) game.odds.attach(store);
+  // 판의 기록 (rooms 모듈의 RoomDef.record): 전적을 저장소에
+  if (game.has('rooms') && hasRoomStore(store)) game.rooms.attach(store);
   for (let i = 0; i < (opts.bots ?? 0); i++) game.players.spawn('Bot' + (i + 1), true);
 
   const clients = new Set<Client>();

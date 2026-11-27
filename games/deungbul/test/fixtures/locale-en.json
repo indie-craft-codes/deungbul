@@ -1245,12 +1245,53 @@
   "Computer 1",
   "Computer 2"
  ],
+ "fmt.roomDefName": [
+  "0c3ff3b04755040e",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
  "fmt.roomHostWaits": [
   "a6bc7d3244bd4669",
   "undefined is waiting",
   "0 is waiting",
   "1 is waiting",
   "2 is waiting"
+ ],
+ "fmt.roomLock": [
+  "9bdcb1060adf7604",
+  "",
+  "(password)",
+  "(friends)"
+ ],
+ "fmt.roomOptName": [
+  "0c3ff3b04755040e",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.roomOptValue": [
+  "aef55ed11fe50b25",
+  "undefined",
+  "0",
+  "1",
+  "3"
+ ],
+ "fmt.roomPage": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.roomPlayRow": [
+  "87dc0ef8bebbf448",
+  "undefined's table · undefined playing",
+  "0's table · undefined playing",
+  "1's table · undefined playing",
+  "2's table · undefined playing"
  ],
  "fmt.roomPlaying": [
   "0f64262b0511e509",
@@ -1273,6 +1314,13 @@
   "1st",
   "2nd"
  ],
+ "fmt.roomRecentRow": [
+  "02fc833f31558b01",
+  "undefined · draw · Invalid Date",
+  "0 · draw · Invalid Date",
+  "1 · draw · Invalid Date",
+  "2 · draw · Invalid Date"
+ ],
  "fmt.roomRound": [
   "2635a24c72b8116c",
   "Round undefined / undefined",
@@ -1287,12 +1335,33 @@
   "1 pt",
   "2 pts"
  ],
+ "fmt.roomSeatsN": [
+  "c86bae33a6a2b545",
+  "undefined seats",
+  "0 seats",
+  "1 seats",
+  "2 seats"
+ ],
  "fmt.roomStartNow": [
   "7d6acbaffd963358",
   "Start now (undefined)",
   "Start now (0)",
   "Start now (1)",
   "Start now (2)"
+ ],
+ "fmt.roomStatsTitle": [
+  "7818ee6c81b36e84",
+  "undefined's record",
+  "0's record",
+  "1's record",
+  "2's record"
+ ],
+ "fmt.roomTally": [
+  "13f73bb6bc7de227",
+  "undefined matchs: undefinedW undefinedL",
+  "0 matchs: undefinedW undefinedL",
+  "1 match: undefinedW undefinedL",
+  "2 matchs: undefinedW undefinedL"
  ],
  "fmt.roomTheirTurn": [
   "a26d3407684ac900",
@@ -1301,12 +1370,33 @@
   "1's turn",
   "2's turn"
  ],
+ "fmt.roomVoteText": [
+  "68f9fbb299af6352",
+  "undefined's vote: rule undefined · yes undefined/undefined · undefineds",
+  "0's vote: rule 0 · yes 0/undefined · undefineds",
+  "1's vote: rule 1 · yes 1/undefined · undefineds",
+  "3's vote: rule 4 · yes 5/undefined · undefineds"
+ ],
  "fmt.roomWaiting": [
   "16c1c81c80b8f9a1",
   "Waiting for players… (undefined/undefined)",
   "Waiting for players… (0/undefined)",
   "Waiting for players… (1/undefined)",
   "Waiting for players… (2/undefined)"
+ ],
+ "fmt.roomWatchNote": [
+  "a43662edefd38d64",
+  "Watching",
+  "Watching (1s behind)",
+  "Watching (2s behind)",
+  "Watching (5s behind)"
+ ],
+ "fmt.roomWatchPending": [
+  "ab7d0855c18f0bdd",
+  "Shown undefineds behind. One moment…",
+  "Shown 0s behind. One moment…",
+  "Shown 1s behind. One moment…",
+  "Shown 2s behind. One moment…"
  ],
  "fmt.roomWhy": "",
  "fmt.rowCount": [
@@ -2664,7 +2754,9 @@
  "msg.rolledBack": "An operator restored this character to an earlier point. Please reconnect.",
  "msg.roomAgainWait": "Waiting for the other player to press Play again.",
  "msg.roomBack": "You are back at your table.",
+ "msg.roomBanned": "You were removed from this table and cannot rejoin.",
  "msg.roomBusy": "You are already at a table.",
+ "msg.roomCodeBad": "No room has that code. Check the code and try again.",
  "msg.roomFewer": [
   "d993f375bf02cf70",
   "At least undefined players are needed to start.",
@@ -2693,9 +2785,43 @@
   "1 disconnected. Waiting 1s.",
   "2 disconnected. Waiting 3s."
  ],
+ "msg.roomFriendsOnly": "Only the host's friends can join this table.",
  "msg.roomFull": "No more tables can open right now. Try again shortly.",
  "msg.roomGone": "You cannot join that table.",
+ "msg.roomKicked": "You were removed from the table.",
+ "msg.roomKickedOut": [
+  "4e894c6fb2b6b6aa",
+  "undefined was removed from the table.",
+  "0 was removed from the table.",
+  "1 was removed from the table.",
+  "2 was removed from the table."
+ ],
+ "msg.roomLeadNew": [
+  "d83e80d60bce7d34",
+  "undefined is now the host.",
+  "0 is now the host.",
+  "1 is now the host.",
+  "2 is now the host."
+ ],
+ "msg.roomLeadOnly": "Only the host can do that.",
+ "msg.roomMidJoin": [
+  "592993b280df9243",
+  "undefined joined mid-match.",
+  "0 joined mid-match.",
+  "1 joined mid-match.",
+  "2 joined mid-match."
+ ],
+ "msg.roomNotReady": [
+  "854143729826900b",
+  "NaN players not ready yet.",
+  "0 players not ready yet.",
+  "1 player not ready yet.",
+  "2 players not ready yet."
+ ],
  "msg.roomNotTurn": "It is not your turn.",
+ "msg.roomPassword": "Wrong password.",
+ "msg.roomQueued": "This match is in play. Watch now and join the next one.",
+ "msg.roomRegroup": "Back in the lobby with the same group.",
  "msg.roomResult": [
   "aee492cc0aac76e5",
   "Draw.",
@@ -2703,6 +2829,7 @@
   "You lost.",
   "You finished tied for 4th of 5."
  ],
+ "msg.roomSlow": "Too many wrong passwords. Try again in a minute.",
  "msg.roomStart": [
   "b2e134cb30268ae3",
   "Match started against the computer. Your opponent moves first.",
@@ -2717,7 +2844,28 @@
   "Time ran out: 2's turn passed.",
   "Time ran out: 1234567's turn passed."
  ],
+ "msg.roomVote": [
+  "e331379f9550e78d",
+  "undefined started a vote: rule change",
+  "0 started a vote: rule change",
+  "1 started a vote: rule change",
+  "3 started a vote: rule change"
+ ],
+ "msg.roomVoteBusy": "A vote is already running.",
+ "msg.roomVoteEnd": [
+  "ab268840b0877873",
+  "The vote failed.",
+  "The vote passed."
+ ],
  "msg.roomWait": "Table opened. Waiting for another player.",
+ "msg.roomWatchFull": "Too many people are watching.",
+ "msg.roomWatching": [
+  "709175613b5ebaeb",
+  "Watching.",
+  "Watching (1s behind).",
+  "Watching (2s behind).",
+  "Watching (1234567s behind)."
+ ],
  "msg.salvageCant": "Some of that gear cannot be salvaged. Equipped, Standard and locked gear cannot be salvaged.",
  "msg.salvageFull": [
   "9ee2ca13c6d983d2",
@@ -3382,28 +3530,65 @@
  "ui.residents": "Residents",
  "ui.roomAgain": "Play again",
  "ui.roomAgainWaitNote": "Starts when the other player presses Play again.",
+ "ui.roomApply": "Apply",
  "ui.roomAway": "disconnected",
  "ui.roomCancel": "Cancel",
+ "ui.roomClose": "Close",
+ "ui.roomCode": "Room code",
+ "ui.roomCodeJoin": "Join by code",
+ "ui.roomCodePh": "6-letter code",
+ "ui.roomCopied": "Invite link copied.",
+ "ui.roomCopyFail": "Could not copy. Share the room code instead.",
+ "ui.roomCopyLink": "Copy invite link",
  "ui.roomCpu": "Computer",
  "ui.roomCpuTurn": "Computer is thinking",
  "ui.roomDraw": "Draw",
  "ui.roomEmpty": "Empty seat",
  "ui.roomFoeGoneNote": "The other player left the table.",
+ "ui.roomGive": "Make host",
+ "ui.roomGo": "Start",
  "ui.roomHost": "Open a table",
  "ui.roomJoin": "Join",
+ "ui.roomKick": "Kick",
+ "ui.roomKickVote": "Vote kick",
+ "ui.roomLeadTag": "Host",
  "ui.roomLeft": "left",
  "ui.roomLobby": "Lobby",
  "ui.roomLobbyInfo": "Play a match against someone. Alone? Play the computer.",
  "ui.roomLose": "You lost",
  "ui.roomMyTurn": "Your turn",
+ "ui.roomNext": "Next",
  "ui.roomNone": "No table is waiting. Open one and wait.",
  "ui.roomNoneCpu": "No table is waiting. Open one or play the computer.",
  "ui.roomOpen": "Tables waiting for players",
  "ui.roomPass": "End turn",
+ "ui.roomPassGo": "Join",
+ "ui.roomPassPh": "Password",
+ "ui.roomPrev": "Prev",
+ "ui.roomPrivFriends": "Friends",
+ "ui.roomPrivPassword": "Password",
+ "ui.roomPrivPrivate": "Private",
+ "ui.roomPrivPublic": "Public",
+ "ui.roomPrivacy": "Access",
  "ui.roomQuick": "Quick match",
+ "ui.roomReady": "Ready",
+ "ui.roomReadyTag": "Ready",
+ "ui.roomRealtime": "Everyone plays at once",
+ "ui.roomRegroup": "Next match, same group",
  "ui.roomResign": "Resign",
  "ui.roomResignSure": "[[Click|Tap]] again to resign",
+ "ui.roomRules": "Rules",
+ "ui.roomSeatsPick": "Seats",
+ "ui.roomStatsBtn": "Record",
+ "ui.roomStatsNone": "No matches yet.",
+ "ui.roomStatsRecent": "Recent matches",
  "ui.roomToLobby": "To the lobby",
+ "ui.roomUnready": "Not ready",
+ "ui.roomVoteNo": "No",
+ "ui.roomVoteYes": "Yes",
+ "ui.roomWaitTag": "Waiting",
+ "ui.roomWatch": "Watch",
+ "ui.roomWatchLeave": "Stop watching",
  "ui.roomWin": "You won!",
  "ui.roomWithCpu": "Play the computer",
  "ui.rowBack": "Back row",

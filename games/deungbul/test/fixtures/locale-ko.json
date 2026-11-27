@@ -1245,12 +1245,53 @@
   "컴퓨터 1",
   "컴퓨터 2"
  ],
+ "fmt.roomDefName": [
+  "0c3ff3b04755040e",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
  "fmt.roomHostWaits": [
   "24b09c2ed6ca45d5",
   "undefined 님이 기다립니다",
   "0 님이 기다립니다",
   "1 님이 기다립니다",
   "2 님이 기다립니다"
+ ],
+ "fmt.roomLock": [
+  "1fa770a4a2f9a9b5",
+  "",
+  "(비밀번호)",
+  "(친구만)"
+ ],
+ "fmt.roomOptName": [
+  "0c3ff3b04755040e",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.roomOptValue": [
+  "aef55ed11fe50b25",
+  "undefined",
+  "0",
+  "1",
+  "3"
+ ],
+ "fmt.roomPage": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.roomPlayRow": [
+  "16b8341f4eb23280",
+  "undefined 님의 판 · undefined명 두는 중",
+  "0 님의 판 · undefined명 두는 중",
+  "1 님의 판 · undefined명 두는 중",
+  "2 님의 판 · undefined명 두는 중"
  ],
  "fmt.roomPlaying": [
   "c376ed6db8a43855",
@@ -1273,6 +1314,13 @@
   "1등",
   "2등"
  ],
+ "fmt.roomRecentRow": [
+  "7ab3cfc6e123cd22",
+  "undefined · 비김 · Invalid Date",
+  "0 · 비김 · Invalid Date",
+  "1 · 비김 · Invalid Date",
+  "2 · 비김 · Invalid Date"
+ ],
  "fmt.roomRound": [
   "15fb16ec6fed3ced",
   "undefined / undefined 바퀴",
@@ -1287,12 +1335,33 @@
   "1점",
   "2점"
  ],
+ "fmt.roomSeatsN": [
+  "d1ee685c0972c6e5",
+  "undefined자리",
+  "0자리",
+  "1자리",
+  "2자리"
+ ],
  "fmt.roomStartNow": [
   "ca5ad901f48ffec9",
   "지금 시작 (undefined명)",
   "지금 시작 (0명)",
   "지금 시작 (1명)",
   "지금 시작 (2명)"
+ ],
+ "fmt.roomStatsTitle": [
+  "e3ae8c3d6932c5b3",
+  "undefined 님의 전적",
+  "0 님의 전적",
+  "1 님의 전적",
+  "2 님의 전적"
+ ],
+ "fmt.roomTally": [
+  "1518537ae136b0d7",
+  "undefined판 undefined승 undefined패",
+  "0판 undefined승 undefined패",
+  "1판 undefined승 undefined패",
+  "2판 undefined승 undefined패"
  ],
  "fmt.roomTheirTurn": [
   "db86b004fe8746c5",
@@ -1301,12 +1370,33 @@
   "1의 차례",
   "2의 차례"
  ],
+ "fmt.roomVoteText": [
+  "dd1c98e1b721ed0e",
+  "undefined 님의 투표: 규칙 undefined · 찬성 undefined/undefined · undefined초",
+  "0 님의 투표: 규칙 0 · 찬성 0/undefined · undefined초",
+  "1 님의 투표: 규칙 1 · 찬성 1/undefined · undefined초",
+  "3 님의 투표: 규칙 4 · 찬성 5/undefined · undefined초"
+ ],
  "fmt.roomWaiting": [
   "5ed67f3e58512054",
   "사람을 기다리는 중… (undefined/undefined)",
   "사람을 기다리는 중… (0/undefined)",
   "사람을 기다리는 중… (1/undefined)",
   "사람을 기다리는 중… (2/undefined)"
+ ],
+ "fmt.roomWatchNote": [
+  "b9e39f3122e23c76",
+  "구경 중",
+  "구경 중 (1초 늦게)",
+  "구경 중 (2초 늦게)",
+  "구경 중 (5초 늦게)"
+ ],
+ "fmt.roomWatchPending": [
+  "23d4aa46ae59997c",
+  "undefined초 늦게 보여 줍니다. 잠시 기다리세요…",
+  "0초 늦게 보여 줍니다. 잠시 기다리세요…",
+  "1초 늦게 보여 줍니다. 잠시 기다리세요…",
+  "2초 늦게 보여 줍니다. 잠시 기다리세요…"
  ],
  "fmt.roomWhy": "",
  "fmt.rowCount": [
@@ -2664,7 +2754,9 @@
  "msg.rolledBack": "운영자가 이 캐릭터를 앞의 시점으로 되돌렸습니다. 다시 접속해 주세요.",
  "msg.roomAgainWait": "다른 사람이 다시 하기를 누르기를 기다립니다.",
  "msg.roomBack": "두던 판으로 돌아왔습니다.",
+ "msg.roomBanned": "내보내진 판에는 다시 들어갈 수 없습니다.",
  "msg.roomBusy": "이미 판에 앉아 있습니다.",
+ "msg.roomCodeBad": "그런 방 코드가 없습니다. 코드를 다시 확인하세요.",
  "msg.roomFewer": [
   "72bab817c5737a0f",
   "undefined명이 모여야 시작할 수 있습니다.",
@@ -2693,9 +2785,43 @@
   "1 님의 연결이 끊겼습니다. 1초 동안 기다립니다.",
   "2 님의 연결이 끊겼습니다. 3초 동안 기다립니다."
  ],
+ "msg.roomFriendsOnly": "방장의 친구만 들어갈 수 있는 판입니다.",
  "msg.roomFull": "지금은 판을 더 열 수 없습니다. 잠시 뒤에 다시 해 보세요.",
  "msg.roomGone": "그 판에는 들어갈 수 없습니다.",
+ "msg.roomKicked": "판에서 내보내졌습니다.",
+ "msg.roomKickedOut": [
+  "99c0a020fa2ef0c4",
+  "undefined 님이 판에서 내보내졌습니다.",
+  "0 님이 판에서 내보내졌습니다.",
+  "1 님이 판에서 내보내졌습니다.",
+  "2 님이 판에서 내보내졌습니다."
+ ],
+ "msg.roomLeadNew": [
+  "7874bd4f668b5d48",
+  "이제 undefined 님이 방장입니다.",
+  "이제 0 님이 방장입니다.",
+  "이제 1 님이 방장입니다.",
+  "이제 2 님이 방장입니다."
+ ],
+ "msg.roomLeadOnly": "방장만 할 수 있습니다.",
+ "msg.roomMidJoin": [
+  "64de65c3df2749f3",
+  "undefined 님이 판 중간에 들어왔습니다.",
+  "0 님이 판 중간에 들어왔습니다.",
+  "1 님이 판 중간에 들어왔습니다.",
+  "2 님이 판 중간에 들어왔습니다."
+ ],
+ "msg.roomNotReady": [
+  "d75f9d61af4581e7",
+  "undefined명이 아직 준비하지 않았습니다.",
+  "0명이 아직 준비하지 않았습니다.",
+  "1명이 아직 준비하지 않았습니다.",
+  "2명이 아직 준비하지 않았습니다."
+ ],
  "msg.roomNotTurn": "내 차례가 아닙니다.",
+ "msg.roomPassword": "비밀번호가 맞지 않습니다.",
+ "msg.roomQueued": "두는 중인 판입니다. 구경하다가 다음 판에 들어갑니다.",
+ "msg.roomRegroup": "같은 무리로 대기실에 돌아왔습니다.",
  "msg.roomResult": [
   "9c8bccf27f899bce",
   "비겼습니다.",
@@ -2703,6 +2829,7 @@
   "졌습니다.",
   "5명 가운데 함께 4등입니다."
  ],
+ "msg.roomSlow": "비밀번호를 너무 자주 틀렸습니다. 1분 뒤에 다시 해 보세요.",
  "msg.roomStart": [
   "2677823921ae4c79",
   "판이 시작됐습니다. 상대: 컴퓨터. 상대가 먼저 둡니다.",
@@ -2717,7 +2844,28 @@
   "시간이 다 되어 2의 차례가 넘어갔습니다.",
   "시간이 다 되어 1234567의 차례가 넘어갔습니다."
  ],
+ "msg.roomVote": [
+  "958772a60e101202",
+  "undefined 님이 투표를 열었습니다: 규칙 바꾸기",
+  "0 님이 투표를 열었습니다: 규칙 바꾸기",
+  "1 님이 투표를 열었습니다: 규칙 바꾸기",
+  "3 님이 투표를 열었습니다: 규칙 바꾸기"
+ ],
+ "msg.roomVoteBusy": "이미 투표가 진행 중입니다.",
+ "msg.roomVoteEnd": [
+  "3a626c8fb5e6c551",
+  "투표가 부결됐습니다.",
+  "투표가 통과됐습니다."
+ ],
  "msg.roomWait": "판을 열었습니다. 다른 사람을 기다립니다.",
+ "msg.roomWatchFull": "구경하는 사람이 너무 많습니다.",
+ "msg.roomWatching": [
+  "7a110fe79c4843d0",
+  "판을 구경합니다.",
+  "판을 구경합니다 (1초 늦게).",
+  "판을 구경합니다 (2초 늦게).",
+  "판을 구경합니다 (1234567초 늦게)."
+ ],
  "msg.salvageCant": "분해할 수 없는 장비가 섞여 있습니다. 낀 장비, 보급형, 잠근 장비는 분해할 수 없습니다.",
  "msg.salvageFull": [
   "3b38ecd066c0fb48",
@@ -3382,28 +3530,65 @@
  "ui.residents": "주민",
  "ui.roomAgain": "다시 하기",
  "ui.roomAgainWaitNote": "다른 사람이 다시 하기를 누르면 시작합니다.",
+ "ui.roomApply": "적용",
  "ui.roomAway": "끊김",
  "ui.roomCancel": "그만두기",
+ "ui.roomClose": "닫기",
+ "ui.roomCode": "방 코드",
+ "ui.roomCodeJoin": "코드로 들어가기",
+ "ui.roomCodePh": "코드 6자",
+ "ui.roomCopied": "초대 링크를 복사했습니다.",
+ "ui.roomCopyFail": "복사하지 못했습니다. 방 코드를 직접 알려 주세요.",
+ "ui.roomCopyLink": "초대 링크 복사",
  "ui.roomCpu": "컴퓨터",
  "ui.roomCpuTurn": "컴퓨터가 두는 중",
  "ui.roomDraw": "비겼습니다",
  "ui.roomEmpty": "빈 자리",
  "ui.roomFoeGoneNote": "함께 두던 사람이 판을 떠났습니다.",
+ "ui.roomGive": "방장 넘기기",
+ "ui.roomGo": "시작",
  "ui.roomHost": "판 만들기",
  "ui.roomJoin": "들어가기",
+ "ui.roomKick": "내보내기",
+ "ui.roomKickVote": "내보내기 투표",
+ "ui.roomLeadTag": "방장",
  "ui.roomLeft": "떠남",
  "ui.roomLobby": "대기실",
  "ui.roomLobbyInfo": "다른 사람과 한 판을 둡니다. 혼자면 컴퓨터와 둘 수 있습니다.",
  "ui.roomLose": "졌습니다",
  "ui.roomMyTurn": "내 차례",
+ "ui.roomNext": "다음",
  "ui.roomNone": "기다리는 판이 없습니다. 판을 만들어 기다리세요.",
  "ui.roomNoneCpu": "기다리는 판이 없습니다. 판을 만들거나 컴퓨터와 두세요.",
  "ui.roomOpen": "사람을 기다리는 판",
  "ui.roomPass": "차례 넘기기",
+ "ui.roomPassGo": "들어가기",
+ "ui.roomPassPh": "비밀번호",
+ "ui.roomPrev": "이전",
+ "ui.roomPrivFriends": "친구만",
+ "ui.roomPrivPassword": "비밀번호",
+ "ui.roomPrivPrivate": "비공개",
+ "ui.roomPrivPublic": "공개",
+ "ui.roomPrivacy": "공개",
  "ui.roomQuick": "빠른 대국",
+ "ui.roomReady": "준비",
+ "ui.roomReadyTag": "준비됨",
+ "ui.roomRealtime": "모두 함께 두는 중",
+ "ui.roomRegroup": "같은 무리로 다음 판",
  "ui.roomResign": "기권",
  "ui.roomResignSure": "한 번 더 누르면 기권",
+ "ui.roomRules": "규칙",
+ "ui.roomSeatsPick": "자리 수",
+ "ui.roomStatsBtn": "전적",
+ "ui.roomStatsNone": "아직 기록이 없습니다.",
+ "ui.roomStatsRecent": "최근 판",
  "ui.roomToLobby": "대기실로",
+ "ui.roomUnready": "준비 풀기",
+ "ui.roomVoteNo": "반대",
+ "ui.roomVoteYes": "찬성",
+ "ui.roomWaitTag": "준비 중",
+ "ui.roomWatch": "구경",
+ "ui.roomWatchLeave": "구경 그만",
  "ui.roomWin": "이겼습니다!",
  "ui.roomWithCpu": "컴퓨터와 두기",
  "ui.rowBack": "뒷줄",

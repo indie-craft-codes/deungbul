@@ -1,11 +1,12 @@
 import { anonymize } from './sqlite';
 import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, SocialStore, Store, WebStore, WorldSave } from './types';
 import type { DrawQuery, OddsStore, OddsVersionRow } from './types';
+import type { RoomRecordRow, RoomStore } from './types';
 import type { DrawRow, OddsHistoryRow, OddsPlanRow } from '../../shared/defs/odds';
 import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
 
 /** 시험용 저장소: 프로세스가 끝나면 사라진다. */
-export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OddsStore, OpsStore {
+export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OddsStore, OpsStore, RoomStore {
   private world: WorldSave | null = null;
   private players = new Map<string, PlayerSave>();
   loadWorld(): WorldSave | null { return this.world && structuredClone(this.world); }
@@ -146,4 +147,9 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore, Socia
   }
   pruneDraws(before: number): number { const n = this.drawRows.length; this.drawRows = this.drawRows.filter((r) => r.at >= before); return n - this.drawRows.length; }
   forgetDraws(owner: string): number { let n = 0; for (const r of this.drawRows) if (r.owner === owner || r.char === owner) { r.owner = '-'; r.char = '-'; n++; } return n; }
+  // ---- 판의 기록 (rooms 모듈) ----
+  private roomRows: RoomRecordRow[] = [];
+  addRoomRecords(rows: readonly RoomRecordRow[]): void { for (const r of rows) this.roomRows.push(structuredClone(r)); }
+  roomRecords(key: string, limit: number): RoomRecordRow[] { return this.roomRows.filter((r) => r.key === key).slice(-Math.max(1, Math.floor(limit))).reverse().map((r) => structuredClone(r)); }
+  forgetRoomRecords(key: string): number { const n = this.roomRows.length; this.roomRows = this.roomRows.filter((r) => r.key !== key); return n - this.roomRows.length; }
 }

@@ -3,13 +3,16 @@
 import type { IdleBack, PullGot, SweepGot } from './defs/collect';
 import type { Gear, Mail, RankRow } from './defs/growth';
 import type { GuildView, MarketItem } from './defs/social';
-import type { RoomLobby } from './defs/rooms';
+import type { RoomLobby, RoomStatsView } from './defs/rooms';
 import type { TeamBoard } from './defs/teams';
 import type { MaintView, NoticeView } from './defs/live';
 import type { BlockView, ChatCh, FriendView, TalkState } from './defs/talk';
 import type { DrawRow, OddsPublic } from './defs/odds';
 import type { ClientMsgs, ServerMsgs, WorldState as GameWorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
+
+/** 판의 명령 (rooms 모듈: { t: 'room', a }) */
+export type RoomCmd = 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again' | 'start' | 'code' | 'watch' | 'privacy' | 'kick' | 'give' | 'ready' | 'opt' | 'vote' | 'ballot' | 'regroup' | 'stats';
 
 /**
  * 프로토콜 번호. 서버가 welcome에 실어 보내고, 클라이언트는 자기 빌드의 번호와 맞지 않으면(protocolFits) 업데이트를 권한다
@@ -186,8 +189,12 @@ export type ClientMsg =
   | { t: 'gacha'; a: 'select'; item: string; hero: string }
   /** 메뉴에서 바로 던전에 들어간다 (DungeonDef.fromMenu인 던전): 들판이나 단계 안에서. 단계 안이면 단계에서 나와 들어간다 */
   | { t: 'dungeonGo'; id: string }
-  /** 판 (rooms 모듈): quick 빠른 대국, host 판 만들기, cpu 컴퓨터와 두기, join 들어가기(id: 판), leave 대기실로(두는 중이면 기권), pass 차례 넘기기, resign 기권, again 다시 하기 */
-  | { t: 'room'; a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again' | 'start'; id?: number }
+  /**
+   * 판 (rooms 모듈): quick 빠른 대국, host 판 만들기(n: 자리 수), cpu 컴퓨터와 두기, join 들어가기(id: 판, pass: 비밀번호), leave 대기실로(두는 중이면 기권), pass 차례 넘기기, resign 기권, again 다시 하기, start 지금 시작.
+   * def는 판의 이름(게임에 판이 여럿일 때). 판의 공통화: code 방 코드로 들어가기(code, pass), watch 구경(id 또는 code), privacy 공개 설정(v, pass), kick·give 방장의 내보내기·넘기기(seat),
+   * ready 준비(on), opt 규칙 고르기(k, v), vote 투표 내기(kind 'opt'|'again'|'kick', k, v, seat), ballot 표(yes), regroup 같은 무리로 다음 판, stats 전적(seat 또는 id: 없으면 나)
+   */
+  | { t: 'room'; a: RoomCmd; id?: number; def?: string; n?: number; code?: string; pass?: string; v?: string | number; seat?: number; on?: boolean; k?: string; kind?: 'opt' | 'again' | 'kick'; yes?: boolean }
   /** 변신 (morph 모듈): on 가진 캐릭터 정의(id)로 변신, off 풀기 */
   | { t: 'morph'; a: 'on' | 'off'; id?: string }
   /** 게임 안의 모드 (modes 모듈): 그 모드로 (MODE_RULES.list의 id). 싸우는 중에도 바로 바뀐다 */
@@ -343,6 +350,9 @@ export type ServerMsg =
   /** 확률표와 이력·사전 공지 (물었을 때, 그리고 표의 버전이 바뀌면 모두에게) / 내 최근 추첨 기록 (사람 칸은 비운다) */
   | { t: 'odds'; a: 'tables'; pub: OddsPublic }
   | { t: 'odds'; a: 'mine'; rows: DrawRow[] }
+  // ---- 판 (rooms 모듈) ----
+  /** 전적 (명령 room a:'stats'의 답: RoomDef.record를 켠 판의 기록을 센 것) */
+  | { t: 'roomStats'; s: RoomStatsView }
   // ---- 운영 도구와 고객지원 (support 모듈: engine/server/net/support.ts) ----
   /** 내 문의 (최근부터)와 지금 걸린 말 막기, 그 말 막기에 열린 이의가 있는가 / 문의를 받았다 (번호) */
   | { t: 'support'; a: 'list'; list: TicketView[]; sanction: SanctionView | null; appealed?: boolean }

@@ -13,6 +13,8 @@ export const GUEST_NAME = 'Picker';
 export const NET = { tickMs: 50, snapEvery: 2, aoi: 20, aoiLeave: 24 };
 /** 채널은 하나 */
 export const CHANNEL = { count: 1, soft: 30, hard: 50, switchCdS: 10, calmS: 5, tellS: 10, tellBusyS: 2 };
+// 별 줍기를 눈으로 볼 때만 판 모듈을 고른다 (서버 server/main.ts의 STARS=1, 화면 client/stars.html이 이 파일보다 먼저 globalThis.CORE_STARS를 세운다). 시험은 늘 모듈 0개
+if ((globalThis as { CORE_STARS?: boolean }).CORE_STARS) (MODULES as ModuleId[]).push('rooms');
 
 // ---------- 맵: 마당 하나와 우물 하나 ----------
 export const MAP: MapDef = {

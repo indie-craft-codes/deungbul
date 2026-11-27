@@ -5,6 +5,7 @@ import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow,
 import type { DrawQuery, OddsStore, OddsVersionRow } from './types';
 import type { DrawRow, OddsHistoryRow, OddsPlanRow, OddsTableDef } from '../../shared/defs/odds';
 import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
+import type { RoomRecordRow, RoomStore } from './types';
 
 /**
  * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
@@ -17,6 +18,7 @@ import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
  *         번호는 목록에서의 자리다 (다른 가지의 단계와 합치면 번호가 바뀔 수 있어 여기 적지 않는다)
  *   (끝) 확률과 재화의 투명성: 확률표의 버전(odds_tables)·변경 이력(odds_history)·사전 공지(odds_plans), 추첨 기록(draws: owner 사람·char 캐릭터, 표와 버전) (engine/server/game/systems/odds.ts).
  *        다른 가지와 합칠 때 번호가 바뀔 수 있어 번호를 적지 않는다: 시험은 SCHEMA.length로 본다
+ *   (끝) 판의 기록: 끝난 판의 한 사람 몫(room_records: key 캐릭터, 판의 이름, 결과 data) (engine/server/game/systems/rooms.ts의 RoomDef.record). 번호는 적지 않는다
  */
 export const SCHEMA: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
@@ -47,10 +49,12 @@ export const SCHEMA: readonly string[] = [
    CREATE TABLE IF NOT EXISTS draws (n INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, owner TEXT NOT NULL, char TEXT NOT NULL, kind TEXT NOT NULL, tbl TEXT NOT NULL, ver INTEGER NOT NULL, steps TEXT NOT NULL, got TEXT NOT NULL, cost TEXT NOT NULL);
    CREATE INDEX IF NOT EXISTS draws_owner ON draws (owner, at);
    CREATE INDEX IF NOT EXISTS draws_at ON draws (at);`,
+  `CREATE TABLE IF NOT EXISTS room_records (n INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL, at INTEGER NOT NULL, def TEXT NOT NULL, data TEXT NOT NULL);
+   CREATE INDEX IF NOT EXISTS room_records_key ON room_records (key, n);`,
 ];
 
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
-export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OpsStore, OddsStore {
+export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OpsStore, OddsStore, RoomStore {
   private db: DatabaseSync;
   readonly file: string;
   /** 지금 열린 묶음의 깊이 (transaction의 SAVEPOINT 이름에 쓴다) */
@@ -347,6 +351,20 @@ export class SqliteStore implements Store, EconStore, LiveStore, WebStore, Socia
   pruneDraws(before: number): number { return Number(this.db.prepare('DELETE FROM draws WHERE at < ?').run(before).changes); }
   forgetDraws(owner: string): number { return Number(this.db.prepare("UPDATE draws SET owner = '-', char = '-' WHERE owner = ? OR char = ?").run(owner, owner).changes); }
   close(): void { this.db.close(); }
+
+  // ---- 판의 기록 (rooms 모듈) ----
+  addRoomRecords(rows: readonly RoomRecordRow[]): void {
+    const st = this.db.prepare('INSERT INTO room_records (key, at, def, data) VALUES (?, ?, ?, ?)');
+    for (const r of rows) st.run(r.key, r.at, r.def, JSON.stringify({ res: r.res, rank: r.rank, n: r.n, why: r.why, ...(r.score !== undefined ? { score: r.score } : {}) }));
+  }
+  roomRecords(key: string, limit: number): RoomRecordRow[] {
+    const rows = this.db.prepare('SELECT key, at, def, data FROM room_records WHERE key = ? ORDER BY n DESC LIMIT ?').all(key, Math.max(1, Math.floor(limit))) as { key: string; at: number; def: string; data: string }[];
+    return rows.map((r) => {
+      const d = this.parse<Partial<RoomRecordRow>>(r.data) ?? {};
+      return { key: r.key, at: Number(r.at), def: r.def, res: d.res === 0 || d.res === 1 ? d.res : 2, rank: Number(d.rank) || 0, n: Number(d.n) || 0, why: String(d.why ?? ''), ...(typeof d.score === 'number' ? { score: d.score } : {}) };
+    });
+  }
+  forgetRoomRecords(key: string): number { return Number(this.db.prepare('DELETE FROM room_records WHERE key = ?').run(key).changes); }
 }
 
 /** 백업 파일(SqliteStore.backup이 만든 것)에서 캐릭터 한 명의 저장만 읽는다 (계정 단위 롤백: engine/server/net/rollback.ts). 파일은 읽기 전용으로 열고 곧 닫는다. 없으면 null */

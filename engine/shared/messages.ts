@@ -187,6 +187,25 @@ export type MsgKey =
   | 'roomAgainWait' // [] 다시 하기: 다른 사람을 기다린다
   | 'roomFoeGone' // [이름] 함께 앉은 사람이 판을 떠나 다시 할 수 없다
   | 'roomFewer' // [시작할 수 있는 가장 적은 사람 수] '지금 시작'을 눌렀지만 사람이 모자란다
+  // 판의 공통화 (RoomDef의 codes·lead·voteS·watch·midJoin)
+  | 'roomCodeBad' // [] 그런 방 코드가 없다
+  | 'roomPassword' // [] 비밀번호가 틀렸거나 비었다
+  | 'roomSlow' // [] 비밀번호를 너무 자주 틀려 잠시 막혔다
+  | 'roomFriendsOnly' // [] 방장의 친구만 들어가는 판이다
+  | 'roomBanned' // [] 방장이 내보낸 판이라 다시 들어갈 수 없다
+  | 'roomKicked' // [] 방장(이나 투표)이 나를 내보냈다
+  | 'roomKickedOut' // [이름] 그 사람이 내보내졌다
+  | 'roomLeadNew' // [이름] 방장이 바뀌었다
+  | 'roomLeadOnly' // [] 방장만 할 수 있다
+  | 'roomNotReady' // [준비하지 않은 사람 수] 모두 준비해야 시작할 수 있다
+  | 'roomVote' // [무엇 opt|again|kick, 낸 사람, 내보낼 사람의 이름(kick)] 투표가 열렸다 (규칙의 이름·값은 개인 상태 room의 vote에)
+  | 'roomVoteEnd' // [통과 1 부결 0, 무엇] 투표가 끝났다
+  | 'roomVoteBusy' // [] 이미 투표가 진행 중이다
+  | 'roomRegroup' // [] 같은 무리로 다음 판: 대기실로 돌아왔다
+  | 'roomQueued' // [관전 지연 초] 두는 중인 판이라 구경하며 다음 판을 기다린다
+  | 'roomWatching' // [관전 지연 초] 판을 구경한다
+  | 'roomWatchFull' // [] 구경하는 사람이 너무 많다
+  | 'roomMidJoin' // [이름] 그 사람이 판 중간에 들어왔다
   // ---- 캐릭터 정의와 변신 (chars, morph 모듈: engine/server/game/systems/chars.ts, morph.ts) ----
   | 'charBad' // [거절 코드(CharErr), 자리, 값] 캐릭터 정의가 거절됐다 (engine/shared/defs/chardef.ts의 validateCharDef)
   | 'charNew' // [캐릭터 id] 새 캐릭터를 얻었다 (변신에 쓴다)
