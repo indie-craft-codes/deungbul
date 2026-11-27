@@ -17,7 +17,7 @@
 // 배속(STAGE_RULES.speed)·일시정지(STAGE_RULES.pause): 그 사람의 단계 층의 시간 배율(g.layerScale: ×2면 한 틱에 두 번, 멈추면 0)과 제한 시간·기다림을 함께 바꾼다.
 //   명령 { t: 'stage', a: 'speed', x } (unlock 단계를 깨야 ×2 이상), { a: 'pause', on }. 뒤에서 잇는 회차·대기실은 늘 ×1이고 멈추지 않는다. 일시정지는 maxS초 뒤 풀린다.
 // 저장: 캐릭터의 ext 'stages' ({ cur, best, auto }, 별을 땄으면 stars, 배속을 골랐으면 speed). 본인에게는 개인 상태 'stage' (StageMe: 진행 중이면 물결·남은 적·남은 시간까지).
-import { IDLE_VIEW, MONSTERS, allStarsOf, anyStars, stageStars, starMask, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
+import { IDLE_VIEW, MONSTERS, STAMINA_RULE_VIEW, stageCost, allStarsOf, anyStars, stageStars, starMask, STAGE_RULES, STAGE_RULE_VIEW, STAGES, isMonsterId, offlinePlan, stageIndex, stageSweepable, sweepMax, waveCount, type MonsterDef, type MonsterId, type Reward, type StageMe, type StageRef } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -55,6 +55,8 @@ interface Run {
   lost?: boolean;
   /** 일시정지한 지 몇 초 (멈춰 있지 않으면 undefined) */
   paused?: number;
+  /** 이 판에 치른 스태미나 (stamina 모듈: 지거나 포기하면 refund의 몫을 돌려준다) */
+  paid?: number;
 }
 
 /** 편성만 싸우는 단계 (STAGE_RULES.squadOnly) */
@@ -76,6 +78,11 @@ export class Stages {
   private readonly byLayer = new Map<number, Run>();
   /** 단계와 상관없이 들판에서 일어나는 자리 (게임의 규칙 g.rules.respawn: 단계가 감싸기 전의 것. 다른 층에 있는 사람의 들판의 몸이 쓴다) */
   fieldRespawn: (p: Ent) => { x: number; z: number; id: string } = (p) => this.g.rules.respawn(p);
+  /**
+   * 출격·소탕의 값 (stamina 모듈이 단다: engine/server/game/systems/stamina.ts). 없으면 공짜 (예전과 같다).
+   * have 가진 양, pay n을 치른다(모자라면 false), back 돌려준다
+   */
+  fuel: { have: (p: Ent) => number; pay: (p: Ent, n: number) => boolean; back: (p: Ent, n: number) => void } | null = null;
   /** 던전에서 나와 단계로 돌아갈 사람 → 남은 초 (STAGE_RULES.returnAfterDungeon) */
   private readonly returning = new Map<number, number>();
 
@@ -205,7 +212,12 @@ export class Stages {
     if (!rule || p.bot || !s) return null;
     if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > sweepMax(rule)) return null;
     if (!stageSweepable(s) || i > this.bestIndex(p) || (rule.allStars && !allStarsOf(s, p.stage.stars?.[id] ?? 0))) { g.notify(p, 'sweepLocked', 'stage', id); return null; }
-    if (!costCheck(g, p, rule.cost, n) || !costPay(g, p, rule.cost, n, 'cmd:stage:sweep')) return null;
+    // 스태미나 (stamina 모듈): 소탕 한 번마다 use.sweep. 모자라면 거절, 다른 값을 치르지 못하면 돌려준다
+    const fuel = this.fuel ? Math.max(0, Math.floor(STAMINA_RULE_VIEW.use.sweep ?? 0)) * n : 0;
+    if (fuel && this.fuel!.have(p) < fuel) { g.notify(p, 'staminaShort', fuel, this.fuel!.have(p)); return null; }
+    if (!costCheck(g, p, rule.cost, n)) return null;
+    if (fuel) this.fuel!.pay(p, fuel);
+    if (!costPay(g, p, rule.cost, n, 'cmd:stage:sweep')) { if (fuel) this.fuel!.back(p, fuel); return null; }
     const got = sweepGot('stage', id, n);
     for (let k = 0; k < n; k++) giveInto(g, p, s.def.reward, SWEEP_WHY, got);
     p.unsaved = true;
@@ -226,6 +238,8 @@ export class Stages {
     if (!rules || p.bot || !p.stage.auto || !STAGES.length) return null;
     const best = this.bestIndex(p), power = g.has('squad') ? g.squad.power(p) : 0;
     const plan = offlinePlan(best, power, ms, rules);
+    // 스태미나 (stamina 모듈): 깬 것으로 칠 단계마다 그 값 (모자라면 거기서 멈춘다)
+    if (this.fuel) for (let k = 0; k < plan.passed.length; k++) if (!this.fuel.pay(p, stageCost(STAGES[plan.passed[k]].def.cost))) { plan.passed.length = k; plan.at.length = k; break; }
     if (!plan.passed.length) return { cleared: best + 1, at: [], from: '', to: '' };
     const from = STAGES[this.curIndex(p)].id;
     for (const i of plan.passed) {
@@ -250,13 +264,21 @@ export class Stages {
     // 던전 안에서는 시작하지 않는다
     if (!this.runs.has(p.id) && !isField(p.layer)) return;
     let r = this.runs.get(p.id);
+    // 스태미나 (stamina 모듈): 한 판의 값. 모자라면 시작하지 않는다 (싸우던 회차는 대기실로, 뒤에서 잇던 회차는 닫는다)
+    const cost = this.fuel ? stageCost(stage.def.cost) : 0;
+    if (cost && !this.fuel!.pay(p, cost)) {
+      g.notify(p, 'staminaShort', cost, this.fuel!.have(p));
+      if (r?.bg) { const at = r.stage.id; this.end(r); this.squadIn(p); g.notify(p, 'stageBgStop', at, 2); }
+      else if (r && r.state !== 'lobby') this.lobby(p);
+      return;
+    }
     if (r) this.despawn(r);
     else {
       r = { p, layer: instanceLayer(g), stage, wave: 0, mobs: new Set(), total: 0, state: 'fight', wait: 0, left: 0, back: { x: p.x, z: p.z, layer: p.layer }, think: 0 };
       this.runs.set(p.id, r);
       this.byLayer.set(r.layer, r);
     }
-    r.stage = stage; r.wave = 0; r.left = stage.def.timeS ?? STAGE_RULES.timeS; r.state = 'fight'; r.wait = 0; r.lost = false; r.paused = undefined;
+    r.stage = stage; r.wave = 0; r.left = stage.def.timeS ?? STAGE_RULES.timeS; r.state = 'fight'; r.wait = 0; r.lost = false; r.paused = undefined; r.paid = cost;
     if (SPEED || PAUSE_MAX_S) this.scale(r);
     p.stage.cur = stage.id; p.unsaved = true;
     // 사람을 단계의 가운데로 (체력을 채운다: 앞 단계의 상처를 끌고 들어가지 않게). 뒤에서 이어 가는 회차는 사람이 이 층에 없다: 영웅만 가운데로
@@ -279,7 +301,7 @@ export class Stages {
     if (p.kind !== 'p' || g.ents.get(p.id) !== p || p.bot) return;
     let r = this.runs.get(p.id);
     if (!r && !isField(p.layer)) return;
-    if (r) this.despawn(r);
+    if (r) { this.refund(r, 'quit'); this.despawn(r); }
     else {
       r = { p, layer: instanceLayer(g), stage: STAGES[this.curIndex(p)] ?? STAGES[0], wave: 0, mobs: new Set(), total: 0, state: 'lobby', wait: 0, left: 0, back: { x: p.x, z: p.z, layer: p.layer }, think: 0 };
       this.runs.set(p.id, r);
@@ -346,7 +368,7 @@ export class Stages {
   /** 깼다: 보상, 가장 멀리 깬 단계, 자동 진행이면 다음 단계를 지금 단계로 */
   private clear(r: Run): void {
     const g = this.g, p = r.p, first = r.stage.i > this.bestIndex(p);
-    r.state = 'clear'; r.wait = STAGE_RULES.nextS;
+    r.state = 'clear'; r.wait = STAGE_RULES.nextS; r.paid = 0;
     this.give(p, r.stage.def.reward);
     if (first) { if (r.stage.def.first) this.give(p, r.stage.def.first); p.stage.best = r.stage.id; }
     const last = r.stage.i >= STAGES.length - 1;
@@ -367,6 +389,7 @@ export class Stages {
   private fail(r: Run, why: 0 | 1): void {
     const p = r.p;
     this.despawn(r);
+    this.refund(r, 'fail');
     r.state = 'fail'; r.wait = STAGE_RULES.retryS;
     const back = Math.max(0, Math.min(this.bestIndex(p), r.stage.i - 1));
     p.stage.cur = STAGES[Math.min(r.stage.i, back)]?.id ?? STAGES[0].id;
@@ -381,6 +404,15 @@ export class Stages {
     if (g.has('economy')) for (const cur of CURS) { const n = rw[cur]; if (n) g.wallet.add(p, cur, n, why); }
     if (g.has('items')) for (const [id, n] of Object.entries(rw.items ?? {})) g.bag.putItem(p, id as Parameters<typeof g.bag.putItem>[1], n, why);
     if (g.has('gear')) for (const it of rw.gear ?? []) g.gear.give(p, it, why);
+  }
+
+  /** 스태미나를 돌려준다 (진 판 fail, 싸우다 나옴 quit: STAMINA_RULES.refund의 몫). 싸우는 중의 판만 한 번 */
+  private refund(r: Run, k: 'fail' | 'quit'): void {
+    const paid = r.paid ?? 0;
+    r.paid = 0;
+    if (!this.fuel || paid <= 0 || (r.state !== 'fight' && r.state !== 'gap')) return;
+    const n = Math.floor(paid * Math.max(0, Math.min(1, STAMINA_RULE_VIEW.refund?.[k] ?? 0)));
+    if (n > 0) this.fuel.back(r.p, n);
   }
 
   /** 회차의 몬스터를 치운다 */
@@ -403,6 +435,7 @@ export class Stages {
     if (!r) return;
     // 뒤에서 이어 가던 회차: 사람은 이미 다른 곳에 있다 (닫기만 한다)
     if (r.bg) { this.end(r); this.squadIn(p); return; }
+    this.refund(r, 'quit');
     this.end(r);
     const layer = isField(r.back.layer) ? r.back.layer : fieldLayer(1);
     this.place(p, r.back.x, r.back.z, layer);

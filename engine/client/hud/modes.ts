@@ -23,6 +23,8 @@ import { redraw } from './menu/parts';
 import { addNotices, closeDangerAlert, dangerAlert, routeNotice } from './notify';
 import type { MsgKey } from '../../shared/messages';
 import { placeIn } from './layout';
+import { celebrate } from './reward';
+import type { ModeBack } from '../../shared/defs';
 import { mountPanel } from './shell';
 
 let mode: ModeMe = { id: '', cd: 0 };
@@ -80,6 +82,25 @@ function label(): void {
   if (to) { btn.textContent = L().fmt.modeTo(uiText.get(to.name)); btn.title = t('modeBtn'); btn.setAttribute('aria-label', `${t('modeBtn')}: ${uiText.get(to.name)}`); }
 }
 
+/** 돌아옴 요약의 한 줄 ('23마리 · 울림 조각 +48 · 물약 2'). 일어난 것만 */
+export function modeBackLine(b: ModeBack): string {
+  const f = L().fmt, out: string[] = [];
+  if (b.side === 'stage' && b.n && b.from) out.push(f.mbStages(b.from, b.to ?? b.from));
+  if (b.kills) out.push(f.mbKills(b.kills));
+  // 얻은 재화: 두 번째 재화·경험치 먼저, 골드는 뒤에 (재화의 이름은 언어 파일이 고른다)
+  for (const [c, n] of Object.entries(b.got).sort(([a], [z]) => (a === 'gold' ? 1 : 0) - (z === 'gold' ? 1 : 0))) if (n > 0) out.push(f.mbGot(c, n));
+  if (b.stars) out.push(f.mbStars(b.stars));
+  if (b.pots) out.push(f.mbPots(b.pots));
+  if (b.safe) out.push(f.mbSafe(b.safe));
+  if (b.down) out.push(f.mbDown(b.down));
+  return out.join(' · ');
+}
+function showModeBack(b: ModeBack): void {
+  const def = modeDef(b.id), line = modeBackLine(b);
+  if (!def || !line) return;
+  celebrate({ kind: 'reward', title: L().fmt.mbTitle(uiText.get(def.name)), big: line, sub: L().fmt.mbAway(b.s), ms: 5200, cls: 'celLine' });
+}
+
 export function initModes(): void {
   mountPanel('hud', '<button type="button" id="modeBtn" class="modeBtn" hidden></button>');
   // 폰: 위 오른쪽 구역의 단추 줄 아래 (hud/layout.ts)
@@ -100,6 +121,8 @@ export function initModes(): void {
     }
   });
   onMsg('welcome', () => label());
+  // 돌아옴 요약 (MODE_RULES.backCard, 묶음 D): 다른 모드에서 그동안 일어난 일을 축하 카드 한 장으로 (hud/reward.ts의 모양)
+  onMsg('modeBack', (m) => { const { t: _t, ...b } = m; showModeBack(b); });
   // 자동 사냥(화면)은 들판의 모드에서만 움직인다: 단계의 모드에서는 켜짐만 지킨다 (들판의 대역이 쓴다)
   if (hasModule('away')) setAutoGate(() => myMode()?.kind !== 'stage');
   // 편성만 싸우는 단계(STAGE_RULES.squadOnly): 단계의 모드에서는 내 몸·이름표를 그리지 않는다 (보기만 한다)

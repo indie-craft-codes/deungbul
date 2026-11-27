@@ -1,7 +1,7 @@
 // 메아리 계약의 규칙 (서버 없이, 가상 시계): 메아리 정의가 규칙을 지나는가, 공개 확률표와 천장, 그리고 두 게임 —
 // 계약의 탑(A: 단계·뽑기·편성)과 울림골(B: 들판)을 '게임 바꾸기'로 오가며, 뽑은 메아리가 같은 소유로 (1) 탑의 편성 동료 (2) 들판의 변신이 되고,
 // 카드의 능력치가 곧 변신의 능력치이며, 보고 있지 않은 쪽(들판의 자동 사냥, 탑의 자동 진행)이 이어 가고, 저장과 예전 저장을 지나도 이어지는가.
-import { BANNERS, CHAPTERS, DAILIES, MODE_RULES, MODULES, SQUAD_RULES } from '../shared/content';
+import { BANNERS, CHAPTERS, DAILIES, MODE_RULES, MODULES, SQUAD_RULES, STAMINA_RULES } from '../shared/content';
 import { MODE, SAFETY, STARTER, STARTER_ECHO, cardToMorph } from '../shared/content/pact';
 import { installEchopact } from '../server/echopact';
 import { ECHO_DEFS } from '../server/echoes';
@@ -175,6 +175,10 @@ const pick = owned.filter((id) => id !== STARTER_ECHO).sort((a, b) => heroDef(b)
   g.command(p, { t: 'mode', id: MODE.vale });
   run(0.2);
   check(!g.modes.standOf(p) && !g.ents.has(stand!.id) && p.layer === 0 && Math.hypot(p.x - at.x, p.z - at.z) < 2, '울림골로 돌아오면 대역이 거둬지고 그 사람이 그 자리에서 이어 간다');
+  // 돌아옴 요약 (MODE_RULES.backCard, 묶음 D): 그동안 들판에서 일어난 일 한 장
+  const back = g.out.filter((o) => o.id === p.id && o.msg.t === 'modeBack').map((o) => o.msg as Extract<typeof o.msg, { t: 'modeBack' }>).at(-1);
+  check(!!back && back.id === MODE.vale && back.side === 'field' && (back.kills ?? 0) > 0 && back.got.sparks > 0 && (back.pots ?? 0) >= 1 && (back.safe ?? 0) >= 1 && back.s >= 60,
+    `울림골로 돌아오면 돌아옴 요약(modeBack): ${back?.s}초 동안 ${back?.kills}마리 · 울림 조각 +${back?.got.sparks} · 물약 ${back?.pots} · 안전장치 ${back?.safe}번`);
   check(!!g.stages.runOf(p)?.bg, '탑의 싸움은 뒤에서 이어 간다 (싸우는 중에 바꿨다)');
 }
 
@@ -269,4 +273,34 @@ check(Object.values(DAILIES).filter((d) => 'period' in d && d.period === 'week')
   const left2 = me().run?.left ?? 0;
   const saved = k.saves.find((x) => x.name === 'stages')!.save(p) as { speed?: number };
   check(me().speedMax === 2 && me().speed === 2 && k.layerScale.get(layer) === 2 && left1 - left2 >= 7 && saved.speed === 2, `1-5를 깨면 ×2: 4초에 제한 시간이 ${left1 - left2}초 줄고, 고른 배속이 저장된다`);
+}
+
+// ---------- 스태미나 '계약의 숨결' (묶음 D: 내용은 꺼 두었다. 이 시험에서만 켜서 제안 수치로 돈다) ----------
+{
+  let t = Date.UTC(2026, 10, 30, 9, 0, 0);
+  const on = (v: boolean) => { (STAMINA_RULES as { enabled: boolean }).enabled = v; };
+  on(true);
+  const k = new Game({ plugins: [installEchopact], now: () => t });
+  on(false);
+  check(!new Game({ plugins: [installEchopact], now: () => t }).stamina.on, '내용의 STAMINA_RULES.enabled가 거짓이면 스태미나는 없다 (지금의 메아리 계약: 명령·저장·개인 상태 없음)');
+  const step = (s: number) => { for (let i = 0; i < s * 20; i++) { k.tick(0.05); t += 50; } };
+  const p = k.players.spawn('숨결', false, null, 'ep-stamina');
+  k.fire('playerJoined', p); k.command(p, { t: 'class', id: 'warden' }); step(0.3);
+  const said2 = (key: string) => k.notices.filter((n) => n.id === p.id && n.k === key).length;
+  k.command(p, { t: 'stage', a: 'go', id: '1-1' }); step(0.5);
+  const paid = k.stamina.have(p);
+  k.command(p, { t: 'stage', a: 'leave' }); step(0.2);
+  const back = k.stamina.have(p);
+  k.stamina.take(p, back - 3);
+  k.command(p, { t: 'stage', a: 'go', id: '1-1' }); step(0.2);
+  const refused = k.stages.inLobby(p) && said2('staminaShort') === 1 && k.stamina.have(p) === 3;
+  const save = structuredClone(k.players.export(p));
+  t += 30 * 60_000; on(true);
+  const k2 = new Game({ plugins: [installEchopact], now: () => t });
+  on(false);
+  const q = k2.players.spawn('숨결', false, save, 'ep-stamina');
+  const offline = k2.stamina.have(q);
+  k2.players.grant(q, 400, 0);
+  check(paid === 54 && back === 60 && refused && offline === 9 && k2.stamina.have(q) >= 9 + 60,
+    `켜면: 처음 60 → 출격 −6(${paid}) → 싸우다 나오면 돌려줌(${back}) → 3이면 출격을 거절(staminaShort, 대기실에 남음) → 접속하지 않은 30분에 +6(${offline}) → 레벨 업에 +60(${k2.stamina.have(q)})`);
 }

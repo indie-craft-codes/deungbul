@@ -2,10 +2,14 @@
 // 진행은 이 기기에 저장한다 (플랫폼 저장소의 'tut:<id>' 칸: 다 보았거나 건너뛰었으면 다시 뜨지 않는다).
 // 단계가 바뀔 때마다 onTutorial에 사건을 낸다 (start, step, done, skip): 분석을 받는 곳이 생기면 거기에 잇는다 (docs/genre-features.md 5.5).
 // 안내 카드는 화면 아래 가운데에 뜬다. 게임을 막지 않는다: 그대로 놀면서 조건을 채우면 넘어간다.
+// 튜토리얼 키트 (묶음 D, docs/making-a-game.md 26절): 단계의 모양 kind 'name'(이름 짓기: 입력·무작위·[이 이름으로]·[나중에], 서버의 이름 검사를 그대로 쓴다),
+//   진행 읽기 tutReached(튜토리얼, 단계)(기능의 열림 조건이 쓴다: hud/unlocks.ts). 첫 편성·결과 창 설명은 보통 단계(target·when·until)로 적는다.
 import { $ } from '../app';
 import { actionOf, onMsg, onSlow } from '../bus';
 import { L, onLangChange, t, type UiKey } from '../i18n';
 import { onSend } from '../net';
+import { rename } from '../actions';
+import { randomName } from '../i18n';
 import { platform } from '../platform';
 import { S } from '../state';
 import { renderMenu } from './menu';
@@ -25,6 +29,8 @@ export interface TutorialStep {
   when?: () => boolean;
   /** 끝나는 조건. 없으면 '다음' 단추로 넘긴다 */
   until?: TutorialCond;
+  /** 단계의 모양: 'name' 이름 짓기 (카드 안의 입력칸·무작위·[이 이름으로]·[나중에]: 이름이 바뀌거나 '나중에'면 끝난다). 없으면 글만 */
+  kind?: 'name';
 }
 export interface TutorialDef {
   id: string;
@@ -55,6 +61,18 @@ function progressOf(d: TutorialDef): TutProgress {
   return p;
 }
 function setProgress(d: TutorialDef, p: TutProgress): void { prog.set(d.id, p); platform().storage.set(storeKey(d.id), writeProgress(p)); }
+/** 지금 보이는 튜토리얼의 단계 id ('튜토리얼 id:단계 id'. 없으면 '') */
+export const tutNow = (): string => { if (!active) return ''; const s = active.steps[progressOf(active).i]; return s ? `${active.id}:${s.id}` : ''; };
+/**
+ * 그 튜토리얼이 그 단계에 이르렀는가 (그 단계에 들어섰거나 지났다. 다 보았거나 건너뛰었으면 참. 없는 튜토리얼·단계면 거짓).
+ * 기능의 열림 조건이 쓴다 (hud/unlocks.ts의 { tut: 'pact:squad' })
+ */
+export function tutReached(id: string, step: string): boolean {
+  const d = defs.find((x) => x.id === id), k = d ? d.steps.findIndex((s) => s.id === step) : -1;
+  if (!d || k < 0) return false;
+  const p = progressOf(d);
+  return p.end !== '' || p.i >= k;
+}
 
 /**
  * 튜토리얼을 더한다 (게임의 화면 모듈의 init에서). 처음 보는 기기면 start가 참이 될 때 시작한다. 예 (games/sample/client/tutorial.ts):
@@ -103,7 +121,9 @@ function draw(): void {
   const d = active, p = progressOf(d), s = d.steps[p.i];
   $('tutN').textContent = L().fmt.tutStep(p.i + 1, d.steps.length);
   $('tutText').textContent = typeof s.text === 'function' ? s.text() : t(s.text);
-  $('tutNext').hidden = !!s.until;
+  $('tutNext').hidden = !!s.until || s.kind === 'name';
+  drawName(s);
+  box.classList.toggle('tutForm', s.kind === 'name');
   const on = s.when?.() ?? true;
   box.hidden = !on;
   lit?.classList.remove('tutHi');
@@ -112,10 +132,33 @@ function draw(): void {
   lit?.classList.add('tutHi');
   dodge();
 }
+// ---------- 이름 짓기 단계 (kind 'name') ----------
+/** 이름 짓기: 보낸 이름 (서버가 받아 내 이름이 그것이 되면 다음 단계) */
+let wanted = '';
+function drawName(s: TutorialStep): void {
+  const box = $('tutName');
+  box.hidden = s.kind !== 'name';
+  if (box.hidden) return;
+  const input = $<HTMLInputElement>('tutNameIn') as HTMLInputElement;
+  if (!input.value && document.activeElement !== input) input.value = S.me?.name ?? '';
+  $('tutNameRand').textContent = t('tkNameRandom'); $('tutNameOk').textContent = t('tkNameOk'); $('tutNameLater').textContent = t('tkNameLater');
+  $('tutNameNote').textContent = t('tkNameNote');
+}
+function nameStep(): boolean { const s = active?.steps[progressOf(active).i]; return s?.kind === 'name'; }
+function sendName(): void {
+  const v = ($<HTMLInputElement>('tutNameIn') as HTMLInputElement).value.trim();
+  if (!v || !S.me) return;
+  if (v === S.me.name) { next(); return; }
+  wanted = v;
+  rename(v);
+}
+
 /** 카드가 강조한 요소를 덮으면 화면의 반대쪽 반으로 비킨다 (대상이 아래면 위로) */
 function dodge(): void {
   const box = $('tut');
   box.classList.remove('tutUp', 'tutDown');
+  // 이름 짓기(입력칸이 있는 카드)는 위에 둔다: 폰의 글자판이 아래를 덮고, 아래 띠·진행 단추를 가리지 않게
+  if (box.classList.contains('tutForm') && !box.hidden) { box.classList.add('tutUp'); return; }
   if (box.hidden || !lit || !lit.offsetParent) return;
   const a = box.getBoundingClientRect(), b = lit.getBoundingClientRect();
   if (a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top) return;
@@ -165,14 +208,24 @@ export function initTutorial(): void {
   ready = true;
   // 건너뛰기는 카드 머리의 오른쪽 작은 글 단추 (엄지 자리의 '다음'과 떨어지게), 한 번 더 눌러야 건너뛴다
   document.body.insertAdjacentHTML('beforeend', `<div class="panel" id="tut" hidden><div class="tutHead"><div class="note" id="tutN"></div><button type="button" class="plain" id="tutSkip" data-i18n="tutSkip">${t('tutSkip')}</button></div><div id="tutText"></div>
+    <div id="tutName" class="tutName" hidden><input id="tutNameIn" maxlength="16" autocomplete="off" enterkeyhint="done"><div class="btns"><button type="button" class="btn-secondary" id="tutNameRand"></button><button type="button" class="btn-primary" id="tutNameOk"></button></div>
+    <div class="tutNameFoot"><span class="note" id="tutNameNote"></span><button type="button" class="btn-ghost" id="tutNameLater"></button></div></div>
     <div class="btns"><button type="button" id="tutNext" data-i18n="tutNext">${t('tutNext')}</button></div></div>`);
+  $('tutNameRand').addEventListener('click', () => { ($<HTMLInputElement>('tutNameIn') as HTMLInputElement).value = randomName(); });
+  $('tutNameOk').addEventListener('click', sendName);
+  $('tutNameIn').addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') sendName(); });
+  $('tutNameLater').addEventListener('click', () => { if (nameStep()) next(); });
   $('tutNext').addEventListener('click', (e) => { next(); (e.currentTarget as HTMLElement).blur(); });
   $('tutSkip').addEventListener('click', (e) => { askSkip(); (e.currentTarget as HTMLElement).blur(); });
   onSend((m) => hear({ kind: 'cmd', name: m.t }));
   window.addEventListener('keydown', (e) => { if (!(document.activeElement instanceof HTMLInputElement)) { const a = actionOf(e.key); if (a) hear({ kind: 'key', name: a }); } });
   onSlow(() => {
     if (!S.me) { if (active) $('tut').hidden = true; return; }
-    if (active) { draw(); hear({ kind: 'tick' }); return; }
+    if (active) {
+      // 이름 짓기: 서버가 받아 내 이름이 보낸 이름이 되면 다음
+      if (wanted && nameStep() && S.me.name === wanted) { wanted = ''; next(); return; }
+      draw(); hear({ kind: 'tick' }); return;
+    }
     if (!S.me.ready) return;
     const d = defs.find((x) => progressOf(x).end === '' && (x.start?.() ?? true));
     if (d) begin(d);

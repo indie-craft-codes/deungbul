@@ -22,6 +22,8 @@ export interface HomeButton {
   dot?: string;
   /** 잠겼으면 그 까닭(보일 글). 빈 글이면 열림 */
   locked?: () => string;
+  /** 참이면 감춘다 (기능의 점진 공개: hud/unlocks.ts의 featureHidden) */
+  hidden?: () => boolean;
   onClick: () => void;
 }
 export interface HomeBanner { id: string; text: string; sub?: string; onClick?: () => void; /** 알림 점의 이름 */ dot?: string; /** 작은 그림 (글자 하나·기호). 없으면 글의 첫 글자 */ icon?: string }
@@ -159,7 +161,10 @@ export function makeHome(o: HomeOpts): HomeKit {
     info.textContent = o.info?.() ?? '';
     for (const { b, e } of btns) {
       const why = b.locked?.() ?? '';
-      e.textContent = b.label();
+      e.hidden = b.hidden?.() ?? false;
+      // 잠김은 🔒와 언제 열리는지 (폰에는 title이 보이지 않는다: 단추 안의 작은 줄)
+      e.textContent = why ? `🔒 ${b.label()}` : b.label();
+      if (why) { const s = document.createElement('small'); s.className = 'hk-why'; s.textContent = why; e.append(s); }
       e.classList.toggle('locked', !!why);
       e.title = why;
     }

@@ -1691,6 +1691,8 @@ export const SQUAD_RULES: SquadRules = {
     pity: { after: 60, rarity: 2 }, tenAtLeast: 1,
     pickup: { hero: 'starseer', share: 0.5 }, fiftyFifty: true, pityGroup: 'limited',
     start: LIMITED_FROM, end: LIMITED_FROM + 14 * DAY,
+    // 교환 상점 (묶음 D): 뽑을 때마다 표식 1, 60개로 픽업 하나. 같은 천장 무리의 다음 배너로 이어진다
+    exchange: { per: 1, cost: 60, end: 'keep' },
   },
 …
 export const GACHA_RULES: GachaRules = { history: 50, select: { herochoice: ['stormblade', 'starseer'] } };
@@ -2370,6 +2372,7 @@ id: 'basics',
 label: () => t('tutBasics'),
 start: () => !!S.me && S.me.cls !== '',
 steps: [
+{ id: 'name', kind: 'name', text: 'tkNameTitle' },
 { id: 'move', text: 'tutMove', until: { cmd: 'move' } },
 { id: 'attack', text: 'tutAttack', until: { cmd: 'attack' } },
 { id: 'menu', text: 'tutMenu', target: 'menuBtn', until: { key: 'm', test: () => !document.getElementById('menu')?.hidden } },
@@ -3107,3 +3110,91 @@ body[data-mode="tower"] {
 ### 움직임 줄이기 (`engine/client/motion.ts`)
 
 기기의 '동작 줄이기'(`prefers-reduced-motion`)와 설정의 **움직임 줄이기 [켬][끔]**(설정 값 `motion`, 처음은 기기를 따른다)를 한 곳에서 본다: 문서 뿌리의 `data-still="1"`이면 움직임 시간 토큰이 1ms가 되고 css의 연출(돌림·흔들림·떠오름·빛살)이 멈춘다. 화면 코드는 `stillMotion()`으로 묻는다(축하 카드의 빛살, 숫자 굴리기, 뽑기의 자동 넘김, 홈 배너의 넘김).
+
+## 26. 경제와 처음 30분: 스태미나, 교환 상점, 돌아옴 요약, 튜토리얼 키트
+
+[screens.md](screens.md) 9절의 묶음 D(12 스태미나 · 11 교환 상점 · 13 돌아옴 요약 · 16 FTUE). 모두 **기본 꺼짐**이다: 켜는 칸을 적지 않은 게임은 예전과 같다(등불지기의 황금 실행 그대로).
+
+### 스태미나 (`stamina` 모듈, `STAMINA_RULES`)
+
+시간으로 차오르는 행동력. 단계 출격 한 번·소탕 한 번이 깎고, 모자라면 서버가 거절한다(안내문 `staminaShort`: 필요, 가진 것). 모듈을 `MODULES`에 고르고 **`STAMINA_RULES.enabled`를 켜야** 돈다(꺼져 있으면 명령·저장·개인 상태가 없다). 필요한 모듈: `stages`.
+
+| 칸 | 무엇 |
+|---|---|
+| `enabled` | 켬/끔 |
+| `name` | 이름의 문장 키 (게임의 언어 파일 ui: '계약의 숨결') |
+| `max`, `everyS` | 시간으로 차오르는 상한(수 또는 `(lv) => 수`)과 하나가 차오르는 간격(초). 접속하지 않은 동안도 저장의 `{ n, at }`로 셈한다(`staminaAt`) |
+| `start` | 처음 온 사람의 양 (없으면 상한) |
+| `hold`, `overflow` | 물약·우편·레벨 업으로 쌓을 수 있는 끝(기본 999)과 넘는 몫(`'mail'` 우편: 받을 때 다시 `hold`까지, `'lose'` 버림) |
+| `levelFill` | 레벨이 오르면 상한만큼 더한다 (사건 `leveledUp`) |
+| `use` | `{ stage, sweep }`: 출격 한 번·소탕 한 번의 값. 단계마다 다르면 `StageDef.cost` |
+| `refund` | `{ fail, quit }`: 진 판·싸우다 나온 판(일시정지의 포기, 나가기)에 돌려줄 몫(0~1) |
+| `potion` | `{ item, n }`: 가방의 그 아이템 하나 = n (명령 `{ t: 'stamina', a: 'potion' }`). 없으면 물약이 없다 |
+
+- 서버(`engine/server/game/systems/stamina.ts`)는 단계 시스템의 연료 칸(`g.stages.fuel`)에 붙는다: 출격(`go`·`start`·자동 진행·실패 뒤 되풀이)마다 깎고, 모자라면 싸우던 회차는 대기실로, 뒤에서 잇던 회차는 닫는다(안내문 `stageBgStop`의 까닭 2). 오프라인 진행도 깬 단계마다 깎는다(모자라면 거기서 멈춘다).
+- 화면(`engine/client/hud/stamina.ts`): 재화 줄의 칩 `'stamina'`('n/상한 · 다음 1까지 m:ss', 누르면 창), 단계 정보 창·편성 확인의 '소모' 줄, [출발]·[다시]·[다음]의 출격 문(`staminaGate`: 모자라면 **부족 창** — '○○이 모자랍니다', 다음 하나까지·가득까지, [물약 쓰기 (+n · 가진 것 k)], [기다리기]). 유료 충전은 없다. 칩은 서버가 개인 상태를 보낼 때만 보인다(서버가 권위).
+- 저장 칸 `ext.stamina`(`MODULE_SAVES`). 넘친 몫의 우편 종류 `'stamina'`, 보상 칸 `Reward.stamina`.
+
+메아리 계약은 규칙을 적되 꺼 두었다(켤지는 사용자 결정. 켰을 때의 흐름은 [proof-echopact.md](proof-echopact.md) '스태미나'):
+
+```ts games/echopact/shared/content/index.ts
+export const STAMINA_RULES: StaminaRules = {
+enabled: false,
+name: 'echoBreath',
+max: 60, everyS: 300, hold: 999, overflow: 'mail', levelFill: true,
+use: { stage: 6, sweep: 6 },
+refund: { fail: 1, quit: 1 },
+};
+```
+
+### 교환 상점 (`BannerDef.exchange`, `BannerDef.markName`)
+
+뽑기 탭의 배너마다 **[교환]** → 창 하나(`engine/client/hud/exchange.ts`): 천장의 표식('n번째 뽑기는 그 등급 확정'), 교환 표식과 목록, 영웅 선택권(`GACHA_RULES.select`), '교환은 확률을 바꾸지 않는다'. 뽑기 요약에도 표식 한 줄.
+
+| 칸 | 무엇 |
+|---|---|
+| `markName` | 천장의 셈을 보일 이름(문장 키). 메아리 계약 `'echoMark'` → '울림 표식 n / 40' (수치는 천장 그대로) |
+| `exchange.per`, `exchange.cost` | 한 번 뽑을 때 쌓이는 표식, 영웅 하나의 값 |
+| `exchange.heroes` | 바꿀 수 있는 영웅 (없으면 픽업, 그것도 없으면 그 배너의 가장 높은 등급: `exchangeHeroes`) |
+| `exchange.end` | 배너의 기간이 끝났을 때 남은 표식: `'keep'`(기본: 같은 천장 무리의 다음 배너로 이어진다) · `'lose'` · `{ cur, rate }`(표식 하나 = 그 재화 rate개. 안내문 `marksEnd`) |
+
+- 표식은 천장의 열쇠(`pityKey`)마다 쌓인다: 같은 `pityGroup`의 배너는 표식도 함께 쓴다. 명령 `{ t: 'gacha', a: 'trade', id, hero }`(안내문 `exchanged`·`exchangeNo`), 개인 상태 `gacha.pts`, 저장 `ext.gacha.pts`(표식이 없으면 예전 모양). 정리는 1분마다·접속할 때(같은 열쇠의 배너가 하나도 열려 있지 않고 열릴 것도 없을 때).
+- 확률표(`pullOdds`)는 바뀌지 않는다: 표식은 뽑은 수로만 쌓인다.
+
+```ts engine/test/collect/shared/content/index.ts
+// 교환 상점 (묶음 D): 뽑을 때마다 표식 1, 60개로 픽업 하나. 같은 천장 무리의 다음 배너로 이어진다
+exchange: { per: 1, cost: 60, end: 'keep' },
+```
+
+### 돌아옴 요약 (`MODE_RULES.backCard`)
+
+모드를 쓰는 게임에서 다른 모드로 갔다가 돌아오면, 그쪽에서 그동안 일어난 일을 축하 카드 한 장으로(`hud/reward.ts`의 `celebrate` 모양): 들판(대역) — 잡은 수 · 얻은 재화 · 쓴 물약 · 안전장치가 물리거나 멈춘 수 · 쓰러진 수, 단계(뒤에서 잇던 회차) — 깬 단계(처음~마지막) · 딴 별 · 얻은 재화. `minS`초(기본 10)보다 짧게 떠났거나 아무 일도 없었으면 보내지 않는다. 서버가 모드를 바꾸기 직전에 셈해 메시지 `modeBack`(`ModeBack`)을 보내고, 화면은 `modeBackLine`으로 한 줄을 만든다. 접속을 끊었다 온 때의 창(`idleback`)과 같은 '자리를 비운 동안'의 다른 입구다.
+
+```ts games/echopact/shared/content/index.ts
+backCard: { minS: 10 },
+```
+
+### 튜토리얼 키트
+
+`hud/tutorial.ts`(17절)에 더한 것과 기능의 점진 공개(`engine/client/hud/unlocks.ts`):
+
+| 칸 | 무엇 |
+|---|---|
+| `TutorialStep.kind: 'name'` | 이름 짓기 단계: 카드 안의 입력칸·[무작위]·[이 이름으로]·[나중에]. 서버의 이름 검사(금칙어·겹침·간격)를 그대로 쓰고 '안 됨'은 단추 곁에 |
+| `tutReached(튜토리얼, 단계)`, `tutNow()` | 그 단계에 이르렀는가 / 지금 단계('id:단계') |
+| `useUnlocks([{ id, name, when, tab?, style?, quiet?, go? }])` | 기능마다 열림 조건 `when: { lv?, stage?, tut? }`(**하나라도 맞으면** 열림: 튜토리얼을 건너뛰었거나 다른 기기에서 온 사람은 깬 단계로 열린다). `tab`의 메뉴 탭은 열리기 전에 숨기거나(`hide`, 기본) 🔒와 까닭(`lock`). 열리는 순간 '새 기능' 카드 한 번(U2의 `addUnlock`)과 [가 보기](그 탭, 또는 `go`). `quiet`면 카드 없이 열린다 |
+| `featureOpen(id)`, `featureLock(id)`, `featureHidden(id)` | 게임의 단추가 묻는다: 홈 키트의 `dock[].locked`(🔒 + 언제 열리는지가 단추 안의 작은 줄로)·`dock[].hidden` |
+| `StageScreenOpts.holdResult` | 참이면 자동 진행이 다음 단계를 시작해도 결과 창을 닫지 않는다 (튜토리얼이 결과 창을 설명하는 동안) |
+
+첫 편성 안내·결과 창 설명은 보통 단계로 적는다(`target`·`when`·`until.test`). 예제의 최소 사용(이름 짓기 한 단계)은 17절의 조각, 메아리 계약의 흐름은 [proof-echopact.md](proof-echopact.md) '처음 30분 (묶음 D)':
+
+```ts games/echopact/client/tutorial.ts
+{ id: 'name', kind: 'name', text: 'tutName', when: () => inTower() && view() === 'home' },
+…
+{ id: 'squad', name: () => t('towerSquad'), when: { stage: '1-3', tut: 'pact:squad' }, tab: 'squad' },
+```
+
+### 함께 고친 것
+
+- **누름 소리**: 사용자 결정(11-27)으로 누를 때마다의 '톡'(`ui.tap`)은 기본 끔, 설정의 **누름 소리 [켬][끔]**(플랫폼 저장소 `uiTap`)으로 켠다. 다른 화면 효과음(`ui.*`)은 기본 켬, 음량 0.35배 그대로.
+- **폰의 오른쪽 창**: 폰 세로의 상점 창, 폰 가로의 등탑 창처럼 구역보다 긴 창은 창 안이 스크롤되고 창 밖(3D)이 눌리지 않는다 ([framework-status.md](framework-status.md) '묶음 D').

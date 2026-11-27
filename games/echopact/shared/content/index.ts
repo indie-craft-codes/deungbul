@@ -22,6 +22,7 @@ import type { OddsRules } from '@engine/shared/defs/odds';
 import type { ModeRules } from '@engine/shared/defs/modes';
 import type { AchieveDef, CodexDef, ComebackRules, EventDef, GoodsDef, MailRules, SeasonRules } from '@engine/shared/defs/livecontent';
 import type { ChatRules } from '@engine/shared/defs/talk';
+import type { StaminaRules } from '@engine/shared/defs/stamina';
 import { BASIC_QUICK_CHAT, CHAT_RULES as BASE_CHAT_RULES, GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
 import type { ModuleId } from '@engine/shared/modules';
 import { ARENA, MODE, SPIRE, WELL, cardToMorph } from './pact';
@@ -37,6 +38,8 @@ export const MODULES: readonly ModuleId[] = [
   'modes',
   // 라이브 콘텐츠 (묶음 6): 기간 이벤트, 시즌과 무료 보상 트랙, 업적·칭호, 도감, 쿠폰·복귀 보상 (상품 GOODS는 items 모듈의 칸)
   'event', 'season', 'achieve', 'codex', 'coupon',
+  // 스태미나 (묶음 D): 모듈은 고르되 규칙(STAMINA_RULES.enabled)은 꺼 두었다. 켤지는 사용자 결정
+  'stamina',
 ];
 
 // ---------- 두 게임: 계약의 탑(A, 단계)과 울림골(B, 들판) ----------
@@ -51,6 +54,8 @@ export const MODE_RULES: ModeRules = {
   switchCdS: 1,
   fieldStay: true,
   stageStay: true,
+  // 돌아옴 요약 (묶음 D): 다른 게임에서 돌아오면 '울림골에서 그동안: 23마리 · 울림 조각 +48 · 물약 2' 한 장 (10초 안에 돌아왔거나 아무 일도 없으면 띄우지 않는다)
+  backCard: { minS: 10 },
 };
 /** 대화: 근처 채널은 '같은 게임에 있는 사람 모두'(탑은 사람마다 층이 달라 근처가 비므로). 전체·귓말·파티·친구는 두 게임이 하나다 */
 export const CHAT_RULES: ChatRules = { ...BASE_CHAT_RULES, nearScope: 'mode' };
@@ -211,6 +216,8 @@ export const BANNERS: Readonly<Record<string, BannerDef>> = {
     ],
     pity: { after: 40, rarity: 2 },
     tenAtLeast: 1,
+    // 교환 상점 (묶음 D): 천장 40번의 진행을 '울림 표식 n/40'으로 보인다 (수치는 그대로: 40번째는 전설 확정. 교환 목록은 상시 배너라 없다)
+    markName: 'echoMark',
   },
 };
 export const GACHA_RULES: GachaRules = { history: 50 };
@@ -252,6 +259,17 @@ export const STAGE_RULES: StageRules = {
   // 전투 화면 (묶음 C): ×2 배속은 1-5를 깨면 열린다, 일시정지(전투 중 뒤로 가기)는 10분까지
   speed: { max: 2, unlock: '1-5' },
   pause: { maxS: 600 },
+};
+
+// ---------- 스태미나 '계약의 숨결' (묶음 D): 꺼 둔다 (enabled: false). 켤지는 사용자 결정 ----------
+// 제안 수치 (docs/proof-echopact.md '스태미나'): 탑의 단계 한 번 6, 소탕 한 번 6, 5분에 하나 차오르고 상한 60(5시간에 가득), 계약자(울림골)의 레벨이 오르면 60을 더한다,
+// 999까지 쌓이고 넘는 몫은 우편으로, 진 판·싸우다 나온 판은 모두 돌려준다. 울림골은 숨결을 쓰지 않는다 (두 게임을 오갈 까닭이 하나 더 생긴다). 물약은 아직 없다
+export const STAMINA_RULES: StaminaRules = {
+  enabled: false,
+  name: 'echoBreath',
+  max: 60, everyS: 300, hold: 999, overflow: 'mail', levelFill: true,
+  use: { stage: 6, sweep: 6 },
+  refund: { fail: 1, quit: 1 },
 };
 
 // ---------- 사회: 정해진 문장(틀의 여덟. 받는 사람이 자기 언어로 읽는다). 연령은 묻지 않는다 ----------

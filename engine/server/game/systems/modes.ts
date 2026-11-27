@@ -10,7 +10,7 @@
 // 접속이 끊기면 들판의 대역은 그 사람 자신으로 돌아오고(자동 사냥이 켜져 있으면 틀의 자리 비움 사냥이 이어 간다), 뒤에서 잇던 회차는 닫힌다(단계의 오프라인 진행이 맡는다).
 // 저장: 캐릭터의 ext 'mode' ({ id }: 처음 모드와 같으면 적지 않는다). 개인 상태 'mode'(ModeMe), 'modeSide'.
 import { AUTO, AWAY, pickPotion, pickSkill, shouldRest } from '../../../shared/auto';
-import { ATTACK_CD, COMBAT, ECON_HUNT, STAGE_RULES, classOf, isItemId, isSkillId, itemDef, MODE_RULE_VIEW, modeDef, modeList, POTION_CD, RESPAWN_S, skillDef, startMode, type FieldSide, type ModeDef, type ModeMe, type ModeSideMe, type SideGot, type StageSide } from '../../../shared/defs';
+import { ATTACK_CD, COMBAT, ECON_HUNT, STAGE_RULES, classOf, isItemId, isSkillId, itemDef, MODE_RULE_VIEW, modeDef, modeList, POTION_CD, RESPAWN_S, skillDef, startMode, backWorth, type FieldSide, type ModeBack, type ModeDef, type ModeMe, type ModeSideMe, type SideGot, type StageSide } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -23,9 +23,13 @@ const ri = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo 
 const noGot = (): SideGot => ({ gold: 0, sparks: 0, exp: 0 });
 
 /** 들판의 대역 하나 */
-interface Stand { e: Ent; at: { x: number; z: number }; state: FieldSide['state']; got: SideGot; kills: number; resting: boolean }
-/** 뒤에서 이어 가는 단계의 기록 */
-interface StageLog { cleared: number; got: SideGot }
+interface Stand { e: Ent; at: { x: number; z: number }; state: FieldSide['state']; got: SideGot; kills: number; resting: boolean; t0: number; pots: number; safe: number; down: number }
+/** 뒤에서 이어 가는 단계의 기록 (돌아옴 요약: 떠난 때, 처음·마지막에 깬 단계, 떠날 때의 별의 합) */
+interface StageLog { cleared: number; got: SideGot; t0: number; from: string; to: string; stars0: number }
+/** 별의 합 (단계마다 딴 별의 비트를 센다) */
+const starSum = (p: Ent): number => Object.values(p.stage.stars ?? {}).reduce((s, m) => { let n = 0; for (let x = m; x; x &= x - 1) n++; return s + n; }, 0);
+/** 돌아옴 요약의 최소 초 (MODE_RULES.backCard. 꺼져 있으면 -1) */
+const BACK_MIN = (() => { const b = MODE_RULE_VIEW.backCard; return !b ? -1 : typeof b === 'object' ? Math.max(0, b.minS ?? 10) : 10; })();
 
 export class Modes {
   private readonly stands = new Map<number, Stand>();
@@ -82,7 +86,7 @@ export class Modes {
       const l = this.logs.get(p.id);
       if (l && (why === 'stage' || why === ECON_HUNT.inst) && g.stages.runOf(p)?.bg) l.got[cur] += d;
     });
-    g.on('stageCleared', (p) => { const l = this.logs.get(p.id); if (l && g.stages.runOf(p)?.bg) l.cleared++; });
+    g.on('stageCleared', (p, id) => { const l = this.logs.get(p.id); if (l && g.stages.runOf(p)?.bg) { l.cleared++; if (!l.from) l.from = id; l.to = id; } });
     g.on('monsterKilled', (m, hitters) => { for (const p of hitters) { const s = this.stands.get(p.id); if (s && s.e.layer === m.layer) s.kills++; } });
     // 대역은 그 사람의 겉모습을 따른다 (단계에서 변신하거나 풀면 들판의 대역도)
     // 화면은 놓일 때의 겉모습으로 대역을 그리므로, 새 겉모습의 대역으로 바꿔 놓는다 (자리·체력·대상·쿨다운은 그대로)
@@ -109,6 +113,17 @@ export class Modes {
     return { field, stage };
   }
 
+  /** 그 모드로 돌아갈 때의 요약 (그쪽에 대역·뒤에서 잇던 기록이 없으면 undefined) */
+  private backOf(p: Ent, to: ModeDef): ModeBack | undefined {
+    const now = this.g.clock;
+    if (to.kind === 'field') {
+      const s = this.stands.get(p.id);
+      return s ? { id: to.id, side: 'field', s: Math.round(now - s.t0), kills: s.kills, pots: s.pots, safe: s.safe, down: s.down, got: { ...s.got } } : undefined;
+    }
+    const l = this.logs.get(p.id);
+    return l ? { id: to.id, side: 'stage', s: Math.round(now - l.t0), n: l.cleared, from: l.from, to: l.to, stars: Math.max(0, starSum(p) - l.stars0), got: { ...l.got } } : undefined;
+  }
+
   // ---------- 바꾸기 ----------
   /** 그 모드로 바꾼다 (싸우는 중에도). 대기(switchCdS) 안이면 modeWait. 바꿨으면 true */
   set(p: Ent, id: string): boolean {
@@ -116,6 +131,8 @@ export class Modes {
     if (!to || !from || to.id === from.id || p.bot || p.kind !== 'p') return false;
     if (g.clock < p.modeCd) { g.notify(p, 'modeWait', Math.ceil(p.modeCd - g.clock)); return false; }
     if (from.kind !== to.kind) {
+      // 돌아옴 요약: 가려는 쪽에서 그동안 일어난 일 (바꾸기 전에 셈한다: 들판의 대역은 거둬지고 단계의 기록은 지워진다)
+      if (BACK_MIN >= 0) { const b = this.backOf(p, to); if (b && backWorth(b, BACK_MIN)) g.out.push({ id: p.id, msg: { t: 'modeBack', ...b } }); }
       if (from.kind === 'stage') this.leaveStage(p); else this.leaveField(p);
       if (to.kind === 'stage') this.enterStage(p); else this.enterField(p);
     }
@@ -136,7 +153,7 @@ export class Modes {
     e.data.owner = p.id;
     e.hp = p.hp; e.maxHp = p.maxHp; e.targetId = p.targetId; e.cds = [...p.cds]; e.atkCd = 0; e.wait = 0;
     if (p.look) g.setLook(e, p.look);
-    this.stands.set(p.id, { e, at: { x: p.x, z: p.z }, state: 'hunt', got: noGot(), kills: 0, resting: false });
+    this.stands.set(p.id, { e, at: { x: p.x, z: p.z }, state: 'hunt', got: noGot(), kills: 0, resting: false, t0: g.clock, pots: 0, safe: 0, down: 0 });
     // 그 사람과 싸우던 몬스터는 대역과 싸운다 (사람이 층을 떠나 놓치고 집으로 돌아가며 다 회복하지 않게)
     for (const m of g.ents.values()) if (m.kind === 'm' && m.targetId === p.id) m.targetId = e.id;
     p.targetId = 0;
@@ -176,7 +193,7 @@ export class Modes {
     const back = r.back;
     if (MODE_RULE_VIEW.stageStay && r.state !== 'lobby' && !r.bg) {
       g.stages.detach(p);
-      this.logs.set(p.id, { cleared: 0, got: noGot() });
+      this.logs.set(p.id, { cleared: 0, got: noGot(), t0: g.clock, from: '', to: '', stars0: starSum(p) });
     } else g.stages.leave(p, false);
     if (g.stages.runOf(p)?.bg) {
       // 회차는 남았다: 사람만 들판으로 (대역이 있으면 enterField가 다시 옮긴다)
@@ -228,7 +245,7 @@ export class Modes {
     g.emit(['d', e.id]);
     for (const m of g.ents.values()) if (m.targetId === e.id) m.targetId = 0;
     if (!o || !s) return;
-    s.state = 'down';
+    s.state = 'down'; s.down++;
     if (g.away.safetyOf(o)?.stopOnDeath) { o.auto = false; o.unsaved = true; }
     g.notify(o, 'modeStandDown');
   }
@@ -273,13 +290,13 @@ export class Modes {
       const amount = Math.round(Math.min(itemDef(id).heal ?? 0, e.maxHp - e.hp));
       if (amount <= 0) return;
       g.bag.takeItem(o, id, 1, 'use');
-      e.hp += amount; o.itemCd = POTION_CD;
+      e.hp += amount; o.itemCd = POTION_CD; s.pots++;
       g.emit(['heal', e.id, amount]);
     };
     if (g.away.safety) {
       const done = g.away.guard(o, e, drink, g.stages.fieldRespawn(o));
-      if (done === 'retreat') { s.state = 'retreat'; return true; }
-      if (done === 'stop') { s.state = 'stop'; return true; }
+      if (done === 'retreat') { if (s.state !== 'retreat') s.safe++; s.state = 'retreat'; return true; }
+      if (done === 'stop') { if (s.state !== 'stop') s.safe++; s.state = 'stop'; return true; }
       if (done === 'potion') return false;
     } else { const id = o.itemCd <= 0 ? pickPotion(ratio, items) : null; if (id) drink(id); }
     s.resting = shouldRest(ratio, items, s.resting);

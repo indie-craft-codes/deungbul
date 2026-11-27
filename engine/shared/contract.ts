@@ -26,6 +26,7 @@ import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
 import type { OddsRules } from './defs/odds';
 import type { ModeRules } from './defs/modes';
+import type { StaminaRules } from './defs/stamina';
 import type { AchieveDef, CodexDef, ComebackRules, CouponRules, EventDef, GoodsDef, MailRules, SeasonRules } from './defs/livecontent';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
@@ -257,6 +258,11 @@ export interface ModesContent {
   MODE_RULES: ModeRules;
 }
 
+/** 스태미나 (stamina 모듈, 묶음 D): 이름·상한·회복 간격·쓰는 곳·돌려주기·물약 (engine/shared/defs/stamina.ts). 적지 않거나 enabled가 거짓이면 없다 */
+export interface StaminaContent {
+  STAMINA_RULES: StaminaRules;
+}
+
 /** 라이브 콘텐츠 (묶음 6: engine/shared/defs/livecontent.ts). 모두 선택이고 적지 않으면 지금과 같다 */
 export interface LiveContent {
   /** 상품: 가격 재화·종류, 주는 것(묶음), 사람마다의 한정과 갱신 주기, 서버 전체의 수량, 기간, 이벤트 상점 (items 모듈). 비어 있으면 상품이 없다 */
@@ -278,7 +284,7 @@ export interface LiveContent {
 }
 
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & OddsContent & ModesContent & LiveContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & OddsContent & ModesContent & StaminaContent & LiveContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

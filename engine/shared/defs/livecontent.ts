@@ -13,7 +13,7 @@ import type { Reward } from './growth';
 import type { Period } from './live';
 
 /** 상품의 값과 이벤트 재화가 쓰는 재화 (지갑의 칸) */
-export type LiveCur = Exclude<keyof Reward, 'exp' | 'gear' | 'items'>;
+export type LiveCur = Exclude<keyof Reward, 'exp' | 'gear' | 'items' | 'stamina'>;
 
 /** 상품 하나 (GOODS의 값). id는 GOODS의 키 */
 export interface GoodsDef {

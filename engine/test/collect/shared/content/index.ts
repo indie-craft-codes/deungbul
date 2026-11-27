@@ -222,12 +222,16 @@ export const BANNERS: Readonly<Record<string, BannerDef>> = {
     pity: { after: 60, rarity: 2 }, tenAtLeast: 1,
     pickup: { hero: 'starseer', share: 0.5 }, fiftyFifty: true, pityGroup: 'limited',
     start: LIMITED_FROM, end: LIMITED_FROM + 14 * DAY,
+    // 교환 상점 (묶음 D): 뽑을 때마다 표식 1, 60개로 픽업 하나. 같은 천장 무리의 다음 배너로 이어진다
+    exchange: { per: 1, cost: 60, end: 'keep' },
   },
   stormcall: {
     name: 'bannerStormcall', cur: 'sparks', one: 120, ten: 1080, pool: LIMITED_POOL,
     pity: { after: 60, rarity: 2 }, tenAtLeast: 1,
     pickup: { hero: 'stormblade', share: 0.5 }, fiftyFifty: true, pityGroup: 'limited',
     start: LIMITED_FROM + 14 * DAY, end: LIMITED_FROM + 28 * DAY,
+    // 무리의 마지막 배너: 끝나면 남은 표식 하나가 별가루(두 번째 재화) 10개
+    exchange: { per: 1, cost: 60, end: { cur: 'sparks', rate: 10 } },
   },
 };
 /** 영웅 선택권: 전설 둘 가운데 하나를 고른다 */

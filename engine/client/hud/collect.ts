@@ -5,7 +5,7 @@
 // 기간이 있는 배너는 서버가 열려 있다고 보낸 것(GachaMe.open)만 보인다. 영웅 선택권(GACHA_RULES.select)이 있으면 뽑기 탭 끝에 고르는 줄이 붙는다.
 // 게임이 더 할 수 있는 것: 뽑기 결과를 받기(onGachaResult: 연출, 소리), 내 영웅·편성 읽기(myHeroes, mySquad).
 import * as THREE from 'three';
-import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
+import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, pityKey, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
 import { rarityHex, tintRarity } from './rarity';
 import { onMsg } from '../bus';
 import { registerKind } from '../kinds';
@@ -24,6 +24,7 @@ import { addNotices } from './notify';
 import { confirmSpend } from './confirm';
 import { drawCardList, redrawCard, type CardData } from './cards';
 import { gachaShowMoney, redrawGachaShow, setShowPic, startGachaShow } from './gachashow';
+import { bindExchange, hasExchange, markText, openExchange, redrawExchange } from './exchange';
 
 /** 서버가 보낸 내 영웅·뽑기·편성 (개인 상태) */
 let heroes: HeroesMe = {};
@@ -138,11 +139,17 @@ function drawGacha(list: HTMLElement): void {
     // 이 배너의 재화를 얼마나 가졌는가 (메뉴 머리의 재화는 골드뿐이다)
     box.append(el('gleft ghave', loc.fmt.gachaHave(have, b.cur)), btns);
     const st = bannerPity(id, gacha);
-    if (b.pity) box.append(el('note', loc.fmt.gachaPity(rarityName(b.pity.rarity), b.pity.after, st.count)));
+    // 천장: 이름이 있는 표식(메아리 계약 '울림 표식 n/40')이면 그 한 줄, 아니면 예전의 글
+    if (b.pity) box.append(el('note', b.markName ? `${markText(id)} · ${loc.fmt.gxPityRule(rarityName(b.pity.rarity), b.pity.after)}` : loc.fmt.gachaPity(rarityName(b.pity.rarity), b.pity.after, st.count)));
+    if (b.exchange) box.append(el('note', loc.fmt.gxMeter(b.exchange.name ? uiText.get(b.exchange.name) : t('gxMark'), gacha.pts?.[pityKey(id)] ?? 0, b.exchange.cost)));
     if (b.fiftyFifty && b.pickup) box.append(el('note', loc.fmt.gachaSureNow(st.sure, heroName(b.pickup.hero))));
     if (st.mates.length) box.append(el('note', loc.fmt.gachaGroup(st.mates.map(bannerName).join(', '))));
     const open = ratesOpen.has(id);
-    box.append(button(t(open ? 'gachaRatesHide' : 'gachaRates'), () => { if (open) ratesOpen.delete(id); else ratesOpen.add(id); redraw(); }));
+    const more = el('btns');
+    more.append(button(t(open ? 'gachaRatesHide' : 'gachaRates'), () => { if (open) ratesOpen.delete(id); else ratesOpen.add(id); redraw(); }));
+    // 교환 상점 (묶음 D): 천장·교환 표식·선택권을 한 창에
+    if (hasExchange(id)) { const x = button(t('gxOpen'), () => openExchange(id)); x.id = `gxOpen-${id}`; more.append(x); }
+    box.append(more);
     if (open) drawRates(box, id);
     list.append(box);
   }
@@ -247,11 +254,13 @@ export function initRoster(): void {
 export function initGacha(): void {
   // 알림 점: 열린 배너 가운데 1번 뽑을 재화가 있다 (지금 할 수 있는 것)
   addMenuTab({ id: 'gacha', label: () => t('tabGacha'), draw: drawGacha, sig: () => [gacha, [...ratesOpen], S.me?.gold, S.me?.sparks], mod: 'gacha', dot: () => openBanners(gacha).some((id) => money(BANNER_TABLE[id].cur) >= BANNER_TABLE[id].one) }, 'heroes');
-  onMsg('me', (m) => { if (m.k === 'gacha') { gacha = m.s as GachaMe; redraw(true); } });
+  onMsg('me', (m) => { if (m.k === 'gacha') { gacha = m.s as GachaMe; redraw(true); redrawExchange(); } else if (m.k === 'heroes') redrawExchange(); });
   onMsg('gacha', (m) => showPull(m.b, m.got));
+  bindExchange({ gacha: () => gacha, heroes: () => heroes });
+  onLangChange(redrawExchange);
   onLangChange(redrawGachaShow);
   onMsg('stat', gachaShowMoney);
-  addNotices({ feed: ['bannerClosed', 'heroPicked', 'itemShort', 'costShort'] });
+  addNotices({ feed: ['bannerClosed', 'heroPicked', 'itemShort', 'costShort', 'exchanged', 'marksEnd'], fail: ['exchangeNo'] });
 }
 
 export function initSquad(): void {

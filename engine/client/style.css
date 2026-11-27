@@ -1489,3 +1489,35 @@ button .why.cmdWhy, button:disabled .why.cmdWhy { color: var(--c-bad); white-spa
 :root[data-still="1"] #opsRoll span { animation: none; padding: 0 8px; white-space: normal; }
 :root[data-still="1"] #opsRoll { white-space: normal; }
 .cel[data-kind="reward"] .celBig { font-size: var(--fs-xl); }
+
+/* ---------- 묶음 D: 스태미나·교환 상점·돌아옴 요약·튜토리얼 키트 (토큰만) ---------- */
+.curchip.cur-stamina { color: var(--c-info); }
+.curchip.curtap { cursor: pointer; }
+.curchip.curtap::before { content: ''; position: absolute; inset: -8px -2px; }
+.curchip.curtap { position: relative; }
+.stcost { margin: 0; font-size: var(--fs-sm); color: var(--c-text-2); }
+.stcost.low { color: var(--c-bad); font-weight: 700; }
+.staPop .staInfo { margin: 0; }
+.staPop #staPotion small, .gxPop .gxRow button small { display: block; font-size: var(--fs-xs); font-weight: 400; opacity: .85; }
+.gxPop { gap: var(--sp-2); }
+.gxPop .gxSec { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2) 0; border-top: 1px solid var(--c-line); }
+.gxPop .gxMeter { font-size: var(--fs-lg); font-weight: 700; color: var(--c-title); }
+.gxPop .gxRow { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.gxPop .gxWho { display: flex; flex-direction: column; min-width: 0; }
+.gxPop .gxOdds { font-size: var(--fs-xs); }
+.gsMark { margin: 0; text-align: center; font-size: var(--fs-sm); color: var(--c-text-2); }
+.celCard.celLine .celBig { font-size: var(--fs-lg); line-height: 1.35; }
+.hk-dockbtn .hk-why { display: block; font-size: var(--fs-xs); font-weight: 400; color: var(--c-text-2); }
+.hk-dockbtn[hidden] { display: none; }
+#menuTabs button.locked { opacity: .6; }
+#tut .tutName { display: flex; flex-direction: column; gap: var(--sp-2); }
+#tut .tutName[hidden] { display: none; }
+#tut .tutName input { font-size: 16px; min-height: var(--tap); padding: 0 var(--sp-2); border-radius: var(--r-md); border: 1px solid var(--c-line-strong); background: var(--c-sunk); color: var(--c-text); }
+#tut .tutNameFoot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+/* 창 안이 스크롤되고 창 밖의 3D가 눌리지 않게: 폰의 오른쪽 창(상점·등탑 같은 게임의 창)은 구역의 높이 안에서 스스로 스크롤한다 */
+body[data-lay="portrait"] .zone .panel, body[data-lay="landscape"] .zone .panel { overscroll-behavior: contain; }
+#tut.tutForm { background: var(--c-surface); }
+/* 홈의 작은 바로 가기 줄: 이벤트 배너가 없으면(점진 공개로 아직 숨김) 왼쪽 열이 좁아 한 칸씩 */
+.homekit:not(.hk-hasev) .hk-banners { grid-template-columns: minmax(0, 1fr); }
+/* 전투 화면의 위 띠·초상 칸은 HUD 층 밖(문서 끝)에 있어 메뉴·가방·지도(HUD 층 안)보다 위에 그려졌다: 그 창이 열려 있으면 감춘다 (묶음 D 해 보기에서 메뉴의 탭이 가려짐) */
+body:has(#menu:not([hidden]), #bag:not([hidden]), #wmap:not([hidden])) .btlTop, body:has(#menu:not([hidden]), #bag:not([hidden]), #wmap:not([hidden])) .btlSquad { visibility: hidden; }

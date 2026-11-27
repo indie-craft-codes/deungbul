@@ -728,6 +728,35 @@
   "Members 1 / undefined",
   "Members 2 / undefined"
  ],
+ "fmt.gxCost": [
+  "a0475c97db5822e3",
+  "One for NaN undefined",
+  "One for NaN 0",
+  "One for NaN 1",
+  "One for NaN 2"
+ ],
+ "fmt.gxEnd": "Leftover marks carry over to the next banner.",
+ "fmt.gxMeter": [
+  "b8fcf4c97f95ec5f",
+  "undefined NaN / NaN",
+  "0 NaN / NaN",
+  "1 NaN / NaN",
+  "2 NaN / NaN"
+ ],
+ "fmt.gxPityRule": [
+  "08738448476eafe1",
+  "Your undefinedth summon is a guaranteed undefined (the count restarts when one appears).",
+  "Your undefinedth summon is a guaranteed 0 (the count restarts when one appears).",
+  "Your undefinedth summon is a guaranteed 1 (the count restarts when one appears).",
+  "Your undefinedth summon is a guaranteed 2 (the count restarts when one appears)."
+ ],
+ "fmt.gxShort": [
+  "1c679bd442a5e2be",
+  "NaN more needed",
+  "0 more needed",
+  "1 more needed",
+  "2 more needed"
+ ],
  "fmt.have": [
   "ac63b0456ba56b66",
   "undefined / undefined",
@@ -1205,6 +1234,69 @@
   "쇳조각: dropped by 고블린, 잊힌 병사",
   "Iron Scrap: dropped by Goblin",
   "idle: dropped by 35"
+ ],
+ "fmt.mbAway": [
+  "0896a9deabb20519",
+  "over undefineds",
+  "over 0s",
+  "over 1s",
+  "over 2s"
+ ],
+ "fmt.mbDown": [
+  "13dab8f77187ff75",
+  "fell ×NaN",
+  "fell ×0",
+  "fell ×1",
+  "fell ×2"
+ ],
+ "fmt.mbGot": [
+  "a0009389bf1366e9",
+  "Sparks +NaN",
+  "Sparks +0",
+  "Sparks +1",
+  "Sparks +3"
+ ],
+ "fmt.mbKills": [
+  "73f2ee85bc81673b",
+  "NaN defeated",
+  "0 defeated",
+  "1 defeated",
+  "2 defeated"
+ ],
+ "fmt.mbPots": [
+  "c09b851cd79119fc",
+  "NaN potions",
+  "0 potions",
+  "1 potion",
+  "2 potions"
+ ],
+ "fmt.mbSafe": [
+  "35c5a7b025e5027e",
+  "safety ×NaN",
+  "safety ×0",
+  "safety ×1",
+  "safety ×2"
+ ],
+ "fmt.mbStages": [
+  "0ac4b1f24ea9e3ec",
+  "cleared undefined",
+  "cleared 0–undefined",
+  "cleared 1–undefined",
+  "cleared 2–undefined"
+ ],
+ "fmt.mbStars": [
+  "5076749db033db82",
+  "stars +NaN",
+  "stars +0",
+  "stars +1",
+  "stars +2"
+ ],
+ "fmt.mbTitle": [
+  "6017642c850cf0f4",
+  "Meanwhile in undefined",
+  "Meanwhile in 0",
+  "Meanwhile in 1",
+  "Meanwhile in 2"
  ],
  "fmt.modeTo": [
   "54f1ee3aac8a073a",
@@ -1788,6 +1880,47 @@
   "1 · undefined",
   "2 · undefined"
  ],
+ "fmt.staChip": [
+  "fc6ad8d738396810",
+  "NaN/NaN",
+  "0/NaN",
+  "1/NaN",
+  "2/NaN"
+ ],
+ "fmt.staCost": [
+  "37023d0730b4ee8b",
+  "Costs NaN undefined",
+  "Costs NaN 0",
+  "Costs NaN 1",
+  "Costs NaN 2"
+ ],
+ "fmt.staFull": [
+  "f24c13cc39411a59",
+  "",
+  "Full in 0m",
+  "Full in 342h 56m"
+ ],
+ "fmt.staNext": [
+  "332ff1cb44551480",
+  "Full",
+  "Next +1 in 0:01",
+  "Next +1 in 0:02",
+  "Next +1 in 0:05"
+ ],
+ "fmt.staPotionBtn": [
+  "b09fbdae6cd5c6ab",
+  "+NaN · you have NaN",
+  "+0 · you have NaN",
+  "+1 · you have NaN",
+  "+2 · you have NaN"
+ ],
+ "fmt.staShort": [
+  "587495b5d1ce7258",
+  "Not enough undefined (need NaN · have NaN)",
+  "Not enough 0 (need NaN · have NaN)",
+  "Not enough 1 (need NaN · have NaN)",
+  "Not enough 2 (need NaN · have NaN)"
+ ],
  "fmt.stageBest": [
   "c9b03c55039cd434",
   "No stage cleared yet",
@@ -2019,6 +2152,13 @@
   "Opens at level 0",
   "Opens at level 1",
   "Opens at level 2"
+ ],
+ "fmt.unlockStage": [
+  "ef9833fb126b1d86",
+  "Opens when you clear undefined",
+  "Opens when you clear 0",
+  "Opens when you clear 1",
+  "Opens when you clear 2"
  ],
  "fmt.whenBack": [
   "49bbd5d91027f3bd",
@@ -2458,6 +2598,20 @@
   "The event “0” has started. See the Event tab in the menu.",
   "The event “1” has started. See the Event tab in the menu.",
   "The event “2” has started. See the Event tab in the menu."
+ ],
+ "msg.exchangeNo": [
+  "717ba762b0a73d6e",
+  "Not enough marks.",
+  "That hero isn't on the exchange list.",
+  "shade_mira has ended: exchange is closed.",
+  "crypt_lord has ended: exchange is closed."
+ ],
+ "msg.exchanged": [
+  "685ef98f977767e1",
+  "Exchanged for undefined!",
+  "Exchanged for 0!",
+  "1: already owned, +1 shards",
+  "3: already owned, +5 shards"
  ],
  "msg.featureOff": "flagOther is paused for now. Please check the notices.",
  "msg.forgeClosed": "Bram the Smith has not returned yet.",
@@ -2903,6 +3057,13 @@
   "The price must be a whole number from 2 to 1 gold.",
   "The price must be a whole number from 2 to 2 gold."
  ],
+ "msg.marksEnd": [
+  "bacc84d8fc62f9b2",
+  "undefined ended: NaN leftover marks vanished.",
+  "0 ended: 0 leftover marks vanished.",
+  "1 ended: 1 leftover marks became 1 Sparks.",
+  "2 ended: 3 leftover marks became 4 Sparks."
+ ],
  "msg.modeOn": [
   "ebcb83112a755e00",
   "Now in undefined.",
@@ -3287,7 +3448,7 @@
   "While you were away: 2 → 3 (4 stages cleared)"
  ],
  "msg.stageBgStop": [
-  "48b3686a7007e974",
+  "0dfd1c998eab9af7",
   "Stopped after stage undefined (auto-progress is off).",
   "Stopped after stage 0 (auto-progress is off).",
   "Lost at stage 1: stage auto-progress stopped.",
@@ -3321,6 +3482,21 @@
   "Stage 0 is locked. Clear the stage before it first.",
   "Stage 1 is locked. Clear the stage before it first.",
   "Stage 2 is locked. Clear the stage before it first."
+ ],
+ "msg.staminaFull": "Your stamina can't hold any more.",
+ "msg.staminaGot": [
+  "aca192bb027113be",
+  "stamina +NaN",
+  "stamina +0",
+  "stamina +1",
+  "stamina +2"
+ ],
+ "msg.staminaShort": [
+  "6c1960cf8e388d63",
+  "Not enough stamina (need NaN · have NaN).",
+  "Not enough stamina (need 0 · have 0).",
+  "Not enough stamina (need 1 · have 1).",
+  "Not enough stamina (need 2 · have 3)."
  ],
  "msg.statNone": "No attribute points to spend. You get 3 each level.",
  "msg.statReset": "All attribute points refunded. You can spend them again.",
@@ -3802,6 +3978,13 @@
  "ui.guildNameHint": "Guild name (2–12 characters)",
  "ui.guildNoticeHint": "Guild notice",
  "ui.guildNoticeSet": "Post notice",
+ "ui.gxEmpty": "Nothing to exchange on this banner",
+ "ui.gxMark": "Exchange marks",
+ "ui.gxOdds": "Exchanging never changes summon rates. Marks build up with every summon (same rate table).",
+ "ui.gxOpen": "Exchange",
+ "ui.gxPityName": "To pity",
+ "ui.gxTitle": "Exchange shop",
+ "ui.gxTrade": "Exchange",
  "ui.helpVerb": "Give",
  "ui.heroAwakenBtn": "Awaken",
  "ui.heroAwakenDone": "Fully awakened.",
@@ -4096,6 +4279,7 @@
  "ui.setTalk": "Chat",
  "ui.setUi": "Text & panel size",
  "ui.setUiSound": "Interface sounds",
+ "ui.setUiTap": "Tap sound",
  "ui.setWhisperIn": "Receive whispers",
  "ui.shop": "Road Merchant",
  "ui.skillUpBtn": "Upgrade",
@@ -4120,6 +4304,9 @@
  "ui.stRepeat": "Each clear",
  "ui.stStars": "Star goals",
  "ui.stSweepNeedStars": "Earn every star to unlock sweeps",
+ "ui.staNoPotion": "No potions",
+ "ui.staPotion": "Use a potion",
+ "ui.staWait": "Wait",
  "ui.stageAuto": "Auto advance",
  "ui.stageBoss": "Boss",
  "ui.stageClearBig": "Stage clear!",
@@ -4133,6 +4320,7 @@
  "ui.stageWaveClear": "Wave cleared",
  "ui.stale": "A new version is available. Please refresh the page.",
  "ui.staleApp": "A new version is required. Please update the game.",
+ "ui.stamina": "Stamina",
  "ui.starAlive": "Nobody falls",
  "ui.starClear": "Clear",
  "ui.stateGot": "Claimed",
@@ -4198,6 +4386,12 @@
  "ui.titleNone": "No title worn yet.",
  "ui.titleOff": "Remove",
  "ui.titleUse": "Wear",
+ "ui.tkLockedTut": "Opens as you follow the guide",
+ "ui.tkNameLater": "Later",
+ "ui.tkNameNote": "You can change it later in Settings.",
+ "ui.tkNameOk": "Use this name",
+ "ui.tkNameRandom": "Random",
+ "ui.tkNameTitle": "Choose your name",
  "ui.toTown": "To town",
  "ui.tower": "Lamp tower",
  "ui.towerDark": "The lamp is out. Once everyone offers sparks to light it, you will rise here when you fall in this area.",

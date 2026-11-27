@@ -142,3 +142,28 @@ const pOf = (xs: readonly Odds[], h: string) => xs.find((x) => x.hero === h)?.p 
   const rows = g.ledger.rows().filter((r) => r.cur === 'item:herochoice' && r.dir === '-');
   check(rows.length === 1 && rows[0].why === 'cmd:gacha:select' && rows[0].amount === 2, '장부: 선택권은 cmd:gacha:select로 나간다');
 }
+
+// ---------- 교환 상점 (BannerDef.exchange, 묶음 D): 표식은 뽑은 수만큼, 값으로 픽업 하나, 무리로 이어지고 마지막 배너가 끝나면 재화로 ----------
+{
+  let now = FROM + DAY;
+  const g = new Game({ now: () => now, plugins: [] });
+  const p = g.players.spawn('교환', false, null, 'pk-7');
+  g.gacha.rng = seededRng(5);
+  g.wallet.add(p, 'sparks', 1e6, '');
+  const odds0 = JSON.stringify(pullOdds(BANNERS.starfall));
+  g.gacha.draw(p, 'starfall', 10); g.notices = [];
+  g.command(p, { t: 'gacha', a: 'trade', id: 'starfall', hero: 'starseer' });
+  const early = said(g, p, 'exchangeNo') && g.gacha.ptsOf(p, 'starfall') === 10;
+  for (let k = 0; k < 5; k++) g.gacha.draw(p, 'starfall', 10);
+  const shards0 = p.heroes.starseer?.shards ?? -1, had = !!p.heroes.starseer;
+  g.command(p, { t: 'gacha', a: 'trade', id: 'starfall', hero: 'ironwall' });
+  g.command(p, { t: 'gacha', a: 'trade', id: 'starfall', hero: 'starseer' });
+  const traded = g.gacha.ptsOf(p, 'starfall') === 0 && said(g, p, 'exchanged') && (had ? p.heroes.starseer.shards > shards0 : !!p.heroes.starseer);
+  g.gacha.draw(p, 'starfall', 10);
+  now = FROM + 15 * DAY; g.gacha.settle(p);
+  const kept = g.gacha.ptsOf(p, 'stormcall') === 10;
+  const save = g.players.export(p) as { ext?: { gacha?: { pts?: Record<string, number> } } };
+  now = FROM + 29 * DAY; const before = p.sparks; g.gacha.settle(p);
+  check(early && traded && kept && save.ext?.gacha?.pts?.['group:limited'] === 10 && g.gacha.ptsOf(p, 'stormcall') === 0 && p.sparks - before === 100 && said(g, p, 'marksEnd') && JSON.stringify(pullOdds(BANNERS.starfall)) === odds0,
+    '교환: 10번에 표식 10(60이 모자라 거절) → 60에 픽업과 바꿈(목록 밖 영웅은 거절) → 배너가 바뀌어도 무리의 표식은 이어지고 저장된다 → 무리의 마지막 배너가 끝나면 표식 10이 재화 100 · 확률표는 그대로');
+}
