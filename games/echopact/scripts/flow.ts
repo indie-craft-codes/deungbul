@@ -31,7 +31,8 @@ export interface FlowResult {
 }
 
 /** 원인(장부의 이름)을 시뮬레이션의 출처로 묶는다 */
-const sourceOf = (why: string): string => (why === 'stage' || why === 'huntDungeon' ? 'stage' : why === 'hunt' || why === 'huntAway' ? 'field' : why.startsWith('mail') ? 'mail' : why);
+const sourceOf = (raw: string): string => { const why = raw.replace(/:(paid|free|event|bound)$/, ''); return sourceOf2(why); };
+const sourceOf2 = (why: string): string => (why === 'stage' || why === 'huntDungeon' ? 'stage' : why === 'hunt' || why === 'huntAway' ? 'field' : why.startsWith('mail') ? 'mail' : why);
 
 export function simulate(minutes = 30, seed = 1, concurrent = true, offMin = 0): FlowResult {
   // 같은 씨앗이면 같은 흐름이 되게: 틀의 난수(피해의 폭, 몬스터의 자리, 떨어뜨리기)도 이 동안만 정해진 난수로 (끝나면 되돌린다)

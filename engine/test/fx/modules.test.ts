@@ -1,7 +1,7 @@
 // 모듈 고르기 (engine/shared/modules.ts): 같은 시험용 내용(모듈 전부를 적었다)으로 모듈을 줄여 띄우면, 뺀 모듈의 명령은 웹소켓으로 보내도 거절되고
 // 그 모듈의 칸은 저장되지도 보내지지도 않는가. 모듈을 다 쓰는 서버(대조군)에서는 같은 명령에 응답이 온다.
-import { ALL_MODULES, type ModuleId } from '../../shared/modules';
-import { hasDungeonKeys } from '../../shared/defs';
+import { ALL_MODULES, LIVE_MODULES, type ModuleId } from '../../shared/modules';
+import { GOODS, hasDungeonKeys } from '../../shared/defs';
 import type { ServerMsg } from '../../shared/protocol';
 import { Game } from '../../server/game/game';
 import { startServer } from '../../server/net/server';
@@ -10,7 +10,8 @@ import { check, connect, settle } from '../harness';
 
 /** 뺄 모듈: 사람들 사이의 것과 일일 임무·순위·던전(던전은 일일 임무에 기댄다) */
 const OFF: ModuleId[] = ['party', 'guild', 'market', 'daily', 'rank', 'dungeon'];
-const ON = ALL_MODULES.filter((m) => !OFF.includes(m));
+// 라이브 콘텐츠의 셋(이벤트·시즌·업적)은 일일 임무의 사건 셈에 기대므로 함께 뺀다
+const ON = ALL_MODULES.filter((m) => !OFF.includes(m) && !LIVE_MODULES.includes(m));
 
 /** 그 서버에 둘이 붙어 뺀 모듈의 명령을 보내고, 돌아온 메시지의 종류를 모은다 */
 async function probe(modules: readonly ModuleId[]): Promise<{ types: string[]; meta: Extract<ServerMsg, { t: 'meta' }>[]; g: Game; ext: string[] }> {
@@ -63,7 +64,8 @@ async function probe(modules: readonly ModuleId[]): Promise<{ types: string[]; m
   const playerNames = full.saves.map((s) => s.name), worldNames = full.worldSaves.map((s) => s.name).filter((n) => n !== 'sanctions');
   // 표의 칸 가운데 이 게임이 고른 모듈의 것 (팀은 RPG_MODULES에 없고, 골라도 TEAM_RULES.persist일 때만 저장한다: teams.test가 본다)
   // 던전의 열쇠(keys)는 열쇠를 쓰는 던전이 있는 게임만 저장한다 (시험용 내용의 던전은 하루 횟수만 쓴다)
-  const pickedSaves = Object.entries(MODULE_SAVES.player).filter(([n, m]) => full.has(m) && (n !== 'keys' || hasDungeonKeys()));
+  // 상품(goods)은 GOODS를 적은 게임만 저장한다 (시험용 내용에는 없다)
+  const pickedSaves = Object.entries(MODULE_SAVES.player).filter(([n, m]) => full.has(m) && (n !== 'keys' || hasDungeonKeys()) && (n !== 'goods' || Object.keys(GOODS).length > 0));
   check(!hasDungeonKeys() && !full.saves.some((s) => s.name === 'keys') && !full.personal.some((x) => x.name === 'keys') && !full.commands.has('dungeonKey'),
     '열쇠를 쓰는 던전이 없는 게임(하루 횟수만)에는 열쇠의 저장 칸·개인 상태·명령이 없다 (등불지기의 던전과 같다)');
   check(['hero', 'gacha', 'squad', 'stage'].every((c) => !full.commands.has(c)) && !full.kinds.has('hero') && !full.saves.some((s) => ['roster', 'gacha', 'squad', 'stages'].includes(s.name)),

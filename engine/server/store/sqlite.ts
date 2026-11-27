@@ -5,6 +5,7 @@ import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow,
 import type { DrawQuery, OddsStore, OddsVersionRow } from './types';
 import type { DrawRow, OddsHistoryRow, OddsPlanRow, OddsTableDef } from '../../shared/defs/odds';
 import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
+import type { CouponRow, CouponStore } from './types';
 
 /**
  * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
@@ -17,6 +18,7 @@ import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
  *         번호는 목록에서의 자리다 (다른 가지의 단계와 합치면 번호가 바뀔 수 있어 여기 적지 않는다)
  *   (끝) 확률과 재화의 투명성: 확률표의 버전(odds_tables)·변경 이력(odds_history)·사전 공지(odds_plans), 추첨 기록(draws: owner 사람·char 캐릭터, 표와 버전) (engine/server/game/systems/odds.ts).
  *        다른 가지와 합칠 때 번호가 바뀔 수 있어 번호를 적지 않는다: 시험은 SCHEMA.length로 본다
+ *   (끝) 라이브 콘텐츠: 쿠폰(coupons: 코드 → 정의), 쓴 기록(coupon_uses: 코드와 사람(owner 저장 키)이 짝으로 한 번) (engine/server/game/systems/coupon.ts)
  */
 export const SCHEMA: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
@@ -47,10 +49,13 @@ export const SCHEMA: readonly string[] = [
    CREATE TABLE IF NOT EXISTS draws (n INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, owner TEXT NOT NULL, char TEXT NOT NULL, kind TEXT NOT NULL, tbl TEXT NOT NULL, ver INTEGER NOT NULL, steps TEXT NOT NULL, got TEXT NOT NULL, cost TEXT NOT NULL);
    CREATE INDEX IF NOT EXISTS draws_owner ON draws (owner, at);
    CREATE INDEX IF NOT EXISTS draws_at ON draws (at);`,
+  `CREATE TABLE IF NOT EXISTS coupons (code TEXT PRIMARY KEY, data TEXT NOT NULL, at INTEGER NOT NULL);
+   CREATE TABLE IF NOT EXISTS coupon_uses (code TEXT NOT NULL, owner TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (code, owner));
+   CREATE INDEX IF NOT EXISTS coupon_uses_owner ON coupon_uses (owner);`,
 ];
 
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
-export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OpsStore, OddsStore {
+export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OpsStore, OddsStore, CouponStore {
   private db: DatabaseSync;
   readonly file: string;
   /** 지금 열린 묶음의 깊이 (transaction의 SAVEPOINT 이름에 쓴다) */
@@ -346,6 +351,18 @@ export class SqliteStore implements Store, EconStore, LiveStore, WebStore, Socia
   }
   pruneDraws(before: number): number { return Number(this.db.prepare('DELETE FROM draws WHERE at < ?').run(before).changes); }
   forgetDraws(owner: string): number { return Number(this.db.prepare("UPDATE draws SET owner = '-', char = '-' WHERE owner = ? OR char = ?").run(owner, owner).changes); }
+  // ---- 라이브 콘텐츠: 쿠폰 ----
+  coupons(): CouponRow[] {
+    const used = new Map(this.db.prepare('SELECT code, COUNT(*) AS n FROM coupon_uses GROUP BY code').all().map((r) => [String(r.code), Number(r.n)]));
+    return this.db.prepare('SELECT code, data FROM coupons ORDER BY code').all().map((r) => { const d = this.parse<CouponRow>(r.data); return d ? { ...d, code: String(r.code), used: used.get(String(r.code)) ?? 0 } : null; }).filter((r): r is CouponRow => r !== null);
+  }
+  putCoupon(code: string, row: CouponRow | null): void {
+    if (!row) { this.db.prepare('DELETE FROM coupons WHERE code = ?').run(code); return; }
+    this.db.prepare('INSERT INTO coupons (code, data, at) VALUES (?, ?, ?) ON CONFLICT(code) DO UPDATE SET data = excluded.data, at = excluded.at').run(code, JSON.stringify(row), row.at);
+  }
+  useCoupon(code: string, owner: string, at: number): boolean { return Number(this.db.prepare('INSERT OR IGNORE INTO coupon_uses (code, owner, at) VALUES (?, ?, ?)').run(code, owner, at).changes) === 1; }
+  couponUsesOf(owner: string): string[] { return this.db.prepare('SELECT code FROM coupon_uses WHERE owner = ? ORDER BY at').all(owner).map((r) => String(r.code)); }
+  forgetCouponUses(owner: string): number { return Number(this.db.prepare('DELETE FROM coupon_uses WHERE owner = ?').run(owner).changes); }
   close(): void { this.db.close(); }
 }
 

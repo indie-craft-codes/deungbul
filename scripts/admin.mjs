@@ -72,11 +72,18 @@ const HELP = `쓰는 법: npm run admin -- [게임] <명령> [인자 …]
   ledger [일수] [이름]          장부: 통로 밖의 재화 변화(other·tick)가 누구에게서 났는가와 날짜별 줄
   suspects [수]                봇·매크로 의심 점수 (보기만 한다)
   alerts [test]                경보 규칙과 상태 / 웹훅에 시험 알림 (ALERT_WEBHOOK을 준 서버만 보낸다)
-  mail 이름|--all [--days n] [--gold n] [--sparks n] [--exp n] [--item id:n]   운영 보상 우편
+  mail 이름|--all [--days n] [--lv a-b] [--expire 일] [--gold n] [--sparks n] [--exp n] [--item id:n]   운영 보상 우편 (--all 전체, --days·--lv 조건부, --expire n일 뒤 사라짐)
   rollback list 이름 | preview 이름 백업|latest | apply 이름 백업 확인코드 | stash 이름 | undo 이름 보관번호 확인코드
                                계정 단위 롤백 (자동 백업에서 그 사람만. 미리보기 → 확인 코드 → 실행)
   tickets [open|answered|closed|all] [수] | ticket 번호 | answer 번호 답글 | tclose 번호 [메모] | treopen 번호   문의 (support 모듈)
   metrics                      지표 값 (/metrics와 같은 것)
+라이브 콘텐츠 (묶음 6: event·season·coupon 모듈, 상품 GOODS):
+  events                       기간 이벤트(열림·예정·끝, 기간)와 상품(한정·남은 수량). 기간은 원격 설정으로: set EVENTS.<id>.to <UTC ms>
+  season                       지금 시즌(열쇠·몇째·끝나는 때)과 보상 트랙
+  coupon [list] | show 코드      쿠폰 목록과 쓰인 수
+  coupon add 코드 [--gold n] [--sparks n] [--exp n] [--item id:n] [--uses n] [--from 시각] [--to 시각 | --for 기간] [--note 글]
+                               쿠폰을 만든다 (영문 대문자·숫자, 금칙어 안 됨, 사람마다 한 번, 보상은 우편으로)
+  coupon del 코드               쿠폰을 지운다 (쓴 기록은 남는다)
 역할: admin.token(전체), admin-ops.token(운영), admin-view.token(보기 전용). CLI는 전체 토큰을 쓴다. ADMIN_TOKEN_FILE로 다른 토큰을 줄 수 있다`;
 
 const root = path.resolve(import.meta.dirname, '..');

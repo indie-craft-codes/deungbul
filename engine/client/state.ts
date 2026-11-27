@@ -81,6 +81,8 @@ export const S = {
   guildInvite: null as { name: string; from: string } | null,
   /** 엔티티별 길드 이름 (이름표에 붙인다) */
   gtags: new Map<number, string>(),
+  /** 엔티티별 칭호 (업적 id: achieve 모듈. 이름표의 앞에 붙인다) */
+  titles: new Map<number, string>(),
   /** 마지막으로 받은 순위표 */
   rank: { list: [] as RankRow[], me: -1 },
   /** 들어가 있는 던전 (id가 빈 문자열이면 밖). at은 이 상태를 받은 시각 */

@@ -2665,3 +2665,118 @@ export const MORPH_RULES: MorphRules = { durationS: 0, cooldownS: 10, noFightS: 
 - 두 게임이 한 서버의 두 모드다. 진짜 두 서버(계정이 같은 사람을 알아보고 소유를 함께 읽기)는 계정과 계정 공용 저장소가 있어야 한다.
 - 모드는 들판 하나·단계 하나의 짝이 바탕이다(셋 이상도 적을 수 있지만 '게임 바꾸기'는 차례로 다음). 던전·판(rooms)의 자리 종류는 없다.
 - 대역은 파티·필드 보스·던전에 들지 않는다. 사람 카드(귓말·친구)가 뜨지 않는다.
+
+## 22. 라이브 콘텐츠: 상품, 기간 이벤트, 시즌과 무료 보상 트랙, 우편 만료·일괄 발송, 업적·칭호, 쿠폰·복귀 보상, 도감
+
+[genre-features.md](genre-features.md) 5.6절의 묶음 6. 모두 켜고 끄는 칸이다: 내용에 적지 않거나 모듈을 고르지 않으면 지금과 같다(`RPG_MODULES`에도 들지 않는다: `LIVE_MODULES`). 모양은 `engine/shared/defs/livecontent.ts`, 본보기는 메아리 계약(`games/echopact/shared/content/index.ts`의 '라이브 콘텐츠' 절, 수치는 [proof-echopact.md](proof-echopact.md) '라이브 콘텐츠').
+
+| 무엇 | 내용의 칸 | 모듈 | 서버 | 화면 |
+|---|---|---|---|---|
+| 상품(상점의 일반화) | `GOODS` | `items`(칸을 적으면) | `systems/goods.ts` (`g.goods`) | 메뉴 '상점' 탭, 상인 창의 '특별 상품', 이벤트 탭의 상점 |
+| 기간 이벤트 | `EVENTS` | `event` (daily·mail·economy) | `systems/event.ts` (`g.event`) | 메뉴 '이벤트' 탭 |
+| 시즌과 무료 보상 트랙 | `SEASON` | `season` (daily·mail·economy) | `systems/season.ts` (`g.season`) | 메뉴 '시즌' 탭 |
+| 업적·칭호 | `ACHIEVES` | `achieve` (daily·mail) | `systems/achieve.ts` (`g.achieve`) | 메뉴 '업적' 탭, 이름표 앞의 칭호 |
+| 도감 | `CODEX` | `codex` (mail) | `systems/codex.ts` (`g.codex`) | 메뉴 '도감' 탭 |
+| 쿠폰·복귀 보상 | `COUPON`, `COMEBACK` | `coupon` (mail) | `systems/coupon.ts` (`g.coupon`), DB `coupons`·`coupon_uses` | 우편 탭 머리의 쿠폰 칸 |
+| 우편 만료 | `MAIL_RULES` | `mail` | `systems/mail.ts` | 우편 줄의 '…뒤 사라짐' |
+
+화면 탭의 id는 `goods`·`event`·`season`·`achieve`·`codex`다: `setMenuTabs`(또는 `MODE_RULES.list[].tabs`)에 넣어야 보인다. 켜질 때 `checkLiveContent`가 표를 살핀다(모르는 이벤트를 가리키는 상품, 이벤트 종류가 없는 재화, 겹치는 이벤트 재화, 깨진 수: 서버가 뜨지 않는다).
+
+### 사건의 셈 하나 (`counted`)
+
+이벤트 임무·시즌 점수·업적은 **일일 임무와 같은 사건**을 센다: `g.daily.add(p, 종류, n)`이 일일 임무를 센 뒤 사건 `counted(p, 종류, n)`을 알리고, 세 모듈이 그것을 듣는다. 틀이 세는 종류는 `kill`(처치), `enhance`(강화), `buy`(상품을 샀다), 그 밖은 게임이 `g.daily.add`로 센다(메아리 계약: `stage`·`pull`·`morph`). 듣는 것이 없으면 아무 일도 없다(등불지기는 그대로).
+
+### 상품 `GOODS`
+
+```ts
+export const GOODS: Readonly<Record<string, GoodsDef>> = {
+  dayPack: { name: 'gDayPack', price: { cur: 'gold', n: 150 }, give: { items: { tonic: 2 }, sparks: 20 }, limit: { n: 1, per: 'day' } },   // 묶음, 하루 한 번
+  wellTonic: { name: 'gWellTonic', shop: 'npc', price: { cur: 'gold', n: 40 }, give: { items: { tonic: 5 } }, stock: 100 },               // 상인 곁에서, 서버 전체 100개
+  festShards: { name: 'gFestShards', event: 'echofest', price: { cur: 'sparks', n: 120, kind: 'event' }, give: { sparks: 100 }, limit: { n: 3 } }, // 이벤트 상점
+};
+```
+
+- `price.kind`를 주면 그 종류의 몫으로만 치른다(지갑 `g.wallet.takeKind`). `give`는 재화(바로)와 아이템(가방: 다 들어가지 않으면 값을 치르기 전에 막는다), `hero`(영웅 하나). 장비는 줄 수 없다(켜질 때 오류).
+- `limit { n, per }`: 사람마다, `per`(`ever` 기본, `day`·`week`·`month`: 초기화 시각 `RESET`)마다 다시 찬다. 이벤트 상품의 `ever`는 그 이벤트의 회차마다. `stock`: 서버가 세고 월드와 함께 저장한다(`goods` 칸). `from`·`to`: 파는 기간.
+- 명령 `{ t: 'goods', id }`, 안내문 `goodsGot`·`goodsNo`(0 팔지 않음 1 한도 2 품절 3 재화 4 가방 5 상인 곁이 아님), 개인 상태 `goods`(`GoodsMe`), 저장 `ext.goods`. 산 것은 `counted('buy')`.
+- GOODS가 비어 있으면 시스템이 만들어지지 않는다. NPC 상점(`SHOP_STOCK`)은 어느 쪽이든 그대로다.
+
+### 기간 이벤트 `EVENTS` (`event` 모듈)
+
+```ts
+export const EVENTS = {
+  echofest: {
+    name: 'evEchofest', note: 'evEchofestNote', from: Date.UTC(2026, 11, 1), to: Date.UTC(2026, 11, 15),
+    cur: 'sparks',                                                           // 이벤트 재화 = 울림 조각의 'event' 종류 몫
+    missions: { hunt: { name: 'evmHunt', kind: 'kill', n: 40, ev: 60 }, climb: { name: 'evmClimb', kind: 'stage', n: 10, ev: 80, r: { gold: 100 } } },
+    end: { swap: { to: 'sparks', rate: 0.5 } },                              // 없으면 소멸
+  },
+};
+// 기간은 원격 설정으로 (재시작 없이): LIVE_KEYS에 'EVENTS.echofest.from'·'EVENTS.echofest.to'를 선언하고 관리자 set
+```
+
+- 기간은 시계(`g.now`)로 본다. 열리면 모두에게 `eventStart`. 임무를 채우면 `ev`(이벤트 재화)는 바로, `r`은 우편(`event`)으로.
+- **이벤트 재화**는 묶음 4의 재화 종류다: 그 재화의 `CURRENCIES[cur].kinds.spend`에 `'event'`가 있어야 한다(없으면 켜질 때 오류). 쓰는 차례에서 `event`를 뒤에 두면(`['free', 'event']`) 다른 곳(뽑기)이 이벤트 몫을 먼저 쓰지 않는다. 같은 재화를 쓰는 이벤트끼리 기간이 겹치면 켜질 때 막는다(한 주머니라서).
+- **끝**: `to`가 지나면 사람마다 한 번(접속 중이면 5초 안에, 아니면 다음 접속 때) 남은 이벤트 몫을 빼고(장부 `event:id:end:event`), `end.swap`이면 `rate`배를 `to` 재화로 우편(`eventSwap`)에. 안내문 `eventEnd [id, 사라진 양, 바꾼 양]`.
+- 저장 `ext.event`(이벤트마다 회차의 `from`, 진행, 받은 임무, 정리했는가), 개인 상태 `event`(지금 열린 것: `EventMe[]`).
+
+### 시즌 `SEASON` (`season` 모듈)
+
+```ts
+export const SEASON: SeasonRules = {
+  name: 'seasonEcho', period: { days: 14, from: Date.UTC(2026, 10, 30) },   // 또는 'week'·'month' (RESET의 경계)
+  points: { kill: 1, stage: 5, pull: 3 },
+  track: [{ pts: 50, r: { gold: 100 } }, { pts: 120, r: { sparks: 50 } }],
+  reset: { part: 0.2 },                                                     // 'all'(0부터, 기본) | 'keep'(그대로) | { part }
+  missed: 'mail',                                                           // 끝날 때 닿았지만 받지 않은 칸 (기본 mail, 'drop')
+};
+```
+
+- 명령 `{ t: 'season', i }`(i가 -1이면 받을 수 있는 칸 모두): 재화는 바로, 물건은 가방(넘치면 우편). 유료 트랙은 없다(결제 결정 뒤: genre-features 5.9).
+- 시즌이 바뀌면(5초마다 보고, 접속하지 않았던 사람은 다음 접속 때) **놓친 보상**을 우편 한 통(`season`)으로, 점수는 `reset`대로, 받은 칸은 새로. 안내문 `seasonNew [몇째, 남은 점수, 우편으로 보낸 칸 수]`. 저장 `ext.season`, 개인 상태 `season`(`SeasonMe`).
+
+### 업적·칭호 `ACHIEVES` (`achieve` 모듈)
+
+```ts
+export const ACHIEVES = { hunter: { name: 'achHunter', kind: 'kill', n: 100, r: { gold: 200 }, title: 'titleHunter' } };
+```
+
+- 종류마다 누적 수를 센다(초기화 없음). 이루면 보상 우편(`achieve`)과 `achieveGot`. `title`이 있으면 명령 `{ t: 'title', id }`(''이면 뗀다)로 단다: 엔티티의 칸 `title`(achieve 모듈의 칸), 들어올 때의 정보 `ti`, 바꾸면 모두에게 `{ t: 'title', id, ti }`. 화면은 이름표 앞에 `fmt.titleTag`.
+- 저장 `ext.achieve`(`c` 종류마다의 수, `got`, `title`), 개인 상태 `achieve`.
+
+### 도감 `CODEX` (`codex` 모듈)
+
+```ts
+export const CODEX = { echoes: { name: 'codexEchoes', of: 'hero', rewards: [{ n: 3, r: { sparks: 100 } }] }, beasts: { name: 'codexBeasts', of: 'monster' } };
+```
+
+- `of`: `hero`(가진 영웅: `heroChanged`, 들어올 때 이미 가진 것은 조용히), `monster`(처치: `monsterKilled`), `item`(상점에서 산 것·상품, 게임은 `g.codex.note(p, 'item', id)`). `ids`가 없으면 그 종류 모두(영웅은 실행 중에 더한 캐릭터 정의까지). 처음 얻은 때를 적고 `codexNew`, 모은 수가 `rewards[].n`에 닿으면 우편(`codex`).
+- 저장 `ext.codex`, 개인 상태 `codex`(묶음의 목록 `ids`도 함께: 화면이 '???' 칸을 그린다).
+
+### 쿠폰·복귀 보상 (`coupon` 모듈)
+
+- **쿠폰은 관리자가 만든다**: `npm run admin -- coupon add FEST2026 --sparks 50 --gold 100 [--uses 500] [--from 시각] [--to 시각 | --for 7d] [--note 글]`, `coupon [list] | show 코드 | del 코드`(역할: 목록·보기는 view, 만들기·지우기는 full). 코드는 영문 대문자·숫자 `COUPON.min`~`max`자(기본 4~20), 금칙어가 든 코드는 만들 수 없다. 사람이 넣을 때 빈칸·하이픈·소문자는 다듬는다.
+- 사람(저장 키)마다 한 번(DB `coupon_uses`의 (코드, 사람) 짝), 전체 쓰임 수 `--uses`, 기간. 손님은 쓸 수 없다. **남용**: 틀린 코드를 `COUPON.lockMin`분 안에 `tries`번(기본 10분에 5번) 넣으면 `lockMin`분 막는다. 보상은 우편(`coupon`), 안내문 `couponOk`·`couponNo`(0 없는 코드 1 이미 씀 2 기간 3 모두 쓰임 4 막힘 5 손님 6 모양). 쓴 기록은 내 데이터 내보내기·삭제에 든다.
+- **복귀 보상** `COMEBACK: { days, r }`: 저장의 `seen`에서 `days`일 넘게 쉬었다 들어오면 우편(`comeback [쉰 날 수]`).
+- DB가 없는 게임(시험)은 메모리에 둔다. SQLite 스키마의 끝 단계: `coupons`(코드 → 정의), `coupon_uses`.
+
+### 우편 만료·일괄 발송
+
+- `MAIL_RULES: { days: { '*': 30, attend: 7 }, warnH: 24 }`: 보낼 때 그 종류의 일 수로 사라지는 때(`Mail.x`)가 붙는다(거래·물건이 붙은 우편은 붙이지 않는다). 1분마다(와 접속할 때) 지난 것을 지우고(`mailExpired`), `warnH`시간 안에 사라질 것을 한 번 알린다(`mailExpSoon`). 맡아 둔 우편(접속하지 않은 사람)도 맡을 때 정한 때를 지킨다.
+- 관리자의 일괄·조건부 발송(운영 도구의 `mail`): `mail --all [--days n] [--lv a-b] [--expire 일] --gold n …`. `--days`는 최근 n일 안에 저장된 사람, `--lv`는 레벨 범위(`10-30`, `10-`, `-9`), `--expire`는 n일 뒤 사라짐(한 사람에게 보낼 때도). 웹 관리 화면의 '라이브' 탭에서도.
+
+### 관리자와 웹 관리 화면
+
+`events`(이벤트의 열림·예정·끝과 기간, 상품의 한정·남은 수량), `season`(지금 시즌·트랙), `coupon …`(위), `mail --all --lv --expire`. 역할은 `net/admin.ts`의 `roleFor` 한 곳(`events`·`season`은 view). 웹 관리 화면(`/admin/ui`)의 '라이브' 탭: 이벤트·상품 표, 시즌, 쿠폰 표(지우기)와 만들기 칸, 일괄 우편 칸. 이벤트의 기간은 원격 설정 `set EVENTS.<id>.to <UTC ms>`로 바꾼다(명령 탭).
+
+### 시험과 예제
+
+`games/echopact/test/live.test.ts`(검사 30개): 가상 시계로 2주의 축제(시작 → 임무 → 축제 상점 → 끝 → 환전)와 시즌 하나(점수 → 트랙 → 끝 → 놓친 보상·부분 초기화)를 한 사람이 돌고, 그 길에서 상품의 갱신·서버 수량·가방, 업적·칭호, 도감, 우편 만료, 저장을 지난 이어짐과 복귀 보상, 쿠폰(표 주도 한 묶음), 서버의 관리자 명령·역할·조건부 우편, SQLite의 쿠폰 표를 본다.
+
+### 남은 것
+
+- 꾸미기 상품(겉모습을 사는 것)은 없다: `give`가 재화·아이템·영웅만. 장비를 상품으로 줄 수 없다.
+- 시즌의 순위(시즌 영역의 순위표)는 묶음 8(경쟁)의 몫이다. 시즌은 하나뿐이다.
+- 이벤트 재화는 재화의 종류 하나(`event`)라 같은 재화를 쓰는 이벤트는 동시에 하나다.
+- 업적의 종류는 사건의 누적 수뿐이다(레벨·모은 수 같은 상태 업적은 게임이 `g.daily.add`로 센다).
+- 웹 관리 화면의 쿠폰 만들기·일괄 우편 칸은 보상을 CLI의 선택 글로 적는다(`--gold 100 --item id:2`).

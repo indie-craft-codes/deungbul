@@ -14,7 +14,7 @@ import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
 import { Sanctions, normIp } from '../game/systems/sanctions';
 import { log } from '../log';
-import { MemoryStore, hasEcon, hasLive, hasOdds, type PlayerSave, type Store, type WorldSave } from '../store';
+import { MemoryStore, hasCoupons, hasEcon, hasLive, hasOdds, type PlayerSave, type Store, type WorldSave } from '../store';
 import type { Reward } from '../../shared/defs';
 import { startBackups, type BackupOptions } from '../store/backup';
 import { isClean, tidy } from '../text';
@@ -30,6 +30,7 @@ import { createWeb, type Web } from './web';
 import { startStatus, type StatusOptions } from './status';
 import { createSocial, type Social } from './social';
 import { createOddsWeb } from './odds';
+import { liveCommands } from './livecmds';
 import { hasOps, type EventRow } from '../store';
 import { startAlerts, type AlertOptions, type Alerts } from './alerts';
 import { metricValues, type OpsNow } from './ops';
@@ -189,6 +190,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   if (hasLive(store)) { game.live.attach(store); game.time.attach(store); }
   // 확률표의 버전·이력·추첨 기록 (odds 모듈): 원격 설정을 적용한 뒤에 붙인다 (적용된 값이 이전 실행의 표와 같으면 버전이 오르지 않는다)
   if (game.has('odds') && hasOdds(store)) game.odds.attach(store);
+  // 쿠폰 (coupon 모듈, 묶음 6): DB의 coupons·coupon_uses 표
+  if (game.has('coupon') && hasCoupons(store)) game.coupon.attach(store);
   for (let i = 0; i < (opts.bots ?? 0); i++) game.players.spawn('Bot' + (i + 1), true);
 
   const clients = new Set<Client>();
@@ -671,10 +674,16 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
    * 일괄 우편 (관리자의 maint end의 보상): 저장된 캐릭터 모두(sinceMs를 주면 그 시각 뒤에 저장된 것만)에게 우편을 보낸다. 접속해 있지 않은 사람은 월드에 맡아 둔다 (우편 모듈의 sendTo).
    * 보낸 수. 우편 모듈이 없거나 저장 키로 훑을 수 없는 저장소면 -1
    */
-  function mailAll(reward: Reward, sinceMs: number, kind: 'maint' | 'comp' = 'maint'): number {
+  function mailAll(reward: Reward, sinceMs: number, kind: 'maint' | 'comp' = 'maint', opt: { lv?: readonly [number, number]; x?: number } = {}): number {
     if (!game.has('mail') || !store.eachPlayerKey) return -1;
     let n = 0;
-    store.eachPlayerKey((key, p) => { if (sinceMs && (p.seen ?? 0) < sinceMs) return; game.mail.sendTo(key, kind, [], reward); n++; });
+    // 조건부 발송 (묶음 6): 레벨 범위(저장된 레벨, 접속 중이면 지금 레벨), 사라지는 때 x
+    const lvOf = (key: string, p: PlayerSave): number => { const e = game.mail.find(key); return e && game.has('growth') ? e.lv : p.lv ?? 1; };
+    store.eachPlayerKey((key, p) => {
+      if (sinceMs && (p.seen ?? 0) < sinceMs) return;
+      if (opt.lv) { const lv = lvOf(key, p); if (lv < opt.lv[0] || lv > opt.lv[1]) return; }
+      game.mail.sendTo(key, kind, [], reward, opt.x); n++;
+    });
     game.saveDirty = true;
     saveTogether();
     return n;
@@ -710,7 +719,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       ...[...away].map(([key, e]) => ({ name: e.name, key, ip: awayIp.get(key) ?? '', ent: e, away: true })),
     ],
     drop: dropBy, broadcast, save: () => { game.saveDirty = true; saveTogether(); },
-    extra: () => ({ ...web.admin, ...social.admin, ...support.admin, ...toolCmds, ...(odds?.admin ?? {}) }),
+    extra: () => ({ ...web.admin, ...social.admin, ...support.admin, ...toolCmds, ...(odds?.admin ?? {}), ...liveCommands(game) }),
   }, opts.admin);
 
   wss.on('connection', (ws, req) => {

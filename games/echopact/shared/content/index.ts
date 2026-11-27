@@ -20,6 +20,7 @@ import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import type { MorphRules } from '@engine/shared/defs/morph';
 import type { OddsRules } from '@engine/shared/defs/odds';
 import type { ModeRules } from '@engine/shared/defs/modes';
+import type { AchieveDef, CodexDef, ComebackRules, EventDef, GoodsDef, MailRules, SeasonRules } from '@engine/shared/defs/livecontent';
 import type { ChatRules } from '@engine/shared/defs/talk';
 import { BASIC_QUICK_CHAT, CHAT_RULES as BASE_CHAT_RULES, GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
 import type { ModuleId } from '@engine/shared/modules';
@@ -34,6 +35,8 @@ export const MODULES: readonly ModuleId[] = [
   // 확률과 재화의 투명성: 확률표 창·공개 페이지(odds.html)·추첨 기록 (docs/making-a-game.md 19절)
   'odds',
   'modes',
+  // 라이브 콘텐츠 (묶음 6): 기간 이벤트, 시즌과 무료 보상 트랙, 업적·칭호, 도감, 쿠폰·복귀 보상 (상품 GOODS는 items 모듈의 칸)
+  'event', 'season', 'achieve', 'codex', 'coupon',
 ];
 
 // ---------- 두 게임: 계약의 탑(A, 단계)과 울림골(B, 들판) ----------
@@ -41,8 +44,8 @@ export const MODULES: readonly ModuleId[] = [
 // 보고 있지 않은 쪽: 들판은 자동 사냥(R)을 켜 두었으면 몸이 남아 사냥하고(fieldStay), 탑은 싸우던 단계를 끝까지·자동 진행이 켜져 있으면 다음 단계로(stageStay)
 export const MODE_RULES: ModeRules = {
   list: [
-    { id: MODE.tower, name: 'modeTower', kind: 'stage', tabs: ['gacha', 'odds', 'heroes', 'squad', 'stages', 'daily', 'mail', 'friends'], hide: ['auto', 'attackNearest', 'worldMap', 'minimap', 'skills', 'hint', 'channel', 'bag'] },
-    { id: MODE.vale, name: 'modeVale', kind: 'field', tabs: ['morph', 'gear', 'daily', 'mail', 'friends'] },
+    { id: MODE.tower, name: 'modeTower', kind: 'stage', tabs: ['gacha', 'odds', 'heroes', 'squad', 'stages', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends'], hide: ['auto', 'attackNearest', 'worldMap', 'minimap', 'skills', 'hint', 'channel', 'bag'] },
+    { id: MODE.vale, name: 'modeVale', kind: 'field', tabs: ['morph', 'gear', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends'] },
   ],
   start: MODE.tower,
   switchCdS: 1,
@@ -54,7 +57,11 @@ export const CHAT_RULES: ChatRules = { ...BASE_CHAT_RULES, nearScope: 'mode' };
 export const GUEST_NAME = 'Pactbinder';
 /** 두 번째 재화(sparks)는 이 게임의 '울림 조각': 뽑기의 값이다. 들판의 사냥과 단계가 준다 (현금으로 살 길은 없다) */
 /** 울림 조각을 한 번에 900개(10번 뽑기) 이상 쓰면 두 번 묻는다 (귀한 재화의 확인 단계). 실제 가격 칸은 비워 둔다: 현금으로 살 길이 없다 */
-export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: false }, sparks: { tradable: false, confirm: { at: 900, price: null } }, exp: { tradable: false } };
+/**
+ * 울림 조각에는 종류가 둘이다 (묶음 4의 재화 종류): 무상(free: 사냥·단계·임무)과 이벤트(event: 기간 이벤트의 임무가 주는 '축제 조각').
+ * 쓰는 차례는 무상 먼저(뽑기가 축제 조각을 먼저 먹지 않게), 이벤트 상점은 이벤트 몫으로만 판다. 남은 축제 조각은 이벤트가 끝나면 절반이 무상 조각으로 바뀐다 (EVENTS.echofest.end)
+ */
+export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: false }, sparks: { tradable: false, confirm: { at: 900, price: null }, kinds: { spend: ['free', 'event'], earn: 'free' } }, exp: { tradable: false } };
 
 // ---------- 맵: 울림골 하나 (가운데 울림 샘, 네 귀퉁이에 무리, 북쪽이 단계의 자리) ----------
 // 상인은 처음 자리(0, 2)와 일어나는 자리(샘 앞)에서 조금 떨어진 서쪽에: 들어오자마자 상점 창이 화면을 덮지 않게 (폰)
@@ -251,6 +258,9 @@ export const LIVE_KEYS: LiveKeys = {
   'MORPH_RULES.cooldownS': { check: liveRange(0, 600, true), note: '변신의 재사용 대기(초)' },
   // 확률표를 바꾸는 칸: 바꾸면 표의 버전이 오르고 공개 페이지의 변경 이력에 남는다 (odds 모듈)
   'BANNERS.well.pity.after': { check: liveRange(10, 200, true), note: '울림 샘의 천장(번째)' },
+  // 기간 이벤트의 기간 (묶음 6): 재시작 없이 당기거나 늘린다 (UTC ms). 화면에도 보낸다 (이벤트 상점의 열림을 화면이 같은 값으로 본다)
+  'EVENTS.echofest.from': { client: true, check: liveRange(0, 4e12, true), note: '울림 축제의 시작 (UTC ms)' },
+  'EVENTS.echofest.to': { client: true, check: liveRange(0, 4e12, true), note: '울림 축제의 끝 (UTC ms)' },
 };
 
 // ---------- 확률 공개 (odds 모듈): 자동 표(울림 샘, 장비 강화)만 쓴다. 공개 페이지(서버가 쓴다)의 이름표 ----------
@@ -263,3 +273,64 @@ export const ODDS: OddsRules = {
     'cur:gold': { ko: '골드', en: 'Gold' },
   },
 };
+
+// ---------- 라이브 콘텐츠 (묶음 6: docs/making-a-game.md 22절, 수치는 docs/proof-echopact.md '라이브 콘텐츠') ----------
+// 기간 이벤트 하나: '울림 축제' 2주 (2026-12-01 00:00 ~ 12-15 00:00 UTC. 원격 설정 EVENTS.echofest.from·to로 옮긴다).
+// 임무가 축제 조각(울림 조각의 이벤트 몫)을 주고, 축제 상점은 축제 조각으로만 판다. 끝나면 남은 축제 조각의 절반이 무상 조각으로 우편에 온다
+const DAY_MS = 86_400_000;
+const FEST_FROM = Date.UTC(2026, 11, 1);
+export const EVENTS: Readonly<Record<string, EventDef>> = {
+  echofest: {
+    name: 'evEchofest', note: 'evEchofestNote',
+    from: FEST_FROM, to: FEST_FROM + 14 * DAY_MS,
+    cur: 'sparks',
+    missions: {
+      hunt: { name: 'evmHunt', kind: 'kill', n: 40, ev: 60 },
+      climb: { name: 'evmClimb', kind: 'stage', n: 10, ev: 80, r: { gold: 100 } },
+      call: { name: 'evmCall', kind: 'pull', n: 5, ev: 60 },
+      shift: { name: 'evmShift', kind: 'morph', n: 3, ev: 40 },
+    },
+    end: { swap: { to: 'sparks', rate: 0.5 } },
+  },
+};
+/**
+ * 상품: 축제 상점 셋(축제 조각으로만, 축제마다 한정), 늘 파는 하루 꾸러미(묶음: 물약 둘 + 조각 20, 하루 한 번), 상인의 특별 물약(서버 전체 100개)
+ */
+export const GOODS: Readonly<Record<string, GoodsDef>> = {
+  festTonic: { name: 'gFestTonic', event: 'echofest', price: { cur: 'sparks', n: 40, kind: 'event' }, give: { items: { tonic: 3 } }, limit: { n: 5 } },
+  festShards: { name: 'gFestShards', event: 'echofest', price: { cur: 'sparks', n: 120, kind: 'event' }, give: { sparks: 100 }, limit: { n: 3 } },
+  festGold: { name: 'gFestGold', event: 'echofest', price: { cur: 'sparks', n: 50, kind: 'event' }, give: { gold: 300 }, limit: { n: 10 } },
+  dayPack: { name: 'gDayPack', price: { cur: 'gold', n: 150 }, give: { items: { tonic: 2 }, sparks: 20 }, limit: { n: 1, per: 'day' } },
+  wellTonic: { name: 'gWellTonic', shop: 'npc', price: { cur: 'gold', n: 40 }, give: { items: { tonic: 5 } }, stock: 100 },
+};
+/** 시즌: 2주마다 (2026-11-30 월요일부터), 사냥·단계·뽑기·변신·구매가 점수, 무료 트랙 다섯 칸, 새 시즌에 점수의 20%가 남는다 */
+export const SEASON: SeasonRules = {
+  name: 'seasonEcho',
+  period: { days: 14, from: Date.UTC(2026, 10, 30) },
+  points: { kill: 1, stage: 5, pull: 3, morph: 2, buy: 2 },
+  track: [
+    { pts: 50, r: { gold: 100 } },
+    { pts: 120, r: { sparks: 50 } },
+    { pts: 220, r: { items: { tonic: 3 } } },
+    { pts: 350, r: { sparks: 150 } },
+    { pts: 500, r: { gold: 500, sparks: 100 } },
+  ],
+  reset: { part: 0.2 },
+  missed: 'mail',
+};
+/** 업적 넷 (셋은 칭호를 준다) */
+export const ACHIEVES: Readonly<Record<string, AchieveDef>> = {
+  hunter: { name: 'achHunter', kind: 'kill', n: 100, r: { gold: 200 }, title: 'titleHunter' },
+  climber: { name: 'achClimber', kind: 'stage', n: 15, r: { sparks: 100 }, title: 'titleClimber' },
+  caller: { name: 'achCaller', kind: 'pull', n: 30, r: { sparks: 100 }, title: 'titleCaller' },
+  shifter: { name: 'achShifter', kind: 'morph', n: 10, r: { gold: 150 } },
+};
+/** 도감 둘: 메아리(가진 영웅) 열, 몬스터(처치) 여덟. 모은 수의 보상 */
+export const CODEX: Readonly<Record<string, CodexDef>> = {
+  echoes: { name: 'codexEchoes', of: 'hero', rewards: [{ n: 3, r: { sparks: 100 } }, { n: 6, r: { sparks: 200 } }, { n: 10, r: { gold: 500, sparks: 300 } }] },
+  beasts: { name: 'codexBeasts', of: 'monster', rewards: [{ n: 4, r: { gold: 100 } }, { n: 8, r: { sparks: 100 } }] },
+};
+/** 복귀 보상: 7일 넘게 쉬었다 오면 */
+export const COMEBACK: ComebackRules = { days: 7, r: { gold: 200, sparks: 200 } };
+/** 우편의 만료: 보상 우편은 30일, 출석은 7일 (사라지기 24시간 전에 알린다) */
+export const MAIL_RULES: MailRules = { days: { '*': 30, attend: 7 }, warnH: 24 };

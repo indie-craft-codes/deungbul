@@ -4,7 +4,8 @@
 //   ledger [일수] [이름]                                   장부: 통로 밖의 변화(other·tick)가 누구에게서 났는가, 날짜별 재화 흐름의 줄
 //   suspects [수]                                          봇·매크로 의심 점수가 높은 사람 (net/suspect.ts: 보기만 한다)
 //   alerts [test]                                          경보 규칙과 지금 상태 / 웹훅에 시험 알림 한 번 (net/alerts.ts)
-//   mail 이름|--all [--days n] [--gold n] [--sparks n] [--exp n] [--item id:n]   운영 보상 우편 (종류 comp: 사고 뒤 보상 같은 것)
+//   mail 이름|--all [--days n] [--lv a-b] [--expire 일] [--gold n] [--sparks n] [--exp n] [--item id:n]   운영 보상 우편 (종류 comp: 사고 뒤 보상 같은 것).
+//        --all은 전체 발송, --days는 최근 n일 안에 저장된 캐릭터만, --lv는 레벨 범위만(조건부 발송), --expire는 n일 뒤 사라짐 (묶음 6)
 //   metrics                                               /metrics의 값
 //   whoami                                                이 토큰의 역할 (웹 관리 화면이 처음에 묻는다)
 import { ECON_UNKNOWN, isItemId, type Reward } from '../../shared/defs';
@@ -26,7 +27,7 @@ export interface OpsToolsHost {
   metrics(): Record<string, number>;
   find(name: string): { key: string | null; name: string } | null;
   /** 저장된 캐릭터 모두에게 (sinceMs 뒤에 저장된 것만) 우편. 보낸 수 (못 하면 -1): server.ts의 mailAll */
-  mailAll(reward: Reward, sinceMs: number, kind: 'comp'): number;
+  mailAll(reward: Reward, sinceMs: number, kind: 'comp', opt?: { lv?: readonly [number, number]; x?: number }): number;
   save(): void;
 }
 
@@ -94,21 +95,33 @@ export function opsTools(host: OpsToolsHost): Record<string, (a: string[], by: s
     },
     mail: (a) => {
       if (!g.has('mail')) return '이 게임은 우편 모듈을 쓰지 않습니다.';
-      const { pos, o, f, m } = options(a, ['all'], [...CURS, 'days'], ['item']);
+      const { pos, o, f, m } = options(a, ['all'], [...CURS, 'days', 'lv', 'expire'], ['item']);
       const pay: Partial<Record<(typeof CURS)[number], number>> = {}, goods: Record<string, number> = {};
       for (const k of CURS) if (o[k] !== undefined) { const n = Number(o[k]); if (!Number.isInteger(n) || n < 1 || n > 1e7) return `--${k}는 1~10000000의 정수: ${o[k]}`; pay[k] = n; }
       for (const it of m.item ?? []) { const [id, cnt] = it.split(':'), n = Number(cnt ?? 1); if (!isItemId(id) || !Number.isInteger(n) || n < 1 || n > 9999) return `--item 아이템id:수 (${it})`; goods[id] = n; }
       const reward: Reward = { ...pay, ...(Object.keys(goods).length ? { items: goods } : {}) };
-      if (!Object.keys(reward).length) return `쓰는 법: mail 이름|--all [--days n] ${CURS.map((c) => `[--${c} n]`).join(' ')} [--item id:n]`;
+      if (!Object.keys(reward).length) return `쓰는 법: mail 이름|--all [--days n] [--lv a-b] [--expire 일] ${CURS.map((c) => `[--${c} n]`).join(' ')} [--item id:n]`;
+      // 만료 (묶음 6): n일 뒤 사라진다
+      const exp = o.expire !== undefined ? Number(o.expire) : 0;
+      if (!Number.isFinite(exp) || exp < 0 || exp > 3650) return `--expire는 0~3650의 일 수: ${o.expire}`;
+      const x = exp > 0 ? g.now() + exp * DAY : undefined;
+      // 레벨 범위 (조건부 발송): 10-30, 10- (10 이상), -9 (9 이하), 20 (20만)
+      let lv: [number, number] | undefined;
+      if (o.lv !== undefined) {
+        const mm = /^(\d*)(-?)(\d*)$/.exec(o.lv.trim());
+        if (!mm || (!mm[1] && !mm[3])) return `--lv는 a-b (예: 10-30, 10-, -9, 20): ${o.lv}`;
+        lv = [mm[1] ? Number(mm[1]) : 0, mm[3] ? Number(mm[3]) : mm[2] ? Infinity : Number(mm[1])];
+        if (!f.has('all')) return '--lv는 --all과 함께 쓴다';
+      }
       if (f.has('all')) {
         const days = o.days !== undefined ? Number(o.days) : 0;
         if (!Number.isFinite(days) || days < 0) return `--days는 0 이상의 수: ${o.days}`;
-        const n = host.mailAll(reward, days ? g.now() - days * DAY : 0, 'comp');
-        return n < 0 ? '보내지 못했습니다 (저장소가 저장 키로 훑지 못한다).' : `운영 보상 우편을 ${n}명에게 보냈습니다${days ? ` (최근 ${days}일 안에 저장된 캐릭터)` : ''}.`;
+        const n = host.mailAll(reward, days ? g.now() - days * DAY : 0, 'comp', { ...(lv ? { lv } : {}), ...(x ? { x } : {}) });
+        return n < 0 ? '보내지 못했습니다 (저장소가 저장 키로 훑지 못한다).' : `운영 보상 우편을 ${n}명에게 보냈습니다${days ? ` (최근 ${days}일 안에 저장된 캐릭터)` : ''}${lv ? ` (레벨 ${lv[0]}~${lv[1] === Infinity ? '' : lv[1]})` : ''}${x ? ` · ${exp}일 뒤 사라짐` : ''}.`;
       }
       const t = host.find(pos[0] ?? '');
       if (!t?.key) return `'${pos[0] ?? ''}' 이름의 저장된 캐릭터가 없습니다.`;
-      g.mail.sendTo(t.key, 'comp', [], reward);
+      g.mail.sendTo(t.key, 'comp', [], reward, x);
       g.saveDirty = true;
       host.save();
       return `${t.name}에게 운영 보상 우편을 보냈습니다.`;

@@ -34,6 +34,13 @@
  "dungeons.crypt.name": "The Ash Crypt",
  "dungeons.crypt_deep.info": "Fight through grave hounds and crypt knights and bring down the awakened Lord. Drops level 7 gear. Go with a party.",
  "dungeons.crypt_deep.name": "The Crypt Depths",
+ "fmt.achieveTitle": [
+  "39f3dbb4e60abccb",
+  "Title “undefined”",
+  "Title “0”",
+  "Title “1”",
+  "Title “2”"
+ ],
  "fmt.ageOver": [
   "7a125d0d2fcfa9ea",
   "undefined or older",
@@ -203,6 +210,20 @@
   "1 +undefined→+undefined: about NaN gold expected",
   "2 +undefined→+undefined: about NaN gold expected"
  ],
+ "fmt.codexAt": [
+  "e8cdb46fe0150ad0",
+  "Collect undefined",
+  "Collect 0",
+  "Collect 1",
+  "Collect 2"
+ ],
+ "fmt.codexCount": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
  "fmt.coinHave": [
   "2df738fa40f6a61f",
   "Sparks NaN",
@@ -364,6 +385,27 @@
   " · 1 Ward Stone",
   " · 2 Ward Stone"
  ],
+ "fmt.eventEv": [
+  "cf516e9ae3ee032f",
+  "+NaN event currency",
+  "+0 event currency",
+  "+1 event currency",
+  "+2 event currency"
+ ],
+ "fmt.eventHave": [
+  "13991aa11bd93f7d",
+  "Event Sparks: NaN",
+  "Event Sparks: 0",
+  "Event Sparks: 1",
+  "Event Sparks: 2"
+ ],
+ "fmt.eventSwap": [
+  "6261753af1e40859",
+  "When the event ends, leftover event currency is exchanged at undefined× into Sparks and mailed to you.",
+  "When the event ends, leftover event currency is exchanged at 0× into Sparks and mailed to you.",
+  "When the event ends, leftover event currency is exchanged at 1× into Sparks and mailed to you.",
+  "When the event ends, leftover event currency is exchanged at 2× into Sparks and mailed to you."
+ ],
  "fmt.friendSeen": [
   "99286e30f4baea0f",
   "Last seen NaN days ago",
@@ -517,6 +559,27 @@
   "Gold 0",
   "Gold 1",
   "Gold 2"
+ ],
+ "fmt.goodsLimit": [
+  "d44fa0ad3a28bb8c",
+  "Per player undefined/undefined",
+  "Per player 0/undefined",
+  "Per player 1/undefined",
+  "Per player 2/undefined"
+ ],
+ "fmt.goodsPrice": [
+  "aa304ff0f000b355",
+  "NaN Sparks",
+  "0 Sparks",
+  "1 Sparks",
+  "2 Sparks"
+ ],
+ "fmt.goodsStock": [
+  "b7d39f86a128a50e",
+  "NaN left",
+  "0 left",
+  "1 left",
+  "2 left"
  ],
  "fmt.guildCreateInfo": [
   "feb56c30cb1e1539",
@@ -831,6 +894,25 @@
   "Lv 0 undefined",
   "Lv 1 undefined",
   "Lv 2 undefined"
+ ],
+ "fmt.liveLeft": [
+  "5fe68b2c438694cb",
+  "NaNm left",
+  "1m left",
+  "21m left"
+ ],
+ "fmt.liveSpan": [
+  "7913915303c96783",
+  "Invalid Date – Invalid Date",
+  "1/1, 12:00 AM – Invalid Date",
+  "1/1, 12:20 AM – Invalid Date",
+  "1/1, 12:00 AM – 1/1, 12:00 AM"
+ ],
+ "fmt.mailLeft": [
+  "19644e7de4be6b24",
+  "expires in NaNm",
+  "expires in 1m",
+  "expires in 21m"
  ],
  "fmt.mailTitle": [
   "1416df6edf57e45a",
@@ -1365,6 +1447,34 @@
   "Until 1/1, 12:00 AM",
   "Until 1/1, 12:20 AM"
  ],
+ "fmt.seasonHead": [
+  "55353cc315b2d556",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.seasonPts": [
+  "798bc7f6e6df8e16",
+  "NaN points",
+  "0 points",
+  "1 points",
+  "2 points"
+ ],
+ "fmt.seasonReset": [
+  "c6a5c39af9690c3e",
+  "undefined% of your points carry over to the next season.",
+  "0% of your points carry over to the next season.",
+  "1% of your points carry over to the next season.",
+  "2% of your points carry over to the next season."
+ ],
+ "fmt.seasonTier": [
+  "e07ea9751e92362e",
+  "Tier NaN · NaN pts",
+  "Tier 1 · NaN pts",
+  "Tier 2 · NaN pts",
+  "Tier 3 · NaN pts"
+ ],
  "fmt.sellConfirm": [
   "8643198b4dde2768",
   "Confirm · NaN gold",
@@ -1618,6 +1728,13 @@
   "Tier 1 · next at undefined",
   "Tier 2 · next at undefined"
  ],
+ "fmt.titleTag": [
+  "e69e28c76fab5173",
+  "“undefined”",
+  "“0”",
+  "“1”",
+  "“2”"
+ ],
  "fmt.towerHp": [
   "2446dc593bc01891",
   "Tower HP undefined / undefined",
@@ -1749,6 +1866,13 @@
  "monsters.slime": "Slime",
  "monsters.wisp": "Wisp",
  "monsters.wolf": "Wolf",
+ "msg.achieveGot": [
+  "d8a934a8d6b0f685",
+  "Feat unlocked: undefined",
+  "Feat unlocked: 0",
+  "Feat unlocked: 1",
+  "Feat unlocked: 2"
+ ],
  "msg.adminChat": [
   "24df00be119ae398",
   "[Notice] undefined",
@@ -1922,7 +2046,35 @@
   "You are now a 2."
  ],
  "msg.classFar": "Move closer to the lamp tower to change class.",
+ "msg.codexNew": [
+  "c306547c403eb87f",
+  "New codex entry: undefined · undefined",
+  "New codex entry: 0 · 0",
+  "New codex entry: 1 · 1",
+  "New codex entry: 2 · 3"
+ ],
+ "msg.comeback": [
+  "b6df38c428790430",
+  "Welcome back after undefined days! A return gift was mailed to you.",
+  "Welcome back after 0 days! A return gift was mailed to you.",
+  "Welcome back after 1 days! A return gift was mailed to you.",
+  "Welcome back after 2 days! A return gift was mailed to you."
+ ],
  "msg.costShort": "Not enough Sparks.",
+ "msg.couponNo": [
+  "4bba0a08876137a8",
+  "You cannot use that coupon.",
+  "That coupon code does not exist.",
+  "You have already used that coupon.",
+  "That coupon cannot be used right now."
+ ],
+ "msg.couponOk": [
+  "abe83e6633191faf",
+  "The reward for coupon undefined was mailed to you.",
+  "The reward for coupon 0 was mailed to you.",
+  "The reward for coupon 1 was mailed to you.",
+  "The reward for coupon 2 was mailed to you."
+ ],
  "msg.crafted": [
   "270b25dd971fbfcf",
   "Forged undefined.",
@@ -2029,6 +2181,27 @@
  ],
  "msg.eraseCanceled": "Deletion request withdrawn.",
  "msg.erased": "As requested, this character's data has been deleted.",
+ "msg.eventEnd": [
+  "4f48241416990ef3",
+  "The event “undefined” has ended.",
+  "The event “0” has ended.",
+  "The event “1” has ended. Your 1 leftover event currency was exchanged for 1 and mailed to you.",
+  "The event “2” has ended. Your 3 leftover event currency was exchanged for 4 and mailed to you."
+ ],
+ "msg.eventMission": [
+  "892f3261aeb3dbc8",
+  "Event task done: undefined",
+  "Event task done: 0",
+  "Event task done: 1 (+1 event currency)",
+  "Event task done: 3 (+4 event currency)"
+ ],
+ "msg.eventStart": [
+  "f45703a4182d518c",
+  "The event “undefined” has started. See the Event tab in the menu.",
+  "The event “0” has started. See the Event tab in the menu.",
+  "The event “1” has started. See the Event tab in the menu.",
+  "The event “2” has started. See the Event tab in the menu."
+ ],
  "msg.featureOff": "flagOther is paused for now. Please check the notices.",
  "msg.forgeClosed": "Bram the Smith has not returned yet.",
  "msg.forgeFar": "Move closer to Bram the Smith to forge.",
@@ -2119,6 +2292,20 @@
   "Gear sold. +0 gold",
   "Gear sold. +1 gold",
   "Gear sold. +2 gold"
+ ],
+ "msg.goodsGot": [
+  "c0b1a6ffcf938081",
+  "Bought undefined.",
+  "Bought 0.",
+  "Bought 1.",
+  "Bought 2."
+ ],
+ "msg.goodsNo": [
+  "778cd10f14cb881d",
+  "You cannot buy that.",
+  "That item is not on sale right now.",
+  "You have reached the limit for that item.",
+  "Sold out."
  ],
  "msg.guildBusy": [
   "50e795ef341192b8",
@@ -2365,6 +2552,20 @@
   "Picked up 0. Bram can use it at the forge.",
   "Picked up 1. Bram can use it at the forge.",
   "Picked up 2. Bram can use it at the forge."
+ ],
+ "msg.mailExpSoon": [
+  "ec7a55a358e960a2",
+  "undefined letters expire within undefined h. Claim them from Mail in the menu.",
+  "0 letters expire within 0 h. Claim them from Mail in the menu.",
+  "1 letter expires within 1 h. Claim it from Mail in the menu.",
+  "2 letters expire within 3 h. Claim them from Mail in the menu."
+ ],
+ "msg.mailExpired": [
+  "8c0b45294b8f8aac",
+  "undefined expired letters were removed.",
+  "0 expired letters were removed.",
+  "1 expired letter was removed.",
+  "2 expired letters were removed."
  ],
  "msg.mailGot": [
   "b7f15779d441793d",
@@ -2733,6 +2934,20 @@
   "Salvaged 1 item. Gear Dust +1",
   "Salvaged 2 items. Gear Dust +3"
  ],
+ "msg.seasonGot": [
+  "5bf68de467c62eec",
+  "Claimed season reward tier NaN.",
+  "Claimed season reward tier 1.",
+  "Claimed season reward tier 2.",
+  "Claimed season reward tier 3."
+ ],
+ "msg.seasonNew": [
+  "018b9f2906b656fd",
+  "A new season has begun.",
+  "A new season has begun (Season 1). You keep 1 points. 1 unclaimed reward was mailed to you.",
+  "A new season has begun (Season 2). You keep 3 points. 4 unclaimed rewards were mailed to you.",
+  "A new season has begun (Season 1234567). You keep 1234567 points. 1234567 unclaimed rewards were mailed to you."
+ ],
  "msg.shopFar": "Move closer to the road merchant to buy.",
  "msg.skillMax": "This skill is at its highest rank.",
  "msg.skillNeedLv": [
@@ -2856,6 +3071,11 @@
   "You reached contribution tier 0. Granny hands you 0 gold.",
   "You reached contribution tier 1. Granny hands you 1 gold.",
   "You reached contribution tier 2. Granny hands you 3 gold."
+ ],
+ "msg.titleSet": [
+  "2b105cc43440cb59",
+  "Title removed.",
+  "You now wear the title “”."
  ],
  "msg.tooFar": "Target is too far away.",
  "msg.towerFull": "The lamp tower is already at its brightest.",
@@ -3032,6 +3252,7 @@
  "towers.crypt": "the crypt entrance",
  "towers.ember": "Emberfall Tower",
  "towers.first": "Firstlight Village Tower",
+ "ui.achieveTitles": "Titles",
  "ui.afkTag": "away",
  "ui.ageAskBand": "Please choose your age.",
  "ui.ageAskYear": "Please choose the year you were born.",
@@ -3096,6 +3317,8 @@
  "ui.cmpThis": "This piece",
  "ui.cmpWorn": "Worn piece",
  "ui.cmpWorse": "Worse",
+ "ui.codexNote": "Things you get for the first time go into the codex. Collecting enough sends rewards by mail.",
+ "ui.codexUnknown": "???",
  "ui.confirmAgain": "One more check. Spend it for sure?",
  "ui.confirmNext": "Continue",
  "ui.confirmNo": "Cancel",
@@ -3105,6 +3328,9 @@
  "ui.count1": "1",
  "ui.count5": "5",
  "ui.countAll": "All",
+ "ui.couponHead": "Coupon",
+ "ui.couponPh": "Coupon code",
+ "ui.couponUse": "Redeem",
  "ui.currentClass": "Current",
  "ui.dailyDay": "Daily tasks",
  "ui.dailyDone": "Done",
@@ -3131,6 +3357,10 @@
  "ui.enhanceFailed": "Enhance failed · the gear is unchanged",
  "ui.enhanceMaxed": "Maxed",
  "ui.equip": "Equip",
+ "ui.eventGone": "Event currency left over when the event ends disappears.",
+ "ui.eventMissions": "Event tasks",
+ "ui.eventNone": "No event is running right now.",
+ "ui.eventShop": "Event shop",
  "ui.farFar": "Far",
  "ui.farMid": "Medium",
  "ui.farNear": "Near",
@@ -3195,6 +3425,11 @@
  "ui.gearMore": "Show enhance, sell, salvage and comparison",
  "ui.gearTapHint": "Tap gear to enhance, sell or salvage it and compare it with what you wear. Against your current piece: ▲ better · ▼ worse · ◆ mixed · = about the same.",
  "ui.goingTown": "Walking back to Firstlight Village.",
+ "ui.goodsAllBought": "Limit reached",
+ "ui.goodsBuy": "Buy",
+ "ui.goodsNone": "Nothing for sale right now.",
+ "ui.goodsNpc": "Merchant's specials",
+ "ui.goodsSoldOut": "Sold out",
  "ui.guildChatHint": "Type '/g message' in chat to talk to your guild only. The leader invites people by [[clicking|tapping]] them.",
  "ui.guildChatTag": "[Guild]",
  "ui.guildCreate": "Create",
@@ -3422,6 +3657,11 @@
  "ui.sanctionPerm": "Permanent",
  "ui.sanctionSpan": "Duration",
  "ui.sanctionWhy": "Reason",
+ "ui.seasonClaim": "Claim",
+ "ui.seasonClaimAll": "Claim everything available",
+ "ui.seasonNone": "No season is running right now.",
+ "ui.seasonNote": "Points come from hunting, tasks and other play. Rewards you reached but did not claim are mailed to you when the season ends.",
+ "ui.seasonTrack": "Reward track (free)",
  "ui.setCalm": "Turn off screen shake",
  "ui.setChatShow": "Show chat",
  "ui.setChatShowNote": "Turn off to hide the chat box and speech bubbles.",
@@ -3491,12 +3731,16 @@
  "ui.sweepResult": "Sweep result",
  "ui.synHead": "Synergy",
  "ui.synNone": "Field heroes of the same faction together to turn on a synergy.",
+ "ui.tabAchieve": "Feats",
  "ui.tabBuild": "Growth",
+ "ui.tabCodex": "Codex",
  "ui.tabDaily": "Daily",
  "ui.tabDevice": "Device",
+ "ui.tabEvent": "Event",
  "ui.tabFriends": "Friends",
  "ui.tabGacha": "Summon",
  "ui.tabGear": "Gear",
+ "ui.tabGoods": "Shop",
  "ui.tabGuild": "Guild",
  "ui.tabHGear": "Hero gear",
  "ui.tabHeroes": "Heroes",
@@ -3505,6 +3749,7 @@
  "ui.tabMorph": "Morph",
  "ui.tabOdds": "Odds",
  "ui.tabRank": "Rank",
+ "ui.tabSeason": "Season",
  "ui.tabSettings": "Settings",
  "ui.tabSquad": "Squad",
  "ui.tabStages": "Stages",
@@ -3516,6 +3761,9 @@
  "ui.teamPickTitle": "Pick a team",
  "ui.teamSwitch": "Switch team",
  "ui.title": "Lampkeeper",
+ "ui.titleNone": "No title worn yet.",
+ "ui.titleOff": "Remove",
+ "ui.titleUse": "Wear",
  "ui.toTown": "To town",
  "ui.tower": "Lamp tower",
  "ui.towerDark": "The lamp is out. Once everyone offers sparks to light it, you will rise here when you fall in this area.",

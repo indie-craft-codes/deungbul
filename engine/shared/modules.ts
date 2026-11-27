@@ -68,6 +68,17 @@ export const MODULE_TABLE = {
   support: { needs: [] },
   /** 게임 안의 모드: 한 캐릭터로 오가는 '두 게임'(들판의 MMORPG와 단계의 수집형). 화면의 '게임 바꾸기' 단추, 모드마다 메뉴의 탭·감출 요소 (MODE_RULES) */
   modes: { needs: ['stages'] },
+  // ---------- 라이브 콘텐츠 (묶음 6: engine/shared/defs/livecontent.ts, docs/making-a-game.md 22절) ----------
+  /** 기간 이벤트: 기간(시계·원격 설정), 이벤트 임무(일일 임무와 같은 사건 셈), 이벤트 상점(GOODS의 event), 이벤트 재화(재화 종류 'event'), 끝나면 소멸·환전 (EVENTS) */
+  event: { needs: ['daily', 'mail', 'economy'] },
+  /** 시즌과 무료 보상 트랙: 주기, 사건 → 점수, 트랙의 받기, 초기화 방식(전부·부분·유지), 끝날 때 놓친 보상은 우편으로 (SEASON) */
+  season: { needs: ['daily', 'mail', 'economy'] },
+  /** 업적과 칭호: 사건의 누적 수(일일 임무와 같은 셈), 이루면 보상(우편), 칭호를 골라 이름표에 단다 (ACHIEVES) */
+  achieve: { needs: ['daily', 'mail'] },
+  /** 도감: 처음 얻은 영웅·몬스터·아이템의 기록, 모은 수의 보상(선택, 우편) (CODEX) */
+  codex: { needs: ['mail'] },
+  /** 쿠폰 코드(관리자가 만든다, 사람당 1회, 틀린 횟수 제한)와 복귀 보상 (COUPON, COMEBACK). 쿠폰은 DB의 coupons·coupon_uses 표 */
+  coupon: { needs: ['mail'] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
 
 export type ModuleId = keyof typeof MODULE_TABLE;
@@ -78,9 +89,9 @@ export type ModuleId = keyof typeof MODULE_TABLE;
  * 틀에 저장 칸을 가진 모듈을 더하면 여기에도 적는다 (engine/test/fx/modules.test.ts가 등록된 칸과 견준다)
  */
 export const MODULE_SAVES: { player: Readonly<Record<string, ModuleId>>; top: Readonly<Record<string, ModuleId>>; world: Readonly<Record<string, ModuleId>> } = {
-  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams', keys: 'dungeon', roster: 'roster', gacha: 'gacha', squad: 'squad', stages: 'stages', formation: 'squad', herogear: 'herogear', morph: 'morph', purse: 'economy', mode: 'modes', autosafe: 'away' },
+  player: { bag: 'gear', vitals: 'combat', away: 'away', gear: 'gear', salvage: 'gear', mail: 'mail', stats: 'economy', daily: 'daily', build: 'build', teams: 'teams', keys: 'dungeon', roster: 'roster', gacha: 'gacha', squad: 'squad', stages: 'stages', formation: 'squad', herogear: 'herogear', morph: 'morph', purse: 'economy', mode: 'modes', autosafe: 'away', goods: 'items', event: 'event', season: 'season', achieve: 'achieve', codex: 'codex', back: 'coupon' },
   top: { lv: 'growth', exp: 'growth', need: 'growth', maxHp: 'combat', sparks: 'economy', gold: 'economy', weapon: 'items', armor: 'items', items: 'items', cls: 'classes', auto: 'away' },
-  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams', chars: 'chars' },
+  world: { mailbox: 'mail', guilds: 'guild', market: 'market', rank: 'rank', teams: 'teams', chars: 'chars', goods: 'items' },
 };
 /** 모든 모듈 (표의 차례) */
 export const ALL_MODULES = Object.keys(MODULE_TABLE) as ModuleId[];
@@ -97,8 +108,10 @@ export const COLLECT_MODULES: readonly ModuleId[] = ['roster', 'gacha', 'squad',
  * 대화 채널(chat)과 친구(friends)도 들지 않는다: 귓말·친구를 켤지는 게임이 정한다 (등불지기는 아직 켜지 않았다)
  * 확률 공개(odds)도 들지 않는다: 등불지기의 확률은 그 표에서 굴리지만 공개 페이지·추첨 기록을 켤지는 사용자가 정한다
  * 문의(support)도 들지 않는다: 고르는 게임이 따로 적는다 (등불지기는 적었다)
+ * 라이브 콘텐츠의 다섯(LIVE_MODULES)도 들지 않는다: 이벤트·시즌·업적·도감·쿠폰을 켤지는 게임이 정한다 (등불지기는 켜지 않았다: 경제·콘텐츠 변경은 사용자 승인)
  */
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends' && m !== 'odds' && m !== 'support' && m !== 'modes');
+export const LIVE_MODULES: readonly ModuleId[] = ['event', 'season', 'achieve', 'codex', 'coupon'];
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends' && m !== 'odds' && m !== 'support' && m !== 'modes' && !LIVE_MODULES.includes(m));
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).

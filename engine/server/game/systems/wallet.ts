@@ -64,6 +64,8 @@ const LOTS_MAX = 64;
 const WORD = /^[A-Za-z0-9_]{1,24}$/;
 /** 우편으로 받은 것의 원인 이름. 우편의 종류는 저장에서 읽은 값이라 걸러서 쓴다 */
 export const mailWhy = (kind: string): string => `mail:${WORD.test(kind) ? kind : 'unknown'}`;
+/** 종류를 세는 재화가 원인에 붙인 ':종류'를 뗀 원인 ('hunt:free' → 'hunt'). 원인으로 가르는 쪽(모드의 다른 쪽 셈 같은 것)이 쓴다 (묶음 6에서 고침) */
+export const baseWhy = (why: string): string => why.replace(/:(paid|free|event|bound)$/, '');
 
 export class Wallet {
   /** 수급 배율들. 등록한 함수들의 값을 모두 곱한다. 비어 있으면 배율 1이다 */
@@ -148,6 +150,31 @@ export class Wallet {
       if (!lots.length) delete bag[kind];
     }
     return out;
+  }
+  /** 그 종류의 몫 (종류를 세지 않거나 그 종류가 없으면 0) */
+  kindHave(p: Ent, cur: Cur, kind: CurKind): number {
+    const k = this.kinded.get(cur);
+    if (!k || !k.spend.includes(kind)) return 0;
+    return (this.sync(p, cur, k)[kind] ?? []).reduce((s, l) => s + l[0], 0);
+  }
+  /**
+   * 그 종류의 몫에서만 뺀다 (이벤트 상점: 이벤트 재화로만 산다. 묶음 6). 모자라거나 그 종류가 없으면 false, 아무것도 바꾸지 않는다.
+   * 장부에는 'why:종류'
+   */
+  takeKind(p: Ent, cur: Cur, kind: CurKind, n: number, why: string): boolean {
+    const k = this.kinded.get(cur), cost = Wallet.cost(n);
+    if (!k || !k.spend.includes(kind) || !(cost >= 0)) return false;
+    if (this.kindHave(p, cur, kind) < cost) return false;
+    if (cost === 0) return true;
+    this.pull(this.sync(p, cur, k), { spend: [kind] }, cost);
+    p[cur] -= cost; p.dirty = true; p.unsaved = true;
+    for (let i = 0; i < this.seen.length; i++) this.seen[i](p, cur, -cost, why ? `${why}:${kind}` : why);
+    return true;
+  }
+  /** 그 종류의 몫을 모두 뺀다 (이벤트가 끝나 이벤트 재화가 사라지거나 바뀔 때). 뺀 양. 장부에는 'why:종류' */
+  drainKind(p: Ent, cur: Cur, kind: CurKind, why: string): number {
+    const n = this.kindHave(p, cur, kind);
+    return n > 0 && this.takeKind(p, cur, kind, n, why) ? n : 0;
   }
   /** 사라질 때가 된 몫을 뺀다 (장부에는 'expire:종류') */
   expire(p: Ent, cur: Cur): number {

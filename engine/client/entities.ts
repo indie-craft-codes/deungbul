@@ -7,6 +7,7 @@ import { mixerEvery } from './assets';
 import { ARROW_S, arrow, burst, hit, puff, recoilOf, shake } from './fx';
 import { floatText, makeTag, placeTag, setTagHp, setTagName, settleTags, type Tag } from './hud/tags';
 import { L, t } from './i18n';
+import { titleName } from './i18n/live';
 import { rules } from './rules';
 import { sfx } from './sound';
 import { animate, cueAnim, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
@@ -85,7 +86,19 @@ export function spawnMerchant(): void {
 }
 
 /** 이름표에 적는 글: 길드가 있으면 이름 뒤에 붙인다 */
-const withGuild = (id: number, name: string): string => { const g = S.gtags.get(id); return g ? `${name} 〈${g}〉` : name; };
+const withGuild = (id: number, name: string): string => {
+  const g = S.gtags.get(id), ti = S.titles.get(id), tn = ti ? titleName(ti) : ''; // 칭호 (achieve 모듈): 이름 앞에
+  const n = tn ? `${L().fmt.titleTag(tn)} ${name}` : name;
+  return g ? `${n} 〈${g}〉` : n;
+};
+/** 누군가의 칭호가 바뀌었다 (achieve 모듈: 메시지 title, 내 것은 개인 상태 achieve): 이름표를 다시 적는다 */
+export function setTitle(id: number, ti: string): void {
+  if (ti) S.titles.set(id, ti); else S.titles.delete(id);
+  const me = S.me;
+  if (me && id === me.id) { setTagName(me.tag, withGuild(id, me.name)); return; }
+  const r = S.others.get(id);
+  if (r && r.kind === 'p') setTagName(r.tag, withGuild(id, r.name));
+}
 /** 누군가의 길드 이름이 바뀌었다: 이름표를 다시 적는다 */
 export function setGuildTag(id: number, guild: string): void {
   if (guild) S.gtags.set(id, guild); else S.gtags.delete(id);
@@ -150,6 +163,7 @@ function addRemote(e: EnterInfo): void {
   const name = monster ? monsterName(e.type, e.r === 1) : e.name;
   const boss = monster && isMonsterId(e.type) && !!monsterDef(e.type).boss;
   if (!monster && e.g) S.gtags.set(e.id, e.g);
+  if (!monster && e.ti) S.titles.set(e.id, e.ti);
   const tag = makeTag(monster ? name : withGuild(e.id, name), monster ? (boss ? 'mon boss' : e.r === 1 ? 'mon swarm' : 'mon') : '', monster);
   setTagHp(tag, hp, maxHp);
   if (!monster) { setBlade(model, e.w ?? ''); setArmor(model, e.a ?? ''); tag.el.classList.toggle('ally', S.party.some((m) => m.id === e.id)); }

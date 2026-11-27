@@ -67,6 +67,13 @@ import { Morph } from './systems/morph';
 import { Modes } from './systems/modes';
 import { Clock } from './systems/clock';
 import { Live } from './systems/live';
+import { Goods, hasGoodsDefs } from './systems/goods';
+import { EventSys } from './systems/event';
+import { SeasonSys } from './systems/season';
+import { AchieveSys } from './systems/achieve';
+import { CodexSys } from './systems/codex';
+import { CouponSys } from './systems/coupon';
+import { CURRENCIES, checkLiveContent, curKinds } from '../../shared/defs';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
 const NAV_VISITS_PER_TICK = 12000;
@@ -117,6 +124,8 @@ export interface Hooks extends HooksExt {
   /** [핵심: 점검] 점검이 시작됐다 (통신 계층이 모두 저장하고 관리자 말고 내보낸다) / 끝났다 */
   maintStarted: () => void;
   maintEnded: () => void;
+  /** [daily] 사건을 셌다 (g.daily.add: 일일 임무의 종류 kill, enhance, buy와 게임의 것). 이벤트 임무·시즌 점수·업적이 함께 센다 (묶음 6) */
+  counted: (p: Ent, kind: string, n: number) => void;
   /** 탭·앱을 숨겼다(false) / 다시 보였다(true) (engine/server/net/web.ts). 실시간 판의 '숨긴 사람' 처리 같은 것을 게임이 건다 */
   playerVisible: (p: Ent, on: boolean) => void;
 }
@@ -343,6 +352,13 @@ export class Game {
   /** [morph] 변신 */ readonly morph: Morph;
   /** [odds] 확률표의 버전·이력·사전 공지와 추첨 기록 (굴림은 모듈과 상관없이 engine/shared/defs/odds.ts의 표에서) */ readonly odds: OddsSys;
   /** [modes] 게임 안의 모드 */ readonly modes: Modes;
+  // ---- 라이브 콘텐츠 (묶음 6) ----
+  /** [items] 상품 (GOODS가 비어 있으면 만들지 않는다: 자리표) */ readonly goods: Goods;
+  /** [event] 기간 이벤트 */ readonly event: EventSys;
+  /** [season] 시즌과 무료 보상 트랙 */ readonly season: SeasonSys;
+  /** [achieve] 업적과 칭호 */ readonly achieve: AchieveSys;
+  /** [codex] 도감 */ readonly codex: CodexSys;
+  /** [coupon] 쿠폰 코드와 복귀 보상 */ readonly coupon: CouponSys;
   /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
   readonly sanctions: Sanctions;
   /** [핵심] 시계와 초기화: 날·주·달의 열쇠와 경계 사건 (내용의 RESET). 규칙 플러그인보다 먼저 만든다 */
@@ -419,6 +435,15 @@ export class Game {
     this.odds = has('odds') ? new OddsSys(this) : off('odds', 'odds');
     // 게임 안의 모드: 그 뒤에 (접속 사건에서 단계·변신의 처리가 먼저 끝난 뒤 저장된 모드로 들어간다)
     this.modes = has('modes') ? new Modes(this) : off('modes', 'modes');
+    // 라이브 콘텐츠 (묶음 6): 그 뒤에 (고르지 않은 게임의 등록 차례가 예전과 같게). 상품은 GOODS를 적은 게임만
+    const goods = has('items') && hasGoodsDefs(), live6 = goods || ['event', 'season', 'achieve', 'codex', 'coupon'].some((m) => has(m as ModuleId));
+    if (live6) { const bad = checkLiveContent((cur) => curKinds(CURRENCIES[cur])?.spend ?? null); if (bad.length) throw new Error(`[live] 라이브 콘텐츠의 표에 문제가 있습니다:\n${bad.join('\n')}`); }
+    this.goods = goods ? new Goods(this) : off('items', 'goods');
+    this.event = has('event') ? new EventSys(this) : off('event', 'event');
+    this.season = has('season') ? new SeasonSys(this) : off('season', 'season');
+    this.achieve = has('achieve') ? new AchieveSys(this) : off('achieve', 'achieve');
+    this.codex = has('codex') ? new CodexSys(this) : off('codex', 'codex');
+    this.coupon = has('coupon') ? new CouponSys(this) : off('coupon', 'coupon');
     this.sanctions = new Sanctions(this);
     new Status(this); // 본인에게 보내는 성장 수치(stat)와 장비·우편(meta): 그 칸의 모듈을 고른 게임만
     for (const fn of this.ready) fn();

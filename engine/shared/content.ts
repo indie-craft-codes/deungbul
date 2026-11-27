@@ -128,3 +128,12 @@ export const AGE = get('AGE');
 export const ODDS = get('ODDS');
 // ---------- 게임 안의 모드 ----------
 export const MODE_RULES = get('MODE_RULES');
+// ---------- 라이브 콘텐츠 (묶음 6) ----------
+export const GOODS = get('GOODS');
+export const EVENTS = get('EVENTS');
+export const SEASON = get('SEASON');
+export const ACHIEVES = get('ACHIEVES');
+export const CODEX = get('CODEX');
+export const COUPON = get('COUPON');
+export const COMEBACK = get('COMEBACK');
+export const MAIL_RULES = get('MAIL_RULES');

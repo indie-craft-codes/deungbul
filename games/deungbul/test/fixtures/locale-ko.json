@@ -34,6 +34,13 @@
  "dungeons.crypt.name": "잿빛 지하묘",
  "dungeons.crypt_deep.info": "무덤 사냥개와 지하묘 기사를 뚫고 깨어난 주인을 쓰러뜨리세요. 레벨 7 장비가 나옵니다. 파티로 가세요.",
  "dungeons.crypt_deep.name": "지하묘 깊은 곳",
+ "fmt.achieveTitle": [
+  "bdfcc94c96357269",
+  "칭호 「undefined」",
+  "칭호 「0」",
+  "칭호 「1」",
+  "칭호 「2」"
+ ],
  "fmt.ageOver": [
   "9d9567d50cd6aef3",
   "만 undefined세 이상",
@@ -203,6 +210,20 @@
   "1 +undefined→+undefined: 기대 약 NaN골드",
   "2 +undefined→+undefined: 기대 약 NaN골드"
  ],
+ "fmt.codexAt": [
+  "1fd5709048848c27",
+  "undefined개 모으면",
+  "0개 모으면",
+  "1개 모으면",
+  "2개 모으면"
+ ],
+ "fmt.codexCount": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
  "fmt.coinHave": [
   "efe882c1c513e571",
   "불씨 NaN",
@@ -364,6 +385,27 @@
   " · 강화 보호석 1개",
   " · 강화 보호석 2개"
  ],
+ "fmt.eventEv": [
+  "80dc5203ce73203c",
+  "이벤트 재화 +NaN",
+  "이벤트 재화 +0",
+  "이벤트 재화 +1",
+  "이벤트 재화 +2"
+ ],
+ "fmt.eventHave": [
+  "a2029fc7338dea43",
+  "이벤트 불씨 NaN",
+  "이벤트 불씨 0",
+  "이벤트 불씨 1",
+  "이벤트 불씨 2"
+ ],
+ "fmt.eventSwap": [
+  "69a6b402c535557a",
+  "끝나면 남은 이벤트 재화는 undefined배의 불씨(으)로 바뀌어 우편으로 옵니다.",
+  "끝나면 남은 이벤트 재화는 0배의 불씨(으)로 바뀌어 우편으로 옵니다.",
+  "끝나면 남은 이벤트 재화는 1배의 불씨(으)로 바뀌어 우편으로 옵니다.",
+  "끝나면 남은 이벤트 재화는 2배의 불씨(으)로 바뀌어 우편으로 옵니다."
+ ],
  "fmt.friendSeen": [
   "d257c55e172835a2",
   "마지막 접속 NaN일 전",
@@ -517,6 +559,27 @@
   "골드 0",
   "골드 1",
   "골드 2"
+ ],
+ "fmt.goodsLimit": [
+  "6aa5ca108789317d",
+  "한 사람 undefined/undefined",
+  "한 사람 0/undefined",
+  "한 사람 1/undefined",
+  "한 사람 2/undefined"
+ ],
+ "fmt.goodsPrice": [
+  "1bad23a35f48a179",
+  "NaN 불씨",
+  "0 불씨",
+  "1 불씨",
+  "2 불씨"
+ ],
+ "fmt.goodsStock": [
+  "87f61822424ee39c",
+  "남은 수량 NaN",
+  "남은 수량 0",
+  "남은 수량 1",
+  "남은 수량 2"
  ],
  "fmt.guildCreateInfo": [
   "73aafad1b521fa32",
@@ -831,6 +894,25 @@
   "Lv 0 undefined",
   "Lv 1 undefined",
   "Lv 2 undefined"
+ ],
+ "fmt.liveLeft": [
+  "4aeffec1e631ebea",
+  "NaN분 남음",
+  "1분 남음",
+  "21분 남음"
+ ],
+ "fmt.liveSpan": [
+  "0d90ed8d18d76304",
+  "Invalid Date ~ Invalid Date",
+  "1. 1. 오전 12:00 ~ Invalid Date",
+  "1. 1. 오전 12:20 ~ Invalid Date",
+  "1. 1. 오전 12:00 ~ 1. 1. 오전 12:00"
+ ],
+ "fmt.mailLeft": [
+  "41443a04e59d2c69",
+  "NaN분 뒤 사라짐",
+  "1분 뒤 사라짐",
+  "21분 뒤 사라짐"
  ],
  "fmt.mailTitle": [
   "8f232c00bb9fefec",
@@ -1365,6 +1447,34 @@
   "1. 1. 오전 12:00까지",
   "1. 1. 오전 12:20까지"
  ],
+ "fmt.seasonHead": [
+  "652f103b7055ef6f",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.seasonPts": [
+  "b232867aaacb6b6b",
+  "점수 NaN",
+  "점수 0",
+  "점수 1",
+  "점수 2"
+ ],
+ "fmt.seasonReset": [
+  "8127230dc4f0d225",
+  "다음 시즌에는 점수의 undefined%가 남습니다.",
+  "다음 시즌에는 점수의 0%가 남습니다.",
+  "다음 시즌에는 점수의 1%가 남습니다.",
+  "다음 시즌에는 점수의 2%가 남습니다."
+ ],
+ "fmt.seasonTier": [
+  "8b2edd86a973b628",
+  "NaN단계 · NaN점",
+  "1단계 · NaN점",
+  "2단계 · NaN점",
+  "3단계 · NaN점"
+ ],
  "fmt.sellConfirm": [
   "4d5ecbc6a231a30e",
   "확인 · NaN골드",
@@ -1618,6 +1728,13 @@
   "기여 1단계 · 다음 undefined",
   "기여 2단계 · 다음 undefined"
  ],
+ "fmt.titleTag": [
+  "d7bd0051a0c268fd",
+  "「undefined」",
+  "「0」",
+  "「1」",
+  "「2」"
+ ],
  "fmt.towerHp": [
   "9c935fa224efdea8",
   "등탑 내구 undefined / undefined",
@@ -1749,6 +1866,13 @@
  "monsters.slime": "슬라임",
  "monsters.wisp": "위습",
  "monsters.wolf": "늑대",
+ "msg.achieveGot": [
+  "cab0eeadb38aba43",
+  "업적 달성: undefined",
+  "업적 달성: 0",
+  "업적 달성: 1",
+  "업적 달성: 2"
+ ],
  "msg.adminChat": [
   "d2e380eded2001e4",
   "[운영] undefined",
@@ -1922,7 +2046,35 @@
   "직업이 2(으)로 정해졌습니다."
  ],
  "msg.classFar": "직업은 등탑 가까이에서 바꿀 수 있습니다.",
+ "msg.codexNew": [
+  "15cf8d755b079a22",
+  "도감에 새로 올랐습니다: undefined · undefined",
+  "도감에 새로 올랐습니다: 0 · 0",
+  "도감에 새로 올랐습니다: 1 · 1",
+  "도감에 새로 올랐습니다: 2 · 3"
+ ],
+ "msg.comeback": [
+  "369715516c2d6406",
+  "undefined일 만에 돌아오셨네요! 복귀 보상을 우편으로 보냈습니다.",
+  "0일 만에 돌아오셨네요! 복귀 보상을 우편으로 보냈습니다.",
+  "1일 만에 돌아오셨네요! 복귀 보상을 우편으로 보냈습니다.",
+  "2일 만에 돌아오셨네요! 복귀 보상을 우편으로 보냈습니다."
+ ],
  "msg.costShort": "불씨가 모자랍니다.",
+ "msg.couponNo": [
+  "7072b3ffb3421d0c",
+  "쿠폰을 쓸 수 없습니다.",
+  "없는 쿠폰 코드입니다.",
+  "이미 쓴 쿠폰입니다.",
+  "쓸 수 있는 기간이 아닙니다."
+ ],
+ "msg.couponOk": [
+  "48ab9fe681cb7ecc",
+  "쿠폰 undefined의 보상을 우편으로 보냈습니다.",
+  "쿠폰 0의 보상을 우편으로 보냈습니다.",
+  "쿠폰 1의 보상을 우편으로 보냈습니다.",
+  "쿠폰 2의 보상을 우편으로 보냈습니다."
+ ],
  "msg.crafted": [
   "6392ca0c56c07af8",
   "undefined을(를) 만들었습니다.",
@@ -2029,6 +2181,27 @@
  ],
  "msg.eraseCanceled": "삭제 요청을 거뒀습니다.",
  "msg.erased": "요청한 대로 이 캐릭터의 데이터를 지웠습니다.",
+ "msg.eventEnd": [
+  "813f3ef6e41e5330",
+  "이벤트 'undefined'이(가) 끝났습니다.",
+  "이벤트 '0'이(가) 끝났습니다.",
+  "이벤트 '1'이(가) 끝났습니다. 남은 이벤트 재화 1을(를) 1(으)로 바꿔 우편으로 보냈습니다.",
+  "이벤트 '2'이(가) 끝났습니다. 남은 이벤트 재화 3을(를) 4(으)로 바꿔 우편으로 보냈습니다."
+ ],
+ "msg.eventMission": [
+  "d13c759e90e26cce",
+  "이벤트 임무 완료: undefined",
+  "이벤트 임무 완료: 0",
+  "이벤트 임무 완료: 1 (이벤트 재화 +1)",
+  "이벤트 임무 완료: 3 (이벤트 재화 +4)"
+ ],
+ "msg.eventStart": [
+  "26aac14a4a620038",
+  "이벤트 'undefined'이(가) 열렸습니다. 메뉴의 이벤트 탭을 보세요.",
+  "이벤트 '0'이(가) 열렸습니다. 메뉴의 이벤트 탭을 보세요.",
+  "이벤트 '1'이(가) 열렸습니다. 메뉴의 이벤트 탭을 보세요.",
+  "이벤트 '2'이(가) 열렸습니다. 메뉴의 이벤트 탭을 보세요."
+ ],
  "msg.featureOff": "flagOther이(가) 잠시 꺼져 있습니다. 공지를 확인해 주세요.",
  "msg.forgeClosed": "대장장이 브람이 아직 돌아오지 않았습니다.",
  "msg.forgeFar": "대장장이 브람 가까이에서 만들 수 있습니다.",
@@ -2119,6 +2292,20 @@
   "장비를 팔았습니다. 골드 +0",
   "장비를 팔았습니다. 골드 +1",
   "장비를 팔았습니다. 골드 +2"
+ ],
+ "msg.goodsGot": [
+  "911b582f6a3db4c7",
+  "undefined을(를) 샀습니다.",
+  "0을(를) 샀습니다.",
+  "1을(를) 샀습니다.",
+  "2을(를) 샀습니다."
+ ],
+ "msg.goodsNo": [
+  "d1663c658d0e1e28",
+  "살 수 없습니다.",
+  "지금은 팔지 않는 상품입니다.",
+  "이 상품은 더 살 수 없습니다 (한도).",
+  "품절입니다."
  ],
  "msg.guildBusy": [
   "08a0a107e6209e49",
@@ -2365,6 +2552,20 @@
   "0을(를) 주웠습니다. 브람의 대장간에서 쓸 수 있습니다.",
   "1을(를) 주웠습니다. 브람의 대장간에서 쓸 수 있습니다.",
   "2을(를) 주웠습니다. 브람의 대장간에서 쓸 수 있습니다."
+ ],
+ "msg.mailExpSoon": [
+  "199fa9f42fb3ad4c",
+  "우편 undefined통이 undefined시간 안에 사라집니다. 메뉴의 우편에서 받아 두세요.",
+  "우편 0통이 0시간 안에 사라집니다. 메뉴의 우편에서 받아 두세요.",
+  "우편 1통이 1시간 안에 사라집니다. 메뉴의 우편에서 받아 두세요.",
+  "우편 2통이 3시간 안에 사라집니다. 메뉴의 우편에서 받아 두세요."
+ ],
+ "msg.mailExpired": [
+  "ffb0b0cc69713eb6",
+  "기한이 지난 우편 undefined통이 사라졌습니다.",
+  "기한이 지난 우편 0통이 사라졌습니다.",
+  "기한이 지난 우편 1통이 사라졌습니다.",
+  "기한이 지난 우편 2통이 사라졌습니다."
  ],
  "msg.mailGot": [
   "8af104ac3ee7b4e3",
@@ -2733,6 +2934,20 @@
   "장비 1점을 분해했습니다. 장비 가루 +1",
   "장비 2점을 분해했습니다. 장비 가루 +3"
  ],
+ "msg.seasonGot": [
+  "60845e65ba93de2d",
+  "시즌 보상 NaN단계를 받았습니다.",
+  "시즌 보상 1단계를 받았습니다.",
+  "시즌 보상 2단계를 받았습니다.",
+  "시즌 보상 3단계를 받았습니다."
+ ],
+ "msg.seasonNew": [
+  "4b6ce9fc503b256b",
+  "새 시즌이 시작했습니다.",
+  "새 시즌이 시작했습니다 (시즌 1). 점수 1을(를) 이어 갑니다. 받지 않은 보상 1칸을 우편으로 보냈습니다.",
+  "새 시즌이 시작했습니다 (시즌 2). 점수 3을(를) 이어 갑니다. 받지 않은 보상 4칸을 우편으로 보냈습니다.",
+  "새 시즌이 시작했습니다 (시즌 1234567). 점수 1234567을(를) 이어 갑니다. 받지 않은 보상 1234567칸을 우편으로 보냈습니다."
+ ],
  "msg.shopFar": "길 상인 가까이에서 살 수 있습니다.",
  "msg.skillMax": "더 강화할 수 없는 기술입니다.",
  "msg.skillNeedLv": [
@@ -2856,6 +3071,11 @@
   "기여 0단계에 올랐습니다. 등탑지기 할멈이 골드 0을 건넵니다.",
   "기여 1단계에 올랐습니다. 등탑지기 할멈이 골드 1을 건넵니다.",
   "기여 2단계에 올랐습니다. 등탑지기 할멈이 골드 3을 건넵니다."
+ ],
+ "msg.titleSet": [
+  "41e8996c6514cf60",
+  "칭호를 뗐습니다.",
+  "칭호 「」을(를) 달았습니다."
  ],
  "msg.tooFar": "대상이 너무 멉니다.",
  "msg.towerFull": "등탑이 이미 가장 밝습니다.",
@@ -3032,6 +3252,7 @@
  "towers.crypt": "지하묘 입구",
  "towers.ember": "잿불 고원 등탑",
  "towers.first": "첫불 마을 등탑",
+ "ui.achieveTitles": "칭호",
  "ui.afkTag": "자리 비움",
  "ui.ageAskBand": "나이를 골라 주세요.",
  "ui.ageAskYear": "태어난 해를 골라 주세요.",
@@ -3096,6 +3317,8 @@
  "ui.cmpThis": "이 장비",
  "ui.cmpWorn": "낀 장비",
  "ui.cmpWorse": "더 나쁨",
+ "ui.codexNote": "처음 얻은 것이 도감에 오릅니다. 모은 수에 따라 보상이 우편으로 옵니다.",
+ "ui.codexUnknown": "???",
  "ui.confirmAgain": "한 번 더 확인합니다. 정말 쓸까요?",
  "ui.confirmNext": "계속",
  "ui.confirmNo": "그만두기",
@@ -3105,6 +3328,9 @@
  "ui.count1": "1개",
  "ui.count5": "5개",
  "ui.countAll": "전부",
+ "ui.couponHead": "쿠폰",
+ "ui.couponPh": "쿠폰 코드",
+ "ui.couponUse": "쓰기",
  "ui.currentClass": "지금 직업",
  "ui.dailyDay": "일일 임무",
  "ui.dailyDone": "완료",
@@ -3131,6 +3357,10 @@
  "ui.enhanceFailed": "강화 실패 · 장비는 그대로입니다",
  "ui.enhanceMaxed": "강화 끝",
  "ui.equip": "끼기",
+ "ui.eventGone": "끝나면 남은 이벤트 재화는 사라집니다.",
+ "ui.eventMissions": "이벤트 임무",
+ "ui.eventNone": "지금 열린 이벤트가 없습니다.",
+ "ui.eventShop": "이벤트 상점",
  "ui.farFar": "멀리",
  "ui.farMid": "보통",
  "ui.farNear": "가까이",
@@ -3195,6 +3425,11 @@
  "ui.gearMore": "강화·팔기·분해와 비교 펼치기",
  "ui.gearTapHint": "장비를 누르면 강화·팔기·분해와, 지금 낀 장비와의 비교가 펼쳐집니다. 지금 낀 것보다 ▲ 좋음 · ▼ 나쁨 · ◆ 좋은 점과 나쁜 점이 섞임 · = 비슷.",
  "ui.goingTown": "첫불 마을로 걸어갑니다.",
+ "ui.goodsAllBought": "다 샀습니다",
+ "ui.goodsBuy": "사기",
+ "ui.goodsNone": "지금 파는 상품이 없습니다.",
+ "ui.goodsNpc": "상인의 특별 상품",
+ "ui.goodsSoldOut": "품절",
  "ui.guildChatHint": "대화창에 '/g 내용'이라고 치면 길드원에게만 보입니다. 초대는 길드장이 상대를 눌러서 합니다.",
  "ui.guildChatTag": "[길드]",
  "ui.guildCreate": "만들기",
@@ -3422,6 +3657,11 @@
  "ui.sanctionPerm": "영구",
  "ui.sanctionSpan": "기간",
  "ui.sanctionWhy": "사유",
+ "ui.seasonClaim": "받기",
+ "ui.seasonClaimAll": "받을 수 있는 것 모두 받기",
+ "ui.seasonNone": "지금은 시즌이 없습니다.",
+ "ui.seasonNote": "점수는 사냥·임무 같은 활동으로 쌓입니다. 시즌이 끝날 때 받지 않은 보상은 우편으로 옵니다.",
+ "ui.seasonTrack": "보상 트랙 (무료)",
  "ui.setCalm": "화면 흔들림 끄기",
  "ui.setChatShow": "대화 보이기",
  "ui.setChatShowNote": "끄면 대화창과 말풍선이 보이지 않습니다.",
@@ -3491,12 +3731,16 @@
  "ui.sweepResult": "소탕 결과",
  "ui.synHead": "시너지",
  "ui.synNone": "같은 진영의 영웅을 함께 넣으면 시너지가 켜집니다.",
+ "ui.tabAchieve": "업적",
  "ui.tabBuild": "성장",
+ "ui.tabCodex": "도감",
  "ui.tabDaily": "일일",
  "ui.tabDevice": "기기",
+ "ui.tabEvent": "이벤트",
  "ui.tabFriends": "친구",
  "ui.tabGacha": "뽑기",
  "ui.tabGear": "장비",
+ "ui.tabGoods": "상점",
  "ui.tabGuild": "길드",
  "ui.tabHGear": "영웅 장비",
  "ui.tabHeroes": "영웅",
@@ -3505,6 +3749,7 @@
  "ui.tabMorph": "변신",
  "ui.tabOdds": "확률",
  "ui.tabRank": "순위",
+ "ui.tabSeason": "시즌",
  "ui.tabSettings": "설정",
  "ui.tabSquad": "편성",
  "ui.tabStages": "단계",
@@ -3516,6 +3761,9 @@
  "ui.teamPickTitle": "팀을 고르세요",
  "ui.teamSwitch": "팀 바꾸기",
  "ui.title": "등불지기",
+ "ui.titleNone": "아직 단 칭호가 없습니다.",
+ "ui.titleOff": "떼기",
+ "ui.titleUse": "달기",
  "ui.toTown": "마을로",
  "ui.tower": "등탑",
  "ui.towerDark": "불이 꺼져 있습니다. 모두가 불씨를 바쳐 밝히면, 이 구역에서 쓰러져도 여기서 다시 일어납니다.",
