@@ -35,6 +35,9 @@ import { platform } from './platform';
 import { initTips } from './hud/tip';
 import { initLayout } from './hud/layout';
 import { initScreens } from './hud/screens';
+import { connIn, connLosing, connLost, connOpening, initConn } from './hud/conn';
+import { initCmdState } from './hud/cmdstate';
+import { initReward } from './hud/reward';
 import { closeWorldMap } from './hud/worldmap';
 import type { Look } from './scene/view';
 import { S } from './state';
@@ -67,7 +70,7 @@ onMsg('name', (m) => { renameEntity(m.id, m.name); if (S.me && m.id === S.me.id)
 // 대화: 차단한 사람의 말은 서버가 거르고 보내지 않는다 (engine/server/net/social.ts). 채널 표시·정해진 문장·말풍선은 대화창이 (hud/chat.ts)
 onMsg('chat', (m) => onChat(m));
 onMsg('sys', (m) => notifySys(m.k, m.a));
-onMsg('pong', (m, now) => { S.pingMs = Math.round(now - m.c); });
+onMsg('pong', (m, now) => { if (m.c >= 0) S.pingMs = Math.round(now - m.c); }); // 음수는 명령의 상태가 보낸 표지 (hud/cmdstate.ts)
 onMsg('full', () => showGate('full', true));
 
 // 끊기면 스스로 다시 접속한다 (폰 화면이 꺼졌다 켜지거나 통신이 잠깐 끊긴 경우). 간격은 2초에서 시작해 15초까지 늘린다.
@@ -76,14 +79,16 @@ onMsg('full', () => showGate('full', true));
 let retryMs = 2000;
 let retryTimer = 0;
 function lost(code: number): void {
-  if (code === 4000 || code === 1013) { showGate(code === 1013 ? 'full' : 'disconnected', true); return; }
+  if (code === 4000 || code === 1013) { showGate(code === 1013 ? 'full' : 'disconnected', true, 'stop'); return; }
   if (code === 4001) { forgetToken(); showGate('gateHandedOff', true); return; }
   if (code === 4002) { showGate('gateKicked', true); return; }
   if (code === 4003) { showGate('gateBanned', false); return; }
   if (opsLost(code)) return; // 점검(4004), 새 접속 막힘(4005): 까닭을 두고 1분마다 다시 접속해 본다 (hud/ops.ts)
   if (code === 4010) { forgetToken(); showGate('gateErased', true); return; } // 요청한 대로 데이터를 지웠다 (engine/server/net/web.ts의 ERASED_CLOSE): 다음 접속은 새 캐릭터
   if (code === 4006) { outdated(); return; } // 서버의 프로토콜 호환 범위 밖 (보통은 먼저 온 update 메시지가 처리한다)
-  showGate('reconnecting', true);
+  // 끊김: 접속 화면이 '다시 잇는 중 (n번째) · m초 뒤'와 [지금 다시 잇기], 오래 걸리면 안내와 [새로고침] (hud/conn.ts)
+  showGate('reconnecting', true, 'lost');
+  connLost(retryMs);
   const again = () => {
     const life = platform().lifecycle;
     if (!life.visible()) { const off = life.on('show', () => { off(); again(); }); return; } // 화면이 꺼져 있으면 켜질 때까지 기다린다
@@ -93,7 +98,7 @@ function lost(code: number): void {
   retryTimer = window.setTimeout(again, retryMs);
   retryMs = Math.min(15000, retryMs * 2);
 }
-onMsg('welcome', () => { retryMs = 2000; clearTimeout(retryTimer); });
+onMsg('welcome', () => { retryMs = 2000; clearTimeout(retryTimer); connIn(); });
 
 // 서버와 이 화면의 프로토콜이 맞지 않는다(서버만 새 버전이고 화면은 옛 빌드가 남았다): 게임을 진행하지 않고 업데이트를 권한다.
 // 맞는지는 protocolFits(shared/protocol.ts): 같은 번호이거나, 서버가 알린 호환 범위(welcome.min ~ welcome.v) 안이면 맞다. 서버가 join.v를 보고 먼저 거절하면 update 메시지가 온다.
@@ -106,7 +111,7 @@ function outdated(store?: string): void {
   storeUrl = store;
   // 웹은 새로 읽으면 새 화면이 온다: '새로고침' 안내. 앱은 묶인 화면이라 새로 읽어도 그대로다: '업데이트' 안내
   const web = platform().id === 'web';
-  showGate(web ? 'stale' : 'staleApp', true);
+  showGate(web ? 'stale' : 'staleApp', true, 'update');
   const btn = $('joinBtn');
   btn.setAttribute('data-i18n', web ? 'reload' : 'updateApp'); // 언어를 바꿔도 따라 바뀌게 한다
   btn.textContent = t(web ? 'reload' : 'updateApp');
@@ -162,8 +167,11 @@ export function startClient(opts: ClientOptions = {}): void {
   onLangChange(relabel);
   initMe();
   initChat();
+  initConn(); // 접속 화면의 상태: 첫 로딩·끊김·닫힘 코드 (hud/conn.ts)
+  initCmdState(); // 명령의 상태: 누른 단추의 보냄·됨·안 됨 (hud/cmdstate.ts)
   for (const init of opts.modules ?? []) init();
   initModules();
+  initReward(); // 보상 연출: 레벨 업·받기·새 기능 (hud/reward.ts). 게임과 틀의 모듈이 안내문의 분류를 정한 뒤에
   initLayout(); // 폰 HUD의 구역 배치 (hud/layout.ts): 틀과 게임의 요소가 모두 붙은 뒤에
   initScreens(closeWorldMap); // 화면 쌓기 (hud/screens.ts): 틀의 창을 쌓임에 잇고, 뒤로 가기를 받는다
   startPreload(); // 게임의 모듈이 에셋을 등록한 뒤에
@@ -184,7 +192,7 @@ export function startClient(opts: ClientOptions = {}): void {
       if (m.t === 'update') { outdated(m.store); return; }
       dispatch(m, performance.now());
     },
-    opening: () => { clearEntities(); setParty([]); showGate('connecting', false); },
+    opening: () => { clearEntities(); setParty([]); if (!connLosing()) showGate('connecting', false); connOpening(); },
     closed: (code) => { clearEntities(); if (!stale) lost(code); },
   });
   initLifecycle(); // 탭 숨김·돌아옴 (lifecycle.ts)
@@ -197,7 +205,7 @@ export function startClient(opts: ClientOptions = {}): void {
 
   // 이름을 묻지 않고 바로 들어간다. 처음이면 무작위 이름이 붙고, 이름은 화면에서 눌러 바꾼다.
   // 개발 편의: 주소에 ?auto=이름 을 붙이면 처음 접속할 때 그 이름을 쓴다 (플랫폼이 시작할 때 받은 값: platform().app.param).
-  $('joinForm').addEventListener('submit', (ev) => { ev.preventDefault(); if (stale) platform().app.requireUpdate(storeUrl); else connect(); });
+  $('joinForm').addEventListener('submit', (ev) => { ev.preventDefault(); if (stale) platform().app.requireUpdate(storeUrl); else { clearTimeout(retryTimer); connect(); } });
   connect(platform().app.param('auto') ?? undefined);
 
   setInterval(() => { if (S.me) send({ t: 'ping', c: performance.now() }); }, 2000);

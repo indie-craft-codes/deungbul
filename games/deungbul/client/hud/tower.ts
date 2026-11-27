@@ -2,8 +2,8 @@
 // 틀의 내 정보 창(hud/me.ts)은 이 줄들을 모른다: 여기서 bus에 스스로 등록해 그린다 (느린 주기, 공유 상태를 받았을 때, 언어가 바뀔 때).
 import { QUESTS, CONTRIB_TIERS, GLOW_BRIGHT, GLOW_BRIGHT_REGEN, GLOW_BRIGHT_SPEED, GLOW_MAX, RESIDENTS, TOWER_REACH } from '../../shared/defs';
 import { TOWERS } from '../../shared/world';
-import { $, addPlace, onMsg, onSlow, openClasses, S, send } from '@engine/client';
-import { L, onLangChange } from '@engine/client/i18n';
+import { $, addPlace, onMsg, onSlow, openClasses, S, send, setLoadingTips, showNumber } from '@engine/client';
+import { L, onLangChange, t } from '@engine/client/i18n';
 import { G, GS, myZone, stage, zoneGlow } from '../state';
 
 /** 화면의 요소들. initTower에서 잡는다 (이 게임의 창이 화면에 붙은 뒤다) */
@@ -23,6 +23,7 @@ export function offer(to: 'tower' | 'resident', n: number): void {
 }
 
 export function initTower(): void {
+  setLoadingTips(() => [t('loadTip1'), t('loadTip2'), t('loadTip3')]); // 첫 로딩의 팁 (U2)
   ui = { sparks: $('sparks'), contrib: $('contrib'), tower: $('tower'), towerMini: $('towerMini') };
   // 등탑에 불씨 바치기
   for (const [to, key] of [['tower', 'T'], ['resident', 'R']] as const) {
@@ -83,7 +84,7 @@ export function towerSlow(): void {
   // 퀘스트가 주민에게 보태라고 하면 '보태기' 단추들을 빛낸다 (대장장이·약초꾼을 되돌리는 길로 이끈다)
   const step = QUESTS[G.quest.c]?.steps[G.quest.s];
   $('resBtns').classList.toggle('hint', step?.goal.kind === 'offer' && 'to' in step.goal && step.goal.to === 'resident');
-  ui.sparks.textContent = loc.fmt.sparks(me.sparks);
+  showNumber(ui.sparks, me.sparks, loc.fmt.sparks, me.ready); // 바뀌면 굴리고 곁에 +n (U2)
   ui.contrib.textContent = loc.fmt.contrib(G.contrib);
   $('rested').textContent = G.rested > 0 ? loc.fmt.rested(G.rested) : '';
   $('tierText').textContent = loc.fmt.tier(G.tier, CONTRIB_TIERS[G.tier]?.need ?? null);
@@ -95,5 +96,6 @@ export function towerSlow(): void {
     const none = me.sparks < 1;
     for (const id of ['offerT1', 'offerT5', 'offerTAll']) $<HTMLButtonElement>(id).disabled = none;
     for (const id of ['offerR1', 'offerR5', 'offerRAll']) $<HTMLButtonElement>(id).disabled = none;
+    $('offerWhy').hidden = !none; // 흐린 까닭: 불씨가 없다 · 몬스터를 잡으면 얻는다 (U2)
   }
 }

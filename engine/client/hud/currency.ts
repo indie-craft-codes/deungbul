@@ -5,6 +5,7 @@ import { onSlow } from '../bus';
 import { L } from '../i18n';
 import { S } from '../state';
 import { itemIcon } from './icons';
+import { showNumber } from './reward';
 
 export interface CurrencyChip {
   /** 칩의 이름표 (class와 data-cur에 들어간다: 게임의 스타일이 색을 준다) */
@@ -27,7 +28,7 @@ const builtIn = (id: CurrencyId): CurrencyChip => id === 'gold'
   ? { id: 'gold', icon: 'cur:gold', glyph: '●', value: () => S.me?.gold ?? 0, title: (n) => L().fmt.gold(n) }
   : { id: 'second', icon: 'cur:second', glyph: '◆', value: () => S.me?.sparks ?? 0, title: (n) => L().fmt.coinHave(n) || String(n) };
 
-const bars: { chip: CurrencyChip; num: HTMLElement; el: HTMLElement; last: string }[] = [];
+const bars: { chip: CurrencyChip; num: HTMLElement; el: HTMLElement; last: string; lang: string }[] = [];
 let ticking = false;
 
 /**
@@ -53,7 +54,7 @@ export function currencyBar(chips: readonly (CurrencyId | CurrencyChip | (Partia
       el.append(p);
     }
     bar.append(el);
-    bars.push({ chip, num, el, last: '' });
+    bars.push({ chip, num, el, last: '', lang: '' });
   }
   draw();
   if (!ticking) { ticking = true; onSlow(draw); }
@@ -65,9 +66,11 @@ function draw(): void {
   for (const b of bars) {
     if (!b.el.isConnected && b.last) continue;
     const n = b.chip.value(), text = n.toLocaleString(loc.code);
-    if (text === b.last) continue;
-    b.last = text;
-    b.num.textContent = text;
+    if (text === b.last && b.lang === loc.code) continue;
+    // 바뀐 값은 굴리고 곁에 +n (U2: hud/reward.ts). 내 상태를 받기 전·언어가 바뀐 때는 글만
+    const live = !!S.me?.ready && b.lang === loc.code;
+    b.last = text; b.lang = loc.code;
+    showNumber(b.num, n, (v) => v.toLocaleString(loc.code), live);
     if (b.chip.title) b.el.title = b.chip.title(n);
   }
 }

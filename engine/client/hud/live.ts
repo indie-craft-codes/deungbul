@@ -13,7 +13,7 @@ import { S } from '../state';
 import { addMenuTab } from './menu';
 import { goodsText } from './menu/gear';
 import { mailTop } from './menu/mail';
-import { button, el, optsEl, redraw, rewardText, row } from './menu/parts';
+import { button, doneMark, el, emptyState, lockMark, optsEl, progBar, redraw, rewardText, row } from './menu/parts';
 import { renderShop, shopExtras } from './shop';
 
 let goods: GoodsMe = { b: {}, s: {} };
@@ -39,7 +39,7 @@ function goodsRow(id: string, def: GoodsDef): HTMLElement {
 function drawGoods(list: HTMLElement): void {
   const now = Date.now();
   const ids = goodsIds().filter((id) => { const d = goodsDef(id)!; return !d.event && d.shop !== 'npc' && goodsOpen(d, now); });
-  if (!ids.length) { list.append(el('note', t('goodsNone'))); return; }
+  if (!ids.length) { list.append(emptyState('✧', t('goodsNone'))); return; }
   // shop 이름표마다 묶는다 (기본 'shop'은 머리 없이)
   const groups = new Map<string, string[]>();
   for (const id of ids) { const k = goodsDef(id)!.shop ?? 'shop'; groups.set(k, [...(groups.get(k) ?? []), id]); }
@@ -51,7 +51,7 @@ function drawGoods(list: HTMLElement): void {
 
 function drawEvents(list: HTMLElement): void {
   const loc = L(), now = Date.now();
-  if (!events.length) { list.append(el('note', t('eventNone'))); return; }
+  if (!events.length) { list.append(emptyState('✧', t('eventNone'))); return; }
   for (const ev of events) {
     const def = eventDef(ev.id);
     if (!def) continue;
@@ -68,7 +68,7 @@ function drawEvents(list: HTMLElement): void {
       list.append(el('baghead', t('eventMissions')));
       for (const [mid, m] of ms) {
         const done = ev.got.includes(mid);
-        list.append(row(missionName(ev.id, mid), optsEl([...giveText(m.r ?? {}), m.ev ? loc.fmt.eventEv(m.ev) : '']), [el('num', done ? t('dailyDone') : loc.fmt.have(ev.prog[mid] ?? 0, m.n))], done ? 'done' : ''));
+        list.append(row(missionName(ev.id, mid), optsEl([...giveText(m.r ?? {}), m.ev ? loc.fmt.eventEv(m.ev) : '']), [done ? doneMark(t('dailyDone')) : el('num', loc.fmt.have(ev.prog[mid] ?? 0, m.n))], done ? 'done' : ''));
       }
     }
     const shop = goodsIds().filter((id) => goodsDef(id)!.event === ev.id);
@@ -78,18 +78,24 @@ function drawEvents(list: HTMLElement): void {
 
 function drawSeason(list: HTMLElement): void {
   const loc = L(), s = SEASON;
-  if (!s || !season) { list.append(el('note', t('seasonNone'))); return; }
+  if (!s || !season) { list.append(emptyState('✧', t('seasonNone'))); return; }
   const me = season, box = el('gbanner liveEv');
   box.append(el('ttitle', loc.fmt.seasonHead(seasonName(), me.n)), el('note', `${loc.fmt.liveLeft(me.to - Date.now())}`), el('liveHave', loc.fmt.seasonPts(me.pts)));
   const r = s.reset ?? 'all';
   box.append(el('note', loc.fmt.seasonReset(typeof r === 'object' ? String(Math.round(r.part * 100)) : r)));
   list.append(box);
   const ready = s.track.map((x, i) => i).filter((i) => me.pts >= s.track[i].pts && !me.got.includes(i));
+  // 다음 단계까지의 막대 (U2: 숫자만 있던 것)
+  const nextTier = s.track.find((x) => x.pts > me.pts);
+  if (nextTier) { const prev = [...s.track].reverse().find((x) => x.pts <= me.pts)?.pts ?? 0; box.append(progBar((me.pts - prev) / Math.max(1, nextTier.pts - prev)), el('note', loc.fmt.seasonNext(nextTier.pts - me.pts))); }
   list.append(el('baghead', t('seasonTrack')));
   if (ready.length > 1) list.append(button(t('seasonClaimAll'), () => send({ t: 'season', i: -1 })));
   s.track.forEach((tier, i) => {
     const got = me.got.includes(i), can = ready.includes(i);
-    list.append(row(loc.fmt.seasonTier(i, tier.pts), optsEl(giveText(tier.r)), [got ? el('num', t('dailyDone')) : button(t('seasonClaim'), () => send({ t: 'season', i }), !can)], got ? 'done' : can ? 'ready' : ''));
+    // 세 모양 (U2): 받음(✓, 흐림 없이) · 받기(주 단추) · 잠김(🔒 n점 더)
+    const claim = button(t('seasonClaim'), () => send({ t: 'season', i }));
+    claim.className = 'btn-primary';
+    list.append(row(loc.fmt.seasonTier(i, tier.pts), optsEl(giveText(tier.r)), [got ? doneMark(t('stateGot')) : can ? claim : lockMark(loc.fmt.seasonNext(tier.pts - me.pts))], got ? 'done' : can ? 'ready' : 'locked'));
   });
   list.append(el('note', t('seasonNote')));
 }
@@ -102,7 +108,7 @@ function drawAchieve(list: HTMLElement): void {
   for (const id of achieveIds()) {
     const a = achieveDef(id)!, done = ach.got.includes(id);
     const bits = [...giveText(a.r ?? {}), a.title ? loc.fmt.achieveTitle(titleName(id)) : ''];
-    const acts = done ? (a.title && ach.title !== id ? [button(t('titleUse'), () => send({ t: 'title', id }))] : [el('num', t('dailyDone'))]) : [el('num', loc.fmt.have(Math.min(a.n, ach.c[a.kind] ?? 0), a.n))];
+    const acts = done ? (a.title && ach.title !== id ? [button(t('titleUse'), () => send({ t: 'title', id }))] : [doneMark(t('dailyDone'))]) : [el('num', loc.fmt.have(Math.min(a.n, ach.c[a.kind] ?? 0), a.n))];
     list.append(row(achName(id), optsEl(bits), acts, done ? 'done' : ''));
   }
 }

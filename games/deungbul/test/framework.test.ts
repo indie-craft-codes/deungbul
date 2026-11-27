@@ -495,15 +495,16 @@ function noonOf(day: unknown): number {
     'noTarget', 'tooFar', 'offerFar', 'noSparks', 'towerFull', 'noResident', 'shopFar', 'notStocked', 'alreadyBest',
     'potionFull', 'noGold', 'noPotion', 'hpFull', 'classFar', 'renameWait', 'loot', 'crafted', 'forgeFar', 'forgeClosed', 'noMats', 'nameBad', 'nameTaken', 'reported', 'reportWait', 'partyInvited', 'partyBusy', 'partyFull', 'partyGone', 'partyDeclined',
   ];
+  // U2: 레벨 업과 받기(우편·시즌·쿠폰)는 화면 효과음(sfx.levelUp·sfx.reward = ui.levelUp·ui.reward)으로 바꿨다
   const SOUND: Record<string, string> = {
-    levelUp: 'fanfare', questDone: 'fanfare', dungeonClear: 'fanfare', raidWon: 'fanfare', residentBack: 'fanfare', bossDown: 'fanfare', enhanceOk: 'fanfare',
-    gearDrop: 'pickup', mailNew: 'pickup', loot: 'pickup', bought: 'pickup', crafted: 'pickup', mailGot: 'pickup',
+    levelUp: 'levelUp', seasonGot: 'reward', couponOk: 'reward', questDone: 'fanfare', dungeonClear: 'fanfare', raidWon: 'fanfare', residentBack: 'fanfare', bossDown: 'fanfare', enhanceOk: 'fanfare',
+    gearDrop: 'pickup', mailNew: 'pickup', loot: 'pickup', bought: 'pickup', crafted: 'pickup', mailGot: 'reward',
     died: 'bad', dungeonFail: 'bad', raidStart: 'bad', raidLost: 'bad', enhanceFail: 'bad', enhanceDown: 'bad', enhanceSaved: 'bad',
   };
   const same = (got: [string, string][], want: Record<string, string>): boolean => got.length === Object.keys(want).length && new Set(got.map(([k]) => k)).size === got.length && got.every(([k, v]) => want[k] === v);
   const gameKeys = [...(/interface MsgMap \{([\s\S]*?)\n  \}/.exec(read('games/deungbul/shared/deungbul.ts'))?.[1] ?? '').matchAll(/^\s{4}(\w+):/gm)].map((m) => m[1]);
   const isGame = (k: string): boolean => gameKeys.includes(k);
-  check(engine.banner.length === 8 && engine.feed.length > 70 && engine.sound.length === 15 && game.banner.length === 9 && game.feed.length === 9 && game.sound.length === 5, `알림 분류표와 소리 대응표를 읽어 낸다 (틀: 가운데 ${engine.banner.length}, 흘러가는 ${engine.feed.length}, 소리 ${engine.sound.length} / 게임: ${game.banner.length}, ${game.feed.length}, ${game.sound.length})`);
+  check(engine.banner.length === 8 && engine.feed.length > 70 && engine.sound.length === 17 && game.banner.length === 9 && game.feed.length === 9 && game.sound.length === 5, `알림 분류표와 소리 대응표를 읽어 낸다 (틀: 가운데 ${engine.banner.length}, 흘러가는 ${engine.feed.length}, 소리 ${engine.sound.length} / 게임: ${game.banner.length}, ${game.feed.length}, ${game.sound.length})`);
   check(same([...engine.banner, ...game.banner], BANNER), '가운데 알림으로 뜨는 안내문과 그 색조가 가르기 전과 같다 (틀의 표 + 게임이 등록한 것)');
   check([...engine.feed, ...game.feed].sort().join() === [...FEED].sort().join() && new Set([...engine.feed, ...game.feed]).size === FEED.length, `흘러가는 알림으로 뜨는 안내문 ${FEED.length}개가 가르기 전과 같다`);
   check(same([...engine.sound, ...game.sound], SOUND), '안내문마다 나는 소리가 가르기 전과 같다');

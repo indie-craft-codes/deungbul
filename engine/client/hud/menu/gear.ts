@@ -8,7 +8,7 @@ import { send } from '../../net';
 import { hasModule } from '../../mods';
 import { S } from '../../state';
 import { gearIcon } from '../icons';
-import { button, el, gearTitle, optsEl, redraw, row, select, span, ui } from './parts';
+import { button, el, emptyState, gearTitle, optsEl, redraw, row, select, span, ui } from './parts';
 
 /** 상점에서 장비(무기, 갑옷)를 파는 게임인가: 장비 탭의 안내가 상점을 말할지 */
 const SELLS_GEAR = SHOPS.length > 0 && SHOP_STOCK.some((id) => isItemId(id) && (itemDef(id).kind === 'weapon' || itemDef(id).kind === 'armor'));
@@ -293,7 +293,7 @@ export function drawGear(): void {
   // 가방이 가득 찼으면 눈에 띄게 알린다: 새로 떨어지는 장비가 조용히 버려진다
   if (m.gear.length >= S.bag.max) { const warn = el('note gwarn', S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull')); warn.setAttribute('role', 'status'); ui.list.append(warn); }
   if (S.salvage.on) ui.list.append(...salvageTools(rest));
-  if (!rest.length) ui.list.append(el('note', t('gearEmpty')));
+  if (!rest.length) ui.list.append(emptyState('⚔', t('gearEmpty')));
   else ui.list.append(el('note', t('gearTapHint')));
   for (const g of rest) ui.list.append(...gearRow(g, false));
 }

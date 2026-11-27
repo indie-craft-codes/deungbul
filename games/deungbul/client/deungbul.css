@@ -36,6 +36,11 @@
 #resBtns.hint button { box-shadow: 0 0 0 1px var(--c-accent), 0 0 8px var(--db-glow); animation: hintPulse 1.6s ease-in-out infinite; }
 @keyframes hintPulse { 50% { box-shadow: 0 0 0 1px var(--c-accent), 0 0 2px var(--db-glow-low); } }
 .bar.res i { background: var(--c-good); }
+/* 바치면 막대가 차오른다 (U2 보상 연출: 틀의 움직임 시간, 움직임 줄이기면 곧바로) */
+.bar.glow i, .bar.res i { transition: transform var(--dur-reward) var(--ease-out); }
+/* 불씨가 없어 흐린 바치기·보태기 단추의 까닭 한 줄 (U2) */
+.offerWhy { color: var(--c-warn); font-size: var(--fs-sm); grid-column: 1 / -1; }
+.offerWhy[hidden] { display: none; }
 .spark { color: var(--c-accent); font-weight: 700; font-size: var(--fs-xs); }
 /* 'Sparks 120'이 두 줄로 꺾이지 않게 (검토 7, 영어 폰) */
 #sparks { white-space: nowrap; }

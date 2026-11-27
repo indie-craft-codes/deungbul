@@ -90,7 +90,7 @@ export function initDevice(): void {
   addNotices({ feed: ['muted', 'handoffGuest', 'handoffBad', 'handoffWait', 'handoffSelf'], banner: { adminNotice: '', adminGive: 'good', adminTake: 'bad' } });
   onMsg('handoff', (m) => {
     if ('token' in m) {
-      void adoptToken(m.token).then((ok) => { if (ok) { code = null; result = null; showGate('gateHandoffDone', false); } });
+      void adoptToken(m.token).then((ok) => { if (ok) { code = null; result = null; showGate('gateHandoffDone', false, 'wait'); } });
       return;
     }
     code = { text: m.code, until: performance.now() + m.ms };

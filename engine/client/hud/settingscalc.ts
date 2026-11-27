@@ -22,6 +22,8 @@ export interface Settings {
   gfx: Gfx;
   /** 흔들림 끄기. null이면 기기의 '동작 줄이기' 설정을 따른다 */
   calm: boolean | null;
+  /** 움직임 줄이기 (보상 연출·돌림·떠오르는 숫자). null이면 기기의 '동작 줄이기'를 따른다 (engine/client/motion.ts) */
+  motion?: boolean | null;
   /** 화면(창·단추·글자)의 배율 */
   ui: number;
   /** 키 재설정: 기능(처음 키) → 고른 키 (engine/client/bus.ts의 setKeyMap) */
@@ -48,6 +50,7 @@ export function readSettings(raw: string | null, cap = 2): Settings {
   return {
     gfx: { shadows: typeof g.shadows === 'boolean' ? g.shadows : d.gfx.shadows, pixelRatio: Math.min(cap, near(g.pixelRatio, PIXEL_STEPS, d.gfx.pixelRatio)), far: near(g.far, FAR_STEPS, d.gfx.far) },
     calm: typeof o.calm === 'boolean' ? o.calm : null,
+    ...(typeof (o as { motion?: unknown }).motion === 'boolean' ? { motion: (o as { motion: boolean }).motion } : {}),
     ui: near(o.ui, UI_STEPS, 1),
     keys,
     extra: typeof o.extra === 'object' && o.extra !== null ? { ...(o.extra as Record<string, unknown>) } : {},

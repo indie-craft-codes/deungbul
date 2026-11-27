@@ -39,6 +39,31 @@ export function whyOf(b: HTMLButtonElement, why: string): void {
   b.append(s);
   b.title = why;
 }
+/**
+ * 빈 상태 (U2): 목록이 비었을 때 그림 하나 + 안내 한 줄 + 할 수 있는 일 단추 (주지 않으면 단추 없이).
+ * 예: emptyState('✉', t('mailEmpty'), { label: t('emptyToDaily'), onClick: () => openMenu('daily') })
+ */
+export function emptyState(icon: string, text: string, action?: { label: string; onClick: () => void }): HTMLDivElement {
+  const box = el('empty');
+  const i = el('emptyIcon', icon); i.setAttribute('aria-hidden', 'true');
+  const p = document.createElement('p'); p.textContent = text;
+  box.append(i, p);
+  if (action) { const b = button(action.label, action.onClick); b.className = 'btn-primary'; box.append(b); }
+  return box;
+}
+/** 이미 함의 표 (✓ 받음·완료): 흐림 없이 낮은 대비 — 못 누르는 단추와 다른 모양 */
+export function doneMark(text: string): HTMLSpanElement { return span('stDone', text); }
+/** 잠김의 표 (🔒 언제 열리는지) */
+export function lockMark(text: string): HTMLSpanElement { return span('stLock', text); }
+/** 탭 머리의 잠김 띠: 이 탭에서 아직 못 하는 것과 언제 열리는지 */
+export function lockBand(text: string): HTMLDivElement { return el('lockBand', text); }
+/** 진행 막대 한 줄 (0~1) */
+export function progBar(k: number): HTMLSpanElement {
+  const b = span('progbar', ''), f = document.createElement('span');
+  f.style.transform = `scaleX(${Math.max(0, Math.min(1, k))})`;
+  b.append(f);
+  return b;
+}
 /** 한 줄: 왼쪽에 이름과 설명, 오른쪽에 단추들. 이름과 설명은 글이거나 미리 만든 요소다 */
 export function row(name: string | HTMLElement, note: string | HTMLElement, buttons: HTMLElement[] = [], cls = ''): HTMLDivElement {
   const r = el('mrow ' + cls), what = el('what');

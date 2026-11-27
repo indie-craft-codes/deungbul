@@ -17,6 +17,7 @@ import { feed } from './notify';
 import { closeScreen, dropScreen, openScreen, screenOpen } from './screens';
 import { myStage } from './stagebar';
 import { tintRarity } from './rarity';
+import { addUnlock } from './reward';
 import { heroDef } from '../../shared/defs';
 
 export interface BattleOpts {
@@ -127,6 +128,9 @@ function drawSquad(): void {
 /** 전투 화면을 켠다 (게임이 한 번) */
 export function useBattleScreen(o: BattleOpts): void {
   opts = o;
+  // 배속이 잠겨 있는 동안 '언제 열리는지', 열리면 새 기능 알림 (hud/reward.ts)
+  const unlockAt = SPEED?.unlock;
+  if (unlockAt) addUnlock({ id: 'speed', name: () => t('unlockSpeed'), open: () => (myStage()?.speedMax ?? 1) > 1, hint: () => L().fmt.btlSpeedLocked(unlockAt) });
   const top = mk('div', 'btlTop'); top.id = 'btlTop'; top.hidden = true;
   const pause = mk('button', 'btlIcon btn-secondary') as HTMLButtonElement; pause.type = 'button'; pause.id = 'btlPauseBtn'; pause.textContent = '‖';
   const info = mk('div', 'btlInfo'), stage = mk('b', ''), wave = mk('span', '');

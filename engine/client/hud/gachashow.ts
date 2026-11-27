@@ -5,7 +5,9 @@
 //   오른쪽 위 '건너뛰기': 남은 공개를 건너 요약으로 — 아직 보이지 않은 새 카드·가장 높은 등급에서는 한 번 멈춘다. 저절로 닫지 않는다.
 // 그림은 영웅의 초상 칸(collect.ts의 setHeroPic: 메아리 계약은 charPortrait). 등급 색은 등급 색 표 하나(hud/rarity.ts).
 // 창은 화면 쌓기의 sheet('gachaPop'): 뒤로 가기가 닫는다. 게임이 더 할 수 있는 것: onGachaResult(소리·덤 연출).
-import { BANNER_TABLE, rarityDef, type PullGot } from '../../shared/defs';
+import { BANNER_TABLE, HERO_RARITIES, rarityDef, type PullGot } from '../../shared/defs';
+import { stillMotion } from '../motion';
+import { gachaSound } from '../sound';
 import { L, t } from '../i18n';
 import { bannerName, heroName, rarityName } from '../i18n/ko';
 import { send } from '../net';
@@ -26,7 +28,9 @@ export function setShowPic(fn: (id: string) => string | undefined): void { pic =
 
 const mk = (tag: string, cls: string, text?: string): HTMLElement => { const e = document.createElement(tag); e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const money = (cur: string): number => (S.me ? (cur === 'gold' ? S.me.gold : S.me.sparks) : 0);
-const reduced = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = stillMotion;
+/** 공개의 소리 (U2): 그 칸의 등급 높이 (가장 높은 등급 = ui.gacha3) */
+const ding = (r: number): void => gachaSound(r, Math.max(1, HERO_RARITIES.length - 1));
 /** 그 칸에서 멈출까: 새 카드이거나 이번 결과의 가장 높은 등급(가장 흔한 등급이 아니면) */
 const special = (s: Show, g: PullGot): boolean => !g.dup || (g.r === s.top && s.top > 0);
 
@@ -105,6 +109,7 @@ function step(): void {
   else if (s.stage === 'reveal') { s.seen.add(s.at); if (s.at + 1 < s.got.length) s.at++; else s.stage = 'summary'; }
   else return;
   draw();
+  if (s.stage === 'reveal') ding(s.got[s.at].r);
   auto();
 }
 /** 낮은 등급의 공개는 저절로 넘긴다 (새 카드·가장 높은 등급은 누를 때까지 멈춘다) */
@@ -122,7 +127,7 @@ function skipAll(): void {
   clearTimeout(timer);
   const from = s.stage === 'tease' ? 0 : s.at + 1;
   for (let i = from; i < s.got.length; i++) {
-    if (special(s, s.got[i]) && !s.seen.has(i)) { s.stage = 'reveal'; s.at = i; s.seen.add(i); draw(); return; }
+    if (special(s, s.got[i]) && !s.seen.has(i)) { s.stage = 'reveal'; s.at = i; s.seen.add(i); draw(); ding(s.got[i].r); return; }
     s.seen.add(i);
   }
   s.stage = 'summary';
@@ -145,6 +150,7 @@ export function startGachaShow(banner: string, got: readonly PullGot[]): void {
   el.hidden = false;
   openScreen('gachaPop', { kind: 'sheet', el, close: () => { clearTimeout(timer); show = null; el.hidden = true; } });
   draw();
+  ding(show.top); // 예고: 가장 높은 등급의 소리가 먼저
   // 예고는 잠깐 비추고 저절로 공개로 (누르면 바로)
   timer = window.setTimeout(step, reduced() ? 300 : 1300);
 }

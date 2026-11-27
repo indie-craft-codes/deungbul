@@ -31,6 +31,7 @@ export function mountMarkup(): void {
         <button type="button" id="offerT5" data-i18n="count5"></button>
         <button type="button" id="offerTAll" data-i18n="countAll"></button>
       </div>
+      <div class="offerWhy" id="offerWhy" data-i18n="offerNone" hidden></div>
       <div id="villageBox">
       <div class="row"><span class="ttitle" id="resName"></span><span class="num" id="resText"></span></div>
       <div class="bar res"><i id="resBar"></i></div>

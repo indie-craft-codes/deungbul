@@ -46,6 +46,10 @@ export const enNames: ContentNames = {
 
 export const enGame: GameLocale = {
   ui: {
+    // Loading tips (U2: the engine's setLoadingTips)
+    loadTip1: 'Collect resonance shards to call echoes at the Echo Well. Stages and the Vale both give shards.',
+    loadTip2: 'Stuck on a stage? Level up your echoes or change your squad.',
+    loadTip3: 'Leave auto-hunt on in the Vale and a stand-in keeps hunting while you are at the Spire.',
     // The engine's 'hero' wording becomes this game's 'echo' (summon results, squad, hero list)
     heroNone: 'No echoes yet. Call one at the Echo Well.',
     gachaRatesHero: 'Rates by echo',

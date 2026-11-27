@@ -15,7 +15,7 @@ import { send } from '../net';
 import { S } from '../state';
 import { detailTabs, enhanceView, formation, gearRows, heroDetail, setViews, slotViews, synergyRows, toggleRow, type CostPart, type DetailTab, type GearRow, type Wallet } from './herogrowcalc';
 import { addMenuTab } from './menu';
-import { button, chips, el, redraw, row, span } from './menu/parts';
+import { button, chips, el, emptyState, redraw, row, span } from './menu/parts';
 import { addNotices } from './notify';
 
 /** 서버가 보낸 내 영웅 장비 (개인 상태 hgear) */
@@ -169,7 +169,7 @@ function enhanceBox(r: GearRow): HTMLElement {
 function drawHeroGear(list: HTMLElement): void {
   const loc = L(), rows = gearRows(myHeroGear()), salv = !!heroGearRules()?.salvage;
   list.append(el('baghead', `${t('tabHGear')} ${loc.fmt.hgCount(rows.length, hgear.cap)}`));
-  if (!rows.length) list.append(el('note', t('hgNone')));
+  if (!rows.length) list.append(emptyState('⚔', t('hgNone')));
   for (const r of rows) {
     const btns = [button(t('hgEnhance'), () => { enhUid = enhUid === r.uid ? 0 : r.uid; redraw(); }, r.lv >= r.maxLv)];
     if (salv && !r.hero) btns.push(button(t('hgSalvage'), () => send({ t: 'hgear', a: 'salvage', uids: [r.uid] })));

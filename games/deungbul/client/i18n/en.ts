@@ -79,6 +79,10 @@ export const enNames: ContentNames = {
 export const enGame: GameLocale = {
   ui: {
     title: 'Lampkeeper',
+    // Loading tips (U2: the engine's setLoadingTips)
+    loadTip1: 'Light a tower with sparks and you will rise beside it when you fall in that area.',
+    loadTip2: 'Tap the quest panel to walk to the goal.',
+    loadTip3: 'Once your character has grown a little, auto-hunt keeps going for a while after you close the window.',
     shop: 'Road Merchant',
     hint: keyHints(['Click or WASD: move', 'Click a monster: attack', '1–3: skills', 'Q: potion', 'F: quest', 'R: auto-hunt', 'H: town', 'B: bag', 'M: menu', 'N: map', 'Tab: target', 'Enter: chat']),
     toTown: 'To town',
@@ -88,6 +92,7 @@ export const enGame: GameLocale = {
     questNeedSparks: 'You have no sparks to offer. Defeat monsters to gather some.',
     tower: 'Lamp tower',
     offerVerb: 'Offer',
+    offerNone: 'No sparks · defeat monsters to earn them',
     helpVerb: 'Give',
     count1: '1',
     count5: '5',

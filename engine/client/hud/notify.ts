@@ -27,13 +27,35 @@ const FEED = new Set<MsgKey>([
 ]);
 /** 대화창에 남기지 않는 안내문 (차례마다 오는 알림처럼 대화를 밀어내는 것). 게임이 addNotices의 quiet로 더한다 */
 const QUIET = new Set<MsgKey>();
+/**
+ * '안 됨'의 안내문: 명령을 받지 않은 까닭 (모자람·멂·잠김·한도·이미 함). 명령의 상태(hud/cmdstate.ts)가 이것을 누른 단추 곁의 붉은 한 줄로 보인다
+ * (단추가 보이면 흘러가는 알림으로는 띄우지 않는다: 한 곳에만). 결과가 나쁜 것(강화 실패)은 명령이 된 것이라 여기 없다. 게임은 addNotices의 fail로 더한다
+ */
+const FAIL = new Set<MsgKey>([
+  'renameWait', 'noTarget', 'tooFar', 'classFar', 'shopFar', 'notStocked', 'alreadyBest', 'gearBagFull', 'potionFull', 'noGold', 'noPotion', 'hpFull', 'gearFull',
+  'enhanceMax', 'reforgeMax', 'marketBound', 'dungeonFar', 'dungeonLevel', 'dungeonNoRuns', 'channelDungeon', 'channelFight', 'channelWait', 'channelFull', 'statNone', 'skillMax', 'skillNeedLv',
+  'marketGuest', 'marketFull', 'marketPriceBad', 'marketCant', 'marketGone', 'marketOwn', 'marketMailFull', 'marketCrowded', 'marketNeedLv',
+  'guildGuest', 'guildNeedLv', 'guildNameBad', 'guildNameTaken', 'guildNotLeader', 'guildBusy', 'guildFull', 'guildNone', 'forgeFar', 'forgeClosed', 'noMats',
+  'partyBusy', 'partyFull', 'partyGone', 'nameBad', 'nameTaken', 'reportWait', 'salvageCant', 'salvageFull', 'gearLocked', 'bagUpMax',
+  'handoffGuest', 'handoffBad', 'handoffWait', 'handoffSelf', 'teamFull', 'teamStay', 'costShort', 'heroMaxLv', 'heroShards', 'heroSkillMax', 'heroAwakenMax', 'heroAwakenStars', 'hgEnhanceMax',
+  'stageLocked', 'dungeonNoKeys', 'dungeonKeyLimit', 'sweepLocked', 'itemShort', 'bannerClosed',
+  'roomFull', 'roomBusy', 'roomGone', 'roomNotTurn', 'roomFewer', 'roomCodeBad', 'roomPassword', 'roomSlow', 'roomFriendsOnly', 'roomBanned', 'roomLeadOnly', 'roomNotReady', 'roomVoteBusy', 'roomWatchFull',
+  'morphWait', 'morphFight', 'morphNone', 'featureOff', 'mydataGuest', 'mydataWait', 'blockFull', 'limitedCant',
+  'friendGuest', 'friendWait', 'friendNoOne', 'friendAlready', 'friendNo', 'friendFull', 'friendOffline',
+  'supportShort', 'supportWait', 'supportFull', 'supportAppealed', 'supportGuest', 'supportNoSanction', 'supportOff', 'modeWait', 'goodsNo', 'couponNo',
+]);
+/** 그 안내문이 '안 됨'(명령을 받지 않은 까닭)인가 */
+export const isFailNotice = (k: MsgKey): boolean => FAIL.has(k);
+/** 안내문을 먼저 받아 가는 곳 (명령의 상태: 누른 단추 곁에 띄웠으면 참). 참이면 흘러가는 알림으로 띄우지 않는다 */
+let claim: (k: MsgKey, text: string) => boolean = () => false;
+export function setNoticeClaim(fn: (k: MsgKey, text: string) => boolean): void { claim = fn; }
 
 /**
  * 안내문의 분류를 더한다: 게임이 자기 안내문을 어디에 띄울지 등록한다. 어디에도 적지 않은 안내문은 대화창에만 남는다.
  * banner: 가운데 알림으로 띄울 것과 그 색조. 덧붙는 줄이 있으면 { tone, sub }로 준다. feed: 흘러가는 알림으로 띄울 것.
  * quiet: 대화창에 남기지 않을 것 (banner에도 적었으면 가운데 알림으로만 뜨고, 어디에도 적지 않았으면 아무 데도 뜨지 않는다: 소리·화면은 게임이 따로)
  */
-export function addNotices(more: { banner?: Partial<Record<MsgKey, Tone | { tone: Tone; sub: Sub }>>; feed?: readonly MsgKey[]; quiet?: readonly MsgKey[] }, keep = false): void {
+export function addNotices(more: { banner?: Partial<Record<MsgKey, Tone | { tone: Tone; sub: Sub }>>; feed?: readonly MsgKey[]; quiet?: readonly MsgKey[]; fail?: readonly MsgKey[] }, keep = false): void {
   // keep: 이미 분류된 안내문은 그대로 둔다 (틀의 모듈이 게임의 모듈보다 늦게 init되면서 기본 분류를 줄 때: 게임이 먼저 정한 것이 이긴다)
   const known = (k: MsgKey) => keep && (k in BANNER || FEED.has(k) || QUIET.has(k));
   for (const [k, v] of Object.entries(more.banner ?? {}) as [MsgKey, Tone | { tone: Tone; sub: Sub }][]) {
@@ -43,6 +65,7 @@ export function addNotices(more: { banner?: Partial<Record<MsgKey, Tone | { tone
   }
   for (const k of more.feed ?? []) if (!known(k)) FEED.add(k);
   for (const k of more.quiet ?? []) QUIET.add(k);
+  for (const k of more.fail ?? []) FAIL.add(k);
 }
 
 const ui = { banner: $('banner'), bannerText: $('bannerText'), bannerSub: $('bannerSub'), feed: $('feed'), flash: $('flash') };
@@ -53,6 +76,9 @@ const queue: { text: string; sub: string; tone: Tone; stale?: () => boolean }[] 
 let showing = false;
 
 function next(): void {
+  // 축하 카드(레벨 업·받음·새 기능: hud/reward.ts)가 떠 있는 동안은 기다린다 (같은 자리에 겹치지 않게)
+  const cel = $('celebrate');
+  if (cel && !cel.hidden && queue.length) { showing = true; ui.banner.hidden = true; setTimeout(next, 400); return; }
   let b = queue.shift();
   while (b?.stale?.()) b = queue.shift(); // 차례를 기다리는 사이에 뜻이 없어진 알림은 건너뛴다
   if (!b) { showing = false; ui.banner.hidden = true; return; }
@@ -134,6 +160,8 @@ export function notifySys(k: MsgKey, a: MsgArg[] = []): void {
   if (k === 'joined' || k === 'left') return; // 드나드는 소식이 대화와 큰 소식을 밀어낸다
   // 다른 곳(위험 알림)이 가져간 안내문: 기록에만 남긴다
   for (const fn of routes) if (fn(k, a, text)) { if (!QUIET.has(k)) logText(text, true); return; }
+  // '안 됨'을 누른 단추 곁에 띄웠으면 흘러가는 알림은 띄우지 않는다 (한 곳에만: hud/cmdstate.ts)
+  if (FAIL.has(k) && claim(k, text)) { if (!FEED.has(k) && !QUIET.has(k)) logText(text, false); return; }
   if (FEED.has(k)) { feed(text); return; }
   const tone = BANNER[k];
   if (!QUIET.has(k)) logText(text, tone !== undefined);

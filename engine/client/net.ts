@@ -8,8 +8,12 @@ let ws: WebSocket | null = null;
 let onMessage: (m: ServerMsg) => void = () => {};
 let onOpening: () => void = () => {};
 let onClosed: (code: number) => void = () => {};
-/** 보내는 메시지를 지켜보는 것들 (튜토리얼의 '명령' 조건: hud/tutorial.ts) */
+/** 보내는 메시지를 지켜보는 것들 (튜토리얼의 '명령' 조건: hud/tutorial.ts, 명령의 상태: hud/cmdstate.ts) */
 const watchers: ((m: ClientMsg) => void)[] = [];
+/** 연결이 없어 보내지 못한 메시지를 지켜보는 것들 (명령의 상태: 누른 단추에 '보내지 못함') */
+const failWatchers: ((m: ClientMsg) => void)[] = [];
+/** 보내기 전에 거르는 것들: 하나라도 false면 보내지 않는다 (명령의 상태: 기다리는 같은 명령을 두 번 보내지 않게) */
+const gates: ((m: ClientMsg) => boolean)[] = [];
 
 export function initNet(h: { message: (m: ServerMsg) => void; opening: () => void; closed: (code: number) => void }): void {
   onMessage = h.message; onOpening = h.opening; onClosed = h.closed;
@@ -17,6 +21,10 @@ export function initNet(h: { message: (m: ServerMsg) => void; opening: () => voi
 
 /** 내가 서버에 보내는 메시지를 지켜본다 (보낸 뒤에 불린다) */
 export function onSend(fn: (m: ClientMsg) => void): void { watchers.push(fn); }
+/** 연결이 없어 보내지 못한 메시지를 지켜본다 */
+export function onSendFail(fn: (m: ClientMsg) => void): void { failWatchers.push(fn); }
+/** 보내기 전에 거른다: false를 돌려주면 그 메시지는 보내지 않는다 (지켜보는 것들도 부르지 않는다) */
+export function gateSend(fn: (m: ClientMsg) => boolean): void { gates.push(fn); }
 
 /** 지금 접속한(또는 접속할) 게임 서버의 http(s) 주소: 오류 묶음을 보내는 곳 (ws → http, wss → https) */
 export async function httpBase(): Promise<string> {
@@ -40,10 +48,11 @@ export async function adoptToken(t: string): Promise<boolean> {
 export function forgetToken(): void { void auth().forget(); }
 
 export function send(m: ClientMsg): void {
+  for (const fn of gates) if (!fn(m)) return;
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(m));
     for (const fn of watchers) fn(m);
-  }
+  } else for (const fn of failWatchers) fn(m);
 }
 /** 연결이 열려 있는가 */
 export const online = (): boolean => !!ws && ws.readyState === WebSocket.OPEN;

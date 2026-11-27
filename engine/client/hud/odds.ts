@@ -12,7 +12,7 @@ import { uiText } from '../i18n/names';
 import { send } from '../net';
 import { platform } from '../platform';
 import { addMenuTab } from './menu';
-import { button, chips, el, redraw } from './menu/parts';
+import { button, chips, el, emptyState, redraw } from './menu/parts';
 
 let pub: OddsPublic | null = null;
 let mine: DrawRow[] | null = null;
@@ -98,7 +98,7 @@ function drawTables(list: HTMLElement): void {
 
 function drawMine(list: HTMLElement): void {
   if (mine === null) { list.append(el('note', t('oddsLoading'))); return; }
-  if (!mine.length) { list.append(el('note', t('oddsMineNone'))); return; }
+  if (!mine.length) { list.append(emptyState('⟳', t('oddsMineNone'))); return; }
   const loc = L();
   for (const r of mine) {
     const tb = pub?.tables.find((x) => x.id === r.table) ?? { kind: r.kind === 'enhance' ? 'enhance' as const : 'capsule' as const };

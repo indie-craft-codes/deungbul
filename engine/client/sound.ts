@@ -1,5 +1,8 @@
 // 소리: 효과음과 배경음. 효과음은 키마다 게임이 등록한 파일(engine/client/assets.ts의 registerSound)을 틀고, 등록하지 않은 키는 브라우저의 소리 합성(Web Audio)으로 만든다.
 // 틀의 효과음 키: hit(때림), crit(치명타), hurt(맞음), kill(처치), skill(기술), fanfare(좋은 소식), pickup(얻음), bad(나쁜 소식).
+// 화면(UI) 효과음 키 (U2): ui.tap(누름), ui.ok(됨), ui.fail(안 됨), ui.reward(보상 받음), ui.coin(재화가 늚), ui.levelUp(레벨 업), ui.unlock(새 기능 열림),
+//   ui.gacha0~ui.gacha3(뽑기 공개: 등급의 높이 넷). 기본은 짧은 합성음이고(저작권 걱정 없음) 게임은 같은 키에 파일을 등록해 바꾼다(registerSound('ui.tap', …)).
+//   화면 효과음은 효과음 음량 아래의 작은 몫(UI_VOL)으로 울리고, 설정의 '화면 효과음'으로 따로 끈다 (플랫폼 저장소 'uiSound').
 // 배경음은 게임이 등록하고(registerMusic) 고르는 함수(setMusicPicker)를 주면 0.25초마다 물어 바뀔 때 천천히 넘긴다 (반복, 페이드).
 // 브라우저는 사용자가 화면을 한 번 누르기 전에는 소리를 내지 못한다: 첫 입력 전에는 소리 장치를 만들지도 틀지도 않는다.
 // 음량은 효과음·배경음 따로 (메뉴의 '음량'. 소리 파일이 있는 게임이나 enableVolume을 부른 게임만 단추가 보인다), 소리 켜고 끄기(soundBtn)와 함께 이 기기에 저장한다.
@@ -14,6 +17,11 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 /** 효과음(파일과 합성음)과 배경음이 저마다 지나는 음량 */
 let sfxBus: GainNode | null = null;
+/** 화면 효과음: 효과음 음량 아래에서 더 작게 (UI_VOL) */
+let uiBus: GainNode | null = null;
+/** 화면 효과음의 기본 크기 (효과음 음량에 곱한다): 누를 때마다 나니 작게 */
+const UI_VOL = 0.35;
+let uiOn = true;
 let musicBus: GainNode | null = null;
 let noise: AudioBuffer | null = null;
 let on = true;
@@ -64,12 +72,12 @@ async function decode(url: string): Promise<void> {
 }
 /** 등록한 키의 파일을 튼다. 다 풀린 파일이 없으면 false */
 function playFile(key: string): boolean {
-  const f = soundFile(key), buf = f && buffers.get(f.url);
-  if (!ctx || !sfxBus || !f || !buf) return false;
+  const f = soundFile(key), buf = f && buffers.get(f.url), bus = key.startsWith('ui.') ? uiBus : sfxBus;
+  if (!ctx || !bus || !f || !buf) return false;
   const s = ctx.createBufferSource(), g = ctx.createGain();
   s.buffer = buf;
   g.gain.value = f.vol;
-  s.connect(g).connect(sfxBus);
+  s.connect(g).connect(bus);
   s.start();
   return true;
 }
@@ -96,6 +104,9 @@ function ready(): boolean {
     musicBus = ctx.createGain();
     sfxBus.connect(master);
     musicBus.connect(master);
+    uiBus = ctx.createGain();
+    uiBus.gain.value = uiOn ? UI_VOL : 0;
+    uiBus.connect(sfxBus);
     applyMix();
     noise = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
     const d = noise.getChannelData(0);
@@ -116,27 +127,27 @@ function due(kind: string, gapMs: number): boolean {
 }
 
 /** 음 하나: 주파수가 from에서 to로 미끄러지며 사라진다 */
-function tone(from: number, to: number, dur: number, vol: number, type: OscillatorType = 'triangle', delay = 0): void {
-  if (!ctx || !sfxBus) return;
+function tone(from: number, to: number, dur: number, vol: number, type: OscillatorType = 'triangle', delay = 0, bus = sfxBus): void {
+  if (!ctx || !bus) return;
   const t0 = ctx.currentTime + delay, o = ctx.createOscillator(), g = ctx.createGain();
   o.type = type;
   o.frequency.setValueAtTime(from, t0);
   o.frequency.exponentialRampToValueAtTime(Math.max(20, to), t0 + dur);
   g.gain.setValueAtTime(vol, t0);
   g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-  o.connect(g).connect(sfxBus);
+  o.connect(g).connect(bus);
   o.start(t0); o.stop(t0 + dur + 0.02);
 }
 
 /** 잡음 한 번: 타격의 '탁' 소리 */
-function thud(dur: number, vol: number, freq: number): void {
-  if (!ctx || !sfxBus || !noise) return;
+function thud(dur: number, vol: number, freq: number, bus = sfxBus): void {
+  if (!ctx || !bus || !noise) return;
   const t0 = ctx.currentTime, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
   s.buffer = noise;
   f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
   g.gain.setValueAtTime(vol, t0);
   g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-  s.connect(f).connect(g).connect(sfxBus);
+  s.connect(f).connect(g).connect(bus);
   s.start(t0); s.stop(t0 + dur + 0.02);
 }
 
@@ -150,9 +161,24 @@ const SYNTH: Record<string, () => void> = {
   fanfare: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.22, 0.2, 'triangle', i * 0.09)),
   pickup: () => { tone(880, 1320, 0.1, 0.16, 'sine'); tone(1320, 1760, 0.12, 0.13, 'sine', 0.08); },
   bad: () => { tone(300, 150, 0.35, 0.22, 'sawtooth'); tone(200, 100, 0.45, 0.18, 'sawtooth', 0.12); },
+  // ---- 화면 효과음 (uiBus: 작게) ----
+  'ui.tap': () => tone(1200, 900, 0.04, 0.12, 'sine', 0, uiBus),
+  'ui.ok': () => { tone(880, 880, 0.06, 0.16, 'sine', 0, uiBus); tone(1320, 1320, 0.09, 0.14, 'sine', 0.05, uiBus); },
+  'ui.fail': () => { tone(240, 200, 0.09, 0.2, 'square', 0, uiBus); tone(200, 170, 0.12, 0.18, 'square', 0.08, uiBus); },
+  'ui.coin': () => { tone(1568, 1568, 0.05, 0.12, 'triangle', 0, uiBus); tone(2093, 2093, 0.1, 0.1, 'triangle', 0.05, uiBus); },
+  'ui.reward': () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.16, 0.16, 'triangle', i * 0.06, uiBus)),
+  'ui.levelUp': () => { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.26, 0.2, 'triangle', i * 0.08, uiBus)); tone(2093, 2637, 0.4, 0.08, 'sine', 0.4, uiBus); },
+  'ui.unlock': () => { tone(660, 990, 0.18, 0.16, 'sine', 0, uiBus); tone(990, 1480, 0.28, 0.14, 'sine', 0.12, uiBus); },
+  'ui.gacha0': () => tone(700, 760, 0.1, 0.14, 'triangle', 0, uiBus),
+  'ui.gacha1': () => { tone(700, 700, 0.1, 0.15, 'triangle', 0, uiBus); tone(1050, 1050, 0.14, 0.14, 'triangle', 0.07, uiBus); },
+  'ui.gacha2': () => [660, 880, 1100, 1320].forEach((f, i) => tone(f, f, 0.18, 0.16, 'triangle', i * 0.06, uiBus)),
+  'ui.gacha3': () => { [523, 784, 1047, 1568, 2093].forEach((f, i) => tone(f, f, 0.3, 0.18, 'triangle', i * 0.07, uiBus)); thud(0.35, 0.25, 180, uiBus); },
 };
+/** 화면 효과음의 키 (게임이 같은 키에 파일을 등록해 바꿀 수 있는 이름들) */
+export const UI_SOUNDS = ['ui.tap', 'ui.ok', 'ui.fail', 'ui.coin', 'ui.reward', 'ui.levelUp', 'ui.unlock', 'ui.gacha0', 'ui.gacha1', 'ui.gacha2', 'ui.gacha3'] as const;
+export type UiSound = (typeof UI_SOUNDS)[number];
 /** 같은 소리를 다시 내기까지의 간격(ms). 치명타는 때림과 간격을 같이 쓴다 */
-const GAP: Record<string, number> = { hit: 60, hurt: 120, kill: 80, skill: 100, fanfare: 400, pickup: 150, bad: 400 };
+const GAP: Record<string, number> = { hit: 60, hurt: 120, kill: 80, skill: 100, fanfare: 400, pickup: 150, bad: 400, 'ui.tap': 40, 'ui.coin': 120, 'ui.reward': 300, 'ui.levelUp': 600, 'ui.unlock': 400 };
 
 /**
  * 효과음 하나를 낸다: 등록한 파일이 다 읽혔으면 그것을, 아니면 틀의 합성음을 (합성음이 없는 게임의 키는 파일이 있어야 들린다).
@@ -160,7 +186,7 @@ const GAP: Record<string, number> = { hit: 60, hurt: 120, kill: 80, skill: 100, 
  */
 export function playSound(key: string): void {
   const gapKey = key === 'crit' ? 'hit' : key;
-  if (!ready() || !due(gapKey, GAP[gapKey] ?? 80)) return;
+  if ((!uiOn && key.startsWith('ui.')) || !ready() || !due(gapKey, GAP[gapKey] ?? 80)) return;
   const how = soundSource(key, stateOf, key in SYNTH);
   if (how === 'file' && playFile(key)) return;
   if (how !== 'none') SYNTH[key]?.();
@@ -181,12 +207,24 @@ export const sfx = {
   pickup(): void { playSound('pickup'); },
   /** 나쁜 소식 (쓰러짐, 실패, 습격) */
   bad(): void { playSound('bad'); },
+  /** 레벨 업 (화면 효과음 ui.levelUp: 설정의 '화면 효과음'을 따른다) */
+  levelUp(): void { playSound('ui.levelUp'); },
+  /** 보상을 받았다 (화면 효과음 ui.reward) */
+  reward(): void { playSound('ui.reward'); },
 };
+
+/** 화면 효과음 하나 (누름·됨·안 됨·보상·레벨 업·새 기능·뽑기 등급). 설정의 '화면 효과음'이 꺼져 있으면 울리지 않는다 */
+export function uiSound(key: UiSound): void { playSound(key); }
+/** 뽑기 공개의 소리: 등급(0부터)을 가장 높은 등급 번호(top) 안에서 넷으로 접는다 (가장 높은 등급 = ui.gacha3) */
+export function gachaSound(r: number, top: number): void {
+  const n = top <= 3 ? r + (3 - top) : Math.round((r / top) * 3);
+  uiSound(`ui.gacha${Math.max(0, Math.min(3, n))}` as UiSound);
+}
 
 /** 서버 안내문마다 어울리는 소리. 여기 적힌 것은 틀의 안내문이고, 게임이 더한 안내문의 소리는 게임의 모듈이 addMsgSounds로 등록한다 */
 const BY_MSG: Partial<Record<MsgKey, () => void>> = {
-  levelUp: sfx.fanfare, dungeonClear: sfx.fanfare, bossDown: sfx.fanfare, enhanceOk: sfx.fanfare,
-  gearDrop: sfx.pickup, mailNew: sfx.pickup, loot: sfx.pickup, bought: sfx.pickup, crafted: sfx.pickup, mailGot: sfx.pickup,
+  levelUp: sfx.levelUp, dungeonClear: sfx.fanfare, bossDown: sfx.fanfare, enhanceOk: sfx.fanfare,
+  gearDrop: sfx.pickup, mailNew: sfx.pickup, loot: sfx.pickup, bought: sfx.pickup, crafted: sfx.pickup, mailGot: sfx.reward, seasonGot: sfx.reward, couponOk: sfx.reward,
   died: sfx.bad, dungeonFail: sfx.bad, enhanceFail: sfx.bad, enhanceDown: sfx.bad, enhanceSaved: sfx.bad,
 };
 /** 안내문에 소리를 붙인다 (게임이 자기 안내문의 소리를 등록한다) */
@@ -318,11 +356,23 @@ export function setSoundMix(m: Partial<Mix>, save = true): void {
   for (const id of ['mixSfx', 'mixMusic'] as const) { const el = $<HTMLInputElement>(id) as HTMLInputElement | null; if (el) el.value = String(Math.round((id === 'mixSfx' ? mix.sfx : mix.music) * 100)); }
   if (save) platform().storage.set(MIX_KEY, writeMix(mix));
 }
+/** 화면 효과음이 켜져 있는가 */
+export const uiSoundOn = (): boolean => uiOn;
+/** 화면 효과음을 켜고 끈다 (설정 창). 이 기기에 저장한다 */
+export function setUiSoundOn(v: boolean): void {
+  if (uiOn === v) return;
+  uiOn = v;
+  platform().storage.set('uiSound', v ? 'on' : 'off');
+  if (uiBus) uiBus.gain.value = v ? UI_VOL : 0;
+  if (v) uiSound('ui.ok');
+  for (const fn of listeners) fn();
+}
 /** 소리 켜짐·음량이 바뀌면 부른다 (설정 창이 다시 그린다) */
 export function onSoundChange(fn: () => void): void { listeners.push(fn); }
 
 export function initSound(): void {
   on = platform().storage.get('sound') !== 'off'; // 저장소를 못 쓰면 켠 채로 둔다
+  uiOn = platform().storage.get('uiSound') !== 'off';
   mix = readMix(platform().storage.get(MIX_KEY)); // 없거나 못 읽으면 기본 음량
   label();
   if (volumeUi || hasAudioFiles()) mountMix();
@@ -339,6 +389,11 @@ export function initSound(): void {
   platform().audio.onUnlock(() => { unlocked = true; ready(); pickMusic(); });
   onMsg('sys', (m) => BY_MSG[m.k]?.());
   onMsg('cd', () => sfx.skill());
+  // 누름: 눌리는 단추마다 작은 '톡' (흐린 단추·기술 단추는 빼고: 기술은 자기 소리가 있다)
+  document.addEventListener('click', (e) => {
+    const b = (e.target as Element | null)?.closest?.('button');
+    if (b && !b.disabled && !b.classList.contains('skill')) uiSound('ui.tap');
+  }, { capture: true, passive: true });
   onSlow(pickMusic);
   onLangChange(label);
 }
