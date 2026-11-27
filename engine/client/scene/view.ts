@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { MAP, rng, type World } from '../../shared/world';
 import { mat } from './models';
+import { platform } from '../platform';
 
 const SKY = 0xa9cdd0;
 const CAM_DIR = new THREE.Vector3(1, 1.25, 1).normalize();
@@ -47,7 +48,7 @@ export class View {
 
   constructor(canvas: HTMLCanvasElement, world: World, look: Look = {}) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(platform().display.pixelRatio(), platform().display.pixelRatioCap())); // 웹: 기기 배율, 상한 2 (예전과 같다)
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.scene.background = new THREE.Color(SKY);
@@ -223,10 +224,10 @@ export class View {
    * 그래픽 품질 (설정 창: hud/settings.ts). shadows: 해의 그림자, pixelRatio: 그리기 배율의 상한(기기 배율보다 크게 그리지는 않는다), far: 그리는 거리(m).
    * 주지 않은 칸은 그대로. 처음 값(그림자 켬, 상한 2, 거리 320)은 이 설정이 생기기 전과 같다
    */
-  setQuality(q: { shadows?: boolean; pixelRatio?: number; far?: number }, devicePixelRatio: number): void {
+  setQuality(q: { shadows?: boolean; pixelRatio?: number; far?: number }, deviceRatio: number): void {
     if (q.shadows !== undefined && this.sun.castShadow !== q.shadows) this.sun.castShadow = q.shadows;
     if (q.pixelRatio !== undefined) {
-      const pr = Math.min(devicePixelRatio || 1, q.pixelRatio);
+      const pr = Math.min(deviceRatio || 1, q.pixelRatio);
       if (this.renderer.getPixelRatio() !== pr) { this.renderer.setPixelRatio(pr); this.renderer.setSize(this.width, this.height, false); }
     }
     if (q.far !== undefined && this.camera.far !== q.far) { this.camera.far = q.far; this.camera.updateProjectionMatrix(); }

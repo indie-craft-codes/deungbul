@@ -1,16 +1,42 @@
 // 플랫폼의 기본 구현: 브라우저. 지금까지 틀이 브라우저에 직접 하던 것을 그대로 한다 (저장 키 이름도 같다: 기존 사용자의 진행이 그대로 이어진다).
-// 브라우저 API(localStorage, visibilitychange, window.onerror, 서비스 워커, 파일 내려받기, 클립보드, 전체 화면)는 이 파일에서만 부른다.
-import type { Feature, LifeEvent, Platform, RawError } from './types';
+// 브라우저 API(localStorage, 주소(location·history), navigator, visibilitychange·pagehide, window.onerror, 서비스 워커, 새 창, 파일 내려받기, 클립보드, 전체 화면)는 이 파일에서만 부른다
+// (engine/test/boundary.test.ts 8절이 platform/ 밖의 호출을 막는다).
+import { keyNameOf } from './keyname';
+import type { Feature, InputKind, LifeEvent, Platform, RawError } from './types';
 
 const on = (target: EventTarget, ev: string, fn: () => void, opts?: AddEventListenerOptions): (() => void) => { target.addEventListener(ev, fn, opts); return () => target.removeEventListener(ev, fn, opts); };
 
 /** localStorage를 감싼다: 시크릿 모드·막힌 저장소에서는 throw 대신 null·false */
 function local(): Storage | null { try { return window.localStorage; } catch { return null; } }
 
-/** 처음 사용자 입력이 오면 한 번 (자동 재생 정책: 소리는 그 뒤에만) */
-const unlockers: (() => void)[] = [];
-let unlocked = false;
-function wakeAll(): void { if (unlocked) return; unlocked = true; for (const fn of unlockers.splice(0)) fn(); }
+const media = (q: string): boolean => typeof matchMedia === 'function' && matchMedia(q).matches;
+
+/**
+ * 주 입력 장치. 처음에는 '(pointer: coarse)'로 짐작하고(예전의 isTouch와 같은 값: 첫 화면이 같다), 그 뒤로는 실제로 쓴 것을 따른다:
+ * 손가락·펜으로 누르면 touch, 패드를 움직이면 gamepad. 마우스·키보드로 바꾸는 것은 이 기기에 정밀한 포인터가 있을 때만이다('(any-pointer: fine)':
+ * 터치 노트북·태블릿+키보드). 폰은 키보드 사건(가상 자판)이 와도 터치로 남는다
+ */
+let input: InputKind | null = null;
+const inputSubs = new Set<(k: InputKind) => void>();
+function setInput(k: InputKind): void { if (input === k) return; input = k; for (const fn of inputSubs) fn(k); }
+function watchInput(): InputKind {
+  if (input) return input;
+  input = media('(pointer: coarse)') ? 'touch' : 'mouse';
+  const fine = (): boolean => media('(any-pointer: fine)');
+  const editable = (t: EventTarget | null): boolean => t instanceof HTMLElement && (t.isContentEditable || t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement);
+  window.addEventListener('pointerdown', (ev) => { if (ev.pointerType === 'touch' || ev.pointerType === 'pen') setInput('touch'); else if (ev.pointerType === 'mouse' && fine()) setInput('mouse'); }, { capture: true, passive: true });
+  window.addEventListener('keydown', (ev) => { if (!editable(ev.target) && ev.key !== 'Unidentified' && ev.key !== 'Process' && fine()) setInput('mouse'); }, { capture: true, passive: true });
+  return input;
+}
+
+/** 화면 크기. 홈 화면에 추가해 연 아이폰은 가로로 돌리면 페이지 높이를 실제보다 작게 알려 줘서 아래가 비므로, 그때는 기기 화면 크기를 직접 쓴다 (예전 main.ts의 appSize) */
+function viewport(): { w: number; h: number } {
+  if ((navigator as { standalone?: boolean }).standalone === true) {
+    const long = Math.max(screen.width, screen.height), short = Math.min(screen.width, screen.height);
+    return window.matchMedia('(orientation: landscape)').matches ? { w: long, h: short } : { w: short, h: long };
+  }
+  return { w: window.innerWidth, h: window.innerHeight };
+}
 
 /** 게임 서버의 주소: 빌드의 VITE_SERVER_URL → 개발 서버의 포트 → 같은 출처 (예전 net.ts의 url) */
 function baseUrl(): string {
@@ -24,11 +50,15 @@ export function webPlatform(): Platform {
   const has = (f: Feature): boolean => {
     switch (f) {
       case 'storage.durable': case 'lifecycle.pause': case 'display.orientation': case 'display.safeArea': case 'ads': case 'ads.rewarded': case 'invite': return false;
+      case 'notify.local': case 'notify.push': case 'purchase': case 'achievements': case 'cloudSave': return false; // 웹 기본 구현에는 없다 (포털·앱 구현이 채운다)
+      case 'input.touch': return (navigator.maxTouchPoints ?? 0) > 0 || media('(any-pointer: coarse)');
+      case 'input.keyboard': return media('(any-pointer: fine)'); // 브라우저는 키보드가 있는지 알려 주지 않는다: 정밀한 포인터가 있으면 키보드도 있다고 본다
+      case 'input.gamepad': return typeof navigator.getGamepads === 'function';
       case 'display.fullscreen': return !!document.documentElement.requestFullscreen;
       case 'share': return typeof navigator.share === 'function';
       case 'clipboard': return !!navigator.clipboard?.writeText;
       case 'offline.cache': return 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
-      default: return true; // link.external, files.save, errors
+      default: return true; // link.external, files.save, errors, app.update(새로고침)
     }
   };
   return {
@@ -56,11 +86,8 @@ export function webPlatform(): Platform {
       },
     },
     audio: {
-      onUnlock: (fn) => {
-        if (unlocked) { fn(); return; }
-        if (!unlockers.length) { window.addEventListener('pointerdown', wakeAll, { passive: true }); window.addEventListener('keydown', wakeAll); }
-        unlockers.push(fn);
-      },
+      // 입력마다 (예전 sound.ts가 직접 달던 것과 같은 사건·같은 차례)
+      onUnlock: (fn) => { window.addEventListener('pointerdown', fn, { passive: true }); window.addEventListener('keydown', fn); },
       onInterrupt: () => { /* 웹에는 바깥의 소리 중단 사건이 없다 (광고는 ads가 알린다: ./index.ts) */ },
     },
     display: {
@@ -73,8 +100,24 @@ export function webPlatform(): Platform {
       safeArea: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
       pixelRatioCap: () => 2,
       pixelRatio: () => window.devicePixelRatio || 1,
+      viewport,
     },
-    openUrl: (url) => { try { return Promise.resolve(!!window.open(url, '_blank', 'noopener')); } catch { return Promise.resolve(false); } },
+    input: {
+      primary: watchInput,
+      onChange: (fn) => { watchInput(); inputSubs.add(fn); return () => inputSubs.delete(fn); },
+      gamepad: () => {
+        const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
+        const pad = [...pads].find((p) => !!p && p.connected);
+        if (!pad) return null;
+        const dz = (v: number | undefined): number => (v === undefined || Math.abs(v) < 0.2 ? 0 : v);
+        const x = dz(pad.axes[0]), z = dz(pad.axes[1]), buttons = pad.buttons.map((b) => b.pressed);
+        if (x || z || buttons.some(Boolean)) setInput('gamepad');
+        return { x, z, buttons };
+      },
+      keyName: keyNameOf,
+    },
+    // 새 창(탭)으로 연다: <a target="_blank" rel="noopener">와 같다. noopener로 열면 window.open이 늘 null을 돌려주므로 던지지 않았으면 연 것으로 본다
+    openUrl: (url) => { try { window.open(url, '_blank', 'noopener'); return Promise.resolve(true); } catch { return Promise.resolve(false); } },
     share: async (d) => { try { await navigator.share(d); return true; } catch { return false; } },
     copy: async (text) => { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } },
     saveFile: (name, data, mime) => {
@@ -90,6 +133,10 @@ export function webPlatform(): Platform {
         return Promise.resolve(true);
       } catch { return Promise.resolve(false); }
     },
+    notify: { permission: () => Promise.resolve('denied'), register: () => Promise.resolve(null), local: () => Promise.resolve(false) },
+    purchase: { products: () => Promise.resolve([]), buy: () => Promise.resolve({ error: 'unsupported' }), onPending: () => {} },
+    achievements: { unlock: () => Promise.resolve(false) },
+    cloud: { get: () => Promise.resolve(null), set: () => Promise.resolve(false) },
     errors: {
       listen: (fn: (e: RawError) => void) => {
         window.addEventListener('error', (ev) => {
@@ -133,7 +180,12 @@ export function webPlatform(): Platform {
       },
       build: () => 0,
       page: () => location.pathname,
+      // 웹은 새로 읽으면 서버가 내보내는 새 화면이 온다 (화면만 따로 올린 곳도 같은 배포에서 함께 바뀐다)
       requireUpdate: () => location.reload(),
+      param: (name) => { try { return new URLSearchParams(location.search).get(name); } catch { return null; } },
+      setParam: (name, value) => { try { const url = new URL(location.href); url.searchParams.set(name, value); history.replaceState(null, '', url); } catch { /* 주소를 바꿀 수 없는 곳 */ } },
+      anchor: () => { try { return decodeURIComponent(location.hash.slice(1)); } catch { return location.hash.slice(1); } },
+      language: () => navigator.language ?? '',
     },
   };
 }

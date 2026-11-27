@@ -851,3 +851,6 @@ body:has(#menu:not([hidden]), #wmap:not([hidden]), #classPick:not([hidden]), #ke
 #keepSafe { position: fixed; left: 50%; top: 80px; transform: translateX(-50%); width: min(380px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 8px; z-index: 9; font-size: 13px; }
 #keepSafe[hidden] { display: none; }
 #menuList button.bad { background: var(--hp); color: #fff; }
+/* 터치에서 길게 눌러 보는 툴팁 (hud/tip.ts): 데스크톱은 브라우저의 title 툴팁 그대로 */
+#tipPop { position: fixed; z-index: 60; max-width: min(300px, calc(100vw - 8px)); padding: 6px 10px; background: var(--ink); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; font-size: 13px; line-height: 1.4; white-space: pre-line; pointer-events: none; box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+#tipPop[hidden] { display: none; }

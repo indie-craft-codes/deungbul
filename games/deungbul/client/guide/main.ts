@@ -1,6 +1,7 @@
 // 도감의 화면: data.ts가 만든 구역과 표를 그대로 그린다. 내용은 여기서 정하지 않는다.
 // 게임 서버에 접속하지 않는 정적 페이지다. 게임의 3D·통신 코드를 불러오지 않는다.
 import './guide.css';
+import { platform } from '@engine/client/platform';
 import { LANGS, PACKS, buildGuide, packOf, type Block, type Pack, type Table } from './data';
 
 /** 빌드한 시각 (vite.config.ts가 넣는다) */
@@ -14,11 +15,10 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, cls?: 
   return e;
 };
 
-/** 처음 언어: 주소의 ?lang= 이 가장 먼저, 그다음 게임에서 고른 언어(게임이 localStorage의 'lang'에 적어 둔다), 그다음 브라우저 언어 */
+/** 처음 언어: 주소의 ?lang= 이 가장 먼저, 그다음 게임에서 고른 언어(게임이 플랫폼 저장소의 'lang'에 적어 둔다), 그다음 기기·브라우저 언어 (모두 플랫폼 접점으로 읽는다) */
 function detect(): Pack {
-  let saved: string | null = null;
-  try { saved = localStorage.getItem('lang'); } catch { /* 저장소를 못 쓰는 환경 */ }
-  return packOf(new URLSearchParams(location.search).get('lang')) ?? packOf(saved) ?? packOf(navigator.language) ?? PACKS[0];
+  const p = platform();
+  return packOf(p.app.param('lang')) ?? packOf(p.storage.get('lang')) ?? packOf(p.app.language()) ?? PACKS[0];
 }
 
 let pack = detect();
@@ -121,9 +121,7 @@ langSel.value = pack.L.code;
 langSel.addEventListener('change', () => {
   pack = packOf(langSel.value) ?? pack;
   // 고른 언어를 주소에 남긴다 (새로 고치거나 주소를 건네도 같은 언어로 열린다). 게임의 언어 선택은 건드리지 않는다
-  const url = new URL(location.href);
-  url.searchParams.set('lang', pack.L.code);
-  history.replaceState(null, '', url);
+  platform().app.setParam('lang', pack.L.code);
   render();
 });
 filter.addEventListener('input', applyFilter);
@@ -131,4 +129,5 @@ window.addEventListener('resize', measureBar);
 
 render();
 // 주소에 구역(#monsters)이 있으면 그린 뒤에 그곳으로 간다
-if (location.hash.length > 1) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+const anchor = platform().app.anchor();
+if (anchor) document.getElementById(anchor)?.scrollIntoView();

@@ -24,6 +24,7 @@ import { L, onLangChange, t } from '../i18n';
 import { dungeonLabel } from '../i18n/names';
 import { rules } from '../rules';
 import { kindLook } from '../kinds';
+import { platform } from '../platform';
 import { S } from '../state';
 import { feed } from './notify';
 import { allLabels, allMarks, cssVar, paintWith } from './minimap';
@@ -87,7 +88,7 @@ function measure(resetView: boolean): void {
   if (resetView || view.area !== i) { view.area = i; view.k = view.fitK; view.cu = (b.u0 + b.u1) / 2; view.cv = (b.v0 + b.v1) / 2; }
   view.k = Math.min(view.fitK * ZOOM_MAX, Math.max(view.fitK, view.k));
   clampView();
-  const ratio = Math.min(2, window.devicePixelRatio || 1), c = ui.canvas;
+  const ratio = Math.min(platform().display.pixelRatioCap(), platform().display.pixelRatio()), c = ui.canvas;
   c.style.width = `${view.w}px`; c.style.height = `${view.h}px`;
   c.width = Math.round(view.w * ratio); c.height = Math.round(view.h * ratio);
   c.getContext('2d')?.setTransform(ratio, 0, 0, ratio, 0, 0);

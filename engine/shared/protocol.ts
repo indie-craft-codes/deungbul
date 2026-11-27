@@ -10,10 +10,20 @@ import type { ClientMsgs, ServerMsgs, WorldState as GameWorldState } from './ext
 import type { MsgArg, MsgKey } from './messages';
 
 /**
- * 프로토콜 번호. 서버가 welcome에 실어 보내고, 클라이언트는 자기 빌드의 번호와 다르면 새로고침을 권한다
- * (서버만 새로 올라가고 화면은 옛 빌드가 남아 있는 때). 메시지의 모양이나 뜻을 바꾸면 올린다. 칸을 덧붙이기만 한 것은 올리지 않는다.
+ * 프로토콜 번호. 서버가 welcome에 실어 보내고, 클라이언트는 자기 빌드의 번호와 맞지 않으면(protocolFits) 업데이트를 권한다
+ * (서버만 새로 올라가고 화면은 옛 빌드가 남아 있는 때: 웹은 새로고침, 앱은 스토어). 메시지의 모양이나 뜻을 바꾸면 올린다. 칸을 덧붙이기만 한 것은 올리지 않는다.
  */
 export const PROTOCOL = 3;
+
+/**
+ * 이 화면(mine)이 그 서버(서버의 번호 serverV, 서버가 받는 가장 낮은 번호 min)와 함께 돌 수 있는가.
+ * 서버가 호환 범위를 알리지 않으면(min 없음: 기본) 같은 번호만 맞다 (예전과 같다). 알리면 min ~ serverV 안의 옛 화면도 맞다:
+ * 앱은 업데이트가 며칠~몇 주 늦게 퍼지므로 서버가 옛 화면을 얼마 동안 받아 준다 (docs/platforms.md 3.2-4. 서버의 설정 protocolMin)
+ */
+export function protocolFits(mine: number, serverV: number, min?: number): boolean {
+  if (mine === serverV) return true;
+  return min !== undefined && min <= mine && mine <= serverV;
+}
 
 /**
  * 엔티티의 종류: 'p' 플레이어(핵심), 'm' 몬스터(전투 모듈), 그 밖의 것은 게임이 등록한 종류 (서버 g.defineKind, 화면 registerKind):
@@ -85,8 +95,9 @@ export type ClientMsg =
   /**
    * token: 브라우저가 간직하는 비밀 값. 같은 값으로 다시 들어오면 캐릭터를 이어받는다.
    * name: 저장된 이름이 없을 때 쓸 이름. 비우면 서버가 중립적인 이름을 붙인다.
+   * v: 이 화면의 프로토콜 번호 (앱·데스크톱이 싣는다. 웹은 싣지 않는다: engine/client/net.ts). 서버의 호환 범위 밖이면 서버가 update를 보내고 닫는다
    */
-  | { t: 'join'; name?: string; token?: string }
+  | { t: 'join'; name?: string; token?: string; v?: number }
   | { t: 'rename'; name: string }
   | { t: 'move'; x: number; z: number }
   | { t: 'stop' }
@@ -192,8 +203,9 @@ export type ServerMsg =
   /**
    * auto: 자동 사냥을 켠 채로 나갔던 캐릭터다 (자리를 비운 동안 사냥하던 캐릭터를 이어받았거나, 저장에서 읽었다)
    * v: 서버의 프로토콜 번호(PROTOCOL). 이 칸이 생기기 전의 서버는 보내지 않는다
+   * min: 서버가 받는 가장 낮은 프로토콜 번호. 서버가 옛 화면을 받아 주도록 설정했을 때만 싣는다 (기본은 같은 번호만이라 싣지 않는다: protocolFits)
    */
-  | { t: 'welcome'; id: number; name: string; x: number; z: number; auto?: boolean; v?: number }
+  | { t: 'welcome'; id: number; name: string; x: number; z: number; auto?: boolean; v?: number; min?: number }
   | {
       t: 'snap';
       /** 접속자 수 */
@@ -282,4 +294,9 @@ export type ServerMsg =
   /** 내 데이터: 내려받을 JSON / 삭제 요청의 상태 (due: 지우는 시각(ms), 요청이 없으면 null. days: 유예 일수) */
   | { t: 'mydata'; a: 'export'; data: unknown }
   | { t: 'mydata'; a: 'state'; due: number | null; days: number }
+  /**
+   * 이 화면은 서버와 함께 돌 수 없다 (join.v가 서버의 호환 범위 min ~ max 밖): 화면은 업데이트를 권한다 (platform().app.requireUpdate(store)).
+   * 서버는 이것을 보낸 뒤 닫힘 코드 4006으로 닫는다 (engine/server/net/server.ts). store: 업데이트할 곳의 주소 (설정했으면)
+   */
+  | { t: 'update'; min: number; max: number; store?: string }
   | Added<ServerMsgs>;

@@ -4,6 +4,7 @@ import { AREAS } from '../../shared/world';
 import { $ } from '../app';
 import { onSlow } from '../bus';
 import { kindLook } from '../kinds';
+import { platform } from '../platform';
 import { S } from '../state';
 
 const canvas = $('minimap') as HTMLCanvasElement;
@@ -119,7 +120,7 @@ function draw(): void {
 }
 
 export function initMinimap(): void {
-  const ratio = Math.min(2, window.devicePixelRatio || 1);
+  const ratio = Math.min(platform().display.pixelRatioCap(), platform().display.pixelRatio());
   canvas.width = SIZE * ratio; canvas.height = SIZE * ratio;
   ctx = canvas.getContext('2d');
   ctx?.scale(ratio, ratio);

@@ -523,6 +523,9 @@ export const koBase = (n: ContentNames) => {
       keepSafe: '이 캐릭터는 이 브라우저에만 저장되어 있습니다. 브라우저 데이터를 지우거나 오래 들어오지 않으면 잃을 수 있습니다. 메뉴의 기기 탭에서 옮기기 코드를 받아 두면 다른 기기에서도 이어 할 수 있습니다.',
       keepOpen: '기기 탭 열기',
       keepLater: '알겠어요',
+      // 버전 불일치: 앱·데스크톱 (웹은 stale·reload. main.ts의 outdated)
+      staleApp: '새 버전이 필요합니다. 게임을 업데이트해 주세요.',
+      updateApp: '업데이트',
     },
     monsters,
     dungeons,

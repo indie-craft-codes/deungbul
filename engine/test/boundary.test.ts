@@ -6,6 +6,8 @@
 //   4. 층을 넘는 import: 화면 → 서버, 게임 규칙 → 저장소 구현
 //   5. 게임이 틀을 입구로만 읽는가 (깊은 import 금지)
 //   6. 틀이 게임을 읽지 않는가: 틀의 소스가 engine/ 밖에서 읽는 것은 내용 통로(@game/shared/content) 하나뿐이고, 읽는 자리도 틀의 내용 통로뿐이다
+//   7. 게임의 운영 설정(deploy.json)과 서버 진입점의 기본값
+//   8. 화면 코드가 브라우저를 직접 부르지 않는가: 저장소·주소·navigator·새 창·생명주기는 플랫폼 접점(engine/client/platform/)으로만
 // 모두 소스 글자를 읽는다. 주석은 보지 않는다. 어느 게임에도 기대지 않는다: 저장소에 있는 게임(games/*)과 틀의 시험용 내용을 모두 본다.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -152,9 +154,10 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
    *   @engine/client/i18n과 그 언어 묶음(ko, en, names, merge): 언어. 도감과 시험이 three.js 없이 읽는다
    *   @engine/shared/defs, @engine/shared/world: 내용 통로 (게임의 통로 defs.ts·world.ts가 다시 내보낸다)
    *   @engine/shared/ext, @engine/server/game/ext, @engine/client/i18n/ext: 확장 지점 (선언 병합)
+   *   @engine/client/platform: 플랫폼 접점. 도감처럼 three.js 없이 서는 페이지가 언어·주소·저장소를 읽는다 (@engine/client는 3D 화면 전체를 끌고 온다)
    */
   const ENTRIES = ['@engine/shared', '@engine/server', '@engine/client', '@engine/testing', '@engine/client/i18n', '@engine/client/i18n/ko', '@engine/client/i18n/en', '@engine/client/i18n/names', '@engine/client/i18n/merge',
-    '@engine/shared/defs', '@engine/shared/world', '@engine/shared/ext', '@engine/server/game/ext', '@engine/client/i18n/ext'];
+    '@engine/shared/defs', '@engine/shared/world', '@engine/shared/ext', '@engine/server/game/ext', '@engine/client/i18n/ext', '@engine/client/platform'];
   /** 게임의 내용 파일(shared/content/)만: 계약의 타입은 defs/*.ts에서 import type으로, 기본값은 defaults에서, 모듈의 목록은 modules에서 (통로를 값으로 읽으면 초기화 순서가 꼬인다. defaults와 modules는 값을 아무 데서도 읽지 않는다) */
   const contentOk = (f: string, spec: string, typeOnly: boolean): boolean => /^games\/[^/]+\/shared\/content\//.test(f) && ((/^@engine\/shared\/defs\/\w+$/.test(spec) && typeOnly) || spec === '@engine/shared/defaults' || spec === '@engine/shared/modules');
   const specsIn = (src: string): { spec: string; typeOnly: boolean }[] => [...stripComments(src).matchAll(/^\s*(import|export)\s+(type\s+)?[^'"]*?from\s+['"](@engine\/[^'"]+)['"]|^\s*import\s+['"](@engine\/[^'"]+)['"]/gm)].map((m) => ({ spec: m[3] ?? m[4], typeOnly: !!m[2] }));
@@ -217,4 +220,58 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
   }
   for (const w of wrong) console.log('  ' + w);
   check(wrong.length === 0, `게임의 운영 설정(deploy.json)이 서버 진입점의 기본값과 같고, 게임끼리 포트·저장 폴더가 겹치지 않는다 (${games.join(', ') || '없음'})`);
+}
+
+// ---------- 8. 화면 코드는 브라우저를 플랫폼 접점으로만 부른다 ----------
+// 데스크톱(Electron)·모바일(Capacitor)·포털에서는 저장소·주소·새 창·생명주기가 브라우저와 다르다: 화면 코드가 그것을 직접 부르면 그 플랫폼에서 조용히 틀린다.
+// 그래서 틀의 화면(engine/client)과 게임의 화면(games/*/client)은 그것을 engine/client/platform/의 접점으로만 부른다 (docs/platforms.md 3.1의 규칙, 1단계에서 옮겼다).
+{
+  /** 금지 낱말 → 대신 쓸 접점 */
+  const BANNED: [RegExp, string][] = [
+    [/\blocalStorage\b/, 'platform().storage'],
+    [/\bsessionStorage\b/, 'platform().storage'],
+    [/(?<![\w.])location\.|\bwindow\.location\b|\bdocument\.location\b/, 'platform().app (param, anchor, page, requireUpdate) · platform().server()'],
+    [/(?<![\w.])navigator\./, 'platform() (app.language, has, copy, share, input …)'],
+    [/\bwindow\.open\s*\(/, 'platform().openUrl'],
+    [/['"`]_blank['"`]/, 'platform().openUrl (새 창 전제 금지)'],
+    [/\bdocument\.(visibilityState|hidden)\b|['"`](visibilitychange|pagehide|pageshow|beforeunload)['"`]/, 'platform().lifecycle'],
+    [/\bhistory\.(replaceState|pushState|back|go)\b/, 'platform().app.setParam'],
+    [/\b(requestFullscreen|exitFullscreen|fullscreenElement)\b/, 'platform().display.fullscreen'],
+    [/\bdevicePixelRatio\b/, 'platform().display.pixelRatio · pixelRatioCap'],
+    [/\bscreen\.(width|height|orientation)\b/, 'platform().display (viewport, orientation)'],
+    [/\bcreateObjectURL\b/, 'platform().saveFile'],
+    [/\(pointer:\s*coarse\)/, 'platform().input.primary (isTouch)'],
+    [/\bserviceWorker\b/, 'platform().offlineCache'],
+  ];
+  /**
+   * 알고 남겨 둔 곳 → 까닭 (최소로). 줄이 바뀌면 이 목록도 고친다 (없어진 것이 남아 있어도 실패한다)
+   *   social.ts의 localStorage: 대화 차단 목록. 묶음 3(친구·서버 쪽 차단)이 차단을 서버로 옮기며 이 파일의 저장을 지운다 (그 작업과 겹치지 않게 1단계에서는 옮기지 않았다)
+   */
+  const KNOWN: Record<string, string> = {
+    'engine/client/social.ts|localStorage': '묶음 3이 지움 (차단 목록을 서버로 옮긴다)',
+  };
+  const CLIENT = [
+    ...walk(path.join(root, 'engine/client'), /\.ts$/),
+    ...(fs.existsSync(path.join(root, 'games')) ? fs.readdirSync(path.join(root, 'games'), { withFileTypes: true }).filter((d) => d.isDirectory()).flatMap((d) => walk(path.join(root, 'games', d.name, 'client'), /\.ts$/)) : []),
+  ].map(rel).filter((f) => !f.startsWith('engine/client/platform/'));
+  /** 그 소스(주석을 뺀 것)에서 걸린 [낱말, 대신 쓸 것] */
+  const scan = (src: string): [string, string][] => BANNED.flatMap(([re, use]) => { const m = re.exec(stripComments(src)); return m ? [[m[0], use] as [string, string]] : []; });
+  const used = new Set<string>();
+  const hits = CLIENT.flatMap((f) => scan(read(f)).filter(([w]) => {
+    const k = `${f}|${w}`;
+    if (k in KNOWN) { used.add(k); return false; }
+    return true;
+  }).map(([w, use]) => `${f}: ${w.trim()} → ${use}`));
+  for (const h of hits) console.log('  ' + h);
+  for (const [k, why] of Object.entries(KNOWN)) console.log(`  알고 남김 ${k.replace('|', ': ')} (${why})`);
+  check(CLIENT.length >= 100 && hits.length === 0, `화면 코드(틀 ${CLIENT.filter((f) => f.startsWith('engine/')).length}개, 게임 ${CLIENT.filter((f) => f.startsWith('games/')).length}개 파일)가 브라우저의 저장소·주소·navigator·새 창·생명주기·전체 화면·내려받기를 직접 부르지 않는다: 플랫폼 접점으로만 (알고 남긴 것 ${Object.keys(KNOWN).length}곳)`);
+  const stale = Object.keys(KNOWN).filter((k) => !used.has(k));
+  check(stale.length === 0, `알고 남긴 목록에 이미 없어진 것이 남아 있지 않다${stale.length ? ': ' + stale.join(', ') : ''}`);
+  // 검사가 실제로 잡아내는가: 직접 부르는 것은 잡고, 주석과 접점을 거친 것, 비슷한 이름은 잡지 않는다
+  const probeHit = scan("const t = localStorage.getItem('x'); if (document.hidden) location.reload(); window.open(u, '_blank'); const l = navigator.language;").map((h) => h[0].trim());
+  const probeMiss = scan("// localStorage, location.reload()\nplatform().storage.get('lang'); platform().app.param('auto'); const myLocation = p.location; const s = el.location.x; ev.code; const dpr = platform().display.pixelRatio();");
+  check(probeHit.length === 6 && probeMiss.length === 0, `검사의 모양: 직접 부르는 것(${probeHit.join(', ')})은 잡고, 주석·접점·다른 객체의 같은 이름은 잡지 않는다${probeMiss.length ? ': 잘못 잡음 ' + probeMiss.map((h) => h[0]).join(', ') : ''}`);
+  // 접점 자체에는 그것이 있다 (옮겨 간 곳)
+  const web = read('engine/client/platform/web.ts');
+  check(['localStorage', 'location.reload()', 'navigator.language', "window.open(url, '_blank', 'noopener')", "'visibilitychange'", "'pagehide'", 'history.replaceState', 'requestFullscreen', 'URL.createObjectURL', 'navigator.clipboard.writeText'].every((w) => web.includes(w)), '옮겨 간 브라우저 호출은 웹 구현(engine/client/platform/web.ts)에 모여 있다');
 }

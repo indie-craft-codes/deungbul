@@ -120,6 +120,7 @@ export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'co
 | `@engine/server` | 서버의 모든 것: `Game`(`g.has`, `g.defineKind`, `g.place`), `Ent`, `KindDef`, `startServer`, `runServer`, 저장소(`MemoryStore` …), `dist`·`readInt`·`clamp`·`ri`·`dayOf`, 층 도우미, `addBannedWords`, `WHY`·`mailWhy` | `import { dist, type Ent, type Game, readInt } from '@engine/server';` |
 | `@engine/client` | 화면의 모든 것: `startClient`, `bus`(`onMsg`·`onFrame`·`onSlow`·`onKey`), `rules`, `S`, `send`, `hasModule`, 엔티티 종류(`registerKind`, `makeBox`, `makeBall`), 창(`mountPanel`, `addPlace`, `addNotices`), 모델·장면(`registerHand` …), 지도(`addMapPlaces` …), 메뉴(`setMenuTabs`, `closeMenu`, 탭의 줄 만들기 `menuRow`·`menuButton`·`menuEl`·`menuSpan`·`menuChips`·`redrawMenu` …) | `import { addMapPlaces, onMsg, rules, S } from '@engine/client';` |
 | `@engine/client/i18n` | 문장: `L`, `t`, `setLocales`, `onLangChange`. 언어 묶음은 `@engine/client/i18n/ko`·`en`·`names`·`merge` | `import { L, t } from '@engine/client/i18n';` |
+| `@engine/client/platform` | 플랫폼 접점만(`platform`, `setPlatform`, `memoryPlatform` …, 17절): 도감처럼 3D 화면 없이 서는 페이지가 저장소·주소·언어를 읽을 때. 게임 화면은 `@engine/client`에서 같은 것을 읽는다 | `import { platform } from '@engine/client/platform';` |
 | `@engine/shared` | 공용: 메시지 타입(`ServerMsg` …), 모듈의 표(`ALL_MODULES`, `RPG_MODULES`, `checkModules`, `ModuleId`), 자동 사냥의 기준(`AUTO`, `AWAY`), 길찾기, `PROTOCOL` | `import type { ServerMsg } from '@engine/shared';` |
 | `@engine/shared/defs`, `@engine/shared/world` | 내용 통로: 내용의 타입·도우미(`maxHpFor`, `itemDef` …)와 맵(`AREAS` …) | `import { maxHpFor } from '@engine/shared/defs';` |
 | `@engine/testing` | 시험 도구: `check`, `failures`, 가짜 클라이언트 | `import { check } from '@engine/testing';` |
@@ -2185,26 +2186,44 @@ export const FLAGS: readonly string[] = ['bonfire'];
 
 ### 플랫폼 접점 (`engine/client/platform/`)
 
-브라우저에 기대는 일(저장소, 보임·숨김, 오류 받기, 파일 내려받기, 주소 열기, 클립보드, 전체 화면, 서비스 워커, 광고, 서버 주소)은 **접점 `Platform`을 거쳐** 부른다(설계: [platforms.md](platforms.md) 3.1). 기본 구현은 `web`(`platform/web.ts`: 지금 동작 그대로, 저장 키 이름도 같다), 시험은 `memory`(`platform/memory.ts`). 데스크톱(Electron/Tauri)·모바일(Capacitor)·포털 구현은 같은 모양으로 더하고, 게임의 진입점이 `startClient`보다 먼저 `setPlatform(구현)`을 부른다. 없을 수 있는 기능은 `platform().has('files.save')`처럼 먼저 묻는다(동기). 읽기 저장은 동기(`storage.get`)이고 앱은 시작 때 `storage.ready()`로 메모리에 채운다. 비동기 칸은 실패해도 던지지 않고 `false`·`null`을 돌려준다. **이번에 새로 쓰거나 고친 코드만 이 접점을 쓴다**: 나머지 옛 호출(언어 고르기, 차단 목록, 도감 링크 …)을 옮기는 것은 다음 작업이다.
+브라우저에 기대는 일(저장소, 보임·숨김, 오류 받기, 파일 내려받기, 주소 열기, 클립보드, 전체 화면, 서비스 워커, 광고, 서버 주소)은 **접점 `Platform`을 거쳐** 부른다(설계: [platforms.md](platforms.md) 3.1). 기본 구현은 `web`(`platform/web.ts`: 지금 동작 그대로, 저장 키 이름도 같다), 시험은 `memory`(`platform/memory.ts`). 데스크톱(Electron/Tauri)·모바일(Capacitor)·포털 구현은 같은 모양으로 더하고, 게임의 진입점이 `startClient`보다 먼저 `setPlatform(구현)`을 부른다. 없을 수 있는 기능은 `platform().has('files.save')`처럼 먼저 묻는다(동기). 읽기 저장은 동기(`storage.get`)이고 앱은 시작 때 `storage.ready()`로 메모리에 채운다. 비동기 칸은 실패해도 던지지 않고 `false`·`null`을 돌려준다. 플랫폼 분리 1단계(11-27)에서 틀과 게임의 옛 호출(언어 고르기, 소리 깨우기, 재접속의 숨김 기다리기, 버전 불일치의 새로고침, `?auto=`, 화면 크기, 그리기 배율, 도감 링크·도감 페이지)을 모두 이 접점 뒤로 옮겼다. 남은 것은 차단 목록(`social.ts`의 `localStorage`) 하나다: 묶음 3이 차단을 서버로 옮기며 지운다.
+
+**규칙: 화면 코드(틀의 `engine/client`, 게임의 `games/<게임>/client`)는 브라우저를 직접 부르지 않는다.** `localStorage`·`sessionStorage`, `location.*`(주소·새로고침·쿼리·`#`), `navigator.*`(언어·클립보드·공유·서비스 워커), `window.open`·`target="_blank"`, `document.visibilityState`·`hidden`·`visibilitychange`·`pagehide`, `history.*`, 전체 화면 API, `devicePixelRatio`, `screen.*`, `URL.createObjectURL`(내려받기), `(pointer: coarse)` 대신 아래 칸을 쓴다. 데스크톱·앱·포털에서는 그것들이 브라우저와 다르게 돈다(앱은 새로고침해도 새 화면이 오지 않고, 주소창이 없고, `localStorage`를 OS가 지울 수 있다). `engine/test/boundary.test.ts` 8절이 `engine/client/platform/` 밖의 이런 호출을 찾으면 실패한다(알고 남긴 곳은 까닭과 함께 그 시험의 `KNOWN`에). 그대로 써도 되는 것: DOM·CSS·Canvas·WebGL·WebAudio·`fetch`(같은 폴더의 자원)·`matchMedia`(화면 너비, '동작 줄이기')·`requestAnimationFrame`·입력 사건(`pointerdown`, `keydown`): 이것들은 WebView 안에서도 같다.
+
+```ts
+import { platform } from '@engine/client';            // 도감처럼 3D 없이 서는 페이지는 '@engine/client/platform'
+const p = platform();
+p.storage.get('myGame:seen');                          // 동기 읽기. 쓰기는 p.storage.set(키, 값) (저장소를 못 쓰면 false)
+p.app.param('lang');                                   // 시작할 때 받은 값 (웹: ?lang=), p.app.setParam('lang', 'en')으로 바꿔 둔다
+p.lifecycle.on('show', () => resume());                // 숨김·보임 (돌려준 함수로 그만 듣는다), p.lifecycle.visible()
+if (p.has('link.external')) void p.openUrl(url);       // 새 창. 포털처럼 못 여는 곳에서는 단추를 그리지 않는다
+p.input.primary() === 'touch';                         // 주 입력 장치 (문장은 i18n의 [[PC|터치]]가 이미 고른다)
+p.input.keyName(ev);                                   // 키의 자리 이름 (KeyW → 'w': 한글 입력 상태에서도)
+```
 
 | 칸 | 하는 일 | web |
 |---|---|---|
 | `id`, `has(기능)` | 플랫폼 이름, 기능이 있는가 (`storage.durable`, `files.save`, `link.external`, `display.fullscreen`, `offline.cache`, `ads` …) | |
 | `storage` (`ready`·`get`·`set`·`remove`, `secret`) | 키-값 저장. 비밀 값(기기 토큰)은 `secret`(앱: Keychain/Keystore) | `localStorage` + try/catch |
 | `lifecycle` (`visible`, `on('hide'·'show'·'pause'·'resume'·'quit')`) | 보임·숨김, 앱의 멈춤·재개 | `visibilitychange`, `pagehide` |
-| `audio` (`onUnlock`, `onInterrupt`) | 소리를 깨워도 되는 때, 바깥 까닭의 소리 멈춤 | 첫 입력 |
-| `display` (`fullscreen`, `orientation`, `safeArea`, `pixelRatioCap`, `pixelRatio`) | 전체 화면, 방향, 안전 영역, 그리기 배율의 상한(설정 창의 기본) | 상한 2 |
+| `audio` (`onUnlock`, `onInterrupt`) | 소리를 깨워도 되는 때(여러 번 불린다), 바깥 까닭의 소리 멈춤 | 입력(`pointerdown`·`keydown`)마다 |
+| `display` (`fullscreen`, `orientation`, `safeArea`, `pixelRatioCap`, `pixelRatio`, `viewport`) | 전체 화면, 방향, 안전 영역, 그리기 배율의 상한(설정 창의 기본)·기기 배율, 게임 화면의 크기 | 상한 2, `devicePixelRatio`, 창 크기(홈 화면 아이폰은 기기 화면) |
+| `input` (`primary`, `onChange`, `gamepad`, `keyName`) | 주 입력 장치(mouse·touch·gamepad: `isTouch`와 `[[PC\|터치]]`가 묻는다), 패드, 키의 자리 이름(`ev.code` 기준) | 처음은 `(pointer: coarse)`로 짐작하고 그 뒤로는 실제로 쓴 장치(마우스·키보드로 바꾸는 것은 정밀한 포인터가 있는 기기만), Gamepad API |
+| `notify`, `purchase`, `achievements`, `cloud` | 기기 알림·푸시, 플랫폼 결제, 플랫폼 업적, 클라우드 저장 (앱·Steam이 채울 자리) | 없음: `has()`가 false, 부르면 `false`·`null`·빈 목록 |
 | `openUrl`, `share`, `copy`, `saveFile` | 주소 열기(약관), 공유, 클립보드, 파일로 저장(내 데이터) | `window.open`, `navigator.share`, `clipboard`, `<a download>` |
 | `errors` (`listen`, `report`) | 처리되지 않은 오류 받기, 오류 묶음 보내기 | `error`·`unhandledrejection`, `fetch(keepalive)` |
 | `offlineCache(주소)` | 재방문 캐시 | 서비스 워커 등록 |
 | `auth` (`providers`, `proof`) | 플랫폼이 주는 증명(나중: Steam·Apple·포털). 지금은 `['guest']` | |
 | `ads` (`gameplayStart`·`gameplayStop`·`adBreak`·`rewarded`), `invite(room)` | 포털 광고·게임 구간·초대 단추 | 아무것도 하지 않는다 |
-| `server()`, `app` (`version`, `build`, `page`, `requireUpdate`) | 서버 주소, 빌드 표시, 오래된 화면일 때 | `VITE_SERVER_URL` → `server.json` → 같은 출처, 새로고침 |
+| `server()`, `app` (`version`, `build`, `page`, `requireUpdate`, `param`, `setParam`, `anchor`, `language`) | 서버 주소, 빌드 표시, 오래된 화면일 때(업데이트), 시작할 때 받은 값·자리, 기기 언어 | `VITE_SERVER_URL`(빌드 때 덮어쓰기) → `server.json` → 같은 출처, 새로고침, `?이름=값`·`#자리`, `navigator.language` |
 
 틀이 접점 위에 얹은 것(`@engine/client`에서 읽는다):
 
 - **광고 지점**: 틀은 광고 SDK를 부르지 않고 '띄워도 되는 자리'를 사건으로만 알린다. `onBreakPoint((where) => …)`: `'roundEnd'`(판 모듈의 결과), `'respawn'`(쓰러져 다시 일어남). 띄울지는 게임이 정해 `adBreak(where)`를 부른다. `rewarded(why)`는 끝까지 봤으면 `true`, 실패·없음·차단이면 `false`(보상을 주지 않는다). 그동안 틀이 소리를 멈추고(`onAd`) 게임 구간을 닫았다 다시 연다. 기본 구현은 곧바로 끝난다: 광고 차단기가 있어도 진행된다.
 - **게임 구간**: `gameplayStart`는 들어와서 첫 입력 때(Poki 규칙), `gameplayStop`은 탭을 숨길 때와 광고 동안. 같은 사건을 잇달아 두 번 보내지 않는다.
+- **버전 불일치**: 서버의 `welcome.v`(와 호환 범위 `welcome.min`)가 이 화면의 `PROTOCOL`과 맞지 않으면(`protocolFits`, `@engine/shared`) 틀이 접속 화면에 안내를 두고 단추가 `platform().app.requireUpdate(스토어 주소)`를 부른다. 웹은 예전과 같은 '새 버전이 나왔습니다. 새로고침해 주세요.'와 새로고침, 앱은 '새 버전이 필요합니다'와 스토어. 앱·데스크톱은 `join`에 자기 번호 `v`를 싣고(웹은 싣지 않는다: 주고받는 바이트가 예전과 같다), 서버가 범위 밖이면 `{ t: 'update', min, max, store? }`를 보내고 4006으로 닫는다.
+- **터치 툴팁**: `title` 속성은 터치에서 보이지 않는다. 틀이 `startClient`에서 켜는 도우미(`engine/client/hud/tip.ts`)가 title이 달린 요소를 손가락으로 길게(0.45초) 누르면 말풍선으로 띄우고, 그 누름의 click은 삼킨다(설명을 보려다 단추가 눌리지 않게). 데스크톱은 브라우저의 툴팁 그대로다. 게임의 창도 `title`만 달면 된다. 직접 띄우려면 `showTip(글, 자리)`·`hideTip()`.
+- **서버 쪽 칸**(`startServer`의 옵션, `runServer`는 환경 변수): `staticDir: null`(`STATIC=0`)이면 화면 파일을 내보내지 않는다(화면은 CDN·포털·앱이 싣고 서버는 게임만. 관리자 통로·`/healthz`는 그대로). `origins: { list, allowNone }`(`ORIGINS=https://a,http://localhost:*`, `ORIGIN_NONE=0`)이면 WebSocket을 그 출처에서만 받는다(기본: 검사 안 함). `protocolMin`(`PROTOCOL_MIN`)을 지금 번호보다 낮추면 그 번호부터의 옛 화면도 받는다(앱의 호환 기간. 기본: 같은 번호만), `storeUrl`(`STORE_URL`)은 `update`에 실을 업데이트할 곳.
 - **인증 접점** `AuthProvider`(`platform/auth.ts`): 접속할 때 낼 증표. 지금은 손님뿐이다(`guestAuth()`: 비밀 저장의 `token` 칸 = 예전의 `localStorage.token`). 포털 토큰·자체 계정은 같은 모양으로 `setAuth(구현)`에 꽂는다. 서버 쪽 짝은 `ServerAuth`이고 `startServer({ auth })`로 꽂는다(주지 않으면 손님: 토큰의 해시가 저장 키, 기기 옮기기의 별칭을 거친다). 계정·로그인 자체는 만들지 않는다([accounts.md](accounts.md)).
 
 ```ts engine/server/net/auth.ts

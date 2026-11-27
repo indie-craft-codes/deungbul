@@ -49,4 +49,6 @@ export { enableOfflineCache, isAfk, onReturn } from './lifecycle';
 export { reportError } from './errors';
 export { preloadLater } from './assets';
 // 플랫폼 접점 (engine/client/platform/): 데스크톱·모바일·포털 구현을 꽂는 자리, 광고 지점과 게임 구간, 인증
-export { adBreak, auth, gameplayStart, gameplayStop, guestAuth, memoryPlatform, onAd, onBreakPoint, platform, rewarded, setAuth, setPlatform, type AuthProvider, type Feature, type LifeEvent, type MemoryPlatform, type Platform, type RawError } from './platform';
+export { adBreak, auth, gameplayStart, gameplayStop, guestAuth, keyNameOf, memoryPlatform, onAd, onBreakPoint, platform, rewarded, setAuth, setPlatform, type AuthProvider, type Feature, type InputKind, type KeyLike, type LifeEvent, type MemoryPlatform, type Platform, type RawError } from './platform';
+// 터치에서 title 툴팁을 길게 눌러 보는 도우미 (hud/tip.ts): 틀이 startClient에서 켠다. 게임이 만든 요소도 title만 달면 된다
+export { showTip, hideTip } from './hud/tip';

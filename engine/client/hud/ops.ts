@@ -9,6 +9,7 @@ import { $ } from '../app';
 import { onMsg, onSlow } from '../bus';
 import { L, onLangChange, t } from '../i18n';
 import { connect } from '../net';
+import { platform } from '../platform';
 import { showGate } from './me';
 import { addNotices } from './notify';
 
@@ -77,7 +78,8 @@ export function opsLost(code: number): boolean {
   renderGate();
   clearTimeout(retry);
   retry = window.setTimeout(function again() {
-    if (document.hidden) { document.addEventListener('visibilitychange', again, { once: true }); return; }
+    const life = platform().lifecycle;
+    if (!life.visible()) { const off = life.on('show', () => { off(); again(); }); return; } // 화면이 꺼져 있으면 켜질 때까지 기다린다
     connect();
   }, 60_000);
   return true;

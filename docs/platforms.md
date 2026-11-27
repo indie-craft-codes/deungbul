@@ -1,6 +1,6 @@
 # 웹 전용 부분 분리 설계: 데스크톱(Steam)·모바일(앱 스토어) 대비
 
-작성 2026-11-27. 조사·설계 문서다(저장소 코드는 고치지 않았다).
+작성 2026-11-27. 조사·설계 문서다(처음 쓸 때는 저장소 코드를 고치지 않았다). **1단계(브라우저 직접 호출을 접점 뒤로)는 끝났다(2026-11-27, 가지 `feat/plat1`): 4절의 '1단계 결과'와 그 표가 1절의 줄마다 지금 상태다.**
 표시: **[확인]** = 코드나 공식 문서에서 직접 봤다. **[추정]** = 경험·간접 근거로 그렇게 보지만 이 저장소나 기기에서 돌려 보지는 않았다.
 읽은 곳: `C:\gamedev`(engine/, games/deungbul, games/sample, scripts/, docs/genre-features.md 5.2절·6절)와 `$TEMP/dg-work/web2`(가지 `feat/web2`, 읽기만).
 
@@ -374,6 +374,53 @@ export interface Platform {
 | 프로토콜 `PROTOCOL_MIN`·`join.v`·`update` 메시지·닫힘 4004 (웹은 지금처럼 reload) | 중 | 프로토콜 변경 자체가 PROTOCOL을 올림 | 옛 번호 클라이언트를 흉내 낸 시험 |
 | `title` 툴팁 → 공용 툴팁(탭/길게 누르기) | 중 | 화면이 달라짐(1단계의 "같게" 밖) → 따로 묶음으로 | 화면 찍기(데스크톱·폰 크기) |
 | **검증 기준**: 황금 실행(`web2-tools/golden.sh`와 같은 방식) 같음, 서버와 주고받는 메시지 바이트 같음(녹화 비교), 화면 찍기 같음, 빌드 크기 차이 ±1% 이내 | | | |
+
+### 1단계 결과 (2026-11-27, 가지 `feat/plat1`): 끝
+
+- **접점에 더한 칸**(`engine/client/platform/types.ts`): `input`(`primary`·`onChange`·`gamepad`·`keyName`), `notify`·`purchase`·`achievements`·`cloud`(웹 기본은 `has()`가 false인 빈 구현), `display.viewport`, `app.param`·`setParam`·`anchor`·`language`. 기능 이름 `input.touch`·`input.keyboard`·`input.gamepad`·`notify.local`·`notify.push`·`purchase`·`achievements`·`cloudSave`·`app.update`. 키 이름은 `platform/keyname.ts`(`ev.code` 기준, 이름의 모양은 지금 키 표와 같게. 단축키는 아직 `ev.key`: 2단계).
+- **웹의 주 입력 장치**: 처음에는 `(pointer: coarse)`로 짐작하고(예전 `isTouch`와 같은 값: 첫 화면이 같다) 그 뒤로는 실제로 쓴 장치를 따른다(손가락·펜 → touch, 패드 → gamepad, 마우스·키보드 → mouse는 정밀한 포인터가 있는 기기에서만). 바뀌면 `[[PC|터치]]` 문장을 다시 고른다.
+- **버전**: `protocolFits(내 번호, 서버 번호, min?)`(`engine/shared/protocol.ts`). 서버 `protocolMin`(기본 = `PROTOCOL`: 같은 번호만, 예전과 같다. 낮추면 `welcome.min`을 싣는다), 앱·데스크톱만 `join.v`를 싣고(웹은 싣지 않는다: 바이트가 같다) 범위 밖이면 `{ t: 'update', min, max, store? }` + 닫힘 **4006**(4004는 이미 점검이 쓴다). 화면은 `platform().app.requireUpdate(store)`: 웹은 예전 안내·새로고침, 앱은 '업데이트' 안내(`staleApp`·`updateApp`).
+- **서버**: `staticDir: null`(`STATIC=0`), `origins: { list, allowNone }`(`ORIGINS`, `ORIGIN_NONE=0`. 기본 검사 안 함), `protocolMin`(`PROTOCOL_MIN`), `storeUrl`(`STORE_URL`). 출처 맞추기는 `engine/server/net/origin.ts`(포트 자리 `*`).
+- **툴팁 #27**: `title`은 그대로 두고, 터치에서 길게(0.45초) 누르면 말풍선으로 띄우는 틀 공통 도우미(`engine/client/hud/tip.ts`). 데스크톱은 브라우저 툴팁 그대로.
+- **경계 시험**: `engine/test/boundary.test.ts` 8절. `engine/client/platform/` 밖의 화면 코드(틀과 `games/*/client`)에서 `localStorage`·`sessionStorage`·`location.`·`navigator.`·`window.open`·`'_blank'`·`document.visibilityState/hidden`·`visibilitychange`·`pagehide`·`history.*`·전체 화면 API·`devicePixelRatio`·`screen.*`·`createObjectURL`·`(pointer: coarse)`·`serviceWorker`를 찾으면 실패. 알고 남긴 곳은 `social.ts`의 `localStorage` 하나(묶음 3이 지움).
+- **검증**: 황금 실행(등불지기 sim·예제) 바이트까지 같다, 저장 키 이름 그대로(`token`·`lang`·`sound`·`soundMix`·`settings`·`legal`·`tut:*`·`keepSafe`·`playSec`·`blocked`: 시험이 소스로 고정), 바탕에서 만든 캐릭터를 같은 브라우저 저장으로 가지에서 이어받음, 화면 찍기(등불지기·예제 × PC·폰 × 한국어·영어) 비교, 빌드 크기 +0.6%(등불지기 첫 묶음 978.9 → 984.6KB), 예제 +0.6%.
+
+**1절 표의 줄마다 지금 상태** (✓ 접점 뒤, ◐ 일부, – 그대로 둠: 까닭)
+
+| # | 상태 | 어떻게 / 까닭 |
+|---|---|---|
+| 1·2·3 | ✓ (묶음 2) | `platform().server()`(빌드의 `VITE_SERVER_URL`로 덮어쓰기 → `server.json` → 같은 출처), 토큰은 `auth()`의 `storage.secret('token')` |
+| 4 | – | `new WebSocket`: 세 플랫폼에서 같다 |
+| 5 | ✓ | 재접속의 숨김 기다리기(`main.ts`, 그 뒤에 생긴 `hud/ops.ts`도) → `lifecycle.visible()`·`on('show')` |
+| 6·41 | ✓ | `protocolFits` + `app.requireUpdate`, 서버 `protocolMin`·`join.v`·`update`·4006 |
+| 7 | ✓ | `display.viewport()`(홈 화면 아이폰의 크기 우회 포함) |
+| 8·9 | – | DOM 사건(확대 막기, 크기 바뀜): WebView에서 같다 |
+| 10 | ✓ | `?auto=` → `app.param('auto')`, 새로고침 → `app.requireUpdate()` |
+| 11 | ✓ | `storage.get/set('lang')`, `app.param('lang')`, `app.language()` |
+| 12 | ✓ | `isTouch()` = `input.primary() === 'touch'` |
+| 13 | – | `documentElement.lang`, `document.title`: 무해(창 제목은 래퍼가 따로) |
+| 14 | – | WebAudio: 세 플랫폼에서 같다 |
+| 15 | ✓ | `audio.onUnlock`(웹: 입력마다, 예전과 같은 사건·차례) |
+| 16·33 | – | 상대 주소의 `fetch`·`Audio`·`GLTFLoader`: 코드가 아니라 래퍼가 푼다(Electron 사용자 정의 프로토콜 `app://`, 2단계) |
+| 17 | ✓ (묶음 2) | `storage('sound')`, `storage('soundMix')` |
+| 18 | – | 차단 목록 `localStorage('blocked')`: 묶음 3(친구·서버 쪽 차단)이 서버로 옮기며 지운다. 경계 시험의 알고 남긴 목록에 있다 |
+| 19·20·32 | – | 포인터·조이스틱·글 입력의 DOM 사건: 같다 |
+| 21 | ◐ | `input.keyName(ev)`(ev.code 기준)을 만들었다. 단축키는 아직 `ev.key`(동작 그대로가 1단계의 조건): 2단계에서 바꾼다 |
+| 22 | ◐ | 그리기 배율 → `display.pixelRatio()`·`pixelRatioCap()`. 컨텍스트 손실 복구·품질 단계는 3단계 |
+| 23 | – | 변신 미리보기의 두 번째 렌더러: 같다(모바일 메모리는 3단계에서 잰다) |
+| 24 | ◐ | 미니맵·세계 지도의 배율 → `display`. 호버 툴팁은 탭 대체가 이미 있다 |
+| 25·26·28·29·30 | – | 너비 `matchMedia`, '동작 줄이기', CSS 호버·`pointer: coarse`, 안전 영역, DOM HUD: WebView에서 같다 |
+| 27 | ✓ | 길게 눌러 보는 툴팁 `hud/tip.ts` (title은 그대로) |
+| 31 | ◐ | `copy` 칸은 있다. 기기 옮기기 창에 복사 단추를 더하면 화면이 달라져 1단계(화면 같게)에서는 두지 않았다 |
+| 34 | ✓ | 도감 링크 → `openUrl`(Ctrl·가운데 단추는 브라우저 그대로), `link.external`이 없으면 단추를 두지 않는다 |
+| 35 | ✓ | 도감 페이지의 언어·주소·`#자리` → `app.param`·`setParam`·`anchor`·`language`, `storage('lang')` (입구 `@engine/client/platform`) |
+| 36·37 | – | PWA 메타·매니페스트: 앱에서 무시된다 |
+| 38 | – | 빌드 대상 구분(`build:desktop`·`build:mobile`): 2단계 |
+| 39 | ✓ | `staticDir: null` |
+| 40 | ✓ | `origins` 허용 목록(기본 끔) |
+| 42 | – | 빠른 터널 주소: 고정 도메인은 4단계의 사용자 결정 |
+
+셈: 표 42줄 가운데 접점 뒤로 간 것 17줄(이번 13줄 + 묶음 2의 4줄), 일부 4줄, 그대로 21줄(WebView에서 같은 DOM·WebAudio·CSS 16줄, 래퍼·빌드·운영 단계의 것 4줄, 묶음 3의 차단 1줄). 코드 위치로는 이번에 옮긴 곳이 25곳(main.ts 5, i18n 5, 도감 페이지 5, 소리 1, 배율 3, 도감 링크 1, 툴팁 1, 서버 3, 그리고 설계 뒤에 생긴 `hud/ops.ts` 1)이고, 설계의 52곳으로 치면 이번 24곳 + 묶음 2의 4곳 = 약 28곳이다(설계의 52곳을 어떻게 셌는지는 남아 있지 않아 같은 방식으로 다시 센 추정이다).
 
 ### 2단계 — 데스크톱 시제품 (비용 0: 서명 없이, Steam 없이)
 

@@ -5,8 +5,9 @@ import { memoryPlatform } from './memory';
 import type { Feature, Platform } from './types';
 import { webPlatform } from './web';
 
-export type { Feature, LifeEvent, Platform, RawError } from './types';
+export type { Feature, InputKind, KeyLike, LifeEvent, Platform, RawError } from './types';
 export { memoryPlatform, type MemoryPlatform } from './memory';
+export { keyNameOf } from './keyname';
 export { guestAuth, auth, setAuth, type AuthProvider } from './auth';
 
 let current: Platform | null = null;
