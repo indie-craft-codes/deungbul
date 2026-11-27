@@ -35,6 +35,7 @@ export class Combat {
       if (!num(m.id)) return;
       const t = g.ents.get(m.id);
       if (!t || t.kind !== 'm' || t.dead || t.layer !== p.layer || dist(p, t) > AOI_LEAVE) return;
+      if (g.rules.ghost?.(p)) return; // 보기만 하는 사람
       p.targetId = t.id; p.stuck = 0;
     });
     g.commands.set('skill', (p, m) => { if (num(m.n)) this.useSkill(p, m.n); });
@@ -48,6 +49,7 @@ export class Combat {
 
   /** n번 칸의 기술을 쓴다. 칸에 든 기술은 직업마다 다르다. */
   private useSkill(p: Ent, n: number): void {
+    if (this.g.rules.ghost?.(p)) return; // 보기만 하는 사람
     const g = this.g;
     if (!Number.isInteger(n) || n < 0 || n >= SKILL_SLOTS || p.cds[n] > 0) return;
     const id = classOf(p.cls).skills[n], def = skillDef(id);
@@ -171,6 +173,9 @@ export class Combat {
 
   damage(src: Ent, dst: Ent, amount: number, crit: boolean): void {
     if (dst.dead || src.layer !== dst.layer) return;
+    // 보기만 하는 사람은 맞지도 때리지도 않는다 (편성만 싸우는 단계: 규칙이 없으면 예전과 같다)
+    const ghost = this.g.rules.ghost;
+    if (ghost && ((src.kind === 'p' && ghost(src)) || (dst.kind === 'p' && ghost(dst)))) return;
     if (src.kind === 'p') amount = Math.round(amount * this.g.mods.product('damage', src));
     if (dst.kind === 'p') amount = Math.max(1, Math.round(amount * this.g.mods.product('guard', dst)));
     else if (this.allies.size > 0) { const k = this.allies.get(dst.kind)?.guard?.(dst); if (k !== undefined && k !== 1) amount = Math.max(1, Math.round(amount * k)); }

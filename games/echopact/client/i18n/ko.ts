@@ -53,7 +53,7 @@ export const koGame = {
   ui: {
     title: '메아리 계약',
     intro: '계약자가 되어 두 곳을 오갑니다. 계약의 탑에서 옛 영웅의 메아리를 불러 모으고 편성해 단계를 깨고, 울림골 들판에서는 모은 메아리의 모습으로 변신해 사냥합니다.',
-    classHint: '직업은 나중에 울림 샘 곁에서 바꿀 수 있습니다. 탑에서도 계약자가 앞에 서서 함께 싸웁니다.',
+    classHint: '직업은 울림골(들판)에서 싸우는 계약자의 것입니다. 나중에 울림 샘 곁에서 바꿀 수 있습니다. 탑에서는 편성한 메아리만 싸웁니다.',
     hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 샘물 약', 'R: 자동 사냥', 'H: 울림 샘으로', 'B: 가방', 'M: 메뉴(변신·장비)', 'N: 지도', 'Tab: 대상', 'Enter: 대화']),
     mapLegend: '■ 울림 샘 · 초록 상인',
     goingTown: '울림 샘으로 걸어갑니다.',
@@ -80,15 +80,13 @@ export const koGame = {
     towerWeak: '편성 전투력이 권장보다 낮습니다. 골드로 메아리의 레벨을 올리거나, 뽑아서 편성을 세게 하세요.',
     towerGrow: '메아리 키우기',
     // 다른 쪽의 작은 표시와 바로 가기
-    sideGoVale: '울림골로',
-    sideGoTower: '탑으로',
     sideStopTower: '탑 멈추기',
     sideHunt: '사냥 중', sideRest: '쉬는 중', sideRetreat: '물러남', sideStop: '멈춤', sideDown: '쓰러짐',
     sideFight: '싸우는 중', sideGap: '다음 물결', sideClear: '깸', sideFail: '실패', sideLobby: '쉬는 중',
     alertGo: '바로 가기',
     // 튜토리얼과 설정 칸 (client/tutorial.ts)
     tutPact: '계약의 첫걸음',
-    tutStage: '계약의 탑입니다. "다음 도전"을 눌러 1-1에 도전해 보세요. 편성한 메아리가 함께 싸우고, 처음 깨면 울림 조각을 받습니다.',
+    tutStage: '계약의 탑입니다. "다음 도전"을 눌러 1-1에 도전해 보세요. 탑에서는 편성한 메아리(카드)만 싸웁니다. 처음 깨면 울림 조각을 받습니다.',
     tutPull: '울림 조각 100개가 모이면 뽑기에서 메아리를 불러 보세요. 확률은 \'확률 보기\'에 모두 공개됩니다.',
     tutSwitch: '위의 \'울림골로\' 단추를 눌러 다른 게임(들판)으로 가 보세요. 싸우는 중이어도 바로 바뀌고, 탑의 단계는 끝까지 이어집니다.',
     tutMove: '울림골입니다. 땅을 눌러[[ (또는 WASD로)|]] 걸어 보세요.',
@@ -108,6 +106,7 @@ export const koGame = {
     /** 탑의 첫 화면: 가진 것과 편성의 전투력 */
     towerHave: (sparks: number, gold: number, power: number) => `울림 조각 ${sparks.toLocaleString('ko-KR')} · 골드 ${gold.toLocaleString('ko-KR')} · 편성 전투력 ${power.toLocaleString('ko-KR')}`,
     towerNext: (id: string) => `다음 도전 ${id}`,
+    towerPower: (n: number) => `편성 전투력 ${n.toLocaleString('ko-KR')}`,
     towerRec: (rec: number) => `권장 ${rec.toLocaleString('ko-KR')}`,
     towerBest: (id: string) => (id ? `가장 멀리 깬 단계 ${id}` : '아직 깬 단계가 없습니다'),
     /** 보고 있지 않은 들판·탑의 작은 표시 */

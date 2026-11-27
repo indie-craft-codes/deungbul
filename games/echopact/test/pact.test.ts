@@ -63,6 +63,13 @@ check(said(p, 'costShort').length === 1 && p.pulls.length === 0, '울림 조각�
   g.command(p, { t: 'stage', a: 'go', id: '1-1' });
   run(0.2);
   check(!!g.stages.runOf(p) && g.stages.runOf(p)!.state === 'fight' && g.stages.inStage(p), '대기실에서 1-1을 고르면 그 층에서 싸움이 시작된다');
+  // 탑에서는 편성의 메아리만 싸운다 (STAGE_RULES.squadOnly): 계약자는 보기만 한다 — 움직이지도 때리지도 맞지도 않는다
+  {
+    const at = { x: p.x, z: p.z }, hp = p.hp, mob = [...g.ents.values()].find((e) => e.kind === 'm' && e.layer === p.layer && !e.dead)!;
+    g.command(p, { t: 'move', x: at.x - 6, z: at.z - 6 }); g.command(p, { t: 'attack', id: mob.id }); g.combat.damage(mob, p, 50, false);
+    run(1);
+    check(Math.hypot(p.x - at.x, p.z - at.z) < 0.01 && p.targetId === 0 && p.hp === hp, '탑의 싸움에서 계약자는 보기만 한다: 이동·공격 명령이 듣지 않고, 맞지 않는다');
+  }
   for (let i = 0; i < 20 * 90 && p.stage.best === ''; i++) { g.tick(0.05); clock += 50; }
   check(p.stage.best === '1-1' && p.sparks >= CHAPTERS[0].stages[0].first!.sparks!, `단계 1-1을 깬다 (처음 깬 보상 울림 조각 ${CHAPTERS[0].stages[0].first!.sparks})`);
   g.command(p, { t: 'stage', a: 'leave' });
@@ -154,6 +161,7 @@ const pick = owned.filter((id) => id !== STARTER_ECHO).sort((a, b) => heroDef(b)
   run(0.4);
   check(!p.auto && said(p, 'autoRetreat').length === 1 && (g.personal.find((x) => x.name === 'modeSide')!.state(p) as { field: { state: string } }).field.state === 'retreat',
     `물약 없이 ${SAFETY.retreatAt * 100}% 아래면 자동 사냥을 멈추고 물러난다 (안내문 autoRetreat: 화면이 탑에서 '바로 가기'를 띄운다)`);
+  check((g.personal.find((x) => x.name === 'mode')!.state(p) as { auto?: boolean }).auto === false, '서버가 자동 사냥을 끄면 개인 상태 mode의 auto도 꺼져 화면의 켜짐이 따라 꺼진다 (켜진 줄 알고 다시 탑으로 가도 몸이 남지 않던 것)');
   // 돌아오면 대역의 자리·체력을 이어받는다
   run(2);
   const at = { x: stand!.x, z: stand!.z };

@@ -4,6 +4,7 @@
 import { CHAPTERS, MODE_RULE_VIEW, type ModeSideMe } from '@engine/shared/defs';
 import { $, addSetting, mountPanel, myMode, myModeSide, myStage, mySquad, onModeChange, onModeSide, onMsg, onSlow, openMenu, S, send, stageRows, switchMode } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
+import { heroName } from '@engine/client/i18n/ko';
 import { uiText } from '@engine/client/i18n/names';
 import type { MsgArg, MsgKey } from '@engine/shared';
 import { MODE, SAFETY } from '../shared/content/pact';
@@ -57,17 +58,43 @@ function drawHome(): void {
   auto.classList.toggle('on', !!st?.auto);
 }
 
+// ---------- 탑의 싸움: 편성의 메아리들 (탑에서는 계약자가 싸우지 않는다: 메아리마다 이름·체력, 편성 전투력) ----------
+function drawSquadBar(): void {
+  const bar = $('towerSquadBar'), st = myStage();
+  const fighting = inTower() && !!S.me && !!st?.run && st.run.state !== 'lobby';
+  bar.hidden = !fighting;
+  if (!fighting) return;
+  const heroes = [...S.others.values()].filter((r) => r.kind === 'hero' && !r.gone);
+  const order = mySquad().ids;
+  heroes.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+  const key = heroes.map((r) => `${r.id}:${Math.round(r.hp)}/${r.maxHp}:${r.dying ? 1 : 0}`).join('|') + L().code;
+  if (bar.dataset.key === key) return;
+  bar.dataset.key = key;
+  bar.textContent = '';
+  for (const r of heroes) {
+    const c = document.createElement('div');
+    c.className = 'tsq' + (r.hp <= 0 || r.dying ? ' down' : '');
+    const n = document.createElement('b'); n.textContent = heroName(r.type);
+    const hp = document.createElement('i'), fill = document.createElement('span');
+    fill.style.transform = `scaleX(${r.maxHp > 0 ? Math.max(0, Math.min(1, r.hp / r.maxHp)) : 0})`;
+    hp.append(fill); c.append(n, hp);
+    bar.append(c);
+  }
+  const pw = document.createElement('small'); pw.textContent = L().fmt.towerPower(mySquad().power);
+  bar.append(pw);
+}
+
 // ---------- 보고 있지 않은 쪽의 작은 표시 ----------
 const VALE_STATE: Record<string, string> = { hunt: 'sideHunt', resting: 'sideRest', retreat: 'sideRetreat', stop: 'sideStop', down: 'sideDown' };
 const TOWER_STATE: Record<string, string> = { fight: 'sideFight', gap: 'sideGap', clear: 'sideClear', fail: 'sideFail', lobby: 'sideLobby' };
 function drawSide(s: Readonly<ModeSideMe> = myModeSide()): void {
-  const chip = $('pactSide'), text = $('pactSideText'), go = $('pactSideGo') as HTMLButtonElement, stop = $('pactSideStop') as HTMLButtonElement;
+  const chip = $('pactSide'), text = $('pactSideText'), stop = $('pactSideStop') as HTMLButtonElement;
   const loc = L(), f = inTower() ? s.field : null, st = !inTower() ? s.stage : null;
   chip.hidden = !S.me || (!f && !st);
   chip.classList.toggle('danger', !!f && (f.state === 'down' || f.state === 'retreat' || f.state === 'stop' || f.hp / Math.max(1, f.max) < SAFETY.potionAt) || !!st && st.state === 'fail');
   stop.hidden = !st;
-  if (f) { text.textContent = loc.fmt.sideVale(t(VALE_STATE[f.state] as never), f.hp, f.max, f.kills, f.got.sparks); go.textContent = t('sideGoVale'); }
-  else if (st) { text.textContent = loc.fmt.sideTower(st.id, t(TOWER_STATE[st.state] as never), st.cleared, st.got.sparks, st.auto); go.textContent = t('sideGoTower'); }
+  if (f) { text.textContent = loc.fmt.sideVale(t(VALE_STATE[f.state] as never), f.hp, f.max, f.kills, f.got.sparks); }
+  else if (st) { text.textContent = loc.fmt.sideTower(st.id, t(TOWER_STATE[st.state] as never), st.cleared, st.got.sparks, st.auto); }
 }
 
 // ---------- 다른 쪽의 위험: 눈에 띄는 알림과 바로 가기 ----------
@@ -116,7 +143,8 @@ export function initTower(): void {
       <div class="tstages" id="towerStages"></div>
       <p class="thint" data-i18n="towerHint"></p>
     </div>
-    <div id="pactSide" class="pactSide" hidden><span id="pactSideText"></span><button type="button" id="pactSideGo"></button><button type="button" id="pactSideStop" data-i18n="sideStopTower" hidden></button></div>
+    <div id="pactSide" class="pactSide" hidden><span id="pactSideText"></span><button type="button" id="pactSideStop" data-i18n="sideStopTower" hidden></button></div>
+    <div id="towerSquadBar" class="towerSquadBar" hidden></div>
     <div id="pactAlert" class="pactAlert" role="alert" hidden><span id="pactAlertText"></span><button type="button" id="pactAlertGo"></button></div>`);
   $('towerPull').addEventListener('click', () => openMenu('gacha'));
   $('towerNext').addEventListener('click', (e) => { const id = (e.currentTarget as HTMLElement).dataset.id; if (!id) return; send({ t: 'stage', a: 'auto', on: true }); send({ t: 'stage', a: 'go', id }); });
@@ -124,7 +152,8 @@ export function initTower(): void {
   $('towerEchoes').addEventListener('click', () => openMenu('heroes'));
   $('towerSquad').addEventListener('click', () => openMenu('squad'));
   $('towerAuto').addEventListener('click', () => send({ t: 'stage', a: 'auto', on: !(myStage()?.auto ?? true) }));
-  $('pactSideGo').addEventListener('click', () => switchMode());
+  // 작은 표시를 누르면 그쪽으로 (가는 단추는 '게임 바꾸기' 하나다: 같은 일을 하는 단추를 둘 두지 않는다)
+  $('pactSideText').addEventListener('click', () => switchMode());
   // 들판에서 뒤에서 잇는 탑을 멈춘다 (지금 싸움을 닫는다)
   $('pactSideStop').addEventListener('click', () => send({ t: 'stage', a: 'leave' }));
   $('pactAlertGo').addEventListener('click', (e) => { const to = (e.currentTarget as HTMLElement).dataset.to; $('pactAlert').hidden = true; if (to && myMode()?.id !== to) switchMode(to); });
@@ -135,6 +164,7 @@ export function initTower(): void {
   onMsg('stat', () => { if (!$('towerHome').hidden) $('towerHave').textContent = L().fmt.towerHave(S.me?.sparks ?? 0, S.me?.gold ?? 0, mySquad().power); });
   // 메뉴(뽑기·메아리·편성)나 뽑기 결과·확인 창이 열리면 첫 화면은 그 아래로 비켜 준다
   onSlow(() => {
+    drawSquadBar();
     if (!S.me) { $('towerHome').hidden = true; $('pactSide').hidden = true; }
     const open = (id: string) => { const el = document.querySelector<HTMLElement>(`#${id}`); return !!el && !el.hidden; };
     const over = open('menu') || open('gachaPop') || open('spendAsk');

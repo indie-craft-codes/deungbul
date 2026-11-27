@@ -50,8 +50,8 @@ export function otherMode(id: string): ModeDef | undefined {
   return list.length < 2 ? undefined : list[(i + 1) % list.length];
 }
 
-/** 개인 상태 'mode': 지금 모드, 다시 바꿀 수 있을 때까지(초) */
-export interface ModeMe { id: string; cd: number }
+/** 개인 상태 'mode': 지금 모드, 다시 바꿀 수 있을 때까지(초), 서버가 아는 자동 사냥의 켜짐(away 모듈: 안전장치 등으로 서버가 끄면 화면도 끈다) */
+export interface ModeMe { id: string; cd: number; auto?: boolean }
 
 /** 다른 쪽에서 얻은 것의 합 (그쪽으로 떠난 뒤로) */
 export interface SideGot { gold: number; sparks: number; exp: number }

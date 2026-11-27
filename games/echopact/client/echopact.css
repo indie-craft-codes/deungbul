@@ -78,3 +78,25 @@ body[data-mode="tower"] .towerHome { top: calc(80px + env(safe-area-inset-top, 0
   .towerHome .tstage small { font-size: 9px; }
   .pactAlert { bottom: auto; top: calc(40% + env(safe-area-inset-top, 0px)); flex-wrap: wrap; }
 }
+
+/* 탑의 싸움: 계약자는 싸우지 않으므로 내 체력·경험치 막대를 감추고, 아래에 편성의 메아리들(이름·체력)과 편성 전투력 */
+body[data-mode="tower"] #me .bar.hp, body[data-mode="tower"] #me .bar.xp, body[data-mode="tower"] #hpt, body[data-mode="tower"] #buffs { display: none !important; }
+/* 탑에서는 걷지 않는다: 조이스틱을 감추고, 폰에서는 흘러가는 안내를 감춰 아래를 편성의 메아리에게 (단계 막대가 깸·실패를 크게 보인다) */
+body[data-mode="tower"] #stick { display: none !important; }
+@media (max-width: 600px) { body[data-mode="tower"] #feed { display: none !important; } }
+.towerSquadBar { position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 6px; align-items: flex-end; pointer-events: none;
+  max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center; }
+.towerSquadBar[hidden] { display: none; }
+.towerSquadBar .tsq { min-width: 92px; padding: 6px 8px; border-radius: 10px; background: rgba(42, 33, 64, .9); border: 1px solid rgba(184, 160, 255, .5); color: #f0eaff; }
+.towerSquadBar .tsq b { display: block; font-size: 12px; white-space: nowrap; }
+.towerSquadBar .tsq i { display: block; height: 6px; margin-top: 4px; border-radius: 3px; background: rgba(0, 0, 0, .45); overflow: hidden; }
+.towerSquadBar .tsq i span { display: block; height: 100%; background: #e05a4a; transform-origin: left; }
+.towerSquadBar .tsq.down { opacity: .45; }
+.towerSquadBar small { width: 100%; text-align: center; font-size: 11px; color: #ffe6a8; text-shadow: 0 1px 2px #000; }
+.pactSide span { cursor: pointer; }
+/* 폰: '게임 바꾸기'와 작은 표시는 오른쪽 위 대화 창 아래에 (아래쪽의 안내 글·기술 단추와 겹치지 않게) */
+@media (max-width: 600px) {
+  .modeBtn { top: calc(136px + env(safe-area-inset-top, 0px)); bottom: auto; left: auto; right: 12px; }
+  .pactSide, body.towerLobby .pactSide, body[data-mode="vale"] .pactSide { top: calc(178px + env(safe-area-inset-top, 0px)); bottom: auto; left: auto; right: 12px; max-width: 58vw; }
+  body[data-mode="tower"] .towerHome { top: calc(220px + env(safe-area-inset-top, 0px)); max-height: calc(var(--app-h, 100vh) - 300px); }
+}

@@ -114,6 +114,11 @@ try {
       await until(() => sa.mode?.id === MODE.tower && !!sa.side?.field, 8000);
       const stand = g.modes.standOf(ea);
       await until(() => !!stand && bEnters.has(stand.id), 8000);
+      // 탑에서는 계약자가 보기만 한다: 화면이 보낸 이동(예전에는 화면의 자동 사냥이 들판의 닻으로 걸어가 탑의 구석으로 끌려갔다)이 듣지 않는다
+      const atTower = { x: ea.x, z: ea.z };
+      a.send({ t: 'move', x: atTower.x - 15, z: atTower.z - 15 });
+      await new Promise((r) => setTimeout(r, 600));
+      check(Math.hypot(ea.x - atTower.x, ea.z - atTower.z) < 0.01, '탑에서 보낸 이동은 듣지 않는다 (계약자는 싸움터의 가운데에서 보기만 한다)');
       check(!!stand && bEnters.get(stand.id)?.k === 'stand' && bEnters.get(stand.id)?.name === '여우' && bEnters.get(stand.id)?.l === lookA, 'A로 간 사람의 들판의 몸(대역)이 B의 다른 접속자에게 그 이름·변신한 겉모습으로 보인다');
       await until(() => (sa.side?.field?.kills ?? 0) > 0, 20000);
       check((sa.side?.field?.kills ?? 0) > 0 && sa.side!.field!.state !== 'down', `대역이 사냥한 것이 A의 화면의 작은 표시(modeSide)로 온다 (잡은 수 ${sa.side?.field?.kills}, 조각 +${sa.side?.field?.got.sparks})`);

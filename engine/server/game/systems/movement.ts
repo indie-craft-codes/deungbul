@@ -12,6 +12,7 @@ export class Movement {
   constructor(private g: Game) {
     g.commands.set('move', (p, m) => {
       if (!num(m.x) || !num(m.z)) return;
+      if (g.rules.ghost?.(p)) return; // 보기만 하는 사람 (편성만 싸우는 단계)
       // 너무 잦은 명령이어도 버리지 않는다(빠르게 두 번 누르면 마지막 것이 목적지여야 한다).
       // 대신 길을 처음부터 다시 세우는 일만 간격을 둔다: 그 사이의 것은 목적지만 바뀌고, 걷는 쪽이 조금 뒤에 알아서 길을 다시 잡는다
       const soon = g.clock - p.lastMove < MOVE_GAP_S;

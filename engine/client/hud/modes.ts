@@ -3,7 +3,11 @@
 // 지금 모드는 문서의 body에 적힌다: data-mode="<모드 id>", data-mode-kind="field|stage". 게임의 스타일이 이것으로 모드마다 다른 겉모습을 준다.
 // 게임이 더 할 수 있는 것: 모드가 바뀔 때 듣기(onModeChange: 장면의 분위기, 게임의 창), 다른 쪽의 상황 듣기(onModeSide: 보이지 않는 쪽의 작은 표시),
 // 바꾸기(switchMode), 읽기(myMode, myModeSide). 다른 쪽의 위험(대역의 쓰러짐·물러남·멈춤, 단계의 멈춤)은 틀의 가운데 알림(banner)으로 뜬다.
-import { classOf, modeDef, otherMode, startMode, type ModeDef, type ModeMe, type ModeSideMe } from '../../shared/defs';
+import { classOf, modeDef, otherMode, STAGE_RULE_VIEW, startMode, type ModeDef, type ModeMe, type ModeSideMe } from '../../shared/defs';
+import { autoOffByServer, resetAutoAnchor, setAutoGate } from '../auto';
+import { onFrame } from '../bus';
+import { hasModule } from '../mods';
+import { rules } from '../rules';
 import { decodeLook } from '../../shared/defs/look';
 import { hiddenHudIds } from '../../shared/defs/hud';
 import { $ } from '../app';
@@ -46,6 +50,8 @@ function apply(def: ModeDef, from: string): void {
   for (const el of document.querySelectorAll<HTMLElement>('.modeOff')) if (!off.has(el.id)) el.classList.remove('modeOff');
   for (const id of off) if (!always.has(id)) ($(id) as HTMLElement | null)?.classList.add('modeOff');
   if (def.tabs) setMenuTabs(def.tabs);
+  // 들판으로 돌아왔다(대역의 자리를 이어받았다): 자동 사냥의 닻을 그 자리로 다시 잡는다 (예전 자리로 걸어 돌아가지 않게)
+  if (from && def.kind === 'field' && hasModule('away')) resetAutoAnchor();
   label();
   for (const fn of modeFns) fn(def, from);
   redraw(true);
@@ -66,6 +72,8 @@ export function initModes(): void {
   onMsg('me', (m) => {
     if (m.k === 'mode') {
       const next = m.s as ModeMe, from = mode.id;
+      // 서버가 자동 사냥을 껐다 (켜져 있다가 꺼짐: 안전장치·오늘의 시간): 화면의 켜짐도 끈다
+      if (mode.auto === true && next.auto === false) autoOffByServer();
       mode = next;
       const def = modeDef(next.id);
       if (def && (from !== next.id || document.body.dataset.mode !== def.id)) apply(def, from);
@@ -76,6 +84,18 @@ export function initModes(): void {
     }
   });
   onMsg('welcome', () => label());
+  // 자동 사냥(화면)은 들판의 모드에서만 움직인다: 단계의 모드에서는 켜짐만 지킨다 (들판의 대역이 쓴다)
+  if (hasModule('away')) setAutoGate(() => myMode()?.kind !== 'stage');
+  // 편성만 싸우는 단계(STAGE_RULES.squadOnly): 단계의 모드에서는 내 몸·이름표를 그리지 않는다 (보기만 한다)
+  // 그동안 내 몸은 움직이지 않는다 (서버도 이동을 받지 않는다: 화면이 먼저 걸었다가 되감기지 않게)
+  if ((STAGE_RULE_VIEW as { squadOnly?: boolean }).squadOnly) { const speed = rules.speed; rules.speed = () => (myMode()?.kind === 'stage' ? 0 : speed()); }
+  if ((STAGE_RULE_VIEW as { squadOnly?: boolean }).squadOnly) onFrame(() => {
+    const me = S.me;
+    if (!me) return;
+    const hide = myMode()?.kind === 'stage';
+    if (me.model.root.visible === hide) me.model.root.visible = !hide;
+    if (me.tag.el.classList.contains('modeOff') !== hide) me.tag.el.classList.toggle('modeOff', hide);
+  });
   onLangChange(label);
   // 다른 쪽의 위험은 가운데 알림으로 (게임이 같은 안내문을 다시 분류하면 게임의 것이 이긴다: keep)
   addNotices({ banner: { modeStandDown: 'bad', stageBgStop: 'bad', autoRetreat: 'bad', autoNoPotion: 'bad', autoDied: 'bad', modeStandEnd: 'bad' }, feed: ['modeOn', 'modeWait', 'modeStandOn'] }, true);

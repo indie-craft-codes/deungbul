@@ -143,6 +143,8 @@ export interface Rules extends RulesExt {
    * 사람이 다른 층(모드 modes의 다른 게임)에 가 있는 동안 그 층에서 대신 싸우는 것(들판의 대역, 단계의 회차)이 있으면 그 자리로 본다. 없으면 예전과 같다
    */
   bodyOn?: (p: Ent, layer: number) => { x: number; z: number } | undefined;
+  /** 보기만 하는 사람인가 (맞지도 때리지도 기술을 쓰지도 않는다: 편성만 싸우는 단계 STAGE_RULES.squadOnly). 없으면 아무도 아니다 */
+  ghost?: (p: Ent) => boolean;
 }
 
 /**

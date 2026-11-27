@@ -43,7 +43,8 @@ export class Modes {
       save: (p) => (p.mode && p.mode !== startMode() ? { id: p.mode } : undefined),
       load: (p, raw) => { const id = (raw as { id?: unknown } | null)?.id; if (typeof id === 'string' && modeDef(id)) p.mode = id; },
     });
-    g.personal.push({ name: 'mode', state: (p): ModeMe => ({ id: this.of(p), cd: Math.max(0, Math.ceil(p.modeCd - g.clock)) }) });
+    const away = g.has('away');
+    g.personal.push({ name: 'mode', state: (p): ModeMe => ({ id: this.of(p), cd: Math.max(0, Math.ceil(p.modeCd - g.clock)), ...(away ? { auto: p.auto } : {}) }) });
     g.personal.push({ name: 'modeSide', state: (p): ModeSideMe => this.side(p) });
     // 접속: 저장된 모드로 (들판에서 들어오므로 단계 모드면 대기실로). 끊김: 대역을 거둬 그 사람 자신이 그 자리에 선다
     g.on('playerJoined', (p) => { if (p.bot) return; p.mode = this.of(p); if (this.cur(p)?.kind === 'stage') this.enterStage(p); });
