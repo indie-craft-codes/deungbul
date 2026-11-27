@@ -5,6 +5,7 @@ import type { MsgArg, MsgKey } from '../../../shared/messages';
 import { L, forInput, itemName, t } from '../../i18n';
 import type { UiKey } from '../../i18n/ko';
 import { send } from '../../net';
+import { hasModule } from '../../mods';
 import { S } from '../../state';
 import { gearIcon } from '../icons';
 import { button, el, gearTitle, optsEl, redraw, row, select, span, ui } from './parts';
@@ -274,7 +275,8 @@ function salvageTools(rest: Gear[]): HTMLElement[] {
 
 export function drawGear(): void {
   const loc = L(), m = S.meta;
-  ui.list.append(el('baghead', loc.fmt.power(m.power)));
+  // 전투력은 순위 모듈(rank)이 셈해 보낸다: 그 모듈이 없는 게임(메아리 계약)에서는 늘 0이라 줄을 뺀다
+  if (hasModule('rank')) ui.list.append(el('baghead', loc.fmt.power(m.power)));
   // 보급형과 만들거나 주운 장비의 차이는 늘 보이게 둔다 (예전에는 남는 장비가 없을 때만 떴다)
   ui.list.append(el('note', loc.fmt.gearHint(ENHANCE.supplyMax, ENHANCE.max, SELLS_GEAR, RECIPES.length > 0 && FORGES.length > 0)));
   // 강화의 위험과 부적 쓰기 단추: 낀 장비를 강화할 때 바로 보이게 낀 장비 위에 둔다 (검토 6: 아래에 있어 스크롤해야 보였다)

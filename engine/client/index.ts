@@ -56,3 +56,8 @@ export { adBreak, auth, gameplayStart, gameplayStop, guestAuth, keyNameOf, memor
 export { showTip, hideTip } from './hud/tip';
 // 확률과 재화의 투명성: 귀한 재화의 확인 단계 (CURRENCIES의 confirm을 적은 재화를 쓰는 게임의 단추를 감싼다)
 export { confirmSpend, spendAsking } from './hud/confirm';
+// 장르별 기본 화면 묶음 A: 화면 쌓기(뒤로·홈), 폰 HUD의 구역 배치, 재화 줄, 알림 점 (docs/making-a-game.md '화면 쌓기와 구역')
+export { backScreen, clearScreens, closeScreen, dropScreen, homeScreen, onScreens, openScreen, screenOpen, screenStack, topScreen, trackPanel, type ScreenKind, type ScreenOpts } from './hud/screens';
+export { layOf, myLay, onLay, placeIn, type Lay, type Zone } from './hud/layout';
+export { currencyBar, type CurrencyChip, type CurrencyId } from './hud/currency';
+export { bindDot, dotOf, dotParent, setDot } from './hud/dots';

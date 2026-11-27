@@ -336,6 +336,13 @@
   "Gear Dust 1 / NaN",
   "Gear Dust 2 / NaN"
  ],
+ "fmt.enemyN": [
+  "96d8413451feab3f",
+  "undefined",
+  "0",
+  "1",
+  "2"
+ ],
  "fmt.enhanceCost": [
   "fd17d68455d56577",
   "Enhance · NaN gold · undefined%",
@@ -482,6 +489,13 @@
   "Shared pity: pity count and guarantee are shared with 1.",
   "Shared pity: pity count and guarantee are shared with 2."
  ],
+ "fmt.gachaHave": [
+  "0e6d22aaea12b0c9",
+  "You have NaN Sparks",
+  "You have 0 Sparks",
+  "You have 1 Sparks",
+  "You have 2 Sparks"
+ ],
  "fmt.gachaLeft": [
   "c75093080514e6b5",
   "NaNm left",
@@ -517,6 +531,13 @@
   "Sparks ×0 · use one to get a hero of your choice below (shards if you already have it).",
   "Sparks ×1 · use one to get a hero of your choice below (shards if you already have it).",
   "Sparks ×3 · use one to get a hero of your choice below (shards if you already have it)."
+ ],
+ "fmt.gachaShort": [
+  "7994b51e6e59c329",
+  "NaN / NaN Sparks — not enough",
+  "0 / NaN Sparks — not enough",
+  "1 / NaN Sparks — not enough",
+  "2 / NaN Sparks — not enough"
  ],
  "fmt.gachaSureNow": [
   "750c6fdfabf97126",
@@ -1286,6 +1307,34 @@
   "Reforged 2 of undefined · this one costs NaN gold and NaN Gear Dust. Tap an option twice to reroll it (its type and value both change)"
  ],
  "fmt.reforgeValueOnly": "Every option type is already on this gear, so only the value is rerolled.",
+ "fmt.resAuto": [
+  "331e838413c6fdde",
+  "Auto: undefined in undefineds",
+  "Auto: undefined in 0s",
+  "Auto: undefined in 1s",
+  "Auto: undefined in 2s"
+ ],
+ "fmt.resLose": [
+  "9df1b6fc158d9440",
+  "undefined failed",
+  "0 failed",
+  "1 failed",
+  "2 failed"
+ ],
+ "fmt.resNext": [
+  "cff25be9428c09c5",
+  "Next undefined",
+  "Next 0",
+  "Next 1",
+  "Next 2"
+ ],
+ "fmt.resWin": [
+  "68b7bcb7c7cc181a",
+  "undefined cleared",
+  "0 cleared",
+  "1 cleared",
+  "2 cleared"
+ ],
  "fmt.resetIn": [
   "13d34aaab7650f89",
   "Resets in NaNm",
@@ -1635,6 +1684,20 @@
   "Squad power 1",
   "Squad power 2"
  ],
+ "fmt.stPower": [
+  "de289be7dfa5c404",
+  "NaN / NaN",
+  "0 / NaN",
+  "1 / NaN",
+  "2 / NaN"
+ ],
+ "fmt.stTitle": [
+  "8fa177e6f1b01ae2",
+  "undefined · undefined",
+  "0 · undefined",
+  "1 · undefined",
+  "2 · undefined"
+ ],
  "fmt.stageBest": [
   "c9b03c55039cd434",
   "No stage cleared yet",
@@ -1697,6 +1760,13 @@
   "Wave 0/undefined",
   "Wave 1/undefined",
   "Wave 2/undefined"
+ ],
+ "fmt.starTime": [
+  "5f948aa3d7a962b7",
+  "Clear within undefineds",
+  "Clear within 0s",
+  "Clear within 1s",
+  "Clear within 2s"
  ],
  "fmt.statLeft": [
   "07c9e381b99c0c40",
@@ -3439,6 +3509,7 @@
  "ui.charHp": "Health",
  "ui.charmOff": "Use ward stones: off",
  "ui.charmOn": "Use ward stones: on",
+ "ui.chatFold": "Hide",
  "ui.chatLabel": "Chat message",
  "ui.chatLimited": "Only quick phrases are available",
  "ui.chatOpen": "Chat",
@@ -3762,6 +3833,12 @@
  "ui.renameTitle": "[[Click|Tap]] to change your name",
  "ui.report": "Report",
  "ui.reportConfirm": "[[Click|Tap]] again to report",
+ "ui.resAgain": "Again",
+ "ui.resAutoStop": "Stop",
+ "ui.resFirstTag": "First",
+ "ui.resGrow": "Get stronger",
+ "ui.resHome": "Home",
+ "ui.resRetry": "Retry",
  "ui.residents": "Residents",
  "ui.roomAgain": "Play again",
  "ui.roomAgainWaitNote": "Starts when the other player presses Play again.",
@@ -3842,12 +3919,14 @@
  "ui.sanctionPerm": "Permanent",
  "ui.sanctionSpan": "Duration",
  "ui.sanctionWhy": "Reason",
+ "ui.scrBack": "Back",
+ "ui.scrHome": "Home",
  "ui.seasonClaim": "Claim",
  "ui.seasonClaimAll": "Claim everything available",
  "ui.seasonNone": "No season is running right now.",
  "ui.seasonNote": "Points come from hunting, tasks and other play. Rewards you reached but did not claim are mailed to you when the season ends.",
  "ui.seasonTrack": "Reward track (free)",
- "ui.setCalm": "Turn off screen shake",
+ "ui.setCalm": "Screen shake",
  "ui.setChatShow": "Show chat",
  "ui.setChatShowNote": "Turn off to hide the chat box and speech bubbles.",
  "ui.setFar": "Draw distance",
@@ -3873,11 +3952,24 @@
  "ui.skillUpHead": "Skill upgrades",
  "ui.soundOff": "Sound off",
  "ui.soundOn": "Sound on",
+ "ui.sqChange": "Change squad",
+ "ui.sqEmpty": "Empty",
+ "ui.sqWeak": "Below the recommended power. You can still go.",
  "ui.squadAdd": "Add",
  "ui.squadEmpty": "Empty",
  "ui.squadHead": "Heroes fighting with you",
  "ui.squadNone": "No heroes to place. Summon some first.",
  "ui.squadRemove": "Remove",
+ "ui.stBoss": "Boss",
+ "ui.stCheck": "Check squad",
+ "ui.stEnemies": "Enemies",
+ "ui.stFirst": "First clear",
+ "ui.stGo": "Start",
+ "ui.stMine": "Your squad",
+ "ui.stRec": "Recommended power",
+ "ui.stRepeat": "Each clear",
+ "ui.stStars": "Star goals",
+ "ui.stSweepNeedStars": "Earn every star to unlock sweeps",
  "ui.stageAuto": "Auto advance",
  "ui.stageBoss": "Boss",
  "ui.stageClearBig": "Stage clear!",
@@ -3891,6 +3983,8 @@
  "ui.stageWaveClear": "Wave cleared",
  "ui.stale": "A new version is available. Please refresh the page.",
  "ui.staleApp": "A new version is required. Please update the game.",
+ "ui.starAlive": "Nobody falls",
+ "ui.starClear": "Clear",
  "ui.stickLabel": "Movement joystick",
  "ui.stunned": "Stunned",
  "ui.supportAnswer": "Reply from the team",
@@ -3957,6 +4051,7 @@
  "ui.tutNext": "Next",
  "ui.tutReplay": "Replay",
  "ui.tutSkip": "Skip",
+ "ui.tutSkipAsk": "Tap again to skip",
  "ui.unblock": "Unblock",
  "ui.unequip": "Remove",
  "ui.updateApp": "Update",

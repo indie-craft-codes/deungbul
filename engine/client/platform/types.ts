@@ -161,6 +161,20 @@ export interface Platform {
   /** 포털의 초대 단추에 방을 알린다 (방 코드·자리 수) */
   invite(room: { code: string; size?: number }): void;
 
+  /**
+   * 화면 쌓기의 '뒤로' (engine/client/hud/screens.ts가 쓴다). 웹: 폰 브라우저의 뒤로 가기·안드로이드 뒤로 몸짓이 게임 페이지를 떠나지 않고 맨 위의 창을 닫게 한다.
+   * 화면 쌓기에 닫을 것이 있는 동안만 자리 하나를 잡아 둔다(arm). 닫을 것이 없으면 거둔다(disarm): 그때의 뒤로 가기는 플랫폼의 기본(웹: 페이지를 떠남)이다.
+   * 앱은 하드웨어 뒤로 키를 onBack으로, 데스크톱·포털은 아무것도 하지 않아도 된다(onBack이 불리지 않을 뿐)
+   */
+  nav: {
+    /** 뒤로 가기를 받을 자리를 잡는다 (이미 잡았으면 그대로) */
+    arm(): void;
+    /** 잡은 자리를 거둔다 (뒤로 가기를 받지 않는다). 거두며 생기는 사건은 onBack으로 알리지 않는다 */
+    disarm(): void;
+    /** 사람이 뒤로 갔다: 잡은 자리는 이때 없어진다 (닫을 것이 남았으면 부른 쪽이 다시 arm) */
+    onBack(fn: () => void): () => void;
+  };
+
   /** 접속할 게임 서버의 주소 (웹: 빌드의 VITE_SERVER_URL → 옆의 server.json → 같은 출처) */
   server(): Promise<string>;
   app: {

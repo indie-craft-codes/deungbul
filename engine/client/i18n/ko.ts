@@ -19,22 +19,32 @@ import { achName, codexName, evName, goodsName, missionName, seasonName, titleNa
 /** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
 export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
 
-/** 받침이 있으면 a, 없으면 b를 붙인다 (예: 검이 / 활이, 방패가). 한글이 아니면 둘 다 적는다. */
+/**
+ * 낱말 끝소리의 받침: 한글이면 그 글자의 받침(0 없음, 8 ㄹ), 숫자면 읽은 소리(일·삼·육·칠·팔·영은 받침, 일·칠·팔은 ㄹ), 그 밖(영문 따위)이면 -1(모름).
+ * 끝의 따옴표·괄호(' " 」 ) ])는 건너뛴다
+ */
+function lastJong(word: string): number {
+  const w = word.replace(/['"」』)\]\s]+$/, '');
+  const c = w.charCodeAt(w.length - 1);
+  if (c >= 0xac00 && c <= 0xd7a3) return (c - 0xac00) % 28;
+  if (c >= 48 && c <= 57) return [21, 8, 0, 16, 0, 0, 1, 8, 8, 0][c - 48]; // 영 일 이 삼 사 오 육 칠 팔 구 (받침의 번호: ㅇ 21, ㄹ 8, ㅁ 16, ㄱ 1)
+  return -1;
+}
+/** 받침이 있으면 a, 없으면 b를 붙인다 (예: 검이 / 활이, 방패가, 1-3을 / 1-2를). 읽는 소리를 모르면(영문) 둘 다 적는다. */
 export function josa(word: string, a: string, b: string): string {
-  const code = word.charCodeAt(word.length - 1);
-  if (code < 0xac00 || code > 0xd7a3) return `${word}${a}(${b})`;
-  return word + ((code - 0xac00) % 28 ? a : b);
+  const j = lastJong(word);
+  if (j < 0) return `${word}${a}(${b})`;
+  return word + (j ? a : b);
 }
 
-/** '~(으)로': 받침이 없거나 ㄹ받침이면 '로', 아니면 '으로'. 한글이 아니면 둘 다 적는다. */
+/** '~(으)로': 받침이 없거나 ㄹ받침이면 '로', 아니면 '으로'. 읽는 소리를 모르면 둘 다 적는다. */
 /** 숫자 뒤의 '(으)로': 끝자리를 읽은 소리로 고른다 (+6으로, +7로, +10으로) */
 export const numRo = (n: number): string => `${n}${[0, 3, 6].includes(n % 10) ? '으로' : '로'}`;
 
 export function ro(word: string): string {
-  const code = word.charCodeAt(word.length - 1);
-  if (code < 0xac00 || code > 0xd7a3) return `${word}(으)로`;
-  const jong = (code - 0xac00) % 28;
-  return word + (jong === 0 || jong === 8 ? '로' : '으로');
+  const j = lastJong(word);
+  if (j < 0) return `${word}(으)로`;
+  return word + (j === 0 || j === 8 ? '로' : '으로');
 }
 
 /** 영웅의 성장의 덤 한 칸의 문장 (engine/shared/defs/herogrow.ts의 HeroBonus) */
@@ -394,6 +404,14 @@ export const koBase = (n: ContentNames) => {
       unblock: '차단 풀기',
       owned: '보유 중',
       chatOpen: '대화하기',
+      chatFold: '접기',
+      // ---- 화면 쌓기·수집형 홈·단계 정보 창·편성 확인·결과 창 (묶음 A·B: hud/screens.ts, homekit.ts, stagepage.ts) ----
+      scrBack: '뒤로', scrHome: '홈',
+      stEnemies: '적', stRec: '권장 전투력', stMine: '내 편성', stStars: '별 조건', stFirst: '처음 깬 보상', stRepeat: '반복 보상',
+      stCheck: '편성 확인', stGo: '출발', stBoss: '우두머리', stSweepNeedStars: '별을 모두 따면 소탕할 수 있습니다',
+      starClear: '깸', starAlive: '아무도 쓰러지지 않음',
+      sqChange: '편성 바꾸기', sqEmpty: '빈 자리', sqWeak: '권장 전투력보다 낮습니다. 그래도 출발할 수 있습니다.',
+      resHome: '홈', resAgain: '다시', resRetry: '다시 도전', resGrow: '강해지는 길', resAutoStop: '멈춤', resFirstTag: '처음',
       // ---- 분해, 잠금, 자동 분해, 가방 넓히기, 장비 비교 (경제 2단계) ----
       gearLockOn: '잠그기: 팔기·분해·거래소 올리기를 막습니다',
       gearLockOff: '잠금 풀기',
@@ -480,7 +498,7 @@ export const koBase = (n: ContentNames) => {
       farMid: '보통',
       farFar: '멀리',
       setScreen: '화면',
-      setCalm: '화면 흔들림 끄기',
+      setCalm: '화면 흔들림',
       setUi: '글자·창 크기',
       setFullscreen: '전체 화면',
       on: '켬',
@@ -503,6 +521,7 @@ export const koBase = (n: ContentNames) => {
       tutReplay: '다시 보기',
       tutNext: '다음',
       tutSkip: '건너뛰기',
+      tutSkipAsk: '한 번 더 누르면 건너뜁니다',
       // 약관·처리방침·동의 (hud/legal.ts)
       legalHead: '약관과 개인정보',
       legalTerms: '이용약관',
@@ -781,8 +800,16 @@ export const koBase = (n: ContentNames) => {
       sellFor: (gold: number) => `팔기 ${num(gold)}${G.unit}`,
       power: (n: number) => `전투력 ${num(n)}`,
       streak: (n: number) => `출석 ${n}일째`,
+      starTime: (s: number) => `${s}초 안에 깸`,
+      stTitle: (id: string, chapter: string) => `${id} · ${chapter}`,
+      stPower: (mine: number, rec: number) => `${num(mine)} / ${num(rec)}`,
+      resWin: (id: string) => `${id} 깸`,
+      resLose: (id: string) => `${id} 실패`,
+      resNext: (id: string) => `다음 ${id}`,
+      resAuto: (s: number, id: string) => `자동 진행: ${s}초 뒤 ${id}`,
+      enemyN: (name: string, n: number) => (n > 1 ? `${name} ×${n}` : name),
       reward: (gold: number, exp: number, second: number) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'maint' ? '점검 보상' : k === 'support' ? `문의 #${a[0]}에 답이 왔습니다 (설정 → 문의)` : k === 'comp' ? '운영 보상' : k === 'event' ? `이벤트 임무: ${missionName(a[0], a[1])}` : k === 'eventSwap' ? `이벤트 '${evName(a[0])}'의 남은 재화 ${a[1]}을(를) 바꾼 것` : k === 'season' ? `${seasonName()}: 받지 않은 보상` : k === 'achieve' ? `업적 달성: ${achName(a[0])}` : k === 'codex' ? `도감 ${codexName(a[0])} ${a[1]}개 보상` : k === 'coupon' ? `쿠폰 ${a[0]}` : k === 'comeback' ? `돌아온 것을 환영합니다 (${a[0]}일 만)` : String(k)),
+      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'maint' ? '점검 보상' : k === 'support' ? `문의 #${a[0]}에 답이 왔습니다 (설정 → 문의)` : k === 'comp' ? '운영 보상' : k === 'event' ? `이벤트 임무: ${missionName(a[0], a[1])}` : k === 'eventSwap' ? `이벤트 '${evName(a[0])}'의 남은 재화 ${josa(`${a[1]}`, '을', '를')} 바꾼 것` : k === 'season' ? `${seasonName()}: 받지 않은 보상` : k === 'achieve' ? `업적 달성: ${achName(a[0])}` : k === 'codex' ? `도감 ${codexName(a[0])} ${a[1]}개 보상` : k === 'coupon' ? `쿠폰 ${a[0]}` : k === 'comeback' ? `돌아온 것을 환영합니다 (${a[0]}일 만)` : String(k)),
       status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
       itemDamage: (pct: number) => `공격 피해 +${pct}%`,
       itemGuard: (pct: number) => `받는 피해 -${pct}%`,
@@ -842,6 +869,8 @@ export const koBase = (n: ContentNames) => {
       heroShards: (have: number, need: number) => `조각 ${num(have)}/${num(need)}`,
       heroCost: (n: number, cur: string) => `${curName(cur)} ${num(n)}`,
       heroRole: (role: string, rarity: string) => `${rarity} · ${role}`,
+      gachaHave: (n: number, cur: string) => `가진 것: ${curName(cur)} ${num(n)}`,
+      gachaShort: (have: number, n: number, cur: string) => `${curName(cur)} ${num(have)} / ${num(n)} 모자람`,
       gachaCost: (n: number, cur: string) => `${curName(cur)} ${num(n)}`,
       gachaPity: (rarity: string, after: number, now: number) => `천장: ${rarity} 이상이 ${after - 1}번 이어서 나오지 않으면 ${after}번째 뽑기는 ${rarity} 이상에서만 나옵니다. 지금 ${now}번 이어서 나오지 않음 (천장까지 ${Math.max(1, after - now)}번).`,
       gachaTenRule: (rarity: string) => `10번 뽑기: 앞의 아홉에 ${rarity} 이상이 없으면 열째는 ${rarity} 이상에서만 나옵니다.`,
@@ -970,7 +999,7 @@ export const koBase = (n: ContentNames) => {
       goodsStock: (n: number) => `남은 수량 ${num(n)}`,
       /** 이벤트 재화의 잔액 */
       eventHave: (n: number, cur: string) => `이벤트 ${curName(cur)} ${num(n)}`,
-      eventSwap: (rate: number, to: string) => `끝나면 남은 이벤트 재화는 ${rate}배의 ${curName(to)}(으)로 바뀌어 우편으로 옵니다.`,
+      eventSwap: (rate: number, to: string) => `끝나면 남은 이벤트 재화는 ${rate}배의 ${ro(`${curName(to)}`)} 바뀌어 우편으로 옵니다.`,
       eventEv: (n: number) => `이벤트 재화 +${num(n)}`,
       seasonHead: (name: string, n: number) => `${name}${n ? ` · 시즌 ${n}` : ''}`,
       seasonPts: (n: number) => `점수 ${num(n)}`,
@@ -990,7 +1019,7 @@ export const koBase = (n: ContentNames) => {
       supportTicket: (id: number, kind: string, at: number) => `#${id} · ${kind} · ${whenText(at, 'ko-KR')}`,
       // 게임 안의 모드, 변신의 카드 능력치 (hud/modes.ts, hud/morph.ts, hud/collect.ts)
       /** '게임 바꾸기' 단추의 글: 건너갈 모드의 이름 */
-      modeTo: (name: string) => `${name}(으)로`,
+      modeTo: (name: string) => `${ro(`${name}`)}`,
       /** 대화 줄의 머리: 말한 사람이 지금 있는 모드 */
       chatMode: (name: string) => `[${name}]`,
       /** 능력치 대체 방식의 변신: 변신한 동안의 체력과 기본 공격 한 번 */
@@ -1164,14 +1193,14 @@ export const koBase = (n: ContentNames) => {
       hgEnhanceMax: (a) => `${heroGearName(a[0])}: 더 강화할 수 없습니다.`,
       hgSalvaged: (a) => `영웅 장비 ${a[0]}점을 분해했습니다.`,
       stageClear: (a) => `${a[0]} 깸!${Number(a[1]) ? ' 처음 깬 보상을 받았습니다.' : ''}`,
-      stageFail: (a) => `${a[0]}을(를) 깨지 못했습니다 (${Number(a[1]) ? '시간 초과' : '쓰러짐'}). 깬 단계로 돌아가고 자동 진행을 끕니다.`,
-      stageLocked: (a) => `${a[0]}은(는) 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요.`,
+      stageFail: (a) => `${josa(`${a[0]}`, '을', '를')} 깨지 못했습니다 (${Number(a[1]) ? '시간 초과' : '쓰러짐'}). 깬 단계로 돌아가고 자동 진행을 끕니다.`,
+      stageLocked: (a) => `${josa(`${a[0]}`, '은', '는')} 아직 갈 수 없습니다. 앞 단계를 먼저 깨세요.`,
       stageLast: () => '마지막 단계까지 깼습니다. 같은 단계를 되풀이합니다.',
       dungeonNoKeys: (a) => `${dungeonName(a[0])}의 열쇠가 없습니다. 날이 바뀌면 채워집니다.`,
       dungeonKeyBought: (a) => `${dungeonName(a[0])}의 열쇠를 샀습니다 (${a[1]}개).`,
       dungeonKeyLimit: (a) => `${dungeonName(a[0])}의 열쇠는 오늘 더 살 수 없습니다.`,
       swept: (a) => `${a[0] === 'stage' ? a[1] : dungeonName(a[1])} 소탕 ×${a[2]} 완료`,
-      sweepLocked: (a) => `${a[0] === 'stage' ? a[1] : dungeonName(a[1])}은(는) 아직 소탕할 수 없습니다. 먼저 깨세요.`,
+      sweepLocked: (a) => `${josa(`${a[0] === 'stage' ? a[1] : dungeonName(a[1])}`, '은', '는')} 아직 소탕할 수 없습니다. 먼저 깨세요.`,
       itemShort: (a) => `${josa(grantWhat(a[0]), '이', '가')} 모자랍니다 (필요 ${num(a[1])}, 가진 것 ${num(a[2])}).`,
       stageAway: (a) => `자리를 비운 동안 ${a[0]} → ${a[1]}까지 진행 (${a[2]}단계 깸)`,
       bannerClosed: (a) => `${josa(bannerName(a[0]), '은', '는')} 지금 열려 있지 않습니다.`,
@@ -1237,7 +1266,7 @@ export const koBase = (n: ContentNames) => {
       friendRemoved: (a) => `${a[0]} 님과 친구를 끊었습니다.`,
       friendOffline: (a) => `${a[0]} 님은 지금 접속해 있지 않습니다.`,
       // 운영 도구와 고객지원
-      supportSent: (a) => `문의 #${a[0]}을(를) 받았습니다. 답이 오면 알려 드립니다.`,
+      supportSent: (a) => `문의 #${josa(`${a[0]}`, '을', '를')} 받았습니다. 답이 오면 알려 드립니다.`,
       supportAnswered: (a) => `문의 #${a[0]}에 답이 왔습니다. 설정의 '문의' 칸에서 볼 수 있습니다.`,
       supportShort: (a) => `조금 더 자세히 적어 주세요 (${a[0]}자 이상).`,
       supportWait: (a) => `문의는 ${a[0]}초 뒤에 다시 보낼 수 있습니다.`,
@@ -1247,7 +1276,7 @@ export const koBase = (n: ContentNames) => {
       supportNoSanction: () => '이의를 낼 제재가 없습니다.',
       supportOff: () => '지금은 문의를 받지 않습니다.',
       rolledBack: () => '운영자가 이 캐릭터를 앞의 시점으로 되돌렸습니다. 다시 접속해 주세요.',
-      modeOn: (a) => `${uiText.get(modeDef(String(a[0]))?.name ?? String(a[0]))}(으)로 왔습니다.`,
+      modeOn: (a) => `${ro(`${uiText.get(modeDef(String(a[0]))?.name ?? String(a[0]))}`)} 왔습니다.`,
       modeWait: (a) => `${a[0]}초 뒤에 다시 바꿀 수 있습니다.`,
       modeStandOn: () => '들판에 남은 몸이 자동 사냥을 이어 갑니다.',
       modeStandDown: () => '들판에서 사냥하던 몸이 쓰러졌습니다.',
@@ -1259,15 +1288,15 @@ export const koBase = (n: ContentNames) => {
       // 라이브 콘텐츠 (묶음 6)
       mailExpired: (a) => `기한이 지난 우편 ${a[0]}통이 사라졌습니다.`,
       mailExpSoon: (a) => `우편 ${a[0]}통이 ${a[1]}시간 안에 사라집니다. 메뉴의 우편에서 받아 두세요.`,
-      goodsGot: (a) => `${goodsName(a[0])}을(를) 샀습니다.`,
+      goodsGot: (a) => `${josa(`${goodsName(a[0])}`, '을', '를')} 샀습니다.`,
       goodsNo: (a) => ['지금은 팔지 않는 상품입니다.', '이 상품은 더 살 수 없습니다 (한도).', '품절입니다.', '재화가 모자랍니다.', '가방에 자리가 없습니다.', '상인 곁에서만 살 수 있습니다.'][Number(a[0])] ?? '살 수 없습니다.',
-      eventStart: (a) => `이벤트 '${evName(a[0])}'이(가) 열렸습니다. 메뉴의 이벤트 탭을 보세요.`,
+      eventStart: (a) => `이벤트 '${josa(`${evName(a[0])}'`, '이', '가')} 열렸습니다. 메뉴의 이벤트 탭을 보세요.`,
       eventMission: (a) => `이벤트 임무 완료: ${missionName(a[0], a[1])}${Number(a[2]) ? ` (이벤트 재화 +${a[2]})` : ''}`,
-      eventEnd: (a) => `이벤트 '${evName(a[0])}'이(가) 끝났습니다.${Number(a[1]) ? (Number(a[2]) ? ` 남은 이벤트 재화 ${a[1]}을(를) ${a[2]}(으)로 바꿔 우편으로 보냈습니다.` : ` 남은 이벤트 재화 ${a[1]}은(는) 사라졌습니다.`) : ''}`,
-      seasonNew: (a) => `새 시즌이 시작했습니다${Number(a[0]) ? ` (시즌 ${a[0]})` : ''}.${Number(a[1]) ? ` 점수 ${a[1]}을(를) 이어 갑니다.` : ''}${Number(a[2]) ? ` 받지 않은 보상 ${a[2]}칸을 우편으로 보냈습니다.` : ''}`,
+      eventEnd: (a) => `이벤트 '${josa(`${evName(a[0])}'`, '이', '가')} 끝났습니다.${Number(a[1]) ? (Number(a[2]) ? ` 남은 이벤트 재화 ${josa(`${a[1]}`, '을', '를')} ${ro(`${a[2]}`)} 바꿔 우편으로 보냈습니다.` : ` 남은 이벤트 재화 ${josa(`${a[1]}`, '은', '는')} 사라졌습니다.`) : ''}`,
+      seasonNew: (a) => `새 시즌이 시작했습니다${Number(a[0]) ? ` (시즌 ${a[0]})` : ''}.${Number(a[1]) ? ` 점수 ${josa(`${a[1]}`, '을', '를')} 이어 갑니다.` : ''}${Number(a[2]) ? ` 받지 않은 보상 ${a[2]}칸을 우편으로 보냈습니다.` : ''}`,
       seasonGot: (a) => `시즌 보상 ${Number(a[0]) + 1}단계를 받았습니다.`,
-      achieveGot: (a) => `업적 달성: ${achName(a[0])}${titleName(a[0]) ? ` · 칭호 「${titleName(a[0])}」을(를) 달 수 있습니다` : ''}`,
-      titleSet: (a) => (a[0] ? `칭호 「${titleName(a[0])}」을(를) 달았습니다.` : '칭호를 뗐습니다.'),
+      achieveGot: (a) => `업적 달성: ${achName(a[0])}${titleName(a[0]) ? ` · 칭호 「${josa(`${titleName(a[0])}」`, '을', '를')} 달 수 있습니다` : ''}`,
+      titleSet: (a) => (a[0] ? `칭호 「${josa(`${titleName(a[0])}」`, '을', '를')} 달았습니다.` : '칭호를 뗐습니다.'),
       codexNew: (a) => `도감에 새로 올랐습니다: ${codexName(a[0])} · ${codexEntry(a[0], a[1])}`,
       couponOk: (a) => `쿠폰 ${a[0]}의 보상을 우편으로 보냈습니다.`,
       couponNo: (a) => ['없는 쿠폰 코드입니다.', '이미 쓴 쿠폰입니다.', '쓸 수 있는 기간이 아닙니다.', '모두 쓰인 쿠폰입니다.', `틀린 코드를 여러 번 넣어 잠시 막혔습니다 (${a[1]}분).`, '저장되지 않는 손님은 쿠폰을 쓸 수 없습니다.', '코드는 영문과 숫자로 되어 있습니다.'][Number(a[0])] ?? '쿠폰을 쓸 수 없습니다.',
@@ -1382,7 +1411,7 @@ export const koOddsPage = {
   total: '총 {n}개',
   pityRule: '천장: {r} 등급 이상이 나오지 않은 채 {n}번째 뽑기가 되면, 그 뽑기는 {r} 등급 이상에서만 나옵니다 (아래 천장 단계의 표).',
   tenRule: '10번 뽑기의 보장: 앞의 아홉에 {r} 등급 이상이 없으면 열째는 {r} 등급 이상에서 나옵니다.',
-  guard: '보호: {item}을(를) 쓰면 실패해도 단계가 내려가지 않습니다 (성공 확률은 같습니다).',
+  guard: '보호({item})를 쓰면 실패해도 단계가 내려가지 않습니다 (성공 확률은 같습니다).',
   base: '평소',
   pity: '천장 ({n}번째 뽑기, {r} 이상)',
   ten: '10번 뽑기의 열째 ({r} 이상 보장)',

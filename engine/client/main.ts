@@ -32,6 +32,9 @@ import { initErrors, watchCanvas } from './errors';
 import { initLifecycle } from './lifecycle';
 import { platform } from './platform';
 import { initTips } from './hud/tip';
+import { initLayout } from './hud/layout';
+import { initScreens } from './hud/screens';
+import { closeWorldMap } from './hud/worldmap';
 import type { Look } from './scene/view';
 import { S } from './state';
 
@@ -160,6 +163,8 @@ export function startClient(opts: ClientOptions = {}): void {
   initChat();
   for (const init of opts.modules ?? []) init();
   initModules();
+  initLayout(); // 폰 HUD의 구역 배치 (hud/layout.ts): 틀과 게임의 요소가 모두 붙은 뒤에
+  initScreens(closeWorldMap); // 화면 쌓기 (hud/screens.ts): 틀의 창을 쌓임에 잇고, 뒤로 가기를 받는다
   startPreload(); // 게임의 모듈이 에셋을 등록한 뒤에
   initTips(); // 터치에서 title 툴팁을 길게 눌러 본다 (hud/tip.ts)
   // iOS 사파리는 확대 금지 설정을 무시한다: 두 손가락 확대와 두 번 눌러 확대를 직접 막는다

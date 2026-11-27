@@ -134,10 +134,12 @@ function drawGacha(list: HTMLElement): void {
     const have = money(b.cur), btns = el('btns');
     // 귀한 재화(CURRENCIES의 confirm)를 그 양 이상 쓰면 두 번 묻는다 (hud/confirm.ts). 적지 않은 재화는 곧바로 보낸다 (예전과 같다)
     const one = button('', () => confirmSpend(b.cur, b.one, () => send({ t: 'gacha', id, n: 1 })), have < b.one), ten = button('', () => confirmSpend(b.cur, b.ten, () => send({ t: 'gacha', id, n: 10 })), have < b.ten);
-    one.append(t('gachaOne'), document.createElement('small')); one.lastElementChild!.textContent = loc.fmt.gachaCost(b.one, b.cur);
-    ten.append(t('gachaTen'), document.createElement('small')); ten.lastElementChild!.textContent = loc.fmt.gachaCost(b.ten, b.cur);
+    // 모자라서 흐린 단추는 왜 안 되는지 '가진 것 / 값'으로 보인다
+    one.append(t('gachaOne'), document.createElement('small')); one.lastElementChild!.textContent = have < b.one ? loc.fmt.gachaShort(have, b.one, b.cur) : loc.fmt.gachaCost(b.one, b.cur);
+    ten.append(t('gachaTen'), document.createElement('small')); ten.lastElementChild!.textContent = have < b.ten ? loc.fmt.gachaShort(have, b.ten, b.cur) : loc.fmt.gachaCost(b.ten, b.cur);
     btns.append(one, ten);
-    box.append(btns);
+    // 이 배너의 재화를 얼마나 가졌는가 (메뉴 머리의 재화는 골드뿐이다)
+    box.append(el('gleft ghave', loc.fmt.gachaHave(have, b.cur)), btns);
     const st = bannerPity(id, gacha);
     if (b.pity) box.append(el('note', loc.fmt.gachaPity(rarityName(b.pity.rarity), b.pity.after, st.count)));
     if (b.fiftyFifty && b.pickup) box.append(el('note', loc.fmt.gachaSureNow(st.sure, heroName(b.pickup.hero))));
@@ -260,7 +262,8 @@ export function initRoster(): void {
 }
 
 export function initGacha(): void {
-  addMenuTab({ id: 'gacha', label: () => t('tabGacha'), draw: drawGacha, sig: () => [gacha, [...ratesOpen], S.me?.gold, S.me?.sparks], mod: 'gacha' }, 'heroes');
+  // 알림 점: 열린 배너 가운데 1번 뽑을 재화가 있다 (지금 할 수 있는 것)
+  addMenuTab({ id: 'gacha', label: () => t('tabGacha'), draw: drawGacha, sig: () => [gacha, [...ratesOpen], S.me?.gold, S.me?.sparks], mod: 'gacha', dot: () => openBanners(gacha).some((id) => money(BANNER_TABLE[id].cur) >= BANNER_TABLE[id].one) }, 'heroes');
   // 결과 창은 문서의 맨 끝에 붙인다: 메뉴 창(뽑기 탭에서 누른다) 위에 떠야 한다
   const pop = document.createElement('div');
   pop.className = 'panel'; pop.id = 'gachaPop'; pop.hidden = true; pop.setAttribute('role', 'dialog');
