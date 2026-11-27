@@ -1,11 +1,20 @@
-// 이 게임의 겉모습: 땅과 잎의 색, 울림 샘, 미니맵의 바탕, 몬스터의 코드 모델, 이 게임이 더한 부품 '울림 고리'. 모델·소리 파일은 없다.
+// 이 게임의 겉모습: 땅과 잎의 색, 울림 샘, 계약의 탑(게임 A의 자리: 따로 된 지역의 돌 바닥·기둥·떠 있는 고리), 두 게임마다의 하늘(모드가 바뀌면),
+// 미니맵의 바탕, 몬스터의 코드 모델, 이 게임이 더한 부품 '울림 고리'. 모델·소리 파일은 없다.
 import * as THREE from 'three';
 import { AREAS } from '@engine/shared/world';
 import type { MonsterId } from '@engine/shared/defs';
-import { type Look, limb, lookGeo, mat, type Model, onFrame, part, registerLookPart, registerMonsterModel, setMapPaint, view } from '@engine/client';
-import { ARENA, WELL } from '../shared/content/pact';
+import { type Look, limb, lookGeo, mat, type Model, onFrame, onModeChange, part, registerLookPart, registerMonsterModel, setMapPaint, view } from '@engine/client';
+import { ARENA, MODE, SPIRE, WELL } from '../shared/content/pact';
 
 const stone = new THREE.Color(0xa8a49a), grass = [new THREE.Color(0x7fa86a), new THREE.Color(0x6a9460)];
+/** 탑의 바닥: 짙은 보랏빛 돌, 가운데 둥근 판은 밝게 */
+const spireStone = [new THREE.Color(0x2e2840), new THREE.Color(0x3a3352)], spireRing = new THREE.Color(0x6a5aa0);
+const inSpire = (x: number, z: number) => x >= SPIRE.x0 - 4 && x <= SPIRE.x1 + 4 && z >= SPIRE.z0 - 4 && z <= SPIRE.z1 + 4;
+/** 떠 있는 고리들 (프레임마다 천천히 돈다) */
+const rings: THREE.Mesh[] = [];
+/** 두 게임의 하늘: 울림골은 맑은 아침, 탑은 보랏빛 밤 */
+const MOOD_VALE = { sky: 0xb8d4e8, hemi: 2.0, sun: 2.2, fogNear: 58, fogFar: 125 };
+const MOOD_TOWER = { sky: 0x1c1830, hemi: 1.3, sun: 1.4, fogNear: 30, fogFar: 70 };
 const LEAVES = [0x4f8a5a, 0x6aa070, 0x3f7a6a, 0x8ab070];
 /** 샘의 물빛: 프레임마다 조금씩 밝아졌다 어두워진다 */
 const water = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 0.1, 18), new THREE.MeshBasicMaterial({ color: 0x7fd0ff }));
@@ -14,7 +23,8 @@ const water = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 0.1, 18), ne
 export const look: Look = {
   // 샘 둘레와 단계의 자리는 돌바닥, 그 밖은 풀빛
   ground: (x, z, j, c) => {
-    if (Math.hypot(x - WELL.x, z - WELL.z) < 7 || Math.hypot(x - ARENA.x, z - ARENA.z) < 10) c.copy(stone).lerp(grass[0], j * 0.25);
+    if (inSpire(x, z)) { const d = Math.hypot(x - ARENA.x, z - ARENA.z); if (Math.abs(d - 11) < 0.8) c.copy(spireRing); else c.copy(spireStone[0]).lerp(spireStone[1], j); return; }
+    if (Math.hypot(x - WELL.x, z - WELL.z) < 7) c.copy(stone).lerp(grass[0], j * 0.25);
     else c.copy(grass[0]).lerp(grass[1], j);
   },
   leaf: (_x, _z, k) => LEAVES[Math.floor(k * LEAVES.length) % LEAVES.length],
@@ -29,6 +39,18 @@ export const look: Look = {
     for (const s of [-1, 1]) well.add(part(new THREE.BoxGeometry(0.18, 2.9, 0.18), mat(0x6a5a4a), s * 1.1, 1.45, 0), part(new THREE.BoxGeometry(2.4, 0.16, 0.2), mat(0x6a5a4a), 0, 2.9, 0));
     well.position.set(WELL.x, 0, WELL.z);
     scene.add(well);
+    // 계약의 탑: 단계의 자리를 두른 기둥 여덟과 그 위에 떠 있는 금빛 고리
+    const spire = new THREE.Group();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2, x = Math.cos(a) * 14, z = Math.sin(a) * 14;
+      spire.add(part(new THREE.BoxGeometry(1.1, 7, 1.1), mat(0x4a4266), x, 3.5, z), part(new THREE.BoxGeometry(1.6, 0.4, 1.6), mat(0x6a5aa0), x, 7.2, z));
+      const ring = part(new THREE.TorusGeometry(0.7, 0.08, 6, 20), new THREE.MeshBasicMaterial({ color: 0xffd27a }), x, 8.6, z);
+      rings.push(ring); spire.add(ring);
+    }
+    const big = part(new THREE.TorusGeometry(4.5, 0.15, 8, 40), new THREE.MeshBasicMaterial({ color: 0xb8a0ff }), 0, 12, 0);
+    big.rotation.x = Math.PI / 2; rings.push(big); spire.add(big);
+    spire.position.set(ARENA.x, 0, ARENA.z);
+    scene.add(spire);
   },
 };
 
@@ -74,9 +96,14 @@ function spirit(type: string): Model {
 export function initScene(): void {
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
   for (const type of Object.keys(SPIRITS)) registerMonsterModel(type, spirit);
-  view.setMood({ sky: 0xb8d4e8, hemi: 2.0, sun: 2.2, fogNear: 58, fogFar: 125 });
-  setMapPaint((b) => { for (const a of AREAS) b.quad(a.x0, a.z0, a.x1, a.z1, '#58784a'); b.disc(WELL.x, WELL.z, 7, '#9a968c'); });
-  onFrame((now) => { (water.material as THREE.MeshBasicMaterial).color.setHSL(0.55, 0.8, 0.68 + Math.sin(now / 600) * 0.06); });
+  view.setMood(MOOD_TOWER);
+  // 두 게임의 하늘: 모드가 바뀌면 (처음 받을 때도)
+  onModeChange((def) => view.setMood(def.id === MODE.tower ? MOOD_TOWER : MOOD_VALE));
+  setMapPaint((b) => { const a = AREAS[0]; b.quad(a.x0, a.z0, a.x1, a.z1, '#58784a'); b.disc(WELL.x, WELL.z, 7, '#9a968c'); });
+  onFrame((now) => {
+    (water.material as THREE.MeshBasicMaterial).color.setHSL(0.55, 0.8, 0.68 + Math.sin(now / 600) * 0.06);
+    rings.forEach((r, i) => { r.rotation.y = now / 1400 + i; });
+  });
   // 이 게임이 더한 모자 '울림 고리' (내용의 LOOK_RULES.add): 머리 위에 뜬 금빛 고리. 모양은 lookGeo로 나눠 쓴다 (같은 겉모습은 구운 모양을 함께 쓴다)
   registerLookPart('hat', 'halo', ({ head, mats }) => {
     const ring = part(lookGeo('haloRing', () => new THREE.TorusGeometry(0.3, 0.045, 6, 18)), mats.accent, 0, head.h + 0.28, 0);

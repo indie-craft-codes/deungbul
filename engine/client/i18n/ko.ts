@@ -11,8 +11,9 @@ import type { MsgArg, MsgKey } from '../../shared/messages';
 import type { LocaleExt } from './ext';
 import { dungeonLabel, itemNameOf, uiText, type ContentNames } from './names';
 import { anyModule } from '../../shared/picked';
-import { charName, type CharErr } from '../../shared/defs/chardef';
+import { charName, knownChar, type CharErr } from '../../shared/defs/chardef';
 import type { MorphMods } from '../../shared/defs/morph';
+import { modeDef } from '../../shared/defs/modes';
 
 /** 틀의 안내문 종류: 게임이 확장 지점(engine/shared/ext.ts의 MsgMap)에 더한 것을 뺀 나머지. 게임이 없으면 전부다 */
 export type EngineMsgKey = Exclude<MsgKey, keyof MsgMap>;
@@ -81,7 +82,7 @@ export const signed = (n: MsgArg) => (Number(n) > 0 ? `+${n}` : String(n));
 /** 팀의 이름 (teams 모듈): 팀 번호 → 게임이 언어 파일의 ui에 적은 이름 (TEAMS의 name 키). 없는 번호는 빈 문자열 */
 export const teamName = (i: MsgArg): string => { const d = TEAMS[Number(i)]; return d ? uiText.get(d.name) : ''; };
 /** 영웅의 이름 (roster 모듈): 영웅 id → 게임이 언어 파일의 ui에 적은 이름 (HeroDef.name 키). 없는 영웅은 id 그대로 */
-export const heroName = (id: MsgArg): string => { const d = heroDef(String(id)); return d ? d.label ?? uiText.get(d.name) : String(id); };
+export const heroName = (id: MsgArg): string => { const d = heroDef(String(id)); return d ? (d.label !== undefined ? (knownChar(String(id)) ? charName(id) : d.label) : uiText.get(d.name)) : String(id); };
 /** 영웅 장비의 이름 (herogear 모듈: HeroGearDef.name 키). 없는 장비는 id 그대로 */
 export const heroGearName = (id: MsgArg): string => { const d = heroGearDef(String(id)); return d ? uiText.get(d.name) : String(id); };
 /** 등급의 이름 (HeroRarityDef.name 키: 틀의 기본 등급은 heroRarity0~2) */
@@ -623,6 +624,10 @@ export const koBase = (n: ContentNames) => {
       appealHint: '이 제재가 왜 잘못되었다고 생각하는지 적어 주세요.',
       appealDone: '이의를 냈습니다. 운영자가 살펴보고 답합니다.',
       appealWait: '이의를 보내는 중…',
+      // 게임 안의 모드 (modes 모듈: hud/modes.ts)
+      modeBtn: '게임 바꾸기',
+      modeToLobby: '단계 선택',
+      morphCardHead: '변신 시 능력치',
     },
     monsters,
     dungeons,
@@ -888,6 +893,15 @@ export const koBase = (n: ContentNames) => {
       sanctionUntil: (until: number) => (until === 0 ? '영구' : `${whenText(until, 'ko-KR')}까지`),
       supportCount: (n: number, max: number) => `${n} / ${max}자`,
       supportTicket: (id: number, kind: string, at: number) => `#${id} · ${kind} · ${whenText(at, 'ko-KR')}`,
+      // 게임 안의 모드, 변신의 카드 능력치 (hud/modes.ts, hud/morph.ts, hud/collect.ts)
+      /** '게임 바꾸기' 단추의 글: 건너갈 모드의 이름 */
+      modeTo: (name: string) => `${name}(으)로`,
+      /** 대화 줄의 머리: 말한 사람이 지금 있는 모드 */
+      chatMode: (name: string) => `[${name}]`,
+      /** 능력치 대체 방식의 변신: 변신한 동안의 체력과 기본 공격 한 번 */
+      morphStats: (hp: number, atk: number) => `변신 시 체력 ${num(hp)} · 공격 ${num(atk)}`,
+      /** 변신의 카드: 레벨과 별, 카드의 공격·체력 */
+      morphCard: (lv: number, stars: number, atk: number, hp: number) => `카드 레벨 ${lv} · ★${stars} · 공격 ${num(atk)} · 체력 ${num(hp)}`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -1123,6 +1137,15 @@ export const koBase = (n: ContentNames) => {
       supportNoSanction: () => '이의를 낼 제재가 없습니다.',
       supportOff: () => '지금은 문의를 받지 않습니다.',
       rolledBack: () => '운영자가 이 캐릭터를 앞의 시점으로 되돌렸습니다. 다시 접속해 주세요.',
+      modeOn: (a) => `${uiText.get(modeDef(String(a[0]))?.name ?? String(a[0]))}(으)로 왔습니다.`,
+      modeWait: (a) => `${a[0]}초 뒤에 다시 바꿀 수 있습니다.`,
+      modeStandOn: () => '들판에 남은 몸이 자동 사냥을 이어 갑니다.',
+      modeStandDown: () => '들판에서 사냥하던 몸이 쓰러졌습니다.',
+      modeStandEnd: () => '오늘의 자동 사냥 시간을 다 써서 들판의 사냥을 멈췄습니다.',
+      stageBgStop: (a) => (Number(a[1]) === 1 ? `단계 ${a[0]}에서 져서 단계의 자동 진행이 멈췄습니다.` : `단계 ${a[0]}까지 하고 멈췄습니다 (자동 진행이 꺼져 있습니다).`),
+      autoRetreat: (a) => `체력이 ${a[0]}%라 자동 사냥을 멈추고 물러났습니다.`,
+      autoNoPotion: () => '물약이 떨어져 자동 사냥을 멈췄습니다.',
+      autoDied: () => '쓰러져서 자동 사냥을 끝냈습니다.',
     } satisfies Record<EngineMsgKey, (a: MsgArg[]) => string>,
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,

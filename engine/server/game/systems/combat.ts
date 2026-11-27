@@ -200,7 +200,10 @@ export class Combat {
     const hitters: Ent[] = [];
     for (const id of m.hitters) {
       const p = g.ents.get(id);
-      if (p && p.kind === 'p' && p.layer === m.layer && dist(p, m) <= AOI_LEAVE) hitters.push(p);
+      if (!p || p.kind !== 'p') continue;
+      // 다른 층에 가 있는 사람은 그 층에 둔 몸(g.rules.bodyOn: 모드의 대역·단계의 회차)의 자리로 본다. 없으면 예전과 같다
+      const at = p.layer === m.layer ? p : g.rules.bodyOn?.(p, m.layer);
+      if (at && dist(at, m) <= AOI_LEAVE) hitters.push(p);
     }
     m.hitters.clear();
     for (const e of g.ents.values()) if (e.targetId === m.id) e.targetId = 0;

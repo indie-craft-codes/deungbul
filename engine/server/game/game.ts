@@ -64,6 +64,7 @@ import { HeroGear } from './systems/herogear';
 import { Wallet } from './systems/wallet';
 import { Chars } from './systems/chars';
 import { Morph } from './systems/morph';
+import { Modes } from './systems/modes';
 import { Clock } from './systems/clock';
 import { Live } from './systems/live';
 
@@ -105,6 +106,8 @@ export interface Hooks extends HooksExt {
   charRemoved: (id: string) => void;
   /** [morph] 변신했다 (id) / 풀렸다 (id는 ''): 까닭 on, off 스스로, end 시간이 다 됨, gone 정의가 빠짐 */
   morphed: (p: Ent, id: string, why: 'on' | 'off' | 'end' | 'gone') => void;
+  /** [modes] 모드를 바꿨다 (from에서 id로. 접속해 저장된 모드로 들어갈 때는 from이 '') */
+  modeChanged: (p: Ent, id: string, from: string) => void;
   /** [핵심: 시계] 날·주·달이 바뀌었다 (내용의 RESET): 새 열쇠, 옛 열쇠, 지난 경계의 수(서버가 꺼져 있던 동안 여럿이 지났어도 사건은 한 번) */
   dayReset: (day: string, prev: string, missed: number) => void;
   weekReset: (week: string, prev: string, missed: number) => void;
@@ -135,6 +138,11 @@ export interface Rules extends RulesExt {
   siege: { x: number; z: number } | null;
   /** 이 캐릭터에게 게임의 진행(틀이 모르는 칸)이 있는가. 아무것도 하지 않은 새 캐릭터를 저장하지 않는 규칙이 틀의 칸(직업, 레벨, 골드 등)에 더해 묻는다. 없으면 '없다' */
   touched?: (p: Ent) => boolean;
+  /**
+   * 그 사람이 다른 층에 둔 '몸'의 자리 (없으면 undefined). 처치 보상은 몬스터와 같은 층·가까이에 있는 사람에게만 가는데(전투 모듈),
+   * 사람이 다른 층(모드 modes의 다른 게임)에 가 있는 동안 그 층에서 대신 싸우는 것(들판의 대역, 단계의 회차)이 있으면 그 자리로 본다. 없으면 예전과 같다
+   */
+  bodyOn?: (p: Ent, layer: number) => { x: number; z: number } | undefined;
 }
 
 /**
@@ -334,6 +342,7 @@ export class Game {
   /** [chars] 캐릭터 정의: 검증하고 두고 화면에 보낸다 (roster를 함께 고르면 영웅이 된다) */ readonly chars: Chars;
   /** [morph] 변신 */ readonly morph: Morph;
   /** [odds] 확률표의 버전·이력·사전 공지와 추첨 기록 (굴림은 모듈과 상관없이 engine/shared/defs/odds.ts의 표에서) */ readonly odds: OddsSys;
+  /** [modes] 게임 안의 모드 */ readonly modes: Modes;
   /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
   readonly sanctions: Sanctions;
   /** [핵심] 시계와 초기화: 날·주·달의 열쇠와 경계 사건 (내용의 RESET). 규칙 플러그인보다 먼저 만든다 */
@@ -408,6 +417,8 @@ export class Game {
     this.morph = has('morph') ? new Morph(this) : off('morph', 'morph');
     // 확률 공개: 그 뒤에 (뽑기·강화가 기록을 남길 곳. 고르지 않은 게임의 등록 차례가 예전과 같게)
     this.odds = has('odds') ? new OddsSys(this) : off('odds', 'odds');
+    // 게임 안의 모드: 그 뒤에 (접속 사건에서 단계·변신의 처리가 먼저 끝난 뒤 저장된 모드로 들어간다)
+    this.modes = has('modes') ? new Modes(this) : off('modes', 'modes');
     this.sanctions = new Sanctions(this);
     new Status(this); // 본인에게 보내는 성장 수치(stat)와 장비·우편(meta): 그 칸의 모듈을 고른 게임만
     for (const fn of this.ready) fn();

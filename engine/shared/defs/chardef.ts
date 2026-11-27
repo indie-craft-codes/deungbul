@@ -17,8 +17,13 @@ export interface CharDef {
   v: number;
   /** 영문 소문자로 시작하는 3~32자 (영웅·변신의 id로 쓴다) */
   id: string;
-  /** 이름과 짧은 소개·성격 (사람이 쓴 글: 화면이 그대로 보인다. 번역하지 않는다) */
+  /** 이름과 짧은 소개·성격 (사람이 쓴 글: 화면이 그대로 보인다. 틀은 번역하지 않는다) */
   name: string; bio: string;
+  /**
+   * 언어마다의 이름·소개 (선택): 언어 코드('en', 'ja' …) → { name, bio? }. 화면이 그 언어일 때 이것을 보인다 (없는 언어는 name·bio 그대로).
+   * 검증기가 name·bio와 같은 규칙(길이·글자·금칙어)으로 본다. 언어는 CHAR_TEXT_LANGS개까지
+   */
+  text?: Record<string, { name: string; bio?: string }>;
   look: Look;
   /** 역할 (HERO_ROLES의 id. 역할이 없는 게임은 빈 문자열) */
   role: string;
@@ -123,24 +128,46 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 const cut = (s: string): string => s.slice(0, 24);
 
 /** 글 하나를 확인한다: 모양, 길이(글자 수), 보이지 않는 글자, 쓸 수 있는 글자, 빈칸, 금칙어. 다듬은 글(NFC)을 돌려준다 */
-function checkText(raw: unknown, field: 'name' | 'bio', min: number, max: number, out: CharIssue[]): string {
-  if (typeof raw !== 'string') { out.push({ code: 'type', path: field }); return ''; }
-  if (raw.length > max * 4 + 16) { out.push({ code: 'length', path: field, arg: max }); return ''; }
+function checkText(raw: unknown, field: 'name' | 'bio', min: number, max: number, out: CharIssue[], path: string = field): string {
+  if (typeof raw !== 'string') { out.push({ code: 'type', path }); return ''; }
+  if (raw.length > max * 4 + 16) { out.push({ code: 'length', path, arg: max }); return ''; }
   const s = raw.normalize('NFC'), n = [...s].length;
-  if (CONTROL.test(s)) { out.push({ code: 'control', path: field }); return ''; }
-  if (n < min || n > max) { out.push({ code: 'length', path: field, arg: n < min ? min : max }); return ''; }
-  if (!(CHAR_RULE_VIEW.charset ?? CHARSET).test(s)) { out.push({ code: 'charset', path: field }); return ''; }
-  if (s !== s.trim() || /\s{2,}/.test(s)) { out.push({ code: 'space', path: field }); return ''; }
+  if (CONTROL.test(s)) { out.push({ code: 'control', path }); return ''; }
+  if (n < min || n > max) { out.push({ code: 'length', path, arg: n < min ? min : max }); return ''; }
+  if (!(CHAR_RULE_VIEW.charset ?? CHARSET).test(s)) { out.push({ code: 'charset', path }); return ''; }
+  if (s !== s.trim() || /\s{2,}/.test(s)) { out.push({ code: 'space', path }); return ''; }
   const key = banKey(s);
   const hit = (CHAR_RULE_VIEW.banned ?? []).some((w) => { const k = banKey(w); return !!k && key.includes(k); })
     || filters.some((f) => { try { return f(s, field); } catch { return true; } })
     // 대화·이름과 같은 금칙어 고리 (engine/shared/textfilter.ts: 틀의 목록, 게임이 addBannedWords로 더한 낱말, addTextFilter의 거르개). 우회 표기를 펴서 견준다
     || !isClean(s, field === 'name' ? 'charName' : 'charBio');
-  if (hit) { out.push({ code: 'banned', path: field }); return ''; }
+  if (hit) { out.push({ code: 'banned', path }); return ''; }
   return s;
 }
 
-const KEYS = ['v', 'id', 'name', 'bio', 'look', 'role', 'rarity', 'stats', 'skills'];
+/** 언어마다의 이름·소개(text)에 적을 수 있는 언어의 수 */
+export const CHAR_TEXT_LANGS = 8;
+const LANG_RE = /^[a-z]{2}(-[a-z]{2})?$/;
+/** 언어마다의 이름·소개를 확인한다 (없으면 undefined). 모양이 틀리면 issues에 적는다 */
+function checkTexts(raw: unknown, out: CharIssue[]): Record<string, { name: string; bio?: string }> | undefined {
+  if (raw === undefined) return undefined;
+  if (!isObj(raw)) { out.push({ code: 'type', path: 'text' }); return undefined; }
+  const keys = Object.keys(raw);
+  if (keys.length > CHAR_TEXT_LANGS) { out.push({ code: 'length', path: 'text', arg: CHAR_TEXT_LANGS }); return undefined; }
+  const res: Record<string, { name: string; bio?: string }> = {};
+  for (const lang of keys) {
+    const v = raw[lang], at = `text.${cut(lang)}`;
+    if (!LANG_RE.test(lang)) { out.push({ code: 'extra', path: at }); continue; }
+    if (!isObj(v)) { out.push({ code: 'type', path: at }); continue; }
+    for (const k of Object.keys(v)) if (k !== 'name' && k !== 'bio') out.push({ code: 'extra', path: `${at}.${cut(k)}` });
+    const name = checkText(v.name, 'name', 1, Math.max(1, CHAR_RULE_VIEW.nameMax ?? 16), out, `${at}.name`);
+    const bio = v.bio === undefined ? undefined : checkText(v.bio, 'bio', 0, Math.max(0, CHAR_RULE_VIEW.bioMax ?? 120), out, `${at}.bio`);
+    res[lang] = bio === undefined ? { name } : { name, bio };
+  }
+  return res;
+}
+
+const KEYS = ['v', 'id', 'name', 'bio', 'text', 'look', 'role', 'rarity', 'stats', 'skills'];
 const REQUIRED = ['v', 'id', 'name', 'look', 'rarity', 'stats'];
 
 /**
@@ -167,6 +194,7 @@ export function validateCharDef(input: unknown, taken?: (id: string) => boolean)
     else if (Object.hasOwn(HEROES, id) || taken?.(id)) issues.push({ code: 'idTaken', path: 'id' });
     const name = checkText(raw.name, 'name', 1, Math.max(1, CHAR_RULE_VIEW.nameMax ?? 16), issues);
     const bio = raw.bio === undefined ? '' : checkText(raw.bio, 'bio', 0, Math.max(0, CHAR_RULE_VIEW.bioMax ?? 120), issues);
+    const text = checkTexts(raw.text, issues);
 
     const lk = checkLook(raw.look);
     for (const x of lk.issues) issues.push(x as LookIssue & { code: CharErr });
@@ -210,7 +238,7 @@ export function validateCharDef(input: unknown, taken?: (id: string) => boolean)
     });
 
     if (issues.length || !lk.look) return fail();
-    return { ok: true, def: { v: CHAR_V, id: id as string, name, bio, look: lk.look, role: role as string, rarity: rarity as number, stats, skills }, issues: [] };
+    return { ok: true, def: { v: CHAR_V, id: id as string, name, bio, ...(text && Object.keys(text).length ? { text } : {}), look: lk.look, role: role as string, rarity: rarity as number, stats, skills }, issues: [] };
   } catch {
     // 여기까지 오면 검증기의 빈틈이다: 통과시키지 않는다
     issues.push({ code: 'shape', path: '' });
@@ -230,5 +258,13 @@ const KNOWN = new Map<string, CharDef>();
 export function setKnownChars(list: readonly CharDef[]): void { KNOWN.clear(); for (const d of list) KNOWN.set(d.id, d); }
 /** 알고 있는 정의 (없으면 undefined) */
 export const knownChar = (id: string): CharDef | undefined => KNOWN.get(id);
-/** 정의의 이름 (사람이 쓴 글 그대로. 모르는 id는 id 그대로) */
-export const charName = (id: unknown): string => KNOWN.get(String(id))?.name ?? String(id);
+/** 이름·소개를 고를 언어 (화면이 언어를 바꿀 때 setCharLang으로 알린다. 서버는 정하지 않는다: 정의의 글 그대로) */
+let charLang = '';
+export function setCharLang(code: string): void { charLang = code; }
+/** 그 정의의 그 언어(주지 않으면 setCharLang의 언어)의 이름·소개. 그 언어의 글(text)이 없으면 정의의 name·bio */
+export function charText(d: CharDef, lang: string = charLang): { name: string; bio: string } {
+  const x = lang && d.text ? d.text[lang] ?? d.text[lang.slice(0, 2)] : undefined;
+  return { name: x?.name ?? d.name, bio: x?.bio ?? d.bio };
+}
+/** 정의의 이름 (지금 언어의 글, 없으면 사람이 쓴 글 그대로. 모르는 id는 id 그대로) */
+export const charName = (id: unknown): string => { const d = KNOWN.get(String(id)); return d ? charText(d).name : String(id); };

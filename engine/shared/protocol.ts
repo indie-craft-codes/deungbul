@@ -190,6 +190,10 @@ export type ClientMsg =
   | { t: 'room'; a: 'quick' | 'host' | 'cpu' | 'join' | 'leave' | 'pass' | 'resign' | 'again' | 'start'; id?: number }
   /** 변신 (morph 모듈): on 가진 캐릭터 정의(id)로 변신, off 풀기 */
   | { t: 'morph'; a: 'on' | 'off'; id?: string }
+  /** 게임 안의 모드 (modes 모듈): 그 모드로 (MODE_RULES.list의 id). 싸우는 중에도 바로 바뀐다 */
+  | { t: 'mode'; id: string }
+  /** 자동 사냥의 안전장치 (게임이 g.away.safety를 켰을 때): 물약을 마실 비율, 물러날 비율, 물약이 떨어지면 멈춤, 쓰러지면 끝 */
+  | { t: 'autoSafe'; potion?: number; retreat?: number; noPotion?: boolean; death?: boolean }
   // ---- 웹 출시의 바탕 (engine/server/net/web.ts) ----
   /** 탭·앱이 보이는가 (숨기면 false: 다른 사람에게 자리 비움으로 보인다) */
   | { t: 'vis'; on: boolean }
@@ -284,7 +288,7 @@ export type ServerMsg =
    * 대화 한 줄. ch: g 길드, n 근처, p 파티, w 귓말 (없으면 전체). n: 줄 번호(신고·차단에 쓴다). q: 정해진 문장의 키(text는 비어 있다: 받는 화면이 자기 언어로 읽는다).
    * to: 내가 보낸 귓말이 돌아온 것이면 받는 사람의 이름
    */
-  | { t: 'chat'; id: number; name: string; text: string; ch?: ChatCh; n?: number; q?: string; to?: string }
+  | { t: 'chat'; id: number; name: string; text: string; ch?: ChatCh; n?: number; q?: string; to?: string; md?: string }
   /** 내 길드(없으면 null)와 받은 초대 */
   | { t: 'guild'; g: GuildView | null; invite?: { name: string; from: string } }
   /** 거래소 목록의 한 쪽. total은 걸러진 물건의 수, guest는 손님이라 사고팔 수 없다는 뜻 */

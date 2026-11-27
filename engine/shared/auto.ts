@@ -66,9 +66,9 @@ const healOf = (id: ItemId): number => (ITEMS[id] as ItemDef).heal ?? 0;
 /** 물약들, 진한 것(회복량이 큰 것)부터. 아이템 id를 적지 않고 정의에서 고른다: 물약을 더하거나 이름을 바꿔도 여기는 그대로다 */
 export const POTIONS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filter((id) => itemDef(id).kind === 'potion').sort((a, b) => healOf(b) - healOf(a));
 
-/** 마실 물약 (진한 것부터). 마실 때가 아니거나 가진 것이 없으면 null */
-export function pickPotion(ratio: number, items: Record<string, number>): ItemId | null {
-  if (ratio >= AUTO.potionAt) return null;
+/** 마실 물약 (진한 것부터). 마실 때가 아니거나 가진 것이 없으면 null. at: 이 비율 아래면 마신다 (기본 AUTO.potionAt, 안전장치가 바꾼다) */
+export function pickPotion(ratio: number, items: Record<string, number>, at: number = AUTO.potionAt): ItemId | null {
+  if (ratio >= at) return null;
   return POTIONS.find((id) => (items[id] ?? 0) > 0) ?? null;
 }
 
@@ -100,4 +100,31 @@ export function restSpot(me: { x: number; z: number }, foes: readonly { x: numbe
 /** 손으로 마실 때 살펴보는 순서: 가장 진한 물약의 회복량만큼 다쳤으면 진한 것부터, 아니면 약한 것부터 (조금 다쳤을 때 진한 물약을 버리지 않게) */
 export function potionOrder(hurt: number): readonly ItemId[] {
   return POTIONS.length && hurt >= healOf(POTIONS[0]) ? POTIONS : [...POTIONS].reverse();
+}
+
+/**
+ * 자동 사냥의 안전장치 (보고 있지 않을 때: 자리 비움 사냥과 모드(modes)의 들판 대역). 틀의 기본은 없다(예전과 같다):
+ * 게임이 서버에서 g.away.safety로 기본값을 켜고, 사람마다 명령 { t: 'autoSafe', potion, retreat, noPotion, death }로 바꾼다 (설정 창).
+ *   potionAt   체력이 이 비율 아래면 물약을 마신다 (AUTO.potionAt 대신)
+ *   retreatAt  물약을 마셔도 이 비율 아래면 사냥을 멈추고 물러난다 (쓰러지는 자리 g.rules.respawn 쪽으로 걸어간다). 0이면 물러나지 않는다
+ *   stopNoPotion  마실 물약이 떨어졌는데 마실 때가 되면 사냥을 멈춘다 (아니면 예전처럼 쉬어 간다)
+ *   stopOnDeath   쓰러지면 자동 사냥을 끝낸다 (아니면 예전처럼 일어나 이어 간다)
+ */
+export interface AwaySafety { potionAt: number; retreatAt: number; stopNoPotion: boolean; stopOnDeath: boolean }
+/** 안전장치를 다듬는다 (믿지 않는 값: 비율은 0~0.95, 물러남은 물약보다 낮게) */
+export function tidySafety(raw: Partial<AwaySafety> | null | undefined, base: AwaySafety): AwaySafety {
+  const r = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(0.95, Math.max(0, v)) : d);
+  const potionAt = r(raw?.potionAt, base.potionAt);
+  return { potionAt, retreatAt: Math.min(potionAt, r(raw?.retreatAt, base.retreatAt)), stopNoPotion: typeof raw?.stopNoPotion === 'boolean' ? raw.stopNoPotion : base.stopNoPotion, stopOnDeath: typeof raw?.stopOnDeath === 'boolean' ? raw.stopOnDeath : base.stopOnDeath };
+}
+/**
+ * 안전장치의 한 판단: 마실 물약(potion), 물러나 멈추기(retreat), 물약이 없어 멈추기(stop), 할 것 없음(null).
+ * canDrink: 물약의 대기가 끝났는가. 물약을 마실 수 있으면 마시기가 먼저다 (마셔도 retreatAt 아래면 다음 판단에서 물러난다)
+ */
+export function safetyStep(ratio: number, items: Record<string, number>, s: AwaySafety, canDrink: boolean): { do: 'potion'; id: ItemId } | { do: 'retreat' | 'stop' } | null {
+  const potion = ratio < s.potionAt ? POTIONS.find((id) => (items[id] ?? 0) > 0) ?? null : null;
+  if (potion && canDrink) return { do: 'potion', id: potion };
+  if (s.retreatAt > 0 && ratio < s.retreatAt) return { do: 'retreat' };
+  if (s.stopNoPotion && ratio < s.potionAt && !potion && POTIONS.length) return { do: 'stop' };
+  return null;
 }

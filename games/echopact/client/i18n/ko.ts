@@ -47,42 +47,84 @@ export const koNames: ContentNames = {
   nameB: ['계약자', '나그네', '종지기', '길잡이', '사냥꾼', '수호자'],
 };
 
-/** 메아리의 이름·소개를 언어마다 (캐릭터 정의의 글은 한국어 하나다: 이 언어는 정의의 글을 그대로 쓰므로 비어 있다. client/echoes.ts) */
-const charText: Readonly<Record<string, { name: string; bio: string }>> = {};
+/** 메아리의 이름·소개는 정의의 글(한국어)이고, 영어는 정의의 text.en이다 (틀의 CharDef.text: server/echoes.ts) */
 
 export const koGame = {
-  /** 메아리(캐릭터 정의)의 이름과 소개: 없는 id는 정의의 글 그대로 */
-  charText,
   ui: {
     title: '메아리 계약',
-    intro: '울림골의 계약자가 됩니다. 들판에서 사냥하고, 울림 샘에서 옛 영웅의 메아리를 불러 함께 단계를 깨고, 그 메아리의 모습으로 변신하세요.',
-    classHint: '직업은 나중에 울림 샘 곁에서 바꿀 수 있습니다.',
-    hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 샘물 약', 'R: 자동 사냥', 'H: 울림 샘으로', 'B: 가방', 'M: 메뉴(뽑기·편성·단계·변신)', 'N: 지도', 'Tab: 대상', 'Enter: 대화']),
+    intro: '계약자가 되어 두 곳을 오갑니다. 계약의 탑에서 옛 영웅의 메아리를 불러 모으고 편성해 단계를 깨고, 울림골 들판에서는 모은 메아리의 모습으로 변신해 사냥합니다.',
+    classHint: '직업은 나중에 울림 샘 곁에서 바꿀 수 있습니다. 탑에서도 계약자가 앞에 서서 함께 싸웁니다.',
+    hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 샘물 약', 'R: 자동 사냥', 'H: 울림 샘으로', 'B: 가방', 'M: 메뉴(변신·장비)', 'N: 지도', 'Tab: 대상', 'Enter: 대화']),
     mapLegend: '■ 울림 샘 · 초록 상인',
     goingTown: '울림 샘으로 걸어갑니다.',
-    // 수집형의 이름 키: 역할·배너·장
-    // 틀의 '영웅' 탭을 이 게임의 말로
+    // 두 게임의 이름 (모드)
+    modeTower: '계약의 탑', modeVale: '울림골',
+    // 틀의 '영웅' 탭을 이 게임의 말로, 근처 대화는 '같은 곳'
     tabHeroes: '메아리',
+    chatTagNear: '[같은 곳]', chatTabNear: '같은 곳',
     roleVanguard: '선봉', roleRanger: '사수', roleMystic: '비술', roleMender: '치유',
     bannerWell: '울림 샘', chapterPath: '속삭임 길', chapterRuins: '종소리 폐허', chapterSpire: '울림 첨탑',
+    // 탑의 첫 화면 (client/tower.ts)
+    towerSub: '메아리를 불러 모으고, 편성해 단계를 깨는 곳',
+    towerGo: '도전',
+    towerPull: '뽑기',
+    towerEchoes: '메아리',
+    towerSquad: '편성',
+    towerAutoOn: '자동 진행 켜짐',
+    towerAutoOff: '자동 진행 꺼짐',
+    towerCleared: '깸',
+    towerLocked: '잠김',
+    towerNow: '지금',
+    towerBoss: '우두머리',
+    towerHint: '단계를 깨면 울림 조각(뽑기의 값)이 나옵니다. 처음 깨면 더 많이.',
+    towerWeak: '편성 전투력이 권장보다 낮습니다. 골드로 메아리의 레벨을 올리거나, 뽑아서 편성을 세게 하세요.',
+    towerGrow: '메아리 키우기',
+    // 다른 쪽의 작은 표시와 바로 가기
+    sideGoVale: '울림골로',
+    sideGoTower: '탑으로',
+    sideStopTower: '탑 멈추기',
+    sideHunt: '사냥 중', sideRest: '쉬는 중', sideRetreat: '물러남', sideStop: '멈춤', sideDown: '쓰러짐',
+    sideFight: '싸우는 중', sideGap: '다음 물결', sideClear: '깸', sideFail: '실패', sideLobby: '쉬는 중',
+    alertGo: '바로 가기',
     // 튜토리얼과 설정 칸 (client/tutorial.ts)
     tutPact: '계약의 첫걸음',
-    tutMove: '땅을 눌러[[ (또는 WASD로)|]] 걸어 보세요.',
+    tutStage: '계약의 탑입니다. "다음 도전"을 눌러 1-1에 도전해 보세요. 편성한 메아리가 함께 싸우고, 처음 깨면 울림 조각을 받습니다.',
+    tutPull: '울림 조각 100개가 모이면 뽑기에서 메아리를 불러 보세요. 확률은 \'확률 보기\'에 모두 공개됩니다.',
+    tutSwitch: '위의 \'울림골로\' 단추를 눌러 다른 게임(들판)으로 가 보세요. 싸우는 중이어도 바로 바뀌고, 탑의 단계는 끝까지 이어집니다.',
+    tutMove: '울림골입니다. 땅을 눌러[[ (또는 WASD로)|]] 걸어 보세요.',
     tutAttack: '들판의 몬스터를 눌러 공격해 보세요. 들판의 몬스터는 울림 조각을 떨어뜨립니다.',
-    tutMenu: '메뉴[[ (M)|]]를 열어 보세요. 뽑기·편성·단계·변신이 모두 여기 있습니다.',
-    tutStage: '단계 탭에서 도전해 보세요. 편성한 메아리가 함께 싸우고, 처음 깨면 울림 조각을 많이 받습니다.',
-    tutPull: '울림 조각 100개가 모이면 뽑기 탭에서 메아리를 불러 보세요. 확률은 \'확률 보기\'에 모두 공개됩니다.',
-    tutMorph: '가진 메아리는 들판에서 변신으로도 쓸 수 있습니다. 변신 탭에서 바꿔 보세요. 다른 사람에게도 그 모습으로 보입니다.',
+    tutMorph: '메뉴[[ (M)|]]의 변신 탭에서 가진 메아리로 변신해 보세요. 탑에서 키운 카드의 능력치가 곧 변신한 동안의 능력치입니다.',
+    tutAuto: '자동 사냥[[ (R)|]]을 켠 채 탑으로 가면 들판의 몸이 남아 사냥을 이어 갑니다.',
     setEchoTags: '이름표 보이기',
+    setSafeGroup: '보이지 않을 때의 자동 사냥',
+    setSafePotion: '물약을 마실 체력',
+    setSafeRetreat: '멈추고 물러날 체력',
+    setSafeNoPotion: '물약이 떨어지면 멈추기',
+    setSafeDeath: '쓰러지면 끝내기',
+    setSafeNote: '탑에 가 있는 동안 들판의 몸, 접속을 끊은 뒤의 자리 비움 사냥에 씁니다.',
   },
   fmt: {
     potions: (n: number) => `샘물 약 ${n}`,
+    /** 탑의 첫 화면: 가진 것과 편성의 전투력 */
+    towerHave: (sparks: number, gold: number, power: number) => `울림 조각 ${sparks.toLocaleString('ko-KR')} · 골드 ${gold.toLocaleString('ko-KR')} · 편성 전투력 ${power.toLocaleString('ko-KR')}`,
+    towerNext: (id: string) => `다음 도전 ${id}`,
+    towerRec: (rec: number) => `권장 ${rec.toLocaleString('ko-KR')}`,
+    towerBest: (id: string) => (id ? `가장 멀리 깬 단계 ${id}` : '아직 깬 단계가 없습니다'),
+    /** 보고 있지 않은 들판·탑의 작은 표시 */
+    sideVale: (state: string, hp: number, max: number, kills: number, sparks: number) => `울림골: ${state} · 체력 ${hp}/${max} · ${kills}마리 · 조각 +${sparks}`,
+    sideTower: (id: string, state: string, cleared: number, sparks: number, auto: boolean) => `탑: ${id} ${state} · 깬 수 ${cleared} · 조각 +${sparks}${auto ? ' · 자동 진행' : ''}`,
+    pct: (v: number) => `${Math.round(v * 100)}%`,
+    /** 게임 바꾸기 단추: 틀의 '(으)로' 대신 */
+    modeTo: (name: string) => `${name} 가기`,
   },
-  /** 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것: 새 메아리를 얻으면 변신도 함께 얻는다는 것을 알린다 */
+  /** 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것 */
   msg: {
-    charNew: (a) => `${charName(a[0])}: 들판에서 이 메아리로 변신할 수 있습니다.`,
+    heroNew: (a) => `새 메아리 ${charName(a[0])}: 탑에서 함께 싸우고, 울림골에서는 이 모습으로 변신할 수 있습니다.`,
     classFar: () => '직업은 울림 샘 곁에서 바꿀 수 있습니다.',
     noPotion: () => '샘물 약이 없습니다. 상인에게서 살 수 있습니다.',
+    modeOn: (a): string => (a[0] === 'tower' ? '계약의 탑에 왔습니다.' : '울림골에 왔습니다.'),
+    modeStandOn: () => '울림골에 남은 몸이 자동 사냥을 이어 갑니다.',
+    modeStandDown: () => '울림골에서 사냥하던 몸이 쓰러졌습니다.',
   } satisfies Partial<Record<MsgKey, (a: MsgArg[]) => string>>,
 };
 

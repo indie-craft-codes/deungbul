@@ -105,7 +105,8 @@ export interface StageBar { id: string; ch: number; wave: number; waves: number;
 export function stageBar(me: StageMe | null): StageBar | null {
   if (!me) return null;
   const r = me.run;
-  if (!r) {
+  // 대기실(모드의 단계 모드: 몬스터 없이 서 있다)은 단계 밖처럼 보인다
+  if (!r || r.state === 'lobby') {
     const ref = STAGES.find((s) => s.id === me.cur) ?? STAGES[0];
     return ref ? { id: ref.id, ch: ref.ch, wave: 0, waves: waveCount(ref.def), progress: 0, boss: false, state: 'out', left: 0 } : null;
   }

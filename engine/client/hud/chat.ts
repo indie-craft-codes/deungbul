@@ -3,10 +3,11 @@
 // chat 모듈을 고른 게임: 채널 탭(전체·근처·파티·길드·귓말)이 생기고 탭이 곧 보내는 곳이다. 귓말은 '/w 이름 내용', 답은 '/r 내용', '/p' 파티, '/n' 근처, '/a' 전체.
 // 줄의 이름을 누르면 사람 카드(귓말·친구·차단·신고)가 뜬다: 그 줄을 신고하면 서버가 앞뒤 줄을 함께 적는다.
 import type { ServerMsg } from '../../shared/protocol';
-import { QUICK_CHAT } from '../../shared/defs';
+import { QUICK_CHAT, modeDef } from '../../shared/defs';
 import { $ } from '../app';
 import { tagOf } from '../entities';
 import { L, onLangChange, t, type UiKey } from '../i18n';
+import { uiText } from '../i18n/names';
 import { hasModule } from '../mods';
 import { send } from '../net';
 import { onSocialChange, talkState } from '../social';
@@ -77,7 +78,10 @@ export function onChat(m: Extract<ServerMsg, { t: 'chat' }>): void {
   if (ch === 'w' && m.to) { w.textContent = `${L().fmt.chatToTag(m.to)} `; replyTo = m.to; }
   else {
     if (ch === 'w' && !mine) replyTo = m.name;
-    w.textContent = `${ch ? t(TAG[ch]) + ' ' : ''}${m.name}: `;
+    // 말한 사람이 있는 모드 (modes 모듈): 작은 표시
+    const md = m.md ? modeDef(m.md) : undefined;
+    w.textContent = `${ch ? t(TAG[ch]) + ' ' : ''}${md ? L().fmt.chatMode(uiText.get(md.name)) + ' ' : ''}${m.name}: `;
+    if (md) w.dataset.mode = md.id;
     // 이름을 누르면 사람 카드 (귓말·친구·차단·신고: 이 줄을 신고하면 앞뒤 줄이 함께 적힌다)
     if (!mine) { w.classList.add('pick'); w.addEventListener('click', (ev) => { const r = (ev.target as HTMLElement).getBoundingClientRect(); showCard(m.id, m.name, r.left + r.width / 2, r.top, m.n); }); }
   }

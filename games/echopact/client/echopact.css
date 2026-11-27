@@ -11,3 +11,70 @@
 }
 /* 설정 창의 '이름표 보이기'를 끄면 (client/tutorial.ts의 addSetting) */
 .noTags #tags { display: none; }
+
+/* ---------- 두 게임 (틀의 modes: body[data-mode]가 tower·vale) ---------- */
+/* 게임 바꾸기 단추: 두 게임의 색 (탑은 금빛, 울림골은 풀빛) */
+body[data-mode="tower"] .modeBtn { background: #2a2140; border-color: #b8a0ff; color: #ffe6a8; }
+body[data-mode="vale"] .modeBtn { background: #24402c; border-color: #9ad08a; color: #eaffdc; }
+
+/* 탑의 첫 화면: 단계 선택과 뽑기·메아리·편성. 화면 가운데의 큰 판 */
+.towerHome { position: fixed; z-index: 12; left: 50%; top: calc(52px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(760px, calc(100vw - 24px));
+  max-height: calc(var(--app-h, 100vh) - 140px); overflow: auto; pointer-events: auto; padding: 14px 16px 12px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(42, 33, 64, .94), rgba(22, 18, 36, .94)); border: 1px solid rgba(184, 160, 255, .45); color: #f0eaff; box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+.towerHome[hidden], .towerHome.under { display: none; }
+.towerHome .thead h2 { margin: 0; font-size: 22px; letter-spacing: .04em; color: #ffe6a8; }
+.towerHome .thead p { margin: 2px 0; font-size: 13px; opacity: .85; }
+.towerHome .thave { font-weight: 700; opacity: 1 !important; }
+.towerHome .tnext { margin: 10px 0 0; }
+.towerHome .tgo { width: 100%; padding: 13px 8px; border-radius: 10px; font-size: 18px; font-weight: 800; background: linear-gradient(180deg, #ffd27a, #e0a040); color: #2a1a08; border: 0; }
+.towerHome .tweak { margin: 6px 0 0; font-size: 12px; color: #ffcf9a; }
+.towerHome .tweak button { margin-left: 6px; padding: 3px 9px; border-radius: 8px; }
+.towerHome .tweak[hidden] { display: none; }
+.towerHome .tbtns { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 6px; }
+.towerHome .tbig { flex: 1 1 110px; padding: 12px 8px; border-radius: 10px; font-size: 16px; font-weight: 700; background: #4a3a78; color: #fff; border: 1px solid #b8a0ff; }
+.towerHome .tauto { flex: 1 1 140px; padding: 12px 8px; border-radius: 10px; background: #2a2440; color: #cfc4ff; border: 1px solid #6a5aa0; }
+.towerHome .tauto.on { color: #ffe6a8; border-color: #ffd27a; }
+.towerHome .tbest, .towerHome .thint { font-size: 12px; opacity: .8; margin: 4px 0; }
+.towerHome h3 { margin: 10px 0 4px; font-size: 14px; color: #cfc4ff; }
+.towerHome .tgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.towerHome .tstage { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 9px; background: #312a4a; color: #fff; border: 1px solid #4a4266; min-width: 0; }
+.towerHome .tstage b { font-size: 17px; }
+.towerHome .tstage small { font-size: 10px; opacity: .85; text-align: center; line-height: 1.2; }
+.towerHome .tstage.done { background: #2e3a4a; border-color: #6a8ab0; }
+.towerHome .tstage.now { background: #5a3f8a; border-color: #ffd27a; box-shadow: 0 0 0 2px rgba(255, 210, 122, .35); }
+.towerHome .tstage.boss b { color: #ffb07a; }
+.towerHome .tstage.locked { opacity: .45; }
+/* 탑에서는 틀의 내 정보 창을 작게: 수집형의 화면처럼 */
+body[data-mode="tower"] #me { opacity: .92; }
+
+/* 보고 있지 않은 쪽의 작은 표시와 바로 가기 (위, 게임 바꾸기 단추 아래) */
+.pactSide { position: fixed; z-index: 29; left: 50%; transform: translateX(-50%); top: calc(128px + env(safe-area-inset-top, 0px)); display: flex; gap: 6px; align-items: center;
+  max-width: calc(100vw - 24px); padding: 4px 6px 4px 10px; border-radius: 999px; background: rgba(20, 26, 36, .82); color: #eaf2ff; font-size: 12px; pointer-events: auto; white-space: nowrap; }
+.pactSide[hidden] { display: none; }
+.pactSide span { overflow: hidden; text-overflow: ellipsis; }
+.pactSide button { padding: 3px 9px; border-radius: 999px; font-size: 12px; }
+.pactSide.danger { background: rgba(120, 30, 30, .9); }
+/* PC: '게임 바꾸기'와 작은 표시는 오른쪽 위 (가운데 위는 틀의 단계 막대와 대상 창의 자리) */
+@media (min-width: 601px) {
+  .modeBtn { left: auto; right: 16px; transform: none; }
+  .pactSide, body.towerLobby .pactSide, body[data-mode="vale"] .pactSide { left: auto; right: 16px; transform: none; top: calc(50px + env(safe-area-inset-top, 0px)); }
+}
+/* 단계 선택 화면에서는 단계 막대가 없다: 작은 표시를 단추 바로 아래로. 울림골에서는 뒤에서 잇는 탑을 작은 표시가 보이므로 단계 막대를 감춘다 */
+body.towerLobby #stageBar, body[data-mode="vale"] #stageBar { display: none !important; }
+body.towerLobby .pactSide, body[data-mode="vale"] .pactSide { top: calc(46px + env(safe-area-inset-top, 0px)); }
+body[data-mode="tower"] .towerHome { top: calc(80px + env(safe-area-inset-top, 0px)); }
+
+/* 다른 쪽의 위험: 눈에 띄는 알림 + 바로 가기 */
+.pactAlert { position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center;
+  max-width: calc(100vw - 24px); padding: 10px 12px 10px 14px; border-radius: 12px; background: #8a2a2a; color: #fff; font-weight: 700; box-shadow: 0 6px 24px rgba(0,0,0,.5); pointer-events: auto; }
+.pactAlert[hidden] { display: none; }
+.pactAlert button { padding: 6px 12px; border-radius: 8px; background: #fff; color: #8a2a2a; font-weight: 700; white-space: nowrap; }
+
+/* 폰(좁은 화면): 위는 내 정보·대화 창이 차지하므로 '게임 바꾸기'와 작은 표시를 왼쪽 아래(조이스틱 위)에 쌓는다 */
+@media (max-width: 600px) {
+  .modeBtn { top: auto; left: 12px; transform: none; bottom: calc(122px + env(safe-area-inset-bottom, 0px)); }
+  .pactSide, body.towerLobby .pactSide, body[data-mode="vale"] .pactSide { top: auto; left: 12px; transform: none; bottom: calc(164px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 24px); white-space: normal; flex-wrap: wrap; border-radius: 12px; }
+  body[data-mode="tower"] .towerHome { top: calc(64px + env(safe-area-inset-top, 0px)); max-height: calc(var(--app-h, 100vh) - 270px); }
+  .towerHome .tstage small { font-size: 9px; }
+  .pactAlert { bottom: auto; top: calc(40% + env(safe-area-inset-top, 0px)); flex-wrap: wrap; }
+}

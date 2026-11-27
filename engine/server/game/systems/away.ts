@@ -1,7 +1,7 @@
 // 자리 비움 자동 사냥: 자동 사냥을 켠 채 접속이 끊기면(창을 닫음, 폰 화면이 꺼짐) 캐릭터가 월드에 남아 계속 사냥한다.
 // 다시 접속하면 그 캐릭터를 그대로 이어받는다. 판단은 클라이언트의 자동 사냥(engine/client/auto.ts)과 같고,
 // 사람이 누른 것과 같은 명령(g.command)만 내므로 전투 규칙은 그대로다.
-import { AUTO, AWAY, pickPotion, pickSkill, restSpot, shouldRest } from '../../../shared/auto';
+import { AUTO, AWAY, pickPotion, pickSkill, restSpot, safetyStep, shouldRest, tidySafety, type AwaySafety } from '../../../shared/auto';
 import { dist, type Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -18,7 +18,16 @@ export const AWAY_MAX_S = AWAY.maxS; // 값은 engine/shared/auto.ts에 있다 (
 interface Stay { x: number; z: number; at: number; sparks: number; gold: number; lv: number; lost: number; salv: number; dust: number }
 
 export class Away {
+  /**
+   * 안전장치의 기본값 (게임의 규칙 플러그인이 정한다. null(기본)이면 안전장치가 없다: 예전과 같다). 사람마다 명령 autoSafe로 바꾼다 (shared/auto.ts의 AwaySafety).
+   * 자리 비움 사냥과 모드(modes)의 들판 대역이 쓴다 (사람이 보고 있지 않은 사냥)
+   */
+  safety: AwaySafety | null = null;
+  /** 다른 시스템이 대신 사냥하는 사람인가 (모드의 들판 대역: 지표가 자리 비움 사냥으로 가려 적는다) */
+  proxied: (p: Ent) => boolean = () => false;
   private stays = new Map<number, Stay>();
+  /** 사람마다 바꾼 안전장치 (저장 칸 'autosafe') */
+  private safe = new WeakMap<Ent, Partial<AwaySafety>>();
   /** 물약이 없어 쉬는 중인 플레이어 (AUTO.restAt ~ restUntil) */
   private resting = new Set<number>();
 
@@ -31,6 +40,27 @@ export class Away {
       p.auto = on;
     });
     g.on('playerLeft', (id) => { this.stays.delete(id); this.resting.delete(id); });
+    // 안전장치: 사람마다 바꾸기 (게임이 기본값을 켰을 때만), 저장, 쓰러지면 끝내기
+    g.commands.set('autoSafe', (p, m) => {
+      if (!this.safety) return;
+      this.safe.set(p, tidySafety({ potionAt: m.potion as number, retreatAt: m.retreat as number, stopNoPotion: m.noPotion as boolean, stopOnDeath: m.death as boolean }, this.safetyOf(p) ?? this.safety));
+      p.unsaved = true;
+    });
+    // 저장 칸: 사람이 바꾼 안전장치가 있을 때만 적는다 (켜지 않은 게임의 저장은 예전과 같다)
+    g.saves.push({
+      name: 'autosafe',
+      save: (p) => { const s = this.safe.get(p); return s ? { ...s } : undefined; },
+      load: (p, raw) => { if (typeof raw === 'object' && raw !== null) this.safe.set(p, raw as Partial<AwaySafety>); },
+    });
+    // 개인 상태·사건은 게임이 안전장치를 켰을 때만 (켜지 않은 게임의 줄 위는 예전과 같다). 기본값은 플러그인이 정하므로 ready에서 본다
+    g.ready.push(() => {
+      if (!this.safety) return;
+      g.personal.push({ name: 'autosafe', state: (p) => this.safetyOf(p) });
+      g.on('playerDied', (p) => {
+        const s = this.safetyOf(p);
+        if (s?.stopOnDeath && this.active(p)) { p.auto = false; p.unsaved = true; g.notify(p, 'autoDied'); }
+      });
+    });
     g.saves.push({
       name: 'away',
       save: (p) => ({ day: p.away.day, used: Math.round(p.away.used) }),
@@ -41,6 +71,34 @@ export class Away {
         p.away = { day: d.day.slice(0, 10), used: Math.max(0, Math.min(AWAY_MAX_S, d.used)) };
       },
     });
+  }
+
+  /** 그 사람의 안전장치 (게임이 켜지 않았으면 null) */
+  safetyOf(p: Ent): AwaySafety | null { return this.safety ? tidySafety(this.safe.get(p), this.safety) : null; }
+
+  /**
+   * 안전장치의 한 판단을 몸(body: 사람 자신이거나 대역)에 낸다: 물약은 그 사람의 가방에서, 물러남은 쓰러지는 자리 쪽으로 걸어가 멈춤.
+   * 멈추면(물러남·물약 없음) 그 사람의 자동 사냥을 끄고 안내문(autoRetreat·autoNoPotion)을 보낸다. 무엇을 했는지 돌려준다 (안 했으면 null)
+   */
+  guard(p: Ent, body: Ent, drink: (id: string) => void, home: { x: number; z: number } = this.g.rules.respawn(p)): 'potion' | 'retreat' | 'stop' | null {
+    const s = this.safetyOf(p), g = this.g;
+    if (!s || body.hp <= 0 || body.maxHp <= 0) return null;
+    const r = safetyStep(body.hp / body.maxHp, g.field(p, 'items'), s, p.itemCd <= 0);
+    if (!r) return null;
+    if (r.do === 'potion') { drink(r.id); return 'potion'; }
+    p.auto = false; p.unsaved = true;
+    body.targetId = 0;
+    if (r.do === 'retreat') { g.movement.goTo(body, home.x, home.z); g.notify(p, 'autoRetreat', Math.round((body.hp / body.maxHp) * 100)); }
+    else g.notify(p, 'autoNoPotion');
+    return r.do;
+  }
+
+  /** 대신 사냥하는 시간을 쓴다 (자리 비움 사냥과 같은 하루 한도). 다 썼으면 false */
+  spend(p: Ent, dt: number): boolean {
+    if (this.left(p) <= 0) return false;
+    if (Math.floor((p.away.used + dt) / 60) !== Math.floor(p.away.used / 60)) p.unsaved = true;
+    p.away.used += dt;
+    return true;
   }
 
   /** 오늘 더 쓸 수 있는 자리 비움 사냥 시간(초). 날이 바뀌었으면 쓴 시간을 비운다 */
@@ -93,6 +151,8 @@ export class Away {
     p.wait = THINK_S;
     const ratio = p.hp / p.maxHp;
     if (p.hp <= 0) { this.resting.delete(p.id); return; } // 쓰러졌다: 일어나면 체력이 차 있다
+    // 안전장치 (게임이 켰을 때만): 물약, 물러나 멈춤, 물약이 없어 멈춤
+    if (this.safety) { const done = this.guard(p, p, (id) => g.command(p, { t: 'use', id })); if (done === 'potion') return; if (done) return; }
 
     const items = g.field(p, 'items'), potion = p.itemCd <= 0 ? pickPotion(ratio, items) : null;
     if (potion) g.command(p, { t: 'use', id: potion });

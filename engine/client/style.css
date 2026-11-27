@@ -915,3 +915,9 @@ body.chatOff .tag .say { display: none !important; }
 #gateSanction { max-width: 340px; margin: 6px auto 0; text-align: left; border: 1px solid rgba(255, 120, 100, .45); border-radius: 8px; padding: 8px 12px; }
 #gateSanction[hidden] { display: none; }
 #gateSanction button { margin-top: 8px; }
+
+/* 게임 안의 모드 (modes 모듈: hud/modes.ts): 모드가 감춘 틀의 요소, '게임 바꾸기' 단추 (게임의 스타일이 자리와 색을 덮어쓴다) */
+.modeOff { display: none !important; }
+.modeBtn { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 30; pointer-events: auto;
+  padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line, rgba(255,255,255,.3)); background: rgba(var(--ink-rgb, 20, 26, 36), .86); color: #fff; font-weight: 700; }
+.modeBtn[hidden] { display: none; }

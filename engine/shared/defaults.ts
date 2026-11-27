@@ -23,6 +23,7 @@ import type { LiveKeys, ResetRules } from './defs/live';
 import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
 import type { OddsRules } from './defs/odds';
+import type { ModeRules } from './defs/modes';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -252,3 +253,7 @@ export const AGE: AgeRules | null = null;
 // ---------- 확률과 재화의 투명성 (odds 모듈: engine/shared/defs/odds.ts) ----------
 /** 게임이 주는 표 없음(강화·뽑기의 자동 표만), 추첨 기록은 5년(1825일) 남긴다 (보관 기간은 사용자 결정: docs/genre-features.md 5.4) */
 export const ODDS: OddsRules = { tables: [], keepDays: 1825 };
+
+// ---------- 게임 안의 모드 (modes) ----------
+/** 모드가 없다 (한 게임: 예전과 같다) */
+export const MODE_RULES: ModeRules = { list: [] };

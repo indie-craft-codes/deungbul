@@ -23,6 +23,7 @@ import { addMenuTab } from './menu';
 import { button, el, redraw, row, span } from './menu/parts';
 import { addNotices } from './notify';
 import { confirmSpend } from './confirm';
+import { morphStatsOf } from './morph';
 
 /** 서버가 보낸 내 영웅·뽑기·편성 (개인 상태) */
 let heroes: HeroesMe = {};
@@ -68,6 +69,9 @@ function drawHeroes(list: HTMLElement): void {
     if (!r.owned) { list.append(row(name, `${loc.fmt.heroRole(roleName(r.id), rarityName(r.rarity))} · ${t('heroNotOwned')}`, [], 'hrow off')); continue; }
     const note = el('note');
     note.append(el('', `${loc.fmt.heroRole(roleName(r.id), rarityName(r.rarity))} · ${loc.fmt.heroLv(r.lv, r.maxLv)}`), el('', loc.fmt.heroStats(r.atk, r.hp, r.power)), el('', r.starNeed ? loc.fmt.heroShards(r.shards, r.starNeed) : `${loc.fmt.heroShards(r.shards, 0).split('/')[0]} · ${t('heroMax')}`));
+    // 변신의 능력치 대체 방식(MORPH_RULES.stats): 이 카드로 변신했을 때의 능력치 (변신 탭과 같은 셈)
+    const ms = hasModule('morph') ? morphStatsOf(r.id) : null;
+    if (ms) note.append(el('mstat', loc.fmt.morphStats(ms.s.hp, ms.s.atk)));
     const lvBtn = button(r.levelCost ? `${t('heroLevelBtn')} · ${loc.fmt.heroCost(r.levelCost, HERO_RULES.levelCur)}` : t('heroMax'), () => send({ t: 'hero', a: 'level', id: r.id }), !r.canLevel);
     const starBtn = button(t('heroStarBtn'), () => send({ t: 'hero', a: 'star', id: r.id }), !r.canStar);
     // 재료로 조각 얻기 (HERO_RULES.trade): 재료마다 단추 하나

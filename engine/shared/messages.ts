@@ -241,4 +241,14 @@ export type MsgKey =
   | 'supportGuest' // [] 저장되지 않는 손님은 답을 받을 곳이 없어 문의할 수 없다
   | 'supportNoSanction' // [] 이의를 낼 제재가 없다
   | 'supportOff' // [] 지금은 문의를 받지 않는다
-  | 'rolledBack'; // [] 운영자가 이 캐릭터를 앞의 시점으로 되돌렸다 (연결을 끊는다: 다시 들어오면 되돌린 상태)
+  | 'rolledBack' // [] 운영자가 이 캐릭터를 앞의 시점으로 되돌렸다 (연결을 끊는다: 다시 들어오면 되돌린 상태)
+  // ---- 게임 안의 모드 (modes 모듈: engine/server/game/systems/modes.ts), 단계를 뒤에서 이어 가기, 자동 사냥의 안전장치 ----
+  | 'modeOn' // [모드 id] 그 모드로 왔다
+  | 'modeWait' // [남은 초] 아직 모드를 바꿀 수 없다
+  | 'modeStandOn' // [] 들판의 몸이 남아 자동 사냥을 이어 간다 (다른 모드에 가 있는 동안)
+  | 'modeStandDown' // [] 들판에서 대신 사냥하던 몸이 쓰러졌다
+  | 'modeStandEnd' // [] 들판의 대신 사냥이 끝났다 (오늘의 시간을 다 썼다)
+  | 'stageBgStop' // [단계 id, 까닭 0 자동 진행이 꺼짐 1 실패] 뒤에서 이어 가던 단계가 멈췄다
+  | 'autoRetreat' // [체력 %] 체력이 낮아 자동 사냥을 멈추고 물러났다 (안전장치)
+  | 'autoNoPotion' // [] 물약이 떨어져 자동 사냥을 멈췄다 (안전장치)
+  | 'autoDied'; // [] 쓰러져 자동 사냥을 끝냈다 (안전장치)

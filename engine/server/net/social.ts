@@ -392,7 +392,8 @@ export function createSocial(host: SocialHost): Social {
     if (!ch) r = { to: null };
     else if (ch === 'n') {
       const to: SocialClient[] = [];
-      for (const x of host.clients()) if (x.ent && x.ent.layer === e.layer && dist(x.ent, e) <= CHAT_RULES.nearM) to.push(x);
+      const byMode = (CHAT_RULES as { nearScope?: string }).nearScope === 'mode' && g.has('modes'), mine = byMode ? g.modes.of(e) : '';
+      for (const x of host.clients()) if (x.ent && (byMode ? g.modes.of(x.ent) === mine : x.ent.layer === e.layer && dist(x.ent, e) <= CHAT_RULES.nearM)) to.push(x);
       r = { ch, to };
     } else if (ch === 'p') {
       if (!g.has('party') || !g.party.mates(e).length) { tell(c, 'chatNoParty'); return null; }
@@ -426,6 +427,8 @@ export function createSocial(host: SocialHost): Social {
     const msg: Extract<ServerMsg, { t: 'chat' }> = { t: 'chat', id: e.id, name: e.name, text: text ? mask(text) : '', n: line.n };
     if (r.ch) msg.ch = r.ch;
     if (quick) msg.q = quick;
+    // 말한 사람이 지금 있는 모드 (modes 모듈: 받는 화면이 작은 표시를 단다)
+    if (g.has('modes')) msg.md = g.modes.of(e);
     const list = r.to ?? [...host.clients()].filter((x) => x.ent);
     for (const x of list) if (!hides(ownerKey(x), char)) host.send(x, msg);
     // 귓말은 보낸 사람에게도 (누구에게 보냈는지와 함께)

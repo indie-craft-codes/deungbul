@@ -3,6 +3,8 @@
 // 싸움의 셈은 전투 모듈 그대로다: 피해는 g.combat.damage, 기술은 g.combat.cast (영웅은 전투 모듈에 '사람 편의 종류'로 등록된다: registerAlly).
 // 영웅이 준 피해는 주인이 준 것으로 쳐서 처치 보상·일일 임무가 주인에게 간다. 몬스터는 자기를 때린 영웅을 노리고, 영웅이 쓰러지면 reviveS 뒤 주인 곁에서 다시 일어난다.
 // 영웅의 공격·체력은 영웅 모듈(roster)의 레벨과 별로 정해진다 (heroStats). 주인이 층(채널, 던전, 단계)을 옮기면 영웅도 따라 옮긴다.
+// 나타나는 곳 SQUAD_RULES.where: 'all'(기본) 어디서나 주인을 따라다닌다, 'stage' 주인의 단계 회차(stages: 대기실 포함)가 있을 때만 그 층에 선다.
+//   'stage'에서 주인이 단계를 떠나 회차가 뒤에서 이어 가면(stages.detach) 영웅은 그 층의 단계 자리를 주인 대신 기준으로 삼아 싸운다 (anchor).
 // 저장: 캐릭터의 ext 'squad' (영웅 id의 목록). 본인에게는 개인 상태 'squad' ({ ids, power }).
 // 화면은 종류 'hero'를 역할의 겉모습으로 그린다 (engine/client/hud/collect.ts의 registerKind). 상태 줄의 값은 [별, 레벨].
 // 선택 칸 (내용이 적어야 켜진다: engine/shared/defs/herogrow.ts):
@@ -10,7 +12,7 @@
 //                          뒷줄은 저장의 'formation' ({ back: [영웅 id] }), 개인 상태 squad의 back. 명령 { t: 'squad', ids, back? }
 //   시너지 SQUAD_RULES.synergy  편성에 같은 태그(HeroDef.tag)의 영웅이 n 이상이면 그 단의 덤. 개인 상태 squad의 syn
 // 영웅의 공격·체력과 편성의 전투력은 squadView(장비·각성·기술 레벨·시너지까지)의 한 셈이다. 성장이 없는 게임에서는 예전(heroStats, heroPower의 합)과 같다.
-import { SQUAD_RULES as SQUAD_RULES_IN, arrangeRows, heroDef, heroRole, isHeroId, isSkillId, skillDef, squadView, type SquadMe, type SquadRules, type SquadView } from '../../../shared/defs';
+import { SQUAD_RULES as SQUAD_RULES_IN, STAGE_RULES, arrangeRows, heroDef, heroRole, isHeroId, isSkillId, skillDef, squadView, type SquadMe, type SquadRules, type SquadView } from '../../../shared/defs';
 import { resolve } from '../../../shared/sim';
 import { clampInto } from '../../../shared/world';
 import { dist, type Ent } from '../entity';
@@ -26,6 +28,8 @@ const TAUNT_S = 0.25;
 /** 내용의 편성 규칙 (게임이 적은 타입 그대로 오므로 선택 칸을 읽으려고 틀의 타입으로 넓힌다) */
 const SQUAD_RULES: SquadRules = SQUAD_RULES_IN;
 const ROWS = SQUAD_RULES.rows;
+/** 편성이 단계 안에서만 나타나는 게임 */
+const STAGE_ONLY = SQUAD_RULES.where === 'stage';
 /** 영웅의 생각 주기(초): 대상을 다시 고르는 간격 */
 const THINK_S = 0.25;
 
@@ -98,17 +102,30 @@ export class Squad {
     for (const e of this.out.get(p.id) ?? []) this.apply(e, p, false, v);
   }
 
+  /** 영웅이 지금 나타나도 되는가 (SQUAD_RULES.where 'stage'면 단계의 회차가 있을 때만) */
+  private allowed(p: Ent): boolean { return !STAGE_ONLY || (this.g.has('stages') && !!this.g.stages.runOf(p)); }
+  /**
+   * 영웅이 기준으로 삼는 자리: 주인. 단, 'stage'에서 회차가 뒤에서 이어 가는 중이면(주인이 다른 층) 그 층의 단계 자리.
+   * 주인의 엔티티 그대로이거나 자리·층·방향만 가진 것
+   */
+  private anchor(o: Ent): Pick<Ent, 'x' | 'z' | 'layer' | 'face'> {
+    if (!STAGE_ONLY || !this.g.has('stages')) return o;
+    const r = this.g.stages.runOf(o);
+    return r && r.bg ? { x: STAGE_RULES.arena.x, z: STAGE_RULES.arena.z + 3, layer: r.layer, face: 0 } : o;
+  }
+
   /** 편성대로 영웅을 세운다: 빠진 영웅은 치우고, 새로 든 영웅은 주인 곁에 놓는다 (봇에게는 영웅이 없다) */
   field(p: Ent): void {
     const g = this.g;
     if (p.bot || p.kind !== 'p' || g.ents.get(p.id) !== p) return;
     const now = this.out.get(p.id) ?? [];
+    if (!this.allowed(p)) { for (const e of now) g.remove(e.id); this.out.delete(p.id); return; }
     const keep = now.filter((e) => p.squad.includes(e.type) && g.ents.has(e.id));
     for (const e of now) if (!keep.includes(e)) g.remove(e.id);
     for (const id of p.squad) {
       if (keep.some((e) => e.type === id) || !g.roster.owned(p, id)) continue;
-      const at = this.spot(p, id);
-      const e = g.place('hero', { x: at.x, z: at.z, type: id, name: '', layer: p.layer, face: p.face });
+      const at = this.spot(p, id), a = this.anchor(p);
+      const e = g.place('hero', { x: at.x, z: at.z, type: id, name: '', layer: a.layer, face: a.face });
       e.data.owner = p.id;
       this.apply(e, p, true);
       keep.push(e);
@@ -144,21 +161,22 @@ export class Squad {
   private ownerOf(e: Ent): Ent | undefined { const o = this.g.ents.get(Number(e.data.owner ?? 0)); return o && o.kind === 'p' ? o : undefined; }
 
   /** 주인 곁에서 그 영웅의 서는 곳: 편성의 몇째 (진형을 켠 게임은 그 줄의 몇째로 앞줄은 앞, 뒷줄은 뒤) */
-  private spot(p: Ent, id: string): { x: number; z: number } {
+  private spot(o: Ent, id: string): { x: number; z: number } {
+    const p = o, a = this.anchor(o);
     let sx: number, sz: number;
     if (ROWS) {
       const back = p.squadBack.includes(id), row = p.squad.filter((x) => p.squadBack.includes(x) === back), list = back ? BACK : FRONT;
       [sx, sz] = list[Math.max(0, row.indexOf(id)) % list.length];
     } else [sx, sz] = SLOTS[Math.max(0, p.squad.indexOf(id)) % SLOTS.length];
-    const c = Math.cos(p.face), s = Math.sin(p.face);
+    const c = Math.cos(a.face), s = Math.sin(a.face);
     // 앞 = (sin face, cos face), 옆 = (cos face, -sin face)
-    return { x: p.x + sx * c + sz * s, z: p.z - sx * s + sz * c };
+    return { x: a.x + sx * c + sz * s, z: a.z - sx * s + sz * c };
   }
 
   /** 주인 곁으로 바로 옮긴다 (층을 옮겼거나 너무 멀어졌다) */
   private jump(e: Ent, p: Ent): void {
     const at = this.spot(p, e.type);
-    e.layer = p.layer; e.x = at.x; e.z = at.z; e.tx = e.x; e.tz = e.z; e.moving = false; e.path = null; e.targetId = 0;
+    e.layer = this.anchor(p).layer; e.x = at.x; e.z = at.z; e.tx = e.x; e.tz = e.z; e.moving = false; e.path = null; e.targetId = 0;
     clampInto(e); resolve(e, this.g.world.obstacles);
     this.g.emit(['r', e.id]);
   }
@@ -173,14 +191,17 @@ export class Squad {
 
   /** 영웅 하나의 틱: 따라가기, 대상 고르기, 다가가 치기, 기술 */
   private think(e: Ent, dt: number): void {
-    const g = this.g, o = this.ownerOf(e);
-    if (!o) { g.remove(e.id); return; }
+    const g = this.g, owner = this.ownerOf(e);
+    if (!owner) { g.remove(e.id); return; }
+    if (STAGE_ONLY && !this.allowed(owner)) { this.field(owner); return; }
+    // 기준 자리: 주인 (단계가 뒤에서 이어 가면 그 층의 단계 자리)
+    const o = this.anchor(owner);
     if (e.dead) {
       e.respawn -= dt;
-      if (e.respawn <= 0) { e.dead = false; e.hp = e.maxHp; e.lastHurt = -99; this.jump(e, o); }
+      if (e.respawn <= 0) { e.dead = false; e.hp = e.maxHp; e.lastHurt = -99; this.jump(e, owner); }
       return;
     }
-    if (e.layer !== o.layer || dist(e, o) > SQUAD_RULES.leash * 2) { this.jump(e, o); return; }
+    if (e.layer !== o.layer || dist(e, o) > SQUAD_RULES.leash * 2) { this.jump(e, owner); return; }
     const role = heroRole(e.type);
     if (e.atkCd > 0) e.atkCd -= dt;
     if (e.cds.length === 0) e.cds = [0];
@@ -188,7 +209,7 @@ export class Squad {
     // 싸우지 않은 지 4초가 지나면 회복한다
     if (e.hp < e.maxHp && g.clock - e.lastHurt > 4) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * SQUAD_RULES.regen * dt);
     // 앞줄: 주인이나 뒷줄을 노리는 몬스터를 자기에게 돌린다
-    if (ROWS && ROWS.taunt > 0 && !o.squadBack.includes(e.type)) this.taunt(e, o, dt);
+    if (ROWS && ROWS.taunt > 0 && !owner.squadBack.includes(e.type)) this.taunt(e, owner, dt);
 
     // 대상: 지금 대상이 살아 있고 주인 곁(leash)이면 그대로. 아니면 생각할 때마다 주인의 대상이나 주인 둘레(seek)에서 가장 가까운 몬스터
     let t = g.ents.get(e.targetId);
@@ -196,7 +217,7 @@ export class Squad {
     e.wait -= dt;
     if (!t && e.wait <= 0) {
       e.wait = THINK_S;
-      const mine = g.ents.get(o.targetId);
+      const mine = o === owner ? g.ents.get(owner.targetId) : undefined;
       if (mine && mine.kind === 'm' && !mine.dead && mine.layer === e.layer) t = mine;
       else {
         let best = SQUAD_RULES.seek;
@@ -212,7 +233,7 @@ export class Squad {
 
     if (!t) {
       // 따라가기: 주인 뒤쪽의 내 자리로
-      const at = this.spot(o, e.type);
+      const at = this.spot(owner, e.type);
       if (dist(e, at) > 1.2) { g.movement.goTo(e, at.x, at.z); g.movement.walk(e, role.speed * (dist(e, o) > 8 ? 1.4 : 1), dt); }
       else { e.moving = false; e.face = o.face; }
       return;
