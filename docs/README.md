@@ -14,7 +14,7 @@
 
 | 문서 | 목적 | 대상 | 상태 | 마지막 현행화 |
 |---|---|---|---|---|
-| [../README.md](../README.md) | 저장소 안내: 틀과 모듈 한눈 표, 게임 둘, 빠른 시작, 폴더 | 모두 | 현행 | 2026-11-27 |
+| [../README.md](../README.md) | 저장소 안내: 틀과 모듈 한눈 표, 게임 셋, 빠른 시작, 폴더 | 모두 | 현행 | 2026-11-27 |
 | [making-a-game.md](making-a-game.md) | 이 틀로 새 게임을 만드는 차례와 틀의 접점 전체(1절 모듈 … 11절 접점 일람표, 12~18절 장르·기능별). 코드 조각은 예제에서 따왔고 시험(`games/sample/test/docs.test.ts`)이 일치를 본다 | 새 게임을 만드는 사람, 틀을 고치는 사람 | 현행 | 2026-11-27 |
 | [framework-status.md](framework-status.md) | 틀이 지금 어디까지 왔나: 맨 위 요약(모듈 표, 게임, 검사 수, 최근 묶음), '0. 이어 갈 것'(다음 후보, 사용자 결정 필요 목록), 묶음마다의 기록 절 | 틀을 이어서 고치는 사람, 다음 작업을 고르는 사람 | 현행 (요약·0절). 날짜가 붙은 절은 그 묶음의 기록 | 2026-11-27 (묶음 3 합친 뒤) |
 
@@ -46,6 +46,7 @@
 | [proof-dalmuri.md](proof-dalmuri.md) | 수집형·방치형 "달무리 원정대"(2026-11-26, 게임은 지움) | [making-a-game.md](making-a-game.md) 13절 |
 | [proof-stepstone.md](proof-stepstone.md) | 턴제 "징검돌 전술"(2026-11-26, 게임은 지움) | [making-a-game.md](making-a-game.md) 14절 |
 | [proof-pond.md](proof-pond.md) | 넷이 두는 판 게임 "반딧불 연못"(2026-11-27, 게임은 지움) | [making-a-game.md](making-a-game.md) 14절 |
+| [proof-echopact.md](proof-echopact.md) | 두 장르를 합친 예제 "메아리 계약"(2026-11-27, 게임은 `games/echopact`에 있다): 잇는 방법, 수치 표, 틀의 빈 곳 | [making-a-game.md](making-a-game.md) 13·15절 |
 
 지운 게임의 코드는 커밋 `7e347c9`에 있다(`git checkout 7e347c9 -- games/<이름>`).
 
