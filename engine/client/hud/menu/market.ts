@@ -6,7 +6,8 @@ import type { UiKey } from '../../i18n/ko';
 import { send } from '../../net';
 import { S } from '../../state';
 import { gearLabel } from './gear';
-import { button, chips, el, gearTitle, numInput, optsEl, redraw, row, select, ui } from './parts';
+import { button, chips, el, emptyState, gearTitle, lockBand, numInput, optsEl, redraw, row, select, ui, whyOf } from './parts';
+import { unlockHint } from '../reward';
 
 // ---------- 거래소 ----------
 /** 거래소 탭의 상태: 보고 있는 화면, 목록을 거른 조건, 서버가 준 목록, 올리려고 고른 물건과 적던 값 */
@@ -55,23 +56,26 @@ function marketTools(): HTMLDivElement {
 function drawMarketBrowse(): void {
   const loc = L(), me = S.me;
   if (!me) return;
-  if (!mk.list.length) ui.list.append(el('note', t('marketEmpty')));
+  const low = me.lv < MARKET.minLv;
+  if (!mk.list.length) ui.list.append(emptyState('⚖', t('marketEmpty'), mk.guest || low ? undefined : { label: t('emptyToPost'), onClick: () => { mk.view = 'post'; redraw(); } }));
   for (const x of mk.list) {
     const short = me.gold < x.price, armed = mk.armed === x.id;
     const buy = button(armed ? loc.fmt.marketConfirm(x.price) : loc.fmt.marketBuy(x.price), () => {
       if (!armed) { mk.armed = x.id; redraw(); return; }
       send({ t: 'market', a: 'buy', id: x.id });
       marketAsk(); // 산 물건이 목록에서 빠지게 바로 새로 받는다
-    }, mk.guest || x.mine || short);
+    }, mk.guest || x.mine || short || low);
+    // 흐린 까닭 (U2): 레벨이 모자람(언제 열리는지) · 골드가 모자람
+    if (!mk.guest && !x.mine) whyOf(buy, low ? unlockHint('market') : short ? loc.fmt.short(x.price - me.gold) : '');
     buy.classList.toggle('armed', armed);
-    ui.list.append(marketRow(x, [loc.fmt.marketSeller(x.seller), !x.mine && short ? loc.fmt.short(x.price - me.gold) : ''], [buy]));
+    ui.list.append(marketRow(x, [loc.fmt.marketSeller(x.seller)], [buy]));
   }
 }
 
 function drawMarketMine(): void {
   const loc = L(), passed = (performance.now() - mk.mineAt) / 1000;
   ui.list.append(el('baghead', loc.fmt.marketMineHead(mk.mine.length, MARKET.maxListings)));
-  if (!mk.mine.length) ui.list.append(el('note', t('marketMineEmpty')));
+  if (!mk.mine.length) ui.list.append(emptyState('⚖', t('marketMineEmpty'), mk.guest || (S.me?.lv ?? 0) < MARKET.minLv ? undefined : { label: t('emptyToPost'), onClick: () => { mk.view = 'post'; redraw(); } }));
   for (const x of mk.mine) {
     const min = Math.max(0, Math.floor((x.left - passed) / 60));
     ui.list.append(marketRow({ ...x, mine: false }, [loc.fmt.marketPrice(x.price), loc.fmt.marketLeft(Math.floor(min / 60), min % 60)], [button(t('marketCancel'), () => send({ t: 'market', a: 'cancel', id: x.id }))]));
@@ -127,7 +131,7 @@ function drawMarketPost(): void {
     show();
     ui.list.append(box, note);
   } else if (gear.length || mats.length) ui.list.append(el('note', t('marketPickHint')));
-  else ui.list.append(el('note', t('marketPostEmpty')));
+  else ui.list.append(emptyState('⚖', t('marketPostEmpty')));
 
   const choose = (next: { uid: number } | { item: ItemId }, n: number) => { mk.pick = next; mk.price = ''; mk.n = String(n); redraw(); ui.list.scrollTop = 0; };
   if (gear.length) ui.list.append(el('baghead', t('tabGear')));
@@ -150,6 +154,8 @@ export function drawMarket(): void {
   if (mk.view === 'browse' || (mk.view === 'post' && mk.guest)) bar.append(marketTools());
   ui.list.append(bar);
   if (mk.guest) ui.list.append(el('note', t('marketGuestNote')));
+  // 잠김 (U2): 레벨이 모자라면 사고팔기가 언제 열리는지 (둘러보기는 된다)
+  else if (S.me && S.me.lv < MARKET.minLv) ui.list.append(lockBand(L().msg.marketNeedLv([MARKET.minLv])));
   if (mk.view === 'mine') drawMarketMine(); else if (mk.view === 'post' && !mk.guest) drawMarketPost(); else drawMarketBrowse();
 }
 

@@ -83,6 +83,10 @@ export const koNames: ContentNames = {
 export const koGame = {
   ui: {
     title: '등불지기',
+    // 첫 로딩의 팁 (U2: 틀의 setLoadingTips)
+    loadTip1: '등탑에 불씨를 바쳐 밝히면, 그 구역에서 쓰러져도 등탑 앞에서 다시 일어납니다.',
+    loadTip2: '퀘스트 창을 누르면 목적지까지 걸어갑니다.',
+    loadTip3: '조금 키운 캐릭터는 자동 사냥을 켠 채 창을 닫아도 잠시 이어서 사냥합니다.',
     hint: keyHints(['땅 클릭/WASD: 이동', '몬스터 클릭: 공격', '1–3: 기술', 'Q: 물약', 'F: 퀘스트 이동', 'R: 자동 사냥', 'H: 마을로', 'B: 가방', 'M: 메뉴', 'N: 지도', 'Tab: 대상', 'Enter: 대화']),
     toTown: '마을로',
     questGoal: '퀘스트 목적지',
@@ -92,6 +96,7 @@ export const koGame = {
     questNeedSparks: '바칠 불씨가 없습니다. 몬스터를 잡아 모으세요.',
     tower: '등탑',
     offerVerb: '바치기',
+    offerNone: '불씨가 없습니다 · 몬스터를 잡으면 얻습니다',
     helpVerb: '보태기',
     count1: '1개',
     count5: '5개',

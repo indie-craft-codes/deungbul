@@ -9,7 +9,7 @@ import { L, applyDom, onLangChange, t, type UiKey } from '../i18n';
 import { send } from '../net';
 import { auth, platform } from '../platform';
 import { renderMenu } from './menu';
-import { button, el, row } from './menu/parts';
+import { button, el, emptyState, row } from './menu/parts';
 
 const TEXT_MAX = 500;
 let tickets: TicketView[] = [];
@@ -45,7 +45,7 @@ export function supportRows(list: HTMLElement): void {
   }
   list.append(row(t('supportNew'), '', [button(t('supportNew'), () => openBox(null))]));
   list.append(el('baghead', t('supportMine')));
-  if (!tickets.length) { list.append(el('note', t('supportNone'))); return; }
+  if (!tickets.length) { list.append(emptyState('✎', t('supportNone'))); return; }
   for (const x of tickets) {
     const what = el('what');
     what.append(el('iname', `${L().fmt.supportTicket(x.id, t(KIND_KEY[x.kind]), x.at)} · ${t(STATE_KEY[x.state])}`), el('note', x.text.length > 120 ? x.text.slice(0, 119) + '…' : x.text));

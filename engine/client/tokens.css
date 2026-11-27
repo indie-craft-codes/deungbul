@@ -148,8 +148,11 @@ body {
 }
 /* 터치: 누르는 것은 44px 이상 (Apple HIG 44pt) */
 @media (pointer: coarse) { :root { --tap: 44px; } }
-/* 움직임 줄이기: 모든 움직임 시간이 거의 0 */
-@media (prefers-reduced-motion: reduce) { :root { --dur-fast: 1ms; --dur-base: 1ms; --dur-slow: 1ms; --dur-reward: 1ms; } }
+/* 움직임 줄이기: 모든 움직임 시간이 거의 0. 기기의 '동작 줄이기'를 따르되, 설정 창의 '움직임 줄이기'가 정하면 그것이 이긴다
+   (engine/client/motion.ts가 문서 뿌리에 data-still="1"/"0"을 단다: 스크립트가 돌기 전에는 기기의 것) */
+@media (prefers-reduced-motion: reduce) { :root:not([data-still="0"]) { --dur-fast: 1ms; --dur-base: 1ms; --dur-slow: 1ms; --dur-reward: 1ms; } }
+:root[data-still="1"] { --dur-fast: 1ms; --dur-base: 1ms; --dur-slow: 1ms; --dur-reward: 1ms; }
+:root[data-still="1"] *, :root[data-still="1"] *::before, :root[data-still="1"] *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 
 /* ---------- 단추 종류 넷 + 크기 둘 ----------
    .btn-primary   그 화면의 한 다음 행동 (금빛 채움). 한 화면에 하나, 많아야 둘. 틀의 맨 button과 같다

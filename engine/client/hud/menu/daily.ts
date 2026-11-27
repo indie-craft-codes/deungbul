@@ -3,7 +3,7 @@
 import { DAILY_IDS, PERIODS, dailyDef, dailyPeriod } from '../../../shared/defs';
 import { L, t } from '../../i18n';
 import { S } from '../../state';
-import { el, rewardText, row, ui } from './parts';
+import { doneMark, el, rewardText, row, ui } from './parts';
 
 const HEAD = { day: 'dailyDay', week: 'dailyWeek', month: 'dailyMonth' } as const;
 
@@ -20,7 +20,7 @@ export function drawDaily(): void {
     }
     for (const id of ids) {
       const def = dailyDef(id), done = d.got.includes(id);
-      ui.list.append(row(loc.gear.dailies[id], rewardText(def.r), [el('num', done ? t('dailyDone') : loc.fmt.have(d.prog[id] ?? 0, def.n))], done ? 'done' : ''));
+      ui.list.append(row(loc.gear.dailies[id], rewardText(def.r), [done ? doneMark(t('dailyDone')) : el('num', loc.fmt.have(d.prog[id] ?? 0, def.n))], done ? 'done' : ''));
     }
   }
   ui.list.append(el('note', t('dailyNote')));

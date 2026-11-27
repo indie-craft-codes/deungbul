@@ -46,7 +46,7 @@ function drawStages(list: HTMLElement): void {
     if (r.ch !== ch) { ch = r.ch; list.append(el('baghead', `${ch + 1}. ${chapterName(ch)}`)); }
     const mark = r.now ? t('stageNow') : r.cleared ? t('stageCleared') : r.open ? '' : t('stageLockedMark');
     const name = `${r.id}${r.boss ? ` · ${t('stageBoss')}` : ''}${mark ? ` · ${mark}` : ''}`;
-    const btns = [button(t('stageGo'), () => send({ t: 'stage', a: 'go', id: r.id }), !r.open)];
+    const btns = [button(t('stageGo'), () => send({ t: 'stage', a: 'go', id: r.id }), !r.open, t('whyStageLocked'))];
     if (view && r.sweep) btns.push(...sweepButtons(view, (n) => send({ t: 'stage', a: 'sweep', id: r.id, n })));
     list.append(row(name, loc.fmt.stageRec(r.rec, power()), btns, 'srow' + (r.now ? ' now' : '') + (r.open ? '' : ' locked')));
   }
@@ -63,7 +63,7 @@ function drawDungeonGo(list: HTMLElement): void {
   for (const id of ids) {
     const def = dungeonDef(id), v = dungeonGoView(def, id, keys, S.meta.daily.prog[runKey(id)] ?? 0, me.lv, !!S.dungeon.id);
     const note = [v.key ? loc.fmt.dungeonKeys(v.n, v.cap) : loc.fmt.dungeonRuns(v.n, v.cap), ...(v.why === 'lv' ? [loc.fmt.dungeonNeedLv(def.minLv)] : []), dungeonLabel(loc, id).info].filter(Boolean).join(' · ');
-    const btns = [button(t('dungeonGoBtn'), () => { send({ t: 'dungeonGo', id }); closeMenu(); }, !v.can)];
+    const btns = [button(t('dungeonGoBtn'), () => { send({ t: 'dungeonGo', id }); closeMenu(); }, !v.can, v.why === 'lv' ? loc.fmt.unlockLv(def.minLv) : v.why === 'none' ? loc.fmt.dungeonKeys(v.n, v.cap) : '')];
     if (dungeonSweepable(id)) {
       const k = keyView(def, id, keys)!, won = !!keys?.[id]?.won, view = sweepView(def.sweep, sweepHave(def.sweep?.cost), k.n)!;
       btns.push(...sweepButtons(view, (n) => send({ t: 'dungeonSweep', id, n }), !won || v.why === 'lv'));

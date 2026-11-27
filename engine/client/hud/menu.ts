@@ -19,7 +19,7 @@ import { drawBuild } from './menu/build';
 import { drawDaily } from './menu/daily';
 import { act, drawGear, onEnhanceResult, onGearResult } from './menu/gear';
 import { drawGuild } from './menu/guild';
-import { drawMail } from './menu/mail';
+import { drawMail, setMailToDaily } from './menu/mail';
 import { drawMarket, marketOpen, onMarketMsg } from './menu/market';
 import { button, setRedraw, ui } from './menu/parts';
 import { askRank, drawRank, rankTick } from './menu/rank';
@@ -89,7 +89,8 @@ export function renderMenu(soft = false): void {
     const b = button(x.label(), () => { const moved = cur !== x.id; cur = x.id; x.open?.(); renderMenu(); if (moved) ui.list.scrollTop = 0; });
     b.classList.toggle('on', x === on);
     // 찍을 점수나 받을 우편이 있으면 점(•)을 찍는다. 점은 단추 모서리에 얹어서(style.css) 생겨도 탭의 너비가 바뀌지 않는다
-    b.classList.toggle('dot', dotOf(`menu.${x.id}`) > 0 || !!x.dot?.());
+    // 탭의 원천(x.dot)이 있으면 지금 값을 바로 본다 (알림 점의 셈은 0.25초마다라, 받기 직후에 다시 그리면 꺼진 점이 남았다)
+    b.classList.toggle('dot', x.dot ? !!x.dot() : dotOf(`menu.${x.id}`) > 0);
     ui.tabs.append(b);
   });
   ui.tabs.scrollLeft = left;
@@ -122,6 +123,7 @@ export function toggleMenu(): void {
 }
 
 export function initMenu(): void {
+  setMailToDaily(() => openMenu('daily'));
   bindKey('m', toggleMenu);
   for (const x of allTabs) tabDot(x);
   bindDot(ui.btn, 'menu');

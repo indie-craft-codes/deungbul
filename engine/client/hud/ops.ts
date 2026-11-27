@@ -74,7 +74,7 @@ function renderGate(): void {
 export function opsLost(code: number): boolean {
   if (code !== 4004 && code !== 4005) return false;
   closedBy = code;
-  showGate(code === 4004 ? 'gateMaint' : 'gateJoinClosed', true);
+  showGate(code === 4004 ? 'gateMaint' : 'gateJoinClosed', true, 'maint');
   renderGate();
   clearTimeout(retry);
   retry = window.setTimeout(function again() {

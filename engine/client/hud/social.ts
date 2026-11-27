@@ -14,7 +14,7 @@ import { blockList, friendList, listenSocial, onSocialChange, talkState, unblock
 import { S } from '../state';
 import { setChatHidden, startWhisper } from './chat';
 import { addMenuTab, closeMenu, renderMenu } from './menu';
-import { button, el, field, row } from './menu/parts';
+import { button, el, emptyState, field, row, whyOf } from './menu/parts';
 import { addSetting, settingValue } from './settings';
 
 /** 기기에 둔 받기 설정을 서버에 알린다 (들어올 때마다: 서버의 것은 이 기기의 것을 따른다) */
@@ -29,7 +29,7 @@ export function socialRows(list: HTMLElement): void {
   const blocks = blockList();
   list.append(el('baghead', t('blockHead')));
   if (talkState().limited) list.append(el('note', t('talkLimitedNote')));
-  if (!blocks.length) { list.append(el('note', t('blockNone'))); return; }
+  if (!blocks.length) { list.append(emptyState('⦸', t('blockNone'))); return; }
   for (const b of blocks) list.append(row(b.name, '', [button(t('unblock'), () => unblock(b.r))]));
 }
 /** 설정 창을 다시 그릴지 가르는 값 */
@@ -50,9 +50,10 @@ function drawAge(): void {
     s.options[0].disabled = true;
     const now = new Date().getFullYear();
     for (let y = now; y >= now - 100; y--) s.add(new Option(String(y), String(y), false, y === ageY));
-    s.addEventListener('change', () => { ageY = Number(s.value) || 0; ok.disabled = !ageY; });
+    s.addEventListener('change', () => { ageY = Number(s.value) || 0; ok.disabled = !ageY; whyOf(ok, ok.disabled ? t('ageAskYear') : ''); });
     pick.append(s);
     ok.disabled = !ageY;
+    whyOf(ok, ok.disabled ? t('ageAskYear') : ''); // 흐린 까닭 (U2: 예제의 '확인'이 왜 회색인지 말이 없었다)
   } else {
     // 두 답을 같은 모양으로 나란히 (어느 쪽도 미리 골라 두지 않는다)
     for (const b of ['u', 'o'] as const) {
@@ -63,6 +64,7 @@ function drawAge(): void {
       pick.append(x);
     }
     ok.disabled = !ageBand;
+    whyOf(ok, ok.disabled ? t('ageAskBand') : '');
   }
 }
 function showAge(): void {
@@ -100,7 +102,7 @@ function drawFriends(list: HTMLElement): void {
   const ins = all.filter((f) => f.st === 'in'), outs = all.filter((f) => f.st === 'out'), oks = all.filter((f) => f.st === 'ok');
   if (ins.length) { list.append(el('baghead', t('friendsIn'))); for (const f of ins) list.append(friendRow(f)); }
   list.append(el('baghead', L().fmt.friendsHead(oks.length)));
-  if (!oks.length) list.append(el('note', t('friendsEmpty')));
+  if (!oks.length) list.append(emptyState('☺', t('friendsEmpty')));
   // 접속한 친구가 위로, 그다음 마지막 접속이 가까운 차례
   for (const f of [...oks].sort((a, b) => Number(b.id !== undefined) - Number(a.id !== undefined) || (b.seen ?? 0) - (a.seen ?? 0))) list.append(friendRow(f));
   if (outs.length) { list.append(el('baghead', t('friendsOut'))); for (const f of outs) list.append(friendRow(f)); }

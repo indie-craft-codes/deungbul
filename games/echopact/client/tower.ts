@@ -9,6 +9,7 @@ import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSide
 import {
   $, addSetting, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
   onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, switchMode, useStageScreens, type HomeKit,
+  setLoadingTips,
 } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { heroName, rarityName } from '@engine/client/i18n/ko';
@@ -202,6 +203,7 @@ function initSafety(): void {
 }
 
 export function initTower(): void {
+  setLoadingTips(() => [t('loadTip1'), t('loadTip2'), t('loadTip3')]); // 첫 로딩의 팁 (U2)
   mountPanel('hud', `
     <div id="towerAdv" class="tscreen tadv" hidden>
       <div class="tnav"><button type="button" id="taBack" data-i18n="scrBack"></button><h2 data-i18n="towerAdventure"></h2><button type="button" id="taHome" data-i18n="scrHome"></button></div>

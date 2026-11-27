@@ -1405,3 +1405,87 @@ body[data-lay="portrait"] .btlTop { top: calc(14px + env(safe-area-inset-top, 0p
 body[data-lay="landscape"] .btlTop { left: max(8px, env(safe-area-inset-left, 0px)); translate: none; width: auto; right: calc(max(8px, env(safe-area-inset-right, 0px)) + var(--ztr-w, 200px) + 8px); max-width: 620px; }
 /* 전투 화면: 튜토리얼 카드와 흘러가는 알림은 초상 칸 위에 */
 body.battleOn #tut.tutDown, body[data-lay].battleOn #tut:not(.tutUp) { bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important; }
+
+/* ---------- U2 피드백·상태 (docs/making-a-game.md 25절) ---------- */
+/* 명령의 상태 (hud/cmdstate.ts): 보냄(흐림 + 0.15초 뒤 돌림) · 됨(초록 테두리) · 안 됨(흔들림 + 붉은 한 줄) */
+button.is-busy { cursor: progress; opacity: .72; }
+.cmdSpin { display: inline-block; width: 1em; height: 1em; margin-left: 6px; vertical-align: -.15em; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; opacity: 0;
+  animation: cmdIn 1ms linear 150ms forwards, spin 800ms linear 150ms infinite; }
+@keyframes cmdIn { to { opacity: .9; } }
+@keyframes spin { to { rotate: 360deg; } }
+button.is-ok { box-shadow: 0 0 0 2px var(--c-good-line); transition: box-shadow var(--dur-base) var(--ease-out); }
+button.is-fail { box-shadow: 0 0 0 2px var(--c-bad-line); animation: cmdShake 300ms var(--ease-out); }
+@keyframes cmdShake { 20% { translate: -4px 0; } 40% { translate: 4px 0; } 60% { translate: -3px 0; } 80% { translate: 2px 0; } }
+button .why.cmdWhy, button:disabled .why.cmdWhy { color: var(--c-bad); white-space: normal; }
+/* 됨·잠김의 표 (parts.doneMark·lockMark): 이미 함은 체크와 낮은 대비(흐림 없이), 잠김은 자물쇠와 언제 열리는지 */
+.stDone { color: var(--c-good); font-weight: 700; font-size: var(--fs-sm); white-space: nowrap; }
+.stDone::before { content: '✓ '; }
+.stLock { color: var(--c-text-2); font-size: var(--fs-sm); }
+.stLock::before { content: '🔒 '; }
+.mrow.done .iname { color: var(--c-text-2); }
+/* 진행 막대 한 줄 (시즌의 다음 단계까지) */
+.progbar { display: block; height: 6px; border-radius: var(--r-pill); background: var(--c-fill-2); overflow: hidden; margin: 4px 0; }
+.progbar > span { display: block; height: 100%; background: var(--c-accent); transform-origin: left; transition: transform var(--dur-reward) var(--ease-out); }
+/* 빈 상태 (parts.emptyState): 그림 하나 + 한 줄 + 할 수 있는 일 */
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-2); padding: var(--sp-5) var(--sp-3); color: var(--c-text-2); }
+.empty .emptyIcon { font-size: var(--fs-3xl); line-height: 1; opacity: .7; }
+.empty p { margin: 0; font-size: var(--fs-sm); max-width: 32em; }
+.empty button { margin-top: var(--sp-1); }
+/* 잠긴 기능의 띠 (탭 머리: 언제 열리는지) */
+.lockBand { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px dashed var(--c-line); border-radius: var(--r-md); color: var(--c-text-2); font-size: var(--fs-sm); margin-bottom: var(--sp-2); }
+.lockBand::before { content: '🔒'; }
+
+/* 접속 화면 (hud/conn.ts): #gate[data-kind] wait·lost·maint·update·stop */
+#gate .card { align-items: stretch; text-align: center; }
+#gateIcon { align-self: center; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: var(--fs-xl); font-weight: 800; }
+#gate[data-kind="wait"] #gateIcon, #gate[data-kind="lost"] #gateIcon { border: 3px solid var(--c-fill-2); border-top-color: var(--c-accent); animation: spin 900ms linear infinite; }
+#gate[data-kind="lost"] #gateIcon { border-top-color: var(--c-warn); }
+#gate[data-kind="maint"] #gateIcon { background: var(--c-accent-bg); color: var(--c-warn); }
+#gate[data-kind="maint"] #gateIcon::before { content: '⚙'; }
+#gate[data-kind="update"] #gateIcon { background: var(--c-good-bg); color: var(--c-good); }
+#gate[data-kind="update"] #gateIcon::before { content: '↻'; }
+#gate[data-kind="stop"] #gateIcon { background: var(--c-bad-bg); color: var(--c-bad); }
+#gate[data-kind="stop"] #gateIcon::before { content: '!'; }
+#gateMsg { color: var(--c-text); font-size: var(--fs-lg); font-weight: 700; }
+#gateSub { white-space: pre-line; font-size: var(--fs-sm); }
+#gateBar progress { width: 100%; height: 6px; accent-color: var(--c-accent); }
+#gateBar[hidden], #gateSub[hidden], #gateTip[hidden], #gateReload[hidden] { display: none; }
+#gateTip { min-height: 2.6em; font-size: var(--fs-sm); color: var(--c-text-2); border-top: 1px solid var(--c-line); padding-top: var(--sp-2); }
+#gateTip::before { content: '💡 '; }
+#gate:has(#gateLoad:not([hidden])) #gateBar { display: none; }
+
+/* 축하 카드 (hud/reward.ts): 레벨 업(금빛 빛살)·받음·새 기능. 화면 가운데 위, 누르면 걷힌다 */
+.cel { position: fixed; left: 50%; top: calc(18% + env(safe-area-inset-top, 0px)); translate: -50% 0; z-index: var(--z-toast); display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer; }
+.cel[hidden] { display: none; }
+.celCard { position: relative; min-width: 220px; max-width: min(340px, calc(100vw - 32px)); padding: var(--sp-4) var(--sp-5); border-radius: var(--r-lg); background: var(--c-surface); border: 2px solid var(--c-accent); box-shadow: var(--shadow-2); text-align: center; display: flex; flex-direction: column; gap: var(--sp-1); animation: celIn var(--dur-slow) var(--ease-out); }
+.cel[data-kind="reward"] .celCard { border-color: var(--c-good-line); }
+.cel[data-kind="unlock"] .celCard { border-color: var(--c-info); }
+.celTitle { color: var(--c-title); font-size: var(--fs-lg); }
+.cel[data-kind="unlock"] .celTitle { color: var(--c-info); }
+.celBig { font-size: var(--fs-3xl); font-weight: 800; color: var(--c-text); line-height: 1.1; }
+.celSub { margin: 0; color: var(--c-text-2); font-size: var(--fs-sm); }
+.celGo { margin-top: var(--sp-2); }
+.celRays { position: absolute; width: 360px; height: 360px; border-radius: 50%; pointer-events: none; opacity: .5;
+  background: repeating-conic-gradient(var(--c-accent) 0deg 8deg, transparent 8deg 24deg);
+  mask: radial-gradient(circle, #000 18%, transparent 68%); -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%); animation: celSpin 6s linear infinite, celFade var(--dur-reward) var(--ease-out); }
+.cel[data-kind="reward"] .celRays { background: repeating-conic-gradient(var(--c-good) 0deg 6deg, transparent 6deg 30deg); width: 280px; height: 280px; opacity: .35; }
+.cel[data-kind="unlock"] .celRays { background: repeating-conic-gradient(var(--c-info) 0deg 6deg, transparent 6deg 30deg); width: 300px; height: 300px; opacity: .35; }
+.cel.still .celRays { display: none; }
+@keyframes celIn { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
+@keyframes celSpin { to { rotate: 360deg; } }
+@keyframes celFade { from { opacity: 0; scale: .6; } }
+/* 떠오르는 +n과 숫자 굴리기 (reward.ts의 floatDelta·showNumber) */
+.floatNum { position: fixed; z-index: var(--z-tip); translate: 0 -50%; pointer-events: none; font-weight: 800; font-size: var(--fs-md); font-variant-numeric: tabular-nums; padding: 0 var(--sp-2); border-radius: var(--r-pill); background: rgba(var(--c-surface-rgb), .9); border: 1px solid var(--c-line); animation: floatUp 1100ms var(--ease-out) forwards; }
+.floatNum.left { translate: -100% -50%; }
+.floatNum.up { color: var(--c-good); }
+.floatNum.down { color: var(--c-bad); }
+@keyframes floatUp { from { opacity: 0; transform: translateY(6px); } 12%, 70% { opacity: 1; } to { opacity: 0; transform: translateY(-28px); } }
+@keyframes floatDown { from { opacity: 0; transform: translateY(-6px); } 12%, 70% { opacity: 1; } to { opacity: 0; transform: translateY(28px); } }
+.floatNum.sink { animation-name: floatDown; }
+.numUp { animation: numUp var(--dur-reward) var(--ease-out); }
+.numDown { animation: numDown var(--dur-reward) var(--ease-out); }
+@keyframes numUp { 0%, 60% { color: var(--c-good); } }
+@keyframes numDown { 0%, 60% { color: var(--c-bad); } }
+:root[data-still="1"] #opsRoll span { animation: none; padding: 0 8px; white-space: normal; }
+:root[data-still="1"] #opsRoll { white-space: normal; }
+.cel[data-kind="reward"] .celBig { font-size: var(--fs-xl); }

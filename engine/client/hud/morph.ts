@@ -17,7 +17,7 @@ import { hasModule } from '../mods';
 import { send } from '../net';
 import { makeHumanoid } from '../scene/models';
 import { addMenuTab } from './menu';
-import { button, el, redraw, row, span } from './menu/parts';
+import { button, el, emptyState, redraw, row, span } from './menu/parts';
 import { addNotices } from './notify';
 
 let defs: CharDef[] = [];
@@ -121,7 +121,7 @@ function drawMorph(list: HTMLElement): void {
     head.append(span('mtag', t('morphNow')), ` ${d ? charText(d).name : me.on} · ${loc.fmt.morphLeft(me.left)}`);
     list.append(row(head, '', [button(t('morphOffBtn'), () => send({ t: 'morph', a: 'off' }))], 'mrow morphHead'));
   } else if (me.cd > 0) list.append(el('note', loc.fmt.morphCd(me.cd)));
-  if (!owned.length) { list.append(el('note', t('morphNone'))); return; }
+  if (!owned.length) { list.append(emptyState('✦', t('morphNone'))); return; }
   for (const d of owned) {
     const name = tinted(el('iname'), d.rarity), pic = portrait(d);
     if (pic) { const img = document.createElement('img'); img.className = 'morphPic'; img.src = pic; img.alt = ''; name.append(img); }

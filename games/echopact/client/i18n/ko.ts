@@ -51,6 +51,10 @@ export const koNames: ContentNames = {
 
 export const koGame = {
   ui: {
+    // 첫 로딩의 팁 (U2: 틀의 setLoadingTips)
+    loadTip1: '울림 조각이 모이면 울림 샘에서 메아리를 부릅니다. 조각은 단계와 울림골에서 모입니다.',
+    loadTip2: '단계에서 막히면 메아리의 레벨을 올리거나 편성을 바꿔 보세요.',
+    loadTip3: '울림골에서 자동 사냥을 켜 두면 탑에 가 있는 동안에도 대역이 사냥을 이어 갑니다.',
     // 틀 문장의 '영웅'을 이 게임의 말 '메아리'로 (뽑기 결과·편성·영웅 목록)
     heroNone: '아직 메아리가 없습니다. 울림 샘에서 메아리를 불러 보세요.',
     gachaRatesHero: '메아리별 확률',

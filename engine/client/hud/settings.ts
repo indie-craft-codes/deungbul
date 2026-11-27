@@ -7,7 +7,8 @@ import { setCalm } from '../fx';
 import { L, isTouch, onLangChange, t, type UiKey } from '../i18n';
 import { platform } from '../platform';
 import { hasMusic } from '../assets';
-import { onSoundChange, setSoundMix, setSoundOn, soundMix, soundOn } from '../sound';
+import { onSoundChange, setSoundMix, setSoundOn, setUiSoundOn, soundMix, soundOn, uiSoundOn } from '../sound';
+import { setStillMotion, stillMotion } from '../motion';
 import { S } from '../state';
 import { legalRows, myDataRows, myDataSig } from './legal';
 import { addMenuTab, renderMenu } from './menu';
@@ -56,6 +57,7 @@ const SCALED = ['hud', 'gate', 'classPick', 'tut', 'legal', 'keepSafe'];
 function apply(): void {
   if (view) view.setQuality(cur.gfx, platform().display.pixelRatio());
   if (cur.calm !== null) setCalm(cur.calm);
+  setStillMotion(cur.motion ?? null);
   for (const id of SCALED) {
     const e = $(id) as (HTMLElement & { style: CSSStyleDeclaration & { zoom?: string } }) | null;
     if (e) e.style.zoom = cur.ui === 1 ? '' : String(cur.ui); // 배율 1이면 아무것도 걸지 않는다 (예전과 같다)
@@ -89,6 +91,7 @@ function drawSettings(list: HTMLElement): void {
   // 소리
   list.append(el('baghead', t('setSound')));
   list.append(row(t('setSound'), '', [onOff(soundOn(), setSoundOn)]));
+  list.append(row(t('setUiSound'), '', [onOff(uiSoundOn(), setUiSoundOn)])); // 누름·됨·보상의 작은 소리 (sound.ts의 ui.*)
   const mix = soundMix();
   list.append(row(t('volSfx'), '', [slider(t('volSfx'), Math.round(mix.sfx * 100), 0, 100, 5, (v) => setSoundMix({ sfx: v / 100 }, false), (v) => setSoundMix({ sfx: v / 100 }))]));
   if (hasMusic()) list.append(row(t('volMusic'), '', [slider(t('volMusic'), Math.round(mix.music * 100), 0, 100, 5, (v) => setSoundMix({ music: v / 100 }, false), (v) => setSoundMix({ music: v / 100 }))]));
@@ -105,6 +108,8 @@ function drawSettings(list: HTMLElement): void {
   const calmNow = cur.calm ?? (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   // '화면 흔들림 [켬][끔]': 켬이 흔들림이 있는 것 (예전 '흔들림 끄기 [켬]'은 이중 부정이었다). 저장 값 calm은 그대로 (켬 = calm false)
   list.append(row(t('setCalm'), '', [onOff(!calmNow, (v) => set((s) => { s.calm = !v; }))]));
+  // 움직임 줄이기: 보상 연출의 빛살·숫자 굴리기·떠오르는 +n·돌림 (engine/client/motion.ts). 처음은 기기의 '동작 줄이기'
+  list.append(row(t('setMotion'), '', [onOff(stillMotion(), (v) => set((s) => { s.motion = v; }))]));
   list.append(row(t('setUi'), '', [chips(UI_STEPS.map((u) => ({ text: `${Math.round(u * 100)}%`, on: cur.ui === u, click: () => set((s) => { s.ui = u; }) })))]));
   const fs = platform().display.fullscreen;
   if (platform().has('display.fullscreen')) list.append(row(t('setFullscreen'), '', [onOff(fs.is(), (v) => { void fs.set(v).then(() => renderMenu()); })]));
@@ -156,7 +161,7 @@ function captureKey(ev: KeyboardEvent): void {
 export function initSettings(): void {
   cur = readSettings(platform().storage.get(STORE_KEY), cap());
   apply();
-  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig(), supportSig()] });
+  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), uiSoundOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig(), supportSig()] });
   window.addEventListener('keydown', captureKey, { capture: true });
   onSoundChange(() => renderMenu());
   onLangChange(() => renderMenu());

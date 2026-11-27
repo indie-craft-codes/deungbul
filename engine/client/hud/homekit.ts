@@ -12,6 +12,7 @@ import { bindDot } from './dots';
 import { dropScreen, openScreen } from './screens';
 import { mountPanel } from './shell';
 import { platform } from '../platform';
+import { stillMotion } from '../motion';
 
 export interface HomeLead { img?: string; name: string; info?: string; color?: string }
 export interface HomeButton {
@@ -91,7 +92,7 @@ export function makeHome(o: HomeOpts): HomeKit {
   side.append(evBox, banners, sideSlot);
   // 이벤트 배너: 지금 보이는 차례, 저절로 넘기기, 밀어서 넘기기
   let evList: readonly HomeEvent[] = [], evAt = 0, evTimer = 0, evKey = '';
-  const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduced = stillMotion();
   const showEv = (i: number) => {
     if (!evList.length) return;
     evAt = (i + evList.length) % evList.length;

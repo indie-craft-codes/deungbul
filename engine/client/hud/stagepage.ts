@@ -13,6 +13,7 @@ import { L, onLangChange, t } from '../i18n';
 import { heroName } from '../i18n/ko';
 import { uiText } from '../i18n/names';
 import { send } from '../net';
+import { uiSound } from '../sound';
 import { myHeroes, mySquad } from './collect';
 import { openMenu } from './menu';
 import { closeScreen, dropScreen, openScreen } from './screens';
@@ -196,6 +197,8 @@ function showResult(id: string, win: boolean, first: boolean, mask: number): voi
   if (next) btns.append(btn('stgo', L().fmt.resNext(next.id), () => { hideResult(); (o.next ?? o.go)(next.id); }));
   box.append(btns);
   box.hidden = false;
+  // 보상 연출의 소리 (U2): 깸이면 별·보상 칩이 뒤집히는 동안 '받음', 지면 낮은 소리 (화면 효과음)
+  window.setTimeout(() => uiSound(win ? 'ui.reward' : 'ui.fail'), win ? 450 : 0);
   openScreen('stResult', { kind: 'sheet', el: box, close: () => { box.hidden = true; clearInterval(resTimer); } });
   // 자동 진행: 다음 단계가 곧 시작한다 (서버의 nextS). 'n초 뒤'와 멈춤
   clearInterval(resTimer);

@@ -69,3 +69,10 @@ export { bindDot, dotOf, dotParent, setDot } from './hud/dots';
 // 장르별 기본 화면 묶음 B: 수집형 홈 키트, 단계 정보 창·편성 확인·결과 창 (docs/making-a-game.md '수집형 홈과 단계 화면')
 export { makeHome, type HomeBanner, type HomeButton, type HomeKit, type HomeLead, type HomeOpts } from './hud/homekit';
 export { closeStageResult, openCheck, openStageInfo, useStageScreens, type StageGrowPath, type StageScreenOpts } from './hud/stagepage';
+// U2 피드백·상태 (docs/making-a-game.md 25절): 명령의 상태, 빈 상태·이미 함·잠김, 접속 화면의 팁, 보상 연출·새 기능 열림, 화면 효과음, 움직임 줄이기
+export { quietCommands, cmdWaiting } from './hud/cmdstate';
+export { doneMark, emptyState, lockBand, lockMark, progBar, whyOf } from './hud/menu/parts';
+export { setLoadingTips } from './hud/conn';
+export { addUnlock, celebrate, floatDelta, showNumber, unlockHint, type CelebrateOpts, type UnlockDef } from './hud/reward';
+export { gachaSound, uiSound, uiSoundOn, setUiSoundOn, UI_SOUNDS, type UiSound } from './sound';
+export { stillMotion } from './motion';

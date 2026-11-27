@@ -9,6 +9,8 @@ import { L, LOCALES, onLangChange, setLang, t } from '../i18n';
 import type { UiKey } from '../i18n/ko';
 import { S } from '../state';
 import { itemIcon } from './icons';
+import { connStop, gateKind, type GateKind } from './conn';
+import { showNumber } from './reward';
 
 /** 재화의 그림('cur:gold', 'cur:second')을 글자 앞에 한 번 붙인다. 게임의 모듈이 시트를 등록한 뒤에야 있으므로 그릴 때마다 보고, 붙였으면 그만 본다 */
 const placed = new Map<string, HTMLElement>();
@@ -34,13 +36,22 @@ let ui: Record<'hpb' | 'xpb' | 'hpt' | 'lv' | 'status' | 'myName' | 'tgt' | 'tna
 let skillUi: { name: HTMLElement; cd: HTMLElement; time: HTMLElement; button: HTMLButtonElement }[] = [];
 
 // ---------- 접속 화면 ----------
-export function showGate(msg: UiKey, retry: boolean): void {
+/**
+ * 접속 화면을 보인다. kind는 모양(돌림·끊김·점검·업데이트·멈춤: hud/conn.ts). 주지 않으면 글로 고른다 (접속 중은 wait, 그 밖은 stop).
+ * 끊겨 다시 잇는 중의 화면은 hud/conn.ts의 connLost가 그린다
+ */
+export function showGate(msg: UiKey, retry: boolean, kind?: GateKind): void {
   const el = $('gateMsg');
   el.setAttribute('data-i18n', msg); // 언어를 바꿔도 따라 바뀌게 한다
   el.textContent = t(msg);
   $('gate').hidden = false;
   $('hud').hidden = true;
-  $('joinBtn').hidden = !retry;
+  const btn = $<HTMLButtonElement>('joinBtn');
+  btn.hidden = !retry; btn.disabled = false;
+  if (retry && btn.getAttribute('data-i18n') === 'connNow') { btn.setAttribute('data-i18n', 'reconnect'); btn.textContent = t('reconnect'); }
+  const k = kind ?? (msg === 'connecting' ? 'wait' : 'stop');
+  if (k !== 'wait' && k !== 'lost') connStop(); // 점검·업데이트·밀려남: 끊김의 셈을 멈춘다
+  gateKind(k);
 }
 export function hideGate(): void {
   $('gate').hidden = true;
@@ -136,6 +147,8 @@ export function hudFrame(now: number): void {
   });
 }
 
+/** 재화 숫자를 마지막으로 쓴 언어 (언어가 바뀌면 굴리지 않고 글만 다시 쓴다) */
+let numLang = '';
 /** 1초에 몇 번이면 되는 것: 숫자 글자. */
 export function hudSlow(_now: number): void {
   const loc = L(), me = S.me;
@@ -145,12 +158,15 @@ export function hudSlow(_now: number): void {
   // 칸마다 그 모듈을 고른 게임에만 있다 (뼈대의 data-mod)
   if (ui.hpt) ui.hpt.textContent = `${me.hp} / ${me.maxHp}`;
   if (ui.lv) ui.lv.textContent = hasModule('growth') ? loc.fmt.level(me.lv, isClassId(me.cls) ? loc.classes[me.cls].name : '') : isClassId(me.cls) ? loc.classes[me.cls].name : '';
-  if (ui.gold) ui.gold.textContent = loc.fmt.gold(me.gold);
+  // 바뀐 재화는 굴리고 곁에 +n (U2: hud/reward.ts). 내 상태를 받기 전(0 → 가진 것)·언어를 바꾼 때는 글만
+  const live = me.ready && numLang === loc.code;
+  numLang = loc.code;
+  if (ui.gold) showNumber(ui.gold, me.gold, loc.fmt.gold, live);
   // 두 번째 재화: 이름표에 currency2가 있는 게임만. 자기 표시를 따로 그리는 게임(등불지기)은 css로 #coin을 감춘다
   if (ui.coin) {
     const coin = loc.fmt.coinHave(me.sparks);
     ui.coin.hidden = !coin;
-    ui.coin.textContent = coin;
+    if (coin) showNumber(ui.coin, me.sparks, loc.fmt.coinHave, live); else ui.coin.textContent = '';
   }
   placeCurrencyIcons();
 }

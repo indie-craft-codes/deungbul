@@ -18,8 +18,8 @@ import { makeHumanoid, type HumanoidLook, type Model } from '../scene/models';
 import { S } from '../state';
 import { bannerPity, heroRows, openBanners, rateTable, squadToggle, type RateRow } from './collectcalc';
 import { drawFormation, drawHeroDetail, growthSig, heroDetailShown, initHeroGrowth, myHeroGear, openHero } from './herogrow';
-import { addMenuTab } from './menu';
-import { button, el, redraw, row, span } from './menu/parts';
+import { addMenuTab, openMenu } from './menu';
+import { button, el, emptyState, redraw, row, span } from './menu/parts';
 import { addNotices } from './notify';
 import { confirmSpend } from './confirm';
 import { drawCardList, redrawCard, type CardData } from './cards';
@@ -64,7 +64,7 @@ const roleName = (id: string) => uiText.get(heroRole(id).name);
 // ---------- 영웅 탭 ----------
 function drawHeroes(list: HTMLElement): void {
   if (drawHeroDetail(list, heroes)) return; // 영웅 상세를 펼쳤다 (성장을 켠 게임: hud/herogrow.ts)
-  if (!Object.keys(heroes).length) list.append(el('note', t('heroNone')));
+  if (!Object.keys(heroes).length) list.append(emptyState('✦', t('heroNone'), hasModule('gacha') ? { label: t('emptyToGacha'), onClick: () => openMenu('gacha') } : undefined));
   drawTradeHead(list);
   // 격자·정렬·거르기·카드 상세 (hud/cards.ts)
   drawCardList(list, cardData, () => redraw());
@@ -120,7 +120,7 @@ function drawRates(box: HTMLElement, id: string): void {
 }
 function drawGacha(list: HTMLElement): void {
   const loc = L(), ids = openBanners(gacha);
-  if (!ids.length) list.append(el('note', t('gachaNoOpen')));
+  if (!ids.length) list.append(emptyState('✧', t('gachaNoOpen')));
   for (const id of ids) {
     const b = BANNER_TABLE[id], box = el('gbanner' + (b.pickup ? ' pick' : ''));
     box.append(el('ttitle', uiText.get(b.name)));
@@ -133,6 +133,7 @@ function drawGacha(list: HTMLElement): void {
     // 모자라서 흐린 단추는 왜 안 되는지 '가진 것 / 값'으로 보인다
     one.append(t('gachaOne'), document.createElement('small')); one.lastElementChild!.textContent = have < b.one ? loc.fmt.gachaShort(have, b.one, b.cur) : loc.fmt.gachaCost(b.one, b.cur);
     ten.append(t('gachaTen'), document.createElement('small')); ten.lastElementChild!.textContent = have < b.ten ? loc.fmt.gachaShort(have, b.ten, b.cur) : loc.fmt.gachaCost(b.ten, b.cur);
+    one.classList.toggle('has-why', have < b.one); ten.classList.toggle('has-why', have < b.ten); // 까닭이 있는 흐린 단추는 덜 흐리게 (U1 .has-why)
     btns.append(one, ten);
     // 이 배너의 재화를 얼마나 가졌는가 (메뉴 머리의 재화는 골드뿐이다)
     box.append(el('gleft ghave', loc.fmt.gachaHave(have, b.cur)), btns);
@@ -147,7 +148,7 @@ function drawGacha(list: HTMLElement): void {
   }
   drawSelect(list);
   list.append(el('baghead', t('gachaHistory')));
-  if (!gacha.log.length) list.append(el('note', t('gachaNoHistory')));
+  if (!gacha.log.length) list.append(emptyState('⟳', t('gachaNoHistory')));
   const fmtAt = (ms: number) => { const d = new Date(ms); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
   for (const g of gacha.log.slice(0, GACHA_RULES.history)) {
     const line = el('glog'), who = document.createElement('b');
@@ -189,7 +190,7 @@ function drawSquad(list: HTMLElement): void {
     list.append(slots);
   }
   const owned = heroRows(heroes, 0, squad.ids, myHeroGear()).filter((r) => r.owned);
-  if (!owned.length) list.append(el('note', t('squadNone')));
+  if (!owned.length) list.append(emptyState('✦', t('squadNone'), hasModule('gacha') ? { label: t('emptyToGacha'), onClick: () => openMenu('gacha') } : undefined));
   for (const r of owned) {
     const name = tinted(el('iname', heroName(r.id)), r.rarity);
     name.append(span('hstar', stars(r.stars)));

@@ -160,11 +160,16 @@ export const SKELETON = `
 
   <div id="flash"></div>
 
-  <div id="gate">
-    <form class="card" id="joinForm" autocomplete="off">
+  <div id="gate" data-kind="wait">
+    <form class="card" id="joinForm" autocomplete="off" aria-live="polite">
       <h1 data-i18n="title"></h1>
+      <i id="gateIcon" aria-hidden="true"></i>
       <p id="gateMsg" data-i18n="connecting"></p>
+      <p id="gateSub" class="note" hidden></p>
+      <div id="gateBar"><progress id="gateProg" max="1" value="0"></progress></div>
+      <p id="gateTip" class="note" hidden></p>
       <button type="submit" id="joinBtn" data-i18n="reconnect" hidden></button>
+      <button type="button" id="gateReload" class="btn-secondary" data-i18n="reload" hidden></button>
     </form>
   </div>
 
