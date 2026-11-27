@@ -38,6 +38,11 @@ export interface ModeRules {
    * 기본 false (떠나면 회차를 닫는다)
    */
   stageStay?: boolean;
+  /**
+   * 돌아옴 요약 (묶음 D): 다른 모드에서 돌아오면 그쪽에서 그동안 일어난 일(잡은 수·얻은 재화·쓴 물약·깬 단계·딴 별·안전장치)을 카드 한 장으로 (메시지 modeBack).
+   * minS초(기본 10)보다 짧게 떠났거나 아무 일도 없었으면 보내지 않는다. 없으면 보내지 않는다 (예전과 같다)
+   */
+  backCard?: boolean | { minS?: number };
 }
 export const MODE_RULE_VIEW: ModeRules = MODE_RULES;
 export const modeList = (): readonly ModeDef[] => MODE_RULE_VIEW.list;
@@ -62,5 +67,14 @@ export interface SideGot { gold: number; sparks: number; exp: number }
 export interface FieldSide { hp: number; max: number; state: 'hunt' | 'resting' | 'retreat' | 'stop' | 'down'; got: SideGot; kills: number }
 /** 보고 있지 않은 단계의 상황 (들판 모드에 있는 동안 단계가 뒤에서 이어 갈 때): 지금 단계, 회차의 상태, 그동안 깬 수, 얻은 것, 자동 진행 */
 export interface StageSide { id: string; state: 'fight' | 'gap' | 'clear' | 'fail' | 'lobby'; cleared: number; got: SideGot; auto: boolean }
+/**
+ * 돌아옴 요약 (메시지 modeBack, MODE_RULES.backCard): 돌아온 모드(id)에서 떠나 있던 초(s), 그쪽에서 그동안 —
+ * 들판: 잡은 수(kills)·얻은 것(got)·쓴 물약(pots)·안전장치가 멈추거나 물린 수(safe)·쓰러진 수(down) / 단계: 깬 수(n)와 처음·마지막 단계(from·to)·딴 별(stars)·얻은 것(got)
+ */
+export interface ModeBack { id: string; s: number; side: 'field' | 'stage'; kills?: number; pots?: number; safe?: number; down?: number; n?: number; from?: string; to?: string; stars?: number; got: SideGot }
+/** 요약을 보낼 만한가: 시간이 minS 이상이고 무엇이든 일어났다 */
+export function backWorth(b: ModeBack, minS: number): boolean {
+  return b.s >= minS && !!(b.kills || b.pots || b.safe || b.down || b.n || b.stars || b.got.gold || b.got.sparks || b.got.exp);
+}
 /** 개인 상태 'modeSide': 다른 쪽의 상황 (그쪽이 돌고 있지 않으면 null) */
 export interface ModeSideMe { field: FieldSide | null; stage: StageSide | null }

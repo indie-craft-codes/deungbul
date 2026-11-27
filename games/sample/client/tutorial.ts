@@ -1,5 +1,5 @@
 // 이 게임의 튜토리얼과 설정 칸 (틀의 addTutorial, addSetting: engine/client/hud/tutorial.ts, settings.ts).
-// 튜토리얼은 직업을 고른 뒤에 한 번 뜬다: 걷기 → 공격 → 메뉴 → 모닥불. 다 보거나 건너뛰면 이 기기에서는 다시 뜨지 않고, 메뉴의 설정 탭에서 다시 볼 수 있다.
+// 튜토리얼은 직업을 고른 뒤에 한 번 뜬다: 이름 짓기(튜토리얼 키트의 kind 'name': 나중에로 넘길 수 있다) → 걷기 → 공격 → 메뉴 → 모닥불. 다 보거나 건너뛰면 이 기기에서는 다시 뜨지 않고, 메뉴의 설정 탭에서 다시 볼 수 있다.
 import { addSetting, addTutorial, enableOfflineCache, onTutorial, preloadLater, S, setGuestReminder } from '@engine/client';
 import { t } from '@engine/client/i18n';
 
@@ -9,6 +9,7 @@ export function initTutorial(): void {
     label: () => t('tutBasics'),
     start: () => !!S.me && S.me.cls !== '',
     steps: [
+      { id: 'name', kind: 'name', text: 'tkNameTitle' },
       { id: 'move', text: 'tutMove', until: { cmd: 'move' } },
       { id: 'attack', text: 'tutAttack', until: { cmd: 'attack' } },
       { id: 'menu', text: 'tutMenu', target: 'menuBtn', until: { key: 'm', test: () => !document.getElementById('menu')?.hidden } },

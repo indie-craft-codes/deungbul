@@ -18,6 +18,7 @@ import { myHeroes, mySquad } from './collect';
 import { openMenu } from './menu';
 import { closeScreen, dropScreen, openScreen } from './screens';
 import { myStage } from './stagebar';
+import { myStamina, stageFuel, staminaGate, staminaName } from './stamina';
 
 export interface StageGrowPath { label: string; sub?: string; onClick: () => void }
 export interface StageScreenOpts {
@@ -37,6 +38,8 @@ export interface StageScreenOpts {
   grow?: () => readonly StageGrowPath[];
   /** 결과 창을 띄울 때인가 (그 단계를 보고 있을 때만: 기본 늘) */
   showResult?: () => boolean;
+  /** 참이면 자동 진행으로 다음 단계가 시작해도 결과 창을 닫지 않는다 (튜토리얼이 결과 창을 설명하는 동안: 묶음 D) */
+  holdResult?: () => boolean;
 }
 
 let opts: StageScreenOpts | null = null;
@@ -86,6 +89,15 @@ function powerRow(rec: number): HTMLElement {
   return row;
 }
 const section = (title: string, ...kids: HTMLElement[]): HTMLElement => { const s = mk('section', 'stsec'); s.append(mk('h4', '', title), ...kids); return s; };
+/** 스태미나의 값 줄 (stamina 모듈을 쓰는 게임만: '소모 숨결 6', 모자라면 붉게) */
+function costRow(s: StageRef): HTMLElement | null {
+  const n = stageFuel(s.def.cost);
+  if (!n) return null;
+  const have = myStamina()?.n ?? 0, row = mk('p', 'stcost' + (have < n ? ' low' : ''), `⚡ ${L().fmt.staCost(staminaName(), n)} · ${L().fmt.staChip(have, myStamina()?.max ?? 0, 0)}`);
+  return row;
+}
+/** 출격 문: 값이 모자라면 부족 창을 열고 보내지 않는다 */
+const fueled = (id: string, fn: () => void): void => { const s = refOf(id); if (!s || staminaGate(stageFuel(s.def.cost))) fn(); };
 
 // ---------- 단계 정보 창 ----------
 let infoId = '';
@@ -102,6 +114,8 @@ function drawInfo(): void {
   if (!cleared(s) && s.def.first) rw.append(...rewardChips(s.def.first, true));
   rw.append(...rewardChips(s.def.reward, false));
   box.append(section(cleared(s) || !s.def.first ? t('stRepeat') : `${t('stFirst')} · ${t('stRepeat')}`, rw));
+  const cost = costRow(s);
+  if (cost) box.append(cost);
   const btns = mk('div', 'stbtns');
   const sweep = STAGE_RULE_VIEW.sweep;
   if (sweep && stageSweepable(s) && cleared(s)) {
@@ -126,7 +140,7 @@ let checkId = '', checkSig = '';
 function drawCheck(force = false): void {
   const box = $('stCheck')!, s = refOf(checkId);
   if (!s || !opts || box.hidden) return;
-  const sq = mySquad(), sig = JSON.stringify([sq, myHeroes(), L().code, checkId]);
+  const sq = mySquad(), sig = JSON.stringify([sq, myHeroes(), L().code, checkId, myStamina()?.n]);
   if (!force && sig === checkSig) return;
   checkSig = sig;
   box.textContent = '';
@@ -144,9 +158,11 @@ function drawCheck(force = false): void {
   if (!sq.ids.length) grid.append(mk('div', 'stmate empty', t('sqEmpty')));
   box.append(head, enemyList(s), powerRow(s.def.rec), grid);
   if (sq.power < s.def.rec) box.append(mk('p', 'stweak', t('sqWeak')));
+  const cost = costRow(s);
+  if (cost) box.append(cost);
   const btns = mk('div', 'stbtns');
   const go = opts.go;
-  btns.append(btn('plain', t('sqChange'), () => (opts?.change ?? (() => openMenu('squad')))()), btn('stgo', t('stGo'), () => { closeScreen('stCheck'); closeScreen('stInfo'); go(s.id); }));
+  btns.append(btn('plain', t('sqChange'), () => (opts?.change ?? (() => openMenu('squad')))()), btn('stgo', t('stGo'), () => fueled(s.id, () => { closeScreen('stCheck'); closeScreen('stInfo'); go(s.id); })));
   box.append(btns);
 }
 /** 편성 확인 페이지를 연다 */
@@ -193,8 +209,8 @@ function showResult(id: string, win: boolean, first: boolean, mask: number): voi
   const next = win ? STAGES[s.i + 1] : undefined, o = opts;
   const btns = mk('div', 'stbtns res');
   btns.append(btn('plain', t('resHome'), () => { hideResult(); o.home(); }));
-  btns.append(btn(win ? 'plain' : 'stgo', win ? t('resAgain') : t('resRetry'), () => { hideResult(); (o.again ?? o.go)(id); }));
-  if (next) btns.append(btn('stgo', L().fmt.resNext(next.id), () => { hideResult(); (o.next ?? o.go)(next.id); }));
+  btns.append(btn(win ? 'plain' : 'stgo', win ? t('resAgain') : t('resRetry'), () => fueled(id, () => { hideResult(); (o.again ?? o.go)(id); })));
+  if (next) btns.append(btn('stgo', L().fmt.resNext(next.id), () => fueled(next.id, () => { hideResult(); (o.next ?? o.go)(next.id); })));
   box.append(btns);
   box.hidden = false;
   // 보상 연출의 소리 (U2): 깸이면 별·보상 칩이 뒤집히는 동안 '받음', 지면 낮은 소리 (화면 효과음)
@@ -236,7 +252,7 @@ export function useStageScreens(o: StageScreenOpts): void {
   // 자동 진행으로 다음 단계가 시작했으면 결과 창을 닫는다 (이긴 창만: 진 창은 사람이 고른다)
   onSlow(() => {
     const run = myStage()?.run;
-    if (resWin && run && run.id !== resId && run.state === 'fight') hideResult();
+    if (resWin && run && run.id !== resId && run.state === 'fight' && !opts?.holdResult?.()) hideResult();
     drawCheck();
   });
   onMsg('me', (m) => { if (m.k === 'stage' && !$('stInfo')!.hidden) drawInfo(); });

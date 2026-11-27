@@ -35,7 +35,7 @@ const readArgs = (a: unknown[]): (string | number)[] => a.filter((v): v is strin
  */
 function readReward(raw: unknown): Reward {
   const d = raw as Record<string, unknown>, r: Reward = {};
-  for (const k of ['gold', 'exp', 'sparks'] as const) if (num(d[k]) && d[k] >= 1) r[k] = Math.min(REWARD_MAX, Math.floor(d[k]));
+  for (const k of ['gold', 'exp', 'sparks', 'stamina'] as const) if (num(d[k]) && d[k] >= 1) r[k] = Math.min(REWARD_MAX, Math.floor(d[k]));
   if (Array.isArray(d.gear)) {
     const gear = d.gear.filter(GearSys.valid).slice(0, MAIL_GEAR_MAX);
     if (gear.length) r.gear = gear;
@@ -196,11 +196,14 @@ export class MailSys {
         items += got;
         if (n > got) restItems[item] = n - got;
       }
-      if (!restGear.length && !Object.keys(restItems).length) continue;
+      // 스태미나 (stamina 모듈): 쌓을 수 있는 끝까지 받고 나머지는 우편에 남긴다
+      const stam = m.r.stamina ?? 0, gotStam = stam > 0 && g.has('stamina') ? g.stamina.give(p, stam) : 0, restStam = stam - gotStam;
+      if (!restGear.length && !Object.keys(restItems).length && restStam <= 0) continue;
       // 골드·경험치·두 번째 재화는 이미 받았으므로 남은 물건만 적어 둔다. 보상 값을 여러 우편이 함께 쓸 수 있어 새로 만든다
       m.r = {};
       if (restGear.length) m.r.gear = restGear;
       if (Object.keys(restItems).length) m.r.items = restItems;
+      if (restStam > 0) m.r.stamina = restStam;
       left.add(m);
     }
     p.mail = p.mail.filter((x) => !take.includes(x) || left.has(x));

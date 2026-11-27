@@ -65,6 +65,7 @@ import { Wallet } from './systems/wallet';
 import { Chars } from './systems/chars';
 import { Morph } from './systems/morph';
 import { Modes } from './systems/modes';
+import { Stamina } from './systems/stamina';
 import { Clock } from './systems/clock';
 import { Live } from './systems/live';
 import { Goods, hasGoodsDefs } from './systems/goods';
@@ -115,6 +116,8 @@ export interface Hooks extends HooksExt {
   morphed: (p: Ent, id: string, why: 'on' | 'off' | 'end' | 'gone') => void;
   /** [modes] 모드를 바꿨다 (from에서 id로. 접속해 저장된 모드로 들어갈 때는 from이 '') */
   modeChanged: (p: Ent, id: string, from: string) => void;
+  /** [growth] 레벨이 올랐다 (새 레벨) */
+  leveledUp: (p: Ent, lv: number) => void;
   /** [핵심: 시계] 날·주·달이 바뀌었다 (내용의 RESET): 새 열쇠, 옛 열쇠, 지난 경계의 수(서버가 꺼져 있던 동안 여럿이 지났어도 사건은 한 번) */
   dayReset: (day: string, prev: string, missed: number) => void;
   weekReset: (week: string, prev: string, missed: number) => void;
@@ -359,6 +362,7 @@ export class Game {
   /** [morph] 변신 */ readonly morph: Morph;
   /** [odds] 확률표의 버전·이력·사전 공지와 추첨 기록 (굴림은 모듈과 상관없이 engine/shared/defs/odds.ts의 표에서) */ readonly odds: OddsSys;
   /** [modes] 게임 안의 모드 */ readonly modes: Modes;
+  /** [stamina] 스태미나 (STAMINA_RULES.enabled가 거짓이면 on이 거짓이고 아무것도 하지 않는다) */ readonly stamina: Stamina;
   // ---- 라이브 콘텐츠 (묶음 6) ----
   /** [items] 상품 (GOODS가 비어 있으면 만들지 않는다: 자리표) */ readonly goods: Goods;
   /** [event] 기간 이벤트 */ readonly event: EventSys;
@@ -447,6 +451,7 @@ export class Game {
     this.odds = has('odds') ? new OddsSys(this) : off('odds', 'odds');
     // 게임 안의 모드: 그 뒤에 (접속 사건에서 단계·변신의 처리가 먼저 끝난 뒤 저장된 모드로 들어간다)
     this.modes = has('modes') ? new Modes(this) : off('modes', 'modes');
+    this.stamina = has('stamina') ? new Stamina(this) : off('stamina', 'stamina');
     // 라이브 콘텐츠 (묶음 6): 그 뒤에 (고르지 않은 게임의 등록 차례가 예전과 같게). 상품은 GOODS를 적은 게임만
     const goods = has('items') && hasGoodsDefs(), live6 = goods || ['event', 'season', 'achieve', 'codex', 'coupon'].some((m) => has(m as ModuleId));
     if (live6) { const bad = checkLiveContent((cur) => curKinds(CURRENCIES[cur])?.spend ?? null); if (bad.length) throw new Error(`[live] 라이브 콘텐츠의 표에 문제가 있습니다:\n${bad.join('\n')}`); }

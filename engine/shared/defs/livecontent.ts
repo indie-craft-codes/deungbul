@@ -13,7 +13,7 @@ import type { Reward } from './growth';
 import type { Period } from './live';
 
 /** 상품의 값과 이벤트 재화가 쓰는 재화 (지갑의 칸) */
-export type LiveCur = Exclude<keyof Reward, 'exp' | 'gear' | 'items'>;
+export type LiveCur = Exclude<keyof Reward, 'exp' | 'gear' | 'items' | 'stamina'>;
 
 /** 상품의 값: 재화(종류), 또는 가방의 아이템 */
 export type GoodsPrice = { cur: LiveCur; n: number; kind?: CurKind; item?: undefined } | { item: string; n: number; cur?: undefined; kind?: undefined };

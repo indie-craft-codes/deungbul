@@ -38,6 +38,7 @@ import { initSocial } from './hud/social';
 import { initSupport } from './hud/support';
 import { initOdds } from './hud/odds';
 import { initAchieve, initCodex, initCoupon, initEvent, initGoods, initSeason } from './hud/live';
+import { initStamina } from './hud/stamina';
 
 /** 차례대로 init한다. 상점, 대장간, 직업 고르기가 앞이다: 가르기 전에 main.ts가 직접 부르던 차례(같은 메시지와 같은 주기 안에서 다른 모듈보다 먼저)를 지킨다 */
 const LIST: { init: () => void; mod?: ModuleId }[] = [
@@ -95,6 +96,8 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initAchieve, mod: 'achieve' },
   { init: initCodex, mod: 'codex' },
   { init: initCoupon, mod: 'coupon' },
+  // 스태미나 (묶음 D: STAMINA_RULES.enabled가 거짓이면 아무것도 하지 않는다): 맨 뒤에
+  { init: initStamina, mod: 'stamina' },
 ];
 
 export function initModules(): void {

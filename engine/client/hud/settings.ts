@@ -7,7 +7,7 @@ import { setCalm } from '../fx';
 import { L, isTouch, onLangChange, t, type UiKey } from '../i18n';
 import { platform } from '../platform';
 import { hasMusic } from '../assets';
-import { onSoundChange, setSoundMix, setSoundOn, setUiSoundOn, soundMix, soundOn, uiSoundOn } from '../sound';
+import { onSoundChange, setSoundMix, setSoundOn, setUiSoundOn, setUiTapOn, soundMix, soundOn, uiSoundOn, uiTapOn } from '../sound';
 import { setStillMotion, stillMotion } from '../motion';
 import { S } from '../state';
 import { legalRows, myDataRows, myDataSig } from './legal';
@@ -91,7 +91,8 @@ function drawSettings(list: HTMLElement): void {
   // 소리
   list.append(el('baghead', t('setSound')));
   list.append(row(t('setSound'), '', [onOff(soundOn(), setSoundOn)]));
-  list.append(row(t('setUiSound'), '', [onOff(uiSoundOn(), setUiSoundOn)])); // 누름·됨·보상의 작은 소리 (sound.ts의 ui.*)
+  list.append(row(t('setUiSound'), '', [onOff(uiSoundOn(), setUiSoundOn)])); // 됨·보상의 작은 소리 (sound.ts의 ui.*)
+  list.append(row(t('setUiTap'), '', [onOff(uiTapOn(), setUiTapOn)])); // 누를 때마다의 '톡' (기본 끔: 사용자 결정 11-27)
   const mix = soundMix();
   list.append(row(t('volSfx'), '', [slider(t('volSfx'), Math.round(mix.sfx * 100), 0, 100, 5, (v) => setSoundMix({ sfx: v / 100 }, false), (v) => setSoundMix({ sfx: v / 100 }))]));
   if (hasMusic()) list.append(row(t('volMusic'), '', [slider(t('volMusic'), Math.round(mix.music * 100), 0, 100, 5, (v) => setSoundMix({ music: v / 100 }, false), (v) => setSoundMix({ music: v / 100 }))]));
@@ -161,7 +162,7 @@ function captureKey(ev: KeyboardEvent): void {
 export function initSettings(): void {
   cur = readSettings(platform().storage.get(STORE_KEY), cap());
   apply();
-  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), uiSoundOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig(), supportSig()] });
+  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), uiSoundOn(), uiTapOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig(), supportSig()] });
   window.addEventListener('keydown', captureKey, { capture: true });
   onSoundChange(() => renderMenu());
   onLangChange(() => renderMenu());

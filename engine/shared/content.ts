@@ -128,6 +128,8 @@ export const AGE = get('AGE');
 export const ODDS = get('ODDS');
 // ---------- 게임 안의 모드 ----------
 export const MODE_RULES = get('MODE_RULES');
+// ---------- 스태미나 (묶음 D) ----------
+export const STAMINA_RULES = get('STAMINA_RULES');
 // ---------- 라이브 콘텐츠 (묶음 6) ----------
 export const GOODS = get('GOODS');
 export const EVENTS = get('EVENTS');

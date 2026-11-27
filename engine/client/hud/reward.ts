@@ -24,6 +24,10 @@ export interface CelebrateOpts {
   sub?: string;
   /** 바로 가기 단추 */
   action?: { label: string; onClick: () => void };
+  /** 떠 있는 시간(ms). 없으면 모양마다의 기본 */
+  ms?: number;
+  /** 카드에 더할 class (돌아옴 요약 'celLine': 큰 줄이 긴 글) */
+  cls?: string;
 }
 
 let box: HTMLElement | null = null;
@@ -52,7 +56,7 @@ function next(): void {
   el.dataset.kind = c.kind;
   el.classList.toggle('still', stillMotion());
   const rays = document.createElement('i'); rays.className = 'celRays'; rays.setAttribute('aria-hidden', 'true');
-  const card = document.createElement('div'); card.className = 'celCard';
+  const card = document.createElement('div'); card.className = 'celCard' + (c.cls ? ` ${c.cls}` : '');
   const h = document.createElement('b'); h.className = 'celTitle'; h.textContent = c.title;
   card.append(h);
   if (c.big) { const b = document.createElement('div'); b.className = 'celBig'; b.textContent = c.big; card.append(b); }
@@ -67,7 +71,7 @@ function next(): void {
   el.append(rays, card);
   el.hidden = false;
   uiSound(c.kind === 'level' ? 'ui.levelUp' : c.kind === 'unlock' ? 'ui.unlock' : 'ui.reward');
-  timer = window.setTimeout(next, c.action ? 5200 : c.kind === 'reward' ? 2600 : 3400);
+  timer = window.setTimeout(next, c.ms ?? (c.action ? 5200 : c.kind === 'reward' ? 2600 : 3400));
 }
 
 /** 축하 카드를 띄운다 (떠 있으면 뒤에 줄 선다: 많이 밀리면 오래된 것부터 버린다) */

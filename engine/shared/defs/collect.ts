@@ -140,6 +140,38 @@ export interface BannerDef {
   pityGroup?: string;
   /** 열리는 때와 닫히는 때 (서버 시계의 ms, Date.getTime()). 이 사이에만 화면에 보이고 뽑을 수 있다. 없으면 늘 열려 있다 */
   start?: number; end?: number;
+  /** 천장의 셈을 화면에 보일 이름 (문장 키: '울림 표식'). 없으면 틀의 '천장까지' */
+  markName?: string;
+  /** 교환 상점(천장 포인트): 뽑을 때마다 표식이 쌓이고, 모이면 목록의 영웅 하나와 바꾼다. 없으면 교환이 없다 (예전과 같다) */
+  exchange?: ExchangeDef;
+}
+/**
+ * 교환 상점의 규칙 하나 (BannerDef.exchange): 표식은 천장의 열쇠(pityKey)마다 쌓인다 (같은 천장 무리의 배너는 표식도 함께 쓴다).
+ * 뽑기의 확률은 바꾸지 않는다 (확률표는 그대로, 표식은 뽑은 수로만 쌓인다)
+ */
+export interface ExchangeDef {
+  /** 표식의 이름 (문장 키). 없으면 틀의 '교환 표식' */
+  name?: string;
+  /** 한 번 뽑을 때 쌓이는 표식 */
+  per: number;
+  /** 영웅 하나와 바꾸는 값 */
+  cost: number;
+  /** 바꿀 수 있는 영웅. 없으면 픽업, 그것도 없으면 그 배너의 가장 높은 등급 */
+  heroes?: readonly string[];
+  /**
+   * 배너의 기간이 끝났을 때 남은 표식: 'keep' 남김(같은 천장 무리의 다음 배너로 이어진다, 기본), 'lose' 사라짐, { cur, rate } 표식 하나를 그 재화 rate개로 바꿔 준다.
+   * 같은 열쇠의 다른 배너가 열려 있으면 정리하지 않는다
+   */
+  end?: 'keep' | 'lose' | { cur: Coin; rate: number };
+}
+/** 그 배너의 교환 목록 (없는 영웅은 뺀다) */
+export function exchangeHeroes(b: BannerDef): string[] {
+  const x = b.exchange;
+  if (!x) return [];
+  if (x.heroes) return x.heroes.filter((h) => isHeroId(h));
+  if (b.pickup && isHeroId(b.pickup.hero)) return [b.pickup.hero];
+  const odds = poolOdds(b.pool), top = Math.max(-1, ...odds.map((o) => o.rarity));
+  return odds.filter((o) => o.rarity === top).map((o) => o.hero);
 }
 
 /** 뽑기의 규칙 */
@@ -214,6 +246,8 @@ export interface StageDef {
   timeS?: number;
   /** false면 이 단계는 소탕할 수 없다 (STAGE_RULES.sweep이 있을 때. 기본은 깬 단계 모두) */
   sweep?: boolean;
+  /** 스태미나의 값 (stamina 모듈: 없으면 STAMINA_RULES.use.stage) */
+  cost?: number;
   /** 별 조건 (보통 셋). 없으면 STAGE_RULES.stars, 그것도 없으면 별이 없다 (예전과 같다) */
   stars?: readonly StarCond[];
 }
@@ -508,6 +542,8 @@ export interface GachaMe {
   open?: Record<string, number>;
   /** 반반을 쓰는 게임만: 천장의 열쇠(pityKey) → 1이면 다음 픽업 등급은 픽업 확정 */
   sure?: Record<string, 1>;
+  /** 교환 상점이 있는 게임만: 천장의 열쇠 → 쌓인 표식 */
+  pts?: Record<string, number>;
 }
 /** 뽑기의 결과 하나 (메시지 gacha): 영웅, 등급, 이미 가진 것이라 조각이 되었나와 받은 조각, 천장·보장으로 나왔나 */
 export interface PullGot { h: string; r: number; dup: boolean; n: number; pity: boolean; /** 넘친 조각(HERO_RULES.cards.overflow)이 바뀐 아이템의 수 (있을 때만) */ x?: number }

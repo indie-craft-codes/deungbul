@@ -9,7 +9,7 @@ import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSide
 import {
   $, addSetting, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
   onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, switchMode, useStageScreens, type HomeKit,
-  setLoadingTips,
+  setLoadingTips, featureLock, featureOpen, tutNow,
 } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { heroName, rarityName } from '@engine/client/i18n/ko';
@@ -58,6 +58,8 @@ function go(id: string, auto?: boolean): void {
 
 function draw(): void {
   const on = inTower() && !!S.me;
+  // 울림골이 아직 열리지 않았으면 '게임 바꾸기'·다른 쪽 표시를 감춘다 (튜토리얼 키트의 점진 공개)
+  document.body.classList.toggle('epNoVale', !!S.me && !featureOpen('vale'));
   if (on) document.body.dataset.tower = view; else delete document.body.dataset.tower;
   document.body.classList.toggle('towerLobby', on && view !== 'battle');
   if (!on) return;
@@ -72,7 +74,8 @@ function initHome(): void {
     id: 'towerHome',
     title: () => t('modeTower'),
     // 울림 조각의 '+': 울림골에서 사냥하면 모인다
-    currencies: [{ id: 'second', plus: () => switchMode(MODE.vale) }, 'gold'],
+    // 계약의 숨결(스태미나)은 서버가 켠 때만 보인다 (STAMINA_RULES.enabled: 사용자 결정)
+    currencies: ['stamina', { id: 'second', plus: () => switchMode(MODE.vale) }, 'gold'],
     lead: () => {
       const id = mySquad().ids[0] ?? Object.keys(myHeroes())[0], def = id ? knownChar(id) : undefined;
       if (!def) return null;
@@ -87,16 +90,17 @@ function initHome(): void {
       onClick: () => { if (fighting()) { watchBattle(); return; } const n = nextRow(); if (n) openCheck(n.id); },
     },
     info: () => `${L().fmt.towerBest(myStage()?.best ?? '')}\n${L().fmt.towerPower(mySquad().power)}`,
+    // 아래 띠: 아직 열리지 않은 기능은 🔒와 언제 열리는지 (튜토리얼 키트의 점진 공개: client/tutorial.ts의 useUnlocks)
     dock: [
-      { id: 'adv', label: () => t('towerAdventure'), onClick: openAdventure },
-      { id: 'heroes', label: () => t('towerEchoes'), dot: 'menu.heroes', onClick: () => openMenu('heroes') },
-      { id: 'squad', label: () => t('towerSquad'), onClick: () => openMenu('squad') },
-      { id: 'gacha', label: () => t('towerPull'), dot: 'menu.gacha', onClick: () => openMenu('gacha') },
-      { id: 'daily', label: () => t('tabDaily'), onClick: () => openMenu('daily') },
-      { id: 'vale', label: () => uiText.get('modeVale'), onClick: () => switchMode(MODE.vale) },
+      { id: 'adv', label: () => t('towerAdventure'), locked: () => featureLock('adv'), onClick: openAdventure },
+      { id: 'heroes', label: () => t('towerEchoes'), dot: 'menu.heroes', locked: () => featureLock('heroes'), onClick: () => openMenu('heroes') },
+      { id: 'squad', label: () => t('towerSquad'), locked: () => featureLock('squad'), onClick: () => openMenu('squad') },
+      { id: 'gacha', label: () => t('towerPull'), dot: 'menu.gacha', locked: () => featureLock('gacha'), onClick: () => openMenu('gacha') },
+      { id: 'daily', label: () => t('tabDaily'), locked: () => featureLock('daily'), onClick: () => openMenu('daily') },
+      { id: 'vale', label: () => uiText.get('modeVale'), locked: () => featureLock('vale'), onClick: () => switchMode(MODE.vale) },
     ],
     // 왼쪽 열의 이벤트 배너: 울림 축제(열렸거나 7일 안에 열림)와 메아리의 계절. 누르면 그 탭으로
-    events: () => liveBanners().map((b) => {
+    events: () => (featureOpen('event') ? liveBanners() : []).map((b) => {
       const now = Date.now(), loc = L(), art = EVENT_ART[b.kind === 'season' ? 'season' : b.id] ?? EVENT_ART.season;
       return {
         id: b.id, title: b.name, art,
@@ -112,7 +116,7 @@ function initHome(): void {
       { id: 'odds', icon: '%', text: t('tabOdds'), onClick: () => openMenu('odds') },
       { id: 'settings', icon: '⚙', text: t('tabSettings'), onClick: () => openMenu('settings') },
       { id: 'achieve', icon: '★', text: t('tabAchieve'), onClick: () => openMenu('achieve') },
-    ],
+    ].filter((x) => featureOpen(x.id)),
   });
   // 홈의 위: 보고 있지 않은 울림골의 작은 표시(누르면 그리로)
   const side = document.createElement('button');
@@ -164,6 +168,7 @@ function drawAdventure(): void {
 
 // ---------- 막힘: 진 단계 (자동 진행은 꺼지고 앞 단계를 되풀이한다: 그 단계를 깨면 풀린다) ----------
 let stuck = '';
+let openSig = '';
 function onStageNews(k: MsgKey, a: MsgArg[]): void {
   const id = String(a[0] ?? '');
   if (k === 'stageFail') stuck = id;
@@ -232,6 +237,8 @@ export function initTower(): void {
     again: (id) => go(id, false),
     heroPic: (id) => { const d = knownChar(id); return d ? charPortrait(d, 120, 150) : undefined; },
     showResult: () => inTower() && view === 'battle',
+    // 튜토리얼이 결과 창을 설명하는 동안은 자동 진행이 다음 단계를 시작해도 창을 남긴다
+    holdResult: () => tutNow() === 'pact:result',
     grow: () => {
       const b = Object.values(BANNER_TABLE)[0], have = S.me?.sparks ?? 0;
       return [
@@ -260,6 +267,9 @@ export function initTower(): void {
   onMsg('stat', () => home.draw());
   onSlow(() => {
     if (!S.me) { home.close(); $('pactSide').hidden = true; }
+    // 기능이 열리면 홈의 띠·배너를 다시 그린다 (깬 단계·튜토리얼의 진행)
+    const sig = ['adv', 'gacha', 'squad', 'vale', 'daily', 'event'].map((x) => (featureOpen(x) ? 1 : 0)).join('');
+    if (sig !== openSig) { openSig = sig; draw(); }
   });
   onLangChange(() => { draw(); drawSide(); });
   initSafety();

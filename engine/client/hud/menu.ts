@@ -21,7 +21,7 @@ import { act, drawGear, onEnhanceResult, onGearResult } from './menu/gear';
 import { drawGuild } from './menu/guild';
 import { drawMail, setMailToDaily } from './menu/mail';
 import { drawMarket, marketOpen, onMarketMsg } from './menu/market';
-import { button, setRedraw, ui } from './menu/parts';
+import { button, lockBand, setRedraw, ui } from './menu/parts';
 import { askRank, drawRank, rankTick } from './menu/rank';
 import { ENGINE_TAB_MODS, tabsForModules, visibleTabs, type MenuTab } from './menu/tabs';
 
@@ -43,8 +43,12 @@ function tabDot(x: MenuTab): void { const fn = x.dot; if (fn) setDot(`menu.${x.i
 let order: string[] | null = null;
 /** 일일 임무도 출석도 없는 게임: 일일 탭을 숨긴다 */
 const noDaily = (): boolean => DAILY_IDS.length === 0 && ATTEND.length === 0;
+/** 탭의 열림 (묶음 D 튜토리얼 키트의 점진 공개: hud/unlocks.ts). hide면 숨기고, why가 있으면 🔒와 까닭. 없으면 모두 열림 (예전과 같다) */
+let gate: ((id: string) => { hide: boolean; why: string } | null) | null = null;
+export function setTabGate(fn: ((id: string) => { hide: boolean; why: string } | null) | null): void { gate = fn; lastSig = ''; }
+const gateOf = (id: string) => gate?.(id) ?? null;
 /** 지금 보이는 탭들 */
-const tabs = (): MenuTab[] => visibleTabs(allTabs, order, noDaily());
+const tabs = (): MenuTab[] => visibleTabs(allTabs, order, noDaily()).filter((x) => !gateOf(x.id)?.hide);
 /**
  * 보일 탭과 그 차례를 고른다 (틀의 id와 게임이 더한 탭의 id). 고르지 않은 탭은 숨는다: 화면에서 감출 뿐이다.
  * 기능 자체를 빼려면(서버의 명령까지) 내용의 MODULES에서 그 모듈을 뺀다: 그러면 탭도 저절로 없다
@@ -78,7 +82,7 @@ export function renderMenu(soft = false): void {
   if ((focus instanceof HTMLInputElement || focus instanceof HTMLSelectElement) && ui.list.contains(focus)) { if (ui.gold) ui.gold.textContent = L().fmt.gold(S.me.gold); return; }
   // 전투 중에는 상태 메시지가 초당 여러 번 온다. 그때마다 단추를 새로 만들면 누르는 사이에 단추가 사라져 클릭이 먹지 않으므로,
   // 화면에 영향을 주는 값이 그대로면 다시 그리지 않는다
-  const sig = JSON.stringify([cur, current().sig?.(), L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid, act.openUid, act.salvUid, act.upArmed, act.bulk, act.res, S.bag, S.salvage, S.me.items]);
+  const sig = JSON.stringify([cur, current().sig?.(), gate ? tabs().map((x) => gateOf(x.id)?.why ?? '') : 0, L().code, S.me.gold, S.me.lv, S.me.cls, S.meta, S.guild, S.guildInvite, S.rank, act.enhUid, act.enhWait, act.enhOk, act.sellUid, act.openUid, act.salvUid, act.upArmed, act.bulk, act.res, S.bag, S.salvage, S.me.items]);
   if (soft === true && sig === lastSig) return;
   lastSig = sig;
   if (ui.gold) ui.gold.textContent = L().fmt.gold(S.me.gold); // 재화가 없는 게임에는 없다
@@ -86,7 +90,9 @@ export function renderMenu(soft = false): void {
   ui.tabs.textContent = '';
   const on = current();
   tabs().forEach((x) => {
-    const b = button(x.label(), () => { const moved = cur !== x.id; cur = x.id; x.open?.(); renderMenu(); if (moved) ui.list.scrollTop = 0; });
+    const lock = gateOf(x.id);
+    const b = button(lock?.why ? `🔒 ${x.label()}` : x.label(), () => { const moved = cur !== x.id; cur = x.id; x.open?.(); renderMenu(); if (moved) ui.list.scrollTop = 0; });
+    if (lock?.why) b.classList.add('locked');
     b.classList.toggle('on', x === on);
     // 찍을 점수나 받을 우편이 있으면 점(•)을 찍는다. 점은 단추 모서리에 얹어서(style.css) 생겨도 탭의 너비가 바뀌지 않는다
     // 탭의 원천(x.dot)이 있으면 지금 값을 바로 본다 (알림 점의 셈은 0.25초마다라, 받기 직후에 다시 그리면 꺼진 점이 남았다)
@@ -96,7 +102,8 @@ export function renderMenu(soft = false): void {
   ui.tabs.scrollLeft = left;
   const top = ui.list.scrollTop;
   ui.list.textContent = '';
-  on.draw(ui.list);
+  const lock = gateOf(on.id);
+  if (lock?.why) ui.list.append(lockBand(lock.why)); else on.draw(ui.list);
   ui.list.scrollTop = top;
 }
 setRedraw(renderMenu);
@@ -113,6 +120,8 @@ export function openMenu(id: string): void {
 
 /** 메뉴를 닫는다 (탭 안의 단추가 다른 곳으로 데려갈 때: 메뉴의 던전 들어가기 같은 것) */
 export function closeMenu(): void { ui.panel.hidden = true; }
+/** 열려 있는 메뉴의 탭 id (닫혀 있으면 '') */
+export const menuTab = (): string => (ui.panel.hidden ? '' : current().id);
 
 export function toggleMenu(): void {
   if (!S.me) return;

@@ -16,6 +16,7 @@ import { confirmSpend } from './confirm';
 import { rarityCss, tintRarity } from './rarity';
 import { dropScreen, openScreen } from './screens';
 import { whyOf } from './menu/parts';
+import { markText } from './exchange';
 import { overflowText } from './cardgrow';
 
 type Stage = 'tease' | 'reveal' | 'summary';
@@ -84,6 +85,9 @@ function draw(): void {
     const b = BANNER_TABLE[s.banner];
     const loc = L(), have = b ? money(b.cur) : 0;
     if (b) el.append(mk('p', 'gsHave', loc.fmt.gachaHave(have, b.cur)));
+    // 천장의 표식 (교환 상점: '울림 표식 32 / 40')
+    const mark = b ? markText(s.banner) : '';
+    if (mark) el.append(mk('p', 'gsMark', mark));
     const btns = mk('div', 'stbtns gsBtns');
     const ok = mk('button', 'btn-secondary', t('gsOk')) as HTMLButtonElement; ok.type = 'button'; ok.id = 'gsOk';
     ok.addEventListener('click', close);

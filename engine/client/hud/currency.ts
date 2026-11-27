@@ -6,6 +6,7 @@ import { L } from '../i18n';
 import { S } from '../state';
 import { itemIcon } from './icons';
 import { showNumber } from './reward';
+import { staminaChip } from './stamina';
 
 export interface CurrencyChip {
   /** 칩의 이름표 (class와 data-cur에 들어간다: 게임의 스타일이 색을 준다) */
@@ -20,12 +21,19 @@ export interface CurrencyChip {
   title?: (n: number) => string;
   /** '+'를 누르면: 그 재화를 얻는 곳으로 (없으면 '+'가 없다) */
   plus?: () => void;
+  /** 수 대신 보일 글 (스태미나의 'n/상한 · 다음 1까지 m:ss'). 없으면 수 */
+  text?: (n: number) => string;
+  /** 칩을 누르면 (스태미나: 부족 창) */
+  onClick?: () => void;
+  /** 거짓이면 칩을 감춘다 (스태미나: 서버가 켜지 않았으면) */
+  shown?: () => boolean;
 }
-/** 틀이 아는 재화: 'gold' 첫 번째, 'second' 두 번째 */
-export type CurrencyId = 'gold' | 'second';
+/** 틀이 아는 재화: 'gold' 첫 번째, 'second' 두 번째, 'stamina' 스태미나(stamina 모듈: hud/stamina.ts) */
+export type CurrencyId = 'gold' | 'second' | 'stamina';
 
 const builtIn = (id: CurrencyId): CurrencyChip => id === 'gold'
   ? { id: 'gold', icon: 'cur:gold', glyph: '●', value: () => S.me?.gold ?? 0, title: (n) => L().fmt.gold(n) }
+  : id === 'stamina' ? staminaChip()
   : { id: 'second', icon: 'cur:second', glyph: '◆', value: () => S.me?.sparks ?? 0, title: (n) => L().fmt.coinHave(n) || String(n) };
 
 const bars: { chip: CurrencyChip; num: HTMLElement; el: HTMLElement; last: string; lang: string }[] = [];
@@ -39,7 +47,7 @@ export function currencyBar(chips: readonly (CurrencyId | CurrencyChip | (Partia
   const bar = document.createElement('div');
   bar.className = 'curbar';
   for (const c of chips) {
-    const chip: CurrencyChip = typeof c === 'string' ? builtIn(c) : c.id === 'gold' || c.id === 'second' ? { ...builtIn(c.id as CurrencyId), ...c } as CurrencyChip : c as CurrencyChip;
+    const chip: CurrencyChip = typeof c === 'string' ? builtIn(c) : c.id === 'gold' || c.id === 'second' || c.id === 'stamina' ? { ...builtIn(c.id as CurrencyId), ...c } as CurrencyChip : c as CurrencyChip;
     const el = document.createElement('span');
     el.className = `curchip cur-${chip.id}`; el.dataset.cur = chip.id;
     const pic = chip.icon ? itemIcon(chip.icon, '', 'sm') : null;
@@ -53,6 +61,7 @@ export function currencyBar(chips: readonly (CurrencyId | CurrencyChip | (Partia
       p.addEventListener('click', (e) => { e.stopPropagation(); go(); });
       el.append(p);
     }
+    if (chip.onClick) { const go = chip.onClick; el.classList.add('curtap'); el.setAttribute('role', 'button'); el.tabIndex = 0; el.addEventListener('click', go); }
     bar.append(el);
     bars.push({ chip, num, el, last: '', lang: '' });
   }
@@ -65,8 +74,11 @@ function draw(): void {
   const loc = L();
   for (const b of bars) {
     if (!b.el.isConnected && b.last) continue;
-    const n = b.chip.value(), text = n.toLocaleString(loc.code);
+    if (b.chip.shown) b.el.hidden = !b.chip.shown();
+    const n = b.chip.value(), text = b.chip.text ? b.chip.text(n) : n.toLocaleString(loc.code);
     if (text === b.last && b.lang === loc.code) continue;
+    // 글로 보이는 칩(스태미나)은 굴리지 않는다
+    if (b.chip.text) { b.last = text; b.lang = loc.code; b.num.textContent = text; if (b.chip.title) b.el.title = b.chip.title(n); continue; }
     // 바뀐 값은 굴리고 곁에 +n (U2: hud/reward.ts). 내 상태를 받기 전·언어가 바뀐 때는 글만
     const live = !!S.me?.ready && b.lang === loc.code;
     b.last = text; b.lang = loc.code;

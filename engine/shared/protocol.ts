@@ -1,6 +1,7 @@
 // 서버와 클라이언트가 주고받는 메시지. 지금은 JSON이고, 트래픽이 문제가 되면 이진 형식으로 바꾼다.
 // 화면에 보일 문장은 싣지 않는다: 종류와 값만 보내고 문장은 클라이언트가 언어에 맞게 만든다.
 import type { IdleBack, PullGot, SweepGot } from './defs/collect';
+import type { ModeBack } from './defs/modes';
 import type { Gear, Mail, RankRow } from './defs/growth';
 import type { GuildView, MarketItem } from './defs/social';
 import type { RoomLobby, RoomStatsView } from './defs/rooms';
@@ -198,6 +199,10 @@ export type ClientMsg =
   | { t: 'dungeonSweep'; id: string; n: number }
   /** 영웅 선택권 (GACHA_RULES.select): 선택권 아이템 하나를 쓰고 그 목록의 영웅 하나를 얻는다 */
   | { t: 'gacha'; a: 'select'; item: string; hero: string }
+  /** 교환 상점 (BannerDef.exchange, 묶음 D): 그 배너의 표식으로 영웅 하나 */
+  | { t: 'gacha'; a: 'trade'; id: string; hero: string }
+  /** 스태미나 (stamina 모듈): 물약 하나를 쓴다 */
+  | { t: 'stamina'; a: 'potion' }
   /** 메뉴에서 바로 던전에 들어간다 (DungeonDef.fromMenu인 던전): 들판이나 단계 안에서. 단계 안이면 단계에서 나와 들어간다 */
   | { t: 'dungeonGo'; id: string }
   /**
@@ -337,6 +342,8 @@ export type ServerMsg =
   | { t: 'sweep'; got: SweepGot }
   /** 돌아왔을 때 받은 방치 보상 (idle 모듈, IDLE.popup을 켠 게임만): 화면이 창으로 알린다. 받기는 그 우편(mail)으로 */
   | ({ t: 'idleBack' } & IdleBack)
+  /** 돌아옴 요약 (modes 모듈, MODE_RULES.backCard를 켠 게임만): 다른 모드에서 돌아왔을 때 그쪽에서 그동안 일어난 일 */
+  | ({ t: 'modeBack' } & ModeBack)
   /** 누군가의 부품 겉모습이 바뀌었다 (g.setLook: 변신과 풀기). l이 빈 문자열이면 예전 그림으로 */
   | { t: 'look'; id: number; l: string }
   /** 지금 보이는 공지 (engine/server/game/systems/live.ts): 접속 직후(있을 때만)와 목록이 바뀔 때. 빈 목록이면 공지가 없다 */

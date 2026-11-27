@@ -6,11 +6,12 @@
 //   번갈아(sequential): 보이지 않는 쪽은 멈춘다 (탑은 대기실로 나오고, 자동 사냥을 끄고 떠난다). 둘을 견주어 '함께'가 총량을 얼마나 키우는지 본다.
 //   탑에서 지면(자동 진행이 꺼짐) 다음에 탑에 올 때 가장 멀리 깬 단계의 다음을 다시 고른다.
 //   울림 조각이 100이 되면 처음 한 번은 1번 뽑기, 그 뒤로는 900이 모이면 10번 뽑기. 뽑으면 전투력 높은 넷으로 편성하고, 1분마다 골드로 편성의 레벨을 올리고 우편(임무 보상)을 받는다.
-// 실행: node node_modules/tsx/dist/cli.mjs --tsconfig games/echopact/tsconfig.json games/echopact/scripts/flow.ts [분=30] [씨앗=1] [seq]
+// 스태미나(묶음 D, 지금은 꺼져 있다: STAMINA_RULES.enabled)를 켠 흐름은 다섯째 인자 stamina로 견준다 (탑의 단계마다 숨결 6, 모자라면 그때는 울림골만).
+// 실행: node node_modules/tsx/dist/cli.mjs --tsconfig games/echopact/tsconfig.json games/echopact/scripts/flow.ts [분=30] [씨앗=1] [seq|co] [오프라인 분=0] [stamina]
 // 시험(test/flow.test.ts)이 짧게 같은 함수를 부른다.
 import { Game, type Ent } from '@engine/server';
 import { ECON_LOST_FULL, dustFor, heroDef, sellPrice, seededRng, STAGES } from '@engine/shared/defs';
-import { BANNERS, CAMPS } from '../shared/content';
+import { BANNERS, CAMPS, STAMINA_RULES } from '../shared/content';
 import { MODE } from '../shared/content/pact';
 import { installEchopact } from '../server/echopact';
 
@@ -30,20 +31,24 @@ export interface FlowResult {
   off?: { min: number; fieldSparks: number; fieldGold: number; stages: number; stageSparks: number; from: string; to: string };
   /** 떨어진 장비 (울림골): 수, 등급별 수, 모두 팔았다면 받았을 골드, 모두 분해했다면 받았을 울림 가루, 가방이 차 버려진 수. 사람은 팔지도 분해하지도 않는다 (골드·조각의 흐름은 그대로) */
   gear: { drops: number; byRar: number[]; sellGold: number; dust: number; lost: number };
+  /** 스태미나를 켠 흐름만: 숨결이 모자라 단계를 못 한 횟수(안내문 staminaShort), 마지막 숨결, 탑에서 싸운 초 */
+  stamina?: { short: number; left: number; fightS: number };
 }
 
 /** 원인(장부의 이름)을 시뮬레이션의 출처로 묶는다 */
 const sourceOf = (raw: string): string => { const why = raw.replace(/:(paid|free|event|bound)$/, ''); return sourceOf2(why); };
 const sourceOf2 = (why: string): string => (why === 'stage' || why === 'huntDungeon' ? 'stage' : why === 'hunt' || why === 'huntAway' ? 'field' : why.startsWith('mail') ? 'mail' : why);
 
-export function simulate(minutes = 30, seed = 1, concurrent = true, offMin = 0): FlowResult {
+export function simulate(minutes = 30, seed = 1, concurrent = true, offMin = 0, stamina = false): FlowResult {
   // 같은 씨앗이면 같은 흐름이 되게: 틀의 난수(피해의 폭, 몬스터의 자리, 떨어뜨리기)도 이 동안만 정해진 난수로 (끝나면 되돌린다)
-  const random = Math.random;
+  const random = Math.random, was = STAMINA_RULES.enabled;
   Math.random = seededRng(seed * 7919 + 1);
-  try { return run(minutes, seed, concurrent, offMin); } finally { Math.random = random; }
+  // 스태미나를 켠 흐름: 내용의 규칙을 이 동안만 켠다 (게임을 만들 때 읽는다)
+  (STAMINA_RULES as { enabled: boolean }).enabled = stamina;
+  try { return run(minutes, seed, concurrent, offMin, stamina); } finally { Math.random = random; (STAMINA_RULES as { enabled: boolean }).enabled = was; }
 }
 
-function run(minutes: number, seed: number, concurrent: boolean, offMin: number): FlowResult {
+function run(minutes: number, seed: number, concurrent: boolean, offMin: number, stamina: boolean): FlowResult {
   let clock = Date.UTC(2026, 10, 30, 3, 0, 0);
   const g = new Game({ plugins: [installEchopact], now: () => clock });
   g.gacha.rng = seededRng(seed);
@@ -106,10 +111,13 @@ function run(minutes: number, seed: number, concurrent: boolean, offMin: number)
   /** 물약이 3개 아래면 상인에게서 5개까지 산다 (보통의 사람: 상인에게 들르는 길은 흉내 내지 않고 값만 치른다) */
   const tonics = () => { while ((p.items.tonic ?? 0) < 5 && g.wallet.take(p, 'gold', 12, 'cmd:buy')) g.bag.putItem(p, 'tonic', 1, 'cmd:buy'); };
   fightTower();
+  let short = 0, fightS = 0;
 
   while (t < minutes * 60) {
     g.tick(0.05); clock += 50; t += 0.05;
     if (inTower()) out.towerS += 0.05; else out.valeS += 0.05;
+    if (stamina) { short += g.notices.filter((n) => n.id === p.id && n.k === 'staminaShort').length; const r = g.stages.runOf(p); if (r && r.state !== 'lobby') fightS += 0.05; }
+    g.notices = [];
     if (t >= nextChores) {
       nextChores += 60;
       g.mail.claim(p, 0);
@@ -125,6 +133,7 @@ function run(minutes: number, seed: number, concurrent: boolean, offMin: number)
       out.minutes.push({ min: Math.round(t / 60), got: { ...total }, have: p.sparks, pulls: pulled, best: p.stage.best, lv: p.lv, power: g.squad.power(p), echoes: Object.keys(p.heroes).length, gold: p.gold, where: g.modes.of(p) });
     }
   }
+  if (stamina) out.stamina = { short, left: g.stamina.have(p), fightS: Math.round(fightS) };
   out.morph = { id: p.morph.on, hp: p.maxHp, mul: Math.round(g.mods.product('damage', p as Ent) * 100) / 100 };
   if (offMin > 0) {
     // 접속을 끊는다 (통신 계층과 같은 차례: 끊김 사건 → 자동 사냥이 켜져 있으면 자리 비움 사냥). 탑의 회차는 닫히고, 돌아왔을 때 오프라인 진행이 맡는다
@@ -149,9 +158,11 @@ function run(minutes: number, seed: number, concurrent: boolean, offMin: number)
 
 // 직접 실행하면 표를 찍는다
 if (process.argv[1]?.endsWith('flow.ts')) {
-  const mins = Number(process.argv[2] ?? 30), seed = Number(process.argv[3] ?? 1), concurrent = process.argv[4] !== 'seq', off = Number(process.argv[5] ?? 0);
-  const r = simulate(mins, seed, concurrent, off);
+  const mins = Number(process.argv[2] ?? 30), seed = Number(process.argv[3] ?? 1), concurrent = process.argv[4] !== 'seq', off = Number(process.argv[5] ?? 0), stam = process.argv[6] === 'stamina' || process.argv[6] === 'stamina-nofill';
+  // stamina-nofill: 레벨 업 채움(levelFill)을 끈 흐름 (견주기만: 내용은 그대로)
+  if (process.argv[6] === 'stamina-nofill') (STAMINA_RULES as { levelFill?: boolean }).levelFill = false;
+  const r = simulate(mins, seed, concurrent, off, stam);
   console.log(`(${concurrent ? '함께' : '번갈아'}) 분 | 보던 곳 | 들판 | 탑 | 우편 | 가진 조각 | 뽑은 수 | 메아리 | 깬 단계 | 레벨 | 편성 전투력`);
   for (const m of r.minutes) console.log(`${m.min} | ${m.where} | ${m.got.field ?? 0} | ${m.got.stage ?? 0} | ${m.got.mail ?? 0} | ${m.have} | ${m.pulls} | ${m.echoes} | ${m.best || '-'} | ${m.lv} | ${m.power}`);
-  console.log(JSON.stringify({ firstPullS: Math.round(r.firstPullS), firstTenS: Math.round(r.firstTenS), towerMin: +(r.towerS / 60).toFixed(1), valeMin: +(r.valeS / 60).toFixed(1), sparks: r.total, gold: r.gold, morph: r.morph, off: r.off, gear: r.gear }));
+  console.log(JSON.stringify({ firstPullS: Math.round(r.firstPullS), firstTenS: Math.round(r.firstTenS), towerMin: +(r.towerS / 60).toFixed(1), valeMin: +(r.valeS / 60).toFixed(1), sparks: r.total, gold: r.gold, morph: r.morph, off: r.off, gear: r.gear, stamina: r.stamina }));
 }

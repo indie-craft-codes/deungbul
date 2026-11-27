@@ -152,3 +152,5 @@ body[data-lay="portrait"][data-mode="tower"] #me, body[data-lay="landscape"][dat
 #zones #stageBar { width: min(300px, calc(100vw - 24px)); max-width: none; }
 /* 탑의 메뉴(뽑기·메아리·편성 …)는 큰 창으로, 홈·편성 확인 페이지 위에 */
 body[data-mode="tower"] #menu { width: min(760px, calc(100vw - 16px)); max-width: none; height: calc(var(--app-h, 100vh) - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); z-index: var(--z-menu); }
+/* 튜토리얼 키트 (묶음 D): 울림골이 열리기 전에는 '게임 바꾸기'와 다른 쪽 표시를 감춘다 */
+body.epNoVale .modeBtn, body.epNoVale .pactSide { display: none !important; }

@@ -358,6 +358,17 @@ export function setSoundMix(m: Partial<Mix>, save = true): void {
 }
 /** 화면 효과음이 켜져 있는가 */
 export const uiSoundOn = (): boolean => uiOn;
+/** 누름 소리('톡', ui.tap)가 켜져 있는가: 사용자 결정(11-27)으로 기본 끔, 설정에서 켠다 (플랫폼 저장소 'uiTap') */
+let tapOn = false;
+export const uiTapOn = (): boolean => tapOn;
+/** 누름 소리를 켜고 끈다 (설정 창). 이 기기에 저장한다 */
+export function setUiTapOn(v: boolean): void {
+  if (tapOn === v) return;
+  tapOn = v;
+  platform().storage.set('uiTap', v ? 'on' : 'off');
+  if (v) uiSound('ui.tap');
+  for (const fn of listeners) fn();
+}
 /** 화면 효과음을 켜고 끈다 (설정 창). 이 기기에 저장한다 */
 export function setUiSoundOn(v: boolean): void {
   if (uiOn === v) return;
@@ -373,6 +384,7 @@ export function onSoundChange(fn: () => void): void { listeners.push(fn); }
 export function initSound(): void {
   on = platform().storage.get('sound') !== 'off'; // 저장소를 못 쓰면 켠 채로 둔다
   uiOn = platform().storage.get('uiSound') !== 'off';
+  tapOn = platform().storage.get('uiTap') === 'on'; // 기본 끔 (사람이 켠 값만 켠다)
   mix = readMix(platform().storage.get(MIX_KEY)); // 없거나 못 읽으면 기본 음량
   label();
   if (volumeUi || hasAudioFiles()) mountMix();
@@ -389,10 +401,10 @@ export function initSound(): void {
   platform().audio.onUnlock(() => { unlocked = true; ready(); pickMusic(); });
   onMsg('sys', (m) => BY_MSG[m.k]?.());
   onMsg('cd', () => sfx.skill());
-  // 누름: 눌리는 단추마다 작은 '톡' (흐린 단추·기술 단추는 빼고: 기술은 자기 소리가 있다)
+  // 누름: 눌리는 단추마다 작은 '톡' (흐린 단추·기술 단추는 빼고: 기술은 자기 소리가 있다). 기본 끔: 설정의 '누름 소리'로 켠다
   document.addEventListener('click', (e) => {
     const b = (e.target as Element | null)?.closest?.('button');
-    if (b && !b.disabled && !b.classList.contains('skill')) uiSound('ui.tap');
+    if (tapOn && b && !b.disabled && !b.classList.contains('skill')) uiSound('ui.tap');
   }, { capture: true, passive: true });
   onSlow(pickMusic);
   onLangChange(label);

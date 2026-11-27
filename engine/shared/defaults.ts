@@ -24,6 +24,7 @@ import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
 import type { OddsRules } from './defs/odds';
 import type { ModeRules } from './defs/modes';
+import type { StaminaRules } from './defs/stamina';
 import type { AchieveDef, CodexDef, ComebackRules, CouponRules, EventDef, GoodsDef, MailRules, SeasonRules } from './defs/livecontent';
 
 // ---------- 핵심 ----------
@@ -258,6 +259,10 @@ export const ODDS: OddsRules = { tables: [], keepDays: 1825 };
 // ---------- 게임 안의 모드 (modes) ----------
 /** 모드가 없다 (한 게임: 예전과 같다) */
 export const MODE_RULES: ModeRules = { list: [] };
+
+// ---------- 스태미나 (stamina, 묶음 D) ----------
+/** 꺼져 있다 (모듈을 골라도 없는 것과 같다) */
+export const STAMINA_RULES: StaminaRules = { enabled: false, name: 'stamina', max: 60, everyS: 300, use: {} };
 
 // ---------- 라이브 콘텐츠 (묶음 6: engine/shared/defs/livecontent.ts). 모두 비어 있다: 적지 않은 게임은 지금과 같다 ----------
 /** 상품 (items 모듈): 비어 있으면 상품이 없다 */
