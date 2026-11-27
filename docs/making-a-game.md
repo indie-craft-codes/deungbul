@@ -3111,7 +3111,42 @@ body[data-mode="tower"] {
 
 기기의 '동작 줄이기'(`prefers-reduced-motion`)와 설정의 **움직임 줄이기 [켬][끔]**(설정 값 `motion`, 처음은 기기를 따른다)를 한 곳에서 본다: 문서 뿌리의 `data-still="1"`이면 움직임 시간 토큰이 1ms가 되고 css의 연출(돌림·흔들림·떠오름·빛살)이 멈춘다. 화면 코드는 `stillMotion()`으로 묻는다(축하 카드의 빛살, 숫자 굴리기, 뽑기의 자동 넘김, 홈 배너의 넘김).
 
-## 26. 경제와 처음 30분: 스태미나, 교환 상점, 돌아옴 요약, 튜토리얼 키트
+## 26. 카드의 공통 손질: 넘친 조각, 범용 조각, 합성, 환원, 잠금, 일괄 성장, 추천 편성 (`HERO_RULES.cards`)
+
+수집형 카드에 흔한 손질([collect-gaps.md](collect-gaps.md)의 조사). 모두 `roster` 모듈의 선택 칸이고 **적은 칸만 켜진다**: `HERO_RULES`에 `cards`가 없는 게임은 서버·저장·화면이 예전과 글자까지 같다. 셈은 `engine/shared/defs/cardgrow.ts` 한 곳(서버 `engine/server/game/systems/cardgrow.ts`, 화면 `engine/client/hud/cardgrow.ts`가 함께 읽는다). 메아리 계약이 모두 켰다:
+
+```ts games/echopact/shared/content/index.ts
+export const HERO_RULES: HeroRules = {
+  ...BASE_HERO_RULES,
+  trade: {
+    wildCommon: { cost: () => 1, shards: () => 1, only: [0] },
+    wildRare: { cost: () => 1, shards: () => 1, only: [1] },
+    wildLegend: { cost: () => 1, shards: () => 1, only: [2] },
+  },
+  cards: {
+    overflow: { item: 'echoCrystal', rate: (r) => [1, 2, 5][r] ?? 1 },
+    fuse: { need: (r) => (r === 0 ? 40 : 80), names: ['cardFuse0', 'cardFuse1'] },
+    reset: { refund: 1 },
+    lock: true, bulk: true, auto: true,
+  },
+};
+```
+
+| 칸 | 하는 일 | 명령 · 안내문 |
+|---|---|---|
+| `overflow: { item, rate(등급) }` | 다 키운 카드(별 최대, 각성이 있으면 각성도 최대)가 받는 조각 하나 → `rate`개의 `item`(가방 한도까지, 넘는 몫은 조각으로 남는다). 받는 길(뽑기·선택권·상품·합성) 모두 `roster.grant`가 부른다. 뽑기 결과는 `PullGot.x`, 결과 창의 칸에 '조각 n → 결정 m'. `rate`는 1 이상의 정수를 권한다(소수는 버린다) | `{ t: 'card', a: 'convert', id }`(남아 있던 조각) · `cardOverflow`, `cardFull` |
+| `trade.<아이템>.only: [등급]` | 범용 조각(선택 조각): 재료 교환을 그 등급의 카드에만 | 기존 `{ t: 'hero', a: 'trade' }` |
+| `fuse: { need(등급), from?, names? }` | 잠그지 않은 그 등급 카드의 조각 `need`개(다 키운 카드 → 조각이 많은 카드 차례) → 한 단계 위 등급의 카드 하나(뽑기 판에 무게가 있는 그 등급의 카드, 같은 확률). 확률표 `fuse:<등급>`(kind `combine`)이 확률의 단일 원본(`allTables`)에 들어가 공개 페이지·확률 창에 보이고, 추첨 기록(종류 `fuse`, 치른 것 `shards:<등급>`)에 남는다. `names`는 표의 이름(문장 키, 공개 페이지는 `ODDS.names`), 없으면 틀의 '카드 합성' | `{ t: 'card', a: 'fuse', r }` · `cardFused`(화면은 축하 카드), `cardFuseNo` |
+| `reset: { refund }` | 레벨(과 기술 레벨)을 1로, 쓴 값의 `refund`(0~1, 1이면 무료 초기화)를 지갑·가방에(넘치면 우편). 별·각성·조각은 돌려주지 않는다. 잠근 카드는 하지 않는다 | `{ t: 'card', a: 'reset', id }` · `cardReset`, `cardIsLocked`, `cardNoReset` |
+| `lock: true` | 잠금: 합성의 재료·환원에서 빠진다. 잠근 카드만 저장·개인 상태 `heroes`의 줄이 `[.., 기술 레벨, 각성, 1]`로 길어진다 | `{ t: 'card', a: 'lock', id, on }` · `cardLock` |
+| `bulk: true` | 레벨 n번(0이면 최대까지, 값은 한 번에, 원인 `cmd:hero:level`), 별을 조각이 되는 만큼(`id`가 없으면 모든 카드) | `{ t: 'card', a: 'levels', id, n }`, `{ t: 'card', a: 'stars', id? }` · `heroUp`, `cardStars`, `cardStarsNone` |
+| `auto: true` | 편성 탭의 [추천 편성]: 전투력이 큰 카드부터(화면의 셈 `autoSquad`, 서버는 편성 명령 그대로) | `{ t: 'squad', ids }` |
+
+- **화면**: 카드 목록 머리(합성 칸·[별 모두 올리기]), 격자 칸(🔒, 성장 점: 별·넘친 조각·범용 조각을 더하면 별), 카드 상세([×5]·[최대까지]·[별 모두]·넘친 조각·[잠금]·[환원]), 편성 탭. 합성·환원은 확인 창 `confirmAsk(제목, 글, 줄들, 하기, 할 일)`(`engine/client/hud/confirm.ts`: 재화가 아닌 되돌릴 수 없는 일의 확인. 하기 단추는 0.4초 잠근다)을 거친다. 단추는 25절의 명령 상태(보냄 → 됨/안 됨)를 그대로 쓴다.
+- **넘친 조각의 재화를 쓰는 곳**: 상품(22절)의 값에 아이템을 줄 수 있다 — `price: { item: 'echoCrystal', n: 3 }`(가방에서 치른다). 메아리 계약의 결정 상점(`shop: 'gShopCrystal'`)이 그것이다. 뽑기 재화로 바꾸는 상품은 두지 않았다(뽑기 경제를 지키려고).
+- **시작할 때의 확인**: `overflow.item`은 items 모듈의 아이템, `reset.refund`는 0~1이어야 한다(아니면 서버가 멈춘다).
+
+## 27. 경제와 처음 30분: 스태미나, 교환 상점, 돌아옴 요약, 튜토리얼 키트
 
 [screens.md](screens.md) 9절의 묶음 D(12 스태미나 · 11 교환 상점 · 13 돌아옴 요약 · 16 FTUE). 모두 **기본 꺼짐**이다: 켜는 칸을 적지 않은 게임은 예전과 같다(등불지기의 황금 실행 그대로).
 

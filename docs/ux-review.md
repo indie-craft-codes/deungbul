@@ -278,7 +278,7 @@ A/B와 나눔: 화면 쌓기·뒤로·구역 배치·재화 줄·알림 점·홈
 | 전투 배속·일시정지 | ×2는 1-5를 깨면 열림, 일시정지 최대 10분 **그대로**. ×4는 넣지 않는다 | 바꾸지 않음 |
 | 등불지기 본문 글자 | 14px **그대로** | 바꾸지 않음 |
 
-**묶음 D의 상태** ([screens.md](screens.md) 표 U4·U14·U15·U24·U25, 쓰는 법은 [making-a-game.md](making-a-game.md) 26절):
+**묶음 D의 상태** ([screens.md](screens.md) 표 U4·U14·U15·U24·U25, 쓰는 법은 [making-a-game.md](making-a-game.md) 27절):
 
 | 열 | 지금 |
 |---|---|

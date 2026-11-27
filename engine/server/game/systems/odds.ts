@@ -8,7 +8,7 @@
 //   공개   publicView()가 odds.json의 모양. 통신 계층(engine/server/net/odds.ts)이 정적 폴더에 쓰고 GET /odds.json·/odds.html로도 준다. 바뀌면 onChange를 부른다
 // 메시지: { t: 'odds', a: 'tables' } → { t: 'odds', a: 'tables', pub }, { t: 'odds', a: 'mine' } → { t: 'odds', a: 'mine', rows } (내 최근 추첨 기록)
 // 게임의 굴림(상자·합성): g.odds.roll(p, 표 id, 단계 key)가 ODDS.tables의 표에서 굴리고 적는다.
-import { ODDS_RULES, allTables, bannerTable, checkTables, enhanceTable, givenTable, problemText, rollStep, stepOf, tableChanges, tableSig, type DrawRow, type OddsHistoryRow, type OddsOutcome, type OddsPlanRow, type OddsPublic, type OddsTable, type OddsTableDef, type LangText } from '../../../shared/defs';
+import { ODDS_RULES, allTables, bannerTable, fuseTable, checkTables, enhanceTable, givenTable, problemText, rollStep, stepOf, tableChanges, tableSig, type DrawRow, type OddsHistoryRow, type OddsOutcome, type OddsPlanRow, type OddsPublic, type OddsTable, type OddsTableDef, type LangText } from '../../../shared/defs';
 import type { OddsStore } from '../../store/types';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
@@ -81,6 +81,7 @@ export class OddsSys {
   build(id: string): OddsTableDef | null {
     if (id === 'enhance' && this.g.has('gear')) return enhanceTable();
     if (id.startsWith('banner:') && this.g.has('gacha')) return bannerTable(id.slice(7));
+    if (id.startsWith('fuse:') && this.g.has('roster')) return fuseTable(Number(id.slice(5)));
     return givenTable(id) ?? null;
   }
   /** 지금 공개하는 표들 (실효 확률 없이) */

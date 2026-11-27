@@ -3,6 +3,7 @@
 //   2단계  '한 번 더 확인합니다' → [쓰기] [그만두기]. 단추의 자리를 1단계와 바꾸고 0.4초 동안 잠가, 빠르게 두 번 누른 손가락이 그대로 쓰지 않게 한다
 // 적지 않은 재화(지금의 게임 모두)는 묻지 않고 곧바로 한다: 예전과 같다 (go를 그 자리에서 부른다).
 // 쓰는 곳: 뽑기의 1번·10번 단추(hud/collect.ts). 게임의 단추도 confirmSpend(재화, 양, 할 일)로 감싸면 같다 (입구 @engine/client).
+// 재화가 아닌 되돌릴 수 없는 일(카드 합성·환원: hud/cardgrow.ts)은 confirmAsk(제목, 글, 덧붙임 줄, 하기 단추, 할 일)로 같은 창에서 한 번 묻는다.
 import { CURRENCIES, needsConfirm, type CurrencyDef } from '../../shared/defs';
 import { L, t } from '../i18n';
 
@@ -48,5 +49,24 @@ export function confirmSpend(cur: string, n: number, go: () => void, no?: () => 
   };
   text.textContent = loc.fmt.confirmSpend(n, cur);
   btns.replaceChildren(mk(t('confirmNo'), () => close?.(), 'no'), mk(t('confirmNext'), step2));
+  b.hidden = false;
+}
+
+/**
+ * 되돌릴 수 없는 일을 한 번 묻는다 (같은 창): 제목, 글, 덧붙임 줄들(확률·쓸 재료), [그만두기] [yes]. [yes]는 0.4초 동안 잠근다 (빠르게 두 번 누른 손가락이 그대로 하지 않게)
+ */
+export function confirmAsk(title: string, text: string, lines: readonly string[], yes: string, go: () => void, no?: () => void): void {
+  const b = ensure(), priceEl = b.querySelector<HTMLElement>('#spendPrice')!;
+  b.querySelector<HTMLElement>('#spendTitle')!.textContent = title;
+  b.querySelector<HTMLElement>('#spendText')!.textContent = text;
+  priceEl.replaceChildren(...lines.map((l) => { const d = document.createElement('span'); d.className = 'askLine'; d.textContent = l; return d; }));
+  priceEl.hidden = !lines.length;
+  close = () => { b.hidden = true; close = null; no?.(); };
+  const mk = (label: string, on: () => void, cls = ''): HTMLButtonElement => { const x = document.createElement('button'); x.type = 'button'; x.textContent = label; if (cls) x.className = cls; x.addEventListener('click', on); return x; };
+  // 하기 단추 안에서 send가 불리므로 명령의 상태(cmdstate)가 이 단추에 붙는다: 창을 닫기 전에 보낸다
+  const ok = mk(yes, () => { go(); b.hidden = true; close = null; }, 'gold');
+  ok.id = 'askYes'; ok.disabled = true;
+  setTimeout(() => { ok.disabled = false; }, 400);
+  b.querySelector<HTMLElement>('#spendBtns')!.replaceChildren(mk(t('confirmNo'), () => close?.(), 'no'), ok);
   b.hidden = false;
 }

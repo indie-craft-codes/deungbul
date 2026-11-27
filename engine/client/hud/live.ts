@@ -28,7 +28,7 @@ const giveText = (r: Reward, hero?: string): string[] => [rewardText(r), goodsTe
 function goodsRow(id: string, def: GoodsDef): HTMLElement {
   const loc = L(), have = goods.b[id] ?? 0, left = goods.s[id];
   const limited = !!def.limit && have >= def.limit.n, out = left !== undefined && left <= 0;
-  const bits = [...giveText(def.give, def.hero), loc.fmt.goodsPrice(def.price.n, def.price.cur, def.price.kind === 'event')];
+  const bits = [...giveText(def.give, def.hero), def.price.item !== undefined ? loc.fmt.goodsPriceItem(def.price.n, def.price.item) : loc.fmt.goodsPrice(def.price.n, def.price.cur, def.price.kind === 'event')];
   if (def.limit) bits.push(loc.fmt.goodsLimit(have, def.limit.n, def.limit.per ?? 'ever'));
   if (left !== undefined) bits.push(loc.fmt.goodsStock(left));
   if (def.to !== undefined) bits.push(loc.fmt.liveLeft(def.to - Date.now()));

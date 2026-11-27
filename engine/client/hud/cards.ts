@@ -2,6 +2,7 @@
 //   목록: 칸 = 초상 + 등급 색 테두리 + 별 + 레벨 + 편성 표시, 없는 것은 흑백. 정렬(등급·전투력·레벨·새로 얻음)·거르기(역할·등급)는 이 기기에 기억한다.
 //   상세(한 화면): 큰 그림, 성장(레벨·공격·체력·전투력·[레벨 업]), 돌파(조각 막대·[별 올리기]), 기술, 변신 시 능력치, 재료 교환,
 //   바로 가기(편성에 넣기·빼기, 이 모습으로 변신, 성장 자세히), 좌우 넘기기(‹ ›). 못 누르는 단추는 까닭을 단다 (parts.button의 why).
+// 카드의 공통 손질(HERO_RULES.cards: 합성·잠금·환원·일괄 성장·넘친 조각)을 켠 게임은 hud/cardgrow.ts가 머리·칸·상세에 단추를 더한다.
 // 데이터와 단추의 일은 collect.ts가 넘긴다 (CardData). 게임이 더 할 수 있는 것: setHeroPic(초상 그림), setCardActions({ morph }) (변신 바로 가기).
 import { HERO_RARITIES, HERO_ROLES, HERO_RULES, heroDef, heroRole, heroIds, isSkillId, type Coin, type HeroesMe } from '../../shared/defs';
 import { L, t } from '../i18n';
@@ -17,6 +18,7 @@ import { tintRarity } from './rarity';
 import { closeScreen, openScreen, dropScreen } from './screens';
 import { S } from '../state';
 import { platform } from '../platform';
+import { cardCell, cardGoButtons, cardGrowButtons, cardStarExtras, drawCardHead, tradeHidden } from './cardgrow';
 
 /** collect.ts가 넘기는 것: 내 영웅·편성·뽑은 때·레벨 업 재화·그림·성장 자세히 */
 export interface CardData {
@@ -84,6 +86,7 @@ export function drawCardList(list: HTMLElement, get: () => CardData, redraw: () 
   HERO_RARITIES.forEach((_, i) => { const b = (() => { chip(rarityName(i), prefs.rar === i, () => { prefs.rar = prefs.rar === i ? -1 : i; savePrefs(); redraw(); }); return chips.lastElementChild as HTMLElement; })(); tintRarity(b, i); b.classList.add('rarchip'); });
   bar.append(sort, span('note cardcount', loc.fmt.cdOwned(owned, heroIds().length)), chips);
   list.append(bar);
+  drawCardHead(list, d.heroes);
   const grid = el('cardgrid');
   for (const r of rowsOf(d)) {
     const c = tintRarity(mk('button', 'cardcell' + (r.owned ? '' : ' off') + (r.inSquad ? ' insq' : '')), r.rarity) as HTMLButtonElement;
@@ -93,6 +96,7 @@ export function drawCardList(list: HTMLElement, get: () => CardData, redraw: () 
     if (r.inSquad) face.append(mk('span', 'cardsq', '◆'));
     c.append(face, mk('b', 'cardname', heroName(r.id)), mk('small', 'cardmeta', r.owned ? `${stars(r.stars)} Lv${r.lv}` : t('heroNotOwned')));
     if (r.canStar) c.classList.add('dot');
+    cardCell(c, r, d.heroes);
     c.addEventListener('click', () => openCard(r.id));
     grid.append(c);
   }
@@ -169,12 +173,14 @@ function drawDetail(): void {
       r.levelCost && !r.canLevel ? loc.fmt.cdWhyGold(r.levelCost) : '');
     lvBtn.className = lvBtn.classList.contains('has-why') ? 'btn-primary has-why' : 'btn-primary';
     grow.append(lvBtn);
+    cardGrowButtons(grow, r);
     s.append(grow);
     // 돌파: 조각
     const star = section(t('cdStar'));
     star.append(meter(r.shards, r.starNeed || 1), mk('div', 'note', r.starNeed ? loc.fmt.heroShards(r.shards, r.starNeed) : t('heroMax')));
     if (r.starNeed) star.append(button(t('heroStarBtn'), () => send({ t: 'hero', a: 'star', id: r.id }), !r.canStar, r.canStar ? '' : loc.fmt.cdWhyShards(r.shards, r.starNeed)));
-    for (const tv of tradeViews(r.id, r.owned, S.me?.items ?? {})) star.append(button(loc.fmt.heroTradeBtn(tv.item, tv.cost, tv.shards), () => send({ t: 'hero', a: 'trade', id: r.id, item: tv.item }), !tv.can));
+    cardStarExtras(star, r, d.heroes);
+    for (const tv of tradeHidden(r.id, d.heroes) ? [] : tradeViews(r.id, r.owned, S.me?.items ?? {})) star.append(button(loc.fmt.heroTradeBtn(tv.item, tv.cost, tv.shards), () => send({ t: 'hero', a: 'trade', id: r.id, item: tv.item }), !tv.can));
     s.append(star);
   }
   // 기술
@@ -193,5 +199,6 @@ function drawDetail(): void {
   }
   if (r.owned && ms && (actions.morph || hasModule('morph'))) go.append(button(t('cdMorphGo'), () => { closeCard(); if (actions.morph) actions.morph(r.id); else openMenu('morph'); }));
   if (r.owned && d.grow) go.append(button(t('cdGrowMore'), () => { closeCard(); d.grow!(r.id); }));
+  cardGoButtons(go, r, d.heroes);
   if (go.childElementCount) s.append(go);
 }

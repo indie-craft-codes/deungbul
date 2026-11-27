@@ -1,4 +1,4 @@
-// 기능의 점진 공개 (튜토리얼 키트, 묶음 D: docs/screens.md 5·9.2의 16, 쓰는 법은 docs/making-a-game.md 26절).
+// 기능의 점진 공개 (튜토리얼 키트, 묶음 D: docs/screens.md 5·9.2의 16, 쓰는 법은 docs/making-a-game.md 27절).
 // 게임이 기능마다 열림 조건(레벨·깬 단계·튜토리얼의 단계: 하나라도 맞으면 열림)을 적으면 —
 //   메뉴의 탭: 열리기 전에는 숨기거나(hide) 🔒와 '언제 열리는지'(lock) (menu.ts의 setTabGate)
 //   홈의 단추 등 게임의 단추: featureLock(id)(잠김의 까닭)·featureHidden(id)으로 묻는다 (homekit의 dock.locked·hidden)

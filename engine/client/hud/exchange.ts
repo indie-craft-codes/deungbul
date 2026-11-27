@@ -1,4 +1,4 @@
-// 교환 상점 (묶음 D: docs/screens.md 2.7·9.2의 11, 쓰는 법은 docs/making-a-game.md 26절): 뽑기 탭의 배너마다 '교환' → 창 하나.
+// 교환 상점 (묶음 D: docs/screens.md 2.7·9.2의 11, 쓰는 법은 docs/making-a-game.md 27절): 뽑기 탭의 배너마다 '교환' → 창 하나.
 //   천장의 표식 (BannerDef.markName이 있으면 그 이름: 메아리 계약 '울림 표식 n/40') — n번째 뽑기는 그 등급 확정
 //   교환 표식 (BannerDef.exchange): n/값, 바꿀 수 있는 영웅 줄([교환]: 모자라면 'n개 더'), 기간이 끝날 때 남은 표식의 규칙
 //   영웅 선택권 (GACHA_RULES.select): 가진 수와 고를 영웅 (예전 뽑기 탭 끝의 줄과 같은 명령)

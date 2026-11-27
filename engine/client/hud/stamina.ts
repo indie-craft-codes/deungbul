@@ -1,4 +1,4 @@
-// 스태미나의 화면 (stamina 모듈, 묶음 D: docs/screens.md 2.8·9.2의 12, 쓰는 법은 docs/making-a-game.md 26절).
+// 스태미나의 화면 (stamina 모듈, 묶음 D: docs/screens.md 2.8·9.2의 12, 쓰는 법은 docs/making-a-game.md 27절).
 //   재화 줄의 칩(staminaChip: 'n/상한 · 다음 1까지 m:ss', 누르면 창): currencyBar(['stamina', …])
 //   부족 창(openStaminaPop): '○○이 모자랍니다', 다음 하나까지·가득까지, [물약 쓰기 (+n · 가진 것 k)](물약이 있는 게임), [기다리기]. 유료 충전은 없다
 //   출격 문(staminaGate): 단계 화면의 [출발]·[다시]·[다음]이 먼저 묻는다: 모자라면 창을 열고 보내지 않는다 (서버도 막는다: 안내문 staminaShort)

@@ -14,6 +14,7 @@
 // 게임이 표를 주지 않으면 지금의 정의(ENHANCE, BANNERS)에서 저절로 만든 표가 원본이다: 값이 예전과 글자까지 같다 (등불지기의 강화 확률도 그대로).
 import { ENHANCE, ODDS } from '../content';
 import { BANNER_IDS, BANNER_TABLE, effectiveOdds, heroDef, pullOdds, type BannerDef, type Odds } from './collect';
+import { fuseTables } from './cardgrow';
 import type { LangText } from './live';
 
 export type OddsKind = 'capsule' | 'enhance' | 'combine' | 'ceiling';
@@ -209,13 +210,15 @@ export function pullStep(t: OddsTableDef, floor: number, sure: boolean): OddsSte
 
 // ---------- 모든 표 ----------
 /**
- * 지금 공개하는 표 모두 (버전은 0: 서버가 붙인다): 게임이 준 표, 장비 강화(gear 모듈), 배너마다(gacha 모듈). has는 고른 모듈을 묻는다.
+ * 지금 공개하는 표 모두 (버전은 0: 서버가 붙인다): 게임이 준 표, 장비 강화(gear 모듈), 배너마다(gacha 모듈), 카드 합성(roster 모듈의 HERO_RULES.cards.fuse). has는 고른 모듈을 묻는다.
  * 원격 설정이나 캐릭터 정의로 내용이 바뀌면 다시 부르면 된다 (표는 부를 때마다 지금의 내용으로 만든다)
  */
-export function allTables(has: (m: 'gear' | 'gacha') => boolean, withEffective = true): OddsTableDef[] {
+export function allTables(has: (m: 'gear' | 'gacha' | 'roster') => boolean, withEffective = true): OddsTableDef[] {
   const out: OddsTableDef[] = ODDS_RULES.tables.filter((t) => t.id !== ENHANCE_TABLE || has('gear'));
   if (has('gear') && !givenTable(ENHANCE_TABLE) && !ODDS_RULES.hide?.enhance) out.push(enhanceTable());
   if (has('gacha') && !ODDS_RULES.hide?.banners) for (const id of BANNER_IDS) { const t = bannerTable(id, withEffective); if (t) out.push(t); }
+  // 카드 합성 (HERO_RULES.cards.fuse: engine/shared/defs/cardgrow.ts)
+  if (has('roster')) out.push(...fuseTables());
   return out;
 }
 /** 표의 내용의 서명 (버전을 뺀 JSON): 서명이 바뀌면 서버가 버전을 올리고 이력을 남긴다 */

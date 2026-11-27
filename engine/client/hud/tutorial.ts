@@ -2,7 +2,7 @@
 // 진행은 이 기기에 저장한다 (플랫폼 저장소의 'tut:<id>' 칸: 다 보았거나 건너뛰었으면 다시 뜨지 않는다).
 // 단계가 바뀔 때마다 onTutorial에 사건을 낸다 (start, step, done, skip): 분석을 받는 곳이 생기면 거기에 잇는다 (docs/genre-features.md 5.5).
 // 안내 카드는 화면 아래 가운데에 뜬다. 게임을 막지 않는다: 그대로 놀면서 조건을 채우면 넘어간다.
-// 튜토리얼 키트 (묶음 D, docs/making-a-game.md 26절): 단계의 모양 kind 'name'(이름 짓기: 입력·무작위·[이 이름으로]·[나중에], 서버의 이름 검사를 그대로 쓴다),
+// 튜토리얼 키트 (묶음 D, docs/making-a-game.md 27절): 단계의 모양 kind 'name'(이름 짓기: 입력·무작위·[이 이름으로]·[나중에], 서버의 이름 검사를 그대로 쓴다),
 //   진행 읽기 tutReached(튜토리얼, 단계)(기능의 열림 조건이 쓴다: hud/unlocks.ts). 첫 편성·결과 창 설명은 보통 단계(target·when·until)로 적는다.
 import { $ } from '../app';
 import { actionOf, onMsg, onSlow } from '../bus';

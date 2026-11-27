@@ -1,4 +1,4 @@
-// 스태미나 (선택 모듈 stamina, 묶음 D: docs/screens.md 2.8·9.2의 12, 쓰는 법은 docs/making-a-game.md 26절).
+// 스태미나 (선택 모듈 stamina, 묶음 D: docs/screens.md 2.8·9.2의 12, 쓰는 법은 docs/making-a-game.md 27절).
 // 시간이 지나면 차오르는 행동력: 단계 출격·소탕이 깎고, 모자라면 거절한다. 오프라인 동안의 회복도 시각으로 셈한다(저장은 { n, at }).
 // 규칙은 게임의 내용 STAMINA_RULES (enabled가 거짓이면 모듈을 골라도 아무것도 하지 않는다: 명령·저장·개인 상태가 없다).
 // 서버는 engine/server/game/systems/stamina.ts, 화면은 engine/client/hud/stamina.ts. 셈(회복)은 이 파일의 staminaAt 하나를 서버·화면·시험이 함께 쓴다.
