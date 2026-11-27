@@ -894,7 +894,8 @@ body.chatOff .tag .say { display: none !important; }
 /* 사람 카드는 대화 줄에서도 열린다 (터치: 대화창이 오른쪽 위라 상점·퀘스트 창과 겹친다): 그 위에 */
 #pcard { z-index: 7; }
 /* 운영 도구와 고객지원: 문의 창, 접속이 막혔을 때의 사유·이의 (support 모듈: hud/support.ts) */
-.supportField { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 13px; }
+.supportField { display: flex; flex-direction: column; gap: 4px; margin: 0; font-size: 13px; }
+.supportField select, .supportField textarea { margin: 0; }
 .supportField select, .supportField textarea { width: 100%; font: inherit; color: inherit; background: rgba(0, 0, 0, .25); border: 1px solid rgba(255, 255, 255, .18); border-radius: 6px; padding: 6px 8px; box-sizing: border-box; }
 .supportField textarea { resize: vertical; min-height: 110px; }
 .supportSanction { border: 1px solid rgba(255, 120, 100, .45); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }

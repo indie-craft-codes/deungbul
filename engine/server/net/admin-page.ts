@@ -113,7 +113,7 @@ const TABS = {
     el.append(h('h2', null, T('alerts')));
     if (al.data) {
       el.append(h('p', { cls: 'note' }, al.data.on ? T('webhookOn') : T('webhookOff')));
-      el.append(table([{ t: 'rule', v: (x) => x.rule.name }, { t: 'metric', v: (x) => x.rule.metric + (x.rule.delta ? ' (Δ)' : '') }, { t: 'limit', v: (x) => x.rule.op + ' ' + x.rule.value }, { t: 'value', v: (x) => x.value, num: true },
+      el.append(table([{ t: 'rule', v: (x) => x.rule.name }, { t: 'metric', v: (x) => x.rule.metric + (x.rule.delta ? ' (Δ)' : '') }, { t: 'limit', v: (x) => x.rule.op + ' ' + x.rule.value }, { t: 'value', v: (x) => (typeof x.value === 'number' && !Number.isInteger(x.value) ? x.value.toFixed(2) : x.value), num: true },
         { t: 'state', v: (x) => h('span', { cls: x.state === 'firing' ? 'bad' : x.state === 'pending' ? 'warn' : 'good' }, T(x.state === 'firing' ? 'stFiring' : x.state === 'pending' ? 'stPending' : 'stOk')) }], al.data.rules, (x) => x.state === 'firing'));
     } else el.append(h('pre', null, al.out));
     el.append(h('h2', null, T('flags')));
@@ -144,7 +144,7 @@ const TABS = {
     el.append(r.data ? table([{ t: 'cohort', v: (x) => (x.day === 'all' ? '∑' : x.day) }, { t: 'count', v: (x) => x.n, num: true }, { t: 'D1', v: (x) => pct(x.d1), num: true }, { t: 'D7', v: (x) => pct(x.d7), num: true }, { t: 'D30', v: (x) => pct(x.d30), num: true }], r.data.rows) : h('pre', null, r.out));
     el.append(h('h2', null, T('funnel')));
     const si = h('input', { value: 'first_join,level_up', style: 'flex:1;min-width:200px', 'aria-label': T('steps') }), di = h('input', { value: '30', size: 4, 'aria-label': T('days') }), fb = h('div');
-    const go = async () => { const b = await api('stats', ['funnel', si.value.replace(/\s/g, ''), '--days', di.value]); fb.textContent = ''; fb.append(b.data ? table([{ t: 'steps', v: (x) => x.name }, { t: 'count', v: (x) => x.n, num: true }, { t: 'stayed', v: (x) => x.pct + '%', num: true }], b.data.rows) : h('pre', null, b.out)); };
+    const go = async () => { const b = await api('stats', ['funnel', si.value.replace(/\s/g, ''), '--days', di.value]); fb.textContent = ''; fb.append(b.data ? table([{ t: 'name', v: (x) => x.name }, { t: 'count', v: (x) => x.n, num: true }, { t: 'stayed', v: (x) => x.pct + '%', num: true }], b.data.rows) : h('pre', null, b.out)); };
     el.append(h('p', { cls: 'note' }, T('steps')), h('div', { cls: 'row' }, si, di, h('span', { cls: 'note' }, T('days')), h('button', { on: { click: go } }, T('run'))), fb);
     await go();
   },
@@ -167,7 +167,7 @@ const TABS = {
       const b = await api('tickets', [which, '100']);
       list.textContent = '';
       if (!Array.isArray(b.data)) { list.append(h('pre', null, b.out)); return; }
-      list.append(table([{ t: 'n', v: (x) => h('button', { on: { click: () => open(x.id) } }, '#' + x.id) }, { t: 'state', v: (x) => T(ST[x.state]) }, { t: 'kind', v: (x) => T(KIND[x.kind]) }, { t: 'at', v: (x) => when(x.at) }, { t: 'name', v: (x) => x.name }, { t: 'text', v: (x) => x.text.slice(0, 80), wrap: true }], b.data, (x) => x.state === 'open' && x.kind === 'appeal'));
+      list.append(table([{ t: '#', v: (x) => h('button', { on: { click: () => open(x.id) } }, '#' + x.id) }, { t: 'state', v: (x) => T(ST[x.state]) }, { t: 'kind', v: (x) => T(KIND[x.kind]) }, { t: 'at', v: (x) => when(x.at) }, { t: 'name', v: (x) => x.name }, { t: 'text', v: (x) => x.text.slice(0, 80), wrap: true }], b.data, (x) => x.state === 'open' && x.kind === 'appeal'));
     };
     const open = async (id) => {
       const b = await api('ticket', [String(id)]);
@@ -176,7 +176,7 @@ const TABS = {
       if (!t) { detail.append(h('pre', null, b.out)); return; }
       const ta = h('textarea', { placeholder: T('answerPh') }), res = h('div');
       detail.append(h('div', { cls: 'card' },
-        h('div', { cls: 'row' }, h('b', null, '#' + t.id), T(KIND[t.kind]), T(ST[t.state]), when(t.at), t.name || '-'),
+        h('div', { cls: 'row' }, h('b', null, '#' + t.id), h('span', null, T(KIND[t.kind])), h('span', { cls: t.state === 'open' ? 'warn' : 'good' }, T(ST[t.state])), h('span', { cls: 'note' }, when(t.at)), h('span', null, t.name || '-')),
         t.sanction ? h('p', { cls: 'warn' }, T('sanction') + ': ' + t.sanction.kind + ' · ' + (t.sanction.until ? when(t.sanction.until) : '∞') + ' · ' + (t.sanction.why || '-')) : null,
         h('p', null, h('b', null, T('text') + ': '), t.text),
         t.answer ? h('p', null, h('b', null, T('answer') + ': '), t.answer) : null,

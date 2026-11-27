@@ -82,7 +82,8 @@ function openBox(appeal: 'mute' | 'ban' | null): void {
 function count(): void {
   const n = [...$<HTMLTextAreaElement>('supportText').value].length;
   $('supportCount').textContent = L().fmt.supportCount(n, TEXT_MAX);
-  $<HTMLButtonElement>('supportSend').disabled = sending || n < 1;
+  // 차단의 이의는 한 번 받으면 다시 보내지 않는다 (서버도 막는다)
+  $<HTMLButtonElement>('supportSend').disabled = sending || n < 1 || (appealFor === 'ban' && !!ban?.appealed);
 }
 function closeBox(): void { $('supportBox').hidden = true; $<HTMLTextAreaElement>('supportText').value = ''; appealFor = null; }
 
