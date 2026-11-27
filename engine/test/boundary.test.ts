@@ -98,7 +98,7 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
    * sparks, sparkBonus: 두 번째 재화의 칸 이름. 재화를 일반화하지 않기로 했다 (계획 7절, 점검 11번). 저장·지갑·장부·우편의 칸 이름으로 남는다 /
    */
   const KNOWN: Record<string, string[]> = {
-    crypto: ['engine/server/net/admin.ts', 'engine/server/net/handoff.ts', 'engine/server/net/web.ts'], // node:crypto (관리자 토큰, 기기 옮기기의 코드와 토큰, 화면 오류의 서명)
+    crypto: ['engine/server/net/admin.ts', 'engine/server/net/handoff.ts', 'engine/server/net/web.ts', 'engine/server/net/social.ts'], // node:crypto (관리자 토큰, 기기 옮기기의 코드와 토큰, 화면 오류의 서명, 사회와 안전의 상대 표)
     sparks: ['engine/shared/defaults.ts', 'engine/server/game/systems/ledger.ts', 'engine/server/game/systems/mail.ts', 'engine/server/game/systems/players.ts', 'engine/server/game/systems/wallet.ts', 'engine/shared/defs/collect.ts'],
     sparkBonus: ['engine/server/game/game.ts', 'engine/server/game/systems/players.ts'],
   };
@@ -245,10 +245,9 @@ const a = 'hello';`).length === 0, '검사의 모양: 문자열로 적은 id는 
   ];
   /**
    * 알고 남겨 둔 곳 → 까닭 (최소로). 줄이 바뀌면 이 목록도 고친다 (없어진 것이 남아 있어도 실패한다)
-   *   social.ts의 localStorage: 대화 차단 목록. 묶음 3(친구·서버 쪽 차단)이 차단을 서버로 옮기며 이 파일의 저장을 지운다 (그 작업과 겹치지 않게 1단계에서는 옮기지 않았다)
+   *   (비어 있다: 1단계에서 남겼던 차단 목록의 localStorage는 묶음 3이 서버로 옮기며 지웠다)
    */
   const KNOWN: Record<string, string> = {
-    'engine/client/social.ts|localStorage': '묶음 3이 지움 (차단 목록을 서버로 옮긴다)',
   };
   const CLIENT = [
     ...walk(path.join(root, 'engine/client'), /\.ts$/),

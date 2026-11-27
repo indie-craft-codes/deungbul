@@ -11,15 +11,16 @@ import type { CharRules } from '@engine/shared/defs/chardef';
 import type { LookRules } from '@engine/shared/defs/look';
 import type { MorphRules } from '@engine/shared/defs/morph';
 import type { LiveKeys, ResetRules } from '@engine/shared/defs/live';
-import { GEAR_BASE, liveRange } from '@engine/shared/defaults';
+import { BASIC_QUICK_CHAT, GEAR_BASE, liveRange } from '@engine/shared/defaults';
 import type { LegalDef } from '@engine/shared/defs/legal';
+import type { AgeRules } from '@engine/shared/defs/talk';
 import { BONFIRE } from './bonfire';
 
 
 // ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
-// 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다. 캐릭터 정의(chars)와 변신(morph)을 쓴다
+// 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다. 캐릭터 정의(chars)와 변신(morph), 대화 채널(chat: 귓말·근처·파티)과 친구(friends)를 쓴다
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends'];
 export const GUEST_NAME = 'Camper';
 
 // ---------- 맵: 지역 하나 ----------
@@ -135,3 +136,10 @@ export const FLAGS: readonly string[] = ['bonfire'];
 // 적으면 접속 화면과 설정 창에 링크가 생기고, 처음 들어올 때(와 버전을 올렸을 때) 동의를 묻는다. 값은 주소나 이 게임의 문장 키다.
 // 이 예제의 문서는 보기일 뿐이다: 실제로 내는 게임은 법률 검토를 거친 문서를 적는다
 export const LEGAL: LegalDef = { terms: 'legalTermsText', privacy: 'legalPrivacyText', version: '2026-11-27' };
+
+// ---------- 사회와 안전: 정해진 문장, 연령과 제한 모드 (engine/shared/defs/talk.ts) ----------
+// 정해진 문장: 틀이 문장을 갖춘 여덟 (대화창의 '문장' 단추). 제한 모드의 사람은 이것만 쓴다
+export const QUICK_CHAT: readonly string[] = [...BASIC_QUICK_CHAT];
+// 연령: 처음 들어온 사람에게 태어난 해를 묻고, 만 14세 미만으로 보이면(생일을 모르니 한 살 적게 센다) 제한 모드 (자유 대화·귓말·친구 요청 받기가 꺼진다).
+// 이 예제는 거래소가 없어 막을 명령이 없다 (거래소를 쓰는 게임은 restrict: ['market'])
+export const AGE: AgeRules = { limit: 14, ask: 'year', restrict: [] };

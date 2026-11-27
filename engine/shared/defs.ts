@@ -21,6 +21,7 @@ export * from './defs/chardef';
 export * from './defs/morph';
 export * from './defs/live';
 export * from './defs/legal';
+export * from './defs/talk';
 // 맵 정의의 모양과 MAP에서 꺼낸 것(AREAS, GRID 등)은 world.ts가 다시 내보낸다. 여기서는 MAP만 내보낸다
 
 export {
@@ -52,4 +53,6 @@ export {
   RESET, LIVE_KEYS, FLAGS,
   // 웹 출시의 바탕: 약관·처리방침, 개인정보 권리
   LEGAL, PRIVACY,
+  // 사회와 안전: 대화 채널, 친구, 정해진 문장, 연령과 제한 모드
+  CHAT_RULES, FRIENDS, QUICK_CHAT, AGE,
 } from './content';

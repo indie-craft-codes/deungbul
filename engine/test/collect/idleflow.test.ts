@@ -76,9 +76,9 @@ const mobsIn = (g: Game, p: Ent) => [...g.ents.values()].filter((e) => e.kind ==
   const t = g.ents.get(p.targetId);
   check(!!t && t.kind === 'm' && t.layer === p.layer, `자동 전투 던전: 대장에게 가장 가까운 적이 대상으로 (${t?.type})`);
   const hp0 = mobsIn(g, p).reduce((s, m) => s + m.hp, 0);
-  step(g, 20);
+  step(g, 12); // 12초: 적이 다 쓰러지기 전에 (20초면 가끔 모두 쓰러져 아래의 '다시 맡는다'를 볼 적이 남지 않았다)
   const hp1 = mobsIn(g, p).reduce((s, m) => s + m.hp, 0);
-  check(hp1 < hp0, `20초 동안 대장이 다가가 친다 (적의 체력 합 ${hp0} → ${hp1})`);
+  check(hp1 < hp0, `12초 동안 대장이 다가가 친다 (적의 체력 합 ${hp0} → ${hp1})`);
   // 손으로 움직이는 동안(1.5초)은 맡기지 않는다.
   // 대상은 맡는 셈(0.3초마다)이 주고, 그 대상이 쓰러지면 다음 셈까지 0으로 비어 있다. 쓰러지는 때는 치명타(Math.random)에 달려 있어서
   // 한 순간만 보면 가끔(약 8%) 막 쓰러뜨린 직후를 본다: 구간 동안 틱마다 본다 (예전에는 2.0초가 된 한 순간만 봐서 가끔 실패했다)

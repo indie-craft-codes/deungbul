@@ -119,3 +119,8 @@ export const FLAGS = get('FLAGS');
 // ---------- 웹 출시의 바탕 ----------
 export const LEGAL = get('LEGAL');
 export const PRIVACY = get('PRIVACY');
+// ---------- 사회와 안전 ----------
+export const CHAT_RULES = get('CHAT_RULES');
+export const FRIENDS = get('FRIENDS');
+export const QUICK_CHAT = get('QUICK_CHAT');
+export const AGE = get('AGE');
