@@ -76,9 +76,9 @@ const mobsIn = (g: Game, p: Ent) => [...g.ents.values()].filter((e) => e.kind ==
   const t = g.ents.get(p.targetId);
   check(!!t && t.kind === 'm' && t.layer === p.layer, `자동 전투 던전: 대장에게 가장 가까운 적이 대상으로 (${t?.type})`);
   const hp0 = mobsIn(g, p).reduce((s, m) => s + m.hp, 0);
-  step(g, 20);
+  step(g, 12); // 12초: 적이 다 쓰러지기 전에 (20초면 가끔 모두 쓰러져 아래의 '다시 맡는다'를 볼 적이 남지 않았다)
   const hp1 = mobsIn(g, p).reduce((s, m) => s + m.hp, 0);
-  check(hp1 < hp0, `20초 동안 대장이 다가가 친다 (적의 체력 합 ${hp0} → ${hp1})`);
+  check(hp1 < hp0, `12초 동안 대장이 다가가 친다 (적의 체력 합 ${hp0} → ${hp1})`);
   // 손으로 움직이는 동안(1.5초)은 맡기지 않는다
   p.targetId = 0; p.lastMove = g.clock;
   step(g, 0.5);

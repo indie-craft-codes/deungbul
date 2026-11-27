@@ -26,7 +26,7 @@ export { MemoryStore, SqliteStore, hasEcon, type EconRow, type EconStore, type P
 export type { Migration, Migrations } from './game/migrate';
 export type { BackupOptions } from './store/backup';
 export { log } from './log';
-export { addBannedWords, isClean, mask } from './text';
+export { addAllowedWords, addBannedWords, addTextFilter, isClean, mask, type TextFilter, type TextWhere } from './text';
 
 /**
  * 서버를 실행하는 흔한 절차 (./run.ts의 runServer). 관리자 통로(net/admin.ts)의 토큰 파일과 기록 파일을 저장 파일과 같은 폴더에 두도록

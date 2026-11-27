@@ -16,13 +16,14 @@
 //
 // 명령 (CLI의 도움말과 docs/making-a-game.md의 운영 절에 같은 목록이 있다):
 //   who | find 이름 | ban 이름 기간 [사유] | unban 이름 | banip 주소 기간 [사유] | unbanip 주소 | mute 이름 기간 [사유] | unmute 이름
-//   kick 이름 [사유] | announce [--chat] 글 | give 이름 무엇 수 | take 이름 무엇 수 | reports [수] [--all] | resolve 신고id [메모] | audit [수]
+//   kick 이름 [사유] | announce [--chat] 글 | give 이름 무엇 수 | take 이름 무엇 수 | reports [수] [--all] | report 신고id | resolve 신고id [메모] | audit [수]
 //   운영의 바탕 (engine/server/game/systems/live.ts):
 //   set [이름 [값(JSON) | --reset | --undo]] | set --log [이름] [수]      원격 설정 (내용의 LIVE_KEYS에 선언된 칸만)
 //   flag [이름 on|off]                                                   기능 깃발 (join, chat, market, mail, gacha와 게임의 FLAGS)
 //   notice [add [--popup] [--ticker] [--from 시각] [--to 시각 | --for 기간] --ko 글 [--en 글] | del id]   공지
 //   maint [plan 시각 | now] [--for 기간 | --until 시각] [--ko 글] [--en 글] | maint cancel | maint end [--gold n] [--sparks n] [--exp n] [--item id:n] [--days n] | maint allow|deny 이름   점검
 //   (웹 출시의 바탕, net/web.ts) errors [수] [--all] | errors clear 서명|all | erase [list|log [수]|ask 이름 [일수]|cancel 이름|now 이름|sweep]
+//   (사회와 안전, net/social.ts) words [test 글 | add 낱말… | del 낱말…] | age 이름 [reset] | blocks 이름
 //   기간: 숫자(시간), 30m·12h·7d처럼 단위를 붙인 것, 또는 perm(영구)
 //   시각: now, +30m·+2h·+1d(지금부터), '2026-12-01 09:00'(초기화 시각 RESET의 시간대로 읽는다), 시간대가 붙은 ISO('2026-12-01T09:00+09:00')
 import { randomBytes, timingSafeEqual } from 'node:crypto';
@@ -35,7 +36,7 @@ import type { Ent } from '../game/entity';
 import type { Game } from '../game/game';
 import { Sanctions, normIp, type AuditRow } from '../game/systems/sanctions';
 import { CURS } from '../game/systems/wallet';
-import type { ReportSave, Store } from '../store/types';
+import type { ReportLine, ReportSave, Store } from '../store/types';
 import { isItemId, liveDef, parseWhen, type Reward } from '../../shared/defs';
 import { langText } from '../game/systems/live';
 
@@ -114,6 +115,10 @@ const when = (ms: number): string => new Date(ms).toISOString().replace('T', ' '
 const spanText = (until: number): string => (until === 0 ? '영구' : `${when(until)}까지`);
 /** 기록 파일과 화면에 넣는 글: 제어 문자를 뺀다 */
 const safe = (s: string, max = 200): string => s.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, max);
+/** 대화 채널의 이름 (신고의 ch, 문맥 줄의 ch) */
+const chName = (ch: string | undefined): string => ({ g: '길드', n: '근처', p: '파티', w: '귓말' } as Record<string, string>)[ch ?? ''] ?? '전체';
+/** 신고에 붙은 대화 한 줄: 시각(UTC), 채널, 이름, 글. 신고당한 사람의 말은 >, 신고한 줄은 ▶ */
+const ctxLine = (l: ReportLine): string => `    ${l.hit ? '▶' : l.t ? '>' : ' '} ${new Date(l.at).toISOString().slice(11, 19)} [${chName(l.ch)}] ${safe(l.name, 40)}: ${safe(l.text, 160)}`;
 
 export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
   const g = host.game, store = host.store, S = g.sanctions;
@@ -242,8 +247,24 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
       if (!list.length) return all ? '신고가 없습니다.' : '처리하지 않은 신고가 없습니다. (모두 보려면 --all)';
       return list.map((r) => {
         const id = reportId(r), done = S.resolved.get(id);
-        return [`[${id}] ${when(r.at)}  ${r.by} → ${r.target}${done ? `  (처리함: ${done.by}${done.note ? ` · ${done.note}` : ''})` : ''}`, ...r.lines.map((l) => `    ${safe(l, 120)}`)].join('\n');
+        // 대화의 앞뒤가 붙은 신고(사회와 안전: net/social.ts)는 신고한 줄과 그 바로 앞뒤 한 줄씩을 보인다 (전부는 report 신고id)
+        const hit = r.ctx?.findIndex((l) => l.hit) ?? -1;
+        const around = r.ctx ? (hit >= 0 ? r.ctx.slice(Math.max(0, hit - 1), hit + 2) : r.ctx.slice(-3)) : [];
+        return [`[${id}] ${when(r.at)}  ${r.by} → ${r.target}${r.ch ? `  (${chName(r.ch)})` : ''}${done ? `  (처리함: ${done.by}${done.note ? ` · ${done.note}` : ''})` : ''}`,
+          ...r.lines.map((l) => `    ${safe(l, 120)}`), ...(around.length ? ['    문맥:', ...around.map(ctxLine)] : [])].join('\n');
       }).join('\n');
+    },
+    report: (a) => {
+      need(a.length >= 1, 'report 신고id (reports로 id를 본다. 앞부분만 적어도 된다)');
+      const hit = store.reports(2000).find((r) => reportId(r).startsWith(a[0]));
+      if (!hit) return `신고 ${a[0]}을(를) 찾지 못했습니다 (reports --all로 id를 보세요).`;
+      const done = S.resolved.get(reportId(hit));
+      return [
+        `[${reportId(hit)}] ${when(hit.at)}  ${hit.by} → ${hit.target}${hit.ch ? `  (${chName(hit.ch)})` : ''}`,
+        `  신고한 사람 키 ${short(hit.byKey)} · 신고당한 사람 키 ${short(hit.targetKey)}${done ? ` · 처리함: ${done.by} ${when(done.at)}${done.note ? ` · ${done.note}` : ''}` : ' · 처리하지 않음'}`,
+        `  신고당한 사람의 최근 말 ${hit.lines.length}줄:`, ...hit.lines.map((l) => `    ${safe(l, 160)}`),
+        ...(hit.ctx?.length ? [`  대화의 앞뒤 ${hit.ctx.length}줄 (신고한 사람이 본 줄만. > 신고당한 사람의 말, ▶ 신고한 줄):`, ...hit.ctx.map(ctxLine)] : ['  대화의 앞뒤: 없음']),
+      ].join('\n');
     },
     resolve: (a, by) => {
       need(a.length >= 1, 'resolve 신고id [메모]');

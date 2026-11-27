@@ -14,23 +14,22 @@ import { boundKeys, dispatch, onMsg, runFrame, runSlow } from './bus';
 import { initModules } from './modules';
 import { steer } from './actions';
 import { $, startApp, view } from './app';
-import { applySnapshot, clearEntities, placeTags, relabel, renameEntity, setGear, setLookOf, spawnMe, spawnMerchant, tagOf, updateEntities } from './entities';
+import { applySnapshot, clearEntities, placeTags, relabel, renameEntity, setGear, setLookOf, spawnMe, spawnMerchant, updateEntities } from './entities';
 import { shakeOffset, updateFx } from './fx';
-import { initChat, logChat } from './hud/chat';
+import { initChat, onChat } from './hud/chat';
 import { hideGate, initMe, renderTexts, setMyName, showGate } from './hud/me';
 import { notifySys } from './hud/notify';
 import { opsLost } from './hud/ops';
 import { setParty } from './hud/party';
 import { keyDiff, keysFor } from './keys';
 import { anyModule, hasModule } from './mods';
-import { speak, updateFloats } from './hud/tags';
+import { updateFloats } from './hud/tags';
 import { applyDom, onLangChange, t } from './i18n';
 import { axis, initInput } from './input';
 import { connect, forgetToken, initNet, send } from './net';
 import { afterPreload, startLater, startPreload } from './preload';
 import { initErrors, watchCanvas } from './errors';
 import { initLifecycle } from './lifecycle';
-import { isBlocked } from './social';
 import type { Look } from './scene/view';
 import { S } from './state';
 
@@ -59,13 +58,8 @@ onMsg('gear', (m) => setGear(m.id, m.weapon, m.cls, m.armor));
 onMsg('look', (m) => setLookOf(m.id, m.l));
 onMsg('cd', (m, now) => { S.cdEnd[m.n] = now + m.ms; S.cdLen[m.n] = m.ms; });
 onMsg('name', (m) => { renameEntity(m.id, m.name); if (S.me && m.id === S.me.id) setMyName(m.name); });
-onMsg('chat', (m) => {
-  if (isBlocked(m.name)) return;
-  if (m.ch === 'g') { logChat(`${t('guildChatTag')} ${m.name}`, m.text, true); return; } // 길드 대화는 말풍선으로 띄우지 않는다
-  logChat(m.name, m.text);
-  const tag = tagOf(m.id);
-  if (tag) speak(tag, m.text);
-});
+// 대화: 차단한 사람의 말은 서버가 거르고 보내지 않는다 (engine/server/net/social.ts). 채널 표시·정해진 문장·말풍선은 대화창이 (hud/chat.ts)
+onMsg('chat', (m) => onChat(m));
 onMsg('sys', (m) => notifySys(m.k, m.a));
 onMsg('pong', (m, now) => { S.pingMs = Math.round(now - m.c); });
 onMsg('full', () => showGate('full', true));

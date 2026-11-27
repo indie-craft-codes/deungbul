@@ -34,8 +34,10 @@ export type PlayerSave = {
   auto?: boolean;
 };
 
-/** 신고 한 건 (engine/server/net/moderation.ts의 Report와 같은 모양) */
-export interface ReportSave { at: number; by: string; byKey: string | null; target: string; targetKey: string | null; lines: string[] }
+/** 신고에 붙는 대화의 앞뒤 한 줄 (engine/server/net/social.ts): 시각, 채널(없으면 전체), 말한 사람의 이름, 원문(가리기 전), 신고당한 사람의 말이면 t, 신고한 줄이면 hit */
+export interface ReportLine { at: number; ch?: string; name: string; text: string; t?: true; hit?: true }
+/** 신고 한 건 (engine/server/net/moderation.ts의 Report와 같은 모양). ctx·ch는 대화 줄을 신고했을 때(또는 그 둘레의 대화가 있을 때)만 */
+export interface ReportSave { at: number; by: string; byKey: string | null; target: string; targetKey: string | null; lines: string[]; ctx?: ReportLine[]; ch?: string }
 
 /**
  * 재화 흐름 지표의 한 줄 (engine/server/game/systems/ledger.ts): 그날, 그 재화가, 그 원인으로, 생겼거나(+) 사라진(-) 양과 건수.
@@ -133,7 +135,7 @@ export interface WebStore {
   /** 그 저장 키가 동의한 약관 버전 (없으면 null) */
   consent(key: string): { v: string; at: number } | null;
   setConsent(key: string, v: string, at: number): void;
-  /** 캐릭터 저장 한 줄을 지운다 */
+  /** 캐릭터 저장 한 줄을 지운다 (사회와 안전의 줄도: 차단한 것·당한 것, 친구, 대화 설정) */
   deletePlayer(key: string): void;
   /** 신고 기록에서 그 저장 키의 이름과 키를 지운다 (신고한 사람이든 당한 사람이든). 줄(대화)은 제재 근거로 남는다 */
   anonymizeReports(key: string): number;
@@ -152,3 +154,33 @@ export interface WebStore {
 }
 /** 그 저장소가 웹 출시의 바탕의 저장도 갖는가 */
 export const hasWeb = (s: Store): s is Store & WebStore => typeof (s as Partial<WebStore>).setConsent === 'function';
+
+// ---------- 사회와 안전: 차단, 친구, 대화 설정과 연령 (engine/server/net/social.ts) ----------
+/**
+ * 차단 한 건: 누가(owner: 사람의 열쇠 — 지금은 저장 키, 계정이 생기면 계정 id) 어느 캐릭터를(char: 캐릭터의 저장 키), 그때의 이름, 시각.
+ * 주인과 대상을 나눠 두어, 계정이 생기면 주인 칸만 계정으로 옮기면 계정의 모든 캐릭터에 걸린다
+ */
+export interface BlockRow { owner: string; char: string; name: string; at: number }
+/** 친구 한 건: 캐릭터 a(저장 키)가 캐릭터 b에게 요청했다(ask) 또는 친구다(ok). 한 쌍에 한 줄. 친구는 캐릭터 사이의 관계다 */
+export interface FriendRow { a: string; b: string; state: 'ask' | 'ok'; at: number }
+/**
+ * 사회와 안전의 저장 (틀의 저장소 둘이 갖는다). 이것이 없는 저장소면 차단·친구·대화 설정은 서버가 켜져 있는 동안만 남는다.
+ * 캐릭터를 지우면(WebStore.deletePlayer) 그 저장 키의 줄도 모두 지운다 (차단한 것과 당한 것, 친구, 설정)
+ */
+export interface SocialStore {
+  /** 그 주인(owner)의 차단 목록 */
+  blocksOf(owner: string): BlockRow[];
+  putBlock(r: BlockRow): void;
+  delBlock(owner: string, char: string): void;
+  /** 그 저장 키가 낀 친구 줄 모두 (요청한 것, 받은 것, 친구) */
+  friendsOf(key: string): FriendRow[];
+  /** 한 쌍의 줄을 적는다 (같은 쌍은 방향과 상관없이 하나: 반대 방향의 줄은 지운다) */
+  putFriend(r: FriendRow): void;
+  /** 한 쌍의 줄을 지운다 (방향과 상관없이) */
+  delFriend(a: string, b: string): void;
+  /** 사람(owner)의 대화 설정과 연령 (JSON). 없으면 null */
+  socialPrefs(owner: string): Record<string, unknown> | null;
+  setSocialPrefs(owner: string, data: Record<string, unknown>, at: number): void;
+}
+/** 그 저장소가 사회와 안전의 저장도 갖는가 */
+export const hasSocial = (s: Store): s is Store & SocialStore => typeof (s as Partial<SocialStore>).putBlock === 'function';

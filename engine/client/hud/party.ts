@@ -1,12 +1,14 @@
-// 사람을 눌렀을 때 뜨는 창(차단, 신고: 핵심 / 파티 초대: party / 길드 초대: guild), 받은 초대, 파티원 목록(party).
+// 사람을 눌렀을 때(또는 대화 줄의 이름을 눌렀을 때) 뜨는 창(차단, 신고: 핵심 / 귓말: chat / 친구 요청: friends / 파티 초대: party / 길드 초대: guild), 받은 초대, 파티원 목록(party).
+// 차단은 서버에 저장된다 (../social.ts): 차단한 사람의 대화·귓말·요청·초대는 서버가 보내지 않는다.
 import type { PartyMember } from '../../shared/protocol';
 import { $ } from '../app';
 import { L, onLangChange, t } from '../i18n';
 import { send } from '../net';
-import { isBlocked, toggleBlock } from '../social';
+import { isBlocked, onSocialChange, toggleBlock } from '../social';
+import { hasModule } from '../mods';
+import { startWhisper } from './chat';
 import { S } from '../state';
 import { onMsg } from '../bus';
-import { feed } from './notify';
 
 const ui = {
   box: $('party'), list: $('partyList'),
@@ -15,6 +17,8 @@ const ui = {
 };
 let cardId = 0;
 let cardName = '';
+/** 대화 줄에서 연 카드면 그 줄의 번호 (신고하면 그 줄의 앞뒤가 함께 적힌다) */
+let cardLine: number | undefined;
 let reportArmed = false;
 let inviteTimer = 0;
 let inviteFrom = '';
@@ -26,13 +30,26 @@ export function initCard(): void {
   $('pcardReport').addEventListener('click', () => {
     // 잘못 누르지 않게, 처음 누르면 확인 문구로 바뀌고 한 번 더 눌러야 접수된다
     if (!reportArmed) { reportArmed = true; $('pcardReport').textContent = t('reportConfirm'); return; }
-    if (cardId) send({ t: 'report', id: cardId });
+    if (cardLine !== undefined) send({ t: 'report', n: cardLine });
+    else if (cardId) send({ t: 'report', id: cardId });
     hideCard();
   });
+  // 차단과 풀기: 서버가 결과를 알린다 (blockedOn, blockedOff)
   $('pcardBlock').addEventListener('click', () => {
-    if (cardName) feed(toggleBlock(cardName) ? L().fmt.blocked(cardName) : L().fmt.unblocked(cardName));
+    if (cardName) toggleBlock(cardId, cardName, cardLine);
     hideCard();
   });
+  // 귓말 (chat 모듈), 친구 요청 (friends 모듈): 차단 단추 앞에
+  const block = $('pcardBlock');
+  const more = (id: string, key: string, on: () => void): void => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'plain'; b.id = id; b.setAttribute('data-i18n', key); b.textContent = t(key as 'report');
+    b.addEventListener('click', () => { on(); hideCard(); });
+    block.before(b);
+  };
+  if (hasModule('chat')) more('pcardWhisper', 'whisper', () => { if (cardName) startWhisper(cardName); });
+  if (hasModule('friends')) more('pcardFriend', 'friendAsk', () => { if (cardId && S.others.has(cardId)) send({ t: 'friend', a: 'ask', id: cardId }); else if (cardName) send({ t: 'friend', a: 'ask', name: cardName }); });
+  onSocialChange(() => { if (!ui.card.hidden) $('pcardBlock').textContent = L().ui[isBlocked(cardId, cardName) ? 'unblock' : 'block']; });
 }
 
 /** 파티: 파티원 목록과 받은 초대 (party) */
@@ -45,13 +62,13 @@ export function initParty(): void {
   onLangChange(renderParty);
 }
 
-/** 다른 사람을 눌렀다: 그 자리에 이름과 초대 단추를 띄운다. */
-export function showCard(id: number, name: string, sx: number, sy: number): void {
-  cardId = id; cardName = name;
+/** 다른 사람을 눌렀다: 그 자리에 이름과 초대 단추를 띄운다. line은 대화 줄에서 열었을 때 그 줄의 번호 */
+export function showCard(id: number, name: string, sx: number, sy: number, line?: number): void {
+  cardId = id; cardName = name; cardLine = line;
   ui.cardName.textContent = name;
   reportArmed = false;
   $('pcardReport').textContent = L().ui.report;
-  $('pcardBlock').textContent = L().ui[isBlocked(name) ? 'unblock' : 'block'];
+  $('pcardBlock').textContent = L().ui[isBlocked(id, name) ? 'unblock' : 'block'];
   // 이미 같은 파티면 초대할 필요가 없다
   const inv = $('pcardInvite'), gi = $('pcardGuild');
   if (inv) inv.hidden = S.party.some((m) => m.id === id);
@@ -63,7 +80,7 @@ export function showCard(id: number, name: string, sx: number, sy: number): void
   ui.card.style.left = `${Math.max(8, Math.min(window.innerWidth - w - 8, sx - w / 2))}px`;
   ui.card.style.top = `${Math.max(8, Math.min(window.innerHeight - h - 8, sy - h - 34))}px`;
 }
-export function hideCard(): void { cardId = 0; cardName = ''; ui.card.hidden = true; }
+export function hideCard(): void { cardId = 0; cardName = ''; cardLine = undefined; ui.card.hidden = true; }
 
 function closeInvite(): void { ui.invite.hidden = true; clearTimeout(inviteTimer); inviteFrom = ''; }
 

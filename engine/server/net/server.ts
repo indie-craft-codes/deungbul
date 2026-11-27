@@ -17,7 +17,7 @@ import { log } from '../log';
 import { MemoryStore, hasEcon, hasLive, type PlayerSave, type Store, type WorldSave } from '../store';
 import type { Reward } from '../../shared/defs';
 import { startBackups, type BackupOptions } from '../store/backup';
-import { isClean, mask, tidy } from '../text';
+import { isClean, tidy } from '../text';
 import { CLOSE, createAdmin, type Admin, type AdminOptions } from './admin';
 import { Handoff } from './handoff';
 import { REPORT_GAP_MS, REPORT_LINES } from './moderation';
@@ -27,6 +27,7 @@ import { serveStatic } from './static';
 import { guestServerAuth, type ServerAuth } from './auth';
 import { createWeb, type Web } from './web';
 import { startStatus, type StatusOptions } from './status';
+import { createSocial, type Social } from './social';
 
 const MAX_CLIENTS = 300; // 기본 상한. 근거는 docs/infra.md의 측정 결과
 const MSG_BURST = 40; // 클라이언트 하나가 한꺼번에 보낼 수 있는 메시지 수
@@ -349,6 +350,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         sendOps(c);
         if (game.has('party')) game.party.resend(kept.id);
         game.channels.tell(kept); // 있던 채널 그대로다: 화면에 다시 알린다
+        social.joined(c);
         return;
       }
     }
@@ -368,6 +370,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     // 오늘의 자리 비움 사냥 시간을 다 써서 멈췄던 사람: 왜 멈춰 있는지 알린다
     if (awayOn && save && c.ent.cls !== '' && game.field(c.ent, 'lv') >= AWAY_MIN_LV && game.away.left(c.ent) <= 0) game.notify(c.ent, 'awayLimit', AWAY.maxS / 3600);
     broadcast(sys('joined', name));
+    social.joined(c); // 차단 목록, 대화 상태, 친구 (./social.ts)
     saveTogether(); // 접속하며 받은 것(맡아 둔 우편)이 월드에서 빠진 것과 함께 저장되게
     savePlayer(c);
   }
@@ -406,36 +409,46 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     savePlayer(c);
   }
 
-  function chat(c: Client, e: Ent, raw: unknown): void {
-    const text = clean(raw, CHAT_MAX);
+  function chat(c: Client, e: Ent, m: Record<string, unknown>): void {
+    // 정해진 문장(q: QUICK_CHAT의 키)이면 글은 없다
+    const quick = typeof m.q === 'string' ? m.q.slice(0, 40) : '';
+    const text = quick ? '' : clean(m.text, CHAT_MAX);
     const now = clock(), me = person(c);
-    if (!text || now - me.lastChat < CHAT_GAP_MS) return;
+    if ((!text && !quick) || now - me.lastChat < CHAT_GAP_MS) return;
     if (!game.flags.on('chat')) { send(c, sys('featureOff', 'chat')); return; } // 기능 깃발: 대화가 꺼져 있다
     const mute = game.sanctions.muted(c.key, c.ip);
     if (mute) { send(c, sys('muted', Sanctions.minutesLeft(mute, game.now()))); return; }
+    // 받는 곳 (./social.ts): 제한 모드, 정해진 문장, 채널·귓말(chat 모듈)과 그 도배 막기. 막혔으면 null (까닭은 이미 알렸다)
+    const to = social.route(c, e, m, text, quick);
+    if (!to) return;
     me.lastChat = now;
     // 한 주소가 보내는 양과 서버 전체의 양에도 끝이 있다. 넘친 말은 전하지 않고, 말한 사람에게만 알린다
     let ip = chatIp.get(c.ip);
     if (!ip) chatIp.set(c.ip, ip = { left: CHAT_IP_BURST, at: now });
     if (!take(ip, now, CHAT_IP_BURST, CHAT_IP_PER_S) || !take(chatAll, now, CHAT_ALL_BURST, CHAT_ALL_PER_S)) { send(c, sys('chatWait')); return; }
-    me.said.push(text);
-    if (me.said.length > REPORT_LINES) me.said.shift();
-    broadcast({ t: 'chat', id: e.id, name: e.name, text: mask(text) });
+    if (text) { me.said.push(text); if (me.said.length > REPORT_LINES) me.said.shift(); }
+    // 모두에게(또는 채널의 사람들에게): 받는 사람이 말한 사람을 차단했으면 그 사람에게는 가지 않는다. 줄 번호를 붙이고 신고의 문맥으로 기억한다
+    social.deliver(c, e, to, text, quick);
   }
 
-  /** 신고: 기록만 한다. 제재는 사람이 기록을 보고 정한다. */
-  function report(c: Client, e: Ent, id: unknown): void {
-    if (!num(id)) return;
-    const target = byEnt.get(id);
-    if (!target?.ent || target === c) return;
+  /**
+   * 신고: 기록만 한다. 제재는 사람이 기록을 보고 정한다.
+   * id(사람을 눌러서) 또는 n(대화 줄을 눌러서: 그 줄을 말한 사람, 지금 접속해 있지 않아도 된다). 신고당한 사람의 최근 말과 함께 대화의 앞뒤(./social.ts의 context: 신고한 사람이 본 줄만)를 적는다
+   */
+  function report(c: Client, e: Ent, m: Record<string, unknown>): void {
+    const target = num(m.id) ? byEnt.get(m.id) ?? null : null;
+    if (num(m.id) && (!target?.ent || target === c)) return;
+    if (!target && !num(m.n)) return;
+    const cx = social.context(c, target ? undefined : m.n, target);
+    if (!cx || cx.char === who(c)) return;
     // 신고한 사람도 당한 사람도 연결이 아니라 사람으로 본다: 어느 쪽이 다시 접속해도 간격이 이어지고, 당한 사람이 한 말도 남아 있다
-    const now = clock(), me = person(c), tk = who(target);
+    const now = clock(), me = person(c), tk = cx.char;
     if (now - (me.reported.get(tk) ?? -Infinity) < REPORT_GAP_MS) { send(c, sys('reportWait')); return; }
     me.reported.set(tk, now);
-    try { store.saveReport({ at: now, by: e.name, byKey: c.key, target: target.ent.name, targetKey: target.key, lines: [...(people.get(tk)?.said ?? [])] }); }
+    try { store.saveReport({ at: now, by: e.name, byKey: c.key, target: cx.name, targetKey: cx.key, lines: [...(people.get(tk)?.said ?? [])], ...(cx.ctx.length ? { ctx: cx.ctx } : {}), ...(cx.ch ? { ch: cx.ch } : {}) }); }
     catch (err) { log.error('[server] 신고 저장 실패:', err); }
-    console.log(`[server] 신고: ${e.name} → ${target.ent.name}`);
-    send(c, sys('reported', target.ent.name));
+    console.log(`[server] 신고: ${e.name} → ${cx.name}`);
+    send(c, sys('reported', cx.name));
   }
 
   /** 기기 옮기기 (net/handoff.ts): 코드를 만들어 주거나, 받은 코드로 이 연결에 새 토큰을 준다 */
@@ -471,10 +484,12 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     const e = c.ent;
     if (!e) return; // 접속 절차 전에는 나머지 메시지를 받지 않는다
     if (m.t === 'rename') rename(c, e, m.name);
-    else if (m.t === 'chat') chat(c, e, m.text);
-    else if (m.t === 'report') report(c, e, m.id);
+    else if (m.t === 'chat') chat(c, e, m);
+    else if (m.t === 'report') report(c, e, m);
     else if (m.t === 'handoff') handoffMsg(c, m);
     else if (web.handle(c, e, m)) { /* 탭 숨김·약관 동의·내 데이터 (./web.ts) */ }
+    else if (social.handle(c, e, m)) { /* 차단·친구·대화 설정과 연령 (./social.ts) */ }
+    else if (social.gate(c, e, m)) { /* 제한 모드에서 막는 명령 (자유 대화인 길드 대화, AGE.restrict) */ }
     else game.command(e, m); // 나머지는 게임 명령
   }
 
@@ -490,6 +505,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       byEnt.delete(c.ent.id);
       // 자동 사냥 중이었으면 캐릭터를 남겨 두고 서버가 이어서 사냥한다.
       // 직업을 고르고 조금이라도 키운 캐릭터만, 정해진 수까지만 남긴다 (접속했다 끊기를 되풀이해 월드를 채우지 못하게)
+      social.left(c); // 친구에게 나갔다고 알리고, 기억해 둔 차단·설정을 놓는다
       if (awayOn && c.key && c.ent.auto && !stopped && !game.live.maintOn() && c.ent.cls !== '' && game.field(c.ent, 'lv') >= AWAY_MIN_LV && away.size < maxAway && awayFrom(c.ip) < AWAY.maxPerIp) { awayIp.set(c.key, c.ip); away.set(c.key, c.ent); game.away.start(c.ent); return; }
       game.players.leave(c.ent.id);
       broadcast(sys('left', c.ent.name));
@@ -515,12 +531,19 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     }
     return n;
   }
+  // 사회와 안전 (./social.ts): 차단, 대화의 받는 곳과 채널, 정해진 문장, 연령과 제한 모드, 친구, 신고의 문맥
+  const social: Social = createSocial({
+    game, store, now: clock, send,
+    clients: () => [...clients].filter((c) => c.ent),
+    byEnt: (id) => byEnt.get(id), byKey: (key) => byKey.get(key),
+  });
   // 웹 출시의 바탕 (./web.ts): 탭 숨김, 약관 동의, 내 데이터, 화면 오류. 삭제 요청은 1분마다와 켜질 때 살핀다
   const web: Web = createWeb({
     game, store, now: clock, send, broadcast,
     drop: (by, code, k, ...a) => dropBy(by, code, k, ...a),
     clients: () => [...clients].filter((c) => c.ent),
     save: () => { game.saveDirty = true; saveTogether(); },
+    social: { exportOf: (key) => social.exportOf(key), erased: (key) => social.erased(key) },
   });
   const eraseTimer = setInterval(() => { try { web.sweep(); } catch (err) { log.error('[server] 삭제 요청 살피기 실패:', err); } }, 60_000);
   setTimeout(() => { if (!stopped) try { web.sweep(); } catch (err) { log.error('[server] 삭제 요청 살피기 실패:', err); } }, 0);
@@ -563,7 +586,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       ...[...away].map(([key, e]) => ({ name: e.name, key, ip: awayIp.get(key) ?? '', ent: e, away: true })),
     ],
     drop: dropBy, broadcast, save: () => { game.saveDirty = true; saveTogether(); },
-    extra: () => web.admin,
+    extra: () => ({ ...web.admin, ...social.admin }),
   }, opts.admin);
 
   wss.on('connection', (ws, req) => {
@@ -648,7 +671,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (const a of game.cdAcks) { const c = byEnt.get(a.id); if (c) send(c, { t: 'cd', n: a.n, ms: a.ms }); }
     for (const a of game.itemCds) { const c = byEnt.get(a.id); if (c) send(c, { t: 'icd', ms: a.ms }); }
     for (const o of game.partyOut) { const c = byEnt.get(o.id); if (c) send(c, o.msg); }
-    for (const o of game.out) { const c = byEnt.get(o.id); if (c) send(c, o.msg); }
+    for (const o of game.out) { const c = byEnt.get(o.id); if (c && social.pass(o.id, o.msg)) send(c, o.msg); } // 길드 대화: 받는 사람이 말한 사람을 차단했으면 빼고, 줄을 기억한다
     for (const msg of game.casts) broadcast(msg);
     for (const a of game.gears) broadcast({ t: 'gear', id: a.id, weapon: a.weapon, armor: a.armor, cls: a.cls });
     for (const a of game.announces) broadcast({ t: 'sys', k: a.k, a: a.a });

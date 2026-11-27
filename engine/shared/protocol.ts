@@ -6,6 +6,7 @@ import type { GuildView, MarketItem } from './defs/social';
 import type { RoomLobby } from './defs/rooms';
 import type { TeamBoard } from './defs/teams';
 import type { MaintView, NoticeView } from './defs/live';
+import type { BlockView, ChatCh, FriendView, TalkState } from './defs/talk';
 import type { ClientMsgs, ServerMsgs, WorldState as GameWorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
 
@@ -131,9 +132,12 @@ export type ClientMsg =
   | { t: 'party'; a: 'invite' | 'accept' | 'decline' | 'leave'; id?: number }
   /** 물약을 마신다 */
   | { t: 'use'; id: string }
-  | { t: 'chat'; text: string }
-  /** 다른 사람을 신고한다 (id는 상대). 서버는 그 사람의 최근 대화와 함께 기록한다 */
-  | { t: 'report'; id: number }
+  /**
+   * 대화. ch(chat 모듈): n 근처, p 파티, w 귓말(to: 받는 사람의 이름). 없으면 전체. q: 정해진 문장의 키(QUICK_CHAT: text는 비운다)
+   */
+  | { t: 'chat'; text: string; ch?: ChatCh; to?: string; q?: string }
+  /** 다른 사람을 신고한다: id는 상대(엔티티), n은 신고할 대화 줄의 번호(줄의 n). 서버는 그 사람의 최근 대화와 줄의 앞뒤를 함께 기록한다 */
+  | { t: 'report'; id?: number; n?: number }
   | { t: 'ping'; c: number }
   /** 장비를 분해해 가루로 바꾼다 (uids: 장비 번호들. 하나라도 안 되면 모두 거절된다) / 장비를 잠그거나 푼다 */
   | { t: 'salvage'; uids: number[] }
@@ -182,6 +186,20 @@ export type ClientMsg =
   | { t: 'consent'; a: 'agree'; v: string }
   /** 내 데이터: export 내려받을 JSON을 달라, erase 삭제를 요청한다(유예 뒤 실행), cancel 요청을 거둔다, status 요청 상태를 묻는다 */
   | { t: 'mydata'; a: 'export' | 'erase' | 'cancel' | 'status' }
+  // ---- 사회와 안전 (engine/server/net/social.ts) ----
+  /** 차단: add 그 사람(id: 엔티티, n: 대화 줄, r: 친구 목록의 표), del 풀기(r), list 목록, import 브라우저에 남은 옛 차단 목록(이름)을 서버로 옮긴다 */
+  | { t: 'block'; a: 'add'; id?: number; n?: number; r?: string }
+  | { t: 'block'; a: 'del'; r: string }
+  | { t: 'block'; a: 'list' }
+  | { t: 'block'; a: 'import'; names: string[] }
+  /** 친구 (friends 모듈): ask 요청(id: 엔티티 또는 name: 이름), accept·decline 받은 요청, cancel 보낸 요청, del 끊기, invite 파티에 부르기, list 목록 */
+  | { t: 'friend'; a: 'ask'; id?: number; name?: string }
+  | { t: 'friend'; a: 'accept' | 'decline' | 'cancel' | 'del' | 'invite'; r: string }
+  | { t: 'friend'; a: 'list' }
+  /** 대화 설정과 연령: state 묻기, age 나이(y: 태어난 해, band: u 기준 미만 / o 이상. 한 번만), prefs 귓말·친구 요청 받기 */
+  | { t: 'talk'; a: 'state' }
+  | { t: 'talk'; a: 'age'; y?: number; band?: 'u' | 'o' }
+  | { t: 'talk'; a: 'prefs'; noWhisper?: boolean; noFriend?: boolean }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -242,8 +260,11 @@ export type ServerMsg =
   | { t: 'cd'; n: number; ms: number }
   /** 누군가 이름을 바꿨다 */
   | { t: 'name'; id: number; name: string }
-  /** ch가 'g'면 길드 대화다 */
-  | { t: 'chat'; id: number; name: string; text: string; ch?: 'g' }
+  /**
+   * 대화 한 줄. ch: g 길드, n 근처, p 파티, w 귓말 (없으면 전체). n: 줄 번호(신고·차단에 쓴다). q: 정해진 문장의 키(text는 비어 있다: 받는 화면이 자기 언어로 읽는다).
+   * to: 내가 보낸 귓말이 돌아온 것이면 받는 사람의 이름
+   */
+  | { t: 'chat'; id: number; name: string; text: string; ch?: ChatCh; n?: number; q?: string; to?: string }
   /** 내 길드(없으면 null)와 받은 초대 */
   | { t: 'guild'; g: GuildView | null; invite?: { name: string; from: string } }
   /** 거래소 목록의 한 쪽. total은 걸러진 물건의 수, guest는 손님이라 사고팔 수 없다는 뜻 */
@@ -282,4 +303,11 @@ export type ServerMsg =
   /** 내 데이터: 내려받을 JSON / 삭제 요청의 상태 (due: 지우는 시각(ms), 요청이 없으면 null. days: 유예 일수) */
   | { t: 'mydata'; a: 'export'; data: unknown }
   | { t: 'mydata'; a: 'state'; due: number | null; days: number }
+  // ---- 사회와 안전 (engine/server/net/social.ts) ----
+  /** 내가 차단한 사람들 (접속하면 있을 때만, 바뀌면 다시). imported: 옛 차단 목록을 옮긴 답이면 옮긴 수 (화면은 그때 브라우저의 옛 목록을 지운다) */
+  | { t: 'blocks'; list: BlockView[]; imported?: number }
+  /** 내 친구와 요청 (friends 모듈) */
+  | { t: 'friends'; list: FriendView[] }
+  /** 내 대화 상태: 제한 모드, 나이를 물어야 하는가, 귓말·친구 요청 받기 (연령을 묻거나 chat·friends 모듈을 고른 게임만) */
+  | { t: 'talk'; s: TalkState }
   | Added<ServerMsgs>;

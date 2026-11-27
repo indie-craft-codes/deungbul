@@ -46,6 +46,8 @@ export interface WebHost {
   clients(): Iterable<WebClient>;
   /** 월드와 바뀐 캐릭터를 지금 저장한다 */
   save(): void;
+  /** 사회와 안전 (./social.ts): 내보내기에 넣을 것, 지운 뒤에 놓을 것 */
+  social?: { exportOf(key: string): Record<string, unknown>; erased(key: string): void };
 }
 export interface Web {
   /** 이쪽의 메시지면 처리하고 true (접속 절차를 마친 연결만) */
@@ -158,6 +160,7 @@ export function createWeb(host: WebHost): Web {
       save, consent: ws?.consent(key) ?? null, erase: ws?.eraseOf(key) ?? null, world,
       sanctions: { ban: ban ? { until: ban.until, why: ban.why, at: ban.at } : null, mute: mute ? { until: mute.until, why: mute.why, at: mute.at } : null },
       reports,
+      ...(host.social ? { social: host.social.exportOf(key) } : {}),
     };
   }
 
@@ -213,6 +216,7 @@ export function createWeb(host: WebHost): Web {
     const done: EraseRow = { key, name: '', asked: row?.asked ?? now, due: row?.due ?? now, state: 'done', done: now };
     let reports = 0;
     store.transaction(() => { ws.deletePlayer(key); reports = ws.anonymizeReports(key); ws.putErase(done); });
+    host.social?.erased(key);
     host.save();
     log.info(`[web] 데이터를 지웠습니다: ${name} (${why}${n ? `, 연결 ${n}개를 끊음` : ''}, 신고 ${reports}건의 이름을 지움)`);
     return `${name}의 데이터를 지웠습니다 (${why}${n ? `, 연결 ${n}개를 끊음` : ''}, 신고 ${reports}건의 이름을 지움).`;

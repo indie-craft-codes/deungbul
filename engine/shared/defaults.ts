@@ -21,6 +21,7 @@ import type { CharRules } from './defs/chardef';
 import type { MorphRules } from './defs/morph';
 import type { LiveKeys, ResetRules } from './defs/live';
 import type { LegalDef, PrivacyRules } from './defs/legal';
+import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
 
 // ---------- 핵심 ----------
 /** 이름을 정하지 못한 접속자에게 붙이는 이름의 머리말 */
@@ -236,3 +237,14 @@ export const liveRange = (min: number, max: number, int = false) => (v: unknown)
 export const LEGAL: LegalDef | null = null;
 /** 내 데이터 삭제: 요청하고 7일 뒤에 지운다 (그동안 취소할 수 있다) */
 export const PRIVACY: PrivacyRules = { eraseDays: 7 };
+// ---------- 사회와 안전: 대화 채널(chat), 친구(friends), 정해진 문장, 연령과 제한 모드 (engine/shared/defs/talk.ts) ----------
+/** 근처 30m, 모든 채널을 합쳐 한꺼번에 5줄·그 뒤로 2초에 1줄, 같은 말은 20초 안에 되풀이하지 못한다 (chat 모듈을 고른 게임에만 걸린다) */
+export const CHAT_RULES: ChatRules = { nearM: 30, burst: 5, perS: 0.5, sameS: 20 };
+/** 친구 50명, 받아 둔 요청 20개, 요청은 5초에 하나 */
+export const FRIENDS: FriendRules = { max: 50, pending: 20, askGapS: 5 };
+/** 틀이 문장을 갖춘 정해진 문장 여덟 (i18n의 ui 키: 인사, 고마움, 미안함, 칭찬, 도움, 기다림, 가자, 작별). 게임은 QUICK_CHAT = [...BASIC_QUICK_CHAT]으로 쓰거나 자기 키를 더한다 */
+export const BASIC_QUICK_CHAT = ['qcHello', 'qcThanks', 'qcSorry', 'qcGood', 'qcHelp', 'qcWait', 'qcGo', 'qcBye'] as const;
+/** 정해진 문장: 없다 (화면에 단추도 없다) */
+export const QUICK_CHAT: readonly string[] = [];
+/** 연령: 묻지 않는다 (제한 모드도 없다) */
+export const AGE: AgeRules | null = null;

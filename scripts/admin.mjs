@@ -50,7 +50,12 @@ const HELP = `쓰는 법: npm run admin -- [게임] <명령> [인자 …]
   erase ask 이름 [일수]         대신 삭제 요청을 받는다 (메일 등으로 요청한 사람). 일수를 주지 않으면 게임의 PRIVACY.eraseDays
   erase cancel 이름             삭제 요청을 거둔다
   erase now 이름|키앞           유예 없이 곧바로 지운다
-  erase sweep                  때가 된 요청을 지금 실행한다 (서버가 1분마다 한다)`;
+  erase sweep                  때가 된 요청을 지금 실행한다 (서버가 1분마다 한다)
+  report 신고id                 신고 하나를 자세히: 최근 말과 대화의 앞뒤 줄 전부 (> 신고당한 사람의 말, ▶ 신고한 줄)
+  words [test 글]               금칙어 개수와 관리자가 더한 낱말 / 그 글이 어떻게 펴지고 가려지는지
+  words add|del 낱말…           관리자 금칙어를 더하거나 뺀다 (DB에 남아 다시 켜도 걸린다)
+  age 이름 [reset]              그 사람의 연령 답과 제한 모드 / 답을 지워 다시 묻는다 (AGE를 적은 게임)
+  blocks 이름                   그 사람이 차단한 사람 (신고 처리 때 확인)`;
 
 const root = path.resolve(import.meta.dirname, '..');
 const argv = process.argv.slice(2);

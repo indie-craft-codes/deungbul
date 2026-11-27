@@ -34,6 +34,20 @@
  "dungeons.crypt.name": "잿빛 지하묘",
  "dungeons.crypt_deep.info": "무덤 사냥개와 지하묘 기사를 뚫고 깨어난 주인을 쓰러뜨리세요. 레벨 7 장비가 나옵니다. 파티로 가세요.",
  "dungeons.crypt_deep.name": "지하묘 깊은 곳",
+ "fmt.ageOver": [
+  "9d9567d50cd6aef3",
+  "만 undefined세 이상",
+  "만 0세 이상",
+  "만 1세 이상",
+  "만 2세 이상"
+ ],
+ "fmt.ageUnder": [
+  "d70b5e6b7aae2441",
+  "만 undefined세 미만",
+  "만 0세 미만",
+  "만 1세 미만",
+  "만 2세 미만"
+ ],
  "fmt.autoOnEarly": [
   "1b48c4158a296e47",
   "자동 사냥을 켰습니다. 직접 움직이면 꺼집니다. (창을 닫아도 이어지는 것은 직업을 고르고 레벨 undefined부터입니다.)",
@@ -105,6 +119,20 @@
   "2채널"
  ],
  "fmt.charErr": "정의의 모양이 틀렸습니다.",
+ "fmt.chatTo": [
+  "705ca779f81b1ae3",
+  "undefined 님에게 귓말",
+  "0 님에게 귓말",
+  "1 님에게 귓말",
+  "2 님에게 귓말"
+ ],
+ "fmt.chatToTag": [
+  "43b3c9261ac0991a",
+  "[→ undefined]",
+  "[→ 0]",
+  "[→ 1]",
+  "[→ 2]"
+ ],
  "fmt.cmpArrow": [
   "2ef3c19e51ae3ac9",
   "지금 바꾸면: undefined",
@@ -314,6 +342,19 @@
   " · 강화 보호석 0개",
   " · 강화 보호석 1개",
   " · 강화 보호석 2개"
+ ],
+ "fmt.friendSeen": [
+  "d257c55e172835a2",
+  "마지막 접속 NaN일 전",
+  "마지막 접속 1분 전",
+  "마지막 접속 20분 전"
+ ],
+ "fmt.friendsHead": [
+  "fcf6151c22f07744",
+  "친구 undefined명",
+  "친구 0명",
+  "친구 1명",
+  "친구 2명"
  ],
  "fmt.fxBuff": [
   "9f64d9425b0201a8",
@@ -1710,6 +1751,27 @@
   "1은(는) 지금 열려 있지 않습니다.",
   "2은(는) 지금 열려 있지 않습니다."
  ],
+ "msg.blockFull": [
+  "2215fdbf70518b2c",
+  "더 차단할 수 없습니다 (최대 undefined명).",
+  "더 차단할 수 없습니다 (최대 0명).",
+  "더 차단할 수 없습니다 (최대 1명).",
+  "더 차단할 수 없습니다 (최대 2명)."
+ ],
+ "msg.blockedOff": [
+  "3caccc376728a415",
+  "undefined 님의 차단을 풀었습니다.",
+  "0 님의 차단을 풀었습니다.",
+  "1 님의 차단을 풀었습니다.",
+  "2 님의 차단을 풀었습니다."
+ ],
+ "msg.blockedOn": [
+  "aaa9e161e7fefb2c",
+  "undefined 님을 차단했습니다. 그 사람의 대화·귓말·친구 요청·초대가 오지 않습니다.",
+  "0 님을 차단했습니다. 그 사람의 대화·귓말·친구 요청·초대가 오지 않습니다.",
+  "1 님을 차단했습니다. 그 사람의 대화·귓말·친구 요청·초대가 오지 않습니다.",
+  "2 님을 차단했습니다. 그 사람의 대화·귓말·친구 요청·초대가 오지 않습니다."
+ ],
  "msg.bossDown": [
   "85e546b8c2e84e0c",
   "undefined이(가) 쓰러졌습니다.",
@@ -1762,6 +1824,9 @@
   "새 캐릭터 1을(를) 얻었습니다!",
   "새 캐릭터 2을(를) 얻었습니다!"
  ],
+ "msg.chatNoParty": "파티가 없어 파티 대화를 보낼 수 없습니다.",
+ "msg.chatQuickOnly": "정해진 문장만 쓸 수 있습니다.",
+ "msg.chatSame": "같은 말을 방금 했습니다. 잠시 뒤에 다시 보내 주세요.",
  "msg.chatWait": "대화가 너무 몰려 방금 한 말이 전해지지 않았습니다. 잠시 뒤에 다시 말해 주세요.",
  "msg.classChanged": [
   "397661100f24019c",
@@ -1881,6 +1946,77 @@
  "msg.featureOff": "flagOther이(가) 잠시 꺼져 있습니다. 공지를 확인해 주세요.",
  "msg.forgeClosed": "대장장이 브람이 아직 돌아오지 않았습니다.",
  "msg.forgeFar": "대장장이 브람 가까이에서 만들 수 있습니다.",
+ "msg.friendAlready": [
+  "15db3e9331934f20",
+  "undefined 님과는 이미 친구입니다.",
+  "0 님과는 이미 친구입니다.",
+  "1 님과는 이미 친구입니다.",
+  "2 님과는 이미 친구입니다."
+ ],
+ "msg.friendAskIn": [
+  "ef211acc0a57c345",
+  "undefined 님이 친구 요청을 보냈습니다. 메뉴의 친구 탭에서 받을 수 있습니다.",
+  "0 님이 친구 요청을 보냈습니다. 메뉴의 친구 탭에서 받을 수 있습니다.",
+  "1 님이 친구 요청을 보냈습니다. 메뉴의 친구 탭에서 받을 수 있습니다.",
+  "2 님이 친구 요청을 보냈습니다. 메뉴의 친구 탭에서 받을 수 있습니다."
+ ],
+ "msg.friendAsked": [
+  "36a86b6cc2fcb829",
+  "undefined 님에게 친구 요청을 보냈습니다.",
+  "0 님에게 친구 요청을 보냈습니다.",
+  "1 님에게 친구 요청을 보냈습니다.",
+  "2 님에게 친구 요청을 보냈습니다."
+ ],
+ "msg.friendFull": [
+  "42347fe26c93cdc3",
+  "친구가 가득 찼습니다 (최대 undefined명).",
+  "친구가 가득 찼습니다 (최대 0명).",
+  "친구가 가득 찼습니다 (최대 1명).",
+  "친구가 가득 찼습니다 (최대 2명)."
+ ],
+ "msg.friendGuest": "저장되지 않는 손님은 친구를 맺을 수 없습니다.",
+ "msg.friendNew": [
+  "dd1172bafca656f8",
+  "undefined 님과 친구가 되었습니다.",
+  "0 님과 친구가 되었습니다.",
+  "1 님과 친구가 되었습니다.",
+  "2 님과 친구가 되었습니다."
+ ],
+ "msg.friendNo": [
+  "ee39b230c6cdd4ef",
+  "undefined 님에게는 지금 친구 요청을 보낼 수 없습니다.",
+  "0 님에게는 지금 친구 요청을 보낼 수 없습니다.",
+  "1 님에게는 지금 친구 요청을 보낼 수 없습니다.",
+  "2 님에게는 지금 친구 요청을 보낼 수 없습니다."
+ ],
+ "msg.friendNoOne": [
+  "ebcb8e83d057a134",
+  "undefined이라는(라는) 이름의 사람이 없습니다.",
+  "0이라는(라는) 이름의 사람이 없습니다.",
+  "1이라는(라는) 이름의 사람이 없습니다.",
+  "2이라는(라는) 이름의 사람이 없습니다."
+ ],
+ "msg.friendOffline": [
+  "3f432fd418cc121d",
+  "undefined 님은 지금 접속해 있지 않습니다.",
+  "0 님은 지금 접속해 있지 않습니다.",
+  "1 님은 지금 접속해 있지 않습니다.",
+  "2 님은 지금 접속해 있지 않습니다."
+ ],
+ "msg.friendRemoved": [
+  "2b857f81d191ea6b",
+  "undefined 님과 친구를 끊었습니다.",
+  "0 님과 친구를 끊었습니다.",
+  "1 님과 친구를 끊었습니다.",
+  "2 님과 친구를 끊었습니다."
+ ],
+ "msg.friendWait": [
+  "1aac34224df7e57f",
+  "친구 요청은 undefined초 뒤에 보낼 수 있습니다.",
+  "친구 요청은 0초 뒤에 보낼 수 있습니다.",
+  "친구 요청은 1초 뒤에 보낼 수 있습니다.",
+  "친구 요청은 2초 뒤에 보낼 수 있습니다."
+ ],
  "msg.gearBagFull": "장비 가방이 가득 찼습니다. 벗은 장비가 들어갈 자리를 만든 뒤(분해·팔기·가방 넓히기) 다시 하세요.",
  "msg.gearDrop": [
   "4f244d1ff5fbf175",
@@ -2136,6 +2272,7 @@
   "레벨이 올랐습니다. Lv 1 · 능력치 3점 (메뉴의 성장)",
   "레벨이 올랐습니다. Lv 2 · 능력치 3점 (메뉴의 성장)"
  ],
+ "msg.limitedCant": "제한 모드에서는 쓸 수 없는 기능입니다.",
  "msg.loot": [
   "82a5973f6fd6cac3",
   "undefined을(를) 주웠습니다. 브람의 대장간에서 쓸 수 있습니다.",
@@ -2579,6 +2716,27 @@
   "1에 불이 켜졌습니다. 이제 그곳에서 다시 일어날 수 있습니다.",
   "2에 불이 켜졌습니다. 이제 그곳에서 다시 일어날 수 있습니다."
  ],
+ "msg.whisperNo": [
+  "b64d7a9738fd5c39",
+  "undefined 님은 귓말을 받지 않습니다.",
+  "0 님은 귓말을 받지 않습니다.",
+  "1 님은 귓말을 받지 않습니다.",
+  "2 님은 귓말을 받지 않습니다."
+ ],
+ "msg.whisperNoOne": [
+  "ebcb8e83d057a134",
+  "undefined이라는(라는) 이름의 사람이 없습니다.",
+  "0이라는(라는) 이름의 사람이 없습니다.",
+  "1이라는(라는) 이름의 사람이 없습니다.",
+  "2이라는(라는) 이름의 사람이 없습니다."
+ ],
+ "msg.whisperOffline": [
+  "3f432fd418cc121d",
+  "undefined 님은 지금 접속해 있지 않습니다.",
+  "0 님은 지금 접속해 있지 않습니다.",
+  "1 님은 지금 접속해 있지 않습니다.",
+  "2 님은 지금 접속해 있지 않습니다."
+ ],
  "nameA.length": "10",
  "nameA[0]": "졸린",
  "nameA[1]": "용감한",
@@ -2667,6 +2825,13 @@
  "towers.ember": "잿불 고원 등탑",
  "towers.first": "첫불 마을 등탑",
  "ui.afkTag": "자리 비움",
+ "ui.ageAskBand": "나이를 골라 주세요.",
+ "ui.ageAskYear": "태어난 해를 골라 주세요.",
+ "ui.ageHead": "나이 확인",
+ "ui.ageNote": "한 번 고르면 바꿀 수 없습니다. 잘못 골랐으면 운영자에게 문의해 주세요.",
+ "ui.ageOk": "확인",
+ "ui.agePick": "고르기",
+ "ui.ageYear": "태어난 해",
  "ui.allReturned": "모두 돌아왔습니다",
  "ui.attackNearest": "가까운 대상 공격",
  "ui.auto": "자동 사냥",
@@ -2683,7 +2848,9 @@
  "ui.bagPick": "칸을 누르면 이름과 설명이 보입니다.",
  "ui.bagPotions": "물약",
  "ui.bagToGear": "장비 보기 (메뉴의 장비)",
- "ui.block": "대화 차단",
+ "ui.block": "차단",
+ "ui.blockHead": "차단한 사람",
+ "ui.blockNone": "차단한 사람이 없습니다. 차단하면 그 사람의 대화·귓말·친구 요청·초대가 오지 않습니다.",
  "ui.buffs": "걸려 있는 강화",
  "ui.changeClass": "직업 바꾸기",
  "ui.channel": "채널",
@@ -2692,8 +2859,18 @@
  "ui.charmOff": "보호석 쓰기: 끔",
  "ui.charmOn": "보호석 쓰기: 켬",
  "ui.chatLabel": "대화 입력",
+ "ui.chatLimited": "정해진 문장만 쓸 수 있습니다",
  "ui.chatOpen": "대화하기",
  "ui.chatPlaceholder": "[[Enter로 대화|대화 입력]]",
+ "ui.chatTabAll": "전체",
+ "ui.chatTabGuild": "길드",
+ "ui.chatTabNear": "근처",
+ "ui.chatTabParty": "파티",
+ "ui.chatTabWhisper": "귓말",
+ "ui.chatTagNear": "[근처]",
+ "ui.chatTagParty": "[파티]",
+ "ui.chatTagWhisper": "[귓말]",
+ "ui.chatWhisperHow": "귓말은 \"/w 이름 내용\"으로 보냅니다. 사람이나 대화의 이름을 눌러도 됩니다.",
  "ui.chooseClass": "직업을 고르세요",
  "ui.claim": "받기",
  "ui.claimAll": "모두 받기",
@@ -2747,6 +2924,23 @@
  "ui.flagMarket": "거래소",
  "ui.flagOther": "이 기능",
  "ui.forge": "브람의 대장간",
+ "ui.friendAccept": "수락",
+ "ui.friendAdd": "요청",
+ "ui.friendAddHint": "이름으로 친구 요청",
+ "ui.friendAsk": "친구 요청",
+ "ui.friendCancel": "요청 취소",
+ "ui.friendDecline": "거절",
+ "ui.friendDel": "끊기",
+ "ui.friendDelSure": "정말 끊을까요?",
+ "ui.friendIn": "친구 요청을 보냈습니다",
+ "ui.friendInOff": "지금은 친구 요청을 받지 않습니다 (설정 또는 제한 모드).",
+ "ui.friendInst": "던전 안",
+ "ui.friendOff": "접속하지 않음",
+ "ui.friendOn": "접속 중",
+ "ui.friendOut": "수락을 기다리는 중",
+ "ui.friendsEmpty": "아직 친구가 없습니다. 사람을 누르거나 이름을 적어 요청해 보세요.",
+ "ui.friendsIn": "받은 요청",
+ "ui.friendsOut": "보낸 요청",
  "ui.full": "서버가 가득 찼습니다. 잠시 뒤에 다시 시도해 주세요.",
  "ui.gachaAlways": "상시",
  "ui.gachaHistory": "최근 뽑기 기록",
@@ -2933,6 +3127,15 @@
  "ui.qHigh": "높음",
  "ui.qLow": "낮음",
  "ui.qMid": "보통",
+ "ui.qcBye": "또 봐요!",
+ "ui.qcGo": "가요!",
+ "ui.qcGood": "잘했어요!",
+ "ui.qcHello": "안녕하세요!",
+ "ui.qcHelp": "도와주세요!",
+ "ui.qcOpen": "문장",
+ "ui.qcSorry": "미안해요.",
+ "ui.qcThanks": "고마워요!",
+ "ui.qcWait": "잠깐만요.",
  "ui.quest": "퀘스트",
  "ui.questAllDone": "지금까지의 이야기를 모두 마쳤습니다.",
  "ui.questGo": "누르면 목적지로 걸어갑니다[[ (F)|]]",
@@ -2986,7 +3189,10 @@
  "ui.salvageCancel": "취소",
  "ui.salvageSource": "장비를 분해하면 나옵니다",
  "ui.setCalm": "화면 흔들림 끄기",
+ "ui.setChatShow": "대화 보이기",
+ "ui.setChatShowNote": "끄면 대화창과 말풍선이 보이지 않습니다.",
  "ui.setFar": "그리는 거리",
+ "ui.setFriendIn": "친구 요청 받기",
  "ui.setFullscreen": "전체 화면",
  "ui.setGame": "게임",
  "ui.setGraphics": "그래픽",
@@ -3000,7 +3206,9 @@
  "ui.setScreen": "화면",
  "ui.setShadows": "음영(빛의 가림)",
  "ui.setSound": "소리",
+ "ui.setTalk": "대화",
  "ui.setUi": "글자·창 크기",
+ "ui.setWhisperIn": "귓말 받기",
  "ui.shop": "길 상인",
  "ui.skillUpBtn": "강화",
  "ui.skillUpHead": "기술 강화",
@@ -3034,6 +3242,7 @@
  "ui.tabBuild": "성장",
  "ui.tabDaily": "일일",
  "ui.tabDevice": "기기",
+ "ui.tabFriends": "친구",
  "ui.tabGacha": "뽑기",
  "ui.tabGear": "장비",
  "ui.tabGuild": "길드",
@@ -3046,6 +3255,7 @@
  "ui.tabSettings": "설정",
  "ui.tabSquad": "편성",
  "ui.tabStages": "단계",
+ "ui.talkLimitedNote": "제한 모드입니다: 정해진 문장만 쓸 수 있고, 귓말과 친구 요청을 받지 않습니다.",
  "ui.teamBoard": "점수판",
  "ui.teamMore": "사람이 더 많음",
  "ui.teamPickBalance": "사람이 더 많은 팀으로는 갈 수 없습니다.",
@@ -3066,6 +3276,7 @@
  "ui.volMusic": "배경음",
  "ui.volSfx": "효과음",
  "ui.volume": "음량",
+ "ui.whisper": "귓말",
  "ui.worldMap": "지도",
  "ui.worldMapHint": "빈 땅을 누르면 그곳으로 걸어가고, 표식을 누르면 자세히 봅니다. [[휠이나 +·−로|두 손가락이나 +·−로]] 확대하고 끌어서 옮깁니다.[[ (N 키, Esc로 닫기)|]]",
  "ui.zoneDark": "등탑이 꺼진 곳입니다. 몬스터가 강하고 먼저 덤벼듭니다. 쓰러지면 불이 켜진 가장 가까운 등탑에서 일어납니다.",
