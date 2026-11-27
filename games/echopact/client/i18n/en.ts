@@ -2,7 +2,7 @@
 import { charName } from '@engine/shared/defs';
 import { keyHints } from '@engine/client/i18n/ko';
 import type { ContentNames } from '@engine/client/i18n/names';
-import type { GameLocale } from './ko';
+import { DUST_FROM, type GameLocale } from './ko';
 
 export const enNames: ContentNames = {
   monsters: { mossling: 'Mossling', thornboar: 'Thorn Boar', stonehorn: 'Stonehorn', wisp: 'Stray Echo', hollowkin: 'Hollowkin', shadeshot: 'Shade Archer', bellgolem: 'Belltower Golem', echowarden: 'Echo Warden', chimeling: 'Chimeling', dirgecaster: 'Dirge Caster', mirrorshade: 'Mirror Shade', knellwraith: 'Knell Wraith', pactsovereign: 'Pact Sovereign' },
@@ -12,6 +12,11 @@ export const enNames: ContentNames = {
     jerkin: { name: 'Quilted Vest' },
     chain: { name: 'Chain Mail' },
     tonic: { name: 'Well Tonic' },
+    valeblade: { name: 'Vale Sword', bow: 'Vale Bow' },
+    hornblade: { name: 'Stonehorn Sword', bow: 'Stonehorn Bow' },
+    valecoat: { name: 'Vale Coat' },
+    hornmail: { name: 'Stonehorn Mail' },
+    echodust: { name: 'Echo Dust', info: 'Comes from salvaging Ringing Vale gear. Used for enhancing from +5.' },
     echoCrystal: { name: 'Echo Crystal', info: 'Spare shards of maxed echoes. Trade them at the Crystal Shop' },
     wildCommon: { name: 'Wild Shard (Common)', info: 'One shard for any Common echo' },
     wildRare: { name: 'Wild Shard (Rare)', info: 'One shard for any Rare echo' },
@@ -124,6 +129,7 @@ export const enGame: GameLocale = {
     gachaNew: () => 'New echo!',
     gachaSameRatio: (rarity) => `Among ${rarity}-or-better echoes, the ratio stays the same as usual.`,
     potions: (n) => `Tonic ${n}`,
+    gearHint: (supplyMax, max) => `Enhancing: standard gear (bought in a shop) goes up to +${supplyMax}; dropped gear up to +${max}. A failed attempt leaves the gear unchanged and costs only the gold (and Echo Dust from +${DUST_FROM}).`,
     towerLive: (id) => `In battle: ${id}`,
     towerPullHave: (cost, have) => `${cost.toLocaleString('en-US')} shards / you have ${have.toLocaleString('en-US')}`,
     towerNext: (id) => `Next: ${id}`,

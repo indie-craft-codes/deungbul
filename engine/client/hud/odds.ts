@@ -3,7 +3,7 @@
 //   '내 추첨 기록'은 서버의 추첨 기록에서 내 것(최근 100건): 시각, 종류, 표의 버전, 결과.
 //   '게임 밖에서 보기'는 같은 서버의 odds.html을 연다 (바깥 링크를 열 수 있는 플랫폼만: 포털 안에서는 단추가 없다).
 // 서버의 짝은 engine/server/game/systems/odds.ts, 표의 모양과 굴림은 engine/shared/defs/odds.ts. 문장은 i18n의 ui·fmt와 oddsPage(공개 페이지와 같은 문장).
-import { oddsPct, outcomeLabel, type DrawRow, type OddsPublic, type OddsTable, type OddsWhen } from '../../shared/defs';
+import { ODDS_RULES, oddsPct, outcomeLabel, type DrawRow, type OddsPublic, type OddsTable, type OddsWhen } from '../../shared/defs';
 import { onMsg } from '../bus';
 import { hasModule } from '../mods';
 import { L, t } from '../i18n';
@@ -23,12 +23,15 @@ const shut = new Set<string>();
 const fill = (s: string, a: Record<string, string | number>): string => s.replace(/\{(\w+)\}/g, (_, k: string) => (a[k] !== undefined ? String(a[k]) : ''));
 const words = () => L().oddsPage;
 /** 표의 이름: 틀의 낱말(강화)이면 그 문장, 아니면 게임의 문장 키 */
-const tableName = (t: Pick<OddsTable, 'name'>): string => words().words[t.name] ?? uiText.get(t.name);
+/** 게임의 이름표(ODDS.names: 공개 페이지와 같은 글). 문장 키로도 영웅으로도 찾지 못한 이름에만 쓴다 (게임이 준 표의 이름과 결과: 메아리 계약의 장비 드롭 표) */
+const given = (key: string, fallback: string): string => ODDS_RULES.names?.[key]?.[L().code] ?? fallback;
+const tableName = (t: Pick<OddsTable, 'name'>): string => { const ui = words().words[t.name] ?? uiText.get(t.name); return ui === t.name ? given(t.name, ui) : ui; };
 const outName = (tb: Pick<OddsTable, 'kind'>, id: string): string => {
   const base = id.replace(/:guard$/, '');
   if (tb.kind === 'enhance') return words().words[outcomeLabel(tb, base).key] ?? base;
   const l = outcomeLabel(tb, base);
-  return l.text ?? (l.key === base ? heroName(base) : uiText.get(l.key));
+  const name = l.text ?? (l.key === base ? heroName(base) : uiText.get(l.key));
+  return name === base ? given(base, name) : name;
 };
 const whenText = (x: OddsWhen): string => {
   const w = words(), r = x.r !== undefined ? rarityName(x.r) : '';
