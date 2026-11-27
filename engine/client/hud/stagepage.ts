@@ -208,8 +208,8 @@ function showResult(id: string, win: boolean, first: boolean, mask: number): voi
   auto.hidden = true;
   box.append(auto);
   const next = win ? STAGES[s.i + 1] : undefined, o = opts;
-  // 마지막 단계를 깼다 (자동 진행이 멈추는 게임): [다음]이 없는 까닭과 할 수 있는 것
-  if (win && lastStop(s)) { const st = myStage()?.stars ?? {}; box.append(lastNote(s, true, { ...st, [id]: (st[id] ?? 0) | mask }, (to) => { hideResult(); openStageInfo(to); })); }
+  // 마지막 단계를 깼다 (자동 진행이 멈추는 게임): [다음]이 없는 까닭과 할 수 있는 것. [별 모으기]는 홈으로 가서 그 단계의 정보 창을 연다 (전투 화면에 남지 않게)
+  if (win && lastStop(s)) { const st = myStage()?.stars ?? {}; box.append(lastNote(s, true, { ...st, [id]: (st[id] ?? 0) | mask }, (to) => { hideResult(); o.home(); openStageInfo(to); })); }
   const btns = mk('div', 'stbtns res');
   btns.append(btn('plain', t('resHome'), () => { hideResult(); o.home(); }));
   btns.append(btn(win ? 'plain' : 'stgo', win ? t('resAgain') : t('resRetry'), () => { hideResult(); (o.again ?? o.go)(id); }));
