@@ -8,7 +8,7 @@ import { check, failures } from '../harness';
 import { AREAS } from '../../shared/world';
 
 /** 핵심만의 시험 (engine/test/core/이름.test.ts) */
-export const CORE = ['core', 'rooms'];
+export const CORE = ['core', 'rooms', 'compete'];
 if (AREAS !== MAP.areas || AREAS[0].id !== 'yard') throw new Error('별칭 @game이 engine/test/core를 가리키지 않습니다. tsx --tsconfig engine/test/core/tsconfig.json 으로 실행하세요 (npm test가 그렇게 부른다)');
 
 const loaded: string[] = [];

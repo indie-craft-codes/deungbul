@@ -31,6 +31,7 @@ import { startStatus, type StatusOptions } from './status';
 import { createSocial, type Social } from './social';
 import { createOddsWeb } from './odds';
 import { liveCommands } from './livecmds';
+import { competeCommands } from './competecmds';
 import { hasOps, type EventRow } from '../store';
 import { startAlerts, type AlertOptions, type Alerts } from './alerts';
 import { metricValues, type OpsNow } from './ops';
@@ -721,7 +722,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       ...[...away].map(([key, e]) => ({ name: e.name, key, ip: awayIp.get(key) ?? '', ent: e, away: true })),
     ],
     drop: dropBy, broadcast, save: () => { game.saveDirty = true; saveTogether(); },
-    extra: () => ({ ...web.admin, ...social.admin, ...support.admin, ...toolCmds, ...(odds?.admin ?? {}), ...liveCommands(game) }),
+    extra: () => ({ ...web.admin, ...social.admin, ...support.admin, ...toolCmds, ...(odds?.admin ?? {}), ...liveCommands(game), ...competeCommands(game) }),
   }, opts.admin);
 
   wss.on('connection', (ws, req) => {

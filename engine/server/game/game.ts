@@ -419,6 +419,8 @@ export class Game {
     this.away = has('away') ? new Away(this) : off('away', 'away');
     this.teams = has('teams') ? new Teams(this) : off('teams', 'teams');
     this.rooms = has('rooms') ? new Rooms(this) : off('rooms', 'rooms');
+    // 순위표 (묶음 8): 규칙 플러그인보다 먼저 (게임이 플러그인에서 g.boards.define을 부른다. 고르지 않은 게임의 등록 차례는 예전과 같다)
+    this.boards = has('boards') ? new Boards(this) : off('boards', 'boards');
     // 게임의 규칙이 깔리는 자리 (Plugin의 설명)
     for (const install of opts.plugins ?? []) install(this);
     // 몬스터가 적은 싸우는 법이 등록되어 있는가 (없으면 기본대로 싸운다: 이름을 잘못 적은 것을 서버를 띄울 때 알린다)
@@ -465,8 +467,7 @@ export class Game {
     this.achieve = has('achieve') ? new AchieveSys(this) : off('achieve', 'achieve');
     this.codex = has('codex') ? new CodexSys(this) : off('codex', 'codex');
     this.coupon = has('coupon') ? new CouponSys(this) : off('coupon', 'coupon');
-    // 경쟁 (묶음 8): 그 뒤에 (고르지 않은 게임의 등록 차례가 예전과 같게)
-    this.boards = has('boards') ? new Boards(this) : off('boards', 'boards');
+    // 랭크 대전 (묶음 8): 그 뒤에 (고르지 않은 게임의 등록 차례가 예전과 같게)
     this.ranked = has('ranked') ? new Ranked(this) : off('ranked', 'ranked');
     this.sanctions = new Sanctions(this);
     new Status(this); // 본인에게 보내는 성장 수치(stat)와 장비·우편(meta): 그 칸의 모듈을 고른 게임만
