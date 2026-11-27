@@ -14,6 +14,8 @@ import { addMenuTab, renderMenu } from './menu';
 import { button, chips, el, row } from './menu/parts';
 import { replayRows, tutorialSig } from './tutorial';
 import { socialRows, socialSig } from './social';
+import { supportRows, supportSig } from './support';
+import { hasModule } from '../mods';
 import { FAR_STEPS, PIXEL_STEPS, QUALITIES, RESERVED_KEYS, UI_STEPS, gfxOf, keyLabel, qualityOf, readSettings, writeSettings, type Quality, type Settings } from './settingscalc';
 
 const STORE_KEY = 'settings';
@@ -132,6 +134,7 @@ function drawSettings(list: HTMLElement): void {
   replayRows(list);
   legalRows(list);
   myDataRows(list);
+  if (hasModule('support')) supportRows(list); // 문의·제재 이의 (support 모듈: ./support.ts)
 }
 
 /** 재설정 중에 누른 키를 받는다 (다른 단축키보다 먼저: 잡은 키는 그 기능을 부르지 않는다) */
@@ -152,7 +155,7 @@ function captureKey(ev: KeyboardEvent): void {
 export function initSettings(): void {
   cur = readSettings(platform().storage.get(STORE_KEY), cap());
   apply();
-  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig()] });
+  addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, soundOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig(), supportSig()] });
   window.addEventListener('keydown', captureKey, { capture: true });
   onSoundChange(() => renderMenu());
   onLangChange(() => renderMenu());

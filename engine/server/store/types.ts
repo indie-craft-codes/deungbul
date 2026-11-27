@@ -184,3 +184,45 @@ export interface SocialStore {
 }
 /** 그 저장소가 사회와 안전의 저장도 갖는가 */
 export const hasSocial = (s: Store): s is Store & SocialStore => typeof (s as Partial<SocialStore>).putBlock === 'function';
+
+// ---------- 운영 도구와 고객지원: 분석 사건, 문의, 롤백 보관 (docs/genre-features.md 5.5) ----------
+/**
+ * 분석 사건 한 줄 (engine/server/game/systems/analytics.ts의 g.track이 쌓고 통신 계층이 저장 주기에 얹는다).
+ * key: 저장 키(손님·서버의 사건이면 빈 글), sess: 접속 한 번의 표(무작위, 저장 키를 가리키지 않는다), at: UTC ms, name: 사건 이름, props: 속성(짧은 값만: 자유 문장은 받지 않는다)
+ */
+export interface EventRow { at: number; key: string; sess: string; name: string; props: Record<string, string | number | boolean> }
+/** 문의 한 건 (선택 모듈 support: engine/server/net/support.ts). kind: ask 질문, bug 오류, appeal 제재 이의. state: open 열림, answered 답변함, closed 닫힘 */
+export interface TicketRow {
+  id: number; key: string; name: string; kind: 'ask' | 'bug' | 'appeal'; state: 'open' | 'answered' | 'closed';
+  /** 보낸 글(금칙어를 가린 뒤), 관리자의 답(없으면 빈 글), 답한 사람 */
+  text: string; answer: string; by: string;
+  /** 접수 시각, 마지막으로 바뀐 시각 */
+  at: number; upd: number;
+  /** 이의라면 그때의 제재 (ban 차단 | mute 말 막기, 끝 시각(0 영구), 사유) */
+  sanction?: { kind: 'ban' | 'mute'; until: number; why: string };
+}
+/** 롤백 전에 따로 둔 캐릭터 저장 (engine/server/net/rollback.ts): 되돌리기를 되돌릴 수 있게 */
+export interface StashRow { id: number; key: string; at: number; by: string; note: string; save: PlayerSave }
+/**
+ * 운영 도구의 저장 (틀의 저장소 둘이 갖는다). 이것이 없는 저장소면 분석 사건을 적지 않고, 문의(support)와 롤백은 꺼진다
+ */
+export interface OpsStore {
+  /** 분석 사건을 얹는다 (한 묶음) */
+  addEvents(rows: EventRow[]): void;
+  /** [from, to) 시각의 사건 (시각 순). names를 주면 그 이름만 */
+  events(from: number, to: number, names?: readonly string[]): EventRow[];
+  /** 그 저장 키의 그 이름의 사건이 하나라도 있는가 (처음 온 사람 first_join을 한 번만 적는다) */
+  hasEvent(key: string, name: string): boolean;
+  /** 그 시각보다 오래된 사건을 지운다 (보관 기간). 지운 수 */
+  pruneEvents(before: number): number;
+  /** 문의: 새로 적고 번호를 받는다 / 한 건 / 고친다 / 목록(최근부터: state·key로 거른다) */
+  addTicket(t: Omit<TicketRow, 'id'>): number;
+  ticket(id: number): TicketRow | null;
+  putTicket(t: TicketRow): void;
+  tickets(q: { state?: TicketRow['state'] | 'live'; key?: string; limit: number }): TicketRow[];
+  /** 롤백 보관: 적고 번호를 받는다 / 그 키의 것(최근부터) */
+  addStash(r: Omit<StashRow, 'id'>): number;
+  stashes(key: string, limit: number): StashRow[];
+}
+/** 그 저장소가 운영 도구의 저장도 갖는가 */
+export const hasOps = (s: Store): s is Store & OpsStore => typeof (s as Partial<OpsStore>).addEvents === 'function';

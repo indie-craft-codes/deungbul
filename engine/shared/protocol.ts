@@ -98,7 +98,7 @@ export type ClientMsg =
    * name: 저장된 이름이 없을 때 쓸 이름. 비우면 서버가 중립적인 이름을 붙인다.
    * v: 이 화면의 프로토콜 번호 (앱·데스크톱이 싣는다. 웹은 싣지 않는다: engine/client/net.ts). 서버의 호환 범위 밖이면 서버가 update를 보내고 닫는다
    */
-  | { t: 'join'; name?: string; token?: string; v?: number }
+  | { t: 'join'; name?: string; token?: string; v?: number; /** 차단된 사람의 이의 글 (support 모듈: 받아 두고 닫는다. engine/server/net/support.ts) */ appeal?: string }
   | { t: 'rename'; name: string }
   | { t: 'move'; x: number; z: number }
   | { t: 'stop' }
@@ -211,6 +211,10 @@ export type ClientMsg =
   | { t: 'talk'; a: 'state' }
   | { t: 'talk'; a: 'age'; y?: number; band?: 'u' | 'o' }
   | { t: 'talk'; a: 'prefs'; noWhisper?: boolean; noFriend?: boolean }
+  // ---- 운영 도구와 고객지원 (support 모듈: engine/server/net/support.ts) ----
+  /** 문의: list 내 문의와 지금 걸린 말 막기, new 새 문의 (kind: ask 질문, bug 오류, appeal 말 막기에 대한 이의) */
+  | { t: 'support'; a: 'list' }
+  | { t: 'support'; a: 'new'; kind: TicketView['kind']; text: string }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -327,4 +331,15 @@ export type ServerMsg =
   | { t: 'friends'; list: FriendView[] }
   /** 내 대화 상태: 제한 모드, 나이를 물어야 하는가, 귓말·친구 요청 받기 (연령을 묻거나 chat·friends 모듈을 고른 게임만) */
   | { t: 'talk'; s: TalkState }
+  // ---- 운영 도구와 고객지원 (support 모듈: engine/server/net/support.ts) ----
+  /** 내 문의 (최근부터)와 지금 걸린 말 막기, 그 말 막기에 열린 이의가 있는가 / 문의를 받았다 (번호) */
+  | { t: 'support'; a: 'list'; list: TicketView[]; sanction: SanctionView | null; appealed?: boolean }
+  | { t: 'support'; a: 'sent'; id: number }
+  /** 접속이 막혀 있다 (닫기 전에): 사유·끝 시각, 이의를 이미 냈는가, 이의에 답이 있으면 그 답 */
+  | { t: 'sanction'; s: SanctionView; appealed: boolean; answer?: string }
   | Added<ServerMsgs>;
+
+/** 문의 한 건의 화면 몫 (support 모듈): 번호, 종류, 상태(open 열림, answered 답변, closed 닫힘), 보낸 글, 답(없으면 빈 글), 접수·마지막으로 바뀐 시각(UTC ms) */
+export interface TicketView { id: number; kind: 'ask' | 'bug' | 'appeal'; state: 'open' | 'answered' | 'closed'; text: string; answer: string; at: number; upd: number }
+/** 걸린 제재의 화면 몫: 종류(ban 접속 차단, mute 말 막기), 끝 시각(0이면 영구), 사유, 건 시각 */
+export interface SanctionView { kind: 'ban' | 'mute'; until: number; why: string; at: number }

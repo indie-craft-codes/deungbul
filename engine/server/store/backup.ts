@@ -27,6 +27,8 @@ export interface Backups {
   readonly lastAt: number;
   /** 실패한 횟수 */
   readonly fails: number;
+  /** 백업 폴더 (계정 단위 롤백이 읽는다: engine/server/net/rollback.ts) */
+  readonly dir: string;
   stop(): void;
 }
 
@@ -76,5 +78,5 @@ export function startBackups(store: Store, opts: BackupOptions = {}): Backups | 
   now();
   const timer = everyMin > 0 ? setInterval(now, everyMin * 60_000) : null;
   timer?.unref();
-  return { now, get lastAt() { return state.lastAt; }, get fails() { return state.fails; }, stop: () => { if (timer) clearInterval(timer); } };
+  return { now, dir, get lastAt() { return state.lastAt; }, get fails() { return state.fails; }, stop: () => { if (timer) clearInterval(timer); } };
 }
