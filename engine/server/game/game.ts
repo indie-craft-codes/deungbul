@@ -62,6 +62,8 @@ import { HeroGear } from './systems/herogear';
 import { Wallet } from './systems/wallet';
 import { Chars } from './systems/chars';
 import { Morph } from './systems/morph';
+import { Clock } from './systems/clock';
+import { Live } from './systems/live';
 
 /** 한 틱에 길찾기가 살펴볼 수 있는 칸의 수. 넘으면 그 틱의 나머지 길찾기는 곧장 가는 길로 대신한다 (길 없는 곳을 찍어 서버를 멈추지 못하게) */
 const NAV_VISITS_PER_TICK = 12000;
@@ -101,6 +103,15 @@ export interface Hooks extends HooksExt {
   charRemoved: (id: string) => void;
   /** [morph] 변신했다 (id) / 풀렸다 (id는 ''): 까닭 on, off 스스로, end 시간이 다 됨, gone 정의가 빠짐 */
   morphed: (p: Ent, id: string, why: 'on' | 'off' | 'end' | 'gone') => void;
+  /** [핵심: 시계] 날·주·달이 바뀌었다 (내용의 RESET): 새 열쇠, 옛 열쇠, 지난 경계의 수(서버가 꺼져 있던 동안 여럿이 지났어도 사건은 한 번) */
+  dayReset: (day: string, prev: string, missed: number) => void;
+  weekReset: (week: string, prev: string, missed: number) => void;
+  monthReset: (month: string, prev: string, missed: number) => void;
+  /** [핵심: 원격 설정] 칸이 바뀌었다 (cfg:이름, flag:이름, notice:id, maint, admins) */
+  liveChanged: (key: string) => void;
+  /** [핵심: 점검] 점검이 시작됐다 (통신 계층이 모두 저장하고 관리자 말고 내보낸다) / 끝났다 */
+  maintStarted: () => void;
+  maintEnded: () => void;
   /** 탭·앱을 숨겼다(false) / 다시 보였다(true) (engine/server/net/web.ts). 실시간 판의 '숨긴 사람' 처리 같은 것을 게임이 건다 */
   playerVisible: (p: Ent, on: boolean) => void;
 }
@@ -322,6 +333,12 @@ export class Game {
   /** [morph] 변신 */ readonly morph: Morph;
   /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
   readonly sanctions: Sanctions;
+  /** [핵심] 시계와 초기화: 날·주·달의 열쇠와 경계 사건 (내용의 RESET). 규칙 플러그인보다 먼저 만든다 */
+  readonly time: Clock;
+  /** [핵심] 원격 설정·공지·점검 (내용의 LIVE_KEYS). 규칙 플러그인보다 먼저 만든다 */
+  readonly live: Live;
+  /** [핵심] 기능 깃발: g.flags.on('market'). 깃발이 없으면 켜짐 (g.live의 것) */
+  readonly flags: { on: (name: string) => boolean };
 
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
@@ -339,6 +356,10 @@ export class Game {
     this.combat = has('combat') ? new Combat(this) : off('combat', 'combat');
     this.monsters = has('combat') ? new Monsters(this) : off('combat', 'monsters');
     this.bots = new Bots(this);
+    // 시계와 원격 설정 (핵심): 규칙 플러그인과 모듈의 시스템이 만들어질 때부터 쓸 수 있게. 틱은 경계·공지의 시각만 견주고 아무것도 바꾸지 않는다
+    this.time = new Clock(this);
+    this.live = new Live(this);
+    this.flags = this.live.flags;
     this.away = has('away') ? new Away(this) : off('away', 'away');
     this.teams = has('teams') ? new Teams(this) : off('teams', 'teams');
     this.rooms = has('rooms') ? new Rooms(this) : off('rooms', 'rooms');
@@ -512,6 +533,9 @@ export class Game {
     const fn = typeof msg.t === 'string' ? this.commands.get(msg.t) : undefined;
     if (!fn) return;
     p.lastAct = this.clock; // 무엇이든 명령을 냈으면 자리에 있는 사람이다 (게임의 규칙이 인원을 셀 때)
+    // 기능 깃발이 꺼진 명령은 처리하지 않고 알린다 (engine/shared/defs/live.ts의 COMMAND_FLAGS, g.live.gate)
+    const flag = this.live.gateOf(msg.t as string);
+    if (flag !== undefined && !this.flags.on(flag)) { this.notify(p, 'featureOff', flag); return; }
     fn(p, msg);
   }
 

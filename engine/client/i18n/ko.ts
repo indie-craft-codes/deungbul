@@ -446,6 +446,20 @@ export const koBase = (n: ContentNames) => {
       morphLookOnly: '겉모습만 바뀝니다',
       charAtk: '공격',
       charHp: '체력',
+      // 운영의 바탕: 공지, 점검, 기능 깃발, 주간·월간 임무 (hud/ops.ts, hud/menu/daily.ts). 게임의 깃발 이름은 게임이 flag<이름>으로 더한다
+      noticeTitle: '공지',
+      noticeClose: '닫기',
+      gateMaint: '서버 점검 중입니다.',
+      gateJoinClosed: '지금은 새로 접속할 수 없습니다. 잠시 뒤에 다시 시도해 주세요.',
+      dailyDay: '일일 임무',
+      dailyWeek: '주간 임무',
+      dailyMonth: '월간 임무',
+      flagJoin: '새 접속',
+      flagChat: '대화',
+      flagMarket: '거래소',
+      flagMail: '우편 받기',
+      flagGacha: '뽑기',
+      flagOther: '이 기능',
       // 웹 출시의 바탕: 설정 창 (hud/settings.ts)
       tabSettings: '설정',
       setSound: '소리',
@@ -593,7 +607,7 @@ export const koBase = (n: ContentNames) => {
       power: (n: number) => `전투력 ${num(n)}`,
       streak: (n: number) => `출석 ${n}일째`,
       reward: (gold: number, exp: number, second: number) => [gold ? `${G.name} ${num(gold)}` : '', exp ? `경험치 ${num(exp)}` : '', second && coin ? `${coin.name} ${second}` : ''].filter(Boolean).join(' · '),
-      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : String(k)),
+      mailTitle: (k: string, a: (string | number)[]) => (k === 'idle' ? `쉬는 동안 모인 것 (${a[0]}분)${a[2] ? ` · ${a[1]} → ${a[2]}까지 진행` : ''}` : k === 'attend' ? `출석 ${a[0]}일째 보상` : k === 'dungeon' ? `${dungeonName(a[0])} 완료 보상` : k === 'daily' ? `일일 임무 완료: ${dailies[a[0] as DailyId] ?? a[0]}` : k === 'marketSold' ? `거래소 판매 대금: ${tradeWhat(a)} (값 ${num(a[2])}, 수수료 ${num(a[3])})` : k === 'marketExpired' ? `거래소에서 기간이 지나 돌아온 물건: ${tradeWhat(a)}` : k === 'marketBought' ? `거래소에서 산 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'marketBack' ? `거래소에서 내린 물건: ${tradeWhat(a)} (자리가 없어 우편으로 보관)` : k === 'maint' ? '점검 보상' : String(k)),
       status: (online: number | string, near: number, ping: string) => `접속자 ${online} · 주변 ${near} · 지연 ${ping}`,
       itemDamage: (pct: number) => `공격 피해 +${pct}%`,
       itemGuard: (pct: number) => `받는 피해 -${pct}%`,
@@ -735,6 +749,13 @@ export const koBase = (n: ContentNames) => {
       morphLeft: (s: number) => (s < 0 ? '스스로 풀 때까지' : `남은 시간 ${s >= 60 ? `${Math.floor(s / 60)}분 ` : ''}${s % 60}초`),
       morphCd: (s: number) => `다시 변신까지 ${s}초`,
       morphBonus: (m: MorphMods) => morphModsKo(m ?? {}),
+      // 운영의 바탕 (hud/ops.ts, hud/menu/daily.ts)
+      /** 임무가 다시 시작하기까지 (남은 ms) */
+      resetIn: (ms: number) => `초기화까지 ${spanMs(ms, 'ko')}`,
+      /** 점검 예고의 띠: 남은 초, 예정 끝 시각 (UTC ms, 0이면 정하지 않음) */
+      maintCountdown: (sec: number, until: number) => `${clockText(sec)} 뒤 서버 점검이 시작됩니다${until ? ` · 예정 끝 ${whenText(until, 'ko-KR')}` : ''}`,
+      /** 점검 중 접속 화면의 덧붙는 줄: 예정 끝 시각, 운영자의 안내 글 */
+      maintGate: (until: number, text: string) => `${text ? `${text} · ` : ''}${until ? `예정 끝 ${whenText(until, 'ko-KR')}. ` : ''}끝나면 저절로 다시 접속합니다.`,
       // 웹 출시의 바탕
       keySkill: (n: number) => `기술 ${n}`,
       keyGame: (k: string) => `게임 키 ${k}`,
@@ -935,6 +956,12 @@ export const koBase = (n: ContentNames) => {
       morphWait: (a) => `${a[0]}초 뒤에 다시 변신할 수 있습니다.`,
       morphFight: () => '싸우는 중에는 변신할 수 없습니다.',
       morphNone: () => '가지지 않은 캐릭터입니다.',
+      // ---- 운영의 바탕 ----
+      featureOff: (a) => `${josa(flagLabel(a[0]), '이', '가')} 잠시 꺼져 있습니다. 공지를 확인해 주세요.`,
+      joinClosed: () => '지금은 새로 접속할 수 없습니다. 잠시 뒤에 다시 시도해 주세요.',
+      maintSoon: (a) => `${a[0]}분 뒤에 서버 점검이 시작됩니다.${Number(a[1]) ? ` 예정 끝: ${whenText(Number(a[1]), 'ko-KR')}.` : ''} 하던 것은 저절로 저장됩니다.`,
+      maintStart: (a) => `서버 점검이 시작되어 접속을 끊습니다.${Number(a[0]) ? ` 예정 끝: ${whenText(Number(a[0]), 'ko-KR')}.` : ''}`,
+      maintEnd: () => '서버 점검이 끝났습니다.',
       // 웹 출시의 바탕: 내 데이터
       eraseAsked: (a) => `삭제를 요청했습니다. ${a[0]}일 뒤에 이 캐릭터의 데이터를 지웁니다. 그동안은 설정에서 거둘 수 있습니다.`,
       eraseCanceled: () => '삭제 요청을 거뒀습니다.',
@@ -969,3 +996,41 @@ export type UiKey = keyof Locale['ui'];
 
 /** 재련 안내의 옵션 한 줄 (서버가 보여 줄 값을 보낸다) */
 const statLine = (id: unknown, v: unknown): string => (isStat(id) ? modText[statMod(id)](Number(v)) : String(id ?? ''));
+
+// ---------- 운영의 바탕의 도우미 (en.ts도 쓴다) ----------
+const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+/** 기능 깃발의 이름: 화면 문장 flag<이름>(flagMarket …). 게임의 깃발은 게임이 ui에 flag<이름>을 더한다. 없으면 flagOther */
+export const flagLabel = (f: MsgArg): string => { const k = 'flag' + cap(String(f)); const v = uiText.get(k); return v === k ? uiText.get('flagOther') : v; };
+/** 초를 m:ss로 (한 시간이 넘으면 h:mm:ss) */
+export const clockText = (sec: number): string => {
+  const s = Math.max(0, Math.ceil(sec)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+};
+/** UTC ms를 보는 사람의 시각(월·일 시:분)으로 */
+export const whenText = (ms: number, locale: string): string => new Date(ms).toLocaleString(locale, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+/** 남은 ms를 읽기 좋게: 일·시간, 시간·분, 분 */
+export const spanMs = (ms: number, lang: 'ko' | 'en'): string => {
+  const all = Math.max(1, Math.ceil(ms / 60000)), d = Math.floor(all / 1440), h = Math.floor((all % 1440) / 60), m = all % 60;
+  if (lang === 'ko') return d ? `${d}일${h ? ` ${h}시간` : ''}` : h ? `${h}시간${m ? ` ${m}분` : ''}` : `${m}분`;
+  return d ? `${d}d${h ? ` ${h}h` : ''}` : h ? `${h}h${m ? ` ${m}m` : ''}` : `${m}m`;
+};
+/**
+ * 상태 페이지(status.html)의 문장: 서버가 정적 폴더에 페이지를 쓸 때 넣는다 (engine/server/net/status.ts). 페이지는 브라우저의 언어로 고른다.
+ * {n}은 수가 들어갈 자리
+ */
+export const koStatusPage = {
+  title: '서버 상태',
+  ok: '정상',
+  maint: '점검 중',
+  planned: '점검 예정',
+  down: '응답 없음',
+  checked: '마지막 확인',
+  players: '접속자',
+  about: '약 {n}명',
+  start: '시작',
+  until: '예정 끝',
+  stale: '서버가 {n}분째 소식을 보내지 않습니다.',
+  missing: '상태를 읽지 못했습니다.',
+  note: '이 페이지는 30초마다 새로 읽습니다. 시각은 이 기기의 시각입니다.',
+  game: '게임으로',
+};

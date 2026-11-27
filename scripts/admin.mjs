@@ -27,6 +27,22 @@ const HELP = `쓰는 법: npm run admin -- [게임] <명령> [인자 …]
   reports [수] [--all]         신고 목록 (기본: 처리하지 않은 것 20건)
   resolve 신고id [메모]         신고를 처리했다고 표시
   audit [수]                   최근 관리자 행동 기록
+운영의 바탕 (시각: now, +30m, '2026-12-01 09:00'(초기화 시각의 시간대), '2026-12-01T09:00+09:00'):
+  set                          원격 설정으로 바꿀 수 있는 칸(내용의 LIVE_KEYS)과 지금 값
+  set 이름 값                   칸을 바꾼다 (값은 JSON. 검사를 지나야 반영, 재시작 없이)
+  set 이름 --reset | --undo     소스의 값으로 / 바로 앞 값으로
+  set --log [이름] [수]          변경 이력 (누가·언제·전·후)
+  flag [이름 on|off]            기능 깃발 (join, chat, market, mail, gacha …). 없으면 켜짐
+  notice                       공지 목록
+  notice add [--popup] [--ticker] [--from 시각] [--to 시각 | --for 기간] --ko 글 [--en 글]
+  notice del id                공지 내리기
+  maint                        점검 상태와 점검 중 입장(관리자) 목록
+  maint plan 시각 [--for 기간 | --until 시각] [--ko 글] [--en 글]   점검 예고 (카운트다운, 30·10·5·1분 전 안내)
+  maint now [--for 기간] …       바로 점검 (모두 저장하고 관리자 말고 내보낸다)
+  maint cancel                 예고 거두기
+  maint end [--gold n] [--sparks n] [--exp n] [--item id:n] [--days n]   점검 끝 (보상을 적으면 저장된 캐릭터 모두에게 우편)
+  maint allow|deny 이름         점검 중(과 새 접속이 꺼졌을 때)에도 들어올 사람
+웹 출시의 바탕:
   errors [수] [--all]          화면 오류 묶음 (같은 오류는 한 줄, 최근 순. --all이면 스택 전부)
   errors clear 서명|all         화면 오류 묶음을 지운다 (고친 뒤)
   erase [list]                 기다리는 내 데이터 삭제 요청

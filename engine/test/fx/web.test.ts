@@ -239,7 +239,7 @@ try {
     old.saveReport({ at: 1, by: '옛사람', byKey: 'k1', target: '남', targetKey: 'k2', lines: ['남의 말'] });
     old.close();
     const s = new SqliteStore(file);
-    check(s.schemaVersion() === SCHEMA.length && SCHEMA.length >= 2 && s.loadPlayer('k1')?.name === '옛사람', `옛 DB(스키마 1)를 열면 웹의 표를 더한다 (스키마 ${s.schemaVersion()})`);
+    check(s.schemaVersion() === SCHEMA.length && SCHEMA.length >= 2 && s.loadPlayer('k1')?.name === '옛사람', `옛 DB(스키마 1)를 열면 원격 설정(2)과 웹의 표(3)를 차례로 더한다 (스키마 ${s.schemaVersion()})`);
     s.setConsent('k1', 'v1', 5);
     s.putErase({ key: 'k1', name: '옛사람', asked: 1, due: 2, state: 'wait', done: 0 });
     const row = { sig: 'aaaa', kind: 'error', msg: 'm', stack: '', where: '/', build: 'b', ua: 'u', n: 1, first: 1, last: 1 };
@@ -250,6 +250,16 @@ try {
     s.deletePlayer('k1');
     check(s.loadPlayer('k1') === null && s.consent('k1') === null && s.erasePending().length === 1 && s.clearClientErrors('all') === 2, '캐릭터와 동의를 지우고, 삭제 요청은 남는다');
     s.close();
+    // 원격 설정(스키마 2)까지만 올린 DB(묶음 1만 있던 서버가 쓴 것)도 웹의 표(3)를 더한다
+    const file2 = path.join(dir, 'g2.db');
+    const mid = new SqliteStore(file2, SCHEMA.slice(0, 2));
+    mid.liveWrite('cfg:x', 1, 'tester', 1);
+    const v2 = mid.schemaVersion();
+    mid.close();
+    const s2 = new SqliteStore(file2);
+    s2.setConsent('k9', 'v', 1);
+    check(v2 === 2 && s2.schemaVersion() === 3 && SCHEMA.length === 3 && s2.liveRows().length === 1 && s2.consent('k9')?.v === 'v', `스키마 2(원격 설정)까지 올린 DB를 열면 3(웹)을 더하고 원격 설정은 그대로 (${v2} → ${s2.schemaVersion()})`);
+    s2.close();
   } finally { removeTemp(dir); }
 }
 

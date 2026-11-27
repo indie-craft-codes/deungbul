@@ -598,15 +598,17 @@
 
 ### 5.1 묶음 1 — 운영의 바탕
 
-| 기능 | 표 | 메모 |
-|---|---|---|
-| 초기화 스케줄러 | d1 | 시간대·하루 시작 시각·주의 시작 요일. 일·주·월 경계 사건 `dayReset`·`weekReset`·`monthReset` |
-| 주간·월간 임무 | d2 | `daily`의 임무에 `period: 'day' \| 'week' \| 'month'` |
-| 원격 설정 저장소 | d12 | 버전 있는 키-값(SQLite), 관리자 편집, 검증, 되돌리기, 재시작 없이 반영 |
-| 기능 깃발·킬 스위치 | d13 | 거래·우편·뽑기·채팅·신규 접속을 끄는 스위치. 모듈이 묻는 `g.flags.on('market')` |
-| 공지 | d10 | 예약(시작·끝), 접속 때 창, 흐르는 띠, 다국어 |
-| 점검 모드 | d11 | 깃발 하나로 관리자만 입장, 예정 시각 카운트다운, 안내 화면, 끝나면 보상 일괄 우편 |
-| 상태 페이지 | g30 | 서버가 정적 폴더에 `status.json`을 쓴다(서버가 죽으면 마지막 시각이 멈춰 보임) |
+**상태: 끝(2026-11-27, 가지 `feat/ops2`).** 쓰는 법은 [making-a-game.md](making-a-game.md) 16절, 운영 절차는 [infra.md](infra.md) '운영의 바탕', 기록은 [framework-status.md](framework-status.md) '운영의 바탕'. 아래 표의 끝 열이 들어간 자리다. 남은 것: 웹 관리 화면(묶음 5), 확률표를 원격 설정으로 바꿀 때의 공개·사전 공지(묶음 4), 공지의 패치 노트, A/B, 사람마다 다른 깃발, 작은 수집형 증명 게임으로 문서 검증(아래 '검증'의 둘째).
+
+| 기능 | 표 | 메모 | 상태 |
+|---|---|---|---|
+| 초기화 스케줄러 | d1 | 시간대·하루 시작 시각·주의 시작 요일. 일·주·월 경계 사건 `dayReset`·`weekReset`·`monthReset` | 끝: 핵심 `g.time`(`systems/clock.ts`), 내용 `RESET`(기본 = 서버 현지 자정) |
+| 주간·월간 임무 | d2 | `daily`의 임무에 `period: 'day' \| 'week' \| 'month'` | 끝: 임무 창이 기간마다 묶이고 '초기화까지' |
+| 원격 설정 저장소 | d12 | 버전 있는 키-값(SQLite), 관리자 편집, 검증, 되돌리기, 재시작 없이 반영 | 끝: 핵심 `g.live`, 내용 `LIVE_KEYS`, 관리자 `set` |
+| 기능 깃발·킬 스위치 | d13 | 거래·우편·뽑기·채팅·신규 접속을 끄는 스위치. 모듈이 묻는 `g.flags.on('market')` | 끝: 깃발 `join`·`chat`·`market`·`mail`·`gacha`와 게임의 `FLAGS`, 관리자 `flag` |
+| 공지 | d10 | 예약(시작·끝), 접속 때 창, 흐르는 띠, 다국어 | 끝: 관리자 `notice` |
+| 점검 모드 | d11 | 깃발 하나로 관리자만 입장, 예정 시각 카운트다운, 안내 화면, 끝나면 보상 일괄 우편 | 끝: 관리자 `maint`, 등불지기 운영 DB 복사본으로 리허설 |
+| 상태 페이지 | g30 | 서버가 정적 폴더에 `status.json`을 쓴다(서버가 죽으면 마지막 시각이 멈춰 보임) | 끝: `status.json`·`status.html` (`net/status.ts`) |
 
 - **틀 설계 메모**: 시간은 핵심 시스템 `clock`(후보 이름: `engine/server/game/systems/clock.ts`)으로 둔다. 모든 시각은 UTC로 저장하고, 내용 칸 `RESET: { tz, dayAt, weekStart }`를 적지 않으면 지금의 '서버 현지 자정'과 같게 한다(황금 실행 유지). 원격 설정은 핵심 `live`(후보)로: 게임이 **덮어쓸 수 있는 내용 칸을 이름으로 선언**한다(`LIVE_KEYS`: 예 `GACHA_RULES.rates`, 배율, 공지). 선언하지 않은 칸은 소스 컴파일 그대로다. 값은 같은 검증기를 지나야 반영된다(`chardef`의 '믿지 않고 검증' 방식). 공지·점검은 관리자 통로(`net/admin.ts`)의 새 명령과 화면의 `hud/notify.ts`를 쓴다.
 - **기존 모듈과의 관계**: `daily`는 `clock`의 사건을 받는다. `gacha` 배너의 `start`·`end`도 같은 시계로. 관리자 CLI 명령에 `notice`·`maint`·`set`·`flag`를 더한다.
@@ -629,7 +631,7 @@
 
 - **틀 설계 메모**: 설정은 화면 핵심(`engine/client/hud/settings.ts` 후보)에 기본 칸을 두고 게임이 `addSetting`으로 더한다. 값은 기기에 두되 서버 저장은 계정 뒤(f9). 문서 페이지는 내용 칸 `LEGAL: { terms, privacy, version }`(URL이나 i18n 키), 적지 않으면 화면에 링크가 없다. 인증·플랫폼 접점은 모두 "기본 = 지금 동작"이라 황금 실행이 같다. 광고 지점은 틀이 사건으로만 알린다(판 끝, 부활 선택). 어느 SDK를 부를지는 게임·배포의 몫.
 - **검증**: 캐주얼·.io 증명 게임(짧은 실시간 판, 이름만 넣고 입장, 같은 무리로 다음 판)을 만들고 6절의 포털 요건표를 하나씩 확인한다: 첫 다운로드 크기, 5분 숨겼다 돌아오기, 음소거, DPR 1·4GB급 기기, 폰 세로·가로, 광고 차단기(접점이 아무것도 안 해도 진행되는지).
-- **상태 (2026-11-27, 가지 `feat/web2`)**: 표의 열 가지 모두 틀에 들어갔다 — 탭 숨김(`engine/client/lifecycle.ts`, 서버 `vis`), 설정 창(`hud/settings.ts`, `addSetting`), 로딩 예산(`scripts/budget.mjs`, `preloadLater`, 서비스 워커는 선택·기본 끔), 화면 오류 수집(`POST /client-error`, 관리자 `errors`), 약관·동의(`LEGAL`, 기본 없음), 내 데이터 내보내기·삭제(`PRIVACY.eraseDays` 7일, 관리자 `erase`), 튜토리얼(`addTutorial`, 선택), 인증 접점(`AuthProvider`·`ServerAuth`, 손님만), 플랫폼 접점(`engine/client/platform/`, 기본 `web`: [platforms.md](platforms.md)의 모양), 손님 진행 보호(기본 30분 뒤 한 번). 쓰는 법은 [making-a-game.md](making-a-game.md) 16절. **캐주얼·.io 증명 게임은 아직 없다**: 이번 확인은 예제와 등불지기로 했다(포털 요건표는 [framework-status.md](framework-status.md) '웹 출시의 바탕').
+- **상태 (2026-11-27, 가지 `feat/web2`)**: 표의 열 가지 모두 틀에 들어갔다 — 탭 숨김(`engine/client/lifecycle.ts`, 서버 `vis`), 설정 창(`hud/settings.ts`, `addSetting`), 로딩 예산(`scripts/budget.mjs`, `preloadLater`, 서비스 워커는 선택·기본 끔), 화면 오류 수집(`POST /client-error`, 관리자 `errors`), 약관·동의(`LEGAL`, 기본 없음), 내 데이터 내보내기·삭제(`PRIVACY.eraseDays` 7일, 관리자 `erase`), 튜토리얼(`addTutorial`, 선택), 인증 접점(`AuthProvider`·`ServerAuth`, 손님만), 플랫폼 접점(`engine/client/platform/`, 기본 `web`: [platforms.md](platforms.md)의 모양), 손님 진행 보호(기본 30분 뒤 한 번). 쓰는 법은 [making-a-game.md](making-a-game.md) 17절. **캐주얼·.io 증명 게임은 아직 없다**: 이번 확인은 예제와 등불지기로 했다(포털 요건표는 [framework-status.md](framework-status.md) '웹 출시의 바탕').
 
 ### 5.3 묶음 3 — 사회와 안전
 
@@ -759,7 +761,7 @@
 | 결제 | 웹 직접 결제는 스토어 수수료 밖. 미국 앱 → 웹 결제 링크(Epic v. Apple: 2025-04 허용 명령, 2025-12 항소심이 일부 수수료·표시 제한을 허용하도록 수정) [확인] | 없음 | 결정(5.9) |
 | PWA·오프라인 | 서버 권위 게임은 오프라인 플레이가 없는 것이 정상. 연결 끊김 화면·자동 재시도·자원 캐시로 재방문 단축 [추정] | 끊김 화면·자동 재시도(2 → 15초)는 있다 | 서비스 워커 캐시(묶음 2) |
 
-**묶음 2 뒤의 상태 (2026-11-27, 가지 `feat/web2`)**: 즉시 접속 — 튜토리얼은 게임 안·건너뛰기·다시 보기(`addTutorial`). 로딩 크기 — 빌드 때 묶음별 크기와 8MB·20MB 경고(`scripts/budget.mjs`), 나중 묶음(`preloadLater`). 브라우저로 잰 첫 다운로드(들어올 때까지): 등불지기 1,148KB, 예제 1,016KB. 탭 전환 — 숨기면 서버에 알려 다른 사람에게 '자리 비움', 소리 멈춤, 돌아오면 밀린 연출을 버림, 게임에 `playerVisible` 사건(실시간 판의 처리는 게임이 건다). 모바일 웹 — 설정 창의 해상도 상한(×1·×1.5·×2)과 품질 단계, 플랫폼의 `display.pixelRatioCap`. 포털 요건 — `Platform.ads`(`gameplayStart/Stop`, `adBreak`, `rewarded`)와 `invite`, 광고 지점 사건(`onBreakPoint`: 판 끝·다시 일어남), 광고 중 소리 멈춤. 기본 구현은 아무것도 하지 않아 광고 차단기가 있어도 진행된다. 처리방침 화면(`LEGAL`)이 Poki의 외부 서버 예외 조건을 채운다. 저장 위치 — 손님 진행 보호(기기 옮기기 코드를 권하는 안내). PWA — 서비스 워커 재방문 캐시(선택, 기본 끔: 까닭은 making-a-game.md 16절). 아직 없음 — 방 정보를 포털에 넘기는 실제 연결(접점만), 대화 끄기 설정(묶음 3), 외부 요청이 새로 생기지 않는지의 빌드 검사.
+**묶음 2 뒤의 상태 (2026-11-27, 가지 `feat/web2`)**: 즉시 접속 — 튜토리얼은 게임 안·건너뛰기·다시 보기(`addTutorial`). 로딩 크기 — 빌드 때 묶음별 크기와 8MB·20MB 경고(`scripts/budget.mjs`), 나중 묶음(`preloadLater`). 브라우저로 잰 첫 다운로드(들어올 때까지): 등불지기 1,148KB, 예제 1,016KB. 탭 전환 — 숨기면 서버에 알려 다른 사람에게 '자리 비움', 소리 멈춤, 돌아오면 밀린 연출을 버림, 게임에 `playerVisible` 사건(실시간 판의 처리는 게임이 건다). 모바일 웹 — 설정 창의 해상도 상한(×1·×1.5·×2)과 품질 단계, 플랫폼의 `display.pixelRatioCap`. 포털 요건 — `Platform.ads`(`gameplayStart/Stop`, `adBreak`, `rewarded`)와 `invite`, 광고 지점 사건(`onBreakPoint`: 판 끝·다시 일어남), 광고 중 소리 멈춤. 기본 구현은 아무것도 하지 않아 광고 차단기가 있어도 진행된다. 처리방침 화면(`LEGAL`)이 Poki의 외부 서버 예외 조건을 채운다. 저장 위치 — 손님 진행 보호(기기 옮기기 코드를 권하는 안내). PWA — 서비스 워커 재방문 캐시(선택, 기본 끔: 까닭은 making-a-game.md 17절). 아직 없음 — 방 정보를 포털에 넘기는 실제 연결(접점만), 대화 끄기 설정(묶음 3), 외부 요청이 새로 생기지 않는지의 빌드 검사.
 
 ---
 

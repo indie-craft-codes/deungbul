@@ -75,7 +75,7 @@ export const S = {
   /** 물약을 다시 마실 수 있는 시각과 대기 길이(ms) */
   itemCdEnd: 0,
   /** 내 드롭 장비, 우편, 일일 임무, 전투력 (서버의 meta 메시지) */
-  meta: { gear: [] as Gear[], worn: {} as Record<string, number>, mail: [] as Mail[], daily: { prog: {} as Record<string, number>, got: [] as string[], streak: 0 }, power: 0, build: { stats: {} as Record<string, number>, skillLv: {} as Record<string, number>, left: 0 } },
+  meta: { gear: [] as Gear[], worn: {} as Record<string, number>, mail: [] as Mail[], daily: { prog: {} as Record<string, number>, got: [] as string[], streak: 0 } as { prog: Record<string, number>; got: string[]; streak: number; next?: number[] }, power: 0, build: { stats: {} as Record<string, number>, skillLv: {} as Record<string, number>, left: 0 } },
   /** 내 길드(없으면 null)와 받은 초대 */
   guild: null as GuildView | null,
   guildInvite: null as { name: string; from: string } | null,

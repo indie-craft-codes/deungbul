@@ -57,6 +57,14 @@ function outputs(fn: (...a: never[]) => unknown, sets: Arg[][], spread: boolean,
 
 /** 언어 묶음 하나의 모든 문장: 자리(ui.title, msg.kill, quests.bram.steps[0] …) → 문자열, 또는 [지문, 문장의 보기 몇 개] */
 export function snapshotOf(locale: unknown, full = false): Snapshot {
+  // 시각을 적는 문장(점검 예고의 '예정 끝' 같은 것)은 서버 PC의 시간대를 따른다: 견본을 뜰 때와 견줄 때 같은 글이 나오게 이 셈 동안만 UTC로 둔다
+  // (node는 process.env.TZ를 바꾸면 곧바로 따른다. 날짜 글의 해석(new Date('…'))과 출력(toLocaleString) 모두). 끝나면 되돌린다: 같은 프로세스의 다른 시험은 그대로
+  // 되돌릴 때는 지운 TZ가 아니라 처음의 시간대 이름을 적는다 (Windows의 node는 TZ를 지워도 UTC에 머문다)
+  const tz = process.env.TZ, zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  process.env.TZ = 'UTC';
+  try { return walkAll(locale, full); } finally { process.env.TZ = tz ?? zone; }
+}
+function walkAll(locale: unknown, full: boolean): Snapshot {
   const snap: Snapshot = {};
   const walk = (v: unknown, at: string): void => {
     if (typeof v === 'function') snap[at] = at.startsWith('msg.') ? outputs(v as never, ARRAYS, false, full) : outputs(v as never, TUPLES, true, full);

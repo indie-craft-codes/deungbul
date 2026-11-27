@@ -2,6 +2,7 @@
 // 수치(STATS, GEAR, ENHANCE, LEVEL 등)는 게임의 내용에 있다 (@game/shared/content). 규칙은 engine/server/game/systems/의 gear, mail, idle, daily, rank가 맡는다.
 import { BAG_UP, BUILD_STATS, DAILIES, ENHANCE, GEAR, GEAR_SLOTS, ITEMS, LEVEL, POWER, RARITIES, SALVAGE, STATS } from '../content';
 import { isItemId } from './items';
+import type { Period } from './live';
 
 // ---------- 장비 ----------
 /**
@@ -231,8 +232,9 @@ export const buildStatDef = (k: BuildStat): { mod: StatMod; per: number } => (BU
 /**
  * 우편의 종류. 제목과 내용은 언어 파일이 만든다 (fmt.mailTitle).
  * 거래소: marketSold 팔린 값, marketExpired 기간이 지나 돌아온 물건, marketBought 산 물건(가방에 자리가 없었다), marketBack 내린 물건(가방에 자리가 없었다)
+ * 운영: maint 점검 보상 (관리자 명령 maint end의 일괄 우편)
  */
-export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack';
+export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack' | 'maint';
 /** 보상. gear와 items는 우편에 붙는 물건이다: 낱개 장비(uid는 받을 때 새로 붙는다)와 아이템 id별 개수 */
 export interface Reward { gold?: number; exp?: number; sparks?: number; gear?: Gear[]; items?: Record<string, number> }
 export interface Mail {
@@ -251,7 +253,11 @@ export const mailKept = (m: { k: string; r: Reward }): boolean => hasGoods(m.r) 
 // ---------- 일일 임무와 출석 ----------
 /** 임무의 종류. 틀이 세는 것은 'kill'(처치)과 'enhance'(강화)이고, 그 밖의 것은 게임의 규칙이 센다 (이 게임의 'offer': 불씨 바치기) */
 export type DailyKind = string;
-export interface DailyDef { kind: DailyKind; n: number; r: Reward }
+/**
+ * 임무 하나. period는 임무가 새로 시작하는 기간이다: 'day'(기본, 날마다), 'week'(주마다), 'month'(달마다).
+ * 경계는 내용의 RESET(초기화 시각: 시간대, 하루 시작 시각, 주의 시작 요일)을 따른다 (engine/server/game/systems/clock.ts)
+ */
+export interface DailyDef { kind: DailyKind; n: number; r: Reward; period?: Period }
 export type DailyId = keyof typeof DAILIES;
 export const DAILY_IDS = Object.keys(DAILIES) as DailyId[];
 /** 임무의 정의를 문자열 id로 읽는다. 임무가 없는 게임(DAILIES = {})에서는 DailyId가 never라서 DAILIES[id]로는 아무것도 읽을 수 없다 (던전의 DUNGEON_TABLE과 같다) */
@@ -268,7 +274,15 @@ export interface DailyState {
   streak: number;
   /** 마지막으로 출석한 날 */
   last: string;
+  /** 주간 임무의 진행이 속한 주 (주가 시작한 날 YYYY-MM-DD). 주간 임무가 있는 게임만 적는다 */
+  wk?: string;
+  /** 월간 임무의 진행이 속한 달 (YYYY-MM). 월간 임무가 있는 게임만 적는다 */
+  mo?: string;
 }
+/** 임무의 기간 (적지 않았으면 'day') */
+export const dailyPeriod = (id: string): Period => dailyDef(id).period ?? 'day';
+/** 주간·월간 임무가 있는가 (없는 게임은 주·달을 세지 않고, 저장과 화면의 모양도 예전 그대로다) */
+export const hasLongDailies = (): boolean => DAILY_IDS.some((id) => dailyPeriod(id) !== 'day');
 
 // ---------- 순위 ----------
 export interface RankRow { name: string; lv: number; cls: string; power: number }

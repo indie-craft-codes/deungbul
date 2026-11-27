@@ -5,6 +5,7 @@ import type { Gear, Mail, RankRow } from './defs/growth';
 import type { GuildView, MarketItem } from './defs/social';
 import type { RoomLobby } from './defs/rooms';
 import type { TeamBoard } from './defs/teams';
+import type { MaintView, NoticeView } from './defs/live';
 import type { ClientMsgs, ServerMsgs, WorldState as GameWorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
 
@@ -221,8 +222,8 @@ export type ServerMsg =
       /** 가진 물약: 아이템 id별 개수 */
       items?: Record<string, number>;
     }
-  /** 내 장비·우편·일일 임무. 바뀔 때만 온다. 칸은 그 모듈을 고른 게임에만 있다: gear·worn[gear], mail[mail], daily[daily], power[rank], build[build] */
-  | { t: 'meta'; gear?: Gear[]; worn?: Record<string, number>; mail?: Mail[]; daily?: { prog: Record<string, number>; got: string[]; streak: number }; power?: number; build?: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
+  /** 내 장비·우편·일일 임무. 바뀔 때만 온다. 칸은 그 모듈을 고른 게임에만 있다: gear·worn[gear], mail[mail], daily[daily], power[rank], build[build]. daily.next는 주간·월간 임무가 있는 게임만: 다음 초기화 시각 [날, 주, 달] (UTC ms) */
+  | { t: 'meta'; gear?: Gear[]; worn?: Record<string, number>; mail?: Mail[]; daily?: { prog: Record<string, number>; got: string[]; streak: number; next?: number[] }; power?: number; build?: { stats: Record<string, number>; skillLv: Record<string, number>; left: number } }
   /** 내가 들어가 있는 던전의 상태. id가 빈 문자열이면 밖이다. left는 남은 시간(초, 끝낸 뒤에는 나가기까지), foes는 남은 적 */
   | { t: 'dungeon'; id: string; left: number; foes: number; cleared: boolean }
   /** 채널: me는 내 채널 번호(1부터), list는 채널별 인원. foes는 게임의 규칙이 '바쁜 때'(Channels.extraFoes)를 알릴 때만 오는 채널별 남은 적의 수 */
@@ -266,6 +267,13 @@ export type ServerMsg =
   | ({ t: 'idleBack' } & IdleBack)
   /** 누군가의 부품 겉모습이 바뀌었다 (g.setLook: 변신과 풀기). l이 빈 문자열이면 예전 그림으로 */
   | { t: 'look'; id: number; l: string }
+  /** 지금 보이는 공지 (engine/server/game/systems/live.ts): 접속 직후(있을 때만)와 목록이 바뀔 때. 빈 목록이면 공지가 없다 */
+  | { t: 'notices'; list: NoticeView[] }
+  /** 점검의 예고·시작 (있을 때만). off면 예고가 취소됐거나 점검이 끝났다 */
+  | ({ t: 'maint' } & MaintView)
+  | { t: 'maint'; off: true }
+  /** 원격 설정으로 바뀐 칸 가운데 화면에도 보내는 것 (LIVE_KEYS의 client): set 덮어쓴 값, reset 소스의 값으로 돌아간 칸 */
+  | { t: 'live'; set: Record<string, unknown>; reset?: string[] }
   // ---- 웹 출시의 바탕 (engine/server/net/web.ts) ----
   /** 자리 비움(탭을 숨김)이 된 사람(on: true)이나 돌아온 사람(on: false)의 엔티티 번호들 */
   | { t: 'afk'; ids: number[]; on: boolean }

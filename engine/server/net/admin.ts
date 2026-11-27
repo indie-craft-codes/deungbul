@@ -17,8 +17,14 @@
 // 명령 (CLI의 도움말과 docs/making-a-game.md의 운영 절에 같은 목록이 있다):
 //   who | find 이름 | ban 이름 기간 [사유] | unban 이름 | banip 주소 기간 [사유] | unbanip 주소 | mute 이름 기간 [사유] | unmute 이름
 //   kick 이름 [사유] | announce [--chat] 글 | give 이름 무엇 수 | take 이름 무엇 수 | reports [수] [--all] | resolve 신고id [메모] | audit [수]
+//   운영의 바탕 (engine/server/game/systems/live.ts):
+//   set [이름 [값(JSON) | --reset | --undo]] | set --log [이름] [수]      원격 설정 (내용의 LIVE_KEYS에 선언된 칸만)
+//   flag [이름 on|off]                                                   기능 깃발 (join, chat, market, mail, gacha와 게임의 FLAGS)
+//   notice [add [--popup] [--ticker] [--from 시각] [--to 시각 | --for 기간] --ko 글 [--en 글] | del id]   공지
+//   maint [plan 시각 | now] [--for 기간 | --until 시각] [--ko 글] [--en 글] | maint cancel | maint end [--gold n] [--sparks n] [--exp n] [--item id:n] [--days n] | maint allow|deny 이름   점검
 //   (웹 출시의 바탕, net/web.ts) errors [수] [--all] | errors clear 서명|all | erase [list|log [수]|ask 이름 [일수]|cancel 이름|now 이름|sweep]
 //   기간: 숫자(시간), 30m·12h·7d처럼 단위를 붙인 것, 또는 perm(영구)
+//   시각: now, +30m·+2h·+1d(지금부터), '2026-12-01 09:00'(초기화 시각 RESET의 시간대로 읽는다), 시간대가 붙은 ISO('2026-12-01T09:00+09:00')
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
 import type http from 'node:http';
@@ -30,6 +36,8 @@ import type { Game } from '../game/game';
 import { Sanctions, normIp, type AuditRow } from '../game/systems/sanctions';
 import { CURS } from '../game/systems/wallet';
 import type { ReportSave, Store } from '../store/types';
+import { isItemId, liveDef, parseWhen, type Reward } from '../../shared/defs';
+import { langText } from '../game/systems/live';
 
 /** 토큰 파일과 기록 파일의 이름 (저장 파일과 같은 폴더) */
 export const TOKEN_FILE = 'admin.token';
@@ -69,10 +77,12 @@ export interface AdminHost {
   save(): void;
   /** 다른 쪽이 더하는 명령 (웹 출시의 바탕: errors, erase — net/web.ts). 틀의 명령과 같은 이름은 무시한다 */
   extra?: () => Record<string, (a: string[], by: string) => string>;
+  /** 저장된 캐릭터 모두에게 우편을 보낸다 (sinceMs를 주면 그 뒤에 저장된 캐릭터만). 보낸 수, 할 수 없으면 -1 (점검 보상) */
+  mailAll?(reward: Reward, sinceMs: number): number;
 }
 
 /** 연결을 끊는 이유 (클라이언트가 이것을 보고 다시 붙을지 정한다: engine/client/main.ts) */
-export const CLOSE = { handedOff: 4001, kicked: 4002, banned: 4003 } as const;
+export const CLOSE = { handedOff: 4001, kicked: 4002, banned: 4003, maint: 4004, joinClosed: 4005 } as const;
 
 export interface Admin {
   /** 이 요청이 관리자 통로의 것이면 처리하고 true. 아니면 false (정적 파일로 넘긴다) */
@@ -246,7 +256,134 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
       const n = Math.min(300, Math.max(1, Number(a[0] ?? 20) || 20));
       return S.log.slice(-n).map((r) => `${when(r.at)}  ${r.by}@${r.from}  ${r.cmd} ${r.args.join(' ')}  → ${r.ok ? '' : '[실패] '}${r.out.split('\n')[0]}`).join('\n') || '기록이 없습니다.';
     },
+    // ---------- 운영의 바탕: 원격 설정, 깃발, 공지, 점검 (engine/server/game/systems/live.ts) ----------
+    set: (a, by) => {
+      const L = g.live;
+      if (!a.length) {
+        const names = L.names();
+        if (!names.length) return '덮어쓸 수 있는 칸이 없습니다 (게임의 내용에 LIVE_KEYS가 없다).';
+        return names.map((n) => { const r = L.row(n), def = liveDef(n); return `  ${n} = ${cut(js(L.get(n)))}${r ? `  (v${r.ver}, ${r.by}, ${when(r.at)} · 소스 ${cut(js(L.original(n)))})` : '  (소스 그대로)'}${def?.client ? '  [화면에도]' : ''}${def?.note ? `  · ${def.note}` : ''}`; }).join('\n');
+      }
+      if (a[0] === '--log') {
+        const name = a[1] && !/^\d+$/.test(a[1]) ? a[1] : '', n = Math.min(200, Math.max(1, Number(a.find((x) => /^\d+$/.test(x)) ?? 20)));
+        const rows = L.log(name ? (name.includes(':') || name === 'maint' || name === 'admins' ? name : 'cfg:' + name) : null, n);
+        return rows.map((r) => `${when(r.at)}  ${r.by}  ${r.key} v${r.ver}  ${cut(js(r.before), 80)} → ${cut(js(r.after), 80)}${r.note ? `  (${r.note})` : ''}`).join('\n') || '이력이 없습니다.';
+      }
+      const name = a[0];
+      need(!!liveDef(name), `덮어쓸 수 있다고 선언되지 않은 칸입니다: ${name} (set만 치면 목록)`);
+      if (a.length === 1) { const r = L.row(name); return `${name} = ${js(L.get(name))}\n  소스: ${js(L.original(name))}${r ? `\n  덮어씀: v${r.ver}, ${r.by}, ${when(r.at)}` : ''}`; }
+      if (a[1] === '--reset' || a[1] === '--undo') {
+        const r = a[1] === '--reset' ? L.reset(name, by) : L.undo(name, by);
+        if (r === null) return a[1] === '--reset' ? `${name}은(는) 이미 소스 그대로입니다.` : `${name}에 되돌릴 변경이 없습니다.`;
+        if ('err' in r) throw new Refused(`거절: ${r.err}`);
+        return `${name} = ${cut(js(L.get(name)))} (v${r.ver}, ${a[1] === '--reset' ? '소스의 값으로' : '바로 앞 값으로'})`;
+      }
+      const raw = a.slice(1).join(' ');
+      let v: unknown;
+      try { v = JSON.parse(raw); } catch { v = raw; } // 글은 따옴표 없이 적어도 된다
+      const r = L.set(name, v, by);
+      if ('err' in r) throw new Refused(`거절: ${r.err}`);
+      return `${name} = ${cut(js(v))} (v${r.ver}${liveDef(name)?.client ? ', 접속한 화면에도 보냄' : ''})`;
+    },
+    flag: (a, by) => {
+      if (!a.length) return g.live.flagList().map((f) => `  ${f.name}  ${f.on ? '켜짐' : '꺼짐'}${f.row ? `  (${f.row.by}, ${when(f.row.at)})` : ''}`).join('\n');
+      need(a.length >= 2 && /^(on|off)$/i.test(a[1]), 'flag 이름 on|off (flag만 치면 목록)');
+      const on = a[1].toLowerCase() === 'on', r = g.live.setFlag(a[0], on, by);
+      if ('err' in r) throw new Refused(r.err);
+      return `${a[0]}: ${on ? '켰습니다' : '껐습니다'}${a[0] === 'join' && !on ? ' (이미 들어와 있는 사람은 그대로, maint allow로 적은 관리자는 들어올 수 있다)' : ''}`;
+    },
+    notice: (a, by) => {
+      const L = g.live, cal = g.time.cal, now = g.now();
+      if (!a.length || a[0] === 'list') {
+        const rows = L.noticeRows();
+        if (!rows.length) return '공지가 없습니다.';
+        return rows.map(({ id, n }) => `[${id}] ${now < n.from ? '예약' : now < n.to ? '보이는 중' : '지남'}  ${cal.format(n.from)} ~ ${cal.format(n.to)} (${tzLabel()})  ${[n.popup ? '창' : '', n.ticker ? '띠' : ''].filter(Boolean).join('·')}  ${Object.entries(n.text).map(([k, t]) => `${k}: ${cut(t, 60)}`).join(' / ')}`).join('\n');
+      }
+      if (a[0] === 'add') {
+        const { o, f } = options(a.slice(1), ['popup', 'ticker'], ['from', 'to', 'for', 'ko', 'en']);
+        const use = 'notice add [--popup] [--ticker] [--from 시각] [--to 시각 | --for 기간] --ko 글 [--en 글]';
+        const text = langText({ ko: o.ko, en: o.en });
+        need(!!text, use);
+        const from = o.from ? parseWhen(o.from, now, cal) : now;
+        need(from !== null, `시각을 읽지 못했습니다: ${o.from} (now, +30m, 2026-12-01 09:00)`);
+        const span = o.for ? parseSpan(o.for) : null;
+        need(!o.for || (span !== null && span > 0), `기간을 읽지 못했습니다: ${o.for}`);
+        const to = o.to ? parseWhen(o.to, now, cal) : from! + (span ?? 24 * 3600000);
+        need(to !== null && to > from!, '끝(--to, --for)이 시작보다 뒤여야 합니다');
+        // 창도 띠도 고르지 않으면 둘 다
+        const both = !f.has('popup') && !f.has('ticker');
+        const id = L.addNotice({ text: text!, from: from!, to: to!, ...(both || f.has('popup') ? { popup: true } : {}), ...(both || f.has('ticker') ? { ticker: true } : {}) }, by);
+        return `공지 [${id}]를 올렸습니다: ${cal.format(from!)} ~ ${cal.format(to!)} (${tzLabel()})${from! > now ? ' · 예약' : ''}`;
+      }
+      if (a[0] === 'del') {
+        need(a.length >= 2, 'notice del id');
+        if (!L.delNotice(a[1], by)) throw new Refused(`없는 공지입니다: ${a[1]} (notice로 목록)`);
+        return `공지 [${a[1]}]를 내렸습니다.`;
+      }
+      throw new Usage('notice | notice add … | notice del id');
+    },
+    maint: (a, by) => {
+      const L = g.live, cal = g.time.cal, now = g.now(), sub = a[0] ?? '';
+      if (!sub || sub === 'status') {
+        const m = L.maint(), admins = Object.entries(L.admins());
+        const head = !m ? '점검 없음' : m.on ? `점검 중 (시작 ${cal.format(m.at)}${m.until ? `, 예정 끝 ${cal.format(m.until)}` : ''})` : `점검 예고: ${cal.format(m.at)} (${Math.max(0, Math.ceil((m.at - now) / 60000))}분 뒤${m.until ? `, 예정 끝 ${cal.format(m.until)}` : ''})`;
+        return [`${head}  [${tzLabel()}]`, m?.text ? `  안내: ${Object.entries(m.text).map(([k, t]) => `${k}: ${t}`).join(' / ')}` : '', `  점검 중 입장(관리자): ${admins.length ? admins.map(([k, n]) => `${n}(${short(k)})`).join(', ') : '없음 (maint allow 이름)'}`].filter(Boolean).join('\n');
+      }
+      if (sub === 'plan' || sub === 'now') {
+        const { pos, o } = options(a.slice(1), [], ['for', 'until', 'ko', 'en']);
+        need(!L.maintOn(), '이미 점검 중입니다 (끝내려면 maint end)');
+        const at = sub === 'now' ? now : parseWhen(pos[0] ?? '', now, cal);
+        need(at !== null, 'maint plan 시각(+30m, 2026-12-01 09:00) [--for 기간 | --until 시각] [--ko 글] [--en 글]');
+        const span = o.for ? parseSpan(o.for) : null;
+        need(!o.for || (span !== null && span > 0), `기간을 읽지 못했습니다: ${o.for}`);
+        const until = o.until ? parseWhen(o.until, now, cal) : span ? at! + span : 0;
+        need(until !== null && (until === 0 || until > at!), '예정 끝(--until, --for)은 시작보다 뒤여야 합니다');
+        L.planMaint(Math.max(at!, now), until!, langText({ ko: o.ko, en: o.en }), by);
+        if (L.maintOn()) return `점검을 시작했습니다. 모두 저장하고 관리자 말고는 내보냈습니다 (남은 연결 ${host.people().length}명).${until ? ` 예정 끝 ${cal.format(until)}.` : ''} 끝내려면: maint end`;
+        return `점검을 예고했습니다: ${cal.format(at!)} (${tzLabel()}), ${Math.ceil((at! - now) / 60000)}분 뒤. 접속한 사람에게 카운트다운을 보이고 30·10·5·1분 전에 알립니다.`;
+      }
+      if (sub === 'cancel') {
+        need(!L.maintOn(), '이미 점검 중입니다: 끝내려면 maint end');
+        return L.endMaint(by) ? '점검 예고를 거뒀습니다.' : '예고한 점검이 없습니다.';
+      }
+      if (sub === 'end') {
+        // 재화 셋(CURS: --gold, 두 번째 재화, --exp)과 --item 아이템id:수
+        const { o, m } = options(a.slice(1), [], [...CURS, 'days'], ['item']);
+        const pay: Partial<Record<(typeof CURS)[number], number>> = {}, goods: Record<string, number> = {};
+        for (const k of CURS) if (o[k] !== undefined) { const n = Number(o[k]); need(Number.isInteger(n) && n >= 1 && n <= 1e7, `--${k}는 1~10000000의 정수: ${o[k]}`); pay[k] = n; }
+        for (const it of m.item ?? []) {
+          const [id, cnt] = it.split(':'), n = Number(cnt ?? 1);
+          need(isItemId(id) && Number.isInteger(n) && n >= 1 && n <= 9999, `--item 아이템id:수 (모르는 아이템이거나 수가 이상함: ${it})`);
+          goods[id] = n;
+        }
+        const reward: Reward = { ...pay, ...(Object.keys(goods).length ? { items: goods } : {}) };
+        const days = o.days !== undefined ? Number(o.days) : 0;
+        need(Number.isFinite(days) && days >= 0, `--days는 0 이상의 수: ${o.days}`);
+        const give = Object.keys(reward).length > 0;
+        need(!give || g.has('mail'), '이 게임은 우편 모듈을 쓰지 않아 보상 우편을 보낼 수 없습니다');
+        if (!L.maint()) throw new Refused('예고했거나 진행 중인 점검이 없습니다.');
+        const was = L.maintOn();
+        L.endMaint(by);
+        let sent = '';
+        if (give) { const n = host.mailAll?.(reward, days ? now - days * 86400000 : 0) ?? -1; sent = n < 0 ? ' 보상 우편은 보내지 못했습니다 (저장소가 저장 키로 훑지 못한다).' : ` 보상 우편을 ${n}명에게 보냈습니다${days ? ` (최근 ${days}일 안에 저장된 캐릭터)` : ''}.`; }
+        return `${was ? '점검을 끝냈습니다. 다시 들어올 수 있습니다.' : '점검 예고를 거뒀습니다.'}${sent}`;
+      }
+      if (sub === 'allow' || sub === 'deny') {
+        need(a.length >= 2, `maint ${sub} 이름`);
+        const t = find(a[1]);
+        if (!t?.key) return `'${a[1]}' 이름의 저장된 캐릭터가 없습니다 (손님은 적을 수 없다).`;
+        L.setAdmin(t.key, sub === 'allow' ? t.name : null, by);
+        return sub === 'allow' ? `${t.name}은(는) 점검 중에도, 새 접속이 꺼져 있어도 들어올 수 있습니다.` : `${t.name}을(를) 점검 중 입장 목록에서 뺐습니다.`;
+      }
+      throw new Usage('maint | maint plan 시각 | maint now | maint cancel | maint end [보상] | maint allow|deny 이름');
+    },
   };
+  /** 값을 한 줄의 JSON으로 */
+  const js = (v: unknown): string => (v === undefined ? '(없음)' : typeof v === 'function' ? '(함수)' : JSON.stringify(v) ?? String(v));
+  /** 긴 글을 줄인다 */
+  const cut = (s: string, max = 160): string => (s.length > max ? s.slice(0, max - 1) + '…' : s);
+  /** 운영자가 적고 읽는 시각의 시간대 (초기화 시각 RESET의 것) */
+  const tzLabel = (): string => (g.time.cal.tz === 'local' ? '서버 현지 시각' : g.time.cal.tz);
 
   // 다른 쪽이 더한 명령 (명령표의 끝에)
   for (const [k, fn] of Object.entries(host.extra?.() ?? {})) if (!Object.hasOwn(COMMANDS, k)) COMMANDS[k] = fn;
@@ -278,7 +415,7 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
     if (!fn) { ok = false; out = `모르는 명령입니다: ${name} (${Object.keys(COMMANDS).join(', ')})`; }
     else {
       try { out = fn(clean, who); }
-      catch (err) { ok = false; out = err instanceof Usage ? `쓰는 법: ${err.message}` : `처리 중 오류: ${String(err)}`; if (!(err instanceof Usage)) console.error('[admin] 명령 처리 중 예외:', err); }
+      catch (err) { ok = false; out = err instanceof Usage ? `쓰는 법: ${err.message}` : err instanceof Refused ? err.message : `처리 중 오류: ${String(err)}`; if (!(err instanceof Usage) && !(err instanceof Refused)) console.error('[admin] 명령 처리 중 예외:', err); }
     }
     const row: AuditRow = { at, by: who, from: src, cmd: name, args: clean, ok, out: safe(out.split('\n')[0], 400) };
     write({ ...row, phase: 'done' });
@@ -334,3 +471,25 @@ export function createAdmin(host: AdminHost, opts: AdminOptions = {}): Admin {
 
 /** 쓰는 법이 틀린 명령 */
 class Usage extends Error {}
+/** 받아들이지 않은 명령 (검사에 걸린 값, 없는 것): 실패로 기록된다 */
+class Refused extends Error {}
+
+/**
+ * 인자에서 선택을 가른다: --깃발(값 없음), --이름 값, 여러 번 오는 --이름 값. 나머지는 차례대로 pos.
+ * '--ko 점검 안내'처럼 값이 여러 낱말이면 다음 '--'까지 이어 붙인다 (셸이 따옴표를 풀어 낱말로 나눴을 때)
+ */
+export function options(a: string[], flags: string[], vals: string[], multi: string[] = []): { pos: string[]; o: Record<string, string>; f: Set<string>; m: Record<string, string[]> } {
+  const pos: string[] = [], o: Record<string, string> = {}, f = new Set<string>(), m: Record<string, string[]> = {};
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    if (!x.startsWith('--')) { pos.push(x); continue; }
+    const k = x.slice(2);
+    if (flags.includes(k)) { f.add(k); continue; }
+    if (!vals.includes(k) && !multi.includes(k)) throw new Usage(`모르는 선택입니다: ${x}`);
+    const words: string[] = [];
+    while (i + 1 < a.length && !a[i + 1].startsWith('--')) { words.push(a[++i]); if (k !== 'ko' && k !== 'en') break; }
+    if (!words.length) throw new Usage(`${x} 뒤에 값이 없습니다`);
+    if (multi.includes(k)) (m[k] ??= []).push(words.join(' ')); else o[k] = words.join(' ');
+  }
+  return { pos, o, f, m };
+}

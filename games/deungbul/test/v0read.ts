@@ -13,10 +13,16 @@ function seeded(seed: number): () => number {
 }
 /** 버전 칸(v, gv)은 비교에서 뺀다: 들인 뒤의 저장에만 있는 칸이다 */
 const strip = (o: Record<string, unknown>): Record<string, unknown> => { const { v: _v, gv: _gv, ...rest } = o; return rest; };
-const NOW = new Date(2026, 10, 20, 12).getTime();
+/**
+ * 기대값은 한국 시각(Asia/Seoul)의 PC에서 만들었다: 일일 임무의 날(등불지기의 RESET은 서버 PC의 현지 자정)과 아래의 정오가 시간대를 따른다.
+ * 그래서 읽는 동안만 그 시간대로 두고 끝나면 처음 시간대로 되돌린다 (서버 PC가 UTC여도 같은 글자가 나오게. Windows의 node는 TZ를 지워도 되돌아가지 않아 이름을 적는다)
+ */
+const FIXTURE_TZ = 'Asia/Seoul';
 
 export function readV0(saves: PlayerSave[], worlds: WorldSave[], gone = 5 * 3600000): { players: string[]; worlds: string[] } {
-  const real = Math.random;
+  const real = Math.random, tz = process.env.TZ, zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  process.env.TZ = FIXTURE_TZ;
+  const NOW = new Date(2026, 10, 20, 12).getTime();
   try {
     const players = saves.map((save, i) => {
       Math.random = seeded(1000 + i);
@@ -33,7 +39,7 @@ export function readV0(saves: PlayerSave[], worlds: WorldSave[], gone = 5 * 3600
       return JSON.stringify({ out: strip(g.exportWorld()), state: g.state() });
     });
     return { players, worlds: ws };
-  } finally { Math.random = real; }
+  } finally { Math.random = real; process.env.TZ = tz ?? zone; }
 }
 
 export const v0Samples = () => ({
