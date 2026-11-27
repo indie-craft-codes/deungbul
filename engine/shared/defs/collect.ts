@@ -553,7 +553,7 @@ export interface GachaMe {
 /** 뽑기의 결과 하나 (메시지 gacha): 영웅, 등급, 이미 가진 것이라 조각이 되었나와 받은 조각, 천장·보장으로 나왔나 */
 export interface PullGot { h: string; r: number; dup: boolean; n: number; pity: boolean; /** 넘친 조각(HERO_RULES.cards.overflow)이 바뀐 아이템의 수 (있을 때만) */ x?: number }
 /** 개인 상태 'squad': 편성한 영웅(자리의 차례)과 그 전투력의 합. 진형을 켠 게임은 뒷줄(back), 시너지를 켠 게임은 켜진 시너지(syn)도 */
-export interface SquadMe { ids: string[]; power: number; back?: string[]; syn?: SynergyMe[] }
+export interface SquadMe { ids: string[]; power: number; back?: string[]; syn?: SynergyMe[]; /** 홈의 대표 캐릭터 (고른 때만) */ lead?: string }
 /** 단계 안의 진행 (개인 상태 'stage'의 run): 단계 id, 지금 물결(0부터, 우두머리는 마지막), 물결 수, 남은 적, 이 물결의 적, 남은 시간(초), 상태 */
 /** state 'lobby': 단계 안의 대기실 (g.stages.lobby: 몬스터 없이 단계의 자리에 서 있다. 모드(modes 모듈)의 단계 모드가 고르는 곳) */
 export interface StageRun { id: string; wave: number; waves: number; foes: number; total: number; left: number; state: 'fight' | 'gap' | 'clear' | 'fail' | 'lobby'; boss: boolean }

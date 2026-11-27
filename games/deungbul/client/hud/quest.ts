@@ -1,13 +1,13 @@
 // 메인 퀘스트 표시: 지금 할 일, 진행 수치, 목적지 길잡이(빛기둥과 화면 가장자리 화살표).
 // 창을 누르면 목적지까지 걸어간다. 가는 것만 자동이고, 도착한 뒤의 일(전투, 구매, 바치기)은 직접 한다.
 import { QUESTS, goalCount, type QuestStep } from '../../shared/defs';
-import { $, inDungeon, moveTo, onFrame, S, view } from '@engine/client';
+import { $, inDungeon, moveTo, onFrame, S, uiIcon, view } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { goalBeam } from '../scene/scene';
 import { G } from '../state';
 
 /** 화면의 요소들. initQuest에서 잡는다 (이 게임의 창이 화면에 붙은 뒤다) */
-let ui: Record<'panel' | 'title' | 'step' | 'prog' | 'dist' | 'arrow' | 'go', HTMLElement>;
+let ui: Record<'panel' | 'title' | 'step' | 'prog' | 'dist' | 'arrow' | 'go' | 'btn', HTMLElement>;
 
 let needSparks = false;
 
@@ -22,8 +22,9 @@ export function goToQuest(): void {
 }
 
 export function initQuest(): void {
-  ui = { panel: $('quest'), title: $('questTitle'), step: $('questStep'), prog: $('questProg'), dist: $('questDist'), arrow: $('goalArrow'), go: $('questGo') };
+  ui = { panel: $('quest'), title: $('questTitle'), step: $('questStep'), prog: $('questProg'), dist: $('questDist'), arrow: $('goalArrow'), go: $('questGo'), btn: $('questGoBtn') };
   ui.panel.addEventListener('click', goToQuest);
+  // 폰: '▶ 가기' 단추 (U3: 창을 누르면 걸어간다는 안내가 PC에만 있었다). 누름은 창의 것과 같다 (창으로 올라가 한 번만 걷는다)
   onFrame(questFrame);
   onLangChange(renderQuest);
 }
@@ -37,11 +38,15 @@ export function renderQuest(): void {
     ui.prog.textContent = '';
     ui.dist.textContent = '';
     ui.go.hidden = true;
+    ui.btn.hidden = true;
     return;
   }
   ui.go.hidden = false;
   needSparks = step.goal.kind === 'offer' && (S.me?.sparks ?? 0) === 0;
   ui.go.textContent = t(needSparks ? 'questNeedSparks' : 'questGo'); // 터치 화면에는 단축키 안내가 빠진다 (i18n의 forInput)
+  ui.btn.hidden = needSparks;
+  ui.btn.textContent = '';
+  ui.btn.append(uiIcon('play', 'sm'), ` ${t('questGoBtn')}`);
   const text = loc.quests[chapter.id];
   ui.title.textContent = text.title;
   ui.step.textContent = text.steps[G.quest.s] ?? '';

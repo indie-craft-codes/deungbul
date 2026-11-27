@@ -3,7 +3,7 @@
 import { SHOPS } from '../shared/content';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MeState } from '../shared/sample';
-import { $, addMapPlaces, addMarks, addMenuTab, setMenuTabs, addNotices, addPlace, type Mark, MARK, mountPanel, onKey, onMsg, onSlow, openClasses, rules, S, send } from '@engine/client';
+import { $, addMapPlaces, addMarks, addMenuTab, MENU_GROUPS, setMenuGroups, setMenuTabs, addNotices, addPlace, type Mark, MARK, mountPanel, onKey, onMsg, onSlow, openClasses, rules, S, send } from '@engine/client';
 import { L, t } from '@engine/client/i18n';
 import './sample.css';
 
@@ -67,6 +67,8 @@ export function initBonfire(): void {
     },
   }, 'gear');
   setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'rank']);
+  // 탭 묶음 (U3): 틀의 기본 묶음에 모닥불을 '활동'의 맨 앞으로
+  setMenuGroups(MENU_GROUPS.map((g) => (g.id === 'play' ? { ...g, tabs: ['camp', ...g.tabs] } : g)));
 
   ui.all.addEventListener('click', () => { feed(logs()); ui.all.blur(); });
   $('classBtn').addEventListener('click', openClasses);

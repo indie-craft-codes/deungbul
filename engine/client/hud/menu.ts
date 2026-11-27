@@ -12,6 +12,7 @@ import { setGuildTag } from '../entities';
 import { bindKey, onMsg, onSlow } from '../bus';
 import { hasModule } from '../mods';
 import { L, onLangChange, t } from '../i18n';
+import type { UiKey } from '../i18n/ko';
 import { S } from '../state';
 import { addNotices } from './notify';
 import { bindDot, dotOf, setDot } from './dots';
@@ -23,9 +24,11 @@ import { drawMail, setMailToDaily } from './menu/mail';
 import { drawMarket, marketOpen, onMarketMsg } from './menu/market';
 import { button, lockBand, setRedraw, ui } from './menu/parts';
 import { askRank, drawRank, rankTick } from './menu/rank';
-import { ENGINE_TAB_MODS, tabsForModules, visibleTabs, type MenuTab } from './menu/tabs';
+import { ENGINE_TAB_MODS, groupTabs, MENU_GROUPS, tabsForModules, visibleTabs, type MenuGroupDef, type MenuTab } from './menu/tabs';
+import { platform } from '../platform';
+import { uiIcon } from './uiicons';
 
-export { MENU_TABS, type EngineMenuTab, type MenuTab } from './menu/tabs';
+export { MENU_GROUPS, MENU_TABS, type EngineMenuTab, type MenuGroupDef, type MenuTab } from './menu/tabs';
 
 const ENGINE_TABS: MenuTab[] = [
   { id: 'gear', label: () => t('tabGear'), draw: drawGear, mod: ENGINE_TAB_MODS.gear },
@@ -61,8 +64,33 @@ export function addMenuTab(def: MenuTab, after?: string): void {
   tabDot(def);
   lastSig = '';
 }
-/** 지금 고른 탭의 id */
+/** 지금 고른 탭의 id (다시 열면 마지막에 본 탭: 기기에 적어 둔다) */
 let cur = 'gear';
+
+// ---------- 탭 묶음 (U3): 위 줄은 묶음(성장·수집 / 활동 / 소식 / 정보 / 설정), 고른 묶음의 탭은 그 아래 줄. 묶음마다 마지막에 본 탭을 기억한다 ----------
+/** 메뉴의 묶음 하나 (게임이 이름을 줄 수 있다: 없으면 i18n의 'mg' + id) */
+export interface MenuGroup extends MenuGroupDef { label?: () => string }
+let groups: readonly MenuGroup[] | null = null;
+/** 묶음마다 마지막에 본 탭 (기기의 'menuLast') */
+let lastIn: Record<string, string> = {};
+/** 기기에 적어 둔 마지막 탭을 읽는다 (initMenu: 플랫폼의 저장소가 준비된 뒤) */
+function recall(): void {
+  try { const v = JSON.parse(platform().storage.get('menuLast') ?? '{}') as { cur?: string; g?: Record<string, string> }; if (typeof v.cur === 'string') cur = v.cur; if (v.g && typeof v.g === 'object') lastIn = v.g; } catch { /* 깨진 값은 버린다 */ }
+}
+/** 고른 탭을 기억한다 (그 탭의 묶음에도) */
+function remember(id: string): void {
+  const g = groups ? groupTabs(groups, tabs()).find((x) => x.tabs.some((y) => y.id === id)) : undefined;
+  if (g) lastIn[g.id] = id;
+  platform().storage.set('menuLast', JSON.stringify({ cur: id, g: lastIn }));
+}
+/**
+ * 메뉴의 탭을 묶음으로 보인다 (U3 정보 구조). 주지 않으면 틀의 기본 묶음 다섯(MENU_GROUPS), null이면 묶음 없이 예전처럼 탭 한 줄.
+ * 묶음의 탭 차례는 setMenuTabs의 차례다. 어느 묶음에도 없는 탭(게임이 더한 탭)은 첫 묶음에 든다. 보이는 탭이 없는 묶음은 빠진다
+ */
+export function setMenuGroups(list: readonly MenuGroup[] | null = MENU_GROUPS): void { groups = list; lastSig = ''; }
+/** 틀의 묶음 다섯의 이름 */
+const GROUP_KEY: Readonly<Record<string, UiKey>> = { grow: 'mgGrow', play: 'mgPlay', social: 'mgSocial', info: 'mgInfo', sys: 'mgSys' };
+const groupLabel = (g: MenuGroup): string => g.label?.() ?? (GROUP_KEY[g.id] ? t(GROUP_KEY[g.id]) : g.id);
 const current = (): MenuTab => { const list = tabs(); return list.find((x) => x.id === cur) ?? list[0] ?? allTabs[0]; };
 /** 마지막으로 그린 내용의 지문 (같으면 다시 그리지 않는다) */
 let lastSig = '';
@@ -86,20 +114,47 @@ export function renderMenu(soft = false): void {
   if (soft === true && sig === lastSig) return;
   lastSig = sig;
   if (ui.gold) ui.gold.textContent = L().fmt.gold(S.me.gold); // 재화가 없는 게임에는 없다
-  const left = ui.tabs.scrollLeft;
+  const left = ui.tabs.scrollLeft, subLeft = ui.sub.scrollLeft;
   ui.tabs.textContent = '';
+  ui.sub.textContent = '';
   const on = current();
-  tabs().forEach((x) => {
+  // 찍을 점수나 받을 우편이 있으면 점(•)을 찍는다. 점은 단추 모서리에 얹어서(style.css) 생겨도 탭의 너비가 바뀌지 않는다
+  // 탭의 원천(x.dot)이 있으면 지금 값을 바로 본다 (알림 점의 셈은 0.25초마다라, 받기 직후에 다시 그리면 꺼진 점이 남았다)
+  const dotted = (x: MenuTab): boolean => (x.dot ? !!x.dot() : dotOf(`menu.${x.id}`) > 0);
+  const tabBtn = (x: MenuTab): HTMLButtonElement => {
     const lock = gateOf(x.id);
-    const b = button(lock?.why ? `🔒 ${x.label()}` : x.label(), () => { const moved = cur !== x.id; cur = x.id; x.open?.(); renderMenu(); if (moved) ui.list.scrollTop = 0; });
-    if (lock?.why) b.classList.add('locked');
+    const b = button(x.label(), () => { const moved = cur !== x.id; cur = x.id; remember(x.id); x.open?.(); renderMenu(); if (moved) ui.list.scrollTop = 0; });
+    b.dataset.tab = x.id;
+    if (lock?.why) { b.classList.add('locked'); b.prepend(uiIcon('lock', 'sm')); }
     b.classList.toggle('on', x === on);
-    // 찍을 점수나 받을 우편이 있으면 점(•)을 찍는다. 점은 단추 모서리에 얹어서(style.css) 생겨도 탭의 너비가 바뀌지 않는다
-    // 탭의 원천(x.dot)이 있으면 지금 값을 바로 본다 (알림 점의 셈은 0.25초마다라, 받기 직후에 다시 그리면 꺼진 점이 남았다)
-    b.classList.toggle('dot', x.dot ? !!x.dot() : dotOf(`menu.${x.id}`) > 0);
-    ui.tabs.append(b);
-  });
-  ui.tabs.scrollLeft = left;
+    b.classList.toggle('dot', dotted(x));
+    return b;
+  };
+  if (groups) {
+    // 위 줄은 묶음, 아래 줄은 고른 묶음의 탭 (탭이 하나뿐인 묶음은 아래 줄이 없다)
+    const gs = groupTabs(groups, tabs()), onG = gs.find((g) => g.tabs.includes(on)) ?? gs[0];
+    ui.tabs.classList.add('groups');
+    for (const g of gs) {
+      const def = groups.find((x) => x.id === g.id)!;
+      const b = button('', () => {
+        const pick = g.tabs.find((x) => x.id === lastIn[g.id]) ?? g.tabs[0];
+        const moved = cur !== pick.id; cur = pick.id; remember(pick.id); pick.open?.(); renderMenu(); if (moved) ui.list.scrollTop = 0;
+      });
+      b.classList.add('mgroup'); b.dataset.group = g.id;
+      b.append(uiIcon(def.icon), Object.assign(document.createElement('span'), { textContent: groupLabel(def) }));
+      b.classList.toggle('on', g === onG);
+      b.classList.toggle('dot', g.tabs.some(dotted));
+      b.classList.toggle('locked', g.tabs.every((x) => !!gateOf(x.id)?.why));
+      ui.tabs.append(b);
+    }
+    ui.sub.hidden = !onG || onG.tabs.length < 2;
+    if (onG && onG.tabs.length > 1) for (const x of onG.tabs) ui.sub.append(tabBtn(x));
+  } else {
+    ui.tabs.classList.remove('groups');
+    ui.sub.hidden = true;
+    tabs().forEach((x) => ui.tabs.append(tabBtn(x)));
+  }
+  ui.tabs.scrollLeft = left; ui.sub.scrollLeft = subLeft;
   const top = ui.list.scrollTop;
   ui.list.textContent = '';
   const lock = gateOf(on.id);
@@ -112,6 +167,7 @@ setRedraw(renderMenu);
 export function openMenu(id: string): void {
   if (!S.me) return;
   cur = id;
+  remember(id);
   ui.panel.hidden = false;
   lastSig = '';
   current().open?.();
@@ -132,6 +188,7 @@ export function toggleMenu(): void {
 }
 
 export function initMenu(): void {
+  recall();
   setMailToDaily(() => openMenu('daily'));
   bindKey('m', toggleMenu);
   for (const x of allTabs) tabDot(x);

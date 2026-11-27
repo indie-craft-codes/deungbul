@@ -182,7 +182,9 @@ export type ClientMsg =
   /** 뽑기 (gacha 모듈): 배너 id와 횟수(1 또는 10) */
   | { t: 'gacha'; id: string; n: number }
   /** 편성 (squad 모듈): 함께 싸울 영웅 (자리의 차례, SQUAD_RULES.size까지) */
-  | { t: 'squad'; ids: string[]; back?: string[] }
+  | { t: 'squad'; ids: string[]; back?: string[]; lead?: undefined }
+  /** 홈(로비)의 대표 캐릭터 (squad 모듈): 가진 영웅 id, 빈 글이면 편성의 첫째 */
+  | { t: 'squad'; lead: string; ids?: undefined; back?: undefined }
   /** 영웅 장비 (herogear 모듈): 끼기(hero에게), 빼기, 강화, 분해(uids: 끼지 않은 것만) */
   | { t: 'hgear'; a: 'equip' | 'unequip' | 'enhance'; uid: number; hero?: string }
   | { t: 'hgear'; a: 'salvage'; uids: number[] }

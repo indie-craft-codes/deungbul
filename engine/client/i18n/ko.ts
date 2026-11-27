@@ -408,6 +408,9 @@ export const koBase = (n: ContentNames) => {
       // ---- 화면 쌓기·수집형 홈·단계 정보 창·편성 확인·결과 창 (묶음 A·B: hud/screens.ts, homekit.ts, stagepage.ts) ----
       scrBack: '뒤로', scrHome: '홈',
       hkEvent: '이벤트', hkSeason: '시즌', hkSoon: '곧 시작',
+      // ---- 상용 로비·메뉴 묶음 (U3: hud/homekit.ts, menu.ts) ----
+      hkProfile: '프로필', hkLeadPick: '대표 바꾸기', hkLeadPickTitle: '대표 고르기', hkLeadPickNote: '홈 가운데에 설 캐릭터를 고릅니다. 고른 것은 서버에 남아 다른 기기에서도 같습니다.',
+      mgGrow: '성장·수집', mgPlay: '활동', mgSocial: '소식', mgInfo: '정보', mgSys: '설정',
       btlPaused: '일시정지', btlResume: '계속', btlHome: '홈으로', btlQuit: '포기', btlQuitArm: '한 번 더 누르면 포기', btlAuto: '자동',
       btlPauseNote: '전투가 멈췄습니다. 홈으로 가면 전투는 뒤에서 이어지고, 포기하면 이 판을 끝냅니다.',
       gsTap: '눌러서 열기', gsNext: '눌러서 다음', gsSkip: '건너뛰기', gsNew: 'NEW', gsOk: '확인',
@@ -432,6 +435,7 @@ export const koBase = (n: ContentNames) => {
       gearLockOff: '잠금 풀기',
       gearMore: '강화·팔기·분해와 비교 펼치기',
       gearLess: '접기',
+      gearRules: '강화 규칙',
       gearTapHint: '장비를 누르면 강화·팔기·분해와, 지금 낀 장비와의 비교가 펼쳐집니다. 지금 낀 것보다 ▲ 좋음 · ▼ 나쁨 · ◆ 좋은 점과 나쁜 점이 섞임 · = 비슷.',
       bagFull: '장비 가방이 가득 찼습니다. 새로 떨어지는 장비는 버려집니다. 분해하거나 팔고, 가방을 넓히세요.',
       salvageAll: '일괄 분해…',

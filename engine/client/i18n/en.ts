@@ -353,6 +353,9 @@ export const enBase = (n: ContentNames): EngineLocale => {
       // ---- Screen stack, collection home, stage info, squad check, result (bundles A·B) ----
       scrBack: 'Back', scrHome: 'Home',
       hkEvent: 'Event', hkSeason: 'Season', hkSoon: 'Coming soon',
+      // ---- Lobby and menu groups (U3: hud/homekit.ts, menu.ts) ----
+      hkProfile: 'Profile', hkLeadPick: 'Change lead', hkLeadPickTitle: 'Pick your lead', hkLeadPickNote: 'Choose who stands at the center of your home screen. Your pick is saved on the server, so it follows you to other devices.',
+      mgGrow: 'Growth', mgPlay: 'Activities', mgSocial: 'Social', mgInfo: 'Info', mgSys: 'Settings',
       btlPaused: 'Paused', btlResume: 'Resume', btlHome: 'Home', btlQuit: 'Give up', btlQuitArm: 'Tap again to give up', btlAuto: 'Auto',
       btlPauseNote: 'The battle is paused. Going home keeps it running in the background; giving up ends this run.',
       gsTap: 'Tap to open', gsNext: 'Tap for next', gsSkip: 'Skip', gsNew: 'NEW', gsOk: 'OK',
@@ -376,6 +379,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       gearLockOff: 'Unlock',
       gearMore: 'Show enhance, sell, salvage and comparison',
       gearLess: 'Collapse',
+      gearRules: 'Enhancing rules',
       gearTapHint: 'Tap gear to enhance, sell or salvage it and compare it with what you wear. Against your current piece: ▲ better · ▼ worse · ◆ mixed · = about the same.',
       bagFull: 'Your gear bag is full. New drops are left behind. Salvage or sell gear, or expand the bag.',
       salvageAll: 'Salvage many…',

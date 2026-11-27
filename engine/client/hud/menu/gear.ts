@@ -9,6 +9,7 @@ import { hasModule } from '../../mods';
 import { S } from '../../state';
 import { gearIcon } from '../icons';
 import { button, el, emptyState, gearTitle, optsEl, redraw, row, select, span, ui } from './parts';
+import { uiIcon } from '../uiicons';
 
 /** 상점에서 장비(무기, 갑옷)를 파는 게임인가: 장비 탭의 안내가 상점을 말할지 */
 const SELLS_GEAR = SHOPS.length > 0 && SHOP_STOCK.some((id) => isItemId(id) && (itemDef(id).kind === 'weapon' || itemDef(id).kind === 'armor'));
@@ -43,6 +44,8 @@ export const act = {
   enhRes: '' as '' | 'fail' | 'down' | 'kept',
   /** 보호 부적을 쓸 것인가 (내려갈 수 있는 강화에만 쓴다). 기본은 쓴다 */
   useCharm: true,
+  /** 강화 규칙(접는 칸)을 펼쳤는가 (U3: 장비가 보이기 전의 규칙 글을 접어 둔다) */
+  rulesOpen: false,
   /** 재련 줄을 펼친 장비, 한 번 누른 옵션의 차례 (-1이면 없음) */
   refUid: 0, refArm: -1, refTimer: 0,
   /** 펼쳐 둔 가방 장비 (강화·팔기·분해 단추와 비교가 그 줄 아래에 보인다) */
@@ -77,19 +80,19 @@ function enhanceButton(g: Gear): HTMLButtonElement {
 }
 /** 들고 있는 보호 부적의 수 (부적이 없는 게임은 0) */
 const charms = (): number => (isItemId(ENHANCE.charm) ? S.me?.items[ENHANCE.charm] ?? 0 : 0);
-/** 강화가 내려갈 수 있는 게임이면: 경고 한 줄과 부적 쓰기 단추 (장비 탭의 머리) */
-function enhanceRiskEl(): HTMLElement | null {
+/** 강화가 내려갈 수 있는 게임이면: 경고 글 (접는 '강화 규칙' 칸 안)과 부적 쓰기 단추 (늘 보이게 칸 밖) */
+function enhanceRiskEl(): { text: HTMLElement; charm: HTMLElement | null } | null {
   if (ENHANCE.dropFrom > ENHANCE.max) return null;
-  const box = el('note grisk');
-  box.append(L().fmt.enhanceRisk(ENHANCE.dropFrom, charms(), ENHANCE.bindPlus));
+  const text = el('note grisk', L().fmt.enhanceRisk(ENHANCE.dropFrom, charms(), ENHANCE.bindPlus));
+  let charm: HTMLElement | null = null;
   if (isItemId(ENHANCE.charm)) {
     const b = button(t(act.useCharm ? 'charmOn' : 'charmOff'), () => { act.useCharm = !act.useCharm; redraw(); });
     b.classList.add('gcharm');
     b.classList.toggle('on', act.useCharm);
     b.setAttribute('aria-pressed', String(act.useCharm));
-    box.append(' ', b);
+    charm = el('grisk gcharmrow'); charm.append(b);
   }
-  return box;
+  return { text, charm };
 }
 /** 재련 단추: 누르면 그 장비 아래에 재련 줄이 펼쳐진다 (옵션이 있는 장비만) */
 function reforgeButton(g: Gear): HTMLButtonElement | null {
@@ -136,7 +139,8 @@ function armButton(text: string, confirm: string, armed: boolean, arm: (on: bool
 }
 /** 잠금 단추 (자물쇠): 잠근 장비는 팔기·분해·거래소 올리기가 막힌다 */
 function lockButton(g: Gear): HTMLButtonElement {
-  const b = button(g.lock ? '🔒' : '🔓', () => send({ t: 'gearLock', uid: g.uid, on: !g.lock }));
+  const b = button('', () => send({ t: 'gearLock', uid: g.uid, on: !g.lock }));
+  b.append(uiIcon(g.lock ? 'lock' : 'unlock'));
   b.classList.add('glock');
   b.classList.toggle('on', !!g.lock);
   b.setAttribute('aria-pressed', String(!!g.lock));
@@ -277,11 +281,18 @@ export function drawGear(): void {
   const loc = L(), m = S.meta;
   // 전투력은 순위 모듈(rank)이 셈해 보낸다: 그 모듈이 없는 게임(메아리 계약)에서는 늘 0이라 줄을 뺀다
   if (hasModule('rank')) ui.list.append(el('baghead', loc.fmt.power(m.power)));
-  // 보급형과 만들거나 주운 장비의 차이는 늘 보이게 둔다 (예전에는 남는 장비가 없을 때만 떴다)
-  ui.list.append(el('note', loc.fmt.gearHint(ENHANCE.supplyMax, ENHANCE.max, SELLS_GEAR, RECIPES.length > 0 && FORGES.length > 0)));
-  // 강화의 위험과 부적 쓰기 단추: 낀 장비를 강화할 때 바로 보이게 낀 장비 위에 둔다 (검토 6: 아래에 있어 스크롤해야 보였다)
+  // 강화 규칙 (보급형과 만들거나 주운 장비의 차이, 내려가는 단계·부적·귀속): 장비보다 먼저 다섯 줄이 보이던 것을 '강화 규칙' 한 줄로 접는다 (U3). 펼친 것은 기억한다
+  const rules = document.createElement('details');
+  rules.className = 'grules'; rules.open = act.rulesOpen;
+  rules.addEventListener('toggle', () => { act.rulesOpen = rules.open; });
+  const sum = document.createElement('summary');
+  sum.append(uiIcon('info', 'sm'), ` ${t('gearRules')}`);
+  rules.append(sum, el('note', loc.fmt.gearHint(ENHANCE.supplyMax, ENHANCE.max, SELLS_GEAR, RECIPES.length > 0 && FORGES.length > 0)));
+  // 강화의 위험(글은 규칙 칸 안)과 부적 쓰기 단추(늘 보이게: 낀 장비를 강화할 때 바로 보이게 낀 장비 위. 검토 6)
   const risk = enhanceRiskEl();
-  if (risk) ui.list.append(risk);
+  if (risk) rules.append(risk.text);
+  ui.list.append(rules);
+  if (risk?.charm) ui.list.append(risk.charm);
   for (const slot of GEAR_SLOTS) {
     const g = m.gear.find((x) => x.uid === m.worn[slot]);
     if (g) ui.list.append(...gearRow(g, true));
@@ -293,7 +304,7 @@ export function drawGear(): void {
   // 가방이 가득 찼으면 눈에 띄게 알린다: 새로 떨어지는 장비가 조용히 버려진다
   if (m.gear.length >= S.bag.max) { const warn = el('note gwarn', S.bag.lost > 0 ? loc.fmt.bagLost(S.bag.lost) : t('bagFull')); warn.setAttribute('role', 'status'); ui.list.append(warn); }
   if (S.salvage.on) ui.list.append(...salvageTools(rest));
-  if (!rest.length) ui.list.append(emptyState('⚔', t('gearEmpty')));
+  if (!rest.length) ui.list.append(emptyState('gear', t('gearEmpty')));
   else ui.list.append(el('note', t('gearTapHint')));
   for (const g of rest) ui.list.append(...gearRow(g, false));
 }

@@ -9,7 +9,9 @@ import path from 'node:path';
 import { ITEMS, itemDef, type ItemId } from '../../shared/defs';
 import { ALL_MODULES, MODULE_TABLE, type ModuleId } from '../../shared/modules';
 import { BAG_KINDS, bagCells, cellCount } from '../../client/hud/bagcells';
-import { ENGINE_TAB_MODS, MENU_TABS, tabsForModules, visibleTabs } from '../../client/hud/menu/tabs';
+import { ENGINE_TAB_MODS, groupTabs, MENU_GROUPS, MENU_TABS, tabsForModules, visibleTabs } from '../../client/hud/menu/tabs';
+import { ICON_PATHS } from '../../client/hud/uiicons';
+import { artPick, artUrl, clearArt, portraitArt, registerArt } from '../../client/art';
 import { engineKeys, keyDiff, keysFor } from '../../client/keys';
 import { check } from '../harness';
 
@@ -52,6 +54,31 @@ import { check } from '../harness';
   check(ids(visibleTabs(all, ['fire', 'gear', 'market'], false)) === 'fire,gear,device', 'setMenuTabs의 차례대로, 고르지 않은 모듈의 탭(market)은 건너뛰고, 기기 탭은 목록에 없어도 맨 뒤에');
   check(ids(visibleTabs(all, ['device', 'gear'], false)) === 'device,gear', '늘 보이는 탭을 목록에 넣으면 그 자리에 (두 번 나오지 않는다)');
   check(ids(visibleTabs(all, [], false)) === 'device', '빈 목록이면 늘 보이는 탭만');
+  // 탭 묶음 (U3): 묶음의 차례, 묶음 안은 보이는 탭의 차례, 어느 묶음에도 없는 탭(게임의 탭)은 첫 묶음, 보이는 탭이 없는 묶음은 빠진다
+  const vis: Tab[] = ['gear', 'fire', 'mail', 'build', 'settings', 'device'].map((id) => ({ id }));
+  const gs = groupTabs(MENU_GROUPS, vis);
+  check(gs.map((g) => `${g.id}:${ids(g.tabs)}`).join(' ') === 'grow:gear,fire,build social:mail sys:settings,device' && MENU_GROUPS.every((g) => g.tabs.length > 0) && new Set(MENU_GROUPS.flatMap((g) => g.tabs)).size === MENU_GROUPS.flatMap((g) => g.tabs).length,
+    `메뉴 묶음: ${gs.map((g) => `${g.id}(${ids(g.tabs)})`).join(' ')} — 게임의 탭(fire)은 첫 묶음, 빈 묶음(play·info)은 빠지고, 한 탭은 한 묶음에만`);
+}
+
+// ---------- 화면 아이콘과 그림 자리 (U3) ----------
+{
+  // 아이콘: 30개 이상, 모양은 path·circle·rect만, 좌표는 24 격자 안, 색을 적지 않는다(currentColor를 따른다)
+  const names = Object.keys(ICON_PATHS), bad = names.filter((n) => {
+    const svg: string = ICON_PATHS[n as keyof typeof ICON_PATHS];
+    const tags = [...svg.matchAll(/<(\w+)/g)].map((m) => m[1]);
+    const nums = [...svg.matchAll(/(?:cx|cy|x|y|width|height|r)="(-?[\d.]+)"/g)].map((m) => Number(m[1]));
+    return !svg || tags.some((x) => !['path', 'circle', 'rect'].includes(x)) || /fill=|stroke=|#[0-9a-f]{3}/i.test(svg) || nums.some((v) => v < 0 || v > 24);
+  });
+  check(names.length >= 30 && bad.length === 0 && ['mail', 'shop', 'gacha', 'squad', 'adventure', 'mission', 'season', 'achieve', 'codex', 'odds', 'friends', 'chat', 'settings', 'bag', 'gear', 'enhance', 'salvage', 'lock', 'star', 'auto', 'speed', 'pause', 'sweep', 'exchange', 'event', 'notice', 'profile', 'swap'].every((n) => names.includes(n)),
+    `화면 아이콘 ${names.length}개가 24 격자의 선 그림이고 색을 적지 않는다${bad.length ? ` (틀린 것: ${bad.join(', ')})` : ''}`);
+  // 그림 자리: 열쇠의 모양, base를 앞에 붙임, 배경은 화면 방향의 것이 먼저, 없으면 undefined (부르는 쪽이 대체)
+  clearArt();
+  const rej = registerArt({ 'portrait:aria': 'portrait/aria.webp', 'bg:tower': 'bg/tower.webp', 'bg:tower@portrait': 'bg/tower@portrait.webp', 'banner:fest': 'https://cdn.example/f.webp', 'face:x': 'x.png', 'bg:a@side': 'y.png' }, 'art/');
+  check(rej.join() === 'face:x,bg:a@side' && portraitArt('aria') === 'art/portrait/aria.webp' && portraitArt('bran') === undefined && artPick('bg', 'tower', 'portrait') === 'art/bg/tower@portrait.webp'
+    && artPick('bg', 'tower', 'landscape') === 'art/bg/tower.webp' && artUrl('banner:fest') === 'https://cdn.example/f.webp' && artPick('banner', 'none') === undefined,
+    '그림 자리: 맞지 않는 열쇠는 건너뛰고, 초상·배경(방향)·배너를 찾고, 없으면 undefined (3D 초상·css 배경으로 대신)');
+  clearArt();
 }
 
 // ---------- 3. 단축키 ----------

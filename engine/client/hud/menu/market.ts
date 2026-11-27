@@ -57,7 +57,7 @@ function drawMarketBrowse(): void {
   const loc = L(), me = S.me;
   if (!me) return;
   const low = me.lv < MARKET.minLv;
-  if (!mk.list.length) ui.list.append(emptyState('⚖', t('marketEmpty'), mk.guest || low ? undefined : { label: t('emptyToPost'), onClick: () => { mk.view = 'post'; redraw(); } }));
+  if (!mk.list.length) ui.list.append(emptyState('exchange', t('marketEmpty'), mk.guest || low ? undefined : { label: t('emptyToPost'), onClick: () => { mk.view = 'post'; redraw(); } }));
   for (const x of mk.list) {
     const short = me.gold < x.price, armed = mk.armed === x.id;
     const buy = button(armed ? loc.fmt.marketConfirm(x.price) : loc.fmt.marketBuy(x.price), () => {
@@ -75,7 +75,7 @@ function drawMarketBrowse(): void {
 function drawMarketMine(): void {
   const loc = L(), passed = (performance.now() - mk.mineAt) / 1000;
   ui.list.append(el('baghead', loc.fmt.marketMineHead(mk.mine.length, MARKET.maxListings)));
-  if (!mk.mine.length) ui.list.append(emptyState('⚖', t('marketMineEmpty'), mk.guest || (S.me?.lv ?? 0) < MARKET.minLv ? undefined : { label: t('emptyToPost'), onClick: () => { mk.view = 'post'; redraw(); } }));
+  if (!mk.mine.length) ui.list.append(emptyState('exchange', t('marketMineEmpty'), mk.guest || (S.me?.lv ?? 0) < MARKET.minLv ? undefined : { label: t('emptyToPost'), onClick: () => { mk.view = 'post'; redraw(); } }));
   for (const x of mk.mine) {
     const min = Math.max(0, Math.floor((x.left - passed) / 60));
     ui.list.append(marketRow({ ...x, mine: false }, [loc.fmt.marketPrice(x.price), loc.fmt.marketLeft(Math.floor(min / 60), min % 60)], [button(t('marketCancel'), () => send({ t: 'market', a: 'cancel', id: x.id }))]));
@@ -131,7 +131,7 @@ function drawMarketPost(): void {
     show();
     ui.list.append(box, note);
   } else if (gear.length || mats.length) ui.list.append(el('note', t('marketPickHint')));
-  else ui.list.append(emptyState('⚖', t('marketPostEmpty')));
+  else ui.list.append(emptyState('exchange', t('marketPostEmpty')));
 
   const choose = (next: { uid: number } | { item: ItemId }, n: number) => { mk.pick = next; mk.price = ''; mk.n = String(n); redraw(); ui.list.scrollTop = 0; };
   if (gear.length) ui.list.append(el('baghead', t('tabGear')));

@@ -6,7 +6,7 @@ import { el, emptyState, row, ui } from './parts';
 
 export function drawRank(): void {
   const loc = L(), r = S.rank;
-  if (!r.list.length) { ui.list.append(emptyState('♛', t('rankEmpty'))); return; }
+  if (!r.list.length) { ui.list.append(emptyState('rank', t('rankEmpty'))); return; }
   r.list.forEach((x, i) => ui.list.append(row(`${i + 1}. ${x.name}`, loc.fmt.level(x.lv, loc.classes[x.cls as keyof typeof loc.classes]?.name ?? ''), [el('num', loc.fmt.power(x.power))], i === r.me ? 'mine' : '')));
 }
 

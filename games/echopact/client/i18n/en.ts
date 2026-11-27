@@ -92,6 +92,10 @@ export const enGame: GameLocale = {
     codexEchoes: 'Echoes', codexBeasts: 'Beasts of the Vale',
     towerAdventure: 'Adventure',
     towerWatch: 'Watch battle',
+    // Home (lobby): profile rows and the lead echo's short lines when tapped (U3)
+    profPower: 'Squad power', profBest: 'Furthest stage', profEchoes: 'Echoes collected', profLead: 'Lead echo',
+    leadSay1: 'Climbing the tower again today? I am ready.', leadSay2: 'The Echo Well sounds clear today.', leadSay3: 'Contractor, shall we check the squad?',
+    leadSay4: 'Gather shards in the Vale and we can call a new friend.', leadSay5: 'It is fine to rest. The tower is not going anywhere.',
     towerGo: 'Fight',
     towerPull: 'Summon',
     towerEchoes: 'Echoes',

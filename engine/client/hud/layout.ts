@@ -8,6 +8,7 @@
 // 폰에서는 등록한 요소를 구역으로 옮기고(제자리에 표시를 남긴다), PC 모양으로 돌아가면 제자리로 되돌린다.
 // 게임은 placeIn(구역, 요소, 차례)으로 자기 요소를 등록한다 (차례가 작을수록 위·앞). 구역이 아니라 다른 요소 안으로도 옮길 수 있다 (언어 선택을 메뉴 창의 머리로).
 import { $ } from '../app';
+import { onSlow } from '../bus';
 import { onLangChange, t } from '../i18n';
 import { platform } from '../platform';
 
@@ -128,4 +129,11 @@ export function initLayout(): void {
   window.addEventListener('orientationchange', () => { relay(); setTimeout(relay, 300); });
   relay();
   measure();
+  // 오른쪽 창(#rightcol: 퀘스트·상점·등탑)이 넘쳐 스크롤되면 아래를 흐리게 한다 (U3: 영어 퀘스트 글이 잘린 줄 몰랐다). 스크롤 끝에 닿으면 걷는다
+  const col = $('rightcol') as HTMLElement | null;
+  if (col) {
+    const more = () => col.classList.toggle('hasMore', col.scrollHeight - col.scrollTop - col.clientHeight > 4);
+    col.addEventListener('scroll', more, { passive: true });
+    onSlow(more);
+  }
 }

@@ -18,7 +18,7 @@ export const mailTop: ((list: HTMLElement) => void)[] = [];
 export function drawMail(): void {
   const loc = L(), mail = S.meta.mail;
   for (const f of mailTop) f(ui.list);
-  if (!mail.length) { const go = toDaily; ui.list.append(emptyState('✉', t('mailEmpty'), go && hasModule('daily') && DAILY_IDS.length ? { label: t('emptyToDaily'), onClick: go } : undefined)); return; }
+  if (!mail.length) { const go = toDaily; ui.list.append(emptyState('mail', t('mailEmpty'), go && hasModule('daily') && DAILY_IDS.length ? { label: t('emptyToDaily'), onClick: go } : undefined)); return; }
   ui.list.append(button(t('claimAll'), () => send({ t: 'mailClaim', id: 0 })));
   for (const m of [...mail].reverse()) {
     const r = row(loc.fmt.mailTitle(m.k, m.a), optsEl([rewardText(m.r), goodsText(m.r), m.x ? loc.fmt.mailLeft(m.x - Date.now()) : '']), [button(t('claim'), () => send({ t: 'mailClaim', id: m.id }))]);

@@ -76,14 +76,24 @@ body[data-mode="tower"] {
 body[data-mode="tower"] .modeBtn { background: var(--ep-violet-800); border-color: var(--ep-violet-300); color: var(--ep-cream); }
 body[data-mode="vale"] .modeBtn { background: var(--ep-vale-800); border-color: var(--ep-vale-300); color: var(--ep-vale-100); }
 
-/* 탑의 홈: 틀의 수집형 홈 키트(hud/homekit.ts: .homekit). 색은 위의 탑 토큰 */
-#towerHome .hk-dockbtn { background: var(--ep-violet-700); border-color: var(--ep-violet-line); color: var(--c-white); }
-#towerHome .hk-banner { background: var(--ep-violet-700a); border-color: var(--c-line); }
+/* 탑의 홈: 틀의 수집형 홈 키트(hud/homekit.ts: .homekit, 상용 로비 구조). 색은 위의 탑 토큰.
+   장면 배경: 그림 'bg:tower'가 없으면 밤하늘(별)·멀리 선 탑의 그림자·바닥의 빛 (그림 없이 css로: 그림자는 SVG 마스크라 색은 토큰) */
+#towerHome { --hk-chip: var(--ep-violet-800a); --hk-dockbg: var(--ep-violet-800a); --hk-glow: var(--ep-amber-glow); }
+#towerHome .hk-railbtn { border-color: var(--ep-violet-line); }
+#towerHome .hk-dock { border-color: var(--ep-violet-line); }
+#towerHome .hk-scene:not(.hk-art) {
+  background-image: radial-gradient(1.5px 1.5px at 12% 18%, var(--c-white), transparent), radial-gradient(1px 1px at 28% 8%, var(--ep-violet-100), transparent),
+    radial-gradient(1.5px 1.5px at 44% 22%, var(--ep-cream), transparent), radial-gradient(1px 1px at 63% 12%, var(--c-white), transparent),
+    radial-gradient(1.5px 1.5px at 81% 20%, var(--ep-violet-200), transparent), radial-gradient(1px 1px at 90% 6%, var(--c-white), transparent),
+    radial-gradient(1px 1px at 7% 36%, var(--ep-violet-200), transparent), radial-gradient(1.5px 1.5px at 94% 38%, var(--ep-cream), transparent),
+    radial-gradient(ellipse 55% 34% at 50% 46%, var(--ep-amber-glow), transparent 70%),
+    radial-gradient(ellipse 75% 14% at 50% 80%, var(--ep-violet-line), transparent 70%),
+    linear-gradient(180deg, var(--ep-night), var(--ep-violet-800) 55%, var(--ep-violet-650)); }
+#towerHome .hk-scene:not(.hk-art)::before { content: ""; position: absolute; left: 0; right: 0; bottom: 14%; height: 62%; background: var(--ep-violet-700); opacity: .75;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMax meet'%3E%3Cpath d='M0 300V250l40-12 30 8 40-20 30 14V300zM400 300V244l-36-10-34 12-30-16-30 18V300z'/%3E%3Cpath d='M176 300V96l8-10V58l16-30 16 30v28l8 10v204zM196 120h8v14h-8zM196 170h8v14h-8z' fill-rule='evenodd'/%3E%3C/svg%3E") center bottom / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMax meet'%3E%3Cpath d='M0 300V250l40-12 30 8 40-20 30 14V300zM400 300V244l-36-10-34 12-30-16-30 18V300z'/%3E%3Cpath d='M176 300V96l8-10V58l16-30 16 30v28l8 10v204zM196 120h8v14h-8zM196 170h8v14h-8z' fill-rule='evenodd'/%3E%3C/svg%3E") center bottom / contain no-repeat; }
 .stpage { --hk-bg: var(--ep-page-bg); --hk-ink: var(--ep-violet-100); }
 .homeSide { position: static; transform: none; width: 100%; justify-content: flex-start; text-align: left; border: 1px solid var(--c-line); padding: 6px 10px; font-weight: 400; color: var(--ep-mist); }
-/* 대표 메아리의 이름은 흰 글자 (등급 색은 아래 정보 줄의 띠로: 보라 바탕에서 일반 등급의 색이 흐렸다) */
-#towerHome .hk-name { color: var(--c-white); text-shadow: 0 2px 6px var(--c-sunk-2); }
-#towerHome .hk-info { border-bottom: 3px solid var(--rc, var(--c-line)); padding-bottom: 2px; }
 /* 홈·모험 페이지가 열려 있으면 '게임 바꾸기' 단추는 감춘다 (홈의 아래 띠에 '울림골'이 있다) */
 body.pageOn .modeBtn, body.pageOn .pactSide:not(.homeSide) { visibility: hidden; }
 /* 탑에서는 틀의 내 정보 창을 작게: 수집형의 화면처럼 */
@@ -144,7 +154,7 @@ body[data-mode="tower"].battleOn #zones #feed > div:nth-last-child(n+2) { displa
 .tadv .tstage.now { background: var(--ep-violet-600); border-color: var(--ep-amber); box-shadow: 0 0 0 2px var(--ep-amber-glow); }
 .tadv .tstage.boss b { color: var(--ep-ember); }
 .tadv .tstage.locked { opacity: .5; }
-.tadv .tstage.locked b::before { content: '🔒'; font-size: var(--fs-xs); margin-right: 2px; vertical-align: 2px; }
+.tadv .tstage.locked b::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 3px; vertical-align: 1px; background: currentColor; -webkit-mask: var(--ic-lock) center / contain no-repeat; mask: var(--ic-lock) center / contain no-repeat; }
 .tadv .thint { font-size: var(--fs-sm); color: var(--ep-violet-200); text-align: center; }
 .tadv > * { max-width: 760px; margin-left: auto; margin-right: auto; }
 /* 탑: 전투에서는 단계 막대의 '단계 선택'을 감춘다 (전투 화면의 일시정지 창이 홈·포기를 맡는다) */

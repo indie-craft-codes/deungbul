@@ -105,6 +105,10 @@ export const koGame = {
     // 탑의 첫 화면 (client/tower.ts)
     towerAdventure: '모험',
     towerWatch: '전투 보기',
+    // 홈(로비): 프로필 창의 줄, 대표 메아리를 눌렀을 때의 짧은 대사 (U3)
+    profPower: '편성 전투력', profBest: '가장 멀리 깬 단계', profEchoes: '모은 메아리', profLead: '대표 메아리',
+    leadSay1: '오늘도 탑을 오를 건가요? 저는 준비됐어요.', leadSay2: '울림 샘 물소리가 오늘따라 맑네요.', leadSay3: '계약자님, 편성을 한 번 살펴봐요.',
+    leadSay4: '울림골에서 조각을 모으면 새 친구를 부를 수 있어요.', leadSay5: '쉬어 가도 괜찮아요. 탑은 어디 가지 않으니까요.',
     towerGrowLv: '메아리 레벨 올리기', towerGrowPull: '울림 샘에서 뽑기', towerGrowSquad: '편성 바꾸기', towerGrowVale: '울림골에서 조각 모으기',
     towerGo: '도전',
     towerPull: '뽑기',

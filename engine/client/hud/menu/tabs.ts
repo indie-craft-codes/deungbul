@@ -38,3 +38,26 @@ export function visibleTabs<T extends Pick<MenuTab, 'id' | 'always'>>(all: reado
   const picked = (order ? order.map((id) => all.find((x) => x.id === id)).filter((x): x is T => !!x) : [...all]).filter((x) => !(x.id === 'daily' && hideDaily));
   return [...picked, ...all.filter((x) => x.always && !picked.includes(x))];
 }
+
+// ---------- 탭 묶음 (U3 정보 구조: docs/ux-review.md 3.6) ----------
+/** 메뉴의 묶음 하나: 위 줄의 칸(그림·이름), 그 안의 탭 id들. 탭의 차례는 게임이 고른 차례(setMenuTabs)를 따른다 */
+export interface MenuGroupDef { id: string; icon: string; tabs: readonly string[] }
+/**
+ * 틀의 기본 묶음 다섯: 성장·수집 / 활동 / 소식 / 정보 / 설정. 이름은 i18n의 'mg' + id (mgGrow …).
+ * 어느 묶음에도 없는 탭(게임이 더한 탭)은 첫 묶음에 든다: 게임의 탭은 대개 그 게임의 놀이다
+ */
+export const MENU_GROUPS: readonly MenuGroupDef[] = [
+  { id: 'grow', icon: 'growth', tabs: ['heroes', 'squad', 'hgear', 'gacha', 'stages', 'gear', 'build', 'morph'] },
+  { id: 'play', icon: 'mission', tabs: ['daily', 'event', 'season', 'achieve', 'goods'] },
+  { id: 'social', icon: 'friends', tabs: ['mail', 'friends', 'guild', 'rank', 'market'] },
+  { id: 'info', icon: 'codex', tabs: ['codex', 'odds'] },
+  { id: 'sys', icon: 'settings', tabs: ['settings', 'device'] },
+];
+/**
+ * 보이는 탭을 묶음으로 나눈다: 묶음의 차례대로, 묶음 안은 보이는 탭의 차례(visible)대로. 어느 묶음에도 없는 탭은 첫 묶음에.
+ * 보이는 탭이 하나도 없는 묶음은 빠진다 (그 게임에 없는 기능)
+ */
+export function groupTabs<T extends Pick<MenuTab, 'id'>>(groups: readonly Pick<MenuGroupDef, 'id' | 'tabs'>[], visible: readonly T[]): { id: string; tabs: T[] }[] {
+  const listed = new Set(groups.flatMap((g) => g.tabs));
+  return groups.map((g, i) => ({ id: g.id, tabs: visible.filter((x) => g.tabs.includes(x.id) || (i === 0 && !listed.has(x.id))) })).filter((g) => g.tabs.length > 0);
+}

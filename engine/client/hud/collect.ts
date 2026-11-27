@@ -6,6 +6,7 @@
 // 게임이 더 할 수 있는 것: 뽑기 결과를 받기(onGachaResult: 연출, 소리), 내 영웅·편성 읽기(myHeroes, mySquad).
 import * as THREE from 'three';
 import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, pityKey, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
+import { portraitArt } from '../art';
 import { rarityHex, tintRarity } from './rarity';
 import { onMsg } from '../bus';
 import { registerKind } from '../kinds';
@@ -41,10 +42,11 @@ export const myHeroes = (): Readonly<HeroesMe> => heroes;
 /** 내 편성과 그 전투력 */
 export const mySquad = (): Readonly<SquadMe> => squad;
 /** 영웅의 초상 그림 (카드 목록·카드 상세·뽑기 연출·전투 초상이 함께 쓴다). 게임이 setHeroPic으로 정한다 (없으면 이름의 첫 글자) */
+/** 게임이 그림 파일을 'portrait:<id>'로 등록했으면(art.ts) 그 그림이 먼저다: 없으면 게임의 초상 함수(3D 모델을 찍은 그림) */
 let picFn: (id: string) => string | undefined = () => undefined;
-export const heroPic = (id: string): string | undefined => picFn(id);
-/** 영웅의 초상 그림을 정한다 (메아리 계약: 캐릭터 정의의 charPortrait) */
-export function setHeroPic(fn: (id: string) => string | undefined): void { picFn = fn; setShowPic(fn); }
+export const heroPic = (id: string): string | undefined => portraitArt(id) ?? picFn(id);
+/** 영웅의 초상 그림을 정한다 (메아리 계약: 캐릭터 정의의 charPortrait). 등록된 그림 파일(portrait:<id>)이 있으면 그것이 이긴다 */
+export function setHeroPic(fn: (id: string) => string | undefined): void { picFn = fn; setShowPic(heroPic); }
 /** 뽑기 결과를 받는다 (결과 창이 뜨는 것과 함께) */
 export function onGachaResult(fn: (banner: string, got: readonly PullGot[]) => void): void { pullFns.push(fn); }
 
@@ -66,7 +68,7 @@ const roleName = (id: string) => uiText.get(heroRole(id).name);
 // ---------- 영웅 탭 ----------
 function drawHeroes(list: HTMLElement): void {
   if (drawHeroDetail(list, heroes)) return; // 영웅 상세를 펼쳤다 (성장을 켠 게임: hud/herogrow.ts)
-  if (!Object.keys(heroes).length) list.append(emptyState('✦', t('heroNone'), hasModule('gacha') ? { label: t('emptyToGacha'), onClick: () => openMenu('gacha') } : undefined));
+  if (!Object.keys(heroes).length) list.append(emptyState('heroes', t('heroNone'), hasModule('gacha') ? { label: t('emptyToGacha'), onClick: () => openMenu('gacha') } : undefined));
   drawTradeHead(list);
   // 격자·정렬·거르기·카드 상세 (hud/cards.ts)
   drawCardList(list, cardData, () => redraw());
@@ -122,7 +124,7 @@ function drawRates(box: HTMLElement, id: string): void {
 }
 function drawGacha(list: HTMLElement): void {
   const loc = L(), ids = openBanners(gacha);
-  if (!ids.length) list.append(emptyState('✧', t('gachaNoOpen')));
+  if (!ids.length) list.append(emptyState('gacha', t('gachaNoOpen')));
   for (const id of ids) {
     const b = BANNER_TABLE[id], box = el('gbanner' + (b.pickup ? ' pick' : ''));
     box.append(el('ttitle', uiText.get(b.name)));
@@ -156,7 +158,7 @@ function drawGacha(list: HTMLElement): void {
   }
   drawSelect(list);
   list.append(el('baghead', t('gachaHistory')));
-  if (!gacha.log.length) list.append(emptyState('⟳', t('gachaNoHistory')));
+  if (!gacha.log.length) list.append(emptyState('gacha', t('gachaNoHistory')));
   const fmtAt = (ms: number) => { const d = new Date(ms); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
   for (const g of gacha.log.slice(0, GACHA_RULES.history)) {
     const line = el('glog'), who = document.createElement('b');
@@ -199,7 +201,7 @@ function drawSquad(list: HTMLElement): void {
   }
   drawAutoSquad(list, heroes, squad.ids, size); // 추천 편성 (HERO_RULES.cards.auto: hud/cardgrow.ts)
   const owned = heroRows(heroes, 0, squad.ids, myHeroGear()).filter((r) => r.owned);
-  if (!owned.length) list.append(emptyState('✦', t('squadNone'), hasModule('gacha') ? { label: t('emptyToGacha'), onClick: () => openMenu('gacha') } : undefined));
+  if (!owned.length) list.append(emptyState('squad', t('squadNone'), hasModule('gacha') ? { label: t('emptyToGacha'), onClick: () => openMenu('gacha') } : undefined));
   for (const r of owned) {
     const name = tinted(el('iname', heroName(r.id)), r.rarity);
     name.append(span('hstar', stars(r.stars)));

@@ -120,6 +120,7 @@ export const SKELETON = `
         <button type="button" class="plain" id="menuClose" data-i18n="close"></button>
       </div>
       <div id="menuTabs"></div>
+      <div id="menuSub" hidden></div>
       <div id="menuList"></div>
     </div>
     <div class="panel" id="invite" hidden data-mod="party">

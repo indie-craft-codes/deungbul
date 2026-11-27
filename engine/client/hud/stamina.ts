@@ -34,7 +34,7 @@ export function myStamina(): StaminaMe | null {
 /** 재화 줄의 칩 ('stamina'). 숫자 대신 'n/상한 · 다음 1까지 m:ss'. 누르면 창 */
 export function staminaChip(): CurrencyChip {
   return {
-    id: 'stamina', glyph: '⚡', value: () => myStamina()?.n ?? 0,
+    id: 'stamina', glyph: 'stamina', value: () => myStamina()?.n ?? 0,
     text: () => { const s = myStamina(); return s ? L().fmt.staChip(s.n, s.max, s.next) : '…'; },
     title: () => staminaName(), onClick: () => openStaminaPop(0), shown: staminaUsed,
   };

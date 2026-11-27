@@ -54,7 +54,7 @@ body {
 #pcard[hidden], #invite[hidden] { display: none; }
 #pcard button, #invite button { padding: 6px 10px; font-size: var(--fs-sm); }
 #invite { left: 50%; top: 42%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; text-align: center; width: max-content; max-width: min(360px, 92%); border-color: var(--c-ally); }
-.num { font-family: var(--mono); font-size: var(--fs-xs); color: var(--c-text-2); font-variant-numeric: tabular-nums; }
+.num { font-size: var(--fs-xs); color: var(--c-text-2); font-variant-numeric: tabular-nums; } /* 숫자는 본문 글꼴 + 같은 너비 숫자 (U3: 고정폭 글꼴은 코드에만) */
 
 #chat { left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: 320px; display: flex; flex-direction: column; gap: 6px; }
 #log { height: 132px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; font-size: var(--fs-xs); -webkit-mask-image: linear-gradient(to bottom, transparent, var(--c-black) 12px); mask-image: linear-gradient(to bottom, transparent, var(--c-black) 12px); } /* 위로 밀려 잘린 줄은 흐리게 사라진다 */
@@ -183,7 +183,7 @@ button.plain:hover { border-color: var(--c-accent); }
 .skill .k { position: absolute; left: 5px; top: 3px; font-family: var(--mono); font-size: var(--fs-xs); color: var(--c-accent); font-weight: 400; }
 .skill .n { font-size: var(--fs-sm); margin-top: 8px; position: relative; z-index: 1; text-shadow: 0 0 3px var(--c-black); } /* 쿨다운 막 위에서도 읽힌다 */
 .skill .cd { position: absolute; inset: 0; background: var(--c-sunk); transform-origin: bottom; transform: scaleY(0); }
-.skill .t { position: absolute; right: 4px; bottom: 2px; font-family: var(--mono); font-size: var(--fs-sm); color: var(--c-white); text-shadow: 0 0 3px var(--c-black); }
+.skill .t { position: absolute; right: 4px; bottom: 2px; font-variant-numeric: tabular-nums; font-size: var(--fs-sm); color: var(--c-white); text-shadow: 0 0 3px var(--c-black); }
 #actRow { display: flex; gap: 6px; justify-content: center; }
 @media (pointer: coarse) { #skills { justify-content: flex-end; } }
 #autoBtn { pointer-events: auto; background: var(--c-panel); color: var(--c-text); border: 1px solid var(--c-line); font-weight: 400; padding: 6px 12px; white-space: nowrap; }
@@ -316,7 +316,7 @@ html, body { height: var(--app-h, 100%); }
 .bagcell .icon { --icon: 100%; width: 86%; height: 86%; box-shadow: none; background-color: transparent; }
 .bagcell.none { opacity: .38; }
 .bagcell.on { border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent); opacity: 1; }
-.bagcell .bagn { position: absolute; right: 3px; bottom: 1px; font-size: var(--fs-xs); font-weight: 700; color: var(--c-white); text-shadow: 0 0 3px var(--c-black), 0 0 2px var(--c-black); font-family: var(--mono, monospace); }
+.bagcell .bagn { position: absolute; right: 3px; bottom: 1px; font-size: var(--fs-xs); font-weight: 700; color: var(--c-white); text-shadow: 0 0 3px var(--c-black), 0 0 2px var(--c-black); font-variant-numeric: tabular-nums; }
 .bagcell .bagabbr { font-size: var(--fs-xs); font-weight: 700; color: var(--c-text-2); }
 .baginfo { min-height: 40px; display: flex; flex-direction: column; gap: 3px; background: var(--c-fill-1); border-radius: var(--r-md); padding: 6px 8px; }
 .baginfo .row { display: flex; justify-content: space-between; gap: 8px; }
@@ -645,7 +645,7 @@ html:lang(en) body { overflow-wrap: break-word; }
 .grates { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-xs); }
 .grates table { width: 100%; border-collapse: collapse; }
 .grates td { padding: 2px 4px; border-bottom: 1px solid var(--c-line); }
-.grates td:last-child { text-align: right; font-family: var(--mono); white-space: nowrap; }
+.grates td:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .grates td.rn { color: var(--rc, inherit); font-weight: 700; }
 .grates .ghd { color: var(--c-accent); font-weight: 700; margin-top: 4px; }
 .glog { font-size: var(--fs-xs); display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--c-line); padding: 2px 0; }
@@ -684,7 +684,7 @@ html:lang(en) body { overflow-wrap: break-word; }
 #stageBar .shead { display: flex; align-items: baseline; gap: 8px; }
 #stageBar .sid { font-size: var(--fs-xl); font-weight: 800; color: var(--c-accent); }
 #stageBar .sname { font-size: var(--fs-xs); opacity: .85; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#stageBar .stime { font-family: var(--mono); font-size: var(--fs-xs); }
+#stageBar .stime { font-variant-numeric: tabular-nums; font-size: var(--fs-xs); }
 #stageSegs { display: flex; gap: 3px; height: 8px; }
 #stageSegs i { flex: 1; background: var(--c-sunk-2); border-radius: var(--r-sm); overflow: hidden; position: relative; }
 #stageSegs i b { position: absolute; inset: 0; background: var(--c-accent); transform-origin: left center; }
@@ -1021,70 +1021,6 @@ body[data-lay="landscape"] #menuTabs > button { flex: 1 0 auto; padding: 4px 6px
 #sweepPop { z-index: var(--z-reveal); }
 #spendAsk { z-index: var(--z-confirm); }
 
-/* ---------- 수집형 홈 키트 (묶음 B: hud/homekit.ts). 게임은 --hk-bg(바탕), --hk-accent(진행 단추), --hk-ink(글자)로 색을 준다 ---------- */
-/* 페이지가 열려 있으면 틀의 창은 페이지 위에 */
-body.pageOn #menu, body.pageOn #bag, body.pageOn #wmap { z-index: var(--z-menu); }
-.homekit { position: fixed; inset: 0; z-index: var(--z-page); pointer-events: auto; overflow: auto; overscroll-behavior: contain; color: var(--hk-ink, var(--c-text));
-  width: var(--app-w, 100%); height: var(--app-h, 100%);
-  background: var(--hk-bg, radial-gradient(ellipse at 50% 35%, rgba(var(--c-surface-rgb), .55), rgba(var(--c-overlay-rgb), .97) 70%));
-  padding: calc(8px + env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
-  display: grid; gap: 8px; grid-template-columns: minmax(84px, 112px) minmax(0, 1fr);
-  grid-template-rows: auto auto auto minmax(150px, 1fr) auto auto;
-  grid-template-areas: "top top" "status status" "title title" "side lead" "act act" "dock dock"; }
-.homekit[hidden] { display: none; }
-.hk-top { grid-area: top; display: flex; align-items: center; gap: 8px; min-width: 0; }
-.hk-top .curbar { flex: 1 1 auto; min-width: 0; }
-.hk-corner { display: flex; gap: 6px; align-items: center; flex: none; }
-.hk-corner > * { position: static !important; transform: none !important; }
-.hk-status { grid-area: status; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.hk-status:empty { display: none; }
-.hk-status > * { position: static !important; transform: none !important; max-width: 100% !important; }
-.hk-title { grid-area: title; margin: 0; text-align: center; font-size: var(--fs-2xl); letter-spacing: .06em; color: var(--hk-title, var(--c-title)); }
-.hk-side { grid-area: side; display: flex; flex-direction: column; gap: 6px; min-height: 0; min-width: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; }
-.hk-banners { display: flex; flex-direction: column; gap: 6px; }
-.hk-banner { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; padding: 8px; border-radius: var(--r-lg); font-size: var(--fs-xs); background: var(--c-sunk); color: var(--hk-ink, var(--c-text)); border: 1px solid var(--c-line); }
-.hk-banner b { font-size: var(--fs-sm); }
-.hk-banner small { opacity: .8; font-weight: 400; }
-.hk-sideslot { display: flex; flex-direction: column; gap: 6px; }
-.hk-sideslot:empty { display: none; }
-.hk-lead { grid-area: lead; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; background: none; border: 0; padding: 0; color: inherit; font-weight: 400; }
-.hk-lead:disabled { cursor: default; }
-.hk-lead img { flex: 1 1 auto; min-height: 0; max-height: 46vh; max-width: 100%; object-fit: contain; filter: drop-shadow(0 10px 18px var(--c-sunk-2)); }
-.hk-name { font-size: var(--fs-xl); font-weight: 800; color: var(--rc, var(--c-text)); }
-.hk-info { font-size: var(--fs-sm); opacity: .85; }
-.hk-act { grid-area: act; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
-.hk-goinfo { font-size: var(--fs-xs); opacity: .85; white-space: pre-line; min-width: 0; }
-/* 진행 단추: 오른쪽 아래(엄지 자리), 가장 크고 밝다 */
-.hk-go { flex: 0 1 230px; min-height: 64px; padding: 10px 14px; border-radius: var(--r-lg); border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  background: var(--hk-accent, var(--c-accent-grad)); color: var(--hk-on-accent, var(--c-on-accent-grad)); box-shadow: 0 6px 18px var(--c-sunk); }
-.hk-go b { font-size: var(--fs-xl); letter-spacing: .04em; }
-.hk-go small { font-size: var(--fs-xs); font-weight: 700; opacity: .85; }
-.hk-dock { grid-area: dock; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
-.hk-dockbtn { min-height: 48px; padding: 6px 2px; border-radius: var(--r-lg); font-size: var(--fs-sm); font-weight: 700; background: var(--c-sunk); color: var(--hk-ink, var(--c-text)); border: 1px solid var(--c-line); overflow-wrap: anywhere; line-height: 1.15; }
-.hk-dockbtn.locked { opacity: .45; }
-/* 가로 화면(폰 가로·PC): 대표를 왼쪽, 진행 단추와 띠를 오른쪽 아래(엄지 자리)에. 높이가 모자라도 단추가 화면 안에 남는다 */
-@media (orientation: landscape) {
-  .homekit { grid-template-columns: minmax(110px, 170px) minmax(0, 1fr) minmax(220px, 34%);
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "top top top" "side lead status" "side lead act" "side lead dock"; }
-  .hk-title { display: none; }
-  .hk-status { align-self: start; }
-  .hk-act { flex-direction: column; align-items: stretch; justify-content: flex-end; }
-  .hk-go { flex: none; }
-  .hk-dock { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .hk-lead img { max-height: calc(var(--app-h, 100vh) - 130px); }
-}
-@media (orientation: landscape) and (max-height: 480px) {
-  .homekit { gap: 6px; }
-  .hk-go { min-height: 54px; }
-  .hk-go b { font-size: var(--fs-xl); }
-  .hk-dockbtn { min-height: var(--tap); font-size: var(--fs-xs); }
-  .hk-name { font-size: var(--fs-lg); }
-}
-@media (orientation: landscape) and (min-height: 481px) {
-  .homekit { padding-left: max(24px, calc((100% - 1100px) / 2)); padding-right: max(24px, calc((100% - 1100px) / 2)); }
-}
-
 /* ---------- 단계 정보 창·편성 확인·결과 창 (묶음 B: hud/stagepage.ts) ---------- */
 .stsheet { position: fixed; left: 50%; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(460px, calc(100% - 16px));
   max-height: calc(var(--app-h, 100vh) - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain;
@@ -1200,10 +1136,6 @@ body.pageOn #tut { z-index: var(--z-tutorial); }
 /* 가운데 위 알림 띠: 틀의 가운데 알림(.banner, 위쪽) 아래에. 폰 가로는 조이스틱과 행동 단추 사이 */
 #zone-tc { top: 50%; }
 body[data-lay="landscape"] #zone-tc { top: 48%; left: calc(max(8px, env(safe-area-inset-left, 0px)) + var(--zbl-w, 110px) + 12px); right: calc(max(8px, env(safe-area-inset-right, 0px)) + var(--zbr-w, 300px) + 12px); width: auto; transform: none; }
-/* 홈의 글은 낱말 중간에서 꺾지 않는다 ('Advent/ure', '1-/1'). 영어의 아래 띠는 조금 작게 */
-.homekit { overflow-wrap: normal; }
-.hk-dockbtn { overflow-wrap: normal; word-break: keep-all; padding-left: 0; padding-right: 0; }
-html:lang(en) .hk-dockbtn { font-size: var(--fs-xs); letter-spacing: -.02em; }
 /* 탭이 열 개 이상이면 PC에서도 여러 줄로 (옆으로 밀어 넘기는 줄은 끝의 탭이 창 밖에 숨었다: 메아리 계약의 열세 탭) */
 #menuTabs:has(> button:nth-child(10)) { flex-wrap: wrap; overflow: visible; }
 
@@ -1233,42 +1165,9 @@ button:disabled { cursor: not-allowed; }
 body[data-lay="portrait"] .alertBox, body[data-lay="landscape"] .alertBox { flex-wrap: wrap; justify-content: center; bottom: auto; top: 42%; width: max-content; max-width: min(360px, calc(100% - 24px)); }
 body[data-lay="landscape"] .alertBox { top: 34%; max-width: min(480px, calc(100% - 24px)); }
 /* 가운데·위험 알림으로 이미 뜬 줄(echo)은 접힌 대화의 한 줄 미리 보기에 되풀이하지 않는다: 그 줄이 마지막이면 '대화하기' 단추만 */
-#chat.fold:has(#log > .echo:last-child) #log { display: none; }
-#chat.fold:has(#log > .echo:last-child) #chatBtn { display: block !important; padding: 4px 10px; }
-#zones #chat.fold:has(#log > .echo:last-child) { width: auto; padding: 0; background: none; border: 0; }
-/* ---------- 홈의 이벤트 배너 (hud/homekit.ts의 events): 코드로 그린 카드, 넘김·점. 아래에 작은 바로 가기 줄 ---------- */
-.homekit.hk-hasev { grid-template-columns: minmax(136px, 42%) minmax(0, 1fr); }
-.hk-events { display: flex; flex-direction: column; gap: 6px; }
-.hk-events[hidden] { display: none; }
-.hk-evcard { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 2px; text-align: left; overflow: hidden;
-  min-height: 150px; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); border: 1px solid var(--c-line); color: var(--c-white);
-  background: linear-gradient(160deg, var(--ev-from), var(--ev-to)); box-shadow: var(--shadow-1); touch-action: pan-y; font-weight: 400; }
-.hk-evcard.hk-evin { animation: hkEvIn var(--dur-slow) var(--ease-out); }
-@keyframes hkEvIn { from { opacity: 0; translate: 16px 0; } to { opacity: 1; translate: 0 0; } }
-.hk-evart { position: absolute; right: -6px; top: -10px; font-size: 76px; line-height: 1; opacity: .5; pointer-events: none; text-shadow: 0 4px 18px var(--c-sunk-2); }
-.hk-evtag { position: absolute; left: var(--sp-2); top: var(--sp-2); padding: 1px 8px; border-radius: var(--r-pill); background: var(--c-sunk-2); font-size: var(--fs-xs); font-weight: 700; color: var(--c-cur-gold); }
-.hk-evtitle { position: relative; font-size: var(--fs-lg); font-weight: 800; line-height: 1.2; text-shadow: 0 1px 4px var(--c-sunk-3); }
-.hk-evleft { position: relative; font-size: var(--fs-xs); opacity: .95; text-shadow: 0 1px 3px var(--c-sunk-3); }
-.hk-evdots { display: flex; justify-content: center; gap: 2px; }
-.hk-evdots[hidden] { display: none; }
-.hk-evdot { position: relative; width: 22px; height: 18px; min-width: 0 !important; min-height: 0 !important; padding: 0; background: none; border: 0; }
-.hk-evdot::after { content: ''; position: absolute; left: 7px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--c-text-3); }
-.hk-evdot.on::after { background: var(--c-accent); width: 14px; left: 4px; border-radius: var(--r-pill); }
-.hk-evdot::before { content: ''; position: absolute; inset: -13px -2px; }
-/* 작은 바로 가기 줄 (우편·확률·설정): 아이콘과 짧은 글, 두 칸씩 */
-.hk-banners { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.hk-banner { flex-direction: row; align-items: center; gap: 6px; min-height: var(--tap); padding: 4px 8px; border-radius: var(--r-md); font-size: var(--fs-xs); overflow: hidden; }
-.hk-banner b { font-size: var(--fs-xs); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hk-qicon { font-style: normal; flex: none; width: 20px; text-align: center; font-size: var(--fs-lg); }
-@media (orientation: landscape) {
-  .homekit.hk-hasev { grid-template-columns: minmax(160px, 220px) minmax(0, 1fr) minmax(220px, 34%); }
-  .hk-evcard { min-height: 130px; }
-}
-@media (orientation: landscape) and (max-height: 480px) {
-  .hk-evcard { min-height: 112px; }
-  .hk-evart { font-size: 60px; }
-  .hk-banner { min-height: var(--tap); }
-}
+#chat.fold:has(#log > :is(.echo, .stale):last-child) #log { display: none; }
+#chat.fold:has(#log > :is(.echo, .stale):last-child) #chatBtn { display: block !important; padding: 4px 10px; }
+#zones #chat.fold:has(#log > :is(.echo, .stale):last-child) { width: auto; padding: 0; background: none; border: 0; }
 @media (pointer: coarse) {
   /* 메뉴 탭: 글이 짧은 탭('장비')도 44px 너비 */
   #menuTabs > button { min-width: var(--tap) !important; }
@@ -1438,7 +1337,7 @@ button .why.cmdWhy, button:disabled .why.cmdWhy { color: var(--c-bad); white-spa
 .stDone { color: var(--c-good); font-weight: 700; font-size: var(--fs-sm); white-space: nowrap; }
 .stDone::before { content: '✓ '; }
 .stLock { color: var(--c-text-2); font-size: var(--fs-sm); }
-.stLock::before { content: '🔒 '; }
+.stLock::before, .lockBand::before { content: ""; display: inline-block; width: 1em; height: 1em; margin-right: .3em; vertical-align: -.15em; background: currentColor; -webkit-mask: var(--ic-lock) center / contain no-repeat; mask: var(--ic-lock) center / contain no-repeat; }
 .mrow.done .iname { color: var(--c-text-2); }
 /* 진행 막대 한 줄 (시즌의 다음 단계까지) */
 .progbar { display: block; height: 6px; border-radius: var(--r-pill); background: var(--c-fill-2); overflow: hidden; margin: 4px 0; }
@@ -1450,7 +1349,6 @@ button .why.cmdWhy, button:disabled .why.cmdWhy { color: var(--c-bad); white-spa
 .empty button { margin-top: var(--sp-1); }
 /* 잠긴 기능의 띠 (탭 머리: 언제 열리는지) */
 .lockBand { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px dashed var(--c-line); border-radius: var(--r-md); color: var(--c-text-2); font-size: var(--fs-sm); margin-bottom: var(--sp-2); }
-.lockBand::before { content: '🔒'; }
 
 /* 접속 화면 (hud/conn.ts): #gate[data-kind] wait·lost·maint·update·stop */
 #gate .card { align-items: stretch; text-align: center; }
@@ -1524,8 +1422,6 @@ button .why.cmdWhy, button:disabled .why.cmdWhy { color: var(--c-bad); white-spa
 .gxPop .gxOdds { font-size: var(--fs-xs); }
 .gsMark { margin: 0; text-align: center; font-size: var(--fs-sm); color: var(--c-text-2); }
 .celCard.celLine .celBig { font-size: var(--fs-lg); line-height: 1.35; }
-.hk-dockbtn .hk-why { display: block; font-size: var(--fs-xs); font-weight: 400; color: var(--c-text-2); }
-.hk-dockbtn[hidden] { display: none; }
 #menuTabs button.locked { opacity: .6; }
 #tut .tutName { display: flex; flex-direction: column; gap: var(--sp-2); }
 #tut .tutName[hidden] { display: none; }
@@ -1537,7 +1433,235 @@ button .why.cmdWhy, button:disabled .why.cmdWhy { color: var(--c-bad); white-spa
 #zone-tr > #rightcol { max-width: 100%; overscroll-behavior: contain; touch-action: pan-y; }
 body[data-lay="portrait"] .zone .panel, body[data-lay="landscape"] .zone .panel { overscroll-behavior: contain; }
 #tut.tutForm { background: var(--c-surface); }
-/* 홈의 작은 바로 가기 줄: 이벤트 배너가 없으면(점진 공개로 아직 숨김) 왼쪽 열이 좁아 한 칸씩 */
-.homekit:not(.hk-hasev) .hk-banners { grid-template-columns: minmax(0, 1fr); }
 /* 전투 화면의 위 띠·초상 칸은 HUD 층 밖(문서 끝)에 있어 메뉴·가방·지도(HUD 층 안)보다 위에 그려졌다: 그 창이 열려 있으면 감춘다 (묶음 D 해 보기에서 메뉴의 탭이 가려짐) */
 body:has(#menu:not([hidden]), #bag:not([hidden]), #wmap:not([hidden])) .btlTop, body:has(#menu:not([hidden]), #bag:not([hidden]), #wmap:not([hidden])) .btlSquad { visibility: hidden; }
+
+/* ======================================================================================================
+   U3: 화면 아이콘 · 상용 로비(홈 키트) · 메뉴 묶음 (hud/uiicons.ts, hud/homekit.ts, menu.ts)
+   ====================================================================================================== */
+/* 화면 아이콘: 글자 크기를 따르는 SVG (선 굵기 하나, 색은 글자 색). css만으로 그리는 곳(::before)은 마스크로: 모양만 쓰고 색은 글자 색 */
+:root { --ic-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'%3E%3Crect x='5' y='10.5' width='14' height='10' rx='2'/%3E%3Cpath d='M8 10.5v-3a4 4 0 0 1 8 0v3M12 14.5V17'/%3E%3C/svg%3E"); }
+.uic { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 1.25em; height: 1.25em; font-style: normal; line-height: 1; vertical-align: -.22em; }
+.uic > svg, .uic > img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.uic.uic-text { width: auto; min-width: 1em; }
+.uic.sm { width: 1em; height: 1em; }
+.curchip .uic { width: 16px; height: 16px; }
+.empty .emptyIcon .uic { width: 40px; height: 40px; }
+
+/* ---------- 수집형 홈(로비) 키트 ---------- */
+/* 페이지가 열려 있으면 틀의 창은 페이지 위에 */
+body.pageOn #menu, body.pageOn #bag, body.pageOn #wmap { z-index: var(--z-menu); }
+/* 게임은 --hk-bg(바탕), --hk-scene-a/-b(대체 배경의 두 색), --hk-glow(대표 뒤의 빛), --hk-accent(진행 단추), --hk-ink(글자), --hk-chip(세로 열의 칸 바탕)으로 색을 준다 */
+.homekit { position: fixed; inset: 0; z-index: var(--z-page); pointer-events: auto; overflow: hidden; overscroll-behavior: contain; color: var(--hk-ink, var(--c-text));
+  width: var(--app-w, 100%); height: var(--app-h, 100%); overflow-wrap: normal; word-break: keep-all; isolation: isolate;
+  background: var(--hk-bg, rgba(var(--c-overlay-rgb), .97));
+  padding: calc(6px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  display: grid; gap: 6px;
+  /* 폰 세로: 위·아래 띠 중심. 가운데는 대표, 양옆은 세로 아이콘 열, 아래는 배너(왼쪽)·진행 단추(오른쪽)·독 */
+  grid-template-columns: 58px minmax(0, 1fr) minmax(0, 1fr) 58px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "top top top top" "status status status status" "lcol stage stage rrail" "events events act act" "dock dock dock dock"; }
+.homekit[hidden] { display: none; }
+.homekit:not(.hk-hasev) { grid-template-areas: "top top top top" "status status status status" "lcol stage stage rrail" "act act act act" "dock dock dock dock"; }
+.homekit > * { min-width: 0; min-height: 0; }
+/* 장면 배경: 그림이 있으면 그 그림(가득), 없으면 게임의 두 색 그라디언트 + 무늬(빛 고리·바닥). 페이지의 맨 뒤 */
+.hk-scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; background-size: cover; background-position: center;
+  background-image: radial-gradient(ellipse 60% 38% at 50% 44%, var(--hk-glow, var(--c-fill-1)), transparent 70%),
+    radial-gradient(ellipse 70% 12% at 50% 78%, var(--c-fill-2), transparent 70%),
+    repeating-radial-gradient(circle at 50% 40%, transparent 0 46px, var(--c-fill-1) 46px 47px),
+    linear-gradient(180deg, var(--hk-scene-a, var(--c-surface)), var(--hk-scene-b, rgba(var(--c-overlay-rgb), 1))); }
+.hk-scene.hk-art { background-color: var(--c-black); }
+.hk-scene.hk-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, var(--c-sunk-2), transparent 16%, transparent 70%, var(--c-sunk-2)); }
+/* 위 띠: 프로필 · 재화 줄 · 오른쪽 위 자리 */
+.hk-top { grid-area: top; display: flex; align-items: center; gap: 6px; }
+.hk-top .curbar { flex: 1 1 auto; min-width: 0; justify-content: flex-end; flex-wrap: nowrap; }
+.hk-corner { display: flex; gap: 6px; align-items: center; flex: none; }
+.hk-corner:empty { display: none; }
+.hk-corner > * { position: static !important; transform: none !important; }
+.hk-prof { flex: 0 1 auto; display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 44%; padding: 2px 10px 2px 2px; border-radius: var(--r-pill);
+  background: var(--c-panel); border: 1px solid var(--c-line); color: inherit; font-weight: 400; text-align: left; }
+.hk-prof[hidden] { display: none; }
+.hk-profpic { flex: none; width: 38px; height: 38px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--c-sunk); border: 2px solid var(--c-accent); }
+.hk-profpic img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; }
+.hk-profpic .uic { width: 22px; height: 22px; color: var(--c-text-2); }
+.hk-proftext { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.hk-proflv { font-size: var(--fs-xs); color: var(--c-accent); }
+.hk-profname { font-size: var(--fs-sm); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hk-status { grid-area: status; display: flex; flex-direction: column; gap: 4px; }
+.hk-status:empty { display: none; }
+.hk-status > * { position: static !important; transform: none !important; max-width: 100% !important; }
+.hk-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); margin: 0; }
+/* 세로 아이콘 열 (왼쪽: 임무·시즌·업적 / 오른쪽: 우편·공지·이벤트·상점·확률) */
+.hk-lcol { grid-area: lcol; z-index: 1; display: flex; flex-direction: column; gap: 6px; align-items: center; overflow-y: auto; scrollbar-width: none; padding-top: 2px; }
+.hk-rrail { grid-area: rrail; z-index: 1; overflow-y: auto; scrollbar-width: none; padding-top: 2px; }
+.hk-rail { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.hk-rail[hidden], .hk-sideslot:empty { display: none; }
+.hk-sideslot { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.hk-railbtn { position: relative; width: 54px; min-height: 54px; padding: 5px 2px 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border-radius: var(--r-lg); background: var(--hk-chip, var(--c-panel)); border: 1px solid var(--c-line); color: var(--hk-ink, var(--c-text)); font-weight: 700; box-shadow: var(--shadow-1); }
+.hk-railbtn[hidden] { display: none; }
+.hk-railic { width: 24px; height: 24px; }
+.hk-raillb { font-size: var(--fs-xs); line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hk-railbtn.dot::after, .hk-dockbtn.dot::after { right: 3px; top: 3px; }
+.hk-railbtn.locked, .hk-dockbtn.locked { opacity: .62; }
+.hk-railbtn .hk-why { display: none; }
+.hk-lockic { position: absolute; right: 2px; top: 2px; width: 18px; height: 18px; padding: 2px; border-radius: 50%; background: var(--c-sunk-2); color: var(--c-white); }
+/* 가운데: 대표 캐릭터 (누르면 반응·대사). 이름판은 발밑, 말풍선은 머리 위 */
+.hk-stage { grid-area: 3 / 1 / 4 / -1; z-index: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.hk-lead { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; padding: 0; background: none; border: 0; color: inherit; font-weight: 400; cursor: pointer; }
+.hk-lead:disabled { cursor: default; }
+.hk-lead img { max-width: 100%; max-height: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 12px 22px var(--c-sunk-2)); transform-origin: 50% 100%; }
+.hk-lead.hk-poke img { animation: hkPoke var(--dur-slow) var(--ease-out); }
+@keyframes hkPoke { 0% { transform: scale(1, 1); } 35% { transform: scale(1.04, .95); } 70% { transform: scale(.98, 1.03); } 100% { transform: scale(1, 1); } }
+.hk-stage::before { content: ""; position: absolute; left: 50%; bottom: 34px; width: min(70%, 260px); height: 26px; transform: translateX(-50%); border-radius: 50%;
+  background: radial-gradient(closest-side, var(--rc, var(--c-accent)), transparent); opacity: .35; pointer-events: none; }
+.hk-plate { flex: none; display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 3px 4px 3px 12px; border-radius: var(--r-pill); background: var(--c-panel); border: 1px solid var(--c-line); border-bottom: 3px solid var(--rc, var(--c-line)); z-index: 1; }
+.hk-plate[hidden] { display: none; }
+.hk-ptext { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.hk-name { font-size: var(--fs-lg); font-weight: 800; color: var(--c-white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hk-info { font-size: var(--fs-xs); color: var(--c-text-2); white-space: nowrap; }
+.hk-pickbtn { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 50%; display: grid; place-items: center; background: var(--c-sunk); border: 1px solid var(--c-line); color: var(--c-text); }
+.hk-pickbtn[hidden] { display: none; }
+.hk-say { position: absolute; top: 3%; left: 50%; transform: translateX(-50%); z-index: 2; width: max-content; max-width: min(92%, 300px); padding: 8px 12px; border-radius: var(--r-lg);
+  background: var(--c-white); color: var(--c-black); font-size: var(--fs-sm); line-height: 1.4; box-shadow: var(--shadow-1); animation: hkEvIn var(--dur-base) var(--ease-out); pointer-events: none; }
+.hk-say::after { content: ""; position: absolute; left: 50%; bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: var(--c-white); }
+.hk-say[hidden] { display: none; }
+/* 이벤트 배너 캐러셀: 그림(banner:<id>)이 있으면 그 그림, 없으면 두 색 + 큰 아이콘. 1200×500 비율 */
+.hk-events { grid-area: events; display: flex; flex-direction: column; gap: 2px; justify-content: flex-end; }
+.hk-events[hidden] { display: none; }
+.hk-evcard { position: relative; width: 100%; aspect-ratio: 12 / 5; min-height: 72px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 1px; text-align: left; overflow: hidden;
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); border: 1px solid var(--c-line); color: var(--c-white); font-weight: 400;
+  background: linear-gradient(160deg, var(--ev-from), var(--ev-to)); background-size: cover; background-position: center; box-shadow: var(--shadow-1); touch-action: pan-y; }
+.hk-evcard.hk-art > :not(.hk-evtag) { visibility: hidden; }
+.hk-evcard.hk-evin { animation: hkEvIn var(--dur-slow) var(--ease-out); }
+@keyframes hkEvIn { from { opacity: 0; translate: 16px 0; } to { opacity: 1; translate: 0 0; } }
+.hk-evart { position: absolute; right: 4px; top: 4px; width: 56px; height: 56px; opacity: .5; pointer-events: none; }
+.hk-evtag { position: absolute; left: var(--sp-2); top: var(--sp-2); padding: 1px 8px; border-radius: var(--r-pill); background: var(--c-sunk-2); font-size: var(--fs-xs); font-weight: 700; color: var(--c-cur-gold); }
+.hk-evtitle { position: relative; font-size: var(--fs-md); font-weight: 800; line-height: 1.2; text-shadow: 0 1px 4px var(--c-sunk-3); }
+.hk-evleft { position: relative; font-size: var(--fs-xs); opacity: .95; text-shadow: 0 1px 3px var(--c-sunk-3); }
+.hk-evdots { display: flex; justify-content: center; gap: 2px; }
+.hk-evdots[hidden] { display: none; }
+.hk-evdot { position: relative; width: 22px; height: 14px; min-width: 0 !important; min-height: 0 !important; padding: 0; background: none; border: 0; }
+.hk-evdot::after { content: ""; position: absolute; left: 7px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--c-text-3); }
+.hk-evdot.on::after { background: var(--c-accent); width: 14px; left: 4px; border-radius: var(--r-pill); }
+.hk-evdot::before { content: ""; position: absolute; inset: -15px -2px; }
+/* 엄지 자리: 가장 큰 진행 단추 */
+.hk-act { grid-area: act; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; gap: 4px; }
+.homekit:not(.hk-hasev) .hk-act { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+.homekit:not(.hk-hasev) .hk-go { flex: 0 1 230px; }
+.hk-goinfo { font-size: var(--fs-xs); white-space: pre-line; text-align: right; color: var(--c-text-2); text-shadow: 0 1px 3px var(--c-sunk-3); }
+.homekit:not(.hk-hasev) .hk-goinfo { text-align: left; }
+.hk-goinfo[hidden] { display: none; }
+.hk-go { min-height: 64px; padding: 8px 12px; border-radius: var(--r-lg); border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: var(--hk-accent, var(--c-accent-grad)); color: var(--hk-on-accent, var(--c-on-accent-grad)); box-shadow: 0 6px 18px var(--c-sunk); }
+.hk-go b { font-size: var(--fs-xl); letter-spacing: .04em; }
+.hk-go small { font-size: var(--fs-xs); font-weight: 700; opacity: .85; }
+/* 아래 독: 고정 메뉴 (큰 아이콘 + 이름) */
+.hk-dock { grid-area: dock; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; border-radius: var(--r-lg); background: var(--hk-dockbg, rgba(var(--c-surface-rgb), .82)); border: 1px solid var(--c-line); box-shadow: var(--shadow-1); }
+.hk-dockbtn { position: relative; min-height: 56px; padding: 4px 2px; border-radius: var(--r-md); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: transparent; border: 0; color: var(--hk-ink, var(--c-text)); font-weight: 700; line-height: 1.1; }
+.hk-dockbtn[hidden] { display: none; }
+.hk-dockic { width: 26px; height: 26px; }
+.hk-docklb { font-size: var(--fs-sm); text-align: center; }
+html:lang(en) .hk-docklb { font-size: var(--fs-xs); }
+.hk-dockbtn .hk-why { display: block; font-size: var(--fs-xs); font-weight: 400; color: var(--c-text-2); text-align: center; line-height: 1.15; }
+.hk-dockbtn.locked .hk-dockic { opacity: .5; }
+.hk-dockbtn.locked .hk-lockic { right: calc(50% - 24px); top: 2px; }
+/* 프로필 창·대표 고르기 창 */
+.hk-sheet { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: var(--z-sheet); width: min(440px, calc(100% - 24px)); max-height: calc(var(--app-h, 100vh) - 32px);
+  overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: var(--sp-3); background: var(--c-surface); pointer-events: auto; box-shadow: var(--shadow-2); }
+.hk-sheet[hidden] { display: none; }
+.hk-sheethead { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-lg); color: var(--c-title); }
+.hk-sheetx { padding: 0 10px; background: none; border: 0; color: var(--c-text-2); }
+.hk-profbig { display: flex; align-items: center; gap: var(--sp-3); }
+.hk-profbig .hk-profpic { width: 72px; height: 72px; }
+.hk-profbig .hk-profpic .uic { width: 36px; height: 36px; }
+.hk-profnm { display: flex; flex-direction: column; gap: 2px; }
+.hk-profnm b { font-size: var(--fs-xl); }
+.hk-profnm span { color: var(--c-accent); font-weight: 700; }
+.hk-profrows { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: var(--fs-md); }
+.hk-profrows dt { color: var(--c-text-2); }
+.hk-profrows dd { margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hk-sheetbtns { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.hk-sheetbtns button { flex: 1 1 40%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.hk-pickgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: var(--sp-2); }
+.hk-pickcell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border-radius: var(--r-md); background: var(--c-fill-1); border: 2px solid var(--rc, var(--c-line)); color: var(--c-text); font-weight: 700; font-size: var(--fs-sm); }
+.hk-pickcell img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; object-position: 50% 15%; border-radius: var(--r-sm); background: var(--c-sunk); }
+.hk-pickcell.on { box-shadow: 0 0 0 2px var(--c-accent); }
+/* 폰 가로·PC: 왼·오른 열 중심. 대표는 가운데 왼쪽, 오른쪽 위에 상태 줄·배너, 그 아래 진행 단추, 바닥에 독 */
+@media (orientation: landscape) {
+  .homekit, .homekit:not(.hk-hasev) {
+    grid-template-columns: 60px minmax(0, 1fr) minmax(220px, 30%) 60px;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "top top top top" "lcol stage status rrail" "lcol stage events rrail" "lcol stage act rrail" "dock dock dock dock"; }
+  .homekit:not(.hk-hasev) .hk-act { flex-direction: column; align-items: stretch; justify-content: flex-end; }
+  .homekit:not(.hk-hasev) .hk-go { flex: none; }
+  .homekit:not(.hk-hasev) .hk-goinfo { text-align: right; }
+  .hk-events { justify-content: flex-start; }
+  .hk-stage { grid-area: stage; }
+  .hk-dock { justify-self: center; width: min(100%, 760px); }
+  .hk-stage::before { bottom: 30px; }
+}
+@media (orientation: landscape) and (max-height: 480px) {
+  .homekit { gap: 4px; }
+  .hk-railbtn { width: 50px; min-height: 48px; }
+  .hk-railic { width: 22px; height: 22px; }
+  .hk-go { min-height: 54px; }
+  .hk-dockbtn { min-height: 46px; flex-direction: row; gap: 6px; }
+  .hk-dockic { width: 22px; height: 22px; }
+  .hk-dockbtn .hk-why { display: none; }
+  .hk-evcard { min-height: 64px; }
+  .hk-profpic { width: 34px; height: 34px; }
+  .hk-name { font-size: var(--fs-md); }
+}
+/* 큰 화면(PC): 칸을 키우고 가운데로 모은다 */
+@media (orientation: landscape) and (min-height: 600px) {
+  .homekit { padding-left: max(24px, calc((100% - 1440px) / 2)); padding-right: max(24px, calc((100% - 1440px) / 2)); gap: 10px;
+    grid-template-columns: 76px minmax(0, 1fr) minmax(300px, 28%) 76px; }
+  .hk-railbtn { width: 68px; min-height: 66px; }
+  .hk-railic { width: 28px; height: 28px; }
+  .hk-raillb { font-size: var(--fs-sm); }
+  .hk-dockbtn { min-height: 66px; }
+  .hk-dockic { width: 30px; height: 30px; }
+  .hk-docklb { font-size: var(--fs-md); }
+  .hk-go { min-height: 78px; }
+  .hk-go b { font-size: var(--fs-2xl); }
+  .hk-profpic { width: 46px; height: 46px; }
+  .hk-name { font-size: var(--fs-xl); }
+}
+
+/* ---------- 메뉴의 묶음 (U3): 위 줄은 묶음(아이콘 + 이름), 그 아래 줄은 고른 묶음의 탭 ---------- */
+#menuTabs.groups { flex-wrap: nowrap !important; overflow-x: auto; gap: 4px; }
+#menuTabs.groups > button.mgroup { flex: 1 1 0; min-width: 0; max-width: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 2px; font-size: var(--fs-xs); line-height: 1.1; }
+#menuTabs.groups > button.mgroup .uic { width: 20px; height: 20px; }
+#menuTabs.groups > button.mgroup > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+#menuSub { flex: none; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; border-bottom: 1px solid var(--c-line); }
+#menuSub[hidden] { display: none; }
+#menuSub::-webkit-scrollbar { display: none; }
+#menuSub > button { position: relative; flex: 0 0 auto; padding: 4px 12px; border-radius: var(--r-pill); white-space: nowrap; background: var(--c-fill-1); }
+#menuSub > button.on { background: var(--c-fill-2); color: var(--c-accent); border-color: var(--c-accent); font-weight: 700; }
+#menuSub > button.dot::after { right: 2px; top: 2px; width: 7px; height: 7px; }
+#menuSub > button.locked { opacity: .6; }
+#menuTabs button .uic.sm, #menuSub button .uic.sm { margin-right: 3px; }
+@media (pointer: coarse) {
+  #menuTabs.groups > button.mgroup { min-height: 52px; min-width: 0 !important; }
+  #menuSub > button { min-height: var(--tap); }
+}
+
+/* ---------- U3 정보 구조의 다듬기: 장비 탭의 강화 규칙 접기, 폰의 대화 탭 고르기, 오른쪽 창의 넘침 표시 ---------- */
+.grules { flex: none; border: 1px solid var(--c-line); border-radius: var(--r-md); background: var(--c-fill-1); }
+.grules > summary { display: flex; align-items: center; gap: 4px; min-height: var(--tap); padding: 0 var(--sp-3); cursor: pointer; color: var(--c-text-2); font-size: var(--fs-sm); list-style: none; }
+.grules > summary::-webkit-details-marker { display: none; }
+.grules > summary::after { content: "+"; margin-left: auto; font-weight: 700; }
+.grules[open] > summary::after { content: "−"; }
+.grules > .note { padding: 0 var(--sp-3) var(--sp-2); margin: 0; }
+.gcharmrow { display: flex; justify-content: flex-end; }
+@media (pointer: coarse) { .grules > summary { min-height: 44px; } }
+/* 대화 탭: PC는 단추 줄, 터치는 고르는 칸 하나 */
+.chatTabSel { display: none; }
+@media (pointer: coarse) {
+  #chatTabs > button { display: none; }
+  #chatTabs > .chatTabSel { display: block; width: 100%; font-size: 16px; padding: 0 var(--sp-2); border-radius: var(--r-sm); background: var(--c-sunk); color: var(--c-text); border: 1px solid var(--c-line); }
+}
+/* 오른쪽 창(퀘스트·상점·등탑)이 구역 안에서 넘치면 아래를 흐리게 (스크롤된다는 표시: hud/layout.ts가 .hasMore를 단다) */
+#rightcol.hasMore { -webkit-mask-image: linear-gradient(180deg, var(--c-black) calc(100% - 28px), transparent); mask-image: linear-gradient(180deg, var(--c-black) calc(100% - 28px), transparent); }

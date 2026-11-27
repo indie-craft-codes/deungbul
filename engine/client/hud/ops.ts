@@ -30,6 +30,8 @@ export function onLive(fn: (changed: string[]) => void): void { liveFns.push(fn)
 export const maintNow = (): MaintView | null => maint;
 /** 지금 보이는 공지 */
 export const noticesNow = (): readonly NoticeView[] => notices;
+/** 지금 걸린 공지를 창으로 다시 연다 (홈의 '공지' 칸). 공지가 없으면 거짓 */
+export function openNotices(): boolean { if (!notices.length) return false; popup = [...notices]; renderPopup(); return true; }
 
 const lang = (): string => L().code;
 const el = (tag: string, cls: string, text = ''): HTMLElement => { const d = document.createElement(tag); d.className = cls; d.textContent = text; return d; };

@@ -52,7 +52,7 @@ export function mountMarkup(): void {
 
   // 오른쪽 위의 맨 아래: 퀘스트 창. 위의 창(등탑, 상점, 대장간)이 열리면 스타일이 줄여 보여 준다
   mountPanel('rightBottom', `<div class="panel" id="quest">
-      <div class="row"><span class="ttitle" id="questTitle"></span><span class="num" id="questDist"></span></div>
+      <div class="row"><span class="ttitle" id="questTitle"></span><span class="num" id="questDist"></span><button type="button" class="qgo" id="questGoBtn" hidden></button></div>
       <div id="questStep"></div>
       <div class="num" id="questProg"></div>
       <div class="note" id="questGo"></div>

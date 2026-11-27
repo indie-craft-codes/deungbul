@@ -5,6 +5,7 @@
 // 게임이 더 할 수 있는 것: 정의가 바뀔 때 듣기(onChars), 내 변신 상태 읽기(myMorph).
 import * as THREE from 'three';
 import { addHeroDef, charHero, charStats, charText, dropHeroDef, HERO_RARITIES, HERO_ROLES, knownChar, MORPH_RULE_VIEW, morphCard, morphMods, morphStats, setCharLang, setKnownChars, type CharDef, type HeroesMe, type MorphMe, type OwnedHero } from '../../shared/defs';
+import { portraitArt } from '../art';
 import { tintRarity } from './rarity';
 import { onMsg } from '../bus';
 import { relabel } from '../entities';
@@ -70,9 +71,9 @@ const portraits = new Map<string, string>();
 let shot: { r: THREE.WebGLRenderer; scene: THREE.Scene; cam: THREE.PerspectiveCamera } | null | undefined;
 /**
  * 캐릭터 정의의 서 있는 그림 (부품으로 그린 모습, data URL. 그릴 수 없는 곳이면 빈 글자). 크기를 주면 그 크기로 (게임의 큰 그림: 홈 화면의 대표 캐릭터).
- * 정의·크기마다 한 번 그려 간직한다
+ * 정의·크기마다 한 번 그려 간직한다. 게임이 그림 파일을 'portrait:<id>'로 등록했으면(engine/client/art.ts) 그 그림을 돌려준다 (그리지 않는다)
  */
-export function charPortrait(d: CharDef, w = 96, h = 112): string { return portrait(d, w, h); }
+export function charPortrait(d: CharDef, w = 96, h = 112): string { return portraitArt(d.id) ?? portrait(d, w, h); }
 function portrait(d: CharDef, w = 96, h = 112): string {
   const key = w === 96 && h === 112 ? d.id : `${d.id}@${w}x${h}`;
   const have = portraits.get(key);
@@ -121,7 +122,7 @@ function drawMorph(list: HTMLElement): void {
     head.append(span('mtag', t('morphNow')), ` ${d ? charText(d).name : me.on} · ${loc.fmt.morphLeft(me.left)}`);
     list.append(row(head, '', [button(t('morphOffBtn'), () => send({ t: 'morph', a: 'off' }))], 'mrow morphHead'));
   } else if (me.cd > 0) list.append(el('note', loc.fmt.morphCd(me.cd)));
-  if (!owned.length) { list.append(emptyState('✦', t('morphNone'))); return; }
+  if (!owned.length) { list.append(emptyState('morph', t('morphNone'))); return; }
   for (const d of owned) {
     const name = tinted(el('iname'), d.rarity), pic = portrait(d);
     if (pic) { const img = document.createElement('img'); img.className = 'morphPic'; img.src = pic; img.alt = ''; name.append(img); }

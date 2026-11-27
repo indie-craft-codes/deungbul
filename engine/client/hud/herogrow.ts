@@ -169,7 +169,7 @@ function enhanceBox(r: GearRow): HTMLElement {
 function drawHeroGear(list: HTMLElement): void {
   const loc = L(), rows = gearRows(myHeroGear()), salv = !!heroGearRules()?.salvage;
   list.append(el('baghead', `${t('tabHGear')} ${loc.fmt.hgCount(rows.length, hgear.cap)}`));
-  if (!rows.length) list.append(emptyState('⚔', t('hgNone')));
+  if (!rows.length) list.append(emptyState('gear', t('hgNone')));
   for (const r of rows) {
     const btns = [button(t('hgEnhance'), () => { enhUid = enhUid === r.uid ? 0 : r.uid; redraw(); }, r.lv >= r.maxLv)];
     if (salv && !r.hero) btns.push(button(t('hgSalvage'), () => send({ t: 'hgear', a: 'salvage', uids: [r.uid] })));
