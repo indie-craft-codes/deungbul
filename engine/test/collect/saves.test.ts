@@ -3,6 +3,7 @@ import { MODULE_SAVES } from '../../shared/modules';
 import { HERO_RULES, seededRng } from '../../shared/defs';
 import { Game } from '../../server/game/game';
 import { check } from '../harness';
+import { keepsThroughLean, resavesClean } from './savebench';
 
 const quiet = () => new Game({ plugins: [] });
 
@@ -51,7 +52,7 @@ const quiet = () => new Game({ plugins: [] });
   check(p.squad.join() === 'ironwall' || p.squad.length <= 1, `편성: 겹침과 없는 영웅은 버린다 (${p.squad.join()})`);
   check(p.stage.cur === '1-1' && p.stage.best === '' && p.stage.auto === true, `단계: 없는 단계는 처음으로 (${JSON.stringify(p.stage)})`);
   check(g.dungeon.keyCount(p, 'goldmine') >= 0 && g.dungeon.keyCount(p, 'goldmine') <= 9999, '열쇠: 음수와 큰 수는 범위 안으로');
-  check(!JSON.stringify(g.players.export(p)).includes('null'), '깨진 저장을 읽고 다시 적어도 null(NaN)이 없다');
+  resavesClean(g, p);
 }
 
 // ---------- 모듈을 끈 게임은 그 칸을 지우지 않는다 ----------
@@ -60,14 +61,10 @@ const quiet = () => new Game({ plugins: [] });
   const p = g.players.spawn('맡김', false, null, 'sv-3');
   g.roster.grant(p, 'starseer'); p.stage = { cur: '1-2', best: '1-1', auto: true };
   g.wallet.add(p, 'sparks', 1000, ''); g.gacha.draw(p, 'dawn', 1);
-  const save = g.players.export(p);
-  const lean = new Game({ plugins: [], modules: ['economy'] });
-  const q = lean.players.spawn('맡김', false, structuredClone(save), 'sv-3');
-  const kept = lean.players.export(q);
-  check(['roster', 'gacha', 'squad', 'stages', 'keys'].every((k) => JSON.stringify(kept.ext?.[k]) === JSON.stringify(save.ext?.[k])) && !('heroes' in q),
-    '영웅·뽑기·편성·단계·던전을 끈 게임이 읽고 다시 적어도 그 칸이 그대로 남는다 (엔티티에는 칸이 없다)');
-  const back = quiet().players.spawn('맡김', false, kept, 'sv-3');
-  check(!!back.heroes.starseer && back.stage.best === '1-1' && back.pulls.length === 1, '다시 켠 게임은 이어서 읽는다');
+  keepsThroughLean({
+    save: g.players.export(p), name: '맡김', pid: 'sv-3', modules: ['economy'], keys: ['roster', 'gacha', 'squad', 'stages', 'keys'], gone: ['heroes'], what: '영웅·뽑기·편성·단계·던전',
+    resumed: (back) => !!back.heroes.starseer && back.stage.best === '1-1' && back.pulls.length === 1,
+  });
 }
 
 // ---------- 버전 칸이 없는 옛 저장(v0)도 이전을 지나 읽힌다 ----------

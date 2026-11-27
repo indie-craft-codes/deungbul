@@ -8,7 +8,7 @@ import type { EnterInfo, Ev } from '../../shared/protocol';
 import type { Ent } from '../../server/game/entity';
 import { Game } from '../../server/game/game';
 import { buildFrame, snapshotFor, type Frame } from '../../server/net/snapshot';
-import { check } from '../harness';
+import { check, checkEach } from '../harness';
 import { heath } from './server/heath';
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -89,16 +89,15 @@ function play(n: number, ticks: number, field: boolean) {
   return { g, tick: avg(tickMs), tickMax: Math.max(...tickMs), frame: avg(frameMs), mobsSame, snapSame, snaps, heroes, layers: new Set(people.map((p) => p.layer)).size };
 }
 
-for (const field of [false, true]) {
-  const where = field ? '들판(한곳에 모임)' : '단계(사람마다 따로인 층)';
+checkEach([false, true], (field) => (field ? '들판(한곳에 모임)' : '단계(사람마다 따로인 층)'), (field, c) => {
   const r = play(13, 400, field);
-  check(r.heroes >= 52, `${where}: 사람 13 × 영웅 4 = 영웅 ${r.heroes}이 싸운다 (층 ${r.layers}개)`);
+  c(r.heroes >= 52, `사람 13 × 영웅 4 = 영웅 ${r.heroes}이 싸운다 (층 ${r.layers}개)`);
   // 상한은 넉넉히 (이 PC에서 단계 약 0.5ms·0.3ms, 들판 약 0.2ms·0.8ms): 느린 컴퓨터와 바쁜 때에도 흔들리지 않고, 사람 수의 제곱으로 커지던 셈이 돌아오면 걸린다
-  check(r.tick < 8, `${where}: 틱의 평균 계산 시간이 8ms 아래다 (${r.tick.toFixed(2)}ms, 가장 긴 것 ${r.tickMax.toFixed(1)}ms)`);
-  check(r.frame < 20, `${where}: 전송 한 번(사람 13의 스냅샷)을 만드는 평균 시간이 20ms 아래다 (${r.frame.toFixed(2)}ms)`);
-  check(r.mobsSame, `${where}: 층마다의 몬스터(g.monstersIn)가 틱마다 엔티티 전부를 훑어 고른 것과 같다 (차례까지)`);
-  check(r.snapSame && r.snaps > 0, `${where}: 층마다 나눈 격자의 스냅샷 ${r.snaps}개가 한 격자로 만들던 예전 것과 글자까지 같다`);
-}
+  c(r.tick < 8, `틱의 평균 계산 시간이 8ms 아래다 (${r.tick.toFixed(2)}ms, 가장 긴 것 ${r.tickMax.toFixed(1)}ms)`);
+  c(r.frame < 20, `전송 한 번(사람 13의 스냅샷)을 만드는 평균 시간이 20ms 아래다 (${r.frame.toFixed(2)}ms)`);
+  c(r.mobsSame, `층마다의 몬스터(g.monstersIn)가 틱마다 엔티티 전부를 훑어 고른 것과 같다 (차례까지)`);
+  c(r.snapSame && r.snaps > 0, `층마다 나눈 격자의 스냅샷 ${r.snaps}개가 한 격자로 만들던 예전 것과 글자까지 같다`);
+});
 
 // 단계마다 사람이 따로인 층에 있으면 남의 단계(같은 좌표의 경기장)는 보이지 않는다
 {

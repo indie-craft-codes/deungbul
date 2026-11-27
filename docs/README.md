@@ -42,13 +42,9 @@
 |---|---|---|
 | [framework-plan.md](framework-plan.md) | 틀과 등불지기를 가르기 전의 계획(0~13단계, 모두 이루어짐) | [framework-status.md](framework-status.md) |
 | [framework-audit.md](framework-audit.md) | 2026-11-24의 틀 점검 보고(묶음 A~F로 모두 처리) | [framework-status.md](framework-status.md) '틀 수리의 진행' |
-| [proof-rollball.md](proof-rollball.md) | 문서만 보고 RPG가 아닌 게임 "굴림공"을 만든 기록(2026-11-26, 게임은 지움) | [making-a-game.md](making-a-game.md) 6절 '팀과 점수판'·12절 |
-| [proof-dalmuri.md](proof-dalmuri.md) | 수집형·방치형 "달무리 원정대"(2026-11-26, 게임은 지움) | [making-a-game.md](making-a-game.md) 13절 |
-| [proof-stepstone.md](proof-stepstone.md) | 턴제 "징검돌 전술"(2026-11-26, 게임은 지움) | [making-a-game.md](making-a-game.md) 14절 |
-| [proof-pond.md](proof-pond.md) | 넷이 두는 판 게임 "반딧불 연못"(2026-11-27, 게임은 지움) | [making-a-game.md](making-a-game.md) 14절 |
 | [proof-echopact.md](proof-echopact.md) | 두 장르를 합친 예제 "메아리 계약"(2026-11-27, 게임은 `games/echopact`에 있다): 잇는 방법, 수치 표, 틀의 빈 곳 | [making-a-game.md](making-a-game.md) 13·15절 |
 
-지운 게임의 코드는 커밋 `7e347c9`에 있다(`git checkout 7e347c9 -- games/<이름>`).
+지운 게임(시제품·증명 게임 일곱)의 코드와 그 증명 기록(`docs/proof-rollball.md`·`proof-dalmuri.md`·`proof-stepstone.md`·`proof-pond.md`)은 커밋 `7e347c9`에 있다(`git show 7e347c9:docs/proof-pond.md`, `git checkout 7e347c9 -- games/<이름>`).
 
 ## 문서를 고칠 때
 
