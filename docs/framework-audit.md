@@ -342,4 +342,4 @@
 - 띄운 서버는 `games/mini/server/try.ts`의 3971번 하나였고 스크립트가 스스로 닫았다(`closed` 출력). 끝난 뒤 3971~3979에 듣는 프로세스가 없음을 `netstat`으로 확인했다. 틀의 시험들은 포트 0(임시)으로 뜨고 스스로 닫는다.
 - `$TEMP/dg-work/audit2`(복사본, 그 안의 `games/mini`, `dist-mini`, fixture 포함)와 내 로그·스크립트를 모두 지웠다. 임시 DB 폴더 `audit2-data`는 만들지 않았다(전부 `MemoryStore`). `$TEMP/dg-work`의 다른 폴더는 다른 작업자의 것이라 건드리지 않았다.
 - 원본 `C:\gamedev`에서는 아무것도 실행하거나 고치지 않았고, `data/`는 열지 않았다. 3001번·trycloudflare·github.io에는 접속하지 않았다. 커밋·푸시도 없다.
-- 남긴 것은 이 보고서 하나다: `C:\Users\MINLOL~1\AppData\Local\Temp\dg-work\audit2-report.md`.
+- 남긴 것은 이 보고서 하나다: `$TEMP\dg-work\audit2-report.md`.

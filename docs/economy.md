@@ -380,7 +380,7 @@ A의 시제품을 측정 스크립트로 만들어 돌렸습니다(`econ/ledger-
 
 ## 측정 스크립트
 
-폴더: `C:\Users\MINLO LEE\AppData\Local\Temp\dg-work\econ\econ\` (Git Bash에서 `cd "$TEMP/dg-work/econ"` 뒤에 실행). 임시 폴더라 지워질 수 있으니, 남기려면 저장소의 `econ/`으로 복사하세요. 사본은 `C:\Users\MINLO LEE\AppData\Local\Temp\dg-work\econ-scripts\`에도 있습니다(큰 결과 파일과 임시 파일 제외. 다시 돌리려면 복제본의 `econ/` 자리에 두어야 상대 경로 `../server`, `../shared`가 맞습니다).
+폴더: `$TEMP\dg-work\econ\econ\` (Git Bash에서 `cd "$TEMP/dg-work/econ"` 뒤에 실행). 임시 폴더라 지워질 수 있으니, 남기려면 저장소의 `econ/`으로 복사하세요. 사본은 `$TEMP\dg-work\econ-scripts\`에도 있습니다(큰 결과 파일과 임시 파일 제외. 다시 돌리려면 복제본의 `econ/` 자리에 두어야 상대 경로 `../server`, `../shared`가 맞습니다).
 
 | 파일 | 하는 일 | 실행 |
 |---|---|---|
