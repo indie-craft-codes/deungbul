@@ -796,6 +796,47 @@ body.room-still #stick { display: none; }
   body.room-bar-top #topmid #roomBar { bottom: auto; top: var(--room-bar-top, calc(env(safe-area-inset-top, 0px) + 96px)); }
   #roomEnd .rbig { font-size: 26px; }
 }
+/* 판의 공통화 (hud/rooms.ts): 판·자리 수 고르기, 방 코드·비밀번호 칸, 목록 넘기기, 기다리는 판의 자리·규칙, 투표 줄, 전적 창, 자리가 다섯 이상인 막대 */
+#roomDefs[hidden], #roomSizes[hidden], #roomCodeRow[hidden], #roomPassRow[hidden], #roomPager[hidden], #roomCodeBox[hidden], #roomPrivRow[hidden], #roomPrivPass[hidden],
+#roomLobby button[hidden], #roomEnd button[hidden], .rvote[hidden], #roomStats[hidden], #roomUnwatch[hidden] { display: none; }
+#roomLobby .rpick { flex-wrap: wrap; align-items: center; }
+#roomLobby .rpick button { padding: 4px 9px; font-size: 12px; }
+#roomLobby .rpick .note { margin-right: 4px; }
+#roomLobby .rcode, #roomLobby .rcodebox { display: flex; gap: 6px; align-items: center; }
+#roomLobby .rcode input { flex: 1 1 0; min-width: 0; text-transform: uppercase; letter-spacing: 2px; padding: 4px 8px; }
+#roomLobby .rcode input[type=password] { text-transform: none; letter-spacing: 0; }
+#roomLobby .rcode select { flex: 1 1 0; min-width: 0; font: inherit; color: var(--fg); background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 4px; padding: 4px 2px; }
+#roomLobby .rcode button, #roomLobby .rcodebox button { padding: 4px 9px; font-size: 12px; white-space: nowrap; }
+#roomLobby .rcodebox span { font-weight: 800; letter-spacing: 1px; color: var(--gold); flex: 1; }
+#roomLobby .rhead { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 8px; }
+#roomLobby .rhead .note.sub { margin-top: 0; }
+#roomLobby .rpage { align-items: center; gap: 4px; flex: none; }
+#roomLobby .rpage button { padding: 1px 8px; font-size: 14px; line-height: 1.2; }
+#roomList .mrow span { white-space: normal; font-size: 12px; line-height: 1.3; }
+#roomList .mrow button { white-space: nowrap; flex: none; }
+#roomLobby .rpage button:disabled { opacity: .4; }
+#roomWaitSeats { display: flex; flex-direction: column; gap: 3px; }
+#roomWaitSeats .mrow { padding: 2px 0 2px 7px; }
+#roomWaitSeats .mrow.ready { border-left-color: var(--gold); }
+#roomWaitSeats .mrow.mine .iname { text-decoration: underline; text-underline-offset: 3px; }
+#roomOpts .btns.rpick button.go:disabled { opacity: 1; filter: none; }
+#roomOpts .btns.rpick button.plain:disabled { opacity: .45; }
+.rvote { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; color: var(--gold); }
+.rvote .btns button { padding: 3px 10px; font-size: 12px; }
+#roomBar .rseat[data-stats], #roomEnd .rrank[data-stats] { cursor: pointer; }
+#roomBar .rseat.lead::after { content: ' ★'; color: var(--gold); }
+#roomBar.many .rseats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; font-size: 13px; }
+#roomBar.many .rseat:last-child { text-align: left; }
+#roomStats { background: rgb(var(--ink-rgb)); position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow-y: auto; z-index: 31; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+#roomStats .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+#roomStats .row button { padding: 3px 10px; font-size: 12px; }
+#roomStats .rbigsm { font-size: 20px; font-weight: 800; color: var(--gold); }
+#roomStats .note.sub { margin-top: 6px; font-weight: 700; }
+@media (max-width: 720px) {
+  /* 좁은 화면의 대기실 창: 위로 너무 자라지 않게 (자리·규칙이 많은 판) */
+  #rightcol #roomLobby { max-height: calc(100vh - 220px); overflow-y: auto; }
+  #roomBar.many .rseats { font-size: 12px; }
+}
 
 /* ---------- 변신 (morph 모듈: hud/morph.ts). 등급의 색은 --rc ---------- */
 .morphRow .iname { color: var(--rc, inherit); display: flex; align-items: center; gap: 8px; }

@@ -1830,13 +1830,14 @@ import { STARTER } from '../shared/content';
 
 ### 서버: 판의 규칙 주기
 
-플러그인에서 `g.rooms.define(def)`를 한 번 부른다(`RoomDef`: `engine/server/game/systems/rooms.ts`). `start`만 꼭 주고 나머지는 선택이다. 자리 번호(0부터)가 곧 편이고, 처음 바퀴는 자리 0이 먼저 둔다. 별 줍기(셋~넷, 바퀴마다 먼저 줍는 사람이 옮기고, 별이 바닥난 바퀴의 끝에 등수로 끝낸다):
+플러그인에서 `g.rooms.define(def)`를 한 번 부른다(`RoomDef`: `engine/server/game/systems/rooms.ts`). `start`만 꼭 주고 나머지는 선택이다. 자리 번호(0부터)가 곧 편이고, 처음 바퀴는 자리 0이 먼저 둔다. 별 줍기(셋~넷, 바퀴마다 먼저 줍는 사람이 옮기고, 별이 바닥난 바퀴의 끝에 등수로 끝낸다. 둘째 줄은 아래 '판의 공통화'의 칸):
 
 ```ts engine/test/core/server/stars.ts
   g.rooms.define<Stars>({
     seats: { min: 3, max: 4 }, startAfterS: STARS.startAfterS, cpuAfterS: STARS.cpuAfterS,
     turnS: STARS.turnS, rounds: STARS.rounds, rotateFirst: true, pass: false,
-    start: (room) => { room.data = { pile: STARS.perSeat * room.seats.length, got: room.seats.map(() => 0), rounds: 0 }; },
+    codes: true, record: true, watch: { delayS: STARS.delayS }, watchView: pub, options: { lucky: ['off', 'on'] },
+    start: (room) => deal(room, STARS.perSeat),
     // 시간이 다 되면 하나를 대신 줍는다
     timeout: (room, seat) => { take(room, seat, 1); g.rooms.pass(room); },
     cpu: (room, seat) => { take(room, seat, 2); g.rooms.pass(room); },
@@ -1868,14 +1869,14 @@ import { STARTER } from '../shared/content';
 | `out(room, i, why)` | | 셋 이상의 판에서 자리 하나가 빠졌다(남은 자리가 둘 이상일 때만). 여기서 `finish`를 부르면 그 결과로 끝난다 |
 | `start`, `turnStart`, `turnEnd`, `timeout`, `cpu`, `outOfRounds`, `finished`, `save`, `load` | | 위의 표 |
 
-게임의 수는 게임의 명령으로 받고, 차례인지는 틀에 묻는다(차례가 아니면 틀이 `roomNotTurn`을 알린다):
+게임의 수는 게임의 명령으로 받고, 차례인지는 틀에 묻는다(차례가 아니면 틀이 `roomNotTurn`을 알린다. 실시간 판 '별 쏟기'는 언제나 답하고 넘기기가 없다):
 
 ```ts engine/test/core/server/stars.ts
   g.commands.set('star', (p, m) => {
     const t = g.rooms.myTurn<Stars>(p);
     if (!t || typeof m.n !== 'number' || ![1, 2, 3].includes(m.n)) return;
     take(t.room, t.seat, m.n);
-    g.rooms.pass(t.room);
+    if (t.room.def === 'rush') { if (t.room.data.pile <= 0) end(t.room); } else g.rooms.pass(t.room);
   });
 ```
 
@@ -1965,6 +1966,51 @@ import { STARTER } from '../shared/content';
 ### 차례·기한을 직접 짤 때 (판 모듈 없이)
 
 판 모듈을 쓰지 않고 틱 위에 차례를 올리려면 `g.now()`(벽시계, 시험은 정해진 시계 `new Game({ now })`)로 기한을 재고 `g.ticks`에서 매 틱 본다(해상도는 틱 50ms). 화면의 초읽기는 남은 시간(ms)을 보낸 때 기준으로 실어 보내고 화면이 받은 때 + 남은 시간을 기한으로 삼는다(판 모듈의 `RoomView.left`가 그렇게 한다: 차례가 바뀔 때만 보내도 매끄럽다).
+
+### 판의 공통화: 방 코드·방장·투표·관전·여러 판·실시간 판·전적 (묶음 7)
+
+모두 `RoomDef`의 선택 칸이다. 주지 않으면 예전 그대로 돈다(코드 없이 모두 공개, 다 차면 곧바로 시작, 구경 없음). 별 줍기는 방 코드·관전·판 기록·규칙 옵션을 켜고, 같은 게임에 둘째 판 '별 쏟기'(차례 없는 실시간 판)를 둔다:
+
+```ts engine/test/core/server/stars.ts
+    codes: true, record: true, watch: { delayS: STARS.delayS }, watchView: pub, options: { lucky: ['off', 'on'] },
+    start: (room) => deal(room, STARS.perSeat),
+```
+
+```ts engine/test/core/server/stars.ts
+  g.rooms.define<Stars>({
+    id: 'rush', seats: { min: 2, max: 4 }, realtimeS: STARS.rushS, cpuAfterS: STARS.cpuAfterS, cpuStepMs: 1500,
+    codes: true, record: true, watch: {}, watchView: pub,
+```
+
+| `RoomDef` 칸 | 기본 | 뜻 |
+|---|---|---|
+| `id` | `'main'` | 판의 이름. 게임에 판이 여럿이면 이름마다 `g.rooms.define`을 한 번씩 부른다(처음 것이 빠른 대국·컴퓨터와 두기의 기본). 화면의 대기실에 '판 고르기' 단추가 생긴다. 명령 `quick`·`host`·`cpu`에 `def`. `room.def`가 그 판의 이름 |
+| `codes` | false | 방 코드(6자, 헷갈리는 0·O·1·I·L 없이)·초대 링크(`?join=코드`)·공개 설정. 방장(방장이 없으면 가장 먼저 앉은 사람)이 `public`(목록에 보임)·`private`(코드로만)·`friends`(방장의 친구만: `friends` 모듈의 친구 목록)·`password`(목록에 자물쇠, 서버는 소금 + scrypt 해시만 둔다. 1분에 5번 틀리면 잠시 막힘)를 고른다 |
+| `lead` | false | 방장: 판을 연 사람. 내보내기(그 판에 다시 못 들어옴)·넘기기·규칙 고르기·시작. 방장이 나가거나 끊기면 다음 자리의 사람에게 넘어가고, 돌아와도 되돌리지 않는다. 다 차도(기다림이 지나도) 저절로 시작하지 않고, 앉은 사람이 모두 '준비'하면 방장이 시작한다 |
+| `options` | | 방장이 고르는 규칙: `{ 이름: [값…] }`(첫 값이 기본). 판의 `room.opts`에 들고 `start`에서 읽는다. 규칙이 바뀌면 준비가 풀린다 |
+| `voteS` | 0 | 투표의 초. 앉은 사람 누구나 '규칙 바꾸기'(`opt`)·'다시 하기'(`again`)·'내보내기'(`kick`)를 내고, 과반이 찬성하면 통과(반이 반대하거나 시간이 지나면 부결). 켜면 결과 창의 '다시 하기'가 투표가 된다 |
+| `watch` | 없음 | 관전: `{ delayS, max }`. 대기실 목록의 두는 중인 판에 '구경' 단추. `delayS`가 0이면 판의 층에 들어 실시간으로 보고, 0보다 크면 층에 들지 않고 그만큼 늦은 판 모양만 받는다 |
+| `watchView(room)` | | 구경꾼이 보는 판 상태(`RoomView.pub`, 관전 지연만큼 늦다). 숨은 정보(손패·비밀 수)는 빼고 준다. 구경꾼은 앉지 않으므로 `g.rooms.of(p)`가 없고, 게임이 `g.rooms.of`로 보내는 개인 상태(손패)도 저절로 가지 않는다 |
+| `midJoin` | 없음 | `'seat'`(협동형)이면 두는 중인 판에 들어온 사람이 떠난 자리나 남은 자리(판을 연 자리 수보다 적게 시작했을 때)에 앉고 `catchUp(room, i)`(따라잡기)가 불린다. 없으면 관전이 있는 판은 '관전 대기'(다음 판에 앉는다), 없으면 들어가지 못한다 |
+| `realtimeS` | 없음 | 차례 없는 실시간 판의 길이(초). 차례·기한·넘기기가 없고(`room.turn`은 -1), `g.rooms.myTurn(p)`이 빠지지 않은 자리면 언제나 답한다. 컴퓨터는 `cpuStepMs`마다 자리마다 `cpu`. 시간이 다 되면 `timeUp(room)`(없으면 비김, 까닭 `'time'`). 대기실·결과 창은 차례 판과 같다 |
+| `record` | false | 판 기록: 끝난 판의 결과(이김/짐/비김, 등수, 자리 수, 까닭, 점수)를 사람의 저장 키마다 저장소의 `room_records`에 적는다(손님·컴퓨터는 빼고). 대기실의 '전적', 막대·결과 창의 이름을 누르면 그 사람의 전적 창(판 수·승패, 판의 이름마다, 최근 10판). 내 데이터 내보내기·지우기에 든다 |
+
+- **판을 열 때 자리 수 고르기**: 자리 수가 범위인 판은 대기실에 '자리 수' 단추가 생기고, 명령 `host`의 `n`으로 그만큼만 연다(`room.size`). 다 차면 시작(방장이 없을 때).
+- **같은 무리로 다음 판**: 결과 창의 '같은 무리로 다음 판'(명령 `regroup`: 방장이 있는 판은 방장만)은 끝난 판을 같은 판·같은 방 코드의 대기실로 되돌린다. 떠난 사람과 컴퓨터는 빠지고 관전 대기하던 사람이 빈 자리에 앉는다. '다시 하기'(모두 누르면 자리를 돌려 곧바로 새 판)는 그대로 있다.
+- **명령**(화면에서는 `roomSend(a, id?, { … })`): `code`(code, pass), `watch`(id 또는 code), `privacy`(v, pass), `kick`·`give`(seat), `ready`(on), `opt`(k, v), `vote`(kind, k, v, seat), `ballot`(yes), `regroup`, `stats`(seat 또는 id: 없으면 나). 답 `{ t: 'roomStats', s: RoomStatsView }`(저장 키는 싣지 않는다).
+- **안내문**: `roomCodeBad`, `roomPassword`, `roomSlow`, `roomFriendsOnly`, `roomBanned`, `roomKicked`, `roomKickedOut`, `roomLeadNew`, `roomLeadOnly`, `roomNotReady`, `roomVote`, `roomVoteEnd`, `roomVoteBusy`, `roomRegroup`, `roomQueued`, `roomWatching`, `roomWatchFull`, `roomMidJoin`.
+- **`RoomView`의 더한 칸**(켠 판에만): `def`, `code`·`privacy`(구경꾼에게는 없다), `lead`(방장의 자리), 자리의 `ready`, `opts`, `vote`, `watch`·`queued`·`pub`·`watchers`·`delayS`, `rt`, `regroup`. 대기실 `RoomLobby.defs`(판의 이름마다 켠 것과 규칙 옵션), 목록 줄의 뒤 셋(판의 이름 번호, 자물쇠, 구경꾼 수: 비공개 판은 목록에 없다).
+- **초대 부품** `engine/server/game/invites.ts`(핵심, 모듈 아님): 코드 표(`Invites.issue`·`find`·`drop`)와 들어가기 검사(`enter(문, 사람, 방장, { byCode, pass })` → `ok`·`private`·`friends`·`password`·`slow`), 비밀번호 해시. 판이 쓰고, 파티·던전처럼 '무리 하나에 들어가기'가 있는 시스템도 같은 부품을 쓸 수 있다(지금 파티·던전은 쓰지 않는다). 친구 여부는 `g.friends(a, b)`(사회와 안전이 friends 모듈을 고른 게임에서 건다).
+- **화면**: 대기실에 판·자리 수 고르기, 코드 칸, 목록 넘기기(한 쪽 4줄)와 '구경', 비밀번호 칸. 기다리는 판에 방 코드와 '초대 링크 복사'(`Platform.copy`), 공개 설정, 자리마다 방장·준비 표시와 방장의 단추, 규칙, 투표 줄. 방 코드가 생기면 `Platform.invite({ code, size })`로 포털의 초대 단추에 알린다. 초대 링크로 들어오면 접속하자마자 그 코드로 들어간다. 게임은 판·규칙의 이름을 `setRoomLook({ defName, optName, optValue })`로 준다. 자리가 다섯 이상인 막대는 세 칸 격자로 줄을 바꾼다(좁은 화면도).
+
+```ts engine/test/core/client/stars.ts
+  setRoomLook({
+    defName: (id) => (id === 'rush' ? tx().rush : tx().main),
+    optName: (k) => (k === 'lucky' ? tx().lucky : k),
+    optValue: (_k, v) => (v === 'on' ? tx().on : v === 'off' ? tx().off : String(v)),
+```
+
+- **눈으로 보기**: `npx vite build -c engine/test/core/vite.config.ts` 뒤 `STARS=1 PORT=3015 DB=memory npx tsx --tsconfig engine/test/core/tsconfig.json engine/test/core/server/main.ts`, 화면은 `/stars.html`(방장·투표를 켠 별 줍기, 여섯 자리까지의 별 쏟기).
 
 ## 15. 겉모습 부품, 캐릭터 정의, 변신 (`chars`·`morph` 모듈)
 

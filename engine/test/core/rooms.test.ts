@@ -2,6 +2,9 @@
 // 판 열기·짝짓기·컴퓨터로 채우기, 판마다의 층(엔티티·스냅샷이 나뉜다), 차례와 기한(넘김, 게임의 처리), 바퀴의 상한, 끊김과 같은 저장 키로 돌아옴, 몰수,
 // 기권·다시 하기(자리 돌리기)·나가기와 정리, 걷기 멈춤, 판의 저장과 되살리기, 연출 사건(g.effect), 순간 이동, 실제 소켓 둘. 모듈을 고르지 않으면 아무것도 없다.
 // 셋 이상의 판은 '별 줍기'(server/stars.ts)로: 자리 수의 범위와 지금 시작, 바퀴마다 선 돌리기, 바퀴의 끝, 등수로 끝내기, 셋 이상의 기권(outEnds·out·skip), 컴퓨터의 이름.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import type { RoomLobby, RoomView } from '../../shared/defs/rooms';
 import type { ServerMsg } from '../../shared/protocol';
 import { Game, type Plugin } from '../../server/game/game';
@@ -10,9 +13,10 @@ import { isField } from '../../server/game/layers';
 import type { Room, RoomDef } from '../../server/game/systems/rooms';
 import { buildFrame, snapshotFor } from '../../server/net/snapshot';
 import { startServer } from '../../server/net/server';
-import { MemoryStore } from '../../server/store';
+import { MemoryStore, SqliteStore } from '../../server/store';
+import { SCHEMA } from '../../server/store/sqlite';
 import { STARS, stars, type Stars } from './server/stars';
-import { check, connect, settle, until, type Peer } from '../harness';
+import { check, connect, removeTemp, settle, until, type Peer } from '../harness';
 
 /** 말뚝 세기: 내 차례에 말뚝 n개(1~3)를 세면 차례가 넘어간다. 세 바퀴를 다 쓰면 많이 세운 쪽이 이긴다. 컴퓨터는 늘 1개 */
 interface Pegs { score: number[]; marks: number[] }
@@ -293,9 +297,9 @@ function world(over?: Partial<Parameters<Game['rooms']['define']>[0]>) {
 }
 
 // ========== 셋 이상의 판 (별 줍기: server/stars.ts) ==========
-function starWorld(over: Partial<RoomDef<Stars>> = {}) {
+function starWorld(over: Partial<RoomDef<Stars>> = {}, rush: Partial<RoomDef<Stars>> = {}) {
   let clock = 1_800_000_000_000;
-  const g = new Game({ modules: ['rooms'], plugins: [stars(over)], now: () => clock });
+  const g = new Game({ modules: ['rooms'], plugins: [stars(over, rush)], now: () => clock });
   const run = (s: number) => { for (let i = 0; i < Math.round(s * 20); i++) { clock += 50; g.tick(0.05); } };
   let n = 0;
   const join = (name: string) => g.players.spawn(name, false, null, `key-star-${name}-${++n}-0123456789`);
@@ -481,4 +485,134 @@ function starWorld(over: Partial<RoomDef<Stars>> = {}) {
   w4.g.importWorld(JSON.parse(JSON.stringify(w3.g.exportWorld())));
   const back = w4.g.rooms.all()[0] as Room<Stars> | undefined;
   check(!!back && back.seats.length === 3 && back.turn === 1 && back.data.got.join() === '2,0,0', '셋으로 시작한 판도 저장했다가 셋 자리 그대로 되살린다 (자리 수가 min~max면 받는다)');
+}
+
+// ========== 판의 공통화 (묶음 7: 별 줍기에 방장·투표를 켜서) ==========
+// 한 줄기로 본다: 방 코드로 들어감 → 공개 설정·비밀번호 → 준비 → 방장 나감·이전 → 내보내기 → 판 → 숨은 정보와 관전 지연 → 관전 대기 → 결과 → 같은 무리로 다음 판 → 투표 → 전적
+{
+  const store = new MemoryStore();
+  const w = starWorld({ lead: true, voteS: 10 });
+  w.g.rooms.attach(store);
+  const [a, b, c, d, e, x] = ['A', 'B', 'C', 'D', 'E', 'X'].map(w.join);
+  const said = (p: Ent, k: string) => w.said(p, k).length > 0;
+  w.room('host', a);
+  const r = w.g.rooms.of<Stars>(a)!;
+  const code = w.view(a)!.code!;
+  check(/^[A-HJ-NP-Z2-9]{6}$/.test(code) && w.view(a)?.lead === 0 && w.view(a)?.privacy === 'public' && r.size === 4 && w.g.rooms.byCode(code.toLowerCase()) === r, `방 코드 6자(헷갈리는 글자 없이, 소문자로 적어도 찾는다): ${code}, 연 사람이 방장`);
+  // 공개 설정: 비밀번호 판은 목록에 자물쇠로, 틀린 비밀번호는 세고, 너무 자주 틀리면 맞아도 잠시 막힌다
+  w.g.command(a, { t: 'room', a: 'privacy', v: 'password', pass: 'moon' });
+  const row = () => (w.g.state().rooms as RoomLobby).rows.find((q) => q[0] === r.id);
+  check(r.privacy === 'password' && !r.pass.includes('moon') && row()?.[7] === 1, '비밀번호 판: 목록에 자물쇠(1), 비밀번호는 해시로만 남는다');
+  for (let k = 0; k < 5; k++) w.g.command(b, { t: 'room', a: 'code', code, pass: 'sun' });
+  w.g.command(b, { t: 'room', a: 'code', code, pass: 'moon' });
+  check(said(b, 'roomPassword') && said(b, 'roomSlow') && !w.g.rooms.of(b), '틀린 비밀번호 다섯 번이면 맞는 비밀번호도 1분 동안 막힌다 (roomSlow)');
+  w.run(61);
+  w.g.command(b, { t: 'room', a: 'code', code, pass: 'moon' });
+  w.g.command(a, { t: 'room', a: 'privacy', v: 'private' });
+  w.room('join', c, r.id);
+  check(w.g.rooms.of(b) === r && !w.g.rooms.of(c) && row() === undefined, '1분 뒤에는 들어간다. 비공개 판은 목록에 없고 id로는 못 들어간다');
+  w.g.command(c, { t: 'room', a: 'code', code: ` ${code} ` });
+  w.g.command(d, { t: 'room', a: 'code', code: 'ZZZZZZ' });
+  check(w.g.rooms.of(c) === r && said(d, 'roomCodeBad'), '비공개 판도 코드로는 들어간다 (앞뒤 공백 무시), 없는 코드는 roomCodeBad');
+  // 준비와 규칙: 방장이 있는 판은 셋이 모여도 저절로 시작하지 않는다
+  w.run(STARS.startAfterS + 1);
+  w.room('start', a);
+  check(r.st === 'wait' && w.said(a, 'roomNotReady')[0]?.a[0] === 2, '방장의 판은 기다림이 지나도 저절로 시작하지 않고, 모두 준비해야 시작한다 (roomNotReady: 2명)');
+  w.g.command(b, { t: 'room', a: 'ready' }); w.g.command(c, { t: 'room', a: 'ready' });
+  w.g.command(b, { t: 'room', a: 'opt', k: 'lucky', v: 'on' });
+  w.g.command(a, { t: 'room', a: 'opt', k: 'lucky', v: 'on' });
+  check(said(b, 'roomLeadOnly') && r.opts.lucky === 'on' && w.view(c)?.opts?.lucky === 'on' && w.view(c)?.seats[1].ready === 0, '규칙은 방장만 고른다 (room.opts). 규칙이 바뀌면 준비가 풀린다');
+  // 방장이 나가면 다음 사람이 방장, 돌아와도 되돌리지 않는다. 방장이 내보낸 사람은 다시 못 들어온다
+  w.room('leave', a);
+  w.g.command(a, { t: 'room', a: 'code', code });
+  check(said(c, 'roomLeadNew') && w.view(c)?.lead === 1 && w.g.rooms.seatOf(r, a) === 0 && w.view(a)?.lead === 1, '방장이 나가면 다음 자리의 사람이 방장 (돌아온 옛 방장은 그냥 자리에)');
+  w.g.command(b, { t: 'room', a: 'kick', seat: 0 });
+  w.g.command(a, { t: 'room', a: 'code', code });
+  check(said(a, 'roomKicked') && said(c, 'roomKickedOut') && !w.g.rooms.of(a) && said(a, 'roomBanned') && isField(a.layer), '방장이 내보내면 들판으로 나가고 그 판에 다시 들어오지 못한다 (roomBanned)');
+  w.g.command(d, { t: 'room', a: 'code', code });
+  for (const p of [c, d]) w.g.command(p, { t: 'room', a: 'ready' });
+  w.room('start', b);
+  check(r.st === 'play' && r.seats.length === 3 && r.data.luck.length === 3, '모두 준비하면 방장이 시작한다 (빈 자리는 빠진다)');
+  // 숨은 정보: 행운의 수는 그 자리에만. 구경꾼은 지연(2초)만큼 늦은 판과 watchView만 받는다
+  const luck = (p: Ent) => (w.g.personal.find((q) => q.name === 'stars')!.state(p) as { luck: number } | null)?.luck ?? 0;
+  w.g.command(x, { t: 'room', a: 'watch', code });
+  check(said(x, 'roomWatching') && luck(b) === r.data.luck[w.g.rooms.seatOf(r, b)] && luck(x) === 0 && w.g.rooms.watched(x) === r && !w.g.rooms.of(x) && isField(x.layer), '비공개 판도 코드로 구경한다. 구경꾼은 앉지 않는다: 행운의 수(게임의 개인 상태)는 가지 않고, 지연이 있으면 판의 층에도 들지 않는다');
+  const xv0 = w.view(x)!;
+  check(xv0.watch === 1 && xv0.me === -1 && xv0.code === undefined && xv0.st === 'wait', `구경꾼의 판은 지연만큼 늦다 (막 시작한 판은 아직 '기다림', 코드 없음)`);
+  w.run(STARS.delayS + 0.1);
+  const before = r.data.got.join();
+  w.g.command(w.g.rooms.playerAt(r, r.turn)!, { t: 'star', n: 3 });
+  const xv = w.view(x)!, pub = xv.pub as { pile: number; got: number[]; luck?: unknown };
+  check(xv.st === 'play' && pub.got.join() === before && pub.luck === undefined && !JSON.stringify(xv).includes('"luck"') && r.data.got.join() !== before, `지연이 지나면 구경꾼에게 판이 보인다: 방금 둔 수는 아직 (${pub.got.join()}), 행운의 수는 어디에도 없다`);
+  w.run(STARS.delayS + 0.1);
+  check((w.view(x)!.pub as { got: number[] }).got.join() === r.data.got.join(), `${STARS.delayS}초 뒤에 구경꾼에게도 그 수가 보인다`);
+  // 두는 중에 들어오면 관전 대기
+  w.g.command(e, { t: 'room', a: 'code', code });
+  check(said(e, 'roomQueued') && w.view(e)?.queued === 1 && (w.g.state().rooms as RoomLobby).rows.length === 0, '두는 중인 판에 코드로 들어오면 관전 대기 (다음 판에 앉는다)');
+  for (let k = 0; k < 60 && r.st === 'play'; k++) w.g.command(w.g.rooms.playerAt(r, r.turn)!, { t: 'star', n: 3 });
+  check(r.st === 'over' && store.roomRecords(b.pid, 5).length === 1 && store.roomRecords(x.pid, 5).length === 0, '판이 끝나면 앉은 사람마다 판 기록이 저장소에 (구경꾼은 없음)');
+  // 같은 무리로 다음 판: 방장만, 떠난 사람은 빠지고 관전 대기가 그 자리에
+  w.room('leave', d);
+  w.room('regroup', c);
+  check(said(c, 'roomLeadOnly') && r.st === 'over', '같은 무리로 다음 판은 방장이');
+  w.room('regroup', b);
+  check(r.st === 'wait' && w.g.rooms.of(e) === r && !w.g.rooms.watched(e) && r.seats.filter((s) => !!s).map((s) => s!.name).join() === 'B,C,E' && r.code === code && said(c, 'roomRegroup'), '결과 창에서 같은 무리로: 같은 판·코드의 대기실로, 떠난 D 대신 기다리던 E가 앉는다');
+  // 투표: 과반이면 통과
+  w.g.command(c, { t: 'room', a: 'vote', kind: 'opt', k: 'lucky', v: 'off' });
+  const vote = w.view(b)!.vote!;
+  check(vote.kind === 'opt' && vote.yes === 1 && vote.need === 2 && vote.mine === -1 && said(b, 'roomVote') && r.opts.lucky === 'on', `투표: 낸 사람은 찬성, 셋이면 둘이 찬성해야 (${vote.yes}/${vote.need})`);
+  w.g.command(e, { t: 'room', a: 'ballot', yes: true });
+  check(r.opts.lucky === 'off' && w.view(b)?.vote === null && said(b, 'roomVoteEnd'), '과반이 찬성하면 통과해 규칙이 바뀐다');
+  w.g.command(c, { t: 'room', a: 'vote', kind: 'kick', seat: 2 });
+  w.run(10.1);
+  check(w.g.rooms.of(e) === r && w.said(c, 'roomVoteEnd').some((n) => n.a[0] === 0), '시간 안에 과반이 안 되면 부결');
+  // 전적: 나와 같은 판의 다른 사람
+  w.g.out = [];
+  w.g.command(b, { t: 'room', a: 'stats' });
+  w.g.command(b, { t: 'room', a: 'stats', seat: 2 });
+  const stats = w.g.out.flatMap((o) => (o.msg.t === 'roomStats' ? [o.msg.s] : []));
+  check(stats[0]?.me === 1 && stats[0].all.n === 1 && stats[0].defs.main?.n === 1 && stats[0].recent[0]?.n === 3 && stats[1]?.name === 'E' && stats[1].all.n === 0 && !JSON.stringify(stats).includes(b.pid), '전적 창: 나(1판)와 자리의 다른 사람(0판). 저장 키는 보내지 않는다');
+}
+
+// ---------- 게임당 판 여럿, 실시간 판, 자리 수 고르기, 판 중간 참가, 친구만, 기록의 저장 ----------
+{
+  const caught: number[] = [];
+  const w = starWorld({}, { midJoin: 'seat', catchUp: (room, seat) => { caught.push(seat); room.data.got[seat] = Math.min(...room.data.got.filter((_, i) => i !== seat)); } });
+  const lob = () => w.g.state().rooms as RoomLobby;
+  check(lob().defs?.map((d) => `${d.id}:${d.rt}:${d.min}-${d.max}`).join() === 'main:0:3-4,rush:1:2-4', `판의 이름마다 대기실에 (${lob().defs?.map((d) => d.id).join()}). 처음 것이 빠른 대국의 기본`);
+  const [p, q, s] = ['P', 'Q', 'S'].map(w.join);
+  w.g.command(p, { t: 'room', a: 'host', def: 'rush', n: 3 });
+  const r = w.g.rooms.of<Stars>(p)!;
+  w.room('quick', q);
+  check(r.def === 'rush' && r.size === 3 && r.seats.length === 3 && w.g.rooms.of(q) !== r, '판을 열 때 판의 이름과 자리 수를 고른다 (빠른 대국은 기본 판으로 간다)');
+  w.room('leave', q);
+  w.g.command(q, { t: 'room', a: 'quick', def: 'rush' });
+  w.room('start', p);
+  check(r.st === 'play' && r.turn === -1 && w.view(p)?.rt === 1 && w.view(p)?.left === STARS.rushS * 1000 && w.view(p)?.pass === 0, '실시간 판: 차례가 없고(turn -1), 남은 시간은 판 전체');
+  w.g.notices = [];
+  w.g.command(q, { t: 'star', n: 2 }); w.g.command(p, { t: 'star', n: 1 }); w.g.command(q, { t: 'star', n: 1 });
+  check(r.data.got.join() === '1,3' && !w.g.notices.some((n) => n.k === 'roomNotTurn'), '누구나 언제든 둔다 (myTurn이 차례를 묻지 않는다)');
+  w.room('join', s, r.id);
+  check(w.g.rooms.of(s) === r && r.seats.length === 3 && caught.join() === '2' && r.data.got[2] === 1 && w.view(p)?.seats[2].name === 'S', '협동형(midJoin seat)은 판 중간에 남은 자리로 들어오고 따라잡기 고리(catchUp)가 불린다');
+  w.run(STARS.rushS + 0.1);
+  check(r.st === 'over' && r.why === 'stars' && r.ranks.length === 3, '시간이 다 되면 timeUp이 끝을 정한다 (등수)');
+  // 친구만: 방장의 친구만 들어온다 (사회와 안전이 g.friends를 건다)
+  const [f, o] = ['F', 'O'].map(w.join);
+  w.g.friends = (x, y) => (x.name === 'P' && y.name === 'F') || (x.name === 'F' && y.name === 'P');
+  w.room('leave', p); w.room('leave', q); w.room('leave', s);
+  w.room('host', p);
+  w.g.command(p, { t: 'room', a: 'privacy', v: 'friends' });
+  const r2 = w.g.rooms.of(p)!;
+  w.room('join', o, r2.id); w.room('join', f, r2.id);
+  check(w.said(o, 'roomFriendsOnly').length === 1 && w.g.rooms.of(f) === r2 && (w.g.state().rooms as RoomLobby).rows.find((x) => x[0] === r2.id)?.[7] === 2, '친구만: 목록에 자물쇠(2), 방장의 친구가 아니면 roomFriendsOnly');
+  // 판 기록이 SQLite에 남고 내 데이터 지우기로 지워진다 (스키마의 끝 단계)
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rooms-rec-'));
+  try {
+    const db = new SqliteStore(path.join(dir, 'g.db'));
+    db.addRoomRecords([{ key: 'k1', at: 5, def: 'rush', res: 0, rank: 1, n: 3, why: 'stars', score: 4 }, { key: 'k1', at: 6, def: 'main', res: 1, rank: 0, n: 2, why: 'resign' }]);
+    const got = db.roomRecords('k1', 10);
+    const gone = db.forgetRoomRecords('k1');
+    check(db.schemaVersion() === SCHEMA.length && got.length === 2 && got[0].def === 'main' && got[1].score === 4 && gone === 2 && db.roomRecords('k1', 10).length === 0, '판 기록의 표(room_records): 최근부터 읽고, 지우기로 그 사람의 줄을 지운다');
+    db.close();
+  } finally { removeTemp(dir); }
 }

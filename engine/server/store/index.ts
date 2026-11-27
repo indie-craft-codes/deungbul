@@ -7,3 +7,4 @@ export { hasSocial, type BlockRow, type FriendRow, type ReportLine, type SocialS
 export { hasOdds, type DrawQuery, type OddsStore, type OddsVersionRow } from './types';
 export { hasOps, type EventRow, type OpsStore, type StashRow, type TicketRow } from './types';
 export { hasCoupons, type CouponRow, type CouponStore } from './types';
+export { hasRoomStore, type RoomRecordRow, type RoomStore } from './types';

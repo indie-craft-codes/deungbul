@@ -372,6 +372,11 @@ export class Game {
    * 서버 없이 도는 게임(시험, 황금 실행)은 아무도 차단하지 않는다
    */
   blocks: (to: Ent, from: Ent) => boolean = () => false;
+  /**
+   * [핵심] a와 b가 친구인가: 판의 '친구만' 공개 설정(./invites.ts)이 묻는다. 통신 계층의 사회와 안전이 friends 모듈을 고른 게임에서 친구 목록으로 바꿔 건다.
+   * 서버 없이 도는 게임(시험)은 아무도 친구가 아니다
+   */
+  friends: (a: Ent, b: Ent) => boolean = () => false;
   /** [핵심] 분석 사건 (./systems/analytics.ts): 쌓기만 한다. 통신 계층이 가져가 저장한다. 게임의 상태·난수·전송을 바꾸지 않는다 */
   readonly analytics: Analytics;
 

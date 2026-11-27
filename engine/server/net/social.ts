@@ -241,6 +241,8 @@ export function createSocial(host: SocialHost): Social {
   }
 
   // ---------- 친구 (friends 모듈) ----------
+  // 판의 '친구만'도 친구 목록을 본다 (engine/server/game/invites.ts의 g.friends). 저장 키가 없는 사람(손님)은 친구가 없다
+  if (friendsOn) g.friends = (a, b) => !!a.pid && !!b.pid && a.pid !== b.pid && friendRows(a.pid).some((r) => r.state === 'ok' && (r.a === b.pid || r.b === b.pid));
   function friendRows(key: string) { try { return ss ? ss.friendsOf(key) : []; } catch (err) { log.error('[social] 친구 목록을 읽지 못했습니다:', err); return []; } }
   function friendList(key: string): FriendView[] {
     return friendRows(key).map((r) => {
