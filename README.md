@@ -69,7 +69,7 @@ npx tsx test/all.ts boundary fx/shop deungbul/quests sample/docs   # 고른 시�
 | 예제 `games/sample` "모닥불 사냥터" | 같은 틀로 만든 아주 작은 두 번째 게임. 새 게임을 만들 때 베끼는 출발점이고, 문서의 코드 조각이 이 파일들과 같은지 시험이 본다 | RPG 일부 + `chars`·`morph`·`chat`·`friends` | 3002 | 아래 '예제 게임', [docs/making-a-game.md](docs/making-a-game.md) |
 | 예제 `games/echopact` "메아리 계약" | 두 장르를 한 서버·한 캐릭터에: 들판의 MMORPG(사냥·장비·파티)와 수집형(뽑기·편성·단계). 뽑은 캐릭터(정의)가 단계의 동료이자 들판의 변신이 된다 | RPG 일부 + 수집형 넷 + `chars`·`morph`·`chat`·`friends`·`odds` | 3003 | [docs/proof-echopact.md](docs/proof-echopact.md) |
 
-2026-11-27에 시제품·증명 게임 일곱(버섯 동굴, 별가루 광산, 돌담 마을, 굴림공, 달무리 원정대, 징검돌 전술, 반딧불 연못)을 지웠다. 코드는 커밋 `7e347c9`에 있다(`git checkout 7e347c9 -- games/<이름>`). 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험(`engine/test/core`, `engine/test/collect`)이 지킨다. 증명 기록은 `docs/proof-*.md`.
+2026-11-27에 시제품·증명 게임 일곱(버섯 동굴, 별가루 광산, 돌담 마을, 굴림공, 달무리 원정대, 징검돌 전술, 반딧불 연못)을 지웠다. 코드는 커밋 `7e347c9`에 있다(`git checkout 7e347c9 -- games/<이름>`). 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험(`engine/test/core`, `engine/test/collect`)이 지킨다. 그 게임들의 증명 기록도 같은 커밋에 있다(남은 것은 메아리 계약의 [docs/proof-echopact.md](docs/proof-echopact.md)).
 
 ## 문서 지도
 

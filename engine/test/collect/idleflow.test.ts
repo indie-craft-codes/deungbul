@@ -1,4 +1,4 @@
-// 단계 밖 (달무리 원정대의 증명이 찾은 빈 곳: docs/proof-dalmuri.md): 던전 안의 자동 전투(DungeonDef.auto), 던전 뒤 단계로 돌아가기(STAGE_RULES.returnAfterDungeon),
+// 단계 밖 (making-a-game.md 13절 '단계 밖'): 던전 안의 자동 전투(DungeonDef.auto), 던전 뒤 단계로 돌아가기(STAGE_RULES.returnAfterDungeon),
 // 메뉴에서 바로 던전 들어가기(DungeonDef.fromMenu, 명령 dungeonGo), 돌아왔을 때의 창(IDLE.popup, 메시지 idleBack), 재료로 영웅 키우기(HERO_RULES.trade),
 // 화면의 틀 요소 끄기(HUD.hide)를 서버의 셈·저장·장부와 화면의 셈(hud/collectcalc.ts)으로 본다. 모두 내용이 적어야 켜지는 칸이라, 끄면 예전과 같은지도 본다.
 import { DUNGEONS, HERO_RULE_VIEW, HUD_PARTS, IDLE, IDLE_VIEW, STAGE_RULE_VIEW, hiddenHudIds, menuDungeons, type IdleBack } from '../../shared/defs';
