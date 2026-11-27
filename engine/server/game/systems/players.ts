@@ -193,6 +193,7 @@ export class Players {
     while (p.exp >= p.need) {
       p.exp -= p.need; p.need = nextNeed(p.need); p.lv++; this.refresh(p); if (this.g.has('combat')) p.hp = p.maxHp;
       this.g.notify(p, 'levelUp', p.lv);
+      this.g.track('level_up', { lv: p.lv }, p); // 분석 사건 (게임의 상태는 바꾸지 않는다)
       p.metaDirty = true; // 찍을 능력치 점수가 생겼다
     }
   }

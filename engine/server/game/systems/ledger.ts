@@ -45,6 +45,11 @@ const WORD = /^[A-Za-z0-9_]{1,24}$/;
 const WHY = /^[A-Za-z0-9_:]{1,64}$/;
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
+/** 통로 밖의 변화 한 건: 시각, 저장 키(손님이면 빈 글), 그때의 이름, 재화, 원인(other·tick), 양(+ 생김, − 사라짐) */
+export interface Stray { at: number; key: string; name: string; cur: string; why: string; d: number }
+/** 통로 밖의 변화를 사람과 함께 남기는 수 */
+const STRAY_KEEP = 500;
+
 /** 하루의 골드: [날짜, 번 골드, 쓴 골드] */
 type DayGold = [string, number, number];
 /** 캐릭터별 기록 (PlayerSave.ext.stats). 덧붙는 칸이라 이 칸이 없는 옛 저장도 그대로 읽힌다 */
@@ -149,6 +154,13 @@ export class Ledger {
   private scratch: number[] = RARITIES.map(() => 0);
   private errors = 0;
   private tickNo = 0;
+  /**
+   * 통로 밖의 변화(원인 other·tick)가 누구에게서 났는가: 최근 STRAY_KEEP건 (운영 도구의 사고 대응: 관리자 명령 ledger, 경보의 지표 game_econ_stray_total).
+   * 날짜별 줄(위의 all)에는 원인만 남고 사람은 남지 않는다: 복제 버그를 잡은 뒤 '그 사람만' 되돌리려면 누구인지가 필요하다. 저장하지 않는다(서버가 켜져 있는 동안만)
+   */
+  private strays: Stray[] = [];
+  /** 서버가 켜진 뒤 통로 밖의 변화가 적힌 건수 */
+  strayCount = 0;
 
   constructor(private g: Game) {
     g.saves.push({
@@ -386,6 +398,11 @@ export class Ledger {
     if (a) { a.amount += amount; a.n++; } else this.unsaved.set(key, { amount, n: 1 });
     if (b) { b.amount += amount; b.n++; } else this.all.set(key, { amount, n: 1 });
     if (!isEconMove(why)) (this.span[cur] ??= [0, 0])[plus ? 0 : 1] += amount;
+    if (t && ECON_UNKNOWN.includes(why)) {
+      this.strayCount++;
+      this.strays.push({ at: this.g.now(), key: t.p.pid ?? '', name: t.p.name, cur, why, d });
+      if (this.strays.length > STRAY_KEEP) this.strays.splice(0, this.strays.length - STRAY_KEEP);
+    }
     if (t && cur === 'gold') {
       const rec = t.rec;
       if (rec.d[0] !== day) { if (rec.d[0]) rec.y = rec.d; rec.d = [day, 0, 0]; }
@@ -460,6 +477,8 @@ export class Ledger {
     for (const [lv, v] of Object.entries(r.reach)) reach[lv] = [Math.round(v[0]), Math.round(v[1])];
     return { born: r.born, play: Math.round(r.play), away: Math.round(r.away), reach, d: [...r.d], y: [...r.y] };
   }
+  /** 통로 밖의 변화의 최근 기록 (최근 것이 뒤). key를 주면 그 저장 키의 것만 */
+  strayList(key?: string): readonly Stray[] { return key === undefined ? [...this.strays] : this.strays.filter((s) => s.key === key); }
   /** 그 캐릭터의 기록 (시험용) */
   statsOf(p: Ent): CharStats | undefined { const t = this.tracks.get(p.id); return t && Ledger.pack(t.rec); }
 

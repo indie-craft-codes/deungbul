@@ -175,10 +175,10 @@ export const CHAR_RULES: CharRules = {
 /**
  * 변신: 가진 메아리(영웅) = 변신 목록(fromRoster: 따로 저장하지 않는다). 변신한 동안의 기본 체력·공격 = 그 메아리 카드의 능력치에서 셈한 값(stats: 틀의 능력치 대체 방식,
  * 셈은 shared/content/pact.ts의 cardToMorph). 탑에서 카드를 키우면 들판의 변신이 그만큼 바로 세진다. 장비(무기·갑옷)의 덤은 그 위에 그대로.
- * 스스로 풀 때까지 이어지고, 풀리고 10초 뒤에 다시, 맞은 지 4초 안에는 못 한다
+ * 스스로 풀 때까지 이어지고, 풀리고 10초 뒤에 다시. 싸우는 중에도 할 수 있다(체력의 비율을 지키므로 회복이 되지 않는다: 처음 20분 해 보기에서 자동 사냥 중에 변신이 막히던 것)
  */
 export const MORPH_RULES: MorphRules = {
-  durationS: 0, cooldownS: 10, noFightS: 4, maxOwn: 60,
+  durationS: 0, cooldownS: 10, noFightS: 0, maxOwn: 60,
   fromRoster: true,
   stats: cardToMorph,
 };
@@ -217,7 +217,8 @@ const stage = (ch: number, n: number): StageDef => {
     ...(n === 4 ? { boss: { type: ch === 0 ? 'bellgolem' : 'echowarden' } } : {}),
     scale,
     reward: { gold: 30 + k * 10, exp: 25 + k * 12, sparks: 8 + k * 2 },
-    first: { sparks: n === 4 ? 150 : 40 },
+    // 처음 깬 보상: 우두머리 150, 1-1은 60(1-1·1-2를 깨면 첫 뽑기 100이 모인다: 처음 메아리 하나로는 1-3에서 막히기 쉽다), 나머지 40
+    first: { sparks: n === 4 ? 150 : k === 0 ? 60 : 40 },
     rec: Math.round(300 * scale * (n === 4 ? 1.5 : 1)),
   };
 };

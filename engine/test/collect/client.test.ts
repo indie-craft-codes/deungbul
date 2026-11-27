@@ -66,7 +66,10 @@ import { check } from '../harness';
 // ---------- 화면 모듈의 목록: 수집형은 맨 뒤에, 모듈마다 ----------
 {
   const src = fs.readFileSync(path.join(import.meta.dirname, '../../client/modules.ts'), 'utf8');
-  const order = [...src.matchAll(/\{ init: (\w+)(?:, mod: '(\w+)')? \}/g)].map((m) => `${m[1]}${m[2] ? ':' + m[2] : ''}`);
+  const all = [...src.matchAll(/\{ init: (\w+)(?:, mod: '(\w+)')? \}/g)].map((m) => `${m[1]}${m[2] ? ':' + m[2] : ''}`);
+  // 그 뒤의 묶음(운영 도구와 고객지원의 문의 initSupport …)은 사회와 안전 뒤에 붙는다: 아래는 사회와 안전까지를 본다
+  const order = all.slice(0, all.indexOf('initSocial') + 1);
+  check(all.indexOf('initSupport:support') > all.indexOf('initSocial'), `문의(support 모듈)의 화면은 사회와 안전 뒤에, 그 모듈을 고른 게임에서만 (${all.slice(all.indexOf('initSocial')).join()})`);
   // 웹 출시의 바탕(설정 창·약관·튜토리얼·손님 진행 보호: 어느 게임에나)은 그 뒤, 그리고 사회와 안전(설정 창의 칸을 더하므로 설정 창 뒤)이 맨 끝에 (고르지 않은 게임의 init 차례가 예전과 같게)
   const WEB = ['initSettings', 'initLegal', 'initTutorial', 'initKeepSafe', 'initSocial'];
   const tail = order.slice(-14, -6).join();

@@ -62,6 +62,8 @@ export const MODULE_TABLE = {
   chat: { needs: [] },
   /** 친구: 요청·수락·거절·삭제, 목록(접속 여부·마지막 접속·있는 곳), 상한(FRIENDS). 저장 키 단위로 저장한다 (DB의 friends 표) */
   friends: { needs: [] },
+  /** 문의·제재 이의: 게임 안 문의 → 티켓(열림·답변·닫힘) → 관리자의 답(알림·우편), 접속 차단·말 막기의 사유·기간과 이의 신청. 저장 키 단위로 저장한다 (DB의 tickets 표: engine/server/net/support.ts) */
+  support: { needs: [] },
   /** 게임 안의 모드: 한 캐릭터로 오가는 '두 게임'(들판의 MMORPG와 단계의 수집형). 화면의 '게임 바꾸기' 단추, 모드마다 메뉴의 탭·감출 요소 (MODE_RULES) */
   modes: { needs: ['stages'] },
 } as const satisfies Record<string, { needs: readonly string[] }>;
@@ -91,8 +93,9 @@ export const COLLECT_MODULES: readonly ModuleId[] = ['roster', 'gacha', 'squad',
  * 판(rooms)도 들지 않는다: 턴제·보드 게임의 모듈이고, 이 목록을 쓰는 게임이 저절로 대기실을 갖지 않게 한다.
  * 캐릭터 정의(chars)와 변신(morph)도 들지 않는다: 이 목록을 쓰는 게임(등불지기)이 저절로 변신을 갖지 않게, 고르는 게임이 따로 적는다.
  * 대화 채널(chat)과 친구(friends)도 들지 않는다: 귓말·친구를 켤지는 게임이 정한다 (등불지기는 아직 켜지 않았다)
+ * 문의(support)도 들지 않는다: 고르는 게임이 따로 적는다 (등불지기는 적었다)
  */
-export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends' && m !== 'modes');
+export const RPG_MODULES: readonly ModuleId[] = ALL_MODULES.filter((m) => m !== 'teams' && !COLLECT_MODULES.includes(m) && m !== 'herogear' && m !== 'rooms' && m !== 'chars' && m !== 'morph' && m !== 'chat' && m !== 'friends' && m !== 'support' && m !== 'modes');
 
 /**
  * 게임이 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 무엇이 문제인지 적은 오류를 던진다 (서버와 화면이 시작할 때 부른다).

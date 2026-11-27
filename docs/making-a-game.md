@@ -92,6 +92,7 @@
 | `morph` | 변신: 가진 캐릭터 정의의 겉모습(남에게도)과 게임이 정한 보정, 지속 시간·재사용 대기·전투 중 금지 (15절) | chars | 메뉴의 변신 탭 | |
 | `chat` | 대화 채널: 귓말(이름으로)·근처·파티 채널, 모든 채널을 합친 도배 막기 (18절) | | 대화창의 채널 탭, 사람 카드의 귓말 | |
 | `friends` | 친구: 요청·수락·거절·삭제, 목록(접속·있는 곳·마지막 접속), 상한 (18절) | | 메뉴의 친구 탭, 사람 카드의 친구 요청 | |
+| `support` | 문의·제재 이의: 티켓(열림·답변·닫힘), 관리자의 답(알림·우편), 말 막기·차단의 사유·기간과 이의 신청 (19절) | | 설정 창의 '문의' 칸과 문의 창, 막혔을 때 접속 화면의 사유·이의 | |
 
 ```ts engine/test/core/shared/content/index.ts
 /** 쓸 모듈: 없다 (핵심만) */
@@ -100,7 +101,7 @@ export const MODULES: readonly ModuleId[] = [];
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
 ```
 
 모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`, `chars`, `morph`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
@@ -233,7 +234,7 @@ if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키�
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
 export const GUEST_NAME = 'Camper';
 ```
 
@@ -1112,6 +1113,7 @@ PORT=3016 DB=/tmp/x/game.db npm run admin -- mute 아무개 30m
 | `audit [수]` | 최근 관리자 행동 기록 |
 | `errors [수] [--all]` / `errors clear 서명\|all` | 화면 오류 묶음(같은 오류는 한 줄, 최근 순)과 고친 뒤 지우기 (17절 '화면 오류 수집') |
 | `erase [list\|log [수]\|ask 이름 [일수]\|cancel 이름\|now 이름\|sweep]` | 내 데이터 삭제 요청: 기다리는 것, 기록, 대신 받기, 거두기, 곧바로 지우기, 때가 된 것 실행 (17절 '약관·처리방침·동의와 내 데이터') |
+| `ui`, `stats`, `ledger`, `suspects`, `alerts`, `mail`, `rollback`, `tickets` … | 운영 도구와 고객지원: 웹 관리 화면의 주소, 분석 집계, 장부, 봇 의심 점수, 경보, 운영 보상 우편, 계정 단위 롤백, 문의 (19절). 명령마다 필요한 역할(보기 전용·운영·전체)이 있다 |
 
 - 기간: 숫자(시간), `30m`·`12h`·`7d`, `perm`(영구).
 - 게임은 첫 인자(게임 폴더 이름) 또는 `GAME`, 포트는 `PORT` 또는 `deploy.json`의 `port`. 토큰은 저장 파일 옆의 `admin.token`(저장 파일은 `DB` 또는 `deploy.json`의 `db`). 다른 곳이면 `ADMIN_TOKEN_FILE`. 기록에 남는 이름은 `ADMIN_BY`, 없으면 PC의 사용자 이름.
@@ -2040,7 +2042,7 @@ g.on('playerJoined', (p) => { for (const d of g.chars.list()) g.morph.grant(p, d
 - 규칙(내용의 `MORPH_RULES`): `durationS`(이어지는 시간, 0이면 스스로 풀 때까지), `cooldownS`(풀린 뒤 다시까지), `noFightS`(맞은 지 이 초 안에는 못 한다, 0이면 언제나), `mods(def)`(정의마다의 보정), `cap`(칸마다 상한, `guard`는 0.9까지), `maxOwn`(가질 수 있는 수). **기본값은 겉모습만**(보정 0), 스스로 풀 때까지, 다시까지 10초, 맞은 지 5초 안에는 못 한다, 서른까지.
 - 서버(`g.morph`): `grant(p, id)`(주기: 게임의 보상·상점, 나중의 거래·AI 만들기), `take(p, id)`(거두기), `owns`, `on(p, id)`, `off(p, why)`, `mods(p)`. 명령 `{ t: 'morph', a: 'on', id }`, `{ t: 'morph', a: 'off' }`. 사건 `morphed(p, id, why)`. 정의가 빠지면 그것으로 변신한 사람이 풀린다. 저장은 캐릭터의 ext `morph`(`{ own, on?, left?, cd? }`), 개인 상태 `morph`(`MorphMe`: 가진 것, 지금의 것, 남은 초, 다시까지).
 - 화면: 메뉴의 '변신' 탭(가진 캐릭터마다 부품으로 그린 작은 그림, 이름·등급·소개·능력치·보정, 변신 단추, 변신 중이면 남은 시간과 풀기). `setMenuTabs`를 쓰는 게임은 목록에 `'morph'`를 넣는다. 내 상태는 `myMorph()`.
-- 선택 칸(19절): `fromRoster`(가진 영웅 = 변신 목록), `stats(card)`(카드의 능력치로 바꾸는 방식), `mods(def, grow)`(키운 만큼). 정의의 언어마다의 이름·소개는 `CharDef.text`.
+- 선택 칸(20절): `fromRoster`(가진 영웅 = 변신 목록), `stats(card)`(카드의 능력치로 바꾸는 방식), `mods(def, grow)`(키운 만큼). 정의의 언어마다의 이름·소개는 `CharDef.text`.
 
 ```ts games/sample/shared/content/index.ts
 export const MORPH_RULES: MorphRules = {
@@ -2361,7 +2363,7 @@ setGuestReminder({ afterMin: 20 });
 예제(모닥불 사냥터)는 다 켰다:
 
 ```ts games/sample/shared/content/index.ts
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
 ```
 
 ```ts games/sample/shared/content/index.ts
@@ -2413,7 +2415,115 @@ addTextFilter((text, where) => where === 'chat' && /https?:\/\//i.test(text)); /
 - 저장: SQLite 스키마 4 (`blocks`, `friends`, `social_prefs`). 3인 DB를 열면 더한다. 내 데이터 내보내기에 `social`(차단한 사람, 친구, 설정)이 들고, 지우면 그 저장 키의 줄을 모두 지운다(차단한 것과 당한 것).
 - 설정 칸은 `addSetting`의 `group`(새 칸)으로 '대화' 머리 아래에 모인다. 게임의 칸도 `group`을 주면 그 머리로 간다.
 
-## 19. 한 캐릭터로 두 게임을 오가기: `modes` 모듈과 함께 쓰는 칸
+## 19. 운영 도구와 고객지원: 분석 사건, 웹 관리 화면, 문의·제재 이의, 계정 단위 롤백, 봇 의심 점수, 경보
+
+[genre-features.md](genre-features.md) 5.5절의 묶음 5. 서버 쪽은 `engine/server/game/systems/analytics.ts`(분석 사건)·`engine/server/net/stats.ts`(집계)·`net/admin.ts`(역할과 웹 관리 화면의 문)·`net/admin-page.ts`(페이지)·`net/support.ts`(문의)·`net/rollback.ts`(롤백)·`net/suspect.ts`(의심 점수)·`net/alerts.ts`(경보)·`net/opstools.ts`(그 관리자 명령), 화면은 `engine/client/hud/support.ts`, 저장은 SQLite 스키마 목록의 끝 단계(`events`, `tickets`, `player_stash`). **고르지 않거나 적지 않으면 게임의 동작은 지금과 같다**: 분석 사건은 쌓기만 하고(게임의 상태·난수·전송을 바꾸지 않는다: 등불지기 황금 실행이 바이트까지 같다), 경보는 웹훅 주소가 없으면 재기만 한다. 등불지기에 새로 보이는 것은 설정 창의 '문의' 칸과, 막혔을 때의 사유·기간·이의뿐이다(`support` 모듈).
+
+| 무엇 | 핵심/선택 | 켜는 곳 | 기본값 |
+|---|---|---|---|
+| 분석 사건 `g.track` | 핵심 | `startServer`의 `analytics: { keepDays }` (false면 끔) | 켬, 180일 보관 (저장소가 `OpsStore`를 가질 때만: 틀의 저장소 둘은 갖는다) |
+| 집계 (잔존·일별 활성·퍼널) | 핵심 | 관리자 `stats`, `npm run stats` | — |
+| 웹 관리 화면 | 핵심 | `admin.web` (false면 끔) | 켬, 같은 PC에서만 |
+| 역할 (보기 전용·운영·전체) | 핵심 | 토큰 파일 셋 | CLI는 전체 |
+| 문의·제재 이의 | 선택 | 모듈 `support` | 고르지 않음 (등불지기·예제는 골랐다) |
+| 계정 단위 롤백 | 핵심 | 관리자 `rollback` | 자동 백업이 있을 때 |
+| 봇·매크로 의심 점수 | 핵심 | 관리자 `suspects` | 재기만 (막지 않는다) |
+| 경보 | 핵심 | `startServer`의 `alerts`, 환경 변수 `ALERT_WEBHOOK` | 규칙 넷을 재기만 (웹훅 없음) |
+
+### 분석 사건 (`g.track`)
+
+```ts
+g.track('quest_done', { id: 'q3', lv: p.lv }, p); // 이름, 속성, 누가(사람 또는 저장 키. 없으면 서버의 사건)
+```
+
+- 이름은 영문 소문자로 시작하는 소문자·숫자·밑줄 40자. 속성은 8개까지, 값은 **수·참거짓·짧은 표(영문자·숫자·`_.:-` 40자)만** 받는다: 띄어쓰기나 한글이 든 글(대화, 이름, 문의 글 같은 자유 문장)은 그 칸을 빼고 센다(`g.analytics.rejected`, 지표 `game_analytics_rejected_total`). 봇의 사건은 적지 않는다.
+- 서버에서만 적는다: 화면은 사건을 보내지 않는다(광고 차단기에 막히지 않고, 화면을 고쳐 숫자를 부풀리지 못하게). 통신 계층이 저장 주기에 가져가 **캐릭터·월드 저장과 같은 묶음**으로 `events` 표(저장 키, 접속 표, UTC 시각, 이름, 속성 JSON)에 얹는다. 접속 표(`sess`)는 접속 한 번마다의 무작위 12자로, 저장 키를 가리키지 않는다.
+- 틀이 주는 기본 사건: `session_start`(`first`, `lv`, 자리 비움 사냥을 이어받았으면 `away`), `session_end`(`sec`: 접속해 있던 초, `lv`), `first_join`(저장 키가 처음 들어왔다: 저장되지 않은 새 캐릭터라도 한 번만), `level_up`(`lv`: growth 모듈). 문의 모듈은 `support_ticket`·`support_answer`(`kind`만: 글은 싣지 않는다). 그 밖은 게임이 제 이름으로 더한다.
+- 보관 기간이 지난 줄은 한 시간마다 지운다. 내 데이터 삭제(`erase`)는 그 저장 키의 사건도 지운다.
+
+### 집계
+
+관리자 `stats [daily | retention | funnel 사건,사건,…] [--days n]`, 또는 서버 밖에서 `npm run stats -- [게임] daily|retention|funnel … [--days n] [--db 경로] [--json]`(저장 파일을 읽기 전용으로 연다: 서버가 켜져 있어도 된다). 날은 UTC로 가른다.
+
+- **잔존**: `first_join`의 날로 무리를 짓고, 그 무리가 1·7·30일 뒤에 `session_start`를 남긴 비율. 아직 오지 않은 날의 칸은 비운다. 끝 줄은 그 칸에 닿은 무리만 모은 합계.
+- **일별 활성**: 그날 접속한 저장 키 수, 새로 온 수, 접속 수, 접속 길이의 중간값(초).
+- **퍼널**: 사건의 차례를 저장 키마다 시각 순으로 따라가 몇이 어디까지 갔는지(앞 단계보다 먼저 일어난 것은 세지 않는다). 튜토리얼 단계(`addTutorial`)를 사건으로 남기면 그대로 퍼널이 된다.
+
+### 웹 관리 화면
+
+`npm run admin -- ui [view|ops|full]`이 `http://127.0.0.1:<포트>/admin/ui#t=<토큰>`을 찍는다. 서버를 켠 PC의 브라우저에서 연다. 탭은 개요(접속·열린 문의·통로 밖 변화·틱, 경보, 기능 깃발 켜고 끄기, 공지 올리기), 사람(내보내기·말 막기, 찾기), 분석(일별 활성·잔존·퍼널), 장부, 문의(목록·답·닫기), 의심 점수, 롤백(목록 → 미리보기 → 실행), 명령(CLI와 같은 명령을 그대로). 화면은 한국어·영어(틀의 언어 파일의 `koAdminPage`·`enAdminPage`), 명령이 돌려주는 글은 CLI와 같은 한국어다. 빌드가 필요 없는 HTML 한 장이고 바깥의 것을 아무것도 읽지 않는다.
+
+**문** (권한 검사는 `net/admin.ts` 한 곳: CLI와 화면이 같은 명령, 같은 `roleFor`를 지난다):
+
+- 같은 PC에서 직접 온 연결만(127.0.0.1·::1), 터널·프록시의 머리(`CF-Connecting-IP`, `CF-Ray`, `X-Forwarded-For` …)가 하나라도 있으면 없는 주소처럼 404. cloudflared 같은 공개 터널은 같은 PC에서 들어오지만 머리를 붙이므로 걸린다.
+- `Host`가 `127.0.0.1`·`localhost`·`[::1]`이어야 한다(공개 주소의 Host로 오면 404). `Origin`이 있으면 그 Host와 같은 출처, `Sec-Fetch-Site`가 있으면 `same-origin`(페이지를 열 때는 `none`도). API의 본문은 `application/json`이라 다른 출처의 페이지는 미리 묻는 요청 없이 보낼 수 없고, 여기는 그것에 답하지 않는다.
+- 페이지는 CSP(`default-src 'none'`, `connect-src 'self'`)와 `frame-ancestors 'none'`·`X-Frame-Options: DENY`로 낸다. 토큰은 주소의 `#` 뒤로 받아(서버로 가지 않는다) 그 탭의 `sessionStorage`에만 두고 주소에서 지운다. 웹에서 한 명령의 기록은 `web:역할`로 남는다.
+- CLI의 길(`POST /admin`)은 예전처럼 브라우저의 머리를 모두 거절한다.
+
+**역할**: 서버가 켜질 때 저장 파일 옆에 토큰 셋을 만든다(`admin.token` 전체, `admin-ops.token` 운영, `admin-view.token` 보기 전용. 끌 때 지운다). 보기 전용은 목록·조회·분석·장부·미리보기, 운영은 그에 더해 내보내기·말 막기·차단·공지·점검·깃발·문의 답, 전체는 지급·회수·원격 설정 값·데이터 삭제·금칙어 바꾸기·롤백 실행·보상 우편. 표에 없는 명령(게임이 더한 것)은 전체다.
+
+### 문의·제재 이의 (`support` 모듈)
+
+```ts
+export const MODULES: readonly ModuleId[] = [...RPG_MODULES, 'support'];
+```
+
+- 설정 창의 '문의' 칸: 걸린 말 막기(사유·기간)와 '이의 신청', '문의하기'(질문·오류 신고), 내 문의(상태: 답을 기다림·답변·닫힘, 운영자의 답). 문의 창은 종류, 내용(500자, 글자 수), 보내기.
+- 글은 금칙어를 가린 뒤 적는다(textfilter의 `mask`). 5자 이상, 한 사람이 1분에 한 건, 열린 문의 셋까지, 하루 열 건까지. 손님(저장 키 없음)은 답을 받을 곳이 없어 받지 않는다. 이의는 걸린 제재마다 열린 것 하나이고, 그때의 제재(종류·끝·사유)가 문의에 붙는다.
+- **차단된 사람**은 게임에 들어올 수 없다: 접속하면 닫기 전에 `sanction` 메시지(사유·끝 시각·이의를 냈는가·이의의 답)가 와서 접속 화면에 보이고, '이의 신청'은 따로 된 연결 하나를 열어 접속 메시지에 이의 글(`join.appeal`)을 싣는다. 서버는 받아 두고(같은 빈도 제한) 다시 닫는다.
+- 관리자: `tickets [open|answered|closed|live|all] [수]`, `ticket 번호`, `answer 번호 답글`(접속해 있으면 곧바로 안내문 `supportAnswered`와 목록, 우편 모듈이 있으면 알림 우편 `support`), `tclose 번호 [메모]`, `treopen 번호`. 지표 `game_tickets_open`.
+- 저장: `tickets` 표. 내 데이터 삭제는 문의의 이름·키를 지우고 글은 남긴다(이의·답변의 기록).
+
+### 계정 단위 롤백
+
+자동 백업(`store/backup.ts`의 `backup/auto-…db`)에서 한 저장 키의 캐릭터 저장만 읽어 그 사람만 그 시점으로 되돌린다. 차례는 미리보기 → 확인 → 실행이다.
+
+```
+npm run admin -- rollback list 이름                 백업마다 그 사람의 레벨·재화·가방 한 줄
+npm run admin -- rollback preview 이름 latest       지금과의 차이, 장부(그 사이의 통로 밖 변화), 월드에 있는 그 사람의 몫, 확인 코드
+npm run admin -- rollback apply 이름 auto-….db 코드  실행 (전체 역할)
+npm run admin -- rollback stash 이름                되돌리기 전의 상태들 / rollback undo 이름 번호 코드: 그것으로 다시
+```
+
+실행은 접속 중이면 먼저 끊고(안내문 `rolledBack`, 그때 저장된다), 지금 상태를 `player_stash`에 보관한 뒤 백업의 저장을 적는다. 마지막 저장 시각은 지금으로 둔다(쉬는 동안의 보상이 백업 뒤의 시간만큼 생기지 않게). 되돌린 재화의 차이는 장부에 원인 `rollback`으로 적힌다. **되돌리지 않는 것**: 월드에 있는 그 사람의 몫(맡아 둔 우편, 거래소에 올린 물건, 길드: `engine/server/game/personal.ts`에 등록된 것)과 이미 남에게 건너간 것. 미리보기가 그 이름을 알린다.
+
+장부(`systems/ledger.ts`)는 날짜별 줄에 더해 **통로 밖의 변화(원인 other·tick)를 사람과 함께** 최근 500건 남긴다(`g.ledger.strayList(키)`, 서버가 켜져 있는 동안만). 관리자 `ledger [일수] [이름]`과 화면의 '장부'가 그것과 날짜별 줄을 보인다.
+
+### 봇·매크로 의심 점수
+
+통신 계층이 게임 명령을 받을 때마다 사람(저장 키, 손님은 주소)의 최근 120개 명령으로 분당 명령 수·간격의 변동 계수·같은 명령의 몫·쉬지 않고 이어진 시간을 재어 0~100점을 낸다(`net/suspect.ts`의 `scoreOf`). 50점 이상은 '살펴볼 것'으로 표시만 한다: **자동으로 막지 않는다**. 같은 단추를 연타하는 사람도 높게 나올 수 있으므로 점수는 신고·장부와 함께 보는 근거다. 관리자 `suspects [수]`, 화면의 '의심 점수'.
+
+### 경보
+
+`/metrics`의 값(`net/ops.ts`의 `metricValues`)에 규칙을 걸어 넘으면 웹훅에 JSON 한 덩어리를 보낸다(`{ text, content, rule, metric, value, limit, state, at }`: Slack·Discord의 들어오는 웹훅이 `text`·`content`를 읽는다). 규칙: `{ name, metric, op, value, forS?, delta? }`(`delta`는 늘어나는 수에 걸 때 지난번 잰 뒤로 늘어난 양을 본다). 틀의 기본 규칙 넷: 틱 95%가 40ms를 60초 넘음, 저장 실패, 백업 실패, 통로 밖의 재화 변화(`game_econ_stray_total`이 늘어남: 복제 버그의 신호). 한 규칙은 넘은 채로 있는 동안 한 번만 알리고(그 뒤 `repeatMin`마다 '아직'), 내려오면 '풀림'을 한 번. **웹훅 주소를 주지 않으면 아무 데도 보내지 않는다**(기본). 운영 서버(`runServer`)는 환경 변수 `ALERT_WEBHOOK=https://…`로 켜고 `ALERT_REPEAT_MIN`으로 되풀이 간격을 바꾼다. 분석 사건은 `ANALYTICS=0`으로 끄고 `ANALYTICS_KEEP_DAYS`로 보관 일수를 바꾼다. 관리자 `alerts`(규칙과 상태), `alerts test`(시험 알림).
+
+### 사고 대응 순서 (복제 버그를 예로)
+
+시험 `engine/test/fx/opstools.test.ts`의 7번이 이 차례를 그대로 돈다.
+
+1. **알아챔**: 경보 `econ_stray`가 웹훅에 오거나, `ledger`·화면의 '장부'에서 원인 `other`·`tick` 줄을 본다. 통로 밖의 변화는 누구에게서 났는지가 함께 나온다.
+2. **번지지 않게**: 거래가 얽혔으면 킬 스위치 — `flag market off`, `flag mail off`(필요하면 `flag join off`나 `maint now`). 공지로 알린다: `notice add --popup --ticker --for 2h --ko … --en …`.
+3. **원인 확인**: `find 이름`, `ledger 7 이름`, `reports`, `suspects`, `audit`. 코드의 버그면 고치고 서버를 다시 켠다([infra.md](infra.md)의 재시작).
+4. **그 사람만 되돌림**: `rollback list 이름` → `rollback preview 이름 <버그 전의 백업>`(차이와 장부를 본다) → `rollback apply 이름 <백업> <코드>`. 월드에 있는 몫(맡아 둔 우편·거래소 물건)은 미리보기가 알리는 대로 따로 본다. 잘못 되돌렸으면 `rollback undo`.
+5. **보상**: 멈춘 동안의 보상은 `mail --all --days 7 --gold 200`(우편 종류 `comp`: 장부에 `mail:comp`로 적힌다). 한 사람에게는 `mail 이름 …`.
+6. **다시 엶과 알림**: `flag market on`, `flag mail on`, 공지를 고쳐 올린다. 관련 문의(`tickets`)에 답한다.
+
+### 메시지와 저장
+
+- 화면 → 서버: `support`(list, new: kind·text), `join`의 `appeal`(차단된 사람의 이의).
+- 서버 → 화면: `support`(list: 내 문의·걸린 말 막기·이의를 냈는가 / sent: 번호), `sanction`(막힌 접속: 사유·끝·이의·답). 안내문 10가지(`supportSent` … `rolledBack`). 우편 종류 `support`·`comp`.
+- 저장: SQLite 스키마 목록의 끝 단계(`events`, `tickets`, `player_stash`). 앞 단계의 DB를 열면 더한다. 시험은 번호를 적지 않고 목록의 길이로 본다(다른 가지의 단계와 합치면 번호가 바뀐다).
+- 지표: `game_econ_stray_total`, `game_analytics_rejected_total`, `game_tickets_open`.
+
+### 남은 것
+
+- 관리 화면의 명령 결과 글은 한국어뿐이다(화면의 틀만 두 언어). 표로 그리는 값은 언어와 상관없다.
+- 롤백은 캐릭터 저장만 되돌린다. 월드에 맡아 둔 우편·거래소 물건·길드 창고를 한 사람 몫만 되돌리는 것은 아직 없다(미리보기가 이름만 알린다).
+- 통로 밖의 변화의 '누구'는 서버가 켜져 있는 동안만 남는다(날짜별 줄은 저장된다).
+- 의심 점수는 간단한 통계뿐이다(이동 궤적·반응 시간·여러 계정의 같은 주소 같은 것은 없다). 서버를 다시 켜면 비워진다.
+- 분석의 날은 UTC로만 가른다(초기화 시각 `RESET`의 시간대가 아니다). 코호트를 바꾸는 선택(첫 결제, 레벨)은 없다.
+- 경보는 웹훅 하나다. 규칙은 `startServer`의 `alerts.rules`로만 준다(`runServer`는 틀의 기본 규칙. 관리자 명령·환경 변수로 바꾸지 않는다). 메일·문자는 없다.
+## 20. 한 캐릭터로 두 게임을 오가기: `modes` 모듈과 함께 쓰는 칸
 
 한 서버·한 캐릭터 안에 '두 게임'(예: 들판의 MMORPG와 단계의 수집형)을 두고 화면의 **'게임 바꾸기'** 단추로 오가는 게임을 만든다. 소유(영웅·재화·장비·변신)는 한 캐릭터의 것이라 저절로 하나이고, 모드가 정하는 것은 **서 있는 곳과 화면**이다. 본보기는 `games/echopact` "메아리 계약"([proof-echopact.md](proof-echopact.md)). 모든 칸은 기본으로 꺼져 있다: 고르지 않은 게임은 예전과 같다(`RPG_MODULES`에도 들지 않는다).
 

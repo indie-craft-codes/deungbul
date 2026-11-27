@@ -22,6 +22,7 @@
     "load": "tsx games/deungbul/test/load.ts",
     "load:game": "node scripts/load.mjs",
     "econ": "tsx games/deungbul/scripts/econ.ts",
+    "stats": "tsx scripts/stats.ts",
     "build:sample": "node scripts/game.mjs build sample",
     "dev:sample": "concurrently -n server,client -c yellow,cyan \"node scripts/game.mjs watch sample\" \"node scripts/game.mjs client sample\"",
     "start:sample": "node scripts/game.mjs start sample",

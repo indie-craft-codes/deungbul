@@ -29,6 +29,13 @@ import { guestServerAuth, type ServerAuth } from './auth';
 import { createWeb, type Web } from './web';
 import { startStatus, type StatusOptions } from './status';
 import { createSocial, type Social } from './social';
+import { hasOps, type EventRow } from '../store';
+import { startAlerts, type AlertOptions, type Alerts } from './alerts';
+import { metricValues, type OpsNow } from './ops';
+import { opsTools } from './opstools';
+import { rollbackCommands } from './rollback';
+import { Suspects } from './suspect';
+import { createSupport, type Support } from './support';
 
 const MAX_CLIENTS = 300; // 기본 상한. 근거는 docs/infra.md의 측정 결과
 const MSG_BURST = 40; // 클라이언트 하나가 한꺼번에 보낼 수 있는 메시지 수
@@ -68,6 +75,8 @@ interface Client {
   ip: string;
   /** 저장된 캐릭터가 있었는가. 없던 사람은 직업을 고르기 전에는 저장하지 않는다 */
   hadSave: boolean;
+  /** 분석 사건의 접속 표와 들어온 시각 (운영 도구: 접속 길이) */
+  sess?: string; joinAt?: number;
 }
 
 /**
@@ -143,6 +152,10 @@ export interface Options {
   auth?: ServerAuth;
   /** 상태 페이지 (./status.ts): 이 폴더에 status.json과 status.html을 쓴다. 주지 않으면 쓰지 않는다 (틀의 runServer는 빌드된 화면의 폴더에 쓴다) */
   status?: StatusOptions | false;
+  /** 분석 사건 (engine/server/game/systems/analytics.ts): 보관 일수(기본 180). false면 적지 않는다. 저장소가 사건을 적지 못하면(OpsStore가 없음) 늘 적지 않는다 */
+  analytics?: { keepDays?: number } | false;
+  /** 경보 (./alerts.ts): 지표의 임계값 → 웹훅. 웹훅 주소를 주지 않으면 재기만 한다. false면 재지도 않는다 */
+  alerts?: AlertOptions | false;
 }
 
 export function startServer(port: number, opts: Options = {}): Promise<Running> {
@@ -156,6 +169,14 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   /** 고른 모듈 (engine/shared/modules.ts): 핵심이 모듈의 시스템을 부르기 전에 묻는다 */
   // 경제 장부는 economy 모듈을 고르고 저장소가 장부를 적을 수 있을 때만 (store/types.ts의 EconStore)
   const ledgerStore = game.has('economy') && hasEcon(store) ? store : null;
+  // 분석 사건 (운영 도구): 저장소가 사건을 적을 수 있고 끄지 않았을 때만. 아니면 쌓지도 않는다
+  const opsStore = opts.analytics !== false && hasOps(store) ? store : null;
+  game.analytics.on = !!opsStore;
+  const keepDays = Math.max(1, (opts.analytics || {}).keepDays ?? 180);
+  /** first_join을 적었거나 이미 있던 저장 키 (사건 표를 다시 묻지 않게) */
+  const firstSeen = new Set<string>();
+  /** 봇·매크로 의심 점수 (./suspect.ts): 게임 명령의 빈도와 간격 */
+  const suspects = new Suspects();
   const econ = !!ledgerStore, awayOn = game.has('away');
   const handoff = new Handoff(game); // 기기 옮기기: 월드 저장에 자기 칸을 두므로 월드를 읽기 전에 만든다
   const auth = opts.auth ?? guestServerAuth(handoff);
@@ -232,12 +253,22 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   const statics: http.RequestListener = dist === null ? (_req, res) => { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('not found'); } : serveStatic(dist);
   // 관리자 통로(POST /admin)가 먼저 보고, 아니면 정적 파일. 통로는 아래에서 연결 목록을 다룰 함수들이 다 생긴 뒤에 만든다
   let admin: Admin | null = null;
-  const httpServer = http.createServer(opsHandler(ops, () => {
+  /** 지표의 지금 값 (/healthz, /metrics, 경보) */
+  const opsNow = (): OpsNow => {
     let openWire = 0, online = 0;
     for (const so of sockets) openWire += so.bytesWritten;
     for (const c of clients) if (c.ent) online++;
-    return { clients: online, away: away.size, entities: game.ents.size, openWire, backup: backups, compress };
-  }, (req, res) => { if (!admin?.route(req, res) && !web?.route(req, res)) statics(req, res); }));
+    return {
+      clients: online, away: away.size, entities: game.ents.size, openWire, backup: backups, compress,
+      // 운영 도구: 통로 밖의 재화 변화(복제 버그의 신호), 받지 않은 분석 사건, 열린 문의
+      extra: [
+        ['game_econ_stray_total', econ ? game.ledger.strayCount : 0, '통로 밖의 재화 변화 (장부의 other·tick: 0이어야 한다)'],
+        ['game_analytics_rejected_total', game.analytics.rejected, '모양이 아니어서 받지 않은 분석 사건·속성'],
+        ['game_tickets_open', support?.openCount() ?? 0, '답을 기다리는 문의 (support 모듈)'],
+      ],
+    };
+  };
+  const httpServer = http.createServer(opsHandler(ops, opsNow, (req, res) => { if (!admin?.route(req, res) && !web?.route(req, res)) statics(req, res); }));
   // 압축은 작은 메시지(이동 한 번)에는 걸지 않는다: 줄어드는 것보다 드는 CPU가 크다. 압축은 libuv의 일꾼 스레드에서 돌아 틱의 스레드는 오히려 덜 쓴다
   // 출처 검사: 목록을 주었을 때만 verifyClient를 단다 (주지 않으면 ws의 기본 그대로: 예전과 같다). 걸린 연결은 손잡기에서 403
   const originCheck = opts.origins?.list?.length ? { verifyClient: (info: { origin: string }) => originAllowed(info.origin || undefined, opts.origins) } : {};
@@ -289,13 +320,15 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   /** 모은 것(월드, 캐릭터, 재화 흐름 지표의 줄)을 한 묶음으로 적는다. 적혔으면 true. 실패하면 하나도 적히지 않고, 지표의 줄은 되돌려 다음에 다시 얹는다 */
   function writeAll(list: (Pending | null)[], world?: WorldSave): boolean {
     const rows = econ ? game.ledger.drain() : [];
+    const evs: EventRow[] = opsStore ? game.analytics.drain() : [];
     try {
       store.transaction(() => {
         if (world) store.saveWorld(world);
         for (const p of list) if (p) store.savePlayer(p.key, p.save);
         if (rows.length) ledgerStore?.addEcon(rows);
+        if (evs.length) opsStore?.addEvents(evs);
       });
-    } catch (err) { if (econ) game.ledger.giveBack(rows); saveFailed(world ? '월드와 캐릭터 저장' : '캐릭터 저장', err); return false; }
+    } catch (err) { if (econ) game.ledger.giveBack(rows); if (evs.length) game.analytics.giveBack(evs); saveFailed(world ? '월드와 캐릭터 저장' : '캐릭터 저장', err); return false; }
     for (const p of list) p?.done();
     ops.lastSaveAt = Date.now();
     econSnapshot();
@@ -352,7 +385,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (key === undefined) { c.key = null; send(c, sys('handedOff')); c.ws.close(CLOSE.handedOff, 'moved'); return; }
     c.key = key;
     const ban = game.sanctions.banned(c.key, c.ip);
-    if (ban) { send(c, sys('banned', Sanctions.minutesLeft(ban, game.now()))); c.ws.close(CLOSE.banned, 'banned'); c.key = null; return; }
+    if (ban) { send(c, sys('banned', Sanctions.minutesLeft(ban, game.now()))); support.atBan(c, m, ban); c.ws.close(CLOSE.banned, 'banned'); c.key = null; return; }
     // 점검 중에는 관리자(점검 중 입장으로 적은 저장 키)만, 깃발 join이 꺼져 있으면 관리자 말고는 새로 들어오지 못한다
     const boss = game.live.isAdmin(c.key);
     if (game.live.maintOn() && !boss) { const v = game.live.maintView(); if (v) send(c, { t: 'maint', ...v }); c.ws.close(CLOSE.maint, 'maint'); c.key = null; return; }
@@ -372,17 +405,20 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         byEnt.set(kept.id, c);
         kept.dirty = true; kept.metaDirty = true;
         game.away.stop(kept);
+        startSession(c, false, kept);
         send(c, { t: 'welcome', id: kept.id, name: kept.name, x: r2(kept.x), z: r2(kept.z), auto: true, v: PROTOCOL, ...welcomeMin });
         send(c, { t: 'world', s: game.state() });
         sendOps(c);
         if (game.has('party')) game.party.resend(kept.id);
         game.channels.tell(kept); // 있던 채널 그대로다: 화면에 다시 알린다
         social.joined(c);
+        support.joined(c);
         return;
       }
     }
     const save = c.key ? store.loadPlayer(c.key) : null;
     c.hadSave = !!save;
+    startSession(c, !save);
     // 이름: 저장된 이름이 먼저다. 없으면 클라이언트가 제안한 이름, 그것도 없으면 중립적인 이름
     const ok = (s: string) => (isClean(s) ? s : ''); // 금칙어가 든 이름은 쓰지 않는다
     let name = ok(tidyName(save?.name)) || ok(tidyName(m.name)) || GUEST_NAME + (1000 + Math.floor(Math.random() * 9000));
@@ -398,8 +434,29 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (awayOn && save && c.ent.cls !== '' && game.field(c.ent, 'lv') >= AWAY_MIN_LV && game.away.left(c.ent) <= 0) game.notify(c.ent, 'awayLimit', AWAY.maxS / 3600);
     broadcast(sys('joined', name));
     social.joined(c); // 차단 목록, 대화 상태, 친구 (./social.ts)
+    support.joined(c); // 답이 온 문의 (./support.ts)
+    game.track('session_start', { first: !save, lv: game.field(c.ent, 'lv') }, c.key ?? '');
     saveTogether(); // 접속하며 받은 것(맡아 둔 우편)이 월드에서 빠진 것과 함께 저장되게
     savePlayer(c);
+  }
+
+  /**
+   * 분석 사건의 접속 하나를 연다: 무작위 접속 표(저장 키를 가리키지 않는다)와 들어온 시각. 처음 온 저장 키면 first_join.
+   * 자리 비움 사냥을 이어받은 접속(kept)은 session_start를 여기서 적는다 (새로 만드는 쪽은 캐릭터를 만든 뒤에 적는다)
+   */
+  function startSession(c: Client, fresh: boolean, kept?: Ent): void {
+    c.sess = globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 12); c.joinAt = clock();
+    if (!c.key) return;
+    game.analytics.session(c.key, c.sess);
+    // 처음 온 저장 키: 한 번만 (아무것도 하지 않아 저장되지 않은 새 캐릭터는 다음에도 '저장 없음'이라 사건 표로 가린다)
+    if (fresh && opsStore && !firstSeen.has(c.key)) {
+      let had = false;
+      try { had = opsStore.hasEvent(c.key, 'first_join'); } catch { /* 모르면 적는다 */ }
+      if (firstSeen.size > 200_000) firstSeen.clear();
+      firstSeen.add(c.key);
+      if (!had) game.track('first_join', {}, c.key);
+    }
+    if (kept) game.track('session_start', { first: false, lv: game.field(kept, 'lv'), away: true }, c.key);
   }
 
   /** 접속 직후에 운영의 것을 보낸다: 화면에도 보내는 원격 설정, 지금 보이는 공지, 예고했거나 진행 중인 점검. 없는 것은 보내지 않는다 (예전과 같은 줄) */
@@ -514,10 +571,14 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     else if (m.t === 'chat') chat(c, e, m);
     else if (m.t === 'report') report(c, e, m);
     else if (m.t === 'handoff') handoffMsg(c, m);
+    else if (support.handle(c, e, m)) { /* 문의·제재 이의 (./support.ts, support 모듈) */ }
     else if (web.handle(c, e, m)) { /* 탭 숨김·약관 동의·내 데이터 (./web.ts) */ }
     else if (social.handle(c, e, m)) { /* 차단·친구·대화 설정과 연령 (./social.ts) */ }
     else if (social.gate(c, e, m)) { /* 제한 모드에서 막는 명령 (자유 대화인 길드 대화, AGE.restrict) */ }
-    else game.command(e, m); // 나머지는 게임 명령
+    else {
+      if (typeof m.t === 'string' && game.commands.has(m.t)) suspects.see(who(c), e.name, m.t, clock()); // 봇·매크로 의심 점수 (./suspect.ts): 재기만 한다
+      game.command(e, m); // 나머지는 게임 명령
+    }
   }
 
   /** 연결을 정리한다. 두 번 불려도 안전하다. */
@@ -525,6 +586,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     if (!clients.delete(c)) return;
     if (c.key && byKey.get(c.key) === c) byKey.delete(c.key);
     if (c.ent) {
+      if (c.key && c.joinAt !== undefined) { game.track('session_end', { sec: Math.round((clock() - c.joinAt) / 1000), lv: game.field(c.ent, 'lv') }, c.key); if (byKey.get(c.key) === undefined) game.analytics.session(c.key, null); }
       web.left(c); // 자리 비움이었으면 풀렸다고 알린다
       game.fire('playerDropped', c.ent); // 던전 안이었으면 문 앞으로 나온 뒤에 저장한다
       saveTogether(); // 방금 한 거래가 월드에만(또는 캐릭터에만) 저장된 채로 남지 않게
@@ -572,7 +634,12 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     save: () => { game.saveDirty = true; saveTogether(); },
     social: { exportOf: (key) => social.exportOf(key), erased: (key) => social.erased(key) },
   });
-  const eraseTimer = setInterval(() => { try { web.sweep(); } catch (err) { log.error('[server] 삭제 요청 살피기 실패:', err); } }, 60_000);
+  let pruneAt = 0;
+  const eraseTimer = setInterval(() => {
+    try { web.sweep(); } catch (err) { log.error('[server] 삭제 요청 살피기 실패:', err); }
+    // 분석 사건의 보관 기간 (opts.analytics.keepDays): 한 시간에 한 번 오래된 것을 지운다
+    if (opsStore && Date.now() - pruneAt > 3_600_000) { pruneAt = Date.now(); try { const n = opsStore.pruneEvents(game.now() - keepDays * 86_400_000); if (n) log.info(`[server] 보관 기간(${keepDays}일)이 지난 분석 사건 ${n}줄을 지웠습니다`); } catch (err) { log.error('[server] 분석 사건 정리 실패:', err); } }
+  }, 60_000);
   setTimeout(() => { if (!stopped) try { web.sweep(); } catch (err) { log.error('[server] 삭제 요청 살피기 실패:', err); } }, 0);
   /** 점검이 시작됐다: 모두를 저장하고, 관리자 말고는 안내와 함께 끊는다. 자리 비움 사냥 중인 캐릭터도 저장하고 내보낸다 (자동 사냥은 켜 둔 채: 돌아오면 이어진다) */
   game.on('maintStarted', () => {
@@ -597,14 +664,37 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
    * 일괄 우편 (관리자의 maint end의 보상): 저장된 캐릭터 모두(sinceMs를 주면 그 시각 뒤에 저장된 것만)에게 우편을 보낸다. 접속해 있지 않은 사람은 월드에 맡아 둔다 (우편 모듈의 sendTo).
    * 보낸 수. 우편 모듈이 없거나 저장 키로 훑을 수 없는 저장소면 -1
    */
-  function mailAll(reward: Reward, sinceMs: number): number {
+  function mailAll(reward: Reward, sinceMs: number, kind: 'maint' | 'comp' = 'maint'): number {
     if (!game.has('mail') || !store.eachPlayerKey) return -1;
     let n = 0;
-    store.eachPlayerKey((key, p) => { if (sinceMs && (p.seen ?? 0) < sinceMs) return; game.mail.sendTo(key, 'maint', [], reward); n++; });
+    store.eachPlayerKey((key, p) => { if (sinceMs && (p.seen ?? 0) < sinceMs) return; game.mail.sendTo(key, kind, [], reward); n++; });
     game.saveDirty = true;
     saveTogether();
     return n;
   }
+
+  // 문의·제재 이의 (./support.ts: support 모듈. 고르지 않으면 메시지를 무시한다)
+  const support: Support = createSupport({ game, store, now: clock, send, byKey: (key) => byKey.get(key), track: (name, props, key) => game.track(name, props, key) });
+  /** 경보 (./alerts.ts): 지표의 임계값 → 웹훅 (주소가 없으면 재기만) */
+  const alerts: Alerts | null = opts.alerts === false ? null : startAlerts(opts.alerts ?? {}, () => metricValues(ops, opsNow()));
+  /** 사람을 찾는다: 접속 중이면 그 사람, 아니면 저장된 캐릭터 (운영 도구의 명령) */
+  const findPerson = (name: string): { key: string | null; name: string; online: boolean } | null => {
+    const low = name.toLowerCase();
+    for (const c of clients) if (c.ent && c.ent.name.toLowerCase() === low) return { key: c.key, name: c.ent.name, online: true };
+    for (const [key, e] of away) if (e.name.toLowerCase() === low) return { key, name: e.name, online: true };
+    const key = name ? store.keyOfName(name) : null;
+    return key ? { key, name: store.loadPlayer(key)?.name ?? name, online: false } : null;
+  };
+  /** 운영 도구의 관리자 명령 (분석, 장부, 의심 점수, 경보, 보상 우편, 지표: ./opstools.ts)과 롤백 (./rollback.ts) */
+  const toolCmds = {
+    ...opsTools({ game, store, suspects, alerts, metrics: () => metricValues(ops, opsNow()), find: findPerson, mailAll, save: () => { game.saveDirty = true; saveTogether(); } }),
+    ...rollbackCommands({
+      game, store, find: findPerson,
+      dir: () => { const file = (store as Store).file; return backups?.dir ?? (file ? path.join(path.dirname(file), 'backup') : null); },
+      drop: (key, k, ...a) => dropBy({ key }, CLOSE.kicked, k, ...a),
+      live: (key) => { const c = byKey.get(key); const e = c?.ent ?? away.get(key); return e ? game.players.export(e) : null; },
+    }),
+  };
 
   admin = createAdmin({
     game, store, mailAll,
@@ -613,7 +703,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       ...[...away].map(([key, e]) => ({ name: e.name, key, ip: awayIp.get(key) ?? '', ent: e, away: true })),
     ],
     drop: dropBy, broadcast, save: () => { game.saveDirty = true; saveTogether(); },
-    extra: () => ({ ...web.admin, ...social.admin }),
+    extra: () => ({ ...web.admin, ...social.admin, ...support.admin, ...toolCmds }),
   }, opts.admin);
 
   wss.on('connection', (ws, req) => {
@@ -793,7 +883,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         metrics,
         admin: admin!,
         close: () => new Promise<void>((ok) => {
-          stopped = true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(autosave); clearInterval(eraseTimer); web.close(); backups?.stop(); status?.stop(); status?.write('down');
+          stopped = true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(autosave); clearInterval(eraseTimer); web.close(); backups?.stop(); status?.stop(); status?.write('down'); alerts?.stop();
           admin?.close();
           // 끄기 전에 전원과 월드를 한 묶음으로 저장한다.
           // 다시 켰을 때 이어서 사냥할 캐릭터를 적어 둔다: 자리 비움 사냥 중이던 것과, 자동 사냥을 켠 채 접속해 있던 것(재시작으로 끊긴다)

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, SocialStore, Store, WebStore, WorldSave } from './types';
+import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
 
 /**
  * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
@@ -10,6 +11,8 @@ import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow,
  *   2: 원격 설정(live: 버전 있는 키-값, live_log: 변경 이력, live_meta: 이력 없는 운영 값). 옛 표는 건드리지 않는다
  *   3: 웹 출시의 바탕: 약관 동의(consents), 내 데이터 삭제 요청과 기록(erasures), 화면 오류 묶음(client_errors) (engine/server/net/web.ts)
  *   4: 사회와 안전: 차단(blocks: owner 사람 → target 캐릭터), 친구(friends: 캐릭터 a·b), 대화 설정과 연령(social_prefs: owner 사람) (engine/server/net/social.ts)
+ *   다음: 운영 도구와 고객지원: 분석 사건(events), 문의(tickets), 롤백 전의 보관(player_stash) (engine/server/game/systems/analytics.ts, net/support.ts, net/rollback.ts).
+ *         번호는 목록에서의 자리다 (다른 가지의 단계와 합치면 번호가 바뀔 수 있어 여기 적지 않는다)
  */
 export const SCHEMA: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
@@ -28,10 +31,16 @@ export const SCHEMA: readonly string[] = [
    CREATE TABLE IF NOT EXISTS friends (a TEXT NOT NULL, b TEXT NOT NULL, state TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (a, b));
    CREATE INDEX IF NOT EXISTS friends_b ON friends (b);
    CREATE TABLE IF NOT EXISTS social_prefs (owner TEXT PRIMARY KEY, data TEXT NOT NULL, at INTEGER NOT NULL);`,
+  `CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, key TEXT NOT NULL, sess TEXT NOT NULL, name TEXT NOT NULL, props TEXT NOT NULL);
+   CREATE INDEX IF NOT EXISTS events_at ON events (at);
+   CREATE INDEX IF NOT EXISTS events_key ON events (key, at);
+   CREATE TABLE IF NOT EXISTS tickets (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL, name TEXT NOT NULL, kind TEXT NOT NULL, state TEXT NOT NULL, text TEXT NOT NULL, answer TEXT NOT NULL, by TEXT NOT NULL, at INTEGER NOT NULL, upd INTEGER NOT NULL, sanction TEXT);
+   CREATE INDEX IF NOT EXISTS tickets_key ON tickets (key);
+   CREATE TABLE IF NOT EXISTS player_stash (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL, at INTEGER NOT NULL, by TEXT NOT NULL, note TEXT NOT NULL, data TEXT NOT NULL);`,
 ];
 
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
-export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore {
+export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OpsStore {
   private db: DatabaseSync;
   readonly file: string;
   /** 지금 열린 묶음의 깊이 (transaction의 SAVEPOINT 이름에 쓴다) */
@@ -173,6 +182,10 @@ export class SqliteStore implements Store, EconStore, LiveStore, WebStore, Socia
     this.db.prepare('DELETE FROM blocks WHERE owner = ? OR target = ?').run(key, key);
     this.db.prepare('DELETE FROM friends WHERE a = ? OR b = ?').run(key, key);
     this.db.prepare('DELETE FROM social_prefs WHERE owner = ?').run(key);
+    // 운영 도구: 분석 사건과 롤백 보관은 지운다. 문의는 이름과 키를 지우고 글은 남긴다(이의·답변의 기록)
+    this.db.prepare('DELETE FROM events WHERE key = ?').run(key);
+    this.db.prepare('DELETE FROM player_stash WHERE key = ?').run(key);
+    this.db.prepare("UPDATE tickets SET key = '', name = '' WHERE key = ?").run(key);
   }
   private reportRows(): { id: number; r: ReportSave }[] {
     return this.db.prepare('SELECT id, data FROM reports ORDER BY id').all().map((row) => ({ id: Number(row.id), r: this.parse<ReportSave>(row.data) })).filter((x): x is { id: number; r: ReportSave } => x.r !== null);
@@ -241,7 +254,61 @@ export class SqliteStore implements Store, EconStore, LiveStore, WebStore, Socia
   setSocialPrefs(owner: string, data: Record<string, unknown>, at: number): void {
     this.db.prepare('INSERT INTO social_prefs (owner, data, at) VALUES (?, ?, ?) ON CONFLICT(owner) DO UPDATE SET data = excluded.data, at = excluded.at').run(owner, JSON.stringify(data), at);
   }
+  // ---- 운영 도구와 고객지원 (OpsStore) ----
+  addEvents(rows: EventRow[]): void {
+    if (!rows.length) return;
+    const put = this.db.prepare('INSERT INTO events (at, key, sess, name, props) VALUES (?, ?, ?, ?, ?)');
+    this.transaction(() => { for (const r of rows) put.run(r.at, r.key, r.sess, r.name, JSON.stringify(r.props)); });
+  }
+  events(from: number, to: number, names?: readonly string[]): EventRow[] {
+    const rows = names?.length
+      ? this.db.prepare(`SELECT at, key, sess, name, props FROM events WHERE at >= ? AND at < ? AND name IN (${names.map(() => '?').join(',')}) ORDER BY at, id`).all(from, to, ...names)
+      : this.db.prepare('SELECT at, key, sess, name, props FROM events WHERE at >= ? AND at < ? ORDER BY at, id').all(from, to);
+    return rows.map((r) => ({ at: Number(r.at), key: String(r.key), sess: String(r.sess), name: String(r.name), props: this.parse<EventRow['props']>(r.props) ?? {} }));
+  }
+  hasEvent(key: string, name: string): boolean { return !!this.db.prepare('SELECT 1 AS x FROM events WHERE key = ? AND name = ? LIMIT 1').get(key, name); }
+  pruneEvents(before: number): number { return Number(this.db.prepare('DELETE FROM events WHERE at < ?').run(before).changes); }
+  private ticketRow(r: Record<string, unknown> | undefined): TicketRow | null {
+    if (!r) return null;
+    const kind = r.kind === 'bug' || r.kind === 'appeal' ? r.kind : 'ask', state = r.state === 'answered' || r.state === 'closed' ? r.state : 'open';
+    const sanction = this.parse<TicketRow['sanction']>(r.sanction);
+    return { id: Number(r.id), key: String(r.key), name: String(r.name), kind, state, text: String(r.text), answer: String(r.answer), by: String(r.by), at: Number(r.at), upd: Number(r.upd), ...(sanction ? { sanction } : {}) };
+  }
+  addTicket(t: Omit<TicketRow, 'id'>): number {
+    const r = this.db.prepare('INSERT INTO tickets (key, name, kind, state, text, answer, by, at, upd, sanction) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(t.key, t.name, t.kind, t.state, t.text, t.answer, t.by, t.at, t.upd, t.sanction ? JSON.stringify(t.sanction) : null);
+    return Number(r.lastInsertRowid);
+  }
+  ticket(id: number): TicketRow | null { return this.ticketRow(this.db.prepare('SELECT * FROM tickets WHERE id = ?').get(id)); }
+  putTicket(t: TicketRow): void {
+    this.db.prepare('UPDATE tickets SET key = ?, name = ?, kind = ?, state = ?, text = ?, answer = ?, by = ?, at = ?, upd = ?, sanction = ? WHERE id = ?')
+      .run(t.key, t.name, t.kind, t.state, t.text, t.answer, t.by, t.at, t.upd, t.sanction ? JSON.stringify(t.sanction) : null, t.id);
+  }
+  tickets(q: { state?: TicketRow['state'] | 'live'; key?: string; limit: number }): TicketRow[] {
+    const where: string[] = [], args: (string | number)[] = [];
+    if (q.state === 'live') where.push("state != 'closed'"); else if (q.state) { where.push('state = ?'); args.push(q.state); }
+    if (q.key !== undefined) { where.push('key = ?'); args.push(q.key); }
+    const sql = `SELECT * FROM tickets${where.length ? ' WHERE ' + where.join(' AND ') : ''} ORDER BY id DESC LIMIT ?`;
+    return this.db.prepare(sql).all(...args, q.limit).map((r) => this.ticketRow(r)!);
+  }
+  addStash(r: Omit<StashRow, 'id'>): number {
+    return Number(this.db.prepare('INSERT INTO player_stash (key, at, by, note, data) VALUES (?, ?, ?, ?, ?)').run(r.key, r.at, r.by, r.note, JSON.stringify(r.save)).lastInsertRowid);
+  }
+  stashes(key: string, limit: number): StashRow[] {
+    return this.db.prepare('SELECT * FROM player_stash WHERE key = ? ORDER BY id DESC LIMIT ?').all(key, limit)
+      .map((r) => ({ id: Number(r.id), key: String(r.key), at: Number(r.at), by: String(r.by), note: String(r.note), save: this.parse<PlayerSave>(r.data) ?? { name: '?' } }));
+  }
   close(): void { this.db.close(); }
+}
+
+/** 백업 파일(SqliteStore.backup이 만든 것)에서 캐릭터 한 명의 저장만 읽는다 (계정 단위 롤백: engine/server/net/rollback.ts). 파일은 읽기 전용으로 열고 곧 닫는다. 없으면 null */
+export function readBackupPlayer(file: string, key: string): { save: PlayerSave; updated: number } | null {
+  const db = new DatabaseSync(file, { readOnly: true });
+  try {
+    const r = db.prepare('SELECT data, updated FROM players WHERE key = ?').get(key) as { data?: string; updated?: number } | undefined;
+    if (!r?.data) return null;
+    try { return { save: JSON.parse(r.data) as PlayerSave, updated: Number(r.updated ?? 0) }; } catch { return null; }
+  } finally { db.close(); }
 }
 
 /** 신고 한 건에서 그 저장 키의 이름과 키를 지운 것 (신고한 사람이면 by, 당한 사람이면 target) */

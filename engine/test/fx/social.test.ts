@@ -243,7 +243,7 @@ await server.close();
     old.savePlayer('k1', { name: '하나' });
     old.close();
     const s = new SqliteStore(file);
-    check(s.schemaVersion() === 4 && SCHEMA.length === 4 && s.loadPlayer('k1')?.name === '하나', '스키마 3의 DB를 열면 4(사회와 안전)를 더하고 캐릭터는 그대로');
+    check(s.schemaVersion() === SCHEMA.length && SCHEMA.length >= 4 && s.loadPlayer('k1')?.name === '하나', '스키마 3의 DB를 열면 4(사회와 안전)와 그 뒤의 단계를 더하고 캐릭터는 그대로');
     s.putBlock({ owner: 'k1', char: 'k2', name: '둘', at: 1 });
     s.putFriend({ a: 'k1', b: 'k3', state: 'ask', at: 2 });
     s.putFriend({ a: 'k3', b: 'k1', state: 'ok', at: 3 });

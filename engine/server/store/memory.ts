@@ -1,8 +1,9 @@
 import { anonymize } from './sqlite';
 import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, SocialStore, Store, WebStore, WorldSave } from './types';
+import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
 
 /** 시험용 저장소: 프로세스가 끝나면 사라진다. */
-export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore {
+export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OpsStore {
   private world: WorldSave | null = null;
   private players = new Map<string, PlayerSave>();
   loadWorld(): WorldSave | null { return this.world && structuredClone(this.world); }
@@ -46,7 +47,7 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore, Socia
   setLiveMeta(key: string, value: unknown): void { this.meta.set(key, structuredClone(value)); }
   transaction<T>(fn: () => T): T {
     // 들어갈 때의 모든 것을 떠 두고, 예외가 나면 그것으로 되돌린다 (시험용이라 통째로 떠도 된다). 안에서 다시 불러도 같다
-    const before = { world: this.world, players: new Map(this.players), reportList: [...this.reportList], econRows: new Map([...this.econRows].map(([k, r]) => [k, { ...r }])), snapshots: new Map(this.snapshots), live: new Map(this.live), liveLogRows: [...this.liveLogRows], meta: new Map(this.meta), consents: new Map(this.consents), erasures: new Map(this.erasures), errors: new Map(this.errors), blocks: [...this.blocks], friends: [...this.friends], prefs: new Map(this.prefs) };
+    const before = { world: this.world, players: new Map(this.players), reportList: [...this.reportList], econRows: new Map([...this.econRows].map(([k, r]) => [k, { ...r }])), snapshots: new Map(this.snapshots), live: new Map(this.live), liveLogRows: [...this.liveLogRows], meta: new Map(this.meta), consents: new Map(this.consents), erasures: new Map(this.erasures), errors: new Map(this.errors), blocks: [...this.blocks], friends: [...this.friends], prefs: new Map(this.prefs), eventList: [...this.eventList], ticketList: this.ticketList.map((t) => ({ ...t })), stashList: [...this.stashList] };
     try { return fn(); } catch (err) { Object.assign(this, before); throw err; }
   }
   // ---- 웹 출시의 바탕 ----
@@ -60,6 +61,9 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore, Socia
     this.blocks = this.blocks.filter((r) => r.owner !== key && r.char !== key);
     this.friends = this.friends.filter((r) => r.a !== key && r.b !== key);
     this.prefs.delete(key);
+    this.eventList = this.eventList.filter((r) => r.key !== key);
+    this.stashList = this.stashList.filter((r) => r.key !== key);
+    for (const t of this.ticketList) if (t.key === key) { t.key = ''; t.name = ''; }
   }
   anonymizeReports(key: string): number {
     let n = 0;
@@ -96,5 +100,24 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore, Socia
   delFriend(a: string, b: string): void { this.friends = this.friends.filter((x) => !((x.a === a && x.b === b) || (x.a === b && x.b === a))); }
   socialPrefs(key: string): Record<string, unknown> | null { const v = this.prefs.get(key); return v ? structuredClone(v) : null; }
   setSocialPrefs(key: string, data: Record<string, unknown>): void { this.prefs.set(key, structuredClone(data)); }
+  // ---- 운영 도구와 고객지원 (OpsStore) ----
+  private eventList: EventRow[] = [];
+  private ticketList: TicketRow[] = [];
+  private stashList: StashRow[] = [];
+  addEvents(rows: EventRow[]): void { for (const r of rows) this.eventList.push(structuredClone(r)); }
+  events(from: number, to: number, names?: readonly string[]): EventRow[] {
+    return this.eventList.filter((r) => r.at >= from && r.at < to && (!names?.length || names.includes(r.name))).sort((a, b) => a.at - b.at).map((r) => structuredClone(r));
+  }
+  hasEvent(key: string, name: string): boolean { return this.eventList.some((r) => r.key === key && r.name === name); }
+  pruneEvents(before: number): number { const n = this.eventList.length; this.eventList = this.eventList.filter((r) => r.at >= before); return n - this.eventList.length; }
+  addTicket(t: Omit<TicketRow, 'id'>): number { const id = this.ticketList.reduce((m, x) => Math.max(m, x.id), 0) + 1; this.ticketList.push(structuredClone({ ...t, id })); return id; }
+  ticket(id: number): TicketRow | null { const t = this.ticketList.find((x) => x.id === id); return t ? structuredClone(t) : null; }
+  putTicket(t: TicketRow): void { const i = this.ticketList.findIndex((x) => x.id === t.id); if (i >= 0) this.ticketList[i] = structuredClone(t); }
+  tickets(q: { state?: TicketRow['state'] | 'live'; key?: string; limit: number }): TicketRow[] {
+    return this.ticketList.filter((t) => (q.state === 'live' ? t.state !== 'closed' : !q.state || t.state === q.state) && (q.key === undefined || t.key === q.key))
+      .sort((a, b) => b.id - a.id).slice(0, q.limit).map((t) => structuredClone(t));
+  }
+  addStash(r: Omit<StashRow, 'id'>): number { const id = this.stashList.length + 1; this.stashList.push(structuredClone({ ...r, id })); return id; }
+  stashes(key: string, limit: number): StashRow[] { return this.stashList.filter((r) => r.key === key).sort((a, b) => b.id - a.id).slice(0, limit).map((r) => structuredClone(r)); }
   close(): void { /* 할 일 없음 */ }
 }

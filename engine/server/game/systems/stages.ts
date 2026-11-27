@@ -382,7 +382,7 @@ export class Stages {
         r.wait -= dt;
         if (r.wait > 0) continue;
         // 뒤에서 이어 가는 회차는 자동 진행이 꺼졌거나 실패했으면 멈춘다 (회차를 닫는다)
-        if (r.bg && (r.state === 'fail' || !p.stage.auto)) { const why = r.state === 'fail' ? 1 : 0; this.end(r); this.squadIn(p); this.g.notify(p, 'stageBgStop', p.stage.cur, why); continue; }
+        if (r.bg && (r.state === 'fail' || !p.stage.auto)) { const why = r.state === 'fail' ? 1 : 0, at = r.stage.id; this.end(r); this.squadIn(p); this.g.notify(p, 'stageBgStop', at, why); continue; }
         this.start(p, this.curIndex(p));
         continue;
       }

@@ -358,3 +358,28 @@ npm run admin -- age 아무개 reset    답을 지운다: 다음 접속(접속 �
 ```
 
 - 사람이 잘못 골랐다고 문의하면 reset. 답은 사람(지금은 저장 키) 단위로 `social_prefs`에 남는다. 본인확인·보호자 동의는 없다(결정이 필요하다).
+
+## 운영 도구와 고객지원 (2026-11-27, 가지 `feat/ops5`)
+
+쓰는 법 전체는 [making-a-game.md](making-a-game.md) 19절. 여기는 운영하는 사람의 차례만 적는다. 명령은 모두 서버를 켠 PC에서 `npm run admin -- <명령>`(등불지기가 아니면 첫 인자로 게임 이름).
+
+### 관리 화면 열기
+
+1. `npm run admin -- ui ops`(보기만 하려면 `view`, 지급·롤백까지 하려면 `full`)가 `http://127.0.0.1:3001/admin/ui#t=…`를 찍는다.
+2. 그 PC의 브라우저에서 연다. 다른 PC·폰에서는 열리지 않는다(터널 주소로 열어도 없는 주소로 답한다). 서버를 다시 켜면 토큰이 바뀌므로 주소를 다시 받는다.
+3. 화면에서 한 일도 `admin-audit.log`에 `web:역할`로 남는다.
+
+### 매일 볼 것
+
+- 개요: 열린 문의, 통로 밖 변화(0이어야 한다), 경보 상태.
+- `tickets`(또는 화면의 '문의') → `answer 번호 답글` → 끝나면 `tclose 번호`. 이의(`appeal`)는 `find 이름`, `reports`, `audit`로 근거를 보고 `unban`·`unmute` 또는 답만.
+- `stats`(일별 활성), 주에 한 번 `stats retention`(D1·D7·D30). 서버 밖에서는 `npm run stats -- retention`.
+- `suspects`: 높은 점수는 `find`·`reports`와 함께 본다. 점수만으로 막지 않는다.
+
+### 경보 켜기
+
+웹훅을 받을 곳(Slack·Discord의 들어오는 웹훅 같은 것)을 정한 뒤 서버를 `ALERT_WEBHOOK=https://… ` 환경 변수로 띄운다. `npm run admin -- alerts test`로 시험 알림을 보내고 `alerts`로 '마지막 보냄 성공'을 본다. 주소를 주지 않으면 아무 데도 보내지 않는다(기본).
+
+### 사고 대응 순서
+
+[making-a-game.md](making-a-game.md) 19절 '사고 대응 순서'와 같다: 알아챔(경보 `econ_stray`, `ledger`) → 번지지 않게(`flag market off`, `flag mail off`, 공지) → 원인 확인(`find`, `ledger 7 이름`, `audit`) → 그 사람만 되돌림(`rollback list` → `preview` → `apply`) → 보상(`mail --all …`) → 다시 엶(`flag … on`)과 공지 → 문의에 답. 되돌리기 전에 자동 백업이 있는지 본다(`data/backup/auto-…db`, 켜질 때와 6시간마다). 사고 직후에 손으로 백업을 하나 더 떠 두면(DB 파일 복사는 서버를 멈춘 뒤에만) 나중에 비교하기 좋다.

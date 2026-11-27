@@ -77,6 +77,8 @@ export const koGame = {
     towerNow: '지금',
     towerBoss: '우두머리',
     towerHint: '단계를 깨면 울림 조각(뽑기의 값)이 나옵니다. 처음 깨면 더 많이.',
+    towerWeak: '편성 전투력이 권장보다 낮습니다. 골드로 메아리의 레벨을 올리거나, 뽑아서 편성을 세게 하세요.',
+    towerGrow: '메아리 키우기',
     // 다른 쪽의 작은 표시와 바로 가기
     sideGoVale: '울림골로',
     sideGoTower: '탑으로',
@@ -86,7 +88,7 @@ export const koGame = {
     alertGo: '바로 가기',
     // 튜토리얼과 설정 칸 (client/tutorial.ts)
     tutPact: '계약의 첫걸음',
-    tutStage: '계약의 탑입니다. 1-1을 눌러 도전해 보세요. 편성한 메아리가 함께 싸우고, 처음 깨면 울림 조각을 받습니다.',
+    tutStage: '계약의 탑입니다. "다음 도전"을 눌러 1-1에 도전해 보세요. 편성한 메아리가 함께 싸우고, 처음 깨면 울림 조각을 받습니다.',
     tutPull: '울림 조각 100개가 모이면 뽑기에서 메아리를 불러 보세요. 확률은 \'확률 보기\'에 모두 공개됩니다.',
     tutSwitch: '위의 \'울림골로\' 단추를 눌러 다른 게임(들판)으로 가 보세요. 싸우는 중이어도 바로 바뀌고, 탑의 단계는 끝까지 이어집니다.',
     tutMove: '울림골입니다. 땅을 눌러[[ (또는 WASD로)|]] 걸어 보세요.',
@@ -105,6 +107,7 @@ export const koGame = {
     potions: (n: number) => `샘물 약 ${n}`,
     /** 탑의 첫 화면: 가진 것과 편성의 전투력 */
     towerHave: (sparks: number, gold: number, power: number) => `울림 조각 ${sparks.toLocaleString('ko-KR')} · 골드 ${gold.toLocaleString('ko-KR')} · 편성 전투력 ${power.toLocaleString('ko-KR')}`,
+    towerNext: (id: string) => `다음 도전 ${id}`,
     towerRec: (rec: number) => `권장 ${rec.toLocaleString('ko-KR')}`,
     towerBest: (id: string) => (id ? `가장 멀리 깬 단계 ${id}` : '아직 깬 단계가 없습니다'),
     /** 보고 있지 않은 들판·탑의 작은 표시 */

@@ -21,6 +21,13 @@ function drawHome(): void {
   const loc = L(), rows = stageRows(st);
   $('towerHave').textContent = loc.fmt.towerHave(S.me.sparks, S.me.gold, mySquad().power);
   $('towerBest').textContent = loc.fmt.towerBest(st?.best ?? '');
+  // 다음 도전: 아직 깨지 않은 첫 단계 (지면 '지금 단계'가 깬 단계로 돌아가므로, 그것과 따로 크게 보인다). 누르면 자동 진행을 켜고 그 단계로
+  const next = rows.find((r) => r.open && !r.cleared) ?? rows[rows.length - 1], power = mySquad().power;
+  const go = $('towerNext');
+  go.hidden = !next;
+  if (next) { go.textContent = loc.fmt.towerNext(next.id); go.dataset.id = next.id; }
+  // 권장 전투력에 모자라면 무엇을 하면 되는지 (처음 20분 해 보기: 1-3에서 지고 1-1만 되풀이하던 것)
+  $('towerWeak').hidden = !next || power >= next.rec;
   const list = $('towerStages');
   list.textContent = '';
   CHAPTERS.forEach((ch, c) => {
@@ -96,6 +103,8 @@ export function initTower(): void {
   mountPanel('hud', `
     <div id="towerHome" class="towerHome" hidden>
       <div class="thead"><h2 data-i18n="modeTower"></h2><p data-i18n="towerSub"></p><p class="thave" id="towerHave"></p></div>
+      <div class="tnext"><button type="button" class="tgo" id="towerNext"></button>
+        <p class="tweak" id="towerWeak" hidden><span data-i18n="towerWeak"></span> <button type="button" id="towerGrow" data-i18n="towerGrow"></button></p></div>
       <div class="tbtns">
         <button type="button" class="tbig" id="towerPull" data-i18n="towerPull"></button>
         <button type="button" class="tbig" id="towerEchoes" data-i18n="towerEchoes"></button>
@@ -109,6 +118,8 @@ export function initTower(): void {
     <div id="pactSide" class="pactSide" hidden><span id="pactSideText"></span><button type="button" id="pactSideGo"></button><button type="button" id="pactSideStop" data-i18n="sideStopTower" hidden></button></div>
     <div id="pactAlert" class="pactAlert" role="alert" hidden><span id="pactAlertText"></span><button type="button" id="pactAlertGo"></button></div>`);
   $('towerPull').addEventListener('click', () => openMenu('gacha'));
+  $('towerNext').addEventListener('click', (e) => { const id = (e.currentTarget as HTMLElement).dataset.id; if (!id) return; send({ t: 'stage', a: 'auto', on: true }); send({ t: 'stage', a: 'go', id }); });
+  $('towerGrow').addEventListener('click', () => openMenu('heroes'));
   $('towerEchoes').addEventListener('click', () => openMenu('heroes'));
   $('towerSquad').addEventListener('click', () => openMenu('squad'));
   $('towerAuto').addEventListener('click', () => send({ t: 'stage', a: 'auto', on: !(myStage()?.auto ?? true) }));
