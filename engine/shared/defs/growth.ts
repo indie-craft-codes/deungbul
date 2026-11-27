@@ -238,7 +238,9 @@ export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 
   // 라이브 콘텐츠 (묶음 6): 이벤트 임무 [이벤트, 임무], 이벤트 재화 환전 [이벤트, 바꾼 양], 시즌의 놓친 보상 [시즌 열쇠], 업적 [업적], 도감 [묶음, 모은 수], 쿠폰 [코드], 복귀 [쉰 날 수]
   | 'event' | 'eventSwap' | 'season' | 'achieve' | 'codex' | 'coupon' | 'comeback'
   // 스태미나 (묶음 D): 넘친 몫 [양]
-  | 'stamina';
+  | 'stamina'
+  // 경쟁 (묶음 8): 레이팅 시즌의 보상 [시즌의 몇째, 최고 등급의 자리] (ranked 모듈)
+  | 'rankSeason';
 /** 보상. gear와 items는 우편에 붙는 물건이다: 낱개 장비(uid는 받을 때 새로 붙는다)와 아이템 id별 개수 */
 export interface Reward { gold?: number; exp?: number; sparks?: number; gear?: Gear[]; items?: Record<string, number>; /** 스태미나 (stamina 모듈: 넘친 몫의 우편) */ stamina?: number }
 export interface Mail {

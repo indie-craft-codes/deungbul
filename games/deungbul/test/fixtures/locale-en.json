@@ -132,6 +132,55 @@
   "You muted 1. Their chat is now hidden for you only.",
   "You muted 2. Their chat is now hidden for you only."
  ],
+ "fmt.boardMine": [
+  "ea641d099a0302f9",
+  "You are #undefined of undefined · undefined",
+  "You are #0 of undefined · undefined",
+  "You are #1 of undefined · undefined",
+  "You are #2 of undefined · undefined"
+ ],
+ "fmt.boardNum": [
+  "78bf499616f7e464",
+  "(던짐) TypeError",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.boardPeriod": [
+  "fbe6073b09eefc91",
+  "This season",
+  "This season · resets in 1m",
+  "This season · resets in 21m",
+  "This season · resets in NaNm"
+ ],
+ "fmt.boardPrev": [
+  "18bd54d6ec2c8ef9",
+  "Last period: undefined",
+  "Last period: 0",
+  "Last period: 1",
+  "Last period: 2"
+ ],
+ "fmt.boardRatingOf": [
+  "dc73e90e6ecb98e6",
+  "Rating · undefined",
+  "Rating · 0",
+  "Rating · 1",
+  "Rating · 2"
+ ],
+ "fmt.boardRatingV": [
+  "4b8d4903240717c5",
+  "NaN",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.boardStage": [
+  "263004ba9870f09b",
+  "undefined-undefined",
+  "0-undefined",
+  "1-undefined",
+  "2-undefined"
+ ],
  "fmt.btlSpeed": [
   "12111541eec5079a",
   "×undefined",
@@ -1607,6 +1656,20 @@
   "1 / undefined",
   "2 / undefined"
  ],
+ "fmt.queueBand": [
+  "9e5d59c8547fc815",
+  "Finding a ranked match · undefined · NaN:NaN · est. NaN:NaN · range ±undefined",
+  "Finding a ranked match · 0 · NaN:NaN · est. NaN:NaN · range ±undefined",
+  "Finding a ranked match · 1 · NaN:NaN · est. NaN:NaN · range ±undefined",
+  "Finding a ranked match · 2 · NaN:NaN · est. NaN:NaN · range ±undefined"
+ ],
+ "fmt.queueBannedLeft": [
+  "3f5058b7d8bc1ed1",
+  "Leaver penalty: no ranked matches for undefined min",
+  "Leaver penalty: no ranked matches for 0 min",
+  "Leaver penalty: no ranked matches for 1 min",
+  "Leaver penalty: no ranked matches for 2 min"
+ ],
  "fmt.raidActive": [
   "7820869b4b3beddb",
   "Raid on Firstlight Village · undefined left · undefined",
@@ -1627,6 +1690,41 @@
   "Mist is closing on Firstlight Village · in 0s",
   "Mist is closing on Firstlight Village · in 1s",
   "Mist is closing on Firstlight Village · in 2s"
+ ],
+ "fmt.rankedBest": [
+  "0bba39e37a97de1a",
+  "Season best undefined",
+  "Season best 0",
+  "Season best 1",
+  "Season best 2"
+ ],
+ "fmt.rankedDelta": [
+  "08090bd1a4e9a80c",
+  "(던짐) TypeError",
+  "Rating 0",
+  "Rating 1",
+  "Rating 2"
+ ],
+ "fmt.rankedPlacement": [
+  "50c6646546745e25",
+  "Placement undefined/undefined",
+  "Placement 0/undefined",
+  "Placement 1/undefined",
+  "Placement 2/undefined"
+ ],
+ "fmt.rankedSeasonEnd": [
+  "0a5379cad87279c6",
+  "This season · ends in NaNm",
+  "Season 1 · ends in NaNm",
+  "Season 2 · ends in NaNm",
+  "Season 5 · ends in NaNm"
+ ],
+ "fmt.rankedWL": [
+  "7219908a0f05e5c3",
+  "undefinedW undefinedL",
+  "0W undefinedL",
+  "1W undefinedL",
+  "2W undefinedL"
  ],
  "fmt.rarAtMost": [
   "8ab24a09e95aa656",
@@ -1664,6 +1762,27 @@
   "Reforged 2 of undefined · this one costs NaN gold and NaN Gear Dust. Tap an option twice to reroll it (its type and value both change)"
  ],
  "fmt.reforgeValueOnly": "Every option type is already on this gear, so only the value is rerolled.",
+ "fmt.replayAt": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.replayResult": [
+  "7c940b26e53adfba",
+  "Draw",
+  "1 wins",
+  "2 wins",
+  "5 wins"
+ ],
+ "fmt.replaySub": [
+  "093a12fa36735265",
+  "undefined · Invalid Date",
+  "0 · Invalid Date",
+  "1 · Invalid Date",
+  "2 · Invalid Date"
+ ],
  "fmt.resAuto": [
   "331e838413c6fdde",
   "Auto: undefined in undefineds",
@@ -1718,6 +1837,13 @@
   "Gold 1",
   "Gold 2",
   "Gold 5"
+ ],
+ "fmt.roomBotName": [
+  "b525da69135e25dd",
+  "Bot undefined (bot)",
+  "1 (bot)",
+  "2 (bot)",
+  "5 (bot)"
  ],
  "fmt.roomClock": [
   "92c98844180fa028",
@@ -2494,6 +2620,13 @@
   "A moderator removed Sparks ×1.",
   "A moderator removed Sparks ×3."
  ],
+ "msg.afkOut": [
+  "af0798df702ccc72",
+  "undefined was removed from the match for being idle.",
+  "0 was removed from the match for being idle.",
+  "1 was removed from the match for being idle.",
+  "2 was removed from the match for being idle."
+ ],
  "msg.alreadyBest": "You already have equal or better gear.",
  "msg.autoBagFull": "Your gear bag is full, so auto-hunt stopped.",
  "msg.autoDied": "You went down, so auto-hunt ended.",
@@ -3203,6 +3336,14 @@
   "1 defeated. +1 exp, +1 spark, +1 gold",
   "2 defeated. +3 exp, +4 sparks, +5 gold"
  ],
+ "msg.leavePenalty": [
+  "4f349c2de0caf319",
+  "You left a ranked match and cannot queue for ranked for undefined min.",
+  "You left a ranked match and cannot queue for ranked for 0 min.",
+  "You left a ranked match and cannot queue for ranked for 1 min.",
+  "You left a ranked match and cannot queue for ranked for 2 min."
+ ],
+ "msg.leaveWarn": "You left a ranked match: this is a warning. Leaving again will block ranked queue for a while.",
  "msg.left": [
   "97d410f04fff99f9",
   "undefined left.",
@@ -3447,6 +3588,22 @@
   "Quest step complete. +1 exp, +1 spark",
   "Quest step complete. +2 exp, +3 sparks"
  ],
+ "msg.queueBanned": [
+  "b673fd33ee3bd972",
+  "Leaver penalty: you cannot queue for ranked for undefined min.",
+  "Leaver penalty: you cannot queue for ranked for 0 min.",
+  "Leaver penalty: you cannot queue for ranked for 1 min.",
+  "Leaver penalty: you cannot queue for ranked for 2 min."
+ ],
+ "msg.queueFound": [
+  "5fbefb0456fae372",
+  "Match found!",
+  "Match found! (1 bot)",
+  "Match found! (3 bots)",
+  "Match found! (1234567 bots)"
+ ],
+ "msg.queueOff": "Stopped looking for a ranked match.",
+ "msg.queueOn": "Looking for a ranked match.",
  "msg.raidAbandoned": [
   "86d9bd2ebd739485",
   "No one held channel undefined, so the foes there struck the tower and went back into the Mist.",
@@ -3496,6 +3653,30 @@
   "The raid was held off. Village tower light +1",
   "The raid was held off. Village tower light +2"
  ],
+ "msg.rankedPlaced": [
+  "2113730150961868",
+  "Placement complete: no tier (rating undefined)",
+  "Placement complete: no tier (rating 0)",
+  "Placement complete: no tier (rating 1)",
+  "Placement complete: no tier (rating 3)"
+ ],
+ "msg.rankedSeason": [
+  "9226b1519616715a",
+  "Rating season undefined has begun. Ratings were pulled slightly toward the baseline.",
+  "Rating season 0 has begun. Ratings were pulled slightly toward the baseline.",
+  "Rating season 1 has begun. Ratings were pulled slightly toward the baseline.",
+  "Rating season 2 has begun. Ratings were pulled slightly toward the baseline."
+ ],
+ "msg.rankedTier": [
+  "cc2569290e3fd8a5",
+  "Demoted to ",
+  "Promoted to "
+ ],
+ "msg.rankedVoid": [
+  "15f252db3518697b",
+  "Everyone disconnected, so this match does not count toward rating.",
+  "Someone left before the first move, so this match does not count toward rating."
+ ],
  "msg.reforgeMax": [
   "5814136c79d21f86",
   "This gear cannot be reforged any more (up to undefined times).",
@@ -3519,6 +3700,7 @@
   "2 is now called 3."
  ],
  "msg.replaced": "Signed in elsewhere. This connection is closing.",
+ "msg.replayNone": "That replay is no longer available.",
  "msg.reportWait": "You can report the same player again later.",
  "msg.reported": [
   "8f6c041679c6b49d",
@@ -4069,6 +4251,11 @@
  "ui.block": "Block",
  "ui.blockHead": "Blocked players",
  "ui.blockNone": "You have not blocked anyone. Blocking stops their chat, whispers, friend requests and invites from reaching you.",
+ "ui.boardEmpty": "No rankings yet.",
+ "ui.boardLoading": "Loading…",
+ "ui.boardNotIn": "You are not on this leaderboard yet.",
+ "ui.boardPower": "Power",
+ "ui.boardRating": "Rating",
  "ui.btlAuto": "Auto",
  "ui.btlHome": "Home",
  "ui.btlPauseNote": "The battle is paused. Going home keeps it running in the background; giving up ends this run.",
@@ -4510,7 +4697,12 @@
  "ui.questGoBtn": "Go",
  "ui.questGoal": "Quest goal",
  "ui.questNeedSparks": "You have no sparks to offer. Defeat monsters to gather some.",
+ "ui.queueCancel": "Cancel",
  "ui.rankEmpty": "No ranking yet.",
+ "ui.rankedMine": "My rank",
+ "ui.rankedNoTier": "No tier",
+ "ui.rankedUnsure": "Rank hidden (inactive for a while: play a match to show it again)",
+ "ui.rankedVoidNote": "This match did not count toward rating.",
  "ui.reconnect": "Reconnect",
  "ui.reconnecting": "Connection lost. Reconnecting…",
  "ui.reforgeBtn": "Reforge",
@@ -4519,6 +4711,14 @@
  "ui.renameLabel": "New name",
  "ui.renameSubmit": "Change",
  "ui.renameTitle": "[[Click|Tap]] to change your name",
+ "ui.replayFirst": "To start",
+ "ui.replayNext": "Step forward",
+ "ui.replayPause": "Pause",
+ "ui.replayPlay": "Play",
+ "ui.replayPrev": "Step back",
+ "ui.replaySeek": "Playback position",
+ "ui.replaySpeed": "Speed",
+ "ui.replayTitle": "Replay",
  "ui.report": "Report",
  "ui.reportConfirm": "[[Click|Tap]] again to report",
  "ui.resAgain": "Again",
@@ -4532,6 +4732,7 @@
  "ui.roomAgainWaitNote": "Starts when the other player presses Play again.",
  "ui.roomApply": "Apply",
  "ui.roomAway": "disconnected",
+ "ui.roomBot": "Bot",
  "ui.roomCancel": "Cancel",
  "ui.roomClose": "Close",
  "ui.roomCode": "Room code",
@@ -4571,10 +4772,14 @@
  "ui.roomPrivPublic": "Public",
  "ui.roomPrivacy": "Access",
  "ui.roomQuick": "Quick match",
+ "ui.roomRanked": "Ranked match",
+ "ui.roomRankedTag": "Ranked",
  "ui.roomReady": "Ready",
  "ui.roomReadyTag": "Ready",
  "ui.roomRealtime": "Everyone plays at once",
  "ui.roomRegroup": "Next match, same group",
+ "ui.roomReplay": "Replay",
+ "ui.roomRequeue": "Queue again",
  "ui.roomResign": "Resign",
  "ui.roomResignSure": "[[Click|Tap]] again to resign",
  "ui.roomRules": "Rules",
@@ -4721,6 +4926,7 @@
  "ui.synNone": "Field heroes of the same faction together to turn on a synergy.",
  "ui.tabAchieve": "Feats",
  "ui.tabAutoSet": "Auto-hunt",
+ "ui.tabBoards": "Leaderboards",
  "ui.tabBuild": "Growth",
  "ui.tabCodex": "Codex",
  "ui.tabDaily": "Daily",

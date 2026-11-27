@@ -273,7 +273,9 @@ export interface CouponStore {
 export const hasCoupons = (s: Store): s is Store & CouponStore => typeof (s as Partial<CouponStore>).useCoupon === 'function';
 // ---------- 판의 기록: 전적 (rooms 모듈의 RoomDef.record: docs/genre-features.md 5.7) ----------
 /** 끝난 판 하나의 한 사람 몫: 저장 키(캐릭터), 때(UTC ms), 판의 이름, 결과(0 이김 1 짐 2 비김), 등수(등수로 끝냈으면, 아니면 0), 자리 수, 까닭, 점수(주었으면) */
-export interface RoomRecordRow { key: string; at: number; def: string; res: 0 | 1 | 2; rank: number; n: number; why: string; score?: number }
+export interface RoomRecordRow { key: string; at: number; def: string; res: 0 | 1 | 2; rank: number; n: number; why: string; score?: number; rp?: number }
+/** 리플레이 한 판 (RoomDef.replay, 묶음 8): 번호(저장소가 준다), 때, 판의 이름, 앉았던 사람의 저장 키들(볼 수 있는 사람), 리플레이의 값(JSON 글) */
+export interface ReplayRow { id: number; at: number; def: string; keys: string[]; data: string }
 /** 판의 기록의 저장 (틀의 저장소 둘이 갖는다). 이것이 없는 저장소면 기록은 서버가 켜져 있는 동안만 남는다 */
 export interface RoomStore {
   addRoomRecords(rows: readonly RoomRecordRow[]): void;
@@ -281,6 +283,11 @@ export interface RoomStore {
   roomRecords(key: string, limit: number): RoomRecordRow[];
   /** 그 사람의 기록을 지운다 (내 데이터 삭제). 지운 수 */
   forgetRoomRecords(key: string): number;
+  /** 리플레이 (묶음 8): 적고(번호를 돌려준다), 읽고, 그때보다 오래된 것을 지우고, 그 사람이 앉았던 것을 지운다(내 데이터 삭제) */
+  addReplay?(row: Omit<ReplayRow, 'id'>): number;
+  replay?(id: number): ReplayRow | null;
+  pruneReplays?(before: number): number;
+  forgetReplays?(key: string): number;
 }
 /** 그 저장소가 판의 기록도 갖는가 */
 export const hasRoomStore = (s: Store): s is Store & RoomStore => typeof (s as Partial<RoomStore>).addRoomRecords === 'function';

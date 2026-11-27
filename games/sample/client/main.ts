@@ -6,12 +6,14 @@ import { LOCALES } from './i18n';
 import { initScene, look } from './scene';
 import { initCharStands } from './chars';
 import { initTutorial } from './tutorial';
+import { initDuel, mountDuel } from './duel';
 
 // 차례가 중요하다: (1) 언어 묶음을 등록하고 (2) 이 게임의 창을 붙인 뒤에 (3) 틀을 시작시킨다. 틀은 시작하면서 화면의 글자를 채운다
 setLocales(LOCALES);
 mountBonfire();
+mountDuel();
 startClient({
   look,
   // 이 게임의 모듈: 적은 차례대로 init되고, 틀의 덧붙는 모듈(상점, 가방, 메뉴 …)보다 먼저다
-  modules: [initBonfire, initScene, initCharStands, initTutorial],
+  modules: [initBonfire, initScene, initCharStands, initTutorial, initDuel],
 });

@@ -5,6 +5,7 @@ import type { ModeBack } from './defs/modes';
 import type { Gear, Mail, RankRow } from './defs/growth';
 import type { GuildView, MarketItem } from './defs/social';
 import type { RoomLobby, RoomStatsView } from './defs/rooms';
+import type { BoardTab, BoardView, ReplayView } from './defs/compete';
 import type { TeamBoard } from './defs/teams';
 import type { MaintView, NoticeView } from './defs/live';
 import type { BlockView, ChatCh, FriendView, TalkState } from './defs/talk';
@@ -214,6 +215,13 @@ export type ClientMsg =
    * ready 준비(on), opt 규칙 고르기(k, v), vote 투표 내기(kind 'opt'|'again'|'kick', k, v, seat), ballot 표(yes), regroup 같은 무리로 다음 판, stats 전적(seat 또는 id: 없으면 나)
    */
   | { t: 'room'; a: RoomCmd; id?: number; def?: string; n?: number; code?: string; pass?: string; v?: string | number; seat?: number; on?: boolean; k?: string; kind?: 'opt' | 'again' | 'kick'; yes?: boolean }
+  // ---- 경쟁 (묶음 8) ----
+  /** 순위표 (boards 모듈): 그 순위표(id, 없으면 첫째)와 탭 목록을 달라 */
+  | { t: 'board'; id?: string }
+  /** 큐 (ranked 모듈): join 그 판(def, 없으면 첫째 랭크 판)의 큐에 서기, leave 나오기 */
+  | { t: 'queue'; a: 'join' | 'leave'; def?: string }
+  /** 리플레이 (RoomDef.replay): 끝난 판의 번호 (내가 앉았던 판만) */
+  | { t: 'replay'; id: number }
   /** 변신 (morph 모듈): on 가진 캐릭터 정의(id)로 변신, off 풀기 */
   | { t: 'morph'; a: 'on' | 'off'; id?: string }
   /** 게임 안의 모드 (modes 모듈): 그 모드로 (MODE_RULES.list의 id). 싸우는 중에도 바로 바뀐다 */
@@ -387,6 +395,11 @@ export type ServerMsg =
   // ---- 판 (rooms 모듈) ----
   /** 전적 (명령 room a:'stats'의 답: RoomDef.record를 켠 판의 기록을 센 것) */
   | { t: 'roomStats'; s: RoomStatsView }
+  // ---- 경쟁 (묶음 8) ----
+  /** 순위표 (명령 board의 답): 탭 목록과 고른 순위표 */
+  | { t: 'board'; tabs: BoardTab[]; s: BoardView | null }
+  /** 리플레이 (명령 replay의 답) */
+  | { t: 'replay'; s: ReplayView }
   // ---- 운영 도구와 고객지원 (support 모듈: engine/server/net/support.ts) ----
   /** 내 문의 (최근부터)와 지금 걸린 말 막기, 그 말 막기에 열린 이의가 있는가 / 문의를 받았다 (번호) */
   | { t: 'support'; a: 'list'; list: TicketView[]; sanction: SanctionView | null; appealed?: boolean }

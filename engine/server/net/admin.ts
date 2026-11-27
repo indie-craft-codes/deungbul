@@ -26,6 +26,7 @@
 //   (사회와 안전, net/social.ts) words [test 글 | add 낱말… | del 낱말…] | age 이름 [reset] | blocks 이름
 //   (운영 도구와 고객지원) stats · ledger · suspects · alerts · mail · rollback · tickets · ticket · answer · tclose · treopen · whoami · metrics (net/opstools.ts, net/support.ts, net/rollback.ts)
 //   (라이브 콘텐츠, 묶음 6) events · season · coupon [list|show|add|del] (net/livecmds.ts), mail --all의 --lv·--expire (net/opstools.ts)
+//   (경쟁, 묶음 8) boards · rating 이름 · leavers [이름] · leavers forgive 이름 (net/competecmds.ts)
 //   기간: 숫자(시간), 30m·12h·7d처럼 단위를 붙인 것, 또는 perm(영구)
 //
 // 역할 (운영 도구): 토큰이 셋이다. admin.token은 전체(full), admin-ops.token은 운영(ops), admin-view.token은 보기 전용(view). 명령마다 필요한 역할은 roleFor 한 곳에서 정한다:
@@ -106,6 +107,9 @@ export function roleFor(cmd: string, a: readonly string[]): Role {
     // 라이브 콘텐츠 (묶음 6, net/livecmds.ts): 이벤트·상품·시즌은 보기(바꾸는 것은 원격 설정 set), 쿠폰의 목록·보기는 보기, 만들기·지우기는 전체
     case 'events': case 'season': return 'view';
     case 'coupon': return !a.length || a[0] === 'list' || a[0] === 'show' ? 'view' : 'full';
+    // 경쟁 (묶음 8, net/competecmds.ts): 순위표·레이팅·이탈 기록은 보기(고객지원), 이탈 기록 지우기는 운영
+    case 'boards': case 'rating': return 'view';
+    case 'leavers': return a[0] === 'forgive' ? 'ops' : 'view';
     default: return 'full';
   }
 }

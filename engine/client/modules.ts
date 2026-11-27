@@ -42,6 +42,7 @@ import { initStamina } from './hud/stamina';
 import { initAutoSet } from './hud/autoset';
 import { initPowerSave } from './hud/powersave';
 import { initCodexBook } from './hud/codexbook';
+import { initBoards, initRanked } from './hud/compete';
 
 /** 차례대로 init한다. 상점, 대장간, 직업 고르기가 앞이다: 가르기 전에 main.ts가 직접 부르던 차례(같은 메시지와 같은 주기 안에서 다른 모듈보다 먼저)를 지킨다 */
 const LIST: { init: () => void; mod?: ModuleId }[] = [
@@ -105,6 +106,9 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initCoupon, mod: 'coupon' },
   // 스태미나 (묶음 D: STAMINA_RULES.enabled가 거짓이면 아무것도 하지 않는다): 맨 뒤에
   { init: initStamina, mod: 'stamina' },
+  // 경쟁 (묶음 8: 순위표 창, 랭크의 등급·큐·결과 창의 레이팅): 맨 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)
+  { init: initBoards, mod: 'boards' },
+  { init: initRanked, mod: 'ranked' },
 ];
 
 export function initModules(): void {

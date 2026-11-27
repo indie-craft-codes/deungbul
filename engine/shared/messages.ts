@@ -218,6 +218,19 @@ export type MsgKey =
   | 'roomWatching' // [관전 지연 초] 판을 구경한다
   | 'roomWatchFull' // [] 구경하는 사람이 너무 많다
   | 'roomMidJoin' // [이름] 그 사람이 판 중간에 들어왔다
+  // ---- 경쟁 (묶음 8: rooms의 리플레이, boards·ranked 모듈) ----
+  | 'replayNone' // [] 그 리플레이를 볼 수 없다 (보관 기간이 지났거나 앉았던 판이 아니다)
+  | 'rankedVoid' // [까닭 0 둘 다 끊김 1 첫 수 전] 이 판은 레이팅에 들지 않았다
+  | 'rankedPlaced' // [등급의 자리(-1이면 등급 없음), 레이팅] 배치 경기를 마쳤다
+  | 'rankedTier' // [새 등급의 자리, 1 오름 0 내림] 등급이 바뀌었다
+  | 'rankedSeason' // [새 시즌의 몇째, 지난 시즌 최고 등급의 자리(-1 없음)] 레이팅의 새 시즌이 시작했다 (부분 초기화)
+  | 'queueOn' // [판의 이름] 큐에 섰다
+  | 'queueOff' // [] 큐에서 나왔다
+  | 'queueFound' // [사람 수, 봇 수] 상대를 찾았다
+  | 'queueBanned' // [남은 분] 이탈 제재로 지금은 큐에 설 수 없다
+  | 'leaveWarn' // [] 랭크 판을 떠났다: 경고 (다음부터 큐 금지)
+  | 'leavePenalty' // [분] 랭크 판을 떠나 그만큼 큐에 설 수 없다
+  | 'afkOut' // [이름] 잠수(시간 넘김이 이어짐)로 판에서 빠졌다
   // ---- 캐릭터 정의와 변신 (chars, morph 모듈: engine/server/game/systems/chars.ts, morph.ts) ----
   | 'charBad' // [거절 코드(CharErr), 자리, 값] 캐릭터 정의가 거절됐다 (engine/shared/defs/chardef.ts의 validateCharDef)
   | 'charNew' // [캐릭터 id] 새 캐릭터를 얻었다 (변신에 쓴다)

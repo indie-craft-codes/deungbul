@@ -69,6 +69,11 @@ export const koGame = {
     feedKey: '모닥불에 장작 넣기',
     // 약관·처리방침 (shared/content의 LEGAL이 가리키는 문장. 보기일 뿐이다)
     legalTermsText: '이용약관 (예제)\n\n1. 이 게임은 틀의 예제입니다. 진행은 예고 없이 초기화될 수 있습니다.\n2. 다른 사람에게 불쾌감을 주는 이름과 대화는 제한될 수 있습니다.\n3. 자동화 프로그램으로 플레이하지 않습니다.',
+    // 별 겨루기 (client/duel.ts, 경쟁 묶음 8): 판의 이름, 대기실의 설명(틀의 문장을 덮어씀), 등급의 이름(COMPETE.tiers)
+    duelName: '별 겨루기',
+    duelInfo: '그루터기 곁에서 둘이 솔방울을 줍는 랭크 대전',
+    roomLobbyInfo: '그루터기에 앉아 둘이 솔방울을 1~3개씩 줍습니다. 마지막 솔방울을 줍는 쪽이 이깁니다. 랭크 대전은 레이팅이 비슷한 상대를 찾고, 오래 없으면 봇이 앉습니다.',
+    tierBronze: '브론즈', tierSilver: '실버', tierGold: '골드', tierPlatinum: '플래티넘', tierDiamond: '다이아몬드',
     legalPrivacyText: '개인정보 처리방침 (예제)\n\n모으는 것: 이 브라우저의 무작위 토큰의 해시(저장 키), 캐릭터 이름과 진행, 접속 주소(접속 제한과 차단에만, 저장하지 않음), 화면 오류(주소·토큰을 뺀 것).\n쓰는 곳: 게임 진행의 저장, 부정 이용 막기, 오류 고치기.\n권리: 설정 탭의 내 데이터에서 내려받거나 삭제를 요청할 수 있습니다. 삭제는 요청 7일 뒤에 실행됩니다.',
   },
   /** 값이 들어가는 화면 문구 */
@@ -78,6 +83,13 @@ export const koGame = {
     logsMini: (have: number) => `장작 ${have}`,
     // 틀의 문구를 덮어쓴 것: 물약 단추의 글 (이 게임의 물약은 스튜다)
     potions: (n: number) => `스튜 ${n}`,
+    // 별 겨루기
+    duelNote: (pile: number, got: number[], secret: number) => `남은 솔방울 ${pile} · 주운 것 ${got.join(' : ')} · 내 비밀 수 ${secret}`,
+    duelPad: (pile: number, secret: number, mine: boolean) => `${mine ? '내 차례' : '상대 차례'} · 남은 솔방울 ${pile} (비밀 수 ${secret}만큼 주우면 하나 더)`,
+    duelTake: (n: number) => `${n}개 줍기`,
+    duelLeft: (n: number) => `남은 솔방울 ${n}`,
+    duelSeat: (name: string, got: number, last: number, secret: number) => `${name} · 주운 것 ${got}${last ? ` (방금 ${last})` : ''} · 비밀 수 ${secret}`,
+    roomWhy: (why: string) => ({ last: '마지막 솔방울을 주웠습니다.', resign: '기권으로 끝났습니다.', left: '연결이 끊긴 채 돌아오지 않았습니다.', afk: '잠수로 빠졌습니다.', time: '시간이 다 됐습니다.' } as Record<string, string>)[why] ?? '',
   },
   /** 이 게임이 더한 안내문(shared/sample.ts의 MsgMap)과, 틀의 안내문 가운데 이 게임의 말로 덮어쓴 것 */
   msg: {

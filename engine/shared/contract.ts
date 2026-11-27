@@ -28,6 +28,7 @@ import type { OddsRules } from './defs/odds';
 import type { ModeRules } from './defs/modes';
 import type { StaminaRules } from './defs/stamina';
 import type { AchieveDef, CodexDef, ComebackRules, CouponRules, EventDef, GoodsDef, MailRules, SeasonRules } from './defs/livecontent';
+import type { CompeteRules } from './defs/compete';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
 import * as content from '@game/shared/content';
@@ -283,8 +284,13 @@ export interface LiveContent {
   MAIL_RULES: MailRules;
 }
 
+/** 경쟁 (묶음 8: engine/shared/defs/compete.ts): 레이팅·등급·시즌 초기화·큐·이탈 제재·리플레이 보관 (ranked 모듈). null이면 없다 */
+export interface CompeteContent {
+  COMPETE: CompeteRules | null;
+}
+
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & OddsContent & ModesContent & StaminaContent & LiveContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & OddsContent & ModesContent & StaminaContent & LiveContent & CompeteContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

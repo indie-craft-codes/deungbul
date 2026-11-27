@@ -5,15 +5,19 @@
 // 판의 공통화(묶음 7, 모두 RoomDef의 선택 칸: 주지 않으면 예전 그대로): 게임당 판 여럿(id)과 방장의 규칙 옵션(options), 방 코드·초대 링크·공개 설정(codes: ../invites.ts),
 // 방장(lead: 강퇴·위임·자동 이전·준비), 투표(voteS), 같은 무리로 다음 판(regroup), 관전과 관전 지연·관전 대기(watch, watchView), 판 중간 참가(midJoin, catchUp),
 // 차례 없는 실시간 판(realtimeS), 판 기록과 전적(record), 판을 열 때 자리 수 고르기(명령 host의 n).
+// 경쟁(묶음 8, 선택 칸): 판마다의 시드와 정해진 난수(room.rng), 리플레이(replay: 시드·입력·프레임을 끝난 뒤 저장, 명령 replay), 랭크 판(rated: ranked 모듈이 큐로 짝지어
+// openWith로 연다. 레이팅·이탈 제재는 ranked.ts가 hooks로 받는다), 자리마다 둔 수(moves)와 떠난 자리(leavers)의 기록.
 // 게임이 맡는 것: 판의 규칙 (RoomDef: 판을 차리는 start, 컴퓨터의 한 수 cpu, 차례의 앞뒤, 판의 끝을 정해 finish를 부르기, 게임 명령의 검사).
 // 판의 규칙은 g.rooms.define(def)로 플러그인에서 준다. 화면의 짝은 engine/client/hud/rooms.ts, 모양은 engine/shared/defs/rooms.ts.
 import type { RoomDefView, RoomLobby, RoomPhase, RoomPrivacy, RoomRow, RoomStatsView, RoomTally, RoomView, RoomVoteView } from '../../../shared/defs/rooms';
+import type { ReplayView } from '../../../shared/defs/compete';
 import type { RoomRecordRow, RoomStore } from '../../store/types';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { Invites, PASS_MAX, hashPass, isPrivacy } from '../invites';
 import { fieldLayer, instanceLayer, isField } from '../layers';
 import { personalData } from '../personal';
+import { competeRules } from '../../../shared/defs/compete';
 
 /** 판의 한 자리: 사람(저장 키로 기억한다: 끊겼다 돌아와도 같은 자리) 또는 컴퓨터 */
 export interface RoomSeat {
@@ -31,6 +35,8 @@ export interface RoomSeat {
   again: boolean;
   /** 준비 완료 (방장이 있는 판: RoomDef.lead) */
   ready: boolean;
+  /** 큐가 채운 봇 (컴퓨터 자리. 묶음 8) */
+  bot?: boolean;
 }
 
 /** 판을 구경하는 사람 (RoomDef.watch). queued: 다음 판에 들어가려고 기다린다 (진행 중 난입) */
@@ -89,6 +95,27 @@ export interface Room<D = unknown> {
   readonly watchers: Map<string, RoomWatcher>;
   /** 진행 중인 투표 */
   vote: RoomVote | null;
+  // ---- 경쟁 (묶음 8) ----
+  /** 이번 판의 시드 (RoomDef.replay나 rated인 판: 판을 차릴 때마다 새로. 아니면 0) */
+  seed: number;
+  /** 정해진 난수 (0 이상 1 미만): 시드가 있으면 시드에서, 없으면 Math.random. 결정적 판(리플레이)은 판의 난수를 모두 이것으로 */
+  rng(): number;
+  /** 자리마다 둔 수 (g.rooms.myTurn이 답한 수: 첫 수 전 이탈은 레이팅에 들지 않고, 잠수는 시간 넘김 사이에 수가 늘지 않은 것) */
+  moves: number[];
+  /** 판을 떠난 자리 (두는 중에 나감, 끊긴 채 돌아오지 않음, 잠수): 이탈 제재와 랭크 판의 패배 */
+  readonly leavers: Map<number, 'leave' | 'left' | 'afk'>;
+  /** 큐가 짝지은 랭크 판 (RoomDef.rated: 레이팅에 든다) */
+  rated: boolean;
+  /** 끝난 판의 리플레이 id (없으면 0) */
+  rp: number;
+}
+
+/** 리플레이를 적는 중 (판마다) */
+interface ReplayRec { at0: number; names: string[]; inputs: ReplayView['inputs']; frames: ReplayView['frames']; lastVer: number }
+/** 정해진 난수 (mulberry32) */
+export function seededRng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
 /** 자리 (월드 좌표와 바라보는 방향: 틀의 face, atan2(dx, dz)) */
@@ -190,9 +217,26 @@ export interface RoomDef<D = unknown> {
   save?(room: Room<D>): unknown;
   /** 저장한 값으로 판 상태와 엔티티를 되살린다 (room.place). 예외를 던지면 그 판은 버린다 */
   load?(room: Room<D>, raw: unknown): void;
+  // ---- 경쟁 (묶음 8). 모두 선택: 주지 않으면 예전 그대로 ----
+  /**
+   * 랭크 판: ranked 모듈의 큐(빠른 대국이 큐가 된다)로 짝지은 판이 레이팅에 든다. true면 사다리 이름이 판의 이름, 글이면 그 사다리(판 여럿이 한 레이팅을 함께 쓴다).
+   * 방 만들기·코드로 연 판은 레이팅에 들지 않는다
+   */
+  rated?: boolean | string;
+  /** 큐가 사람을 기다리다 이만큼(초) 지나면 빈 자리를 봇(컴퓨터 자리, 화면에 '봇'이라고 적는다)으로 채운다. 없거나 0이면 봇 없음 (cpu가 있어야 한다) */
+  queueBots?: number;
+  /** 팀 판: 자리의 팀 (같은 팀끼리는 레이팅을 견주지 않는다). 없으면 모두 따로 */
+  teamOf?(room: Room<D>, seat: number): number;
+  /**
+   * 리플레이: 판의 시드와 입력(cmds의 게임 명령, 컴퓨터의 수, 시간 넘김)과 프레임(판이 바뀔 때마다 view의 모양)을 적어 판이 끝나면 저장한다.
+   * view는 숨은 정보까지 다 담아도 된다(끝난 뒤에만, 앉았던 사람만 본다). 보관 기간은 COMPETE.replayDays(기본 7일). 결정적 판은 판의 난수를 room.rng로
+   */
+  replay?: { cmds: readonly string[]; view(room: Room<D>): unknown; maxFrames?: number };
 }
 
 const MSG_ROOM = new Set(['quick', 'host', 'cpu', 'join', 'leave', 'pass', 'resign', 'again', 'start', 'code', 'watch', 'privacy', 'kick', 'give', 'ready', 'opt', 'vote', 'ballot', 'regroup', 'stats']);
+/** 리플레이를 메모리에 두는 수 (저장소가 없을 때), 한 판의 프레임·입력 상한 (기본), 보관 기간을 훑는 간격(ms) */
+const MEM_REPLAYS = 200, REPLAY_FRAMES = 600, PRUNE_MS = 600_000;
 /** 저장한 판에서 읽는 칸의 상한 (깨진 저장을 막는다) */
 const SEATS_MAX = 16;
 /** 판 기록을 메모리에 두는 줄 수 (저장소가 없을 때), 전적을 셀 때 읽는 줄 수, 전적 창의 최근 판 */
@@ -223,10 +267,25 @@ export class Rooms {
   private nextId = 1;
   /** 판의 저장을 월드 저장에 걸었다 (save와 load를 준 판이 하나라도 있다) */
   private saving = false;
+  /** 리플레이를 적는 중인 판 (묶음 8), 메모리의 리플레이(저장소가 없을 때), 마지막으로 오래된 리플레이를 지운 때 */
+  private readonly recs = new Map<number, ReplayRec>();
+  private memReplays: { id: number; at: number; def: string; keys: string[]; data: ReplayView }[] = [];
+  private memReplaySeq = 0;
+  private prunedAt = 0;
+  /**
+   * 다른 시스템이 판에 거는 고리 (묶음 8: ranked 모듈). finish 판이 끝났다(게임의 finished 뒤), timeout 시간 넘김(게임의 처리 전), quick 빠른 대국을 가로챈다(참이면 판을 열지 않는다),
+   * guard 판에 앉기 전의 검사(거짓이면 막는다: 큐 금지)
+   */
+  readonly hooks = {
+    finish: [] as ((room: Room<unknown>) => void)[],
+    timeout: [] as ((room: Room<unknown>, seat: number) => void)[],
+    quick: null as ((p: Ent, def: string) => boolean) | null,
+  };
 
   constructor(private g: Game) {
     this.codes = new Invites<number>(g);
     g.commands.set('room', (p, m) => this.command(p, m));
+    g.commands.set('replay', (p, m) => { if (typeof m.id === 'number' && Number.isInteger(m.id)) this.sendReplay(p, m.id); });
     g.ticks.push(() => this.tick());
     g.personal.push({
       name: 'room',
@@ -246,7 +305,27 @@ export class Rooms {
     personalData(g).push({
       name: 'rooms',
       get: (pid) => { const rows = this.records(pid, MEM_RECORDS); return rows.length ? rows : undefined; },
-      erase: (pid) => { if (this.store) this.store.forgetRoomRecords(pid); else this.memRecords = this.memRecords.filter((r) => r.key !== pid); },
+      erase: (pid) => {
+        if (this.store) { this.store.forgetRoomRecords(pid); this.store.forgetReplays?.(pid); } else this.memRecords = this.memRecords.filter((r) => r.key !== pid);
+        this.memReplays = this.memReplays.filter((r) => !r.keys.includes(pid));
+      },
+    });
+    // 리플레이 (RoomDef.replay): 그 판의 게임 명령을 감싸 입력을 적는다. 모든 플러그인이 명령을 등록한 뒤에
+    g.ready.push(() => {
+      const cmds = new Set([...this.defs.values()].flatMap((d) => d.replay?.cmds ?? []));
+      for (const name of cmds) {
+        const fn = g.commands.get(name);
+        if (!fn) continue;
+        g.commands.set(name, (p, m) => {
+          const room = this.of(p), rec = room && room.st === 'play' ? this.recs.get(room.id) : undefined;
+          if (!rec || !room) { fn(p, m); return; }
+          // 먼저 적고, 판이 바뀌지 않았으면(받지 않은 수) 거둔다: 그 수로 판이 끝나도 입력이 리플레이에 든다
+          const ver = room.ver, { t: _t, ...rest } = m, mark = rec.inputs.length;
+          this.input(room, this.seatOf(room, p), { c: name, ...rest });
+          fn(p, m);
+          if (room.ver === ver && this.recs.get(room.id) === rec) rec.inputs.length = mark;
+        });
+      }
     });
   }
 
@@ -284,6 +363,13 @@ export class Rooms {
 
   // ---------- 읽기 ----------
 
+  /** 판의 이름들 (define한 차례)과 그 규칙 (묶음 8: 랭크 판의 사다리를 고른다) */
+  defIds(): string[] { return [...this.defs.keys()]; }
+  defOf(id: string): RoomDef<unknown> | undefined { return this.defs.get(id); }
+  /** 그 판의 자리 수 범위 */
+  seatsOf(id: string): { min: number; max: number } { const d = this.defs.get(id); return d ? { min: this.minOf(d), max: this.sizeOf(d) } : { min: 0, max: 0 }; }
+  /** 그 사람의 열쇠가 판에 앉아 있는가 */
+  seatedKey(key: string): boolean { return this.seated.has(key); }
   /** 그 사람이 앉은 판 (기다리는 판, 끝난 판도) */
   of<D = unknown>(p: Ent): Room<D> | undefined { const id = this.seated.get(Rooms.keyOf(p)); return id === undefined ? undefined : (this.rooms.get(id) as Room<D> | undefined); }
   /** 그 사람이 구경하는 판 */
@@ -335,8 +421,9 @@ export class Rooms {
     const room = this.of<D>(p);
     if (!room || room.st !== 'play') return null;
     const seat = this.seatOf(room as Room<unknown>, p);
-    if (this.dOf(room as Room<unknown>).realtimeS) return seat >= 0 && !room.seats[seat]!.out ? { room, seat } : null;
+    if (this.dOf(room as Room<unknown>).realtimeS) { if (seat < 0 || room.seats[seat]!.out) return null; room.moves[seat]++; return { room, seat }; }
     if (seat !== room.turn) { this.g.notify(p, 'roomNotTurn'); return null; }
+    room.moves[seat]++;
     return { room, seat };
   }
 
@@ -355,6 +442,7 @@ export class Rooms {
   touch(room: Room<unknown>): void {
     room.ver++;
     if (this.dOf(room).save) this.g.saveDirty = true;
+    if (room.st === 'play') this.frame(room);
   }
 
   // ---------- 명령 ----------
@@ -398,7 +486,10 @@ export class Rooms {
   /** 빠른 대국: 그 판의 이름(없으면 기본)으로 기다리는 공개 판 가운데 가장 먼저 연 판에 들어가고, 없으면 판을 열고 기다린다 */
   quick(p: Ent, defId?: unknown): void {
     const def = this.defBy(defId);
-    if (!def || this.busy(p)) return;
+    if (!def) return;
+    // 랭크 판의 빠른 대국은 큐로 (ranked 모듈)
+    if (def.rated && this.hooks.quick && !this.seated.has(Rooms.keyOf(p)) && this.hooks.quick(p, this.idOf(def))) return;
+    if (this.busy(p)) return;
     const open = [...this.rooms.values()].find((r) => r.def === this.idOf(def) && r.privacy === 'public' && this.joinable(r) && !r.banned.has(Rooms.keyOf(p)));
     if (open) this.join(p, open.id); else this.host(p, defId);
   }
@@ -415,6 +506,7 @@ export class Rooms {
       id: this.nextId++, def: id, layer: instanceLayer(this.g), st: 'wait', seats: Array.from({ length: size }, () => null), size, turn: -1, first: 0, round: 1,
       deadline: 0, win: -1, why: '', ranks: [], scores: [], data: undefined, ents: new Set(), openedAt: now, cpuAt: 0, ver: 0,
       code: '', privacy: 'public', pass: '', lead: def.lead ? Rooms.keyOf(p) : '', banned: new Set(), opts: this.defaultOpts(def), watchers: new Map(), vote: null,
+      seed: 0, rng: Math.random, moves: [], leavers: new Map(), rated: false, rp: 0,
     };
     if (def.codes) room.code = this.codes.issue(room.id);
     this.rooms.set(room.id, room);
@@ -547,7 +639,7 @@ export class Rooms {
   /** 자리 i의 사람이 판을 떠난다 (나가기·내보내기): 두는 중이면 기권, 기다리는 판은 빈 자리, 끝난 판은 떠난 자리. 방장이면 넘긴다 */
   private vacate(room: Room<unknown>, i: number, tell: 'roomFoeGone' | 'roomKickedOut'): void {
     const s = room.seats[i]!;
-    if (room.st === 'play') this.forfeit(room, i, 'resign');
+    if (room.st === 'play') { if (!s.out) room.leavers.set(i, 'leave'); this.forfeit(room, i, 'resign'); }
     if (room.st === 'wait') room.seats[i] = null; // 기다리는 판의 빈 자리로 돌린다
     else { s.ent = 0; s.goneAt = -1; }
     if (room.st === 'over' || tell === 'roomKickedOut') for (const q of this.players(room)) if (q.id !== s.ent) this.g.notify(q, tell, s.name);
@@ -575,7 +667,7 @@ export class Rooms {
   /** 다시 하기: 컴퓨터만 남았으면 곧바로, 사람끼리는 모두 누르면 (RoomDef.againSwap이면 자리를 한 칸씩 돌려) 새 판. 투표가 있는 판은 다시 하기 투표를 낸다 */
   again(p: Ent): void {
     const room = this.of(p);
-    if (!room || room.st !== 'over') return;
+    if (!room || room.st !== 'over' || room.rated) return; // 랭크 판은 다시 큐로 (같은 상대와 이어 두지 않는다)
     const i = this.seatOf(room, p);
     if (i < 0) return;
     const gone = room.seats.find((s) => !!s && !s.cpu && s.goneAt !== 0);
@@ -717,7 +809,7 @@ export class Rooms {
   /** 같은 무리로 다음 판 (결과 창): 끝난 판을 기다리는 판으로 되돌린다. 떠난 사람과 컴퓨터는 빠지고, 관전 대기하던 사람이 빈 자리에 앉는다. 방장이 있는 판은 방장이 */
   regroup(p: Ent): void {
     const room = this.of(p);
-    if (!room || room.st !== 'over' || this.seatOf(room, p) < 0) return;
+    if (!room || room.st !== 'over' || this.seatOf(room, p) < 0 || room.rated) return;
     if (this.dOf(room).lead && !this.isLead(room, p)) { this.g.notify(p, 'roomLeadOnly'); return; }
     this.regroupRoom(room);
   }
@@ -870,10 +962,12 @@ export class Rooms {
       const k = ranks[i] ?? 0, tied = k > 0 && ranks.some((x, j) => j !== i && x === k) ? 1 : 0;
       this.g.notify(p, 'roomResult', res(i), why, k, k > 0 ? ranked : 0, tied);
     });
+    if (this.recs.has(room.id)) this.saveReplay(room);
     if (this.dOf(room).record) this.record(room, res);
     this.touch(room);
     this.g.stateDirty = true;
     this.dOf(room).finished?.(room);
+    for (const fn of this.hooks.finish) fn(room);
   }
 
   /**
@@ -892,6 +986,103 @@ export class Rooms {
     if (room.turn === i) this.pass(room); else this.touch(room);
   }
 
+  // ---------- 경쟁 (묶음 8): 짝지은 판, 리플레이 ----------
+
+  /**
+   * 큐가 짝지은 사람들로 판을 연다 (ranked 모듈): 자리 차례대로 앉히고 bots만큼 봇(컴퓨터 자리)을 더해 곧바로 시작한다. rated면 레이팅에 드는 판.
+   * 앉을 수 없는 사람(이미 앉음·봇·없음)이 있으면 열지 않고 undefined
+   */
+  openWith(defId: string, players: readonly Ent[], bots: number, rated: boolean): Room<unknown> | undefined {
+    const def = this.defs.get(defId);
+    const n = players.length + bots;
+    if (!def || !players.length || n < this.minOf(def) || n > this.sizeOf(def) || players.some((p) => p.bot || this.seated.has(Rooms.keyOf(p)))) return undefined;
+    for (const p of players) if (this.watching.has(Rooms.keyOf(p))) this.unwatch(p);
+    const now = this.g.now();
+    const room: Room<unknown> = {
+      id: this.nextId++, def: defId, layer: instanceLayer(this.g), st: 'wait', seats: Array.from({ length: n }, () => null), size: n, turn: -1, first: 0, round: 1,
+      deadline: 0, win: -1, why: '', ranks: [], scores: [], data: undefined, ents: new Set(), openedAt: now, cpuAt: 0, ver: 0,
+      code: '', privacy: 'private', pass: '', lead: '', banned: new Set(), opts: this.defaultOpts(def), watchers: new Map(), vote: null,
+      seed: 0, rng: Math.random, moves: [], leavers: new Map(), rated, rp: 0,
+    };
+    this.rooms.set(room.id, room);
+    players.forEach((p, i) => this.sit(room, p, i));
+    for (let i = players.length; i < n; i++) room.seats[i] = { key: '', ent: 0, name: def.cpuName ? String(def.cpuName(room, i) ?? '').slice(0, 40) : '', cpu: true, goneAt: 0, out: false, again: false, ready: true, bot: true };
+    this.g.stateDirty = true;
+    this.start(room);
+    return room;
+  }
+
+  /** 끝난 판에서 자리 i의 결과: 0 이김 1 짐 2 비김 (등수로 끝냈으면 1등 하나만 이김, 함께 1등은 비김) */
+  resultOf(room: Room<unknown>, i: number): 0 | 1 | 2 {
+    const k = room.ranks[i] ?? 0, tied = k > 0 && room.ranks.some((x, j) => j !== i && x === k);
+    return k > 0 ? (k === 1 ? (tied ? 2 : 0) : 1) : room.win === -2 ? 2 : room.win === i ? 0 : 1;
+  }
+  /** 자리 i를 판에서 뺀다 (잠수 따위: 다른 시스템이). 그 자리를 떠난 자리로 적는다 */
+  drop(room: Room<unknown>, i: number, why: 'afk'): void {
+    const s = room.seats[i];
+    if (!s || s.cpu || s.out || room.st !== 'play') return;
+    room.leavers.set(i, why);
+    this.forfeit(room, i, why);
+  }
+
+  /** 리플레이의 입력 하나를 적는다 (적는 중인 판만): 자리와 수(게임 명령의 칸, 'cpu' 컴퓨터의 수, 'timeout' 시간 넘김) */
+  private input(room: Room<unknown>, seat: number, m: unknown): void {
+    const rec = this.recs.get(room.id);
+    if (!rec || rec.inputs.length >= (this.dOf(room).replay?.maxFrames ?? REPLAY_FRAMES) * 4) return;
+    rec.inputs.push({ t: this.g.now() - rec.at0, s: seat, m });
+  }
+  /** 리플레이의 프레임 하나 (판이 바뀔 때: touch). 같은 버전이면 다시 적지 않는다 */
+  private frame(room: Room<unknown>): void {
+    const rec = this.recs.get(room.id), view = this.dOf(room).replay?.view;
+    if (!rec || !view || rec.lastVer === room.ver || rec.frames.length >= (this.dOf(room).replay?.maxFrames ?? REPLAY_FRAMES)) return;
+    rec.lastVer = room.ver;
+    try { rec.frames.push({ t: this.g.now() - rec.at0, v: structuredClone(view(room)) }); } catch (err) { console.error('[rooms] 리플레이의 프레임을 적지 못했습니다:', err); }
+  }
+  /** 끝난 판의 리플레이를 저장한다 (마지막 프레임까지): room.rp에 번호 */
+  private saveReplay(room: Room<unknown>): void {
+    const rec = this.recs.get(room.id);
+    this.recs.delete(room.id);
+    const view = this.dOf(room).replay?.view;
+    if (!rec || !view) return;
+    try { rec.frames.push({ t: this.g.now() - rec.at0, v: structuredClone(view(room)) }); } catch { /* 앞의 프레임으로 */ }
+    const keys = [...new Set(room.seats.filter((s): s is RoomSeat => !!s && !s.cpu && !!s.key).map((s) => s.key))];
+    const data: ReplayView = { id: 0, def: room.def, at: rec.at0, names: rec.names, seed: room.seed, inputs: rec.inputs, frames: rec.frames, ranks: [...room.ranks], win: room.win, why: room.why };
+    const at = this.g.now();
+    try {
+      if (this.store?.addReplay) room.rp = this.store.addReplay({ at, def: room.def, keys, data: JSON.stringify(data) });
+      else {
+        room.rp = ++this.memReplaySeq;
+        this.memReplays.push({ id: room.rp, at, def: room.def, keys, data });
+        if (this.memReplays.length > MEM_REPLAYS) this.memReplays.splice(0, this.memReplays.length - MEM_REPLAYS);
+      }
+    } catch (err) { console.error('[rooms] 리플레이를 저장하지 못했습니다:', err); }
+  }
+  /** 리플레이 하나 (보관 기간 안의 것). 저장 키를 주면 그 사람이 앉았던 판만 */
+  replayOf(id: number, key?: string): ReplayView | null {
+    const since = this.g.now() - this.replayDays() * 86_400_000;
+    let row: { at: number; keys: string[]; data: ReplayView } | null = null;
+    if (this.store?.replay) {
+      const r = this.store.replay(id);
+      if (r) { try { row = { at: r.at, keys: r.keys, data: JSON.parse(r.data) as ReplayView }; } catch { row = null; } }
+    } else { const r = this.memReplays.find((x) => x.id === id); if (r) row = { at: r.at, keys: r.keys, data: structuredClone(r.data) }; }
+    if (!row || row.at < since || (key !== undefined && !row.keys.includes(key))) return null;
+    return { ...row.data, id };
+  }
+  /** 리플레이의 보관 기간 (일): 내용의 COMPETE.replayDays, 기본 7 */
+  replayDays(): number { return Math.max(1, competeRules()?.replayDays ?? 7); }
+  private sendReplay(p: Ent, id: number): void {
+    const r = this.replayOf(id, Rooms.keyOf(p));
+    if (!r) { this.g.notify(p, 'replayNone'); return; }
+    this.g.out.push({ id: p.id, msg: { t: 'replay', s: r } });
+  }
+  /** 보관 기간이 지난 리플레이를 지운다 (10분마다) */
+  private prune(): void {
+    this.prunedAt = this.g.now();
+    const before = this.g.now() - this.replayDays() * 86_400_000;
+    if (this.store?.pruneReplays) { try { this.store.pruneReplays(before); } catch (err) { console.error('[rooms] 오래된 리플레이를 지우지 못했습니다:', err); } }
+    if (this.memReplays.length && this.memReplays[0].at < before) this.memReplays = this.memReplays.filter((r) => r.at >= before);
+  }
+
   // ---------- 판 기록 (RoomDef.record) ----------
 
   /** 끝난 판을 저장 키마다 적는다 (손님·컴퓨터는 빼고) */
@@ -900,7 +1091,7 @@ export class Rooms {
     const rows: RoomRecordRow[] = [];
     room.seats.forEach((s, i) => {
       if (!s || s.cpu || !s.key || s.key.startsWith('guest:')) return;
-      rows.push({ key: s.key, at, def: room.def, res: res(i), rank: room.ranks[i] ?? 0, n: room.seats.length, why: room.why, ...(room.scores.length ? { score: room.scores[i] ?? 0 } : {}) });
+      rows.push({ key: s.key, at, def: room.def, res: res(i), rank: room.ranks[i] ?? 0, n: room.seats.length, why: room.why, ...(room.scores.length ? { score: room.scores[i] ?? 0 } : {}), ...(room.rp ? { rp: room.rp } : {}) });
     });
     if (!rows.length) return;
     if (this.store) { try { this.store.addRoomRecords(rows); } catch (err) { console.error('[rooms] 판 기록을 적지 못했습니다:', err); } }
@@ -917,7 +1108,7 @@ export class Rooms {
     const tally = (): RoomTally => ({ n: 0, win: 0, lose: 0, draw: 0 });
     const all = tally(), defs: Record<string, RoomTally> = {};
     for (const r of rows) for (const t of [all, (defs[r.def] ??= tally())]) { t.n++; if (r.res === 0) t.win++; else if (r.res === 1) t.lose++; else t.draw++; }
-    return { name, me: me ? 1 : 0, all, defs, recent: rows.slice(0, STATS_RECENT).map((r) => ({ at: r.at, def: r.def, res: r.res, rank: r.rank, n: r.n, why: r.why })) };
+    return { name, me: me ? 1 : 0, all, defs, recent: rows.slice(0, STATS_RECENT).map((r) => ({ at: r.at, def: r.def, res: r.res, rank: r.rank, n: r.n, why: r.why, ...(r.rp && me ? { rp: r.rp } : {}) })) };
   }
   /** 전적 창 (명령 room a:'stats'): 나, 내 판의 자리 seat의 사람(구경 중이면 그 판), 또는 같은 층의 사람(엔티티 id). 저장 키는 보내지 않는다 */
   private sendStats(p: Ent, seat?: number, id?: number): void {
@@ -958,6 +1149,11 @@ export class Rooms {
     room.ents.clear();
     room.st = 'play'; room.round = 1; room.first = 0; room.win = -1; room.why = ''; room.ranks = []; room.scores = []; room.vote = null;
     for (const s of room.seats) if (s) { s.again = false; s.out = false; s.ready = false; }
+    // 경쟁 (묶음 8): 시드는 리플레이나 랭크 판만 (다른 판의 난수 차례는 예전과 같다)
+    room.moves = room.seats.map(() => 0); room.leavers.clear(); room.rp = 0;
+    if (def.replay || def.rated) { room.seed = Math.floor(Math.random() * 2 ** 31) || 1; room.rng = seededRng(room.seed); } else { room.seed = 0; room.rng = Math.random; }
+    if (def.replay) this.recs.set(room.id, { at0: this.g.now(), names: room.seats.map((s, i) => (s ? s.name || (s.cpu ? (s.bot ? `bot${i + 1}` : `cpu${i + 1}`) : '?') : '')), inputs: [], frames: [], lastVer: -1 });
+    else this.recs.delete(room.id);
     def.start(room);
     this.g.stateDirty = true;
     room.seats.forEach((s, i) => {
@@ -1024,6 +1220,7 @@ export class Rooms {
     if (room.code) this.codes.drop(room.code);
     this.rooms.delete(room.id);
     this.hist.delete(room.id);
+    this.recs.delete(room.id);
     this.g.stateDirty = true;
     if (this.dOf(room).save) this.g.saveDirty = true;
   }
@@ -1070,7 +1267,9 @@ export class Rooms {
   // ---------- 시간 ----------
 
   private tick(): void {
-    if (!this.defs.size || !this.rooms.size) return;
+    if (!this.defs.size) return;
+    if (this.g.now() - this.prunedAt >= PRUNE_MS) this.prune();
+    if (!this.rooms.size) return;
     const now = this.g.now();
     for (const room of [...this.rooms.values()]) {
       const def = this.dOf(room), grace = (def.graceS ?? 60) * 1000;
@@ -1080,7 +1279,7 @@ export class Rooms {
         s.goneAt = -1;
         if (this.seated.get(s.key) === room.id) this.seated.delete(s.key);
         this.back.delete(s.key);
-        if (room.st === 'play') this.forfeit(room, i, 'left'); else room.ver++;
+        if (room.st === 'play') { if (!s.out) room.leavers.set(i, 'left'); this.forfeit(room, i, 'left'); } else room.ver++;
       });
       if (this.closeIfEmpty(room)) continue;
       if (room.vote && now >= room.vote.until) this.settle(room, true);
@@ -1099,6 +1298,9 @@ export class Rooms {
       if (room.deadline && now >= room.deadline) {
         const seat = room.turn, who = room.seats[seat];
         for (const q of this.players(room)) this.g.notify(q, 'roomTimeout', who?.name ?? '');
+        this.input(room, seat, 'timeout');
+        for (const fn of this.hooks.timeout) fn(room, seat);
+        if (room.st !== 'play' || room.turn !== seat) continue; // 고리가 그 자리를 뺐다 (잠수)
         if (def.timeout) def.timeout(room, seat); else this.pass(room);
         // 게임의 처리가 차례를 넘기지 않았으면 기한만 새로 (같은 틱에서 끝없이 돌지 않게)
         if (room.st === 'play' && room.turn === seat && room.deadline <= now) this.begin(room, seat);
@@ -1108,6 +1310,7 @@ export class Rooms {
       const s = room.seats[room.turn];
       if (s?.cpu && now >= room.cpuAt) {
         room.cpuAt = now + (def.cpuStepMs ?? 700);
+        this.input(room, room.turn, 'cpu');
         if (def.cpu) def.cpu(room, room.turn); else this.pass(room);
       }
     }
@@ -1177,7 +1380,7 @@ export class Rooms {
     const def = this.dOf(room), now = this.g.now();
     const v: RoomView = {
       id: room.id, st: room.st, me,
-      seats: room.seats.map((s) => ({ name: s ? s.name : '', cpu: s?.cpu ? 1 : 0, away: !s || s.cpu ? 0 : s.goneAt > 0 ? 1 : s.goneAt < 0 || s.out ? 2 : 0, empty: s ? 0 : 1, again: s?.again ? 1 : 0, ...(def.lead ? { ready: s?.ready ? 1 : 0 } : {}) })),
+      seats: room.seats.map((s) => ({ name: s ? s.name : '', cpu: s?.cpu ? 1 : 0, away: !s || s.cpu ? 0 : s.goneAt > 0 ? 1 : s.goneAt < 0 || s.out ? 2 : 0, empty: s ? 0 : 1, again: s?.again ? 1 : 0, ...(def.lead ? { ready: s?.ready ? 1 : 0 } : {}), ...(s?.bot ? { bot: 1 as const } : {}) })),
       turn: room.st === 'play' ? room.turn : -1, round: room.round, rounds: def.rounds ?? 0,
       left: room.st === 'play' && room.deadline ? Math.max(0, room.deadline - now) : 0, turnMs: this.turnMsOf(def),
       win: room.win, why: room.why, pass: def.pass === false || def.realtimeS ? 0 : 1, walk: def.walk ? 1 : 0,
@@ -1190,7 +1393,9 @@ export class Rooms {
     if (def.voteS) v.vote = room.vote ? this.voteView(room, room.vote, me) : null;
     if (def.watch) { v.watchers = room.watchers.size; v.delayS = def.watch.delayS ?? 0; if (me < 0 && def.watchView && room.st !== 'wait') v.pub = def.watchView(room); }
     if (def.realtimeS) v.rt = 1;
-    if (def.lead || def.codes || def.watch || def.voteS) v.regroup = 1;
+    if ((def.lead || def.codes || def.watch || def.voteS) && !room.rated) v.regroup = 1;
+    if (room.rated) v.rated = 1;
+    if (room.rp && me >= 0) v.rp = room.rp;
     return v;
   }
   private voteView(room: Room<unknown>, v: RoomVote, me: number): RoomVoteView {
@@ -1213,6 +1418,7 @@ export class Rooms {
     const defs: RoomDefView[] = [...this.defs.values()].map((d) => ({
       id: this.idOf(d), min: this.minOf(d), max: this.sizeOf(d), cpu: d.cpu ? 1 : 0, codes: d.codes ? 1 : 0, lead: d.lead ? 1 : 0, vote: d.voteS ? 1 : 0,
       watch: d.watch ? 1 : 0, rt: d.realtimeS ? 1 : 0, record: d.record ? 1 : 0, opts: d.options ?? {},
+      ...(d.rated && this.hooks.quick ? { rated: 1 as const } : {}), ...(d.replay ? { replay: 1 as const } : {}),
     }));
     return {
       rows, cpu: main?.cpu ? 1 : 0, cpuAfterS: main?.cpu ? main.cpuAfterS ?? 0 : 0, startAfterS: main && this.minOf(main) < this.sizeOf(main) ? main.startAfterS ?? 0 : 0, defs,
@@ -1268,6 +1474,7 @@ export class Rooms {
           deadline: 0, win: -1, why: '', ranks: [], scores: [], data: undefined, ents: new Set(), openedAt: now, cpuAt: 0, ver: 0,
           code: '', privacy: isPrivacy(r.privacy) ? r.privacy : 'public', pass: typeof r.pass === 'string' ? r.pass.slice(0, 200) : '',
           lead: typeof r.lead === 'string' ? r.lead.slice(0, 200) : '', banned: new Set(), opts, watchers: new Map(), vote: null,
+          seed: 0, rng: Math.random, moves: seats.map(() => 1), leavers: new Map(), rated: false, rp: 0,
         };
         def.load(room, r.data);
         this.rooms.set(room.id, room);

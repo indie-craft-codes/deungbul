@@ -94,6 +94,8 @@
 | `friends` | 친구: 요청·수락·거절·삭제, 목록(접속·있는 곳·마지막 접속), 상한 (18절) | | 메뉴의 친구 탭, 사람 카드의 친구 요청 | |
 | `support` | 문의·제재 이의: 티켓(열림·답변·닫힘), 관리자의 답(알림·우편), 말 막기·차단의 사유·기간과 이의 신청 (19절) | | 설정 창의 '문의' 칸과 문의 창, 막혔을 때 접속 화면의 사유·이의 | |
 | `odds` | 확률 공개: 확률표의 버전·변경 이력·사전 공지, 게임 밖 공개 페이지(`odds.json`·`odds.html`), 추첨 기록(뽑기·강화·게임의 굴림)과 관리자 조회. 굴림 자체는 모듈과 상관없이 표에서 한다 (20절) | | 메뉴의 확률 탭(확률표·내 추첨 기록) | |
+| `boards` | 순위표 여럿: 이름 붙은 순위표(게임이 `g.boards.define`), 기간(상시·날·주·달·레이팅 시즌)의 초기화, 내 순위·위아래, 휴면 빼기, 동점 규칙. `rank`를 함께 고르면 전투력 순위표가 그 위의 한 판 (31절) | | 메뉴 '소식 › 순위표' 탭 | |
+| `ranked` | 랭크 대전: Glicko-2 레이팅·배치·등급, 레이팅 시즌의 부분 초기화와 보상, 큐(넓어지는 범위·예상 대기·봇), 이탈·잠수의 단계 제재 (31절, 내용 `COMPETE`) | `rooms`, `boards` | 대기실의 '랭크 대전'과 내 등급, 큐 띠, 결과 창의 레이팅 변화, 순위표 탭의 등급 카드 | |
 
 ```ts engine/test/core/shared/content/index.ts
 /** 쓸 모듈: 없다 (핵심만) */
@@ -102,10 +104,10 @@ export const MODULES: readonly ModuleId[] = [];
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support', 'rooms', 'boards', 'ranked'];
 ```
 
-모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`, `chars`, `morph`, `chat`, `friends`, `odds`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
+모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`, `chars`, `morph`, `chat`, `friends`, `odds`, 경쟁의 둘(`boards`, `ranked`)이 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
 **의존으로 딸려 온 모듈의 화면 감추기**: 쓰려는 모듈의 의존 때문에 고른 모듈의 단추가 필요 없으면(예: 던전 → 장비 → 아이템이라 생기는 가방 단추, 서버가 대신 싸우는 게임의 '가까운 대상 공격') 내용에 `export const HUD: HudRules = { hide: ['bag', 'attackNearest'] };`(타입은 `@engine/shared/defs/hud`)를 적는다. 감출 뿐이라 기능과 단축키는 그대로다. 이름의 목록은 13절 '단계 밖'의 표.
 
@@ -235,7 +237,7 @@ if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키�
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support', 'rooms', 'boards', 'ranked'];
 export const GUEST_NAME = 'Camper';
 ```
 
@@ -455,10 +457,11 @@ npm run start:sample          # http://localhost:3002
 // 차례가 중요하다: (1) 언어 묶음을 등록하고 (2) 이 게임의 창을 붙인 뒤에 (3) 틀을 시작시킨다. 틀은 시작하면서 화면의 글자를 채운다
 setLocales(LOCALES);
 mountBonfire();
+mountDuel();
 startClient({
   look,
   // 이 게임의 모듈: 적은 차례대로 init되고, 틀의 덧붙는 모듈(상점, 가방, 메뉴 …)보다 먼저다
-  modules: [initBonfire, initScene, initCharStands, initTutorial],
+  modules: [initBonfire, initScene, initCharStands, initTutorial, initDuel],
 });
 ```
 
@@ -689,7 +692,7 @@ declare module '@engine/shared/ext' {
     bonfireLit: [name: string];
   }
   /** 화면 → 서버: 모닥불에 장작을 n개 넣는다 */
-  interface ClientMsgs { feed: { n: number } }
+  interface ClientMsgs { feed: { n: number }; /** 별 겨루기 (server/duel.ts): 솔방울 n개(1~3)를 줍는다 */ duel: { n: number } }
   /** 모두가 함께 보는 상태: 모닥불의 온기 */
   interface WorldState { bonfire: { heat: number } }
 }
@@ -718,6 +721,8 @@ export function installSample(g: Game): void {
   g.ready.push(() => { const daily = g.daily; g.on('fed', (p, n) => daily.add(p, 'feed', n)); });
   // 캐릭터 정의 넷과 변신 (./chars.ts)
   installChars(g);
+  // 별 겨루기: 랭크 판 (./duel.ts, 경쟁 묶음 8의 증명)
+  installDuel(g);
 }
 ```
 
@@ -2415,7 +2420,7 @@ setGuestReminder({ afterMin: 20 });
 예제(모닥불 사냥터)는 다 켰다:
 
 ```ts games/sample/shared/content/index.ts
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support', 'rooms', 'boards', 'ranked'];
 ```
 
 ```ts games/sample/shared/content/index.ts
@@ -3285,7 +3290,7 @@ leftRail: () => [railTab('daily', 'mission'), railTab('season', 'season', 'menu.
 - 세 게임 모두 쓴다. 등불지기는 탭 이름·기능 그대로 묶음만(성장: 장비·성장 / 활동: 일일 / 소식: 우편·거래소·길드·순위 / 설정). 예제는 모닥불을 '활동'의 맨 앞으로:
 
 ```ts games/sample/client/bonfire.ts
-setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'rank', 'autoset', 'codex']);
+setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'boards', 'autoset', 'codex']);
 // 탭 묶음 (U3): 틀의 기본 묶음에 모닥불을 '활동'의 맨 앞으로
 setMenuGroups(MENU_GROUPS.map((g) => (g.id === 'play' ? { ...g, tabs: ['camp', ...g.tabs] } : g)));
 ```
@@ -3469,3 +3474,84 @@ setCodexPublic(() => `./guide.html?lang=${L().code}`);
 - **색만으로 가르지 않기**: 카드 격자의 등급은 테두리 색에 더해 모서리에 등급 이름의 첫 글자(`.cardrar`)와 낭독기의 등급 이름. 뽑기 공개·카드 상세·장비 이름은 등급 이름을 글로 이미 보인다.
 - **소리로만 알리지 않기**: 효과음이 나는 일(레벨 업·받음·실패·안내문의 소리)은 모두 글(축하 카드·알림·버튼 곁의 까닭)이 함께 뜬다. 게임이 `addMsgSounds`로 소리를 단 안내문도 `addNotices`로 글이 뜨게 둔다.
 - **누르는 크기**: 터치에서 44px(`--tap`, U1 그대로).
+
+## 31. 경쟁: 순위표, 레이팅·배치·등급, 시즌 초기화, 큐, 이탈 제재, 리플레이 (묶음 8)
+
+[genre-features.md](genre-features.md) 5.8의 묶음 8. 장치는 틀에, 수치·이름은 게임의 내용에. 모두 **기본 꺼짐**: 모듈(`boards`, `ranked`)을 고르지 않고 `RoomDef`의 칸(`rated`, `queueBots`, `teamOf`, `replay`)을 적지 않으면 예전과 같다(등불지기 황금 실행 7,489,205바이트 `ba83af30d07f` 그대로). 모양과 셈은 `engine/shared/defs/compete.ts`, 서버는 `systems/boards.ts`·`ranked.ts`·`queue.ts`와 `rooms.ts`의 리플레이, 화면은 `hud/compete.ts`·`hud/replay.ts`, 관리자 명령은 `net/competecmds.ts`.
+
+본보기: 예제 `games/sample`의 '별 겨루기'(`server/duel.ts`·`client/duel.ts`: 랭크·큐·봇·리플레이·이탈 제재·시즌), 메아리 계약의 순위표 둘(`games/echopact/server/boards.ts`: 탑 최고 단계 주간·편성 전투력), 틀의 시험 `engine/test/core/compete.test.ts`.
+
+### 순위표 (`boards` 모듈)
+
+```ts
+// 플러그인에서 (Boards는 플러그인보다 먼저 만들어진다)
+g.boards.define({ id: 'tower', name: 'boardTower', period: 'week', fmt: 'stage' });
+g.on('stageCleared', (p, id) => { const [ch, st] = id.split('-').map(Number); g.boards.submit('tower', p, ch * 100 + st); });
+```
+
+| 칸 | 뜻 |
+|---|---|
+| `id`, `name` | 영문 32자 이내 / 이름의 문장 키(게임의 언어 파일 `ui`) |
+| `period` | `'ever'`(기본)·`'day'`·`'week'`·`'month'`(초기화 시각 `RESET`)·`'season'`(레이팅 시즌, 없으면 `SEASON`의 주기). 경계를 넘으면 비우고 지난 기간의 1~3등을 남긴다 |
+| `fmt` | 화면의 값: `'num'`·`'rating'`·`'power'`(값 + `'레벨:직업'`)·`'stage'`(장×100 + 단계 → '3-5') |
+| `asc`, `keep`, `show` | 작은 값이 위 / 남기는 줄(1000) / 보이는 줄(50) |
+
+- `submit(id, 사람 | { pid, name }, 값, 'max' | 'set' | 'add')`: 저장 키(pid)가 있는 사람만 오른다(손님·봇은 빠진다). 'max'는 더 좋을 때만이고 **같은 값이면 먼저 닿은 사람이 위**(닿은 때를 남긴다).
+- 다른 시스템의 줄은 `g.boards.adopt({ tab, rows, to?, prev? })`로 읽기만 한다. 틀이 거는 것: `rank` 모듈을 함께 고르면 전투력('power', 순위의 줄 그대로), `ranked`가 사다리마다 레이팅('rating:<사다리>').
+- 창: 메뉴 '소식 › 순위표'(`boards`). 순위표 고르기(칩, `aria-pressed`), 기간과 초기화까지, 내 순위 카드, 위 50줄, 내가 그 밖이면 내 위아래 둘, 지난 기간의 1~3등. 명령 `{ t: 'board', id? }`, 답 `{ t: 'board', tabs, s }`.
+- **`rank` 모듈의 전투력 순위표**는 줄을 `Board`(정렬·자르기·찾기만 하는 작은 판, `boards.ts`)에 둔다. 명령 `rank`와 그 답·저장의 모양은 예전 그대로라 등불지기의 '순위' 탭은 바뀌지 않는다.
+
+### 랭크 대전 (`ranked` 모듈 + `RoomDef.rated`)
+
+```ts
+g.rooms.define<Duel>({
+  id: 'duel', seats: 2, rated: true, queueBots: 25, record: true,
+  replay: { cmds: ['duel'], view: (room) => ({ pile: room.data.pile, secret: [...room.data.secret], turn: room.turn }) },
+  start: (room) => { room.data = { pile: 11 + Math.floor(room.rng() * 5), … }; },
+  …
+});
+```
+
+- `rated: true`(사다리 = 판의 이름) 또는 `rated: '사다리'`(판 여럿이 한 레이팅). 대기실의 **빠른 대국이 큐가 된다**(단추 글 '랭크 대전'). 방 만들기·코드로 연 판은 레이팅에 들지 않는다. 결과 창은 다시 하기·같은 무리 대신 **[다시 큐]**.
+- **레이팅**: Glicko-2(`glicko`). 셋 이상은 등수로, 팀은 `teamOf(room, seat)`로 같은 팀을 빼고 **쌍대 비교**를 한 번에(`pairwise`). 게임이 `finish`에 준 등수(없으면 이김/짐)를 쓴다.
+- **배치·등급**: `placement`판 전에는 등급을 숨기고 '배치 n/10'. RD가 `showRd` 이상이면(오래 쉼) 등급을 숨기고 순위표에서 빠진다(휴면 점거 방지). 마지막 판에서 `idleDays`일 뒤로 하루 `perDay`씩 RD가 는다(`rdMax`까지).
+- **반영 안 함**: 모두 끊겼거나 떠난 판, 누군가 **첫 수를 두기 전에** 떠나 끝난 판(`room.moves`: `myTurn`이 답한 수). 떠난 사람의 이탈은 그래도 센다.
+- **랭크 판의 이탈은 패배**: 두는 중에 나감·끊긴 채 `graceS`를 넘김·잠수(`room.leavers`)는 등수가 맨 뒤.
+- **잠수**: 시간 넘김이 `leave.afkTurns`번 이어지면(그 사이 수가 늘지 않음) 판에서 뺀다(`g.rooms.drop`, 까닭 `afk`).
+- **이탈 제재**: 떠날 때마다 점수 1, 점수의 단계 `leave.steps`(분, 0이면 경고)만큼 큐 금지, `decayH`시간마다 점수가 하나 준다. 안내문 `leaveWarn`·`leavePenalty`·`queueBanned`, 개인 상태 `leave`.
+- **시즌**: `season.period`(없으면 `SEASON`의 주기)가 바뀌면 모두를 기준 쪽으로 `pull`만큼 당기고 RD를 `rdTo` 이상으로. 지난 시즌 최고 등급의 보상 `season.rewards[등급 id]`은 우편 `'rankSeason'`(접속하지 않은 사람도 `sendTo`), 안내문 `rankedSeason`.
+- **큐**: 1초마다 오래 기다린 사람부터, 서로의 범위(`queue.range` ± 초마다 `grow`, `maxRange`까지) 안에서 레이팅이 가까운 사람으로 자리를 채운다. `queueBots`(초)를 준 판은 그만큼 기다리면 **봇**(컴퓨터 자리, 화면에 늘 '(봇)')으로 채운다. 봇과의 판은 `queue.botR`가 있을 때만 레이팅에 든다(봇의 RD 150). 예상 대기는 그 판의 최근 대기 평균. 개인 상태 `queue`, 큐 띠(가운데 위, 폰은 아래)의 [취소].
+- 개인 상태 `rating`(`RatingMe[]`: 사다리마다 보이는 레이팅·등급·배치·승패·시즌 최고·마지막 변화)으로 대기실의 내 등급 줄, 결과 창의 '레이팅 1,512 (+12) · 골드', 순위표 탭 맨 위의 등급 카드.
+
+```ts
+// 내용 (games/sample/shared/content/index.ts: 수치는 임시값)
+export const COMPETE: CompeteRules = {
+  rating: { placement: 3, showRd: 250, idleDays: 7, perDay: 1 },
+  tiers: [{ id: 'bronze', name: 'tierBronze', min: 0 }, { id: 'silver', name: 'tierSilver', min: 1450 }, …],
+  season: { period: 'month', pull: 0.25, rdTo: 150, rewards: { silver: { gold: 100 }, … } },
+  queue: { range: 75, grow: 5, maxRange: 400, botR: 1300 },
+  leave: { afkTurns: 2, steps: [0, 5, 15, 60, 240], decayH: 24 },
+  replayDays: 7,
+};
+```
+
+기본값(적지 않은 칸): 처음 1500/350/0.06, τ 0.5, RD 30~350, 배치 10판, `showRd` 100, 쉼 7일 뒤 하루 1, 큐 ±100에서 초마다 +10(±1000까지), 이탈 [0, 5, 15, 60]분·24시간, 리플레이 7일. 등급의 이름(`TierDef.name`)은 게임의 언어 파일.
+
+### 리플레이 (`RoomDef.replay`: `rooms` 모듈의 칸)
+
+- 판을 차릴 때마다 시드(`room.seed`)와 정해진 난수 `room.rng()`를 준다(리플레이나 랭크 판만: 다른 판의 난수 차례는 예전과 같다). **결정적 판은 판의 난수를 모두 `room.rng`로**.
+- 적는 것: 시드, 입력(`cmds`의 게임 명령은 판이 바뀐 것만, 컴퓨터의 수 `'cpu'`, 시간 넘김 `'timeout'`), 프레임(판이 바뀔 때마다 `view(room)`: 숨은 정보까지 담아도 된다). 판이 끝나면 저장(SQLite `room_replays`, 저장소가 없으면 메모리 200판), 전적의 줄에 번호(`rp`).
+- 보는 것: **끝난 뒤에만, 앉았던 사람만**(명령 `{ t: 'replay', id }`, 아니면 `replayNone`). 결과 창과 전적 창의 [다시 보기] → 재생기(재생·멈춤·처음으로·한 칸(←·→)·막대·배속 1×·2×·4×, Space). 그리기는 게임이 `setReplayLook({ draw(v, names, box, at) })`로(없으면 값을 글로).
+- 보관 기간 `COMPETE.replayDays`(기본 7일)가 지나면 10분마다 지운다. 내 데이터 지우기는 내가 앉았던 리플레이도 지운다.
+
+### 관리자 (CLI·웹 관리 화면)
+
+`boards`(목록·줄 수), `rating 이름|저장 키`(사다리마다 r·RD·σ·판 수·승패·시즌), `leavers [이름]`(이탈 점수·큐 금지·최근 기록 20줄: 고객지원이 본다), `leavers forgive 이름`(운영: 기록을 지우고 큐 금지를 푼다). 역할은 `roleFor`(앞의 셋은 보기).
+
+### 화면의 칸
+
+- `setRoomLook({ lobbyWhen })`: 들판이 있는 게임에서 대기실 창을 판을 두는 자리 곁에서만 보인다(예제: 그루터기 12m).
+- `setReplayLook`, `openReplay(id)`, `boardName`, `tierName`(`@engine/client`).
+- 문장은 틀의 ko·en에 `ui` 24·`fmt` 18·`msg` 12(새 키 54만: 언어 견본에서 달라진 문장 0). 게임은 등급·순위표·판의 이름과 `fmt.roomWhy`의 까닭을 자기 언어 파일에.
+
+남은 것: 팀 판의 큐(일행 넣기), 대회·관전 지연의 랭크 판, 리플레이 공유 링크, 클라이언트에서 시드·입력으로 다시 셈하기(지금은 서버가 적은 프레임을 본다), 실시간 판의 잠수 판정(지금은 차례 판만).

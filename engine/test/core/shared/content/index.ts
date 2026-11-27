@@ -5,6 +5,7 @@
 // 별칭 @game이 이 폴더를 가리키는 것은 engine/test/core/tsconfig.json뿐이다. 뿌리의 tsconfig.json은 이 폴더를 빼고 검사한다.
 import type { MapDef } from '@engine/shared/defs/map';
 import type { ModuleId } from '@engine/shared/modules';
+import type { CompeteRules } from '@engine/shared/defs/compete';
 
 /** 쓸 모듈: 없다 (핵심만) */
 export const MODULES: readonly ModuleId[] = [];
@@ -32,3 +33,13 @@ export const MAP: MapDef = {
 // ---------- 이 '게임'만의 것 (틀은 읽지 않는다: 시험만 읽는다) ----------
 /** 공을 놓는 자리 */
 export const BALL_SPOTS: readonly { x: number; z: number }[] = [{ x: 4, z: 3 }, { x: -6, z: 5 }, { x: 30, z: 30 }];
+
+// ---------- 경쟁 (묶음 8): 랭크 판의 시험(compete.test.ts)이 고르는 ranked 모듈의 규칙. 모듈을 고르지 않으면 읽지 않는다 ----------
+export const COMPETE: CompeteRules = {
+  rating: { placement: 2, showRd: 400 },
+  tiers: [{ id: 'bronze', name: 'tierBronze', min: 0 }, { id: 'silver', name: 'tierSilver', min: 1500 }],
+  season: { period: { days: 14, from: 0 }, pull: 0.5, rdTo: 200 },
+  queue: { range: 100, grow: 50, botR: 1400 },
+  leave: { afkTurns: 2, steps: [0, 5, 15], decayH: 24 },
+  replayDays: 7,
+};

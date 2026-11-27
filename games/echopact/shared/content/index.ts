@@ -43,6 +43,8 @@ export const MODULES: readonly ModuleId[] = [
   'event', 'season', 'achieve', 'codex', 'coupon',
   // 스태미나 (묶음 D): 모듈은 고르되 규칙(STAMINA_RULES.enabled)은 꺼 두었다. 켤지는 사용자 결정
   'stamina',
+  // 순위표 (경쟁 묶음 8): 탑 최고 단계(주간)·편성 전투력 (server/boards.ts). 경쟁 판(rooms·ranked)은 없다
+  'boards',
 ];
 
 // ---------- 두 게임: 계약의 탑(A, 단계)과 울림골(B, 들판) ----------
@@ -50,8 +52,8 @@ export const MODULES: readonly ModuleId[] = [
 // 보고 있지 않은 쪽: 들판은 자동 사냥(R)을 켜 두었으면 몸이 남아 사냥하고(fieldStay), 탑은 싸우던 단계를 끝까지·자동 진행이 켜져 있으면 다음 단계로(stageStay)
 export const MODE_RULES: ModeRules = {
   list: [
-    { id: MODE.tower, name: 'modeTower', kind: 'stage', tabs: ['gacha', 'odds', 'heroes', 'squad', 'stages', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends', 'autoset'], hide: ['auto', 'attackNearest', 'worldMap', 'minimap', 'skills', 'hint', 'channel', 'bag'] },
-    { id: MODE.vale, name: 'modeVale', kind: 'field', tabs: ['morph', 'gear', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends', 'autoset'] },
+    { id: MODE.tower, name: 'modeTower', kind: 'stage', tabs: ['gacha', 'odds', 'heroes', 'squad', 'stages', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends', 'boards', 'autoset'], hide: ['auto', 'attackNearest', 'worldMap', 'minimap', 'skills', 'hint', 'channel', 'bag'] },
+    { id: MODE.vale, name: 'modeVale', kind: 'field', tabs: ['morph', 'gear', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends', 'boards', 'autoset'] },
   ],
   start: MODE.tower,
   switchCdS: 1,

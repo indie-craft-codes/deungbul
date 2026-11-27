@@ -4,7 +4,9 @@
 // 비밀번호 묻기, 기다리는 판의 방 코드·초대 링크 복사·공개 설정·자리마다 준비·방장의 내보내기·넘기기·규칙 고르기·시작, 투표 줄(찬성·반대), 구경꾼의 막대(지연·관전 대기),
 // 결과 창의 '같은 무리로 다음 판', 전적 창(대기실의 '전적', 자리 이름 누르기). 방 코드가 생기면 Platform.invite로 포털의 초대 단추에 알린다.
 // 게임이 더 할 수 있는 것: 내 판 읽기(myRoom, myRoomTurn), 판이 바뀔 때 받기(onRoomChange), 매끄러운 남은 시간(roomLeftMs), 명령 보내기(roomSend),
-// 막대에 자기 글과 자리의 색·이름 더하기, 좁은 화면에서 막대의 자리 고르기, 판·규칙의 이름(setRoomLook). 문장은 틀의 언어 파일(ui.room…, fmt.room…)이고, 게임은 같은 키를 자기 언어 파일에 적어 덮어쓴다(대기실의 설명 roomLobbyInfo, 끝난 까닭 fmt.roomWhy).
+// 막대에 자기 글과 자리의 색·이름 더하기, 좁은 화면에서 막대의 자리 고르기, 판·규칙의 이름(setRoomLook).
+// 경쟁(묶음 8): 랭크 판(RoomDef.rated)은 빠른 대국이 '랭크 대전'(큐)이고 결과 창은 다시 하기 대신 [다시 큐], 리플레이(RoomDef.replay)는 결과 창·전적 창의 [다시 보기](hud/replay.ts).
+// 대기실의 내 등급 줄(#roomCompete)과 결과 창의 레이팅 변화(#roomEndRating)는 ranked 모듈의 화면(hud/compete.ts)이 채운다. 문장은 틀의 언어 파일(ui.room…, fmt.room…)이고, 게임은 같은 키를 자기 언어 파일에 적어 덮어쓴다(대기실의 설명 roomLobbyInfo, 끝난 까닭 fmt.roomWhy).
 import type { RoomDefView, RoomLobby, RoomRow, RoomStatsView, RoomView } from '../../shared/defs/rooms';
 import type { RoomCmd } from '../../shared/protocol';
 import { $ } from '../app';
@@ -15,6 +17,7 @@ import { platform } from '../platform';
 import { rules } from '../rules';
 import { addMsgSounds, sfx } from '../sound';
 import { addNotices, feed } from './notify';
+import { initReplay, openReplay } from './replay';
 import { mountPanel } from './shell';
 
 let room: RoomView | null = null;
@@ -37,6 +40,8 @@ interface RoomLook {
   /** 규칙 옵션의 이름과 값의 글 (RoomDef.options). 빈 문자열이면 fmt.roomOptName·roomOptValue */
   optName?: (k: string) => string;
   optValue?: (k: string, v: string | number) => string;
+  /** 판에 앉지 않았을 때 대기실 창을 보일 때 (들판이 있는 게임: 판을 두는 자리 곁에서만). 없으면 늘 (묶음 8) */
+  lobbyWhen?: () => boolean;
 }
 let look: RoomLook = {};
 /** 대기실 목록의 한 쪽에 보이는 줄 수 */
@@ -71,11 +76,15 @@ export function roomSeatName(v: RoomView, i: number): string {
   const mine = look.seatName?.(v, i);
   if (mine) return mine;
   if (!s.cpu) return s.name || '?';
+  // 큐가 채운 봇 (묶음 8): 봇이라고 늘 적는다 (봇과 붙는 것을 숨기지 않는다)
+  if (s.bot) return L().fmt.roomBotName(s.name, v.seats.slice(0, i + 1).filter((x) => x.bot).length);
   if (s.name) return s.name;
   const cpus = v.seats.filter((x) => x.cpu && !x.name).length;
   return cpus > 1 ? L().fmt.roomCpuN(v.seats.slice(0, i).filter((x) => x.cpu && !x.name).length + 1) : t('roomCpu');
 }
 const defName = (id: string): string => look.defName?.(id) || L().fmt.roomDefName(id);
+/** 판의 이름 (RoomDef.id → 화면의 글: 게임의 setRoomLook의 defName, 없으면 fmt.roomDefName). 경쟁의 화면(큐 띠·사다리)이 쓴다 */
+export const roomDefLabel = defName;
 const optName = (k: string): string => look.optName?.(k) || L().fmt.roomOptName(k);
 const optValue = (k: string, v: string | number): string => look.optValue?.(k, v) || L().fmt.roomOptValue(k, v);
 
@@ -87,6 +96,7 @@ export function initRooms(): void {
     <div class="panel" id="roomLobby">
       <div class="row"><span class="ttitle" id="roomLobbyTitle"></span><span class="num" id="roomLobbyExtra"></span></div>
       <div class="note" id="roomLobbyInfo"></div>
+      <div id="roomCompete" hidden></div>
       <div id="roomIdle">
         <div class="btns rpick" id="roomDefs" hidden></div>
         <div class="btns rpick" id="roomSizes" hidden></div>
@@ -121,10 +131,11 @@ export function initRooms(): void {
     <div class="panel" id="roomEnd" hidden>
       <div class="rbig" id="roomEndTitle"></div>
       <div class="note" id="roomEndWhy"></div>
+      <div class="rrating" id="roomEndRating" hidden></div>
       <div class="rranks" id="roomEndRanks" hidden></div>
       <div class="note" id="roomEndNote"></div>
       <div class="note rvote" id="roomVoteE" hidden></div>
-      <div class="btns"><button type="button" id="roomAgain" class="go"></button><button type="button" id="roomRegroup" hidden></button><button type="button" class="plain" id="roomToLobby"></button></div>
+      <div class="btns"><button type="button" id="roomAgain" class="go"></button><button type="button" id="roomRequeue" class="go" hidden></button><button type="button" id="roomRegroup" hidden></button><button type="button" class="plain" id="roomReplay" hidden></button><button type="button" class="plain" id="roomToLobby"></button></div>
     </div>
     <div class="panel" id="roomStats" hidden>
       <div class="row"><span class="ttitle" id="roomStatsTitle"></span><button type="button" class="plain" id="roomStatsClose"></button></div>
@@ -161,6 +172,7 @@ export function initRooms(): void {
     $('roomCopy').textContent = t('roomCopyLink'); ui.privPass.placeholder = t('roomPassPh'); $('roomPrivGo').textContent = t('roomApply');
     ui.privSel.innerHTML = (['public', 'private', 'friends', 'password'] as const).map((v) => `<option value="${v}">${esc(t(`roomPriv${v[0].toUpperCase()}${v.slice(1)}` as 'roomPrivPublic'))}</option>`).join('');
     ui.unwatch.textContent = t('roomWatchLeave'); ui.regroup.textContent = t('roomRegroup'); $('roomStatsClose').textContent = t('roomClose');
+    $('roomRequeue').textContent = t('roomRequeue'); $('roomReplay').textContent = t('roomReplay');
   };
   label();
   onLangChange(() => { label(); render(); });
@@ -195,6 +207,10 @@ export function initRooms(): void {
   click('roomUnwatch', () => roomSend('leave'));
   click('roomReadyBtn', () => { if (room) roomSend('ready', undefined, { on: room.seats[room.me]?.ready !== 1 }); });
   click('roomStatsMine', () => roomSend('stats'));
+  click('roomReplay', () => { if (room?.rp) openReplay(room.rp); });
+  // 다시 큐: 끝난 랭크 판을 떠나 같은 판의 큐에 선다
+  click('roomRequeue', () => { const def = room?.def; roomSend('leave'); send({ t: 'queue', a: 'join', ...(def ? { def } : {}) }); });
+  initReplay();
   click('roomStatsClose', () => { ui.stats.hidden = true; });
   click('roomPrev', () => { page = Math.max(0, page - 1); render(); });
   click('roomNext', () => { page++; render(); });
@@ -233,6 +249,7 @@ export function initRooms(): void {
     else if (d.kickvote) roomSend('vote', undefined, { kind: 'kick', seat: Number(d.kickvote) });
     else if (d.give) roomSend('give', undefined, { seat: Number(d.give) });
     else if (d.stats) roomSend('stats', undefined, { seat: Number(d.stats) });
+    else if (d.replay) openReplay(Number(d.replay));
     else if (d.opt !== undefined && room) {
       const v = d.num ? Number(d.val) : d.val ?? '';
       if (room.lead === room.me || (room.lead === undefined && room.seats.findIndex((s) => !s.empty && !s.cpu) === room.me)) roomSend('opt', undefined, { k: d.opt, v });
@@ -240,7 +257,7 @@ export function initRooms(): void {
     } else if (d.yes) roomSend('ballot', undefined, { yes: d.yes === '1' });
     (b as HTMLElement).blur();
   });
-  for (const el of [ui.list, ui.defs, ui.sizes, ui.waitSeats, ui.opts, ui.voteW, ui.voteB, ui.voteE, ui.seats, ui.endRanks]) onData(el);
+  for (const el of [ui.list, ui.defs, ui.sizes, ui.waitSeats, ui.opts, ui.voteW, ui.voteB, ui.voteE, ui.seats, ui.endRanks, ui.statsBody]) onData(el);
 
   onMsg('me', (m) => {
     if (m.k !== 'room') return;
@@ -289,7 +306,7 @@ export function initRooms(): void {
       `<div class="rbigsm">${esc(tl(s.all))}</div>`,
       ...(many ? Object.entries(s.defs).map(([id, x]) => `<div class="note">${esc(defName(id))} · ${esc(tl(x))}</div>`) : []),
       `<div class="note sub">${esc(t('roomStatsRecent'))}</div>`,
-      ...s.recent.map((r) => `<div class="note">${esc(loc.fmt.roomRecentRow(defName(r.def), r.res, r.rank, r.n, r.at))}</div>`),
+      ...s.recent.map((r) => `<div class="note${r.rp ? ' mrow' : ''}"><span>${esc(loc.fmt.roomRecentRow(defName(r.def), r.res, r.rank, r.n, r.at))}</span>${r.rp ? btn(t('roomReplay'), `data-replay="${r.rp}"`, 'plain') : ''}</div>`),
     ].join('');
     ui.stats.hidden = false;
   }
@@ -307,7 +324,7 @@ export function initRooms(): void {
   function render(): void {
     const loc = L(), r = room, watching = !!r?.watch;
     // 대기실 창: 판에 앉지 않았거나 사람을 기다리는 동안 (구경꾼은 막대만)
-    ui.lobby.hidden = !!r && (r.st !== 'wait' || watching);
+    ui.lobby.hidden = (!!r && (r.st !== 'wait' || watching)) || (!r && !!look.lobbyWhen && !look.lobbyWhen());
     ui.idle.hidden = !!r; ui.wait.hidden = !(r && r.st === 'wait' && !watching);
     const d = chosen();
     ui.cpu.hidden = ui.waitCpu.hidden = !(d ? d.cpu : lobby.cpu);
@@ -358,7 +375,9 @@ export function initRooms(): void {
         return `<div class="rrank${i === r.me ? ' mine' : ''}"${stats}${color ? ` style="color:${esc(color)}"` : ''}>${esc(text)}</div>`;
       }).join('');
       const gone = r.seats.some((s, i) => i !== r.me && !s.cpu && !s.empty && s.away !== 0);
-      ui.again.hidden = watching;
+      ui.again.hidden = watching || !!r.rated;
+      $('roomRequeue').hidden = watching || !r.rated;
+      $('roomReplay').hidden = watching || !r.rp;
       ui.again.disabled = gone || r.seats[r.me]?.again === 1 || !!r.vote;
       // 같은 무리로 다음 판: 방장이 있는 판은 방장만 (떠난 사람이 있어도 된다)
       ui.regroup.hidden = watching || !r.regroup || (r.lead !== undefined && r.lead !== r.me);
@@ -373,7 +392,8 @@ export function initRooms(): void {
   function renderIdle(loc: ReturnType<typeof L>, d: RoomDefView | undefined): void {
     const defs = lobby.defs ?? [];
     ui.defs.hidden = defs.length < 2;
-    ui.defs.innerHTML = defs.length < 2 ? '' : defs.map((x) => btn(defName(x.id), `data-def="${esc(x.id)}"`, x.id === (d?.id ?? '') ? 'go' : 'plain')).join('');
+    ui.defs.innerHTML = defs.length < 2 ? '' : defs.map((x) => btn(defName(x.id) + (x.rated ? ` · ${t('roomRankedTag')}` : ''), `data-def="${esc(x.id)}"`, x.id === (d?.id ?? '') ? 'go' : 'plain')).join('');
+    $('roomQuick').textContent = d?.rated ? t('roomRanked') : t('roomQuick');
     const range = d && d.min < d.max ? Array.from({ length: d.max - d.min + 1 }, (_, i) => d.min + i) : [];
     ui.sizes.hidden = range.length < 2;
     const cur = size || d?.max || 0;

@@ -27,6 +27,7 @@ export * from './defs/odds';
 export * from './defs/modes';
 export * from './defs/stamina';
 export * from './defs/livecontent';
+export * from './defs/compete';
 // 맵 정의의 모양과 MAP에서 꺼낸 것(AREAS, GRID 등)은 world.ts가 다시 내보낸다. 여기서는 MAP만 내보낸다
 
 export {
@@ -68,4 +69,6 @@ export {
   STAMINA_RULES,
   // 라이브 콘텐츠 (묶음 6)
   GOODS, EVENTS, SEASON, ACHIEVES, CODEX, COUPON, COMEBACK, MAIL_RULES,
+  // 경쟁 (묶음 8)
+  COMPETE,
 } from './content';

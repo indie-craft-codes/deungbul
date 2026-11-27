@@ -1,9 +1,12 @@
 // 순위: 캐릭터의 전투력(레벨, 무기와 갑옷, 낀 드롭 장비)으로 줄을 세운다.
 // 접속 중인 사람의 값을 주기적으로 갱신하고, 나간 사람의 마지막 값도 남겨 둔다. 월드와 함께 저장한다.
+// 줄은 순위표의 작은 판(boards.ts의 Board)에 둔다: boards 모듈을 함께 고른 게임은 순위표 창의 '전투력' 탭으로 이 줄을 그대로 읽는다 (묶음 8).
+// 명령 rank와 그 답, 저장의 모양은 예전 그대로다.
 import { GEAR_SLOTS, RANK, powerOf, type Gear, type RankRow } from '../../../shared/defs';
 import { NAME_MAX } from '../../../shared/world';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
+import { Board, type BoardEntry } from './boards';
 import { Shop } from './shop';
 
 /** 순위의 한 줄. 사람은 저장 키(pid)로 구분한다. pid가 빈 줄은 이름으로만 저장하던 때의 것이다 */
@@ -12,7 +15,10 @@ interface Row extends RankRow { pid: string }
 const shown = (r: Row): RankRow => ({ name: r.name, lv: r.lv, cls: r.cls, power: r.power });
 
 export class Rank {
-  private rows: Row[] = [];
+  /** 전투력이 높은 차례, 같으면 레벨이 높은 차례 (같으면 먼저 오른 사람) */
+  private readonly board = new Board<Row>((a, b) => b.power - a.power || b.lv - a.lv, RANK.keep);
+  private get rows(): Row[] { return this.board.rows; }
+  private set rows(v: Row[]) { this.board.rows = v; }
   private wait = 0;
 
   constructor(private g: Game) {
@@ -49,8 +55,7 @@ export class Rank {
       this.rows = this.rows.filter((r) => r.pid || r.name !== p.name);
       this.g.saveDirty = true;
     }
-    this.rows.sort((a, b) => b.power - a.power || b.lv - a.lv);
-    this.rows.length = Math.min(this.rows.length, RANK.keep);
+    this.board.sort();
   }
 
   /** 이름을 바꾸면 순위의 이름도 따라간다. 내 줄만 바뀐다: 남의 이름으로 바꿔도 남의 줄은 그대로다 */
@@ -67,6 +72,8 @@ export class Rank {
   }
 
   top(): RankRow[] { return this.rows.slice(0, RANK.show).map(shown); }
+  /** 순위표 창의 줄 (boards 모듈의 '전투력' 탭): 값은 전투력, 덧붙인 값은 '레벨:직업'. 저장 키는 화면에 가지 않는다 (Boards.view가 이름만 싣는다) */
+  entries(): BoardEntry[] { this.update(); return this.rows.map((r) => ({ pid: r.pid, name: r.name, v: r.power, x: `${r.lv}:${r.cls}` })); }
   save(): unknown { return this.rows; }
   load(data: unknown): void {
     if (!Array.isArray(data)) return;

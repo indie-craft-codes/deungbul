@@ -4,6 +4,7 @@ import { dist, type Game } from '@engine/server';
 import { MAP as aliased } from '@engine/shared/world';
 import { MAP } from '../shared/content';
 import { WELL } from '../shared/content/pact';
+import { installBoards } from './boards';
 import { installPact } from './pact';
 
 // 틀이 별칭 @game으로 읽은 내용이 이 게임의 것인가. tsx는 --tsconfig를 주지 않으면 뿌리의 tsconfig.json을 읽어 다른 게임의 내용으로 조용히 뜬다
@@ -14,4 +15,6 @@ export function installEchopact(g: Game): void {
   g.rules.respawn = () => ({ x: WELL.x, z: WELL.z + 5, id: 'well' });
   g.rules.canChangeClass = (p) => dist(p, WELL) <= 7;
   installPact(g);
+  // 순위표 (경쟁 묶음 8): 탑 최고 단계(주간)·편성 전투력 (./boards.ts)
+  installBoards(g);
 }

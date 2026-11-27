@@ -64,6 +64,8 @@ export const koNames: ContentNames = {
 
 export const koGame = {
   ui: {
+    // 순위표 (경쟁 묶음 8: server/boards.ts)
+    boardTower: '탑 최고 단계',
     // 첫 로딩의 팁 (U2: 틀의 setLoadingTips)
     loadTip1: '울림 조각이 모이면 울림 샘에서 메아리를 부릅니다. 조각은 단계와 울림골에서 모입니다.',
     loadTip2: '단계에서 막히면 메아리의 레벨을 올리거나 편성을 바꿔 보세요.',

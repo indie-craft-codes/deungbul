@@ -16,3 +16,11 @@
 #rightcol[data-near="bonfire"] #shop, #rightcol[data-near="shop"] #bonfire { display: none; }
 /* 설정 창의 '이름표 보이기'를 끄면 (client/tutorial.ts의 addSetting) */
 .noTags #tags { display: none; }
+/* 별 겨루기 (client/duel.ts): 내 차례의 줍기 단추 셋, 리플레이의 솔방울 줄 */
+#duelPad[hidden] { display: none; }
+#duelPad { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); z-index: var(--z-float); display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; text-align: center; max-width: calc(calc(var(--uvw, 1vw) * 100) - 24px); }
+#duelPad .btns { justify-content: center; gap: 8px; }
+#duelPad button { min-width: 88px; min-height: 44px; }
+.duelPile { font-size: var(--fs-xl); letter-spacing: 3px; color: #c08a4a; word-break: break-all; margin-bottom: 6px; }
+.duelSeat { padding: 2px 0; opacity: .8; }
+.duelSeat.now { opacity: 1; font-weight: 800; }
