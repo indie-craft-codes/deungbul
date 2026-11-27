@@ -351,7 +351,9 @@ for (const P of PACKS) {
   // 진입점에서 시작해 불러오는 파일을 모두 따라간다 (형만 불러오는 import type은 번들에 들어가지 않으므로 건너뛴다).
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
   const seen = new Set<string>(), problems: string[] = [];
-  const allowed = (rel: string): boolean => rel.startsWith('engine/shared/') || rel.startsWith('games/deungbul/shared/') || rel.startsWith('games/deungbul/client/guide/') || rel.startsWith('games/deungbul/client/i18n/') || /^engine\/client\/i18n\/(ko|en|merge|names|ext)\.ts$/.test(rel);
+  const allowed = (rel: string): boolean => rel.startsWith('engine/shared/') || rel.startsWith('games/deungbul/shared/') || rel.startsWith('games/deungbul/client/guide/') || rel.startsWith('games/deungbul/client/i18n/') || /^engine\/client\/i18n\/(ko|en|merge|names|ext)\.ts$/.test(rel)
+    // 플랫폼 접점(언어·주소·저장소를 읽는 곳): 브라우저 API만 감싸고 3D·통신 코드를 부르지 않는다
+    || /^engine\/client\/platform\/(index|types|web|memory|auth|keyname)\.ts$/.test(rel);
   const visit = (file: string): void => {
     const rel = path.relative(root, file).replace(/\\/g, '/');
     if (seen.has(rel)) return;

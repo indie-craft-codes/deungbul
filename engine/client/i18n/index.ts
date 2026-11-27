@@ -7,6 +7,7 @@ import { NAME_MAX } from '../../shared/world';
 import { enBase } from './en';
 import { itemInfo as itemInfoOf, koBase, type Locale, type UiKey } from './ko';
 import { idNames, uiText } from './names';
+import { platform } from '../platform';
 
 export { mergeLocale } from './merge';
 export type { EngineLocale, Locale, UiKey } from './ko';
@@ -21,10 +22,9 @@ const listeners: (() => void)[] = [];
 
 function detect(): Locale {
   const pick = (code: string | null | undefined) => LOCALES.find((l) => code?.toLowerCase().startsWith(l.code));
-  let saved: string | null = null;
-  try { saved = localStorage.getItem('lang'); } catch { /* 저장소를 못 쓰는 환경 */ }
-  // 주소의 ?lang= 이 가장 먼저, 그다음 저장된 선택, 그다음 브라우저 언어
-  return pick(new URLSearchParams(location.search).get('lang')) ?? pick(saved) ?? pick(navigator.language) ?? LOCALES[0];
+  const p = platform();
+  // 주소의 ?lang= 이 가장 먼저, 그다음 저장된 선택(저장 키 'lang'), 그다음 기기·브라우저 언어 (모두 플랫폼이 준다: 웹은 예전과 같은 곳에서 읽는다)
+  return pick(p.app.param('lang')) ?? pick(p.storage.get('lang')) ?? pick(p.app.language()) ?? LOCALES[0];
 }
 
 /**
@@ -49,7 +49,8 @@ export function itemName(id: ItemId, cls: string): string {
 /** 아이템의 한 줄 설명: 수치로 된 효과는 아이템 정의에서 읽어 만든다 (ko.ts의 itemInfo) */
 export const itemInfo = (id: ItemId): string => itemInfoOf(current, id);
 
-export const isTouch = (): boolean => matchMedia('(pointer: coarse)').matches;
+/** 주 입력 장치가 터치인가 (플랫폼이 정한다: 웹은 처음에 '(pointer: coarse)'로 짐작하고 그 뒤로는 실제로 쓴 장치를 따른다. platform/web.ts) */
+export const isTouch = (): boolean => platform().input.primary() === 'touch';
 /**
  * 문장 안의 [[PC용|터치용]] 표시를 지금 입력 장치에 맞게 고른다. 터치용을 비우면([[ (F)|]]) 그 부분이 빠진다.
  * 언어 파일의 문장은 이것을 거쳐야 하므로, 고정 문구는 t()로, 서버 안내문은 notifySys로 읽는다.
@@ -87,7 +88,7 @@ export function setLang(code: string): void {
   const next = LOCALES.find((l) => l.code === code);
   if (!next || next === current) return;
   current = next;
-  try { localStorage.setItem('lang', code); } catch { /* 무시 */ }
+  platform().storage.set('lang', code); // 저장소를 못 쓰면 이번 세션에만
   applyDom();
   for (const fn of listeners) fn();
 }
@@ -126,3 +127,5 @@ export function clock(sec: number): string {
 }
 
 current = detect();
+// 주 입력 장치가 바뀌면(터치 노트북에서 손가락 ↔ 마우스) [[PC|터치]] 문장을 다시 고른다: 언어가 바뀐 것처럼 다시 그린다
+platform().input.onChange(() => { if (!applied) return; applyDom(); for (const fn of listeners) fn(); });

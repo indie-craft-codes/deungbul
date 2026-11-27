@@ -1,5 +1,6 @@
 // 시험용 플랫폼(node): 저장소는 Map, 생명주기는 손으로 일으킨다(fire), 내려받기·열기·광고는 적어 둔다. 브라우저 없이 화면의 셈을 시험한다.
-import type { Feature, LifeEvent, Platform, RawError } from './types';
+import { keyNameOf } from './keyname';
+import type { Feature, InputKind, LifeEvent, Platform, RawError } from './types';
 
 export interface MemoryPlatform extends Platform {
   /** 저장된 값 (시험이 들여다본다) */
@@ -12,15 +13,25 @@ export interface MemoryPlatform extends Platform {
   readonly did: string[];
   /** 보낸 오류 묶음의 본문 */
   readonly reports: string[];
+  /** 시작할 때 받은 값 (app.param이 읽고 setParam이 쓴다) */
+  readonly params: Map<string, string>;
+  /** 주 입력 장치를 바꾼다 (onChange한 곳에 간다) */
+  setInput(k: InputKind): void;
+  /** 화면 크기 (viewport가 돌려준다) */
+  size: { w: number; h: number };
+  /** 기기 언어 (app.language) */
+  lang: string;
 }
 
 export function memoryPlatform(features: readonly Feature[] = ['files.save', 'link.external', 'errors']): MemoryPlatform {
   const data = new Map<string, string>(), did: string[] = [], reports: string[] = [];
   const subs = new Map<LifeEvent, Set<() => void>>();
   const errs: ((e: RawError) => void)[] = [];
-  let visible = true;
-  return {
-    id: 'test', data, did, reports,
+  const params = new Map<string, string>(), inputSubs = new Set<(k: InputKind) => void>();
+  let visible = true, kind: InputKind = 'mouse';
+  const me: MemoryPlatform = {
+    id: 'test', data, did, reports, params, size: { w: 1280, h: 720 }, lang: '',
+    setInput: (k) => { if (kind === k) return; kind = k; for (const fn of inputSubs) fn(k); },
     has: (f) => features.includes(f),
     storage: {
       ready: () => Promise.resolve(),
@@ -42,11 +53,17 @@ export function memoryPlatform(features: readonly Feature[] = ['files.save', 'li
       safeArea: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
       pixelRatioCap: () => 2,
       pixelRatio: () => 1,
+      viewport: () => ({ ...me.size }),
     },
+    input: { primary: () => kind, onChange: (fn) => { inputSubs.add(fn); return () => inputSubs.delete(fn); }, gamepad: () => null, keyName: keyNameOf },
     openUrl: (url) => { did.push('open:' + url); return Promise.resolve(true); },
     share: () => Promise.resolve(false),
     copy: () => Promise.resolve(false),
     saveFile: (name) => { did.push('save:' + name); return Promise.resolve(true); },
+    notify: { permission: () => Promise.resolve('denied'), register: () => Promise.resolve(null), local: (_at, title) => { did.push('notify:' + title); return Promise.resolve(false); } },
+    purchase: { products: () => Promise.resolve([]), buy: () => Promise.resolve({ error: 'unsupported' }), onPending: () => {} },
+    achievements: { unlock: (id) => { did.push('achievement:' + id); return Promise.resolve(false); } },
+    cloud: { get: () => Promise.resolve(null), set: () => Promise.resolve(false) },
     errors: { listen: (fn) => { errs.push(fn); }, report: (url, body) => { did.push('report:' + url); reports.push(body); } },
     offlineCache: () => Promise.resolve(false),
     auth: { providers: () => ['guest'], proof: () => Promise.resolve(null) },
@@ -56,6 +73,10 @@ export function memoryPlatform(features: readonly Feature[] = ['files.save', 'li
     },
     invite: (room) => { did.push('invite:' + room.code); },
     server: () => Promise.resolve('ws://127.0.0.1:0'),
-    app: { version: () => 'test', build: () => 0, page: () => '/', requireUpdate: () => { did.push('update'); } },
+    app: {
+      version: () => 'test', build: () => 0, page: () => '/', requireUpdate: (store) => { did.push(store ? 'update:' + store : 'update'); },
+      param: (name) => params.get(name) ?? null, setParam: (name, value) => { params.set(name, value); }, anchor: () => '', language: () => me.lang,
+    },
   };
+  return me;
 }

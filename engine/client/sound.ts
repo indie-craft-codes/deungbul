@@ -335,10 +335,8 @@ export function initSound(): void {
   platform().lifecycle.on('show', () => hold('hidden', false));
   onAd((v) => hold('ad', v));
   platform().audio.onInterrupt((v) => hold('ad', v));
-  // 첫 입력에서 소리 장치를 깨운다 (자동 재생 정책: 그 전에는 만들지도 틀지도 않는다)
-  const wake = () => { unlocked = true; ready(); pickMusic(); };
-  window.addEventListener('pointerdown', wake, { passive: true });
-  window.addEventListener('keydown', wake);
+  // 입력에서 소리 장치를 깨운다 (자동 재생 정책: 그 전에는 만들지도 틀지도 않는다). 언제가 깨워도 되는 때인지는 플랫폼이 안다 (웹: 입력마다)
+  platform().audio.onUnlock(() => { unlocked = true; ready(); pickMusic(); });
   onMsg('sys', (m) => BY_MSG[m.k]?.());
   onMsg('cd', () => sfx.skill());
   onSlow(pickMusic);

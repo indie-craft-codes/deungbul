@@ -79,12 +79,15 @@ const mobsIn = (g: Game, p: Ent) => [...g.ents.values()].filter((e) => e.kind ==
   step(g, 20);
   const hp1 = mobsIn(g, p).reduce((s, m) => s + m.hp, 0);
   check(hp1 < hp0, `20초 동안 대장이 다가가 친다 (적의 체력 합 ${hp0} → ${hp1})`);
-  // 손으로 움직이는 동안(1.5초)은 맡기지 않는다
+  // 손으로 움직이는 동안(1.5초)은 맡기지 않는다.
+  // 대상은 맡는 셈(0.3초마다)이 주고, 그 대상이 쓰러지면 다음 셈까지 0으로 비어 있다. 쓰러지는 때는 치명타(Math.random)에 달려 있어서
+  // 한 순간만 보면 가끔(약 8%) 막 쓰러뜨린 직후를 본다: 구간 동안 틱마다 본다 (예전에는 2.0초가 된 한 순간만 봐서 가끔 실패했다)
   p.targetId = 0; p.lastMove = g.clock;
-  step(g, 0.5);
-  check(p.targetId === 0, '손으로 움직인 지 1.5초 안이면 대상을 주지 않는다');
-  step(g, 1.5);
-  check(p.targetId !== 0, '그 뒤에는 다시 맡는다');
+  const watch = (s: number): number[] => { const got: number[] = []; for (let i = 0; i < Math.round(s * 20); i++) { g.tick(0.05); got.push(p.targetId); } return got; };
+  const hold = watch(0.5);
+  check(hold.every((id) => id === 0), '손으로 움직인 지 1.5초 안이면 대상을 주지 않는다 (그동안의 모든 틱)');
+  const after = watch(1.5);
+  check(after.some((id) => id !== 0), `그 뒤에는 다시 맡는다 (1.5초 안에 대상을 준다: 처음 준 틱 ${after.findIndex((id) => id !== 0)})`);
   // 끄면 (auto 없음) 예전처럼 사람이 싸운다
   goldmine.auto = false;
   const g2 = new Game({ now: () => T, plugins: [] });

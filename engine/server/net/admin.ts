@@ -82,7 +82,7 @@ export interface AdminHost {
 }
 
 /** 연결을 끊는 이유 (클라이언트가 이것을 보고 다시 붙을지 정한다: engine/client/main.ts) */
-export const CLOSE = { handedOff: 4001, kicked: 4002, banned: 4003, maint: 4004, joinClosed: 4005 } as const;
+export const CLOSE = { handedOff: 4001, kicked: 4002, banned: 4003, maint: 4004, joinClosed: 4005, /** 화면이 서버의 프로토콜 호환 범위 밖이다 (update 메시지 뒤: server.ts) */ update: 4006 } as const;
 
 export interface Admin {
   /** 이 요청이 관리자 통로의 것이면 처리하고 true. 아니면 false (정적 파일로 넘긴다) */

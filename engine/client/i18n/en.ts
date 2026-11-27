@@ -472,6 +472,9 @@ export const enBase = (n: ContentNames): EngineLocale => {
       keepSafe: 'This character is saved only in this browser. Clearing browser data or staying away for a long time can lose it. Get a transfer code from the Device tab in the menu to keep playing on another device.',
       keepOpen: 'Open Device tab',
       keepLater: 'Got it',
+      // Version mismatch: apps and desktop (the web uses stale·reload. main.ts outdated)
+      staleApp: 'A new version is required. Please update the game.',
+      updateApp: 'Update',
     },
     monsters,
     dungeons,

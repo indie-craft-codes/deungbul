@@ -8,7 +8,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { AWAY } from '../../shared/auto';
 import { GUEST_NAME } from '../../shared/defs';
 import type { MsgArg, MsgKey } from '../../shared/messages';
-import { PROTOCOL, type ServerMsg } from '../../shared/protocol';
+import { PROTOCOL, protocolFits, type ServerMsg } from '../../shared/protocol';
 import { CHAT_MAX, NAME_MAX, SNAP_EVERY, TICK_MS } from '../../shared/world';
 import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
@@ -24,6 +24,7 @@ import { REPORT_GAP_MS, REPORT_LINES } from './moderation';
 import { OpsCounters, opsHandler, pushCapped } from './ops';
 import { buildFrame, snapshotFor } from './snapshot';
 import { serveStatic } from './static';
+import { originAllowed, type OriginOptions } from './origin';
 import { guestServerAuth, type ServerAuth } from './auth';
 import { createWeb, type Web } from './web';
 import { startStatus, type StatusOptions } from './status';
@@ -114,7 +115,21 @@ const AWAY_AT_CLOSE = 'awayAtClose';
 const AWAY_RESTORE_MS = 90_000;
 export interface Running { port: number; game: Game; metrics(): Metrics; close(): Promise<void>; /** 관리자 통로 (net/admin.ts) */ admin: Admin }
 export interface Options {
-  bots?: number; store?: Store; game?: GameOptions; maxClients?: number; maxPerIp?: number; maxAway?: number; /** 빌드된 화면(dist/)의 자리. 주지 않으면 저장소 뿌리의 dist/ */ staticDir?: string;
+  bots?: number; store?: Store; game?: GameOptions; maxClients?: number; maxPerIp?: number; maxAway?: number;
+  /**
+   * 빌드된 화면(dist/)의 자리. 주지 않으면 저장소 뿌리의 dist/. null이면 화면 파일을 내보내지 않는다(모든 주소가 404. 관리자 통로·/healthz·/metrics·웹 끝점은 그대로):
+   * 화면을 CDN·정적 호스팅·포털·앱이 따로 싣고 이 서버는 게임(WebSocket)만 맡을 때 (docs/platforms.md 3.2-1)
+   */
+  staticDir?: string | null;
+  /** WebSocket 접속의 출처(Origin) 허용 목록 (./origin.ts). 주지 않으면 검사하지 않는다 (예전과 같다) */
+  origins?: OriginOptions;
+  /**
+   * 받는 가장 낮은 프로토콜 번호. 기본 PROTOCOL(같은 번호만: 예전과 같다). 더 낮게 주면 그 번호 ~ PROTOCOL의 옛 화면도 받는다(앱의 호환 기간: docs/platforms.md 3.2-4):
+   * welcome에 min을 실어 화면이 스스로 알게 하고, join에 v를 실은 화면(앱)이 범위 밖이면 update를 보내고 닫는다(4006)
+   */
+  protocolMin?: number;
+  /** 업데이트할 곳의 주소 (update 메시지의 store: 앱은 스토어 페이지를 연다). 주지 않으면 싣지 않는다 */
+  storeUrl?: string;
   /** 자동 백업 (../store/backup.ts). false면 하지 않는다. 주지 않으면 기본값(켜질 때와 360분마다, 20개 보관). 파일로 저장하지 않는 저장소(메모리)는 늘 하지 않는다 */
   backup?: BackupOptions | false;
   /** WebSocket 압축(perMessageDeflate). 기본 켬: 근거는 docs/infra.md '압축' (봇 30·접속 50에서 회선 -73%, CPU +8%p, 접속 200에서는 CPU가 두 배) */
@@ -206,11 +221,14 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   /** 구간의 값 하나를 더한다. metrics()를 부르는 쪽(METRICS 로그, 부하 측정)이 없으면 비워지지 않으므로, M_KEEP을 넘으면 오래된 반을 버린다 (예전에는 하루에 수십 MB씩 쌓였다) */
   const keepIn = (a: number[], v: number) => pushCapped(a, v, M_KEEP);
 
-  const dist = opts.staticDir ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist');
+  const dist = opts.staticDir === null ? null : opts.staticDir ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist');
+  /** 받는 프로토콜 번호의 범위 (protocolMin ~ PROTOCOL). 기본은 PROTOCOL 하나 */
+  const protoMin = Math.min(PROTOCOL, Math.max(0, Math.floor(opts.protocolMin ?? PROTOCOL)));
   /** 열린 연결의 소켓 (실제로 보낸 바이트를 세는 데 쓴다) */
   const sockets = new Set<Socket>();
   const compress = opts.compress ?? true;
-  const statics = serveStatic(dist);
+  // 화면 파일을 내보내지 않는 서버: 모든 주소가 404 (본문은 정적 처리기의 '없음'과 같다)
+  const statics: http.RequestListener = dist === null ? (_req, res) => { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('not found'); } : serveStatic(dist);
   // 관리자 통로(POST /admin)가 먼저 보고, 아니면 정적 파일. 통로는 아래에서 연결 목록을 다룰 함수들이 다 생긴 뒤에 만든다
   let admin: Admin | null = null;
   const httpServer = http.createServer(opsHandler(ops, () => {
@@ -220,7 +238,9 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     return { clients: online, away: away.size, entities: game.ents.size, openWire, backup: backups, compress };
   }, (req, res) => { if (!admin?.route(req, res) && !web?.route(req, res)) statics(req, res); }));
   // 압축은 작은 메시지(이동 한 번)에는 걸지 않는다: 줄어드는 것보다 드는 CPU가 크다. 압축은 libuv의 일꾼 스레드에서 돌아 틱의 스레드는 오히려 덜 쓴다
-  const wss = new WebSocketServer({ server: httpServer, maxPayload: 1024, perMessageDeflate: compress ? { threshold: 256 } : false });
+  // 출처 검사: 목록을 주었을 때만 verifyClient를 단다 (주지 않으면 ws의 기본 그대로: 예전과 같다). 걸린 연결은 손잡기에서 403
+  const originCheck = opts.origins?.list?.length ? { verifyClient: (info: { origin: string }) => originAllowed(info.origin || undefined, opts.origins) } : {};
+  const wss = new WebSocketServer({ server: httpServer, maxPayload: 1024, perMessageDeflate: compress ? { threshold: 256 } : false, ...originCheck });
 
   /** 보낸 메시지를 센다: 지표 로그(m)와 운영 지표(ops) */
   const count = (n: number) => { m.bytes += n; m.msgs++; ops.sent(n); };
@@ -316,8 +336,15 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     catch (err) { log.error('[server] 지표 스냅샷 실패:', err); }
   }
   econSnapshot(); // 켜질 때: 오늘의 스냅샷이 없으면 남긴다
+  /** welcome에 덧붙이는 호환 범위: 옛 화면을 받아 줄 때만 (기본은 비어 있어 welcome이 예전과 같다) */
+  const welcomeMin: { min?: number } = protoMin < PROTOCOL ? { min: protoMin } : {};
 
   function join(c: Client, m: Record<string, unknown>): void {
+    // 프로토콜 번호를 실은 화면(앱·데스크톱)이 받는 범위 밖이면 업데이트를 알리고 닫는다 (웹은 싣지 않는다: welcome의 v·min으로 화면이 안다)
+    if (typeof m.v === 'number' && !protocolFits(m.v, PROTOCOL, protoMin < PROTOCOL ? protoMin : undefined)) {
+      send(c, { t: 'update', min: protoMin, max: PROTOCOL, ...(opts.storeUrl ? { store: opts.storeUrl } : {}) });
+      c.ws.close(CLOSE.update, 'update'); return;
+    }
     // 토큰이 있으면 저장된 캐릭터를 이어받는다 (인증 접점 ./auth.ts: 손님은 토큰의 해시가 저장 키)
     // 다른 기기로 옮겨 간 토큰은 받지 않는다. 옮겨 온 기기의 토큰은 그 캐릭터의 저장 키를 가리킨다 (net/handoff.ts)
     const key = auth.keyOf(m);
@@ -344,7 +371,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
         byEnt.set(kept.id, c);
         kept.dirty = true; kept.metaDirty = true;
         game.away.stop(kept);
-        send(c, { t: 'welcome', id: kept.id, name: kept.name, x: r2(kept.x), z: r2(kept.z), auto: true, v: PROTOCOL });
+        send(c, { t: 'welcome', id: kept.id, name: kept.name, x: r2(kept.x), z: r2(kept.z), auto: true, v: PROTOCOL, ...welcomeMin });
         send(c, { t: 'world', s: game.state() });
         sendOps(c);
         if (game.has('party')) game.party.resend(kept.id);
@@ -362,7 +389,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     for (let i = 0; i < 5 && taken(name, undefined, c.key); i++) name = ([...name].slice(0, NAME_MAX - 3).join('') + (100 + Math.floor(Math.random() * 900)));
     c.ent = game.players.spawn(name, false, save, c.key ?? '');
     byEnt.set(c.ent.id, c);
-    send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: (awayOn && c.ent.auto) || undefined, v: PROTOCOL });
+    send(c, { t: 'welcome', id: c.ent.id, name, x: r2(c.ent.x), z: r2(c.ent.z), auto: (awayOn && c.ent.auto) || undefined, v: PROTOCOL, ...welcomeMin });
     send(c, { t: 'world', s: game.state() });
     sendOps(c);
     // 오늘의 자리 비움 사냥 시간을 다 써서 멈췄던 사람: 왜 멈춰 있는지 알린다

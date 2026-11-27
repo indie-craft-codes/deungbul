@@ -13,6 +13,11 @@
 //   COMPRESS=0           WebSocket 압축(perMessageDeflate)을 끈다 (기본 켬: docs/infra.md '압축')
 //   STATUS=0             상태 페이지(status.json, status.html)를 쓰지 않는다 (기본: 빌드된 화면의 폴더가 있으면 거기에 30초마다. DB=memory면 쓰지 않는다: engine/server/net/status.ts)
 //   STATUS_DIR=경로       상태 페이지를 쓸 폴더 (정적 호스팅에 올리는 폴더 같은 곳)
+//   STATIC=0             빌드된 화면을 내보내지 않는다 (화면은 다른 곳에 올리고 이 서버는 게임만: net/server.ts의 staticDir: null)
+//   ORIGINS=a,b          WebSocket 접속을 이 출처들에서만 받는다 (https://example.com, http://localhost:* …: net/origin.ts). 없으면 검사하지 않는다
+//   ORIGIN_NONE=0        ORIGINS를 줄 때, Origin 머리말이 없는 연결(네이티브 앱의 소켓, 부하 도구)을 받지 않는다 (기본 받음)
+//   PROTOCOL_MIN=n       이 번호 ~ 지금 번호의 옛 화면도 받는다 (앱의 호환 기간). 없으면 같은 번호만
+//   STORE_URL=주소        옛 화면에 업데이트할 곳으로 알릴 주소 (앱 스토어 페이지)
 // 서버는 저장 파일 옆에 자기 프로세스 번호를 server.pid로 적는다 (scripts/restart.mjs가 강제로 끌 때 쓴다). 꺼질 때 지운다.
 // 치명적 오류(처리되지 않은 예외): 적고, 저장을 시도하고, 코드 1로 끝낸다. 감시자(scripts/serve.mjs)가 다시 띄운다.
 import fs from 'node:fs';
@@ -40,7 +45,14 @@ export async function runServer(opts: RunOptions): Promise<Running> {
   const dbFile = process.env.DB ?? opts.db;
   if (dbFile !== 'memory') fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const store: Store = dbFile === 'memory' ? new MemoryStore() : new SqliteStore(dbFile);
-  const s = await startServer(port, { bots, store, staticDir: opts.dist, game: { plugins: opts.plugins ?? [] }, backup: backupFromEnv(), compress: process.env.COMPRESS === undefined || process.env.COMPRESS === '' ? undefined : process.env.COMPRESS !== '0', status: statusFrom(dbFile, opts.dist) });
+  const origins = (process.env.ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const protocolMin = process.env.PROTOCOL_MIN ? Number(process.env.PROTOCOL_MIN) : undefined;
+  const s = await startServer(port, {
+    bots, store, staticDir: process.env.STATIC === '0' ? null : opts.dist, game: { plugins: opts.plugins ?? [] }, backup: backupFromEnv(), compress: process.env.COMPRESS === undefined || process.env.COMPRESS === '' ? undefined : process.env.COMPRESS !== '0', status: statusFrom(dbFile, opts.dist),
+    origins: origins.length ? { list: origins, allowNone: process.env.ORIGIN_NONE !== '0' } : undefined,
+    protocolMin: protocolMin !== undefined && Number.isInteger(protocolMin) ? protocolMin : undefined,
+    storeUrl: process.env.STORE_URL || undefined,
+  });
   const at = (process.env.DEV_SPAWN ?? '').split(',').map(Number);
   if (at.length === 2 && at.every(Number.isFinite)) s.game.players.devSpawn = { x: at[0], z: at[1] };
 

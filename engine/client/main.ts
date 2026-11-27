@@ -7,7 +7,7 @@
 //   bus       모듈이 스스로 끼어드는 자리   modules   덧붙는 기능 모듈의 목록
 // 틀의 스타일: 게임의 index.html이 틀의 폴더를 가리키지 않아도 되게 여기서 읽는다. 맨 먼저 읽어야 게임의 스타일(틀의 것을 덮어쓴다)보다 앞에 놓인다
 import './style.css';
-import { PROTOCOL } from '../shared/protocol';
+import { PROTOCOL, protocolFits } from '../shared/protocol';
 import { HOME_KEY, SKILL_SLOTS } from '../shared/defs';
 import { bindCameraView, cameraAim } from './camera';
 import { boundKeys, dispatch, onMsg, runFrame, runSlow } from './bus';
@@ -30,6 +30,8 @@ import { connect, forgetToken, initNet, send } from './net';
 import { afterPreload, startLater, startPreload } from './preload';
 import { initErrors, watchCanvas } from './errors';
 import { initLifecycle } from './lifecycle';
+import { platform } from './platform';
+import { initTips } from './hud/tip';
 import { isBlocked } from './social';
 import type { Look } from './scene/view';
 import { S } from './state';
@@ -82,9 +84,11 @@ function lost(code: number): void {
   if (code === 4003) { showGate('gateBanned', false); return; }
   if (opsLost(code)) return; // 점검(4004), 새 접속 막힘(4005): 까닭을 두고 1분마다 다시 접속해 본다 (hud/ops.ts)
   if (code === 4010) { forgetToken(); showGate('gateErased', true); return; } // 요청한 대로 데이터를 지웠다 (engine/server/net/web.ts의 ERASED_CLOSE): 다음 접속은 새 캐릭터
+  if (code === 4006) { outdated(); return; } // 서버의 프로토콜 호환 범위 밖 (보통은 먼저 온 update 메시지가 처리한다)
   showGate('reconnecting', true);
   const again = () => {
-    if (document.hidden) { document.addEventListener('visibilitychange', again, { once: true }); return; } // 화면이 꺼져 있으면 켜질 때까지 기다린다
+    const life = platform().lifecycle;
+    if (!life.visible()) { const off = life.on('show', () => { off(); again(); }); return; } // 화면이 꺼져 있으면 켜질 때까지 기다린다
     connect();
   };
   clearTimeout(retryTimer);
@@ -93,30 +97,25 @@ function lost(code: number): void {
 }
 onMsg('welcome', () => { retryMs = 2000; clearTimeout(retryTimer); });
 
-// 서버의 프로토콜 번호가 이 화면의 것과 다르다(서버만 새 버전이고 화면은 옛 빌드가 남았다): 게임을 진행하지 않고 새로고침을 권한다.
+// 서버와 이 화면의 프로토콜이 맞지 않는다(서버만 새 버전이고 화면은 옛 빌드가 남았다): 게임을 진행하지 않고 업데이트를 권한다.
+// 맞는지는 protocolFits(shared/protocol.ts): 같은 번호이거나, 서버가 알린 호환 범위(welcome.min ~ welcome.v) 안이면 맞다. 서버가 join.v를 보고 먼저 거절하면 update 메시지가 온다.
+// 업데이트는 플랫폼이 한다(platform().app.requireUpdate): 웹은 새로고침(예전과 같은 안내·단추), 앱은 스토어·런처를 연다.
 // 번호를 보내지 않는 옛 서버에는 지금처럼 그냥 접속한다. 한번 어긋난 것을 안 뒤로는 메시지를 처리하지 않고 다시 접속하지도 않는다.
 let stale = false;
-function outdated(): void {
+let storeUrl: string | undefined;
+function outdated(store?: string): void {
   stale = true;
-  showGate('stale', true);
+  storeUrl = store;
+  // 웹은 새로 읽으면 새 화면이 온다: '새로고침' 안내. 앱은 묶인 화면이라 새로 읽어도 그대로다: '업데이트' 안내
+  const web = platform().id === 'web';
+  showGate(web ? 'stale' : 'staleApp', true);
   const btn = $('joinBtn');
-  btn.setAttribute('data-i18n', 'reload'); // 언어를 바꿔도 따라 바뀌게 한다
-  btn.textContent = t('reload');
+  btn.setAttribute('data-i18n', web ? 'reload' : 'updateApp'); // 언어를 바꿔도 따라 바뀌게 한다
+  btn.textContent = t(web ? 'reload' : 'updateApp');
 }
 
-/**
- * 화면 크기. 홈 화면에 추가해 연 아이폰은 가로로 돌리면 페이지 높이를 실제보다 작게 알려 줘서
- * 아래가 비므로, 그때는 기기 화면 크기를 직접 쓴다.
- */
-function appSize(): { w: number; h: number } {
-  if ((navigator as { standalone?: boolean }).standalone === true) {
-    const long = Math.max(screen.width, screen.height), short = Math.min(screen.width, screen.height);
-    return window.matchMedia('(orientation: landscape)').matches ? { w: long, h: short } : { w: short, h: long };
-  }
-  return { w: window.innerWidth, h: window.innerHeight };
-}
 function resize(): void {
-  const { w, h } = appSize();
+  const { w, h } = platform().display.viewport();
   document.documentElement.style.setProperty('--app-w', `${w}px`);
   document.documentElement.style.setProperty('--app-h', `${h}px`);
   view.resize(w, h);
@@ -168,6 +167,7 @@ export function startClient(opts: ClientOptions = {}): void {
   for (const init of opts.modules ?? []) init();
   initModules();
   startPreload(); // 게임의 모듈이 에셋을 등록한 뒤에
+  initTips(); // 터치에서 title 툴팁을 길게 눌러 본다 (hud/tip.ts)
   // iOS 사파리는 확대 금지 설정을 무시한다: 두 손가락 확대와 두 번 눌러 확대를 직접 막는다
   for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
   document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
@@ -180,7 +180,8 @@ export function startClient(opts: ClientOptions = {}): void {
   initNet({
     message: (m) => {
       if (stale) return;
-      if (m.t === 'welcome' && m.v !== undefined && m.v !== PROTOCOL) { outdated(); return; }
+      if (m.t === 'welcome' && m.v !== undefined && !protocolFits(PROTOCOL, m.v, m.min)) { outdated(); return; }
+      if (m.t === 'update') { outdated(m.store); return; }
       dispatch(m, performance.now());
     },
     opening: () => { clearEntities(); setParty([]); showGate('connecting', false); },
@@ -195,9 +196,9 @@ export function startClient(opts: ClientOptions = {}): void {
   resize();
 
   // 이름을 묻지 않고 바로 들어간다. 처음이면 무작위 이름이 붙고, 이름은 화면에서 눌러 바꾼다.
-  // 개발 편의: 주소에 ?auto=이름 을 붙이면 처음 접속할 때 그 이름을 쓴다.
-  $('joinForm').addEventListener('submit', (ev) => { ev.preventDefault(); if (stale) location.reload(); else connect(); });
-  connect(new URLSearchParams(location.search).get('auto') ?? undefined);
+  // 개발 편의: 주소에 ?auto=이름 을 붙이면 처음 접속할 때 그 이름을 쓴다 (플랫폼이 시작할 때 받은 값: platform().app.param).
+  $('joinForm').addEventListener('submit', (ev) => { ev.preventDefault(); if (stale) platform().app.requireUpdate(storeUrl); else connect(); });
+  connect(platform().app.param('auto') ?? undefined);
 
   setInterval(() => { if (S.me) send({ t: 'ping', c: performance.now() }); }, 2000);
   setInterval(() => runSlow(performance.now()), 250);

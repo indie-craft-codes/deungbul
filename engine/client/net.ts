@@ -1,6 +1,6 @@
 // 서버 연결. 메시지를 주고받기만 하고, 내용 처리는 등록된 처리기가 맡는다.
 // 서버의 주소는 플랫폼(platform().server(): 웹은 빌드의 VITE_SERVER_URL → 옆의 server.json → 같은 출처), 접속 증표는 인증 접점(auth(): 지금은 손님의 기기 토큰)이 준다.
-import type { ClientMsg, ServerMsg } from '../shared/protocol';
+import { PROTOCOL, type ClientMsg, type ServerMsg } from '../shared/protocol';
 import { randomName } from './i18n';
 import { auth, platform } from './platform';
 
@@ -57,7 +57,9 @@ export function connect(name?: string): void {
 function open(to: string, token: string | undefined, name?: string): void {
   const sock = new WebSocket(to);
   ws = sock;
-  sock.onopen = () => send({ t: 'join', name: name || randomName(), token });
+  // 앱·데스크톱은 자기 프로토콜 번호(v)를 실어 서버가 호환 범위로 먼저 거르게 한다 (범위 밖이면 update 메시지와 닫힘 4006).
+  // 웹은 싣지 않는다: 화면과 서버가 같은 배포라 늘 같고, 주고받는 바이트도 예전과 같다 (어긋나면 welcome의 v로 안다)
+  sock.onopen = () => send(platform().id === 'web' ? { t: 'join', name: name || randomName(), token } : { t: 'join', name: name || randomName(), token, v: PROTOCOL });
   sock.onmessage = (ev) => {
     if (typeof ev.data !== 'string') return;
     let m: ServerMsg;
