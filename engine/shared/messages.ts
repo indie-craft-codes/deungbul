@@ -172,6 +172,17 @@ export type MsgKey =
   | 'heroPicked' // [영웅 id, 이미 가졌으면 1, 받은 조각] 선택권으로 영웅을 골랐다
   // ---- 단계 밖 (roster.ts의 재료 교환) ----
   | 'heroTraded' // [영웅 id, 받은 조각, 쓴 아이템 id, 남은 아이템 수] 재료로 영웅의 조각을 얻었다 (HERO_RULES.trade)
+  // ---- 카드의 공통 손질 (HERO_RULES.cards: systems/cardgrow.ts) ----
+  | 'cardOverflow' // [영웅 id, 바꾼 조각, 아이템 id, 받은 수] 다 키운 카드의 넘친 조각을 아이템으로 바꿨다
+  | 'cardFull' // [아이템 id] 가방에 자리가 없어 넘친 조각을 바꾸지 못했다
+  | 'cardLock' // [영웅 id, 1 잠금 0 풂] 카드를 잠갔다·풀었다
+  | 'cardFuseNo' // [등급, 쓸 수 있는 조각, 드는 조각] 합성할 조각이 모자란다 (잠근 카드의 조각은 쓰지 않는다)
+  | 'cardFused' // [재료 등급, 얻은 영웅 id, 이미 가졌으면 1, 받은 조각, 넘쳐 바뀐 아이템 수] 합성했다
+  | 'cardIsLocked' // [영웅 id] 잠근 카드라 환원할 수 없다
+  | 'cardNoReset' // [영웅 id] 되돌릴 성장이 없다
+  | 'cardReset' // [영웅 id, (재화나 아이템 id, 돌려받은 수)…] 카드를 환원했다
+  | 'cardStars' // [카드 수, 오른 별의 합] 별을 한꺼번에 올렸다
+  | 'cardStarsNone' // [] 별을 올릴 수 있는 카드가 없다
   // ---- 판 (rooms 모듈: engine/server/game/systems/rooms.ts) ----
   | 'roomWait' // [] 판을 열고 다른 사람을 기다린다
   | 'roomStart' // [먼저 두면 1, 상대의 이름(컴퓨터는 RoomDef.cpuName이나 빈 문자열: 셋 이상이면 다음 자리의 이름), 자리 수] 판이 시작됐다

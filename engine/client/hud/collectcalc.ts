@@ -1,7 +1,7 @@
 // 수집형·방치형 화면의 셈 (영웅 탭, 뽑기의 확률표, 편성, 단계 막대, 던전 열쇠): 화면 요소도 three.js도 읽지 않는다 (시험 engine/test/collect/client.test.ts가 그대로 읽는다).
 // 그리는 것은 hud/collect.ts(메뉴 탭과 영웅의 겉모습)와 hud/stagebar.ts(단계 막대). 확률은 서버와 같은 셈(engine/shared/defs/collect.ts)이다.
 import {
-  BANNER_TABLE, heroIds, HERO_RARITIES, HERO_RULES, STAGES, gearOn, growthOf, heroDef, heroFull, heroTradeShards, heroTrades, rarityDef, rarityOdds, waveCount, BANNER_IDS, effectiveOdds, pityKey, pityMates, pullOdds, stageSweepable, sweepMax,
+  BANNER_TABLE, heroIds, HERO_RARITIES, HERO_RULES, STAGES, gearOn, growthOf, heroDef, heroFull, heroTradeShards, heroTrades, rarityDef, tradeFits, rarityOdds, waveCount, BANNER_IDS, effectiveOdds, pityKey, pityMates, pullOdds, stageSweepable, sweepMax,
   type BannerDef, type HeroGearPiece, type HeroesMe, type Odds, type Reward, type StageMe, type StageRun, type GachaMe, type SweepRule,
 } from '../../shared/defs';
 import type { KeysMe } from '../../shared/defs/collect';
@@ -175,6 +175,7 @@ export function tradeViews(id: string, owned: boolean, items: Readonly<Record<st
   const d = heroDef(id);
   if (!owned || !d) return [];
   return Object.entries(heroTrades()).flatMap(([item, t]) => {
+    if (!tradeFits(t, d.rarity)) return []; // 범용 조각은 그 등급의 카드에만
     const cost = Math.floor(t.cost(d.rarity)), shards = heroTradeShards(t, d.rarity), have = items[item] ?? 0;
     return cost > 0 && shards > 0 ? [{ item, cost, shards, have, can: have >= cost }] : [];
   });

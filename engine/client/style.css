@@ -1393,6 +1393,19 @@ body.battleOn #zone-bc { bottom: calc(150px + env(safe-area-inset-bottom, 0px));
 .cdskill { color: var(--c-title); }
 .cdgo { flex-wrap: wrap; }
 .cdgo button { flex: 1 1 40%; }
+/* 카드의 공통 손질 (hud/cardgrow.ts: 합성·잠금·일괄 성장·넘친 조각) */
+.cgfuse { display: flex; flex-direction: column; gap: 6px; padding: var(--sp-2); margin-bottom: var(--sp-2); border: 1px solid var(--c-line); border-radius: var(--r-md); background: var(--c-fill-1); }
+.cgfrow { display: flex; align-items: center; gap: var(--sp-2); }
+.cgfwhat { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
+.cgfrow button { flex: 0 0 auto; min-width: 88px; }
+#cgStarsAll { width: 100%; margin-bottom: var(--sp-2); }
+#cgAuto { width: 100%; margin: var(--sp-2) 0; }
+.cglock { position: absolute; right: 3px; top: 2px; font-size: var(--fs-xs); text-shadow: 0 1px 2px var(--c-black); }
+.cgbulk { gap: var(--sp-2); }
+.cgbulk button { flex: 1 1 0; min-width: 0; }
+.cgmax { color: var(--c-accent); }
+#spendPrice .askLine { display: block; }
+@media (pointer: coarse) { .cgfrow button, .cgbulk button, #cgStarsAll, #cgAuto, #cgConvert, #cgLockBtn, #cgResetBtn, #askYes { min-height: 44px; } }
 @media (orientation: landscape) and (max-height: 480px) {
   .cardDetail { width: min(640px, calc(100% - 32px)); display: grid; grid-template-columns: 200px 1fr; align-items: start; }
   .cardDetail > .cdhead, .cardDetail > .cdgo { grid-column: 1 / -1; }

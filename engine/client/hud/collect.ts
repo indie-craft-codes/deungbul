@@ -24,6 +24,7 @@ import { addNotices } from './notify';
 import { confirmSpend } from './confirm';
 import { drawCardList, redrawCard, type CardData } from './cards';
 import { gachaShowMoney, redrawGachaShow, setShowPic, startGachaShow } from './gachashow';
+import { drawAutoSquad, initCardGrow } from './cardgrow';
 
 /** 서버가 보낸 내 영웅·뽑기·편성 (개인 상태) */
 let heroes: HeroesMe = {};
@@ -189,6 +190,7 @@ function drawSquad(list: HTMLElement): void {
     }
     list.append(slots);
   }
+  drawAutoSquad(list, heroes, squad.ids, size); // 추천 편성 (HERO_RULES.cards.auto: hud/cardgrow.ts)
   const owned = heroRows(heroes, 0, squad.ids, myHeroGear()).filter((r) => r.owned);
   if (!owned.length) list.append(emptyState('✦', t('squadNone'), hasModule('gacha') ? { label: t('emptyToGacha'), onClick: () => openMenu('gacha') } : undefined));
   for (const r of owned) {
@@ -242,6 +244,7 @@ export function initRoster(): void {
   onMsg('stat', redrawCard);
   addNotices({ feed: ['costShort', 'heroUp', 'heroStar', 'heroMaxLv', 'heroShards', 'heroNew'] });
   initHeroGrowth();
+  initCardGrow();
 }
 
 export function initGacha(): void {

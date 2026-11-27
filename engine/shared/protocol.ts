@@ -172,6 +172,12 @@ export type ClientMsg =
   | { t: 'hero'; a: 'level' | 'star' | 'skill' | 'awaken'; id: string }
   /** 재료로 영웅 키우기 (HERO_RULES.trade): 그 아이템을 써서 가진 영웅의 조각을 얻는다. n번 한꺼번에 (기본 1, 99까지) */
   | { t: 'hero'; a: 'trade'; id: string; item: string; n?: number }
+  /** 카드의 공통 손질 (HERO_RULES.cards: engine/server/game/systems/cardgrow.ts): 합성(등급), 넘친 조각 바꾸기, 환원, 잠금, 레벨 n번(0이면 최대), 별 모두(id가 없으면 모든 카드) */
+  | { t: 'card'; a: 'fuse'; r: number; id?: undefined }
+  | { t: 'card'; a: 'convert' | 'reset'; id: string }
+  | { t: 'card'; a: 'lock'; id: string; on: boolean }
+  | { t: 'card'; a: 'levels'; id: string; n: number }
+  | { t: 'card'; a: 'stars'; id?: string }
   /** 뽑기 (gacha 모듈): 배너 id와 횟수(1 또는 10) */
   | { t: 'gacha'; id: string; n: number }
   /** 편성 (squad 모듈): 함께 싸울 영웅 (자리의 차례, SQUAD_RULES.size까지) */

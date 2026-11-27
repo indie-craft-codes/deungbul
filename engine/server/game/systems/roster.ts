@@ -6,11 +6,13 @@
 // 선택 칸 (내용이 적어야 켜진다: engine/shared/defs/herogrow.ts): 기술 레벨(HERO_RULES.skill: 재료로 올리고 기술의 피해·회복이 커진다),
 // 각성(HERO_RULES.awaken: 별이 최대인 영웅이 조각과 재료로 오르고 공격·체력 배율과 패시브를 얻는다). 켠 게임은 저장과 개인 상태의 줄이 [.., 기술 레벨, 각성]까지 길어진다.
 // 재료로 영웅 키우기(HERO_RULES.trade): 재료 아이템을 써서 가진 영웅의 조각을 얻는다 ({ t: 'hero', a: 'trade', id, item, n }).
+// 카드의 공통 손질(HERO_RULES.cards: 넘친 조각·합성·환원·잠금·일괄 성장)은 systems/cardgrow.ts가 맡는다 (켠 게임만 만든다). 넘친 조각은 grant가 그것을 부른다.
 // 전투력은 heroFull(장비·각성·기술 레벨까지)의 한 셈이다. 성장이 없는 게임에서는 heroPower(레벨, 별)와 같다.
-import { HERO_RULES as HERO_RULES_IN, awakenMax, awakenOf, gearOn, heroDef, heroFull, heroGrowthOn, heroTradeShards, isHeroId, isItemId, rarityDef, skillMax, skillOf, type HeroesMe, type HeroRules, type OwnedHero } from '../../../shared/defs';
+import { HERO_RULES as HERO_RULES_IN, awakenMax, awakenOf, cardMaxed, cardRules, gearOn, heroDef, heroFull, heroGrowthOn, heroTradeShards, isHeroId, isItemId, rarityDef, skillMax, skillOf, tradeFits, type HeroesMe, type HeroRules, type OwnedHero } from '../../../shared/defs';
 import { readInt, type Ent } from '../entity';
 import type { Game } from '../game';
 import { payCost } from './herocost';
+import { CardGrow } from './cardgrow';
 
 /** 내용의 영웅 규칙 (게임이 적은 타입 그대로 오므로 선택 칸을 읽으려고 틀의 타입으로 넓힌다) */
 const HERO_RULES: HeroRules = HERO_RULES_IN;
@@ -19,11 +21,14 @@ const HERO_RULES: HeroRules = HERO_RULES_IN;
 export const ROSTER_WHY = { level: 'cmd:hero:level', skill: 'cmd:hero:skill', awaken: 'cmd:hero:awaken', trade: 'cmd:hero:trade' } as const;
 /** 한 번의 교환 명령으로 되풀이할 수 있는 수 */
 export const TRADE_MAX = 99;
-/** 개인 상태와 저장의 한 줄: [레벨, 별, 조각] (기술 레벨·각성을 켰으면 [.., 기술 레벨, 각성]) */
-const line = (h: OwnedHero, long: boolean): HeroesMe[string] => (long ? [h.lv, h.stars, h.shards, skillOf(h), awakenOf(h)] : [h.lv, h.stars, h.shards]);
+/** 개인 상태와 저장의 한 줄: [레벨, 별, 조각] (기술 레벨·각성을 켰으면 [.., 기술 레벨, 각성], 잠근 카드는 [.., 기술 레벨, 각성, 1]) */
+const line = (h: OwnedHero, long: boolean): HeroesMe[string] => (h.lock ? [h.lv, h.stars, h.shards, skillOf(h), awakenOf(h), 1] : long ? [h.lv, h.stars, h.shards, skillOf(h), awakenOf(h)] : [h.lv, h.stars, h.shards]);
 
 export class Roster {
+  /** 카드의 공통 손질 (HERO_RULES.cards를 적은 게임만) */
+  readonly cards: CardGrow | null;
   constructor(private g: Game) {
+    this.cards = cardRules() ? new CardGrow(g, this) : null;
     g.commands.set('hero', (p, m) => {
       if (!isHeroId(m.id)) return;
       if (m.a === 'level') this.levelUp(p, m.id);
@@ -51,11 +56,16 @@ export class Roster {
    * 영웅을 준다 (뽑기·보상). 처음이면 1레벨·그 등급의 처음 별로 얻고, 이미 가졌으면 그 등급의 조각이 된다.
    * 돌려주는 것: 이미 가졌던 것인가와 받은 조각. 없는 영웅이면 null
    */
-  grant(p: Ent, id: string): { dup: boolean; shards: number } | null {
+  grant(p: Ent, id: string, quiet = false): { dup: boolean; shards: number; x?: number } | null {
     if (!isHeroId(id)) return null;
     const r = rarityDef(heroDef(id).rarity), had = this.owned(p, id);
     p.unsaved = true;
-    if (had) { had.shards = Math.min(1e6, had.shards + r.shards); return { dup: true, shards: r.shards }; }
+    if (had) {
+      // 다 키운 카드면 넘친 조각을 바꾼다 (HERO_RULES.cards.overflow: 가방에 들어가지 않은 몫은 조각으로 남는다)
+      const sp = this.cards?.spill(p, id, r.shards, quiet);
+      had.shards = Math.min(1e6, had.shards + r.shards - (sp?.used ?? 0));
+      return { dup: true, shards: r.shards, ...(sp?.got ? { x: sp.got } : {}) };
+    }
     p.heroes[id] = { lv: 1, stars: Math.max(1, Math.min(HERO_RULES.maxStars, r.stars)), shards: 0 };
     this.g.notify(p, 'heroNew', id);
     this.g.fire('heroChanged', p, id);
@@ -125,7 +135,8 @@ export class Roster {
    */
   trade(p: Ent, id: string, item: string, n: unknown): number {
     const g = this.g, rule = HERO_RULES.trade?.[item], h = this.owned(p, id);
-    if (!rule || !h || p.bot || !g.has('items') || !isItemId(item)) return 0;
+    if (!rule || !h || p.bot || !g.has('items') || !isItemId(item) || !tradeFits(rule, heroDef(id).rarity)) return 0;
+    if (cardRules()?.overflow && cardMaxed(h)) return 0; // 넘친 조각을 켠 게임: 다 키운 카드의 조각은 결정으로 바뀔 뿐이다
     if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > TRADE_MAX) return 0;
     const r = heroDef(id).rarity, per = Math.floor(rule.cost(r)), got = heroTradeShards(rule, r) * n;
     if (!(per > 0) || !(got > 0)) return 0;
@@ -157,6 +168,7 @@ export class Roster {
         const sk = readInt(v[3], 1, HERO_RULES.skill ? skillMax(stars, aw) : 1e4, 1);
         if (sk > 1) h.skill = sk;
         if (aw > 0) h.awaken = aw;
+        if (v[5] === 1) h.lock = true;
       }
     }
   }

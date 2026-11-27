@@ -16,6 +16,7 @@ import { modeDef } from '../../shared/defs/modes';
 import { uiText } from './names';
 import { achName, codexName, evName, goodsName, missionName, seasonName, titleName } from './live';
 import { codexDef } from '../../shared/defs';
+import { rarityDef } from '../../shared/defs/collect';
 
 /** Field names of a character definition (ko.ts의 charField와 같다) */
 const charField = (path: string): string => {
@@ -358,6 +359,11 @@ export const enBase = (n: ContentNames): EngineLocale => {
       cdSort: 'Sort', cdSortRarity: 'Rarity', cdSortPower: 'Power', cdSortLevel: 'Level', cdSortNew: 'Newest', cdAll: 'All',
       cdGrow: 'Growth', cdStar: 'Limit break', cdSkill: 'Skill', cdMorph: 'Stats when shifted', cdToSquad: 'Add to squad', cdFromSquad: 'Remove from squad',
       cdMorphGo: 'Shift into this form', cdGrowMore: 'Growth details', cdNoSkill: 'Basic attack only', cdSquadFull: 'Squad is full', cdClose: 'Close',
+      cgFuseHead: 'Card fusion', cgFuseInfo: 'Combine shards of one rarity to get one random card of the next rarity. Shards of locked cards are never used.', cgFuse: 'Fuse',
+      cgFuseTitle: 'Fuse cards?', cgFuseLock: 'Shards come from maxed cards first, then cards with the most shards (locked cards are skipped).', cgFused: 'Fusion result',
+      cgStarsAll: 'Raise all stars', cgStarsNone: 'No card can gain a star', cgLocked: 'Locked', cgLock: '🔒 Lock', cgUnlock: 'Unlock',
+      cgReset: 'Reset', cgResetTitle: 'Reset this card?', cgResetLocked: 'This card is locked', cgResetNone: 'Nothing to reset', cgResetKeep: 'Stars and shards stay.',
+      cgAuto: 'Recommended squad (by power)', cgAutoSame: 'Already the recommended squad',
       stEnemies: 'Enemies', stRec: 'Recommended power', stMine: 'Your squad', stStars: 'Star goals', stFirst: 'First clear', stRepeat: 'Each clear',
       stCheck: 'Check squad', stGo: 'Start', stBoss: 'Boss', stSweepNeedStars: 'Earn every star to unlock sweeps',
       starClear: 'Clear', starAlive: 'Nobody falls',
@@ -946,6 +952,21 @@ export const enBase = (n: ContentNames): EngineLocale => {
       cdOwned: (n: number, m: number) => `${n} / ${m}`,
       cdWhyGold: (need: number) => `Needs ${need.toLocaleString('en-US')} gold`,
       cdWhyShards: (have: number, need: number) => `Shards ${have} / ${need}`,
+      cgFuseRow: (from, have, need, to) => `${from} shards ${num(have)} / ${num(need)} → 1 ${to} card`,
+      cgFuseShort: (n) => `${num(n)} more shards needed`,
+      cgFuseText: (need, from, to) => `Use ${num(need)} ${from} shards to get one random ${to} card. This cannot be undone.`,
+      cgFuseUse: (list) => `Shards used: ${list}`,
+      cgFuseOdds: (names, pct) => `Possible cards (${pct} each): ${names}`,
+      cgFusedSub: (rar, dup, shards, x, item) => (!dup ? `${rar} · New card!` : x ? `${rar} · maxed, +${num(x)} ${item}` : `${rar} · already owned, +${num(shards)} shards`),
+      cgLevels: (n, cost, cur) => `Lv +${n} · ${num(cost)} ${curName(cur)}`,
+      cgLevelsMax: (n, cost, cur) => `To max (+${n}) · ${num(cost)} ${curName(cur)}`,
+      cgStarsUp: (n, cost) => `Raise all stars (★+${n} · ${num(cost)} shards)`,
+      cgMaxed: (item, rate) => `Maxed card: each new shard becomes ${num(rate)} ${item}`,
+      cgConvert: (n, item, m) => `Convert ${num(n)} spare shards → ${num(m)} ${item}`,
+      cgOverflow: (n, item, m) => `${num(n)} shards → ${num(m)} ${item}`,
+      cgResetText: (name, lv) => `${name} goes back from Lv${lv} to Lv1.`,
+      cgResetBack: (what) => `You get back: ${what}`,
+      goodsPriceItem: (n, item) => `${num(n)} ${grantWhat(item)}`,
       goodsPrice: (n: number, cur: string, ev: boolean) => `${num(n)} ${ev ? 'event ' : ''}${curName(cur)}`,
       goodsLimit: (have: number, n: number, per: string) => `${per === 'day' ? 'Daily' : per === 'week' ? 'Weekly' : per === 'month' ? 'Monthly' : 'Per player'} ${have}/${n}`,
       goodsStock: (n: number) => `${num(n)} left`,
@@ -1153,6 +1174,16 @@ export const enBase = (n: ContentNames): EngineLocale => {
       bannerClosed: (a) => `${bannerName(a[0])} is not open right now.`,
       heroPicked: (a) => (Number(a[1]) ? `${heroName(a[0])}: already owned, +${num(a[2])} shards` : `You got ${heroName(a[0])}!`),
       heroTraded: (a) => `${heroName(a[0])}: +${num(a[1])} shards (${grantWhat(a[2])} left: ${num(a[3])})`,
+      cardOverflow: (a) => `${heroName(a[0])} is maxed: ${num(a[1])} shards became ${num(a[3])} ${grantWhat(a[2])}.`,
+      cardFull: (a) => `${grantWhat(a[0])} is full; spare shards were not converted.`,
+      cardLock: (a) => (Number(a[1]) ? `${heroName(a[0])}: locked (kept out of fusion and reset).` : `${heroName(a[0])}: unlocked.`),
+      cardFuseNo: (a) => `Not enough ${uiText.get(rarityDef(Number(a[0])).name)} shards (${num(a[1])} / ${num(a[2])}).`,
+      cardFused: (a) => `Fusion: ${heroName(a[1])}${Number(a[2]) ? ` (+${num(a[3])} shards)` : ' (new card)'}`,
+      cardIsLocked: (a) => `${heroName(a[0])}: a locked card cannot be reset.`,
+      cardNoReset: (a) => `${heroName(a[0])}: nothing to reset.`,
+      cardReset: (a) => `${heroName(a[0])} reset. Got back ${Array.from({ length: Math.floor((a.length - 1) / 2) }, (_, i) => `${num(a[2 + i * 2])} ${grantWhat(a[1 + i * 2])}`).join(', ') || 'nothing'}`,
+      cardStars: (a) => `Raised ${num(a[1])} stars on ${num(a[0])} card${Number(a[0]) === 1 ? '' : 's'}.`,
+      cardStarsNone: () => 'No card can gain a star.',
       roomWait: () => 'Table opened. Waiting for another player.',
       roomStart: (a) => (Number(a[2] ?? 2) > 2 ? `Match started: ${a[2]} players.${Number(a[0]) ? ' You move first.' : ''}` : `Match started against ${a[1] || 'the computer'}. ${Number(a[0]) ? 'You move first.' : 'Your opponent moves first.'}`),
       roomFull: () => 'No more tables can open right now. Try again shortly.',
@@ -1342,7 +1373,7 @@ export const enOddsPage: typeof koOddsPage = {
   operator: 'Operator',
   operatorEmpty: '(Operator details and contact are not filled in yet.)',
   foot: 'The game server writes this page. Rates are rounded at the fourth decimal place.',
-  words: { oddsEnhanceName: 'Gear enhancement', oddsUp: 'Success (+1)', oddsKeep: 'Fail (no change)', oddsDown: 'Fail (-1)', oddsBreak: 'Destroyed', heroRarity0: 'Common', heroRarity1: 'Rare', heroRarity2: 'Legendary' },
+  words: { oddsEnhanceName: 'Gear enhancement', oddsUp: 'Success (+1)', oddsKeep: 'Fail (no change)', oddsDown: 'Fail (-1)', oddsBreak: 'Destroyed', oddsFuse: 'Card fusion', heroRarity0: 'Common', heroRarity1: 'Rare', heroRarity2: 'Legendary' },
 };
 
 /** 웹 관리 화면의 문장 (ko.ts의 koAdminPage와 같은 모양) */
