@@ -15,6 +15,8 @@ import type { Period } from './live';
 /** 상품의 값과 이벤트 재화가 쓰는 재화 (지갑의 칸) */
 export type LiveCur = Exclude<keyof Reward, 'exp' | 'gear' | 'items'>;
 
+/** 상품의 값: 재화(종류), 또는 가방의 아이템 */
+export type GoodsPrice = { cur: LiveCur; n: number; kind?: CurKind; item?: undefined } | { item: string; n: number; cur?: undefined; kind?: undefined };
 /** 상품 하나 (GOODS의 값). id는 GOODS의 키 */
 export interface GoodsDef {
   /** 이름의 문장 키 (i18n ui) */
@@ -26,8 +28,8 @@ export interface GoodsDef {
   shop?: string;
   /** 그 이벤트(EVENTS의 키)의 상점: 그 이벤트의 기간에만 판다 */
   event?: string;
-  /** 값: 재화와 양. kind를 주면 그 종류의 몫으로만 치른다 (이벤트 재화로만 사는 상품: kind 'event') */
-  price: { cur: LiveCur; n: number; kind?: CurKind };
+  /** 값: 재화와 양. kind를 주면 그 종류의 몫으로만 치른다 (이벤트 재화로만 사는 상품: kind 'event'). item을 주면 재화 대신 가방의 그 아이템 n개 (메아리 결정 같은 교환 재료) */
+  price: GoodsPrice;
   /** 주는 것 (묶음: 골드·두 번째 재화·경험치·아이템 여럿). 재화는 바로, 아이템은 가방에 (자리가 없으면 사기 전에 막는다) */
   give: Reward;
   /** 덤으로 주는 영웅 (roster 모듈) */
@@ -140,8 +142,8 @@ export function checkLiveContent(kinds: (cur: LiveCur) => readonly CurKind[] | n
   const pos = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0;
   for (const id of goodsIds()) {
     const g = goodsDef(id)!;
-    if (!pos(g.price?.n) || typeof g.price.cur !== 'string' || (g.price.cur as string) === 'exp') out.push(`GOODS.${id}: 값(price)이 깨졌습니다`);
-    if (g.price?.kind && !(kinds(g.price.cur) ?? []).includes(g.price.kind)) out.push(`GOODS.${id}: ${g.price.cur}에 종류 '${g.price.kind}'가 없습니다 (CURRENCIES.${g.price.cur}.kinds.spend)`);
+    if (!pos(g.price?.n) || (g.price.item === undefined ? typeof g.price.cur !== 'string' || (g.price.cur as string) === 'exp' : typeof g.price.item !== 'string')) out.push(`GOODS.${id}: 값(price)이 깨졌습니다`);
+    if (g.price?.kind && g.price.cur && !(kinds(g.price.cur) ?? []).includes(g.price.kind)) out.push(`GOODS.${id}: ${g.price.cur}에 종류 '${g.price.kind}'가 없습니다 (CURRENCIES.${g.price.cur}.kinds.spend)`);
     if (g.event && !eventDef(g.event)) out.push(`GOODS.${id}: 모르는 이벤트 '${g.event}'`);
     if (g.limit && !(g.limit.n >= 1)) out.push(`GOODS.${id}: limit.n은 1 이상`);
     if (g.stock !== undefined && !(g.stock >= 0)) out.push(`GOODS.${id}: stock은 0 이상`);

@@ -5,6 +5,7 @@
 // 줄 위에서 영웅은 HEROES의 id로, 등급은 HERO_RARITIES의 번호(0부터, 클수록 귀하다)로, 단계는 '장-단계'의 id('1-3')로 오간다.
 import { BANNERS, CHAPTERS, GACHA_RULES, HERO_RARITIES, HERO_ROLES, HERO_RULES, HEROES, IDLE, STAGE_RULES } from '../content';
 import type { Reward } from './growth';
+import type { CardRules } from './cardgrow';
 import type { HeroAwakenRules, HeroGearRules, HeroSkillRules, PowerIn, SquadRowRules, SynergyDef, SynergyMe } from './herogrow';
 import type { Look } from './look';
 
@@ -91,14 +92,22 @@ export interface HeroRules {
    * (명령 { t: 'hero', a: 'trade', id, item, n? }, 원인 cmd:hero:trade). 없으면 교환이 없다
    */
   trade?: Readonly<Record<string, HeroTrade>>;
+  /** 카드의 공통 손질: 넘친 조각, 합성, 환원, 잠금, 일괄 성장, 추천 편성 (engine/shared/defs/cardgrow.ts. 없으면 없다) */
+  cards?: CardRules;
 }
 
 /** 재료 → 영웅 조각의 교환 하나: 한 번에 드는 아이템의 수와 얻는 조각 (영웅의 등급 번호로). shards가 없으면 그 등급의 조각 한 묶음(HeroRarityDef.shards) */
-export interface HeroTrade { cost: (rarity: number) => number; shards?: (rarity: number) => number }
+export interface HeroTrade {
+  cost: (rarity: number) => number; shards?: (rarity: number) => number;
+  /** 범용 조각(선택 조각): 이 등급들의 영웅에게만 쓴다 (없으면 모든 영웅) */
+  only?: readonly number[];
+}
 /** 영웅의 규칙을 넓은 타입으로 본 것 (게임이 적은 HERO_RULES에 선택 칸 trade 같은 것이 없어도 읽힌다) */
 export const HERO_RULE_VIEW: HeroRules = HERO_RULES;
 /** 재료 교환의 표 (HERO_RULES.trade: 아이템 id → 교환. 없으면 빈 표) */
 export const heroTrades = (): Readonly<Record<string, HeroTrade>> => HERO_RULE_VIEW.trade ?? {};
+/** 그 교환을 그 등급의 영웅에게 쓸 수 있는가 (범용 조각의 only) */
+export const tradeFits = (t: HeroTrade, rarity: number): boolean => !t.only || t.only.includes(rarity);
 /** 교환 한 번에 얻는 조각 (shards가 없으면 그 등급의 조각 한 묶음) */
 export const heroTradeShards = (t: HeroTrade, rarity: number): number => Math.max(0, Math.floor(t.shards ? t.shards(rarity) : rarityDef(rarity).shards));
 
@@ -317,7 +326,11 @@ export function heroStats(id: string, lv: number, stars: number): { atk: number;
 export const heroPower = (id: string, lv: number, stars: number): number => { const s = heroStats(id, lv, stars); return Math.round(s.atk * 4 + s.hp / 2); };
 
 /** 가진 영웅 하나: 레벨, 별, 모아 둔 조각. 기술 레벨(없으면 1)과 각성(없으면 0)은 HERO_RULES.skill·awaken을 켠 게임만 */
-export interface OwnedHero { lv: number; stars: number; shards: number; skill?: number; awaken?: number }
+export interface OwnedHero {
+  lv: number; stars: number; shards: number; skill?: number; awaken?: number;
+  /** 잠금 (HERO_RULES.cards.lock: 합성의 재료·환원에서 빠진다) */
+  lock?: boolean;
+}
 
 // ---------- 뽑기의 확률 (공개 확률표와 서버가 같은 셈) ----------
 /** 확률표의 한 줄: 영웅, 등급, 확률(0~1) */
@@ -485,7 +498,7 @@ export function idleSegments(minutes: number, cleared: number, at: readonly numb
 
 // ---------- 줄 위의 모양 (개인 상태와 메시지) ----------
 /** 개인 상태 'heroes': 가진 영웅마다 [레벨, 별, 조각]. 기술 레벨·각성을 켠 게임은 [.., 기술 레벨, 각성]까지 */
-export type HeroesMe = Record<string, [lv: number, stars: number, shards: number, skill?: number, awaken?: number]>;
+export type HeroesMe = Record<string, [lv: number, stars: number, shards: number, skill?: number, awaken?: number, lock?: number]>;
 /** 뽑기 기록 한 줄: 시각(ms), 배너, 영웅, 등급, 천장·10번 보장으로 나온 것인가 */
 export interface PullLog { at: number; b: string; h: string; r: number; pity: boolean }
 /** 개인 상태 'gacha': 배너마다 천장의 셈(그 등급 이상이 나오지 않은 뽑기의 수)과 최근 기록 (새 것이 앞) */
@@ -497,7 +510,7 @@ export interface GachaMe {
   sure?: Record<string, 1>;
 }
 /** 뽑기의 결과 하나 (메시지 gacha): 영웅, 등급, 이미 가진 것이라 조각이 되었나와 받은 조각, 천장·보장으로 나왔나 */
-export interface PullGot { h: string; r: number; dup: boolean; n: number; pity: boolean }
+export interface PullGot { h: string; r: number; dup: boolean; n: number; pity: boolean; /** 넘친 조각(HERO_RULES.cards.overflow)이 바뀐 아이템의 수 (있을 때만) */ x?: number }
 /** 개인 상태 'squad': 편성한 영웅(자리의 차례)과 그 전투력의 합. 진형을 켠 게임은 뒷줄(back), 시너지를 켠 게임은 켜진 시너지(syn)도 */
 export interface SquadMe { ids: string[]; power: number; back?: string[]; syn?: SynergyMe[] }
 /** 단계 안의 진행 (개인 상태 'stage'의 run): 단계 id, 지금 물결(0부터, 우두머리는 마지막), 물결 수, 남은 적, 이 물결의 적, 남은 시간(초), 상태 */
