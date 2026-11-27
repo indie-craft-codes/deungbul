@@ -308,3 +308,61 @@ check(Object.values(DAILIES).filter((d) => 'period' in d && d.period === 'week')
   check(blocked && ENHANCE.dust(5, 1) === 4 && ENHANCE.dust(4, 3) === 0 && p.items[SALVAGE.item] === 6 && c.plus === 5 && p.gold === gold0 - ENHANCE.gold(5, 1),
     `+5 강화는 가루 ${ENHANCE.dust(5, 1)}(쓸 만한)와 골드 ${ENHANCE.gold(5, 1)}: 가루가 모자라면 아무것도 들지 않고, 실패해도 +5 그대로 (+4까지와 상점 장비는 가루가 들지 않는다)`);
 }
+
+// ---------- 카드의 공통 손질 (HERO_RULES.cards: 넘친 조각·범용 조각·합성·환원·잠금·일괄 성장, 결정 상점) ----------
+{
+  let t = Date.UTC(2026, 10, 30, 7, 0, 0);
+  const k = new Game({ plugins: [installEchopact], now: () => t });
+  const step = (s: number) => { for (let i = 0; i < s * 20; i++) { k.tick(0.05); t += 50; } };
+  const p = k.players.spawn('카드 시험', false, null, 'ep-cards');
+  k.fire('playerJoined', p); k.command(p, { t: 'class', id: 'warden' }); step(0.3);
+  const told = (key: string) => k.notices.filter((n) => n.id === p.id && n.k === key);
+  k.roster.cards!.rng = seededRng(5);
+  for (const id of ['pell', 'tamsin', 'aurelle']) k.roster.grant(p, id);
+  // 합성: 잠근 카드의 조각은 쓰지 않는다 → 모자람, 풀면 일반 조각 40으로 희귀 하나 (추첨 기록·공개 표 'fuse:0')
+  p.heroes.brindle.shards = 25; p.heroes.pell.shards = 20; p.heroes.tamsin.shards = 0;
+  k.notices = [];
+  k.command(p, { t: 'card', a: 'lock', id: 'pell', on: true });
+  k.command(p, { t: 'card', a: 'fuse', r: 0 });
+  const refused = told('cardFuseNo').length === 1 && p.heroes.brindle.shards === 25 && p.heroes.pell.shards === 20;
+  k.command(p, { t: 'card', a: 'lock', id: 'pell', on: false });
+  const before = Object.keys(p.heroes).length;
+  k.command(p, { t: 'card', a: 'fuse', r: 0 });
+  const fused = told('cardFused')[0], got = String(fused?.a[1] ?? '');
+  const row = k.odds.draws({ owner: p.pid, limit: 1 })[0], pub = k.odds.publicView().tables.find((x) => x.id === 'fuse:0');
+  check(refused && !!fused && heroDef(got)?.rarity === 1 && p.heroes.brindle.shards === 0 && p.heroes.pell.shards === 5 && Object.keys(p.heroes).length === before + 1
+    && row?.kind === 'fuse' && row.table === 'fuse:0' && row.got[0] === got && row.ver >= 1 && pub?.kind === 'combine' && pub.steps[0].outcomes.length === 4 && pub.steps[0].outcomes.every((o) => Math.abs(o.p - 0.25) < 1e-12),
+    `합성: 잠근 카드는 빠져 모자라고, 풀면 조각 40(brindle 25 + pell 15) → 희귀 ${got}. 확률표 'fuse:0'(희귀 넷 25%씩)이 공개되고 추첨 기록(종류 fuse)에 남는다`);
+  // 넘친 조각: 다 키운(★6) 전설이 또 오면 조각 25 → 메아리 결정 125. 결정 상점에서 범용 조각, 범용 조각은 그 등급에만
+  p.heroes.aurelle.stars = 6;
+  const gr = k.roster.grant(p, 'aurelle', true);
+  const crystals = p.items.echoCrystal ?? 0;
+  k.command(p, { t: 'goods', id: 'cWildRare' });
+  k.command(p, { t: 'hero', a: 'trade', id: 'brindle', item: 'wildRare' });
+  const wrong = p.heroes.brindle.shards === 0 && p.items.wildRare === 1;
+  k.command(p, { t: 'hero', a: 'trade', id: got, item: 'wildRare' });
+  check(gr?.x === 125 && crystals === 125 && p.heroes.aurelle.shards === 0 && p.items.echoCrystal === 117 && wrong && p.items.wildRare === 0 && p.heroes[got].shards === 1,
+    `넘친 조각: ★6 전설의 조각 25 → 메아리 결정 ${crystals}, 결정 8로 범용 조각(희귀) 하나, 그것은 일반에게 쓰이지 않고 희귀(${got})에게 조각 하나`);
+  // 일괄 성장(레벨 최대까지: 값은 한 번에)과 환원(무료: 쓴 골드를 모두 돌려받는다, 잠근 카드는 하지 않는다), 별 모두
+  k.wallet.add(p, 'gold', 50000, 'test');
+  const gold0 = p.gold, max = 10 + p.heroes.tamsin.stars * 10;
+  k.command(p, { t: 'card', a: 'levels', id: 'tamsin', n: 0 });
+  const lv = p.heroes.tamsin.lv, spent = gold0 - p.gold;
+  k.command(p, { t: 'card', a: 'lock', id: 'tamsin', on: true });
+  k.command(p, { t: 'card', a: 'reset', id: 'tamsin' });
+  const kept = p.heroes.tamsin.lv === max && told('cardIsLocked').length === 1;
+  k.command(p, { t: 'card', a: 'lock', id: 'tamsin', on: false });
+  k.command(p, { t: 'card', a: 'reset', id: 'tamsin' });
+  p.heroes.pell.shards = 30;
+  k.command(p, { t: 'card', a: 'stars', id: undefined });
+  check(lv === max && spent > 0 && kept && p.heroes.tamsin.lv === 1 && p.gold === gold0 && p.heroes.pell.stars === 3 && p.heroes.pell.shards === 0,
+    `일괄 성장: 레벨 ${lv}까지 한 번에(골드 ${spent}), 잠근 카드는 환원되지 않고, 풀면 Lv1 + 골드 ${spent}을 모두 돌려받는다. 별 모두: pell ★1 → ★3 (조각 30)`);
+  // 잠금은 저장의 줄 끝(1)과 개인 상태에 남고, 다시 읽으면 이어진다
+  k.command(p, { t: 'card', a: 'lock', id: 'aurelle', on: true });
+  const save = k.saves.find((x) => x.name === 'roster')!, raw = JSON.parse(JSON.stringify(save.save(p))) as Record<string, number[]>;
+  const q = k.players.spawn('카드 시험 2', false, null, 'ep-cards2');
+  save.load(q, raw);
+  const me = k.personal.find((x) => x.name === 'heroes')!.state(p) as Record<string, number[]>;
+  check(raw.aurelle?.[5] === 1 && raw.brindle?.length === 3 && q.heroes.aurelle?.lock === true && !q.heroes.brindle?.lock && me.aurelle?.[5] === 1,
+    '잠금: 잠근 카드만 저장의 줄이 [.., 1]로 길어지고(다른 카드는 예전 모양), 다시 읽어도 잠겨 있다');
+}

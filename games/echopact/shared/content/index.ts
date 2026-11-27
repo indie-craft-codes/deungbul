@@ -135,6 +135,11 @@ export const ITEMS = {
   chain: { kind: 'armor', price: 200, guard: 0.8, tier: 2 },
   tonic: { kind: 'potion', price: 12, heal: 80 },
   ...GEAR_ITEMS,
+  // 카드의 공통 손질 (HERO_RULES.cards): 메아리 결정(다 키운 메아리의 넘친 조각이 바뀐 것)과 범용 조각(등급마다, 그 등급의 메아리 조각 하나). 결정 상점(GOODS의 shop 'gShopCrystal')에서 바꾼다
+  echoCrystal: { kind: 'mat', price: 0, max: 9999 },
+  wildCommon: { kind: 'mat', price: 0, max: 999 },
+  wildRare: { kind: 'mat', price: 0, max: 999 },
+  wildLegend: { kind: 'mat', price: 0, max: 999 },
 } as const satisfies Record<string, ItemDef>;
 export const START_WEAPON: ItemId = 'blade1';
 export const SHOP_STOCK: readonly ItemId[] = ['tonic', 'blade2', 'jerkin', 'chain'];
@@ -172,8 +177,26 @@ export const HERO_ROLES: Readonly<Record<string, HeroRoleDef>> = {
   mender: { name: 'roleMender', hand: 'staff', shot: 'bolt', range: 7, atkCd: 1.6, speed: 4.4, skill: 'chant', cloth: 0xe8e0c8 },
 };
 export const HEROES: Readonly<Record<string, HeroDef>> = {};
-/** 키우기: 틀의 기본(별 6, 레벨 상한 10 + 별 × 10, 레벨 값 레벨 × 20 × (등급 + 1) 골드, 별 값 별 × 10 조각) */
-export const HERO_RULES: HeroRules = { ...BASE_HERO_RULES };
+/**
+ * 키우기: 틀의 기본(별 6, 레벨 상한 10 + 별 × 10, 레벨 값 레벨 × 20 × (등급 + 1) 골드, 별 값 별 × 10 조각).
+ * 범용 조각(trade의 only): 그 등급의 메아리에게 하나 = 조각 하나. 카드의 공통 손질(cards: docs/proof-echopact.md '카드 손질'):
+ *   넘친 조각 다 키운(★6) 메아리의 조각 하나 → 메아리 결정 일반 1·희귀 2·전설 5, 합성 일반 조각 40 → 희귀 하나·희귀 조각 80 → 전설 하나,
+ *   환원 무료(레벨 업에 쓴 골드를 모두 돌려준다: 키울 메아리를 바꿔 보기), 잠금, 일괄 성장, 추천 편성
+ */
+export const HERO_RULES: HeroRules = {
+  ...BASE_HERO_RULES,
+  trade: {
+    wildCommon: { cost: () => 1, shards: () => 1, only: [0] },
+    wildRare: { cost: () => 1, shards: () => 1, only: [1] },
+    wildLegend: { cost: () => 1, shards: () => 1, only: [2] },
+  },
+  cards: {
+    overflow: { item: 'echoCrystal', rate: (r) => [1, 2, 5][r] ?? 1 },
+    fuse: { need: (r) => (r === 0 ? 40 : 80), names: ['cardFuse0', 'cardFuse1'] },
+    reset: { refund: 1 },
+    lock: true, bulk: true, auto: true,
+  },
+};
 
 // ---------- 캐릭터 정의의 규칙: 등급마다 (공격 × 4 + 체력 × 0.5)의 예산. 내용의 영웅이 없으므로 직접 적는다 ----------
 export const CHAR_RULES: CharRules = {
@@ -285,6 +308,8 @@ export const ODDS: OddsRules = {
     'cur:sparks': { ko: '울림 조각', en: 'Echo Shards' },
     'cur:gold': { ko: '골드', en: 'Gold' },
     ...DROP_NAMES,
+    cardFuse0: { ko: '메아리 합성 (일반 → 희귀)', en: 'Echo fusion (Common → Rare)' },
+    cardFuse1: { ko: '메아리 합성 (희귀 → 전설)', en: 'Echo fusion (Rare → Legendary)' },
   },
 };
 
@@ -316,6 +341,11 @@ export const GOODS: Readonly<Record<string, GoodsDef>> = {
   festGold: { name: 'gFestGold', event: 'echofest', price: { cur: 'sparks', n: 50, kind: 'event' }, give: { gold: 300 }, limit: { n: 10 } },
   dayPack: { name: 'gDayPack', price: { cur: 'gold', n: 150 }, give: { items: { tonic: 2 }, sparks: 20 }, limit: { n: 1, per: 'day' } },
   wellTonic: { name: 'gWellTonic', shop: 'npc', price: { cur: 'gold', n: 40 }, give: { items: { tonic: 5 } }, stock: 100 },
+  // 결정 상점 (카드 손질): 메아리 결정으로 범용 조각과 골드(레벨 업의 재료)만. 뽑기 재화(울림 조각)로 바꾸는 길은 없다. 주마다 한도
+  cWildCommon: { name: 'gWildCommon', shop: 'gShopCrystal', price: { item: 'echoCrystal', n: 3 }, give: { items: { wildCommon: 1 } }, limit: { n: 20, per: 'week' } },
+  cWildRare: { name: 'gWildRare', shop: 'gShopCrystal', price: { item: 'echoCrystal', n: 8 }, give: { items: { wildRare: 1 } }, limit: { n: 10, per: 'week' } },
+  cWildLegend: { name: 'gWildLegend', shop: 'gShopCrystal', price: { item: 'echoCrystal', n: 20 }, give: { items: { wildLegend: 1 } }, limit: { n: 3, per: 'week' } },
+  cGold: { name: 'gCrystalGold', shop: 'gShopCrystal', price: { item: 'echoCrystal', n: 5 }, give: { gold: 300 }, limit: { n: 10, per: 'week' } },
 };
 /** 시즌: 2주마다 (2026-11-30 월요일부터), 사냥·단계·뽑기·변신·구매가 점수, 무료 트랙 다섯 칸, 새 시즌에 점수의 20%가 남는다 */
 export const SEASON: SeasonRules = {

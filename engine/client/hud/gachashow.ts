@@ -16,6 +16,7 @@ import { confirmSpend } from './confirm';
 import { rarityCss, tintRarity } from './rarity';
 import { dropScreen, openScreen } from './screens';
 import { whyOf } from './menu/parts';
+import { overflowText } from './cardgrow';
 
 type Stage = 'tease' | 'reveal' | 'summary';
 interface Show { banner: string; got: readonly PullGot[]; at: number; stage: Stage; top: number; seen: Set<number> }
@@ -50,7 +51,7 @@ function card(g: PullGot, big: boolean): HTMLElement {
   if (img) { const i = document.createElement('img'); i.src = img; i.alt = ''; face.append(i); } else face.textContent = [...heroName(g.h)][0] ?? '?';
   c.append(face, mk('b', 'gsName', heroName(g.h)), mk('small', 'gsRar', rarityName(g.r)));
   if (!g.dup) c.append(mk('span', 'gsNew', t('gsNew')));
-  else c.append(mk('span', 'gsDup', L().fmt.gachaDup(g.n)));
+  else c.append(mk('span', 'gsDup', overflowText(g) || L().fmt.gachaDup(g.n))); // 다 키운 카드는 '조각 n → 결정 m' (hud/cardgrow.ts)
   if (g.pity) c.append(mk('span', 'gsPity', t('gachaPityMark')));
   return c;
 }

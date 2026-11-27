@@ -33,7 +33,7 @@ export function liveCommands(g: Game): Record<string, (a: string[], by: string) 
     events: () => {
       const now = g.now();
       const evs = eventIds().map((id) => { const e = EVENTS[id]; return { id, from: e.from, to: e.to, state: within(now, e.from, e.to) ? 'open' : now < e.from ? 'soon' : 'ended', cur: e.cur ?? '', end: e.end?.swap ? `swap ${e.end.swap.rate}x → ${e.end.swap.to}` : e.cur ? 'expire' : '', missions: Object.keys(e.missions ?? {}).length }; });
-      const goods = goodsIds().map((id) => { const d = GOODS[id]; return { id, shop: d.event ? `event:${d.event}` : d.shop ?? 'shop', price: `${d.price.n} ${d.price.cur}${d.price.kind ? `:${d.price.kind}` : ''}`, limit: d.limit ? `${d.limit.n}/${d.limit.per ?? 'ever'}` : '', left: g.has('items') && goodsIds().length && d.stock !== undefined ? g.goods.left(id) : null }; });
+      const goods = goodsIds().map((id) => { const d = GOODS[id]; return { id, shop: d.event ? `event:${d.event}` : d.shop ?? 'shop', price: `${d.price.n} ${d.price.item ?? d.price.cur}${d.price.kind ? `:${d.price.kind}` : ''}`, limit: d.limit ? `${d.limit.n}/${d.limit.per ?? 'ever'}` : '', left: g.has('items') && goodsIds().length && d.stock !== undefined ? g.goods.left(id) : null }; });
       const out = [
         g.has('event') ? `기간 이벤트 ${evs.length}개 (지금 ${new Date(now).toISOString().slice(0, 16)} UTC)` : '이 게임은 기간 이벤트(event 모듈)를 쓰지 않습니다.',
         ...evs.map((e) => `  ${e.state === 'open' ? '열림' : e.state === 'soon' ? '예정' : '끝'}  ${e.id}  ${when(e.from)} ~ ${when(e.to)}  임무 ${e.missions}${e.cur ? `  재화 ${e.cur}:event (${e.end})` : ''}`),

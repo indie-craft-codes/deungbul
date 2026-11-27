@@ -88,8 +88,8 @@ export class Gacha {
       steps.push(step.key);
       count = b.pity && rarity >= b.pity.rarity ? 0 : count + 1;
       sure = nextSure(b, { hero, rarity }, sure);
-      const r = g.roster.grant(p, hero);
-      got.push({ h: hero, r: rarity, dup: r?.dup ?? false, n: r?.shards ?? 0, pity: floor >= 0 });
+      const r = g.roster.grant(p, hero, true);
+      got.push({ h: hero, r: rarity, dup: r?.dup ?? false, n: r?.shards ?? 0, pity: floor >= 0, ...(r?.x ? { x: r.x } : {}) });
     }
     if (g.has('odds')) g.odds.record(p, 'gacha', table, steps, got.map((x) => x.h), { cur: b.cur, n: cost, ...(paid ? { kinds: paid } : {}) });
     if (b.pity) p.pity[key] = count;

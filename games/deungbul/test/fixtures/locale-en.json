@@ -160,6 +160,104 @@
   "1 stat point to spend",
   "2 stat points to spend"
  ],
+ "fmt.cgConvert": [
+  "57f448dbe22be821",
+  "Convert NaN spare shards → NaN undefined",
+  "Convert 0 spare shards → NaN undefined",
+  "Convert 1 spare shards → NaN undefined",
+  "Convert 2 spare shards → NaN undefined"
+ ],
+ "fmt.cgFuseOdds": [
+  "f1404d1b8a728381",
+  "Possible cards (undefined each): undefined",
+  "Possible cards (undefined each): 0",
+  "Possible cards (undefined each): 1",
+  "Possible cards (undefined each): 2"
+ ],
+ "fmt.cgFuseRow": [
+  "327e381aa4af7ddb",
+  "undefined shards NaN / NaN → 1 undefined card",
+  "0 shards NaN / NaN → 1 undefined card",
+  "1 shards NaN / NaN → 1 undefined card",
+  "2 shards NaN / NaN → 1 undefined card"
+ ],
+ "fmt.cgFuseShort": [
+  "353b65c06d84f164",
+  "NaN more shards needed",
+  "0 more shards needed",
+  "1 more shards needed",
+  "2 more shards needed"
+ ],
+ "fmt.cgFuseText": [
+  "0ff6054eac29bf7d",
+  "Use NaN undefined shards to get one random undefined card. This cannot be undone.",
+  "Use 0 undefined shards to get one random undefined card. This cannot be undone.",
+  "Use 1 undefined shards to get one random undefined card. This cannot be undone.",
+  "Use 2 undefined shards to get one random undefined card. This cannot be undone."
+ ],
+ "fmt.cgFuseUse": [
+  "866339be18684193",
+  "Shards used: undefined",
+  "Shards used: 0",
+  "Shards used: 1",
+  "Shards used: 2"
+ ],
+ "fmt.cgFusedSub": [
+  "248990a150a9c55d",
+  "undefined · New card!",
+  "0 · New card!",
+  "1 · New card!",
+  "2 · New card!"
+ ],
+ "fmt.cgLevels": [
+  "fd341d6e8d73373b",
+  "Lv +undefined · NaN Sparks",
+  "Lv +0 · NaN Sparks",
+  "Lv +1 · NaN Sparks",
+  "Lv +2 · NaN Sparks"
+ ],
+ "fmt.cgLevelsMax": [
+  "25ca6e369789d238",
+  "To max (+undefined) · NaN Sparks",
+  "To max (+0) · NaN Sparks",
+  "To max (+1) · NaN Sparks",
+  "To max (+2) · NaN Sparks"
+ ],
+ "fmt.cgMaxed": [
+  "3187aa73d6cdae7d",
+  "Maxed card: each new shard becomes NaN undefined",
+  "Maxed card: each new shard becomes NaN 0",
+  "Maxed card: each new shard becomes NaN 1",
+  "Maxed card: each new shard becomes NaN 2"
+ ],
+ "fmt.cgOverflow": [
+  "98d83530e775d5a6",
+  "NaN shards → NaN undefined",
+  "0 shards → NaN undefined",
+  "1 shards → NaN undefined",
+  "2 shards → NaN undefined"
+ ],
+ "fmt.cgResetBack": [
+  "711468f981be77d4",
+  "You get back: undefined",
+  "You get back: 0",
+  "You get back: 1",
+  "You get back: 2"
+ ],
+ "fmt.cgResetText": [
+  "396a60c74cfec29a",
+  "undefined goes back from Lvundefined to Lv1.",
+  "0 goes back from Lvundefined to Lv1.",
+  "1 goes back from Lvundefined to Lv1.",
+  "2 goes back from Lvundefined to Lv1."
+ ],
+ "fmt.cgStarsUp": [
+  "8f09c9653f85e242",
+  "Raise all stars (★+undefined · NaN shards)",
+  "Raise all stars (★+0 · NaN shards)",
+  "Raise all stars (★+1 · NaN shards)",
+  "Raise all stars (★+2 · NaN shards)"
+ ],
  "fmt.channelOpt": [
   "ed49aac5f4935f19",
   "Ch undefined · undefined",
@@ -653,6 +751,13 @@
  ],
  "fmt.goodsPrice": [
   "aa304ff0f000b355",
+  "NaN Sparks",
+  "0 Sparks",
+  "1 Sparks",
+  "2 Sparks"
+ ],
+ "fmt.goodsPriceItem": [
+  "0b3c0d0688e359fa",
   "NaN Sparks",
   "0 Sparks",
   "1 Sparks",
@@ -2260,6 +2365,70 @@
   "Bought 1.",
   "Bought 2."
  ],
+ "msg.cardFull": [
+  "8ce862942bae3008",
+  "Sparks is full; spare shards were not converted.",
+  "Worn Sword is full; spare shards were not converted.",
+  "Iron Sword is full; spare shards were not converted.",
+  "Lamp Sword is full; spare shards were not converted."
+ ],
+ "msg.cardFuseNo": [
+  "85bc5707eee0cd53",
+  "Not enough heroRarity0 shards (NaN / NaN).",
+  "Not enough heroRarity0 shards (0 / 0).",
+  "Not enough heroRarity1 shards (1 / 1).",
+  "Not enough heroRarity2 shards (3 / 4)."
+ ],
+ "msg.cardFused": [
+  "441f3e8735dd84d4",
+  "Fusion: undefined (new card)",
+  "Fusion: 0 (new card)",
+  "Fusion: 1 (+1 shards)",
+  "Fusion: 3 (+5 shards)"
+ ],
+ "msg.cardIsLocked": [
+  "bff1f12c0b0eea3f",
+  "undefined: a locked card cannot be reset.",
+  "0: a locked card cannot be reset.",
+  "1: a locked card cannot be reset.",
+  "2: a locked card cannot be reset."
+ ],
+ "msg.cardLock": [
+  "43946f2c0307e4d2",
+  "undefined: unlocked.",
+  "0: unlocked.",
+  "1: locked (kept out of fusion and reset).",
+  "2: locked (kept out of fusion and reset)."
+ ],
+ "msg.cardNoReset": [
+  "6a4ecafd93c19317",
+  "undefined: nothing to reset.",
+  "0: nothing to reset.",
+  "1: nothing to reset.",
+  "2: nothing to reset."
+ ],
+ "msg.cardOverflow": [
+  "debf6de72eb07188",
+  "undefined is maxed: NaN shards became NaN Sparks.",
+  "0 is maxed: 0 shards became 0 Sparks.",
+  "1 is maxed: 1 shards became 1 Sparks.",
+  "2 is maxed: 3 shards became 5 Sparks."
+ ],
+ "msg.cardReset": [
+  "b782b740f1079bdb",
+  "undefined reset. Got back nothing",
+  "0 reset. Got back 0 Sparks, 0 Sparks",
+  "1 reset. Got back 1 Sparks, 1 Sparks",
+  "2 reset. Got back 4 Sparks, 6 Sparks"
+ ],
+ "msg.cardStars": [
+  "2c289f4aad01343c",
+  "Raised NaN stars on NaN cards.",
+  "Raised 0 stars on 0 cards.",
+  "Raised 1 stars on 1 card.",
+  "Raised 3 stars on 2 cards."
+ ],
+ "msg.cardStarsNone": "No card can gain a star.",
  "msg.channelDungeon": "You cannot change channels inside a dungeon.",
  "msg.channelFight": "You cannot change channels while fighting. Try again once the fight is over.",
  "msg.channelFull": [
@@ -3500,6 +3669,7 @@
  "oddsPage.words.oddsBreak": "Destroyed",
  "oddsPage.words.oddsDown": "Fail (-1)",
  "oddsPage.words.oddsEnhanceName": "Gear enhancement",
+ "oddsPage.words.oddsFuse": "Card fusion",
  "oddsPage.words.oddsKeep": "Fail (no change)",
  "oddsPage.words.oddsUp": "Success (+1)",
  "quests.ashwood.steps.length": "5",
@@ -3629,6 +3799,24 @@
  "ui.celLevel": "Level up!",
  "ui.celReward": "Received",
  "ui.celUnlock": "New feature unlocked",
+ "ui.cgAuto": "Recommended squad (by power)",
+ "ui.cgAutoSame": "Already the recommended squad",
+ "ui.cgFuse": "Fuse",
+ "ui.cgFuseHead": "Card fusion",
+ "ui.cgFuseInfo": "Combine shards of one rarity to get one random card of the next rarity. Shards of locked cards are never used.",
+ "ui.cgFuseLock": "Shards come from maxed cards first, then cards with the most shards (locked cards are skipped).",
+ "ui.cgFuseTitle": "Fuse cards?",
+ "ui.cgFused": "Fusion result",
+ "ui.cgLock": "🔒 Lock",
+ "ui.cgLocked": "Locked",
+ "ui.cgReset": "Reset",
+ "ui.cgResetKeep": "Stars and shards stay.",
+ "ui.cgResetLocked": "This card is locked",
+ "ui.cgResetNone": "Nothing to reset",
+ "ui.cgResetTitle": "Reset this card?",
+ "ui.cgStarsAll": "Raise all stars",
+ "ui.cgStarsNone": "No card can gain a star",
+ "ui.cgUnlock": "Unlock",
  "ui.changeClass": "Change class",
  "ui.channel": "Channel",
  "ui.charAtk": "Attack",

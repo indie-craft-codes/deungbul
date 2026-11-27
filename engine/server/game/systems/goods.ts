@@ -1,5 +1,5 @@
 // [items] 상품 (상점의 일반화, 묶음 6): 내용의 GOODS에 적은 상품을 판다. GOODS가 비어 있으면 이 시스템은 만들어지지 않는다 (NPC 상점 shop.ts는 그대로다).
-//   값      price { cur, n, kind? }: kind를 주면 그 종류의 몫으로만 (이벤트 상점: 이벤트 재화 'event')
+//   값      price { cur, n, kind? }: kind를 주면 그 종류의 몫으로만 (이벤트 상점: 이벤트 재화 'event'). { item, n }이면 가방의 그 아이템으로
 //   주는 것  give(골드·두 번째 재화·경험치·아이템 여럿: 묶음), hero(영웅 하나, roster 모듈). 아이템이 가방에 다 들어가지 않으면 값을 치르기 전에 막는다
 //   한정    limit { n, per }: 사람마다, 그 기간(초기화 시각 RESET의 날·주·달, 또는 ever)에 살 수 있는 수. 이벤트 상품의 ever는 그 이벤트의 회차마다
 //   수량    stock: 서버 전체에서 팔 수 있는 수. 서버가 세고 월드와 함께 저장한다 (월드 저장의 goods 칸)
@@ -94,7 +94,8 @@ export class Goods {
     if (this.left(id) <= 0) return no(2);
     for (const [item, n] of Object.entries(def.give.items ?? {})) if (!g.has('items') || !isItemId(item) || g.bag.count(p, item) + n > itemCap(item)) return no(4);
     const pr = def.price;
-    const paid = pr.kind ? g.wallet.takeKind(p, pr.cur, pr.kind, pr.n, GOODS_WHY) : g.wallet.take(p, pr.cur, pr.n, GOODS_WHY);
+    // 아이템 값 (메아리 결정 같은 교환 재료): 가방에서. 아니면 지갑
+    const paid = pr.item !== undefined ? g.has('items') && isItemId(pr.item) && g.bag.takeItem(p, pr.item, pr.n, GOODS_WHY) : pr.kind ? g.wallet.takeKind(p, pr.cur, pr.kind, pr.n, GOODS_WHY) : g.wallet.take(p, pr.cur, pr.n, GOODS_WHY);
     if (!paid) return no(3);
     giveNow(g, p, def.give, GOODS_WHY);
     if (def.hero && g.has('roster') && isHeroId(def.hero)) g.roster.grant(p, def.hero);
