@@ -22,6 +22,7 @@ export * from './defs/morph';
 export * from './defs/live';
 export * from './defs/legal';
 export * from './defs/talk';
+export * from './defs/odds';
 export * from './defs/modes';
 // 맵 정의의 모양과 MAP에서 꺼낸 것(AREAS, GRID 등)은 world.ts가 다시 내보낸다. 여기서는 MAP만 내보낸다
 
@@ -56,6 +57,8 @@ export {
   LEGAL, PRIVACY,
   // 사회와 안전: 대화 채널, 친구, 정해진 문장, 연령과 제한 모드
   CHAT_RULES, FRIENDS, QUICK_CHAT, AGE,
+  // 확률과 재화의 투명성 (odds 모듈)
+  ODDS,
   // 게임 안의 모드
   MODE_RULES,
 } from './content';

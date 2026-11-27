@@ -1,5 +1,7 @@
 // [gacha] 뽑기: 배너(내용의 BANNERS)에서 1번·10번 뽑는다. 값은 게임 안의 재화(골드나 두 번째 재화)뿐이고 지갑(g.wallet)을 지난다: 현금·결제는 없다.
-// 확률은 배너의 영웅마다의 무게(와 픽업)로만 정해지고, 화면의 공개 확률표와 이 시스템이 같은 셈(engine/shared/defs/collect.ts의 pullOdds, pickOdds)을 쓴다.
+// 확률은 배너의 영웅마다의 무게(와 픽업)로만 정해진다. 굴림은 확률표의 단일 원본(engine/shared/defs/odds.ts의 bannerTable → pullStep → rollStep)에서만 한다:
+// 화면의 확률표, 공개 페이지(odds 모듈), 이 시스템이 같은 표를 쓴다 (표의 확률은 engine/shared/defs/collect.ts의 pullOdds 그대로).
+// odds 모듈을 고른 게임은 뽑을 때마다 추첨 기록(사람·시각·표의 버전·결과·치른 것)이 남는다 (engine/server/game/systems/odds.ts).
 // 천장(BannerDef.pity): 사람마다·천장의 열쇠(pityKey: 배너 id, 무리 pityGroup가 있으면 'group:이름')마다 'pity.rarity 이상이 나오지 않은 뽑기의 수'를 세고, after번째 뽑기는 그 등급 이상의 칸에서만 뽑는다.
 // 10번 뽑기의 보장(BannerDef.tenAtLeast): 앞의 아홉에 그 등급 이상이 없으면 열째는 그 등급 이상에서.
 // 픽업(BannerDef.pickup)과 반반(fiftyFifty): 픽업의 등급이 나왔는데 픽업이 아니면 확정이 켜지고, 다음에 그 등급이 나오면 픽업이다. 확정도 천장의 열쇠마다 센다.
@@ -8,7 +10,7 @@
 // 난수는 서버의 것이다(rng). 시험은 seededRng로 바꿔 끼워 같은 결과를 되풀이한다.
 // 저장: 캐릭터의 ext 'gacha' ({ pity: { 열쇠: 셈 }, log: 최근 기록, sure?: { 열쇠: 1 } }). 본인에게는 개인 상태 'gacha'와, 뽑을 때마다 메시지 { t: 'gacha', b, got }.
 import {
-  BANNER_IDS, BANNER_TABLE, GACHA_RULES, GACHA_RULE_VIEW, SELECT_TICKETS, hasFiftyFifty, hasTimedBanners, heroDef, isBannerId, isHeroId, isItemId, nextSure, pickOdds, pityKey, poolOdds, pullOdds,
+  BANNER_IDS, BANNER_TABLE, GACHA_RULES, GACHA_RULE_VIEW, SELECT_TICKETS, bannerTable, hasFiftyFifty, hasTimedBanners, heroDef, isBannerId, isHeroId, isItemId, nextSure, pityKey, pullStep, rollStep,
   type BannerDef, type GachaMe, type PullGot, type PullLog,
 } from '../../../shared/defs';
 import { readInt, type Ent } from '../entity';
@@ -65,11 +67,13 @@ export class Gacha {
     const g = this.g, b: BannerDef | undefined = BANNER_TABLE[id];
     if (!b || p.bot) return null;
     if (!g.time.open(b.start, b.end)) { g.notify(p, 'bannerClosed', id); return null; }
-    const normal = poolOdds(b.pool);
-    if (!normal.length) return null;
+    // 이 뽑기가 쓰는 확률표 (평소·천장·10번 보장·반반 확정의 단계): 뽑기 판에 든 영웅이 없으면 null
+    const table = bannerTable(id);
+    if (!table) return null;
     const cost = n === 10 ? b.ten : b.one;
     if (!g.wallet.take(p, b.cur, cost, GACHA_WHY)) { g.notify(p, 'costShort', b.cur); return null; }
-    const got: PullGot[] = [];
+    const paid = g.wallet.lastTake;
+    const got: PullGot[] = [], steps: string[] = [];
     const key = pityKey(id);
     let count = p.pity[key] ?? 0, sure = this.sureOf(p, id);
     for (let i = 0; i < n; i++) {
@@ -77,15 +81,17 @@ export class Gacha {
       const pity = !!b.pity && count + 1 >= b.pity.after;
       const ten = n === 10 && i === 9 && b.tenAtLeast !== undefined && !got.some((x) => x.r >= b.tenAtLeast!);
       const floor = Math.max(pity ? b.pity!.rarity : -1, ten ? b.tenAtLeast! : -1);
-      // 확률표는 공개 확률표와 같은 셈 (pullOdds: 픽업이 없는 배너는 poolOdds와 같다)
-      const odds = pullOdds(b, floor, sure);
-      const o = pickOdds(odds.length ? odds : pullOdds(b, -1, sure), this.rng());
-      if (!o) break;
-      count = b.pity && o.rarity >= b.pity.rarity ? 0 : count + 1;
-      sure = nextSure(b, o, sure);
-      const r = g.roster.grant(p, o.hero);
-      got.push({ h: o.hero, r: o.rarity, dup: r?.dup ?? false, n: r?.shards ?? 0, pity: floor >= 0 });
+      // 그 바닥 등급·확정의 단계에서 굴린다 (그 등급 이상의 영웅이 없으면 평소의 단계: 표의 확률은 공개 확률표와 같은 pullOdds)
+      const step = pullStep(table, floor, sure), o = step && rollStep(step, this.rng());
+      if (!step || !o) break;
+      const hero = o.id, rarity = o.r ?? heroDef(o.id).rarity;
+      steps.push(step.key);
+      count = b.pity && rarity >= b.pity.rarity ? 0 : count + 1;
+      sure = nextSure(b, { hero, rarity }, sure);
+      const r = g.roster.grant(p, hero);
+      got.push({ h: hero, r: rarity, dup: r?.dup ?? false, n: r?.shards ?? 0, pity: floor >= 0 });
     }
+    if (g.has('odds')) g.odds.record(p, 'gacha', table, steps, got.map((x) => x.h), { cur: b.cur, n: cost, ...(paid ? { kinds: paid } : {}) });
     if (b.pity) p.pity[key] = count;
     if (b.fiftyFifty && b.pickup) { if (sure) this.sureMap(p)[key] = 1; else delete this.sureMap(p)[key]; }
     const now = g.now();

@@ -27,7 +27,7 @@ import { check } from '@engine/testing';
   check(!skill.ok && skill.issues[0].code === 'skill', '계약자의 기술(cleave)은 메아리가 고를 수 없다 (CHAR_RULES.skills)');
   const badText = validateCharDef({ ...(ECHO_DEFS[0] as object), id: 'badtext', text: { en: { name: '운영자 admin' } } });
   check(!badText.ok && badText.issues.some((x) => x.code === 'banned' && x.path === 'text.en.name'), '언어마다의 이름도 같은 검증(금칙어)을 지난다 (자리 text.en.name)');
-  check(!MODULES.includes('herogear') && ['roster', 'gacha', 'squad', 'stages', 'chars', 'morph', 'modes', 'combat', 'away', 'party', 'chat', 'friends'].every((m) => MODULES.includes(m as never)), '모듈: 들판(전투·자동 사냥·파티·대화 …) + 수집형 넷 + 캐릭터 정의·변신 + 게임 안의 모드');
+  check(!MODULES.includes('herogear') && ['roster', 'gacha', 'squad', 'stages', 'chars', 'morph', 'modes', 'combat', 'away', 'party', 'chat', 'friends', 'odds'].every((m) => MODULES.includes(m as never)), '모듈: 들판(전투·자동 사냥·파티·대화 …) + 수집형 넷 + 캐릭터 정의·변신 + 게임 안의 모드 + 확률 공개');
   check(MODE_RULES.list.map((m) => `${m.id}:${m.kind}`).join() === 'tower:stage,vale:field' && MODE_RULES.start === MODE.tower && SQUAD_RULES.where === 'stage', '두 게임: 계약의 탑(단계)·울림골(들판), 처음은 탑, 편성은 탑에서만');
 }
 

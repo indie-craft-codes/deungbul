@@ -57,6 +57,7 @@ import { Teams } from './systems/teams';
 import { Roster } from './systems/roster';
 import { Rooms } from './systems/rooms';
 import { Gacha } from './systems/gacha';
+import { OddsSys } from './systems/odds';
 import { Squad } from './systems/squad';
 import { Stages } from './systems/stages';
 import { HeroGear } from './systems/herogear';
@@ -340,6 +341,7 @@ export class Game {
   /** [herogear] 영웅 장비 */ readonly herogear: HeroGear;
   /** [chars] 캐릭터 정의: 검증하고 두고 화면에 보낸다 (roster를 함께 고르면 영웅이 된다) */ readonly chars: Chars;
   /** [morph] 변신 */ readonly morph: Morph;
+  /** [odds] 확률표의 버전·이력·사전 공지와 추첨 기록 (굴림은 모듈과 상관없이 engine/shared/defs/odds.ts의 표에서) */ readonly odds: OddsSys;
   /** [modes] 게임 안의 모드 */ readonly modes: Modes;
   /** 제재(차단, 말 막기)와 관리자 지급·회수. 관리자 통로(net/admin.ts)가 부른다 */
   readonly sanctions: Sanctions;
@@ -413,6 +415,8 @@ export class Game {
     // 캐릭터 정의와 변신: 그 뒤에 (앞의 시스템의 등록 차례가 이것들을 고르지 않은 게임과 같게)
     this.chars = has('chars') ? new Chars(this) : off('chars', 'chars');
     this.morph = has('morph') ? new Morph(this) : off('morph', 'morph');
+    // 확률 공개: 그 뒤에 (뽑기·강화가 기록을 남길 곳. 고르지 않은 게임의 등록 차례가 예전과 같게)
+    this.odds = has('odds') ? new OddsSys(this) : off('odds', 'odds');
     // 게임 안의 모드: 그 뒤에 (접속 사건에서 단계·변신의 처리가 먼저 끝난 뒤 저장된 모드로 들어간다)
     this.modes = has('modes') ? new Modes(this) : off('modes', 'modes');
     this.sanctions = new Sanctions(this);

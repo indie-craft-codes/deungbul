@@ -38,3 +38,7 @@ export function runServer(opts: RunOptions): ReturnType<typeof runWith> {
   setAdminDir(db === 'memory' ? undefined : path.dirname(path.resolve(db)));
   return runWith(opts);
 }
+// 확률과 재화의 투명성 (odds 모듈): 공개 페이지의 모양을 만드는 것 (게임의 시험·도구가 쓴다), 저장의 접점
+export { oddsFile, oddsHtml, type OddsFile } from './net/odds';
+export type { OddsSys } from './game/systems/odds';
+export { hasOdds, type OddsStore } from './store';

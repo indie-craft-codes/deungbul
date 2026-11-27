@@ -18,7 +18,14 @@
 //
 // 재화의 표(이름, 거래 가능 여부, 상한)는 게임의 내용에 있다 (CURRENCIES). 틀이 아는 칸은 엔티티의 gold, sparks, exp 셋이고, 표에 없는 재화는 한도 없이 다룬다.
 // 장비(낱개)와 아이템(재료, 물약)은 짝이 되는 통로인 가방(bag.ts)을 지난다. 원인의 이름은 아래 WHY를 함께 쓴다.
-import { CURRENCIES, type CurrencyDef } from '../../../shared/defs';
+//
+// 재화의 종류 (CURRENCIES의 선택 칸 kinds: 유상·무상·이벤트·귀속, 쓰는 차례, 만료. engine/shared/defs/economy.ts):
+//   적은 재화만 종류마다의 몫(지갑의 주머니)을 따로 센다. 엔티티의 칸(p.sparks)은 그대로 합이고, 주머니는 저장의 ext.purse에 적힌다.
+//   add(p, cur, n, why, kind)  kind를 주지 않으면 earn의 종류. take는 spend의 차례로(같은 종류 안에서는 먼저 사라질 몫부터) 꺼낸다.
+//   장부에 알리는 원인에는 ':종류'가 붙는다 ('cmd:gacha:free', 'quest:event'). 만료된 몫은 'expire:종류'로 빠진다 (1분마다, 접속 중인 사람만. 접속할 때도 본다).
+//   주머니의 합이 칸과 다르면(종류를 적기 전의 저장, 지갑 밖의 변화) 칸을 믿는다: 모자라면 earn의 종류로 채우고, 남으면 쓰는 차례로 덜어 낸다.
+//   종류를 적지 않은 게임(지금의 게임 모두)은 주머니가 없다: 저장·장부·줄 위가 예전과 같다.
+import { CURRENCIES, curKinds, earnKind, type CurKind, type CurrencyDef, type CurrencyKinds } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 
@@ -46,6 +53,13 @@ export const WHY = {
   /** 관리자가 준 것과 거둔 것 (관리자 통로: systems/sanctions.ts). 장부에 따로 보여 경제 지표에서 '관리자' 몫으로 가려진다 */
   admin: 'admin',
 } as const;
+/** 종류 하나의 몫: [양, 사라지는 때(UTC ms, 0이면 사라지지 않는다)] 들 */
+type Lots = [number, number][];
+/** 한 사람의 주머니: 재화 → 종류 → 몫들 */
+type Purse = Partial<Record<Cur, Partial<Record<CurKind, Lots>>>>;
+const DAY_MS = 86_400_000;
+/** 한 종류에 두는 몫의 수 (넘으면 사라지는 때가 가장 늦은 둘을 합친다: 이벤트 재화를 자주 받아도 저장이 끝없이 늘지 않게) */
+const LOTS_MAX = 64;
 /** 원인 이름에 넣어도 되는 낱말: 영문자, 숫자, 밑줄만 (장부의 줄을 가르는 글자가 섞이지 않게) */
 const WORD = /^[A-Za-z0-9_]{1,24}$/;
 /** 우편으로 받은 것의 원인 이름. 우편의 종류는 저장에서 읽은 값이라 걸러서 쓴다 */
@@ -58,11 +72,126 @@ export class Wallet {
   readonly seen: ((p: Ent, cur: Cur, d: number, why: string) => void)[] = [];
   /** 재화별 상한 (표에 없으면 한도 없음) */
   private max: Record<Cur, number>;
+  /** 종류를 세는 재화와 그 규칙 (CURRENCIES의 kinds. 경험치는 세지 않는다). 비어 있으면 주머니가 없다 */
+  private readonly kinded = new Map<Cur, CurrencyKinds>();
+  /** 사람(엔티티 id) → 주머니 */
+  private readonly purses = new Map<number, Purse>();
+  private expAcc = 0;
+  /** 마지막으로 꺼낸 종류마다의 양 (종류를 세는 재화의 take 뒤. 세지 않으면 null). 뽑기의 추첨 기록이 '무엇으로 치렀나'를 적는다 */
+  lastTake: Partial<Record<CurKind, number>> | null = null;
 
   constructor(private g: Game) {
     const defs: Readonly<Record<string, CurrencyDef>> = CURRENCIES;
     const max = (cur: Cur): number => { const m = defs[cur]?.max; return typeof m === 'number' && m > 0 ? m : Infinity; };
     this.max = { gold: max('gold'), sparks: max('sparks'), exp: max('exp') };
+    for (const cur of ['gold', 'sparks'] as const) { const k = curKinds(defs[cur]); if (k) this.kinded.set(cur, k); }
+    // 저장 칸은 늘 등록한다(engine/shared/modules.ts의 MODULE_SAVES): 종류를 세지 않으면 적을 것이 없어 칸이 생기지 않는다
+    g.saves.push({ name: 'purse', save: (p) => this.savePurse(p), load: (p, raw) => this.loadPurse(p, raw) });
+    if (this.kinded.size) {
+      g.on('playerJoined', (p) => { for (const cur of this.kinded.keys()) this.expire(p, cur); });
+      g.on('playerLeft', (id) => { this.purses.delete(id); });
+      if ([...this.kinded.values()].some((k) => k.days && Object.values(k.days).some((d) => (d ?? 0) > 0))) g.ticks.push((dt) => this.tickExpire(dt));
+    }
+  }
+
+  // ---------- 재화의 종류 ----------
+  /** 그 재화가 종류를 세는가 (세면 그 규칙) */
+  kindsOf(cur: Cur): CurrencyKinds | null { return this.kinded.get(cur) ?? null; }
+  /** 종류마다 가진 양 (종류를 세지 않는 재화는 null). 지금 칸과 맞춘 뒤의 값 */
+  balance(p: Ent, cur: Cur): Partial<Record<CurKind, number>> | null {
+    const k = this.kinded.get(cur);
+    if (!k) return null;
+    const bag = this.sync(p, cur, k), out: Partial<Record<CurKind, number>> = {};
+    for (const kind of k.spend) out[kind] = (bag[kind] ?? []).reduce((s, l) => s + l[0], 0);
+    return out;
+  }
+  /** 종류마다의 몫 (사라지는 때와 함께: 화면·관리자). 종류를 세지 않는 재화는 null */
+  lots(p: Ent, cur: Cur): Partial<Record<CurKind, Lots>> | null {
+    const k = this.kinded.get(cur);
+    return k ? structuredClone(this.sync(p, cur, k)) : null;
+  }
+  private bagOf(p: Ent, cur: Cur): Partial<Record<CurKind, Lots>> {
+    let purse = this.purses.get(p.id);
+    if (!purse) this.purses.set(p.id, purse = {});
+    return (purse[cur] ??= {});
+  }
+  /** 주머니의 합을 칸에 맞춘다 (칸이 원본). 맞춘 주머니 */
+  private sync(p: Ent, cur: Cur, k: CurrencyKinds): Partial<Record<CurKind, Lots>> {
+    const bag = this.bagOf(p, cur);
+    let sum = 0;
+    for (const kind of k.spend) for (const l of bag[kind] ?? []) sum += l[0];
+    const have = p[cur];
+    if (sum < have) this.put(bag, earnKind(k), have - sum, this.until(k, earnKind(k)));
+    else if (sum > have) this.pull(bag, k, sum - have);
+    return bag;
+  }
+  private until(k: CurrencyKinds, kind: CurKind): number { const d = k.days?.[kind] ?? 0; return d > 0 ? this.g.now() + d * DAY_MS : 0; }
+  private put(bag: Partial<Record<CurKind, Lots>>, kind: CurKind, n: number, until: number): void {
+    const lots = (bag[kind] ??= []);
+    const same = lots.find((l) => l[1] === until);
+    if (same) same[0] += n; else { lots.push([n, until]); lots.sort((a, b) => (a[1] || Infinity) - (b[1] || Infinity)); }
+    if (lots.length > LOTS_MAX) { const last = lots.pop()!, keep = lots[lots.length - 1]; keep[0] += last[0]; keep[1] = keep[1] === 0 || last[1] === 0 ? 0 : Math.max(keep[1], last[1]); }
+  }
+  /** 쓰는 차례로 n을 덜어 낸다. 종류마다 덜어 낸 양 */
+  private pull(bag: Partial<Record<CurKind, Lots>>, k: CurrencyKinds, n: number): [CurKind, number][] {
+    const out: [CurKind, number][] = [];
+    for (const kind of k.spend) {
+      const lots = bag[kind];
+      if (!lots || n <= 0) continue;
+      let took = 0;
+      while (lots.length && n > 0) {
+        const l = lots[0], d = Math.min(l[0], n);
+        l[0] -= d; n -= d; took += d;
+        if (l[0] <= 0) lots.shift();
+      }
+      if (took) out.push([kind, took]);
+      if (!lots.length) delete bag[kind];
+    }
+    return out;
+  }
+  /** 사라질 때가 된 몫을 뺀다 (장부에는 'expire:종류') */
+  expire(p: Ent, cur: Cur): number {
+    const k = this.kinded.get(cur);
+    if (!k || p.bot) return 0;
+    const bag = this.sync(p, cur, k), now = this.g.now();
+    let all = 0;
+    for (const kind of k.spend) {
+      const lots = bag[kind];
+      if (!lots) continue;
+      let gone = 0;
+      for (let i = lots.length - 1; i >= 0; i--) if (lots[i][1] > 0 && lots[i][1] <= now) { gone += lots[i][0]; lots.splice(i, 1); }
+      if (!lots.length) delete bag[kind];
+      if (gone <= 0) continue;
+      all += gone;
+      p[cur] -= gone; p.dirty = true; p.unsaved = true;
+      for (let i = 0; i < this.seen.length; i++) this.seen[i](p, cur, -gone, `expire:${kind}`);
+    }
+    return all;
+  }
+  private tickExpire(dt: number): void {
+    this.expAcc += dt;
+    if (this.expAcc < 60) return;
+    this.expAcc = 0;
+    for (const e of this.g.ents.values()) if (e.kind === 'p' && !e.bot) for (const cur of this.kinded.keys()) this.expire(e, cur);
+  }
+  private savePurse(p: Ent): Purse | undefined {
+    if (!this.kinded.size) return undefined;
+    const out: Purse = {};
+    for (const [cur, k] of this.kinded) { const bag = this.sync(p, cur, k); if (Object.keys(bag).length) out[cur] = structuredClone(bag); }
+    return Object.keys(out).length ? out : undefined;
+  }
+  private loadPurse(p: Ent, raw: unknown): void {
+    if (!this.kinded.size || typeof raw !== 'object' || raw === null) return;
+    for (const [cur, k] of this.kinded) {
+      const src = (raw as Record<string, unknown>)[cur];
+      if (typeof src !== 'object' || src === null) continue;
+      const bag = this.bagOf(p, cur);
+      for (const kind of k.spend) {
+        const lots = (src as Record<string, unknown>)[kind];
+        if (!Array.isArray(lots)) continue;
+        for (const l of lots) if (Array.isArray(l) && Number.isInteger(l[0]) && l[0] > 0 && typeof l[1] === 'number' && l[1] >= 0) this.put(bag, kind, l[0], l[1]);
+      }
+    }
   }
 
   /** 그 재화를 가질 수 있는 상한 (CURRENCIES의 max). 한도가 없으면 Number.MAX_SAFE_INTEGER: 저장을 읽을 때 범위를 잡는 데 쓴다 */
@@ -85,12 +214,22 @@ export class Wallet {
     return got > 0 ? got : 0;
   }
 
-  /** 더한다. 실제로 더한 양을 돌려준다 (배율과 상한이 적용된 값). 경험치는 더한 뒤에 레벨 업을 확인한다 */
-  add(p: Ent, cur: Cur, n: number, why: string): number {
+  /**
+   * 더한다. 실제로 더한 양을 돌려준다 (배율과 상한이 적용된 값). 경험치는 더한 뒤에 레벨 업을 확인한다.
+   * kind: 종류를 세는 재화일 때 넣을 종류 (주지 않거나 그 재화에 없는 종류면 earn의 종류). 장부의 원인에 ':종류'가 붙는다
+   */
+  add(p: Ent, cur: Cur, n: number, why: string, kind?: CurKind): number {
     const got = this.amount(p, cur, n, why);
     if (got === 0) return 0;
+    const k = this.kinded.get(cur);
+    let as = why;
+    if (k) {
+      const bag = this.sync(p, cur, k), to = kind && k.spend.includes(kind) ? kind : earnKind(k);
+      this.put(bag, to, got, this.until(k, to));
+      if (why) as = `${why}:${to}`;
+    }
     p[cur] += got; p.dirty = true; p.unsaved = true;
-    for (let i = 0; i < this.seen.length; i++) this.seen[i](p, cur, got, why);
+    for (let i = 0; i < this.seen.length; i++) this.seen[i](p, cur, got, as);
     if (cur === 'exp') this.g.players.levelUp(p);
     return got;
   }
@@ -105,7 +244,17 @@ export class Wallet {
   take(p: Ent, cur: Cur, n: number, why: string): boolean {
     const cost = Wallet.cost(n);
     if (!(this.g.field(p, cur) >= cost)) return false; // 칸이 없는 재화(성장 없는 게임의 경험치)는 0으로 본다: 0이 아닌 값은 치를 수 없다
-    if (cost === 0) return true;
+    if (cost === 0) { this.lastTake = null; return true; }
+    const k = this.kinded.get(cur);
+    if (k) {
+      // 종류를 세는 재화: 쓰는 차례로 꺼내고, 종류마다 한 줄씩 장부에 알린다
+      const parts = this.pull(this.sync(p, cur, k), k, cost);
+      p[cur] -= cost; p.dirty = true; p.unsaved = true;
+      this.lastTake = Object.fromEntries(parts);
+      for (const [kind, d] of parts) for (let i = 0; i < this.seen.length; i++) this.seen[i](p, cur, -d, why ? `${why}:${kind}` : why);
+      return true;
+    }
+    this.lastTake = null;
     p[cur] -= cost; p.dirty = true; p.unsaved = true;
     for (let i = 0; i < this.seen.length; i++) this.seen[i](p, cur, -cost, why);
     return true;

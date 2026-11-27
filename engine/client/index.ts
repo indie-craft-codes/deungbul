@@ -54,3 +54,5 @@ export { preloadLater } from './assets';
 export { adBreak, auth, gameplayStart, gameplayStop, guestAuth, keyNameOf, memoryPlatform, onAd, onBreakPoint, platform, rewarded, setAuth, setPlatform, type AuthProvider, type Feature, type InputKind, type KeyLike, type LifeEvent, type MemoryPlatform, type Platform, type RawError } from './platform';
 // 터치에서 title 툴팁을 길게 눌러 보는 도우미 (hud/tip.ts): 틀이 startClient에서 켠다. 게임이 만든 요소도 title만 달면 된다
 export { showTip, hideTip } from './hud/tip';
+// 확률과 재화의 투명성: 귀한 재화의 확인 단계 (CURRENCIES의 confirm을 적은 재화를 쓰는 게임의 단추를 감싼다)
+export { confirmSpend, spendAsking } from './hud/confirm';

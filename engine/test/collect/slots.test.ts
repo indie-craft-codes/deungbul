@@ -41,7 +41,7 @@ const codes = (r: ReturnType<typeof validateCharDef>): string[] => (r.ok ? [] : 
 {
   const base: AwaySafety = { potionAt: 0.45, retreatAt: 0.25, stopNoPotion: true, stopOnDeath: true };
   const s = tidySafety({ potionAt: 2, retreatAt: 0.9 }, base);
-  check(s.potionAt === 0.95 && s.retreatAt === 0.95 && tidySafety({ potionAt: 0.3, retreatAt: 0.5 }, base).retreatAt === 0.3 && tidySafety({ potionAt: Number.NaN as number }, base).potionAt === 0.45,
+  check(s.potionAt === 0.95 && s.retreatAt === 0.9 && tidySafety({ potionAt: 0.3, retreatAt: 0.5 }, base).retreatAt === 0.3 && tidySafety({ potionAt: Number.NaN as number }, base).potionAt === 0.45,
     '안전장치의 값을 다듬는다 (비율은 0~0.95, 물러남은 물약보다 낮게, 깨진 값은 기본)');
   const pot = POTIONS[0];
   const has = pot ? { [pot]: 2 } : {};

@@ -124,5 +124,7 @@ export const CHAT_RULES = get('CHAT_RULES');
 export const FRIENDS = get('FRIENDS');
 export const QUICK_CHAT = get('QUICK_CHAT');
 export const AGE = get('AGE');
+// ---------- 확률과 재화의 투명성 (odds 모듈) ----------
+export const ODDS = get('ODDS');
 // ---------- 게임 안의 모드 ----------
 export const MODE_RULES = get('MODE_RULES');

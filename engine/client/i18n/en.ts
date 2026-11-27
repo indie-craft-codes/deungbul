@@ -6,7 +6,7 @@ import type { BuildStat, ClassId, GearSlot, HeroBonus, ItemId, MonsterId, Stat, 
 import { BUILD_STAT_IDS, STAT_IDS, buildStatDef, isStat, statMod } from '../../shared/defs';
 import type { MsgArg } from '../../shared/messages';
 import { bannerName, heroGearName, heroName, keyHints, moduleHints, teamName, type EngineLocale } from './ko';
-import { clockText, flagLabel, spanMs, whenText, type koAdminPage, type koStatusPage } from './ko';
+import { clockText, flagLabel, spanMs, whenText, type koAdminPage, type koOddsPage, type koStatusPage } from './ko';
 import { anyModule } from '../../shared/picked';
 import { SALVAGE } from '../../shared/defs';
 import { dungeonLabel, itemNameOf, type ContentNames } from './names';
@@ -531,6 +531,20 @@ export const enBase = (n: ContentNames): EngineLocale => {
       friendsIn: 'Requests',
       friendsOut: 'Sent requests',
       friendsEmpty: 'No friends yet. Tap a person or type a name to send a request.',
+      // Odds and currency transparency (odds module: odds window, my draw log, confirming a precious currency)
+      tabOdds: 'Odds',
+      oddsTables: 'Odds tables',
+      oddsMine: 'My draw log',
+      oddsMineNone: 'No draws yet.',
+      oddsLoading: 'Loading…',
+      oddsPageLink: 'View outside the game (public page)',
+      oddsHistory: 'Change history',
+      oddsPlans: 'Planned changes',
+      confirmTitle: 'Confirm',
+      confirmNext: 'Continue',
+      confirmYes: 'Spend',
+      confirmNo: 'Cancel',
+      confirmAgain: 'One more check. Spend it for sure?',
       // Ops tools and support (support module: hud/support.ts)
       supportHead: 'Support',
       supportNote: 'Send us what you want to know or a problem you ran into and an operator will reply. Replies appear here and in your mail. Do not include personal details such as your real name or contacts.',
@@ -794,6 +808,10 @@ export const enBase = (n: ContentNames): EngineLocale => {
       ageOver: (n: number) => `${n} or older`,
       friendSeen: (ms: number) => { const m = Math.max(1, Math.floor(ms / 60_000)), h = Math.floor(ms / 3_600_000), d = Math.floor(ms / 86_400_000); return `Last seen ${ms < 3_600_000 ? `${m} min` : ms < 86_400_000 ? `${h} h` : `${d} day${d === 1 ? '' : 's'}`} ago`; },
       friendsHead: (n: number) => `Friends (${n})`,
+      confirmSpend: (n: number, cur: string) => `This spends ${num(n)} ${curName(cur)}.`,
+      confirmPrice: (price: string) => `Real price: ${price}`,
+      oddsDrawHead: (at: number, kind: string, ver: number) => `${whenText(at, 'en-US')} · ${kind === 'gacha' ? 'Summon' : kind === 'enhance' ? 'Enhance' : kind} · table v${ver}`,
+      oddsVersion: (v: number) => `Version ${v}`,
       // Ops tools and support
       sanctionUntil: (until: number) => (until === 0 ? 'Permanent' : `Until ${whenText(until, 'en-US')}`),
       supportCount: (n: number, max: number) => `${n} / ${max}`,
@@ -1046,6 +1064,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
     },
     nameA: n.nameA,
     nameB: n.nameB,
+    oddsPage: enOddsPage,
   };
 };
 
@@ -1068,6 +1087,58 @@ export const enStatusPage: typeof koStatusPage = {
   missing: 'Could not read the status.',
   note: 'This page refreshes every 30 seconds. Times are in your local time.',
   game: 'Go to the game',
+};
+
+/** 확률 공개 페이지와 확률표 창의 문장 (ko.ts의 koOddsPage와 같은 모양) */
+export const enOddsPage: typeof koOddsPage = {
+  title: 'Odds',
+  made: 'As of {at} ({local} in your local time)',
+  lead: 'These rates are the same tables the game server uses for every draw. When a table changes its version goes up and the change is listed below. Planned changes are announced in advance.',
+  missing: 'Could not read the odds.',
+  none: 'No published odds tables.',
+  kinds: { capsule: 'Capsule (summon)', enhance: 'Enhancement', combine: 'Combination', ceiling: 'Ceiling' },
+  version: 'Version {v}',
+  cost: '{one} {cur} per draw',
+  costTen: '{one} per draw · {ten} for 10 ({cur})',
+  cur: { gold: 'Gold' },
+  curOther: 'currency',
+  limited: 'Limited time or quantity',
+  from: 'from {at}',
+  to: 'until {at}',
+  total: '{n} in total',
+  pityRule: 'Ceiling: if nothing of {r} or higher comes out and you reach draw {n}, that draw is only from {r} or higher (the ceiling table below).',
+  tenRule: 'Ten-draw guarantee: if the first nine have nothing of {r} or higher, the tenth is from {r} or higher.',
+  guard: 'Protection: using {item} keeps the level on failure (the success rate is the same).',
+  base: 'Normal',
+  pity: 'Ceiling (draw {n}, {r} or higher)',
+  ten: 'Tenth of a ten-draw ({r} or higher)',
+  plus: 'Enhancing from +{n}',
+  roll: 'Step {n}',
+  sure: 'With the 50/50 guarantee on',
+  colOutcome: 'Result',
+  colRarity: 'Rarity',
+  colP: 'Rate',
+  effective: 'Effective rates',
+  effectiveNote: 'What you actually get over many single draws (an average that includes the ceiling and guarantees).',
+  plans: 'Planned changes',
+  planAt: 'Applies from {at} ({local} in your local time)',
+  history: 'Change history',
+  noHistory: 'No changes yet.',
+  colAt: 'Time (UTC)',
+  colTable: 'Table',
+  colVer: 'Version',
+  colWhy: 'Reason',
+  colChange: 'Changed rates (before → after)',
+  whyBoot: 'Server update',
+  whyAuto: 'Content change',
+  whyLive: 'Live setting',
+  whyAdmin: 'Admin check',
+  gone: 'Table removed',
+  first: 'First published',
+  operator: 'Operator',
+  operatorEmpty: '(Operator details and contact are not filled in yet.)',
+  foot: 'The game server writes this page. Rates are rounded at the fourth decimal place.',
+  words: { oddsEnhanceName: 'Gear enhancement', oddsUp: 'Success (+1)', oddsKeep: 'Fail (no change)', oddsDown: 'Fail (-1)', oddsBreak: 'Destroyed', heroRarity0: 'Common', heroRarity1: 'Rare', heroRarity2: 'Legendary' },
 };
 
 /** 웹 관리 화면의 문장 (ko.ts의 koAdminPage와 같은 모양) */

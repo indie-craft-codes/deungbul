@@ -24,6 +24,7 @@ import type { MorphRules } from './defs/morph';
 import type { LiveKeys, ResetRules } from './defs/live';
 import type { LegalDef, PrivacyRules } from './defs/legal';
 import type { AgeRules, ChatRules, FriendRules } from './defs/talk';
+import type { OddsRules } from './defs/odds';
 import type { ModeRules } from './defs/modes';
 import type { ModuleId } from './modules';
 import * as defaults from './defaults';
@@ -245,13 +246,18 @@ export interface SafetyContent {
   AGE: AgeRules | null;
 }
 
+/** 확률과 재화의 투명성 (odds 모듈): 게임이 직접 주는 확률표, 추첨 기록의 보관, 공개 페이지의 이름표와 운영자 문구 (engine/shared/defs/odds.ts). 적지 않으면 자동 표만 */
+export interface OddsContent {
+  ODDS: OddsRules;
+}
+
 /** 게임 안의 모드 (modes 모듈): 한 캐릭터로 오가는 '두 게임'(들판·단계)의 목록과 화면 (engine/shared/defs/modes.ts). 적지 않으면 모드가 없다 */
 export interface ModesContent {
   MODE_RULES: ModeRules;
 }
 
 /** 모듈의 계약 전부 (모두 선택) */
-export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & ModesContent;
+export type ModuleContent = CoreTuning & CombatContent & ItemsContent & GearContent & GrowthContent & MailContent & DungeonContent & SocialContent & EconomyContent & TeamsContent & CollectContent & CharsContent & OpsContent & WebContent & SafetyContent & OddsContent & ModesContent;
 /** 게임의 내용이 지킬 모양: 핵심은 반드시, 나머지는 적었으면 이 모양으로 */
 export type ContentContract = CoreContent & Partial<ModuleContent>;
 

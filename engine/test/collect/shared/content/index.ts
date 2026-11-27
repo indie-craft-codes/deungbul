@@ -16,7 +16,9 @@ import type { Reward } from '@engine/shared/defs/growth';
 import type { ItemDef, ItemId } from '@engine/shared/defs/items';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
-import { GEAR_BASE, HERO_RULES as BASE_HERO_RULES } from '@engine/shared/defaults';
+import { GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
+import type { LiveKeys } from '@engine/shared/defs/live';
+import type { OddsRules } from '@engine/shared/defs/odds';
 import type { ModuleId } from '@engine/shared/modules';
 
 /** 쓸 모듈: 수집형의 넷과 그 의존, 방치 보상(우편), 열쇠 던전(던전은 일일·장비에 기댄다), 영웅 장비 */
@@ -301,3 +303,20 @@ export const PORTAL_REACH = 5;
 // ---------- 이 '게임'만의 것 (틀은 읽지 않는다) ----------
 /** 처음 온 사람이 받는 것: 보석(10번 뽑기 두 번 남짓)과 골드, 소탕권 다섯과 영웅 선택권 하나 */
 export const STARTER: Reward = { sparks: 2000, gold: 1500, items: { sweepticket: 5, herochoice: 1 } };
+
+// ---------- 확률과 재화의 투명성 (odds 모듈: 이 내용의 MODULES에는 없다. engine/test/collect/odds.test.ts가 GameOptions.modules로 고른다) ----------
+/** 원격 설정으로 바꿀 수 있는 칸: 새벽의 부름의 천장과 뽑기 판 (표를 바꾸면 버전이 오르고 이력이 남는가를 본다) */
+export const LIVE_KEYS: LiveKeys = {
+  'BANNERS.dawn.pity.after': { check: liveRange(1, 200, true), note: '새벽의 부름의 천장(번째)' },
+  'BANNERS.dawn.pool': { note: '새벽의 부름의 뽑기 판' },
+};
+/** 게임이 직접 주는 표 둘: 보물 상자(캡슐형, 한정 100개)와 조각 합성(합성형: 셋을 넣어 하나). 이름표는 공개 페이지의 것 */
+export const ODDS: OddsRules = {
+  tables: [
+    { id: 'chest', kind: 'capsule', name: 'oddsChest', steps: [{ key: 'open', when: [{ k: 'base' }], outcomes: [{ id: 'stardust', p: 0.7 }, { id: 'sweepticket', p: 0.25 }, { id: 'herochoice', p: 0.05 }] }], limited: { total: 100 } },
+    { id: 'fuse', kind: 'combine', name: 'oddsFuse', steps: [{ key: 'r0', when: [{ k: 'roll', n: 0 }], outcomes: [{ id: 'up', p: 0.3 }, { id: 'same', p: 0.7 }] }, { key: 'r1', when: [{ k: 'roll', n: 1 }], outcomes: [{ id: 'up', p: 0.1 }, { id: 'same', p: 0.9 }] }] },
+  ],
+  keepDays: 30,
+  names: { oddsChest: { ko: '보물 상자', en: 'Treasure chest' }, oddsFuse: { ko: '조각 합성', en: 'Shard fusion' }, bannerDawn: { ko: '새벽의 부름', en: 'Call of Dawn' } },
+  operator: { ko: '시험용 내용 (운영자 정보 없음)', en: 'Test content (no operator)' },
+};
