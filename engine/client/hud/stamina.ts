@@ -53,7 +53,7 @@ let sig = '';
 function draw(): void {
   if (!pop || pop.hidden) return;
   const s = myStamina(), loc = L(), name = staminaName();
-  const pot = STAMINA_RULE_VIEW.potion, mine = JSON.stringify([s?.n, s?.max, need, pot ? S.me?.items[pot.item] ?? 0 : 0, loc.code]);
+  const pot = me?.pot ?? STAMINA_RULE_VIEW.potion, mine = JSON.stringify([s?.n, s?.max, need, pot ? S.me?.items[pot.item] ?? 0 : 0, loc.code]);
   // 단추는 바뀔 때만 새로 만든다 (누르는 사이에 단추가 바뀌지 않게). 시간의 글은 늘 고친다
   if (mine === sig) { const info = pop.querySelector('.staInfo'); if (info) info.textContent = [loc.fmt.staNext(s?.next ?? 0), loc.fmt.staFull(s?.full ?? 0)].filter(Boolean).join(' · '); return; }
   sig = mine;

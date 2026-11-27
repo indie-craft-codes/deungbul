@@ -52,4 +52,4 @@ export function staminaAt(s: StaminaSave, now: number, max: number, everyS: numb
   return n + k >= max ? { n: max, at: now } : { n: n + k, at: at + k * per };
 }
 /** 개인 상태 'stamina': 지금 양, 상한, 다음 하나까지(초, 상한 이상이면 0), 가득까지(초) */
-export interface StaminaMe { n: number; max: number; next: number; full: number }
+export interface StaminaMe { n: number; max: number; next: number; full: number; /** 물약 (규칙에 있으면: 화면은 서버가 보낸 것을 따른다) */ pot?: { item: string; n: number } }

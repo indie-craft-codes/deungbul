@@ -42,9 +42,10 @@ export class Stamina {
   have(p: Ent): number { return this.on && !p.bot ? this.now(p).n : 0; }
   private me(p: Ent): StaminaMe {
     const s = this.now(p), max = staminaMax(this.lv(p)), per = Math.max(1, STAMINA_RULE_VIEW.everyS);
-    if (s.n >= max) return { n: s.n, max, next: 0, full: 0 };
+    const pot = STAMINA_RULE_VIEW.potion ? { pot: { item: STAMINA_RULE_VIEW.potion.item, n: STAMINA_RULE_VIEW.potion.n } } : {};
+    if (s.n >= max) return { n: s.n, max, next: 0, full: 0, ...pot };
     const next = Math.max(1, Math.ceil((s.at + per * 1000 - this.g.now()) / 1000));
-    return { n: s.n, max, next, full: next + (max - s.n - 1) * per };
+    return { n: s.n, max, next, full: next + (max - s.n - 1) * per, ...pot };
   }
   /** n만큼 쓴다 (모자라면 쓰지 않고 false) */
   take(p: Ent, n: number): boolean {
