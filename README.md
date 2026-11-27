@@ -17,7 +17,7 @@ npm run build && npm start     # 등불지기 빌드본을 한 포트로: http:/
 npm run build:sample && npm run start:sample   # 예제: http://localhost:3002
 npm run games                  # 이 저장소의 게임 목록 (games/ 아래에서 스스로 찾는다)
 
-npm test                       # 모든 시험: 틀의 경계 검사·틀의 시험(fx, core, collect) → 게임마다의 시험. 검사 2567개(2026-11-27)
+npm test                       # 모든 시험: 틀의 경계 검사·틀의 시험(fx, core, collect) → 게임마다의 시험. 검사 2535개(2026-11-27)
 npm run typecheck              # 타입 검사: 틀의 설정 다섯 + 게임마다의 설정, 모두 8개
 npm run build:all              # 모든 게임을 빌드
 npx tsx test/all.ts boundary fx/shop deungbul/quests sample/docs   # 고른 시험만
