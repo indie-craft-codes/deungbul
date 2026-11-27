@@ -1284,7 +1284,7 @@ body[data-lay="landscape"] .alertBox { top: 34%; max-width: min(480px, calc(100%
 #btlSpeed.on { background: var(--c-accent); color: var(--c-on-accent); border-color: transparent; font-weight: 800; }
 #btlSpeed.locked { color: var(--c-text-3); }
 .btlSquad { position: fixed; z-index: var(--z-page-over); left: 50%; translate: -50% 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: min(440px, calc(100% - 16px));
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 6px; pointer-events: none; }
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 100px)); justify-content: center; gap: 6px; pointer-events: none; }
 .btlMate { display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 4px; border-radius: var(--r-md); background: var(--c-panel); border: 2px solid var(--rc, var(--c-line)); min-width: 0; }
 .btlMate b { font-size: var(--fs-xs); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .btlMate.down { filter: grayscale(1); opacity: .55; }
@@ -1302,7 +1302,7 @@ body[data-lay="landscape"] .alertBox { top: 34%; max-width: min(480px, calc(100%
 body.battleOn #zone-bc { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 @media (orientation: landscape) and (max-height: 480px) {
   .btlTop { width: min(620px, calc(100% - 32px)); padding: 4px; }
-  .btlSquad { width: min(620px, calc(100% - 32px)); grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+  .btlSquad { width: min(620px, calc(100% - 32px)); grid-template-columns: repeat(auto-fit, minmax(110px, 150px)); }
   .btlMate { flex-direction: row; align-items: center; flex-wrap: wrap; }
   .btlFace { width: 40px; flex: none; }
   .btlMate b { flex: 1; text-align: left; }
@@ -1403,3 +1403,5 @@ body.battleOn:not([data-lay="portrait"]):not([data-lay="landscape"]) #bottom { b
 /* 폰: 전투 화면의 위 띠는 위 오른쪽 구역(메뉴·게임 바꾸기)을 가리지 않는다. 세로는 그 아래, 가로는 그 왼쪽 */
 body[data-lay="portrait"] .btlTop { top: calc(14px + env(safe-area-inset-top, 0px) + var(--ztr-h, 80px)); }
 body[data-lay="landscape"] .btlTop { left: max(8px, env(safe-area-inset-left, 0px)); translate: none; width: auto; right: calc(max(8px, env(safe-area-inset-right, 0px)) + var(--ztr-w, 200px) + 8px); max-width: 620px; }
+/* 전투 화면: 튜토리얼 카드와 흘러가는 알림은 초상 칸 위에 */
+body.battleOn #tut.tutDown, body[data-lay].battleOn #tut:not(.tutUp) { bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important; }
