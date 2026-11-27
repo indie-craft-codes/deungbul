@@ -580,6 +580,20 @@ export const koBase = (n: ContentNames) => {
       friendsIn: '받은 요청',
       friendsOut: '보낸 요청',
       friendsEmpty: '아직 친구가 없습니다. 사람을 누르거나 이름을 적어 요청해 보세요.',
+      // 확률과 재화의 투명성 (odds 모듈의 확률표 창·내 기록, 귀한 재화의 확인 단계)
+      tabOdds: '확률',
+      oddsTables: '확률표',
+      oddsMine: '내 추첨 기록',
+      oddsMineNone: '아직 추첨 기록이 없습니다.',
+      oddsLoading: '불러오는 중…',
+      oddsPageLink: '게임 밖에서 보기 (공개 페이지)',
+      oddsHistory: '변경 이력',
+      oddsPlans: '예정된 변경',
+      confirmTitle: '확인',
+      confirmNext: '계속',
+      confirmYes: '쓰기',
+      confirmNo: '그만두기',
+      confirmAgain: '한 번 더 확인합니다. 정말 쓸까요?',
     },
     monsters,
     dungeons,
@@ -833,6 +847,13 @@ export const koBase = (n: ContentNames) => {
       /** 친구의 마지막 접속 (지난 ms) */
       friendSeen: (ms: number) => `마지막 접속 ${ms < 3_600_000 ? `${Math.max(1, Math.floor(ms / 60_000))}분` : ms < 86_400_000 ? `${Math.floor(ms / 3_600_000)}시간` : `${Math.floor(ms / 86_400_000)}일`} 전`,
       friendsHead: (n: number) => `친구 ${n}명`,
+      /** 귀한 재화의 확인 단계: 쓰려는 양과 재화 */
+      confirmSpend: (n: number, cur: string) => `${curName(cur)} ${num(n)}만큼 씁니다.`,
+      /** 실제 가격을 함께 적는 칸 (결제가 생긴 뒤에 채운다) */
+      confirmPrice: (price: string) => `실제 가격: ${price}`,
+      /** 내 추첨 기록의 한 줄: 시각, 종류, 표의 버전 */
+      oddsDrawHead: (at: number, kind: string, ver: number) => `${whenText(at, 'ko-KR')} · ${kind === 'gacha' ? '뽑기' : kind === 'enhance' ? '강화' : kind} · 표 v${ver}`,
+      oddsVersion: (v: number) => `버전 ${v}`,
     },
     /** 서버 안내문 (engine/shared/messages.ts의 종류별 문장). 게임이 더한 종류의 문장은 게임의 언어 파일에 있다 */
     msg: {
@@ -1061,6 +1082,8 @@ export const koBase = (n: ContentNames) => {
     /** 처음 접속할 때 붙이는 무작위 이름의 재료 */
     nameA: n.nameA,
     nameB: n.nameB,
+    /** 확률표의 문장 (공개 페이지와 같은 것: 아래 koOddsPage) */
+    oddsPage: koOddsPage,
   };
 };
 
@@ -1122,4 +1145,60 @@ export const koStatusPage = {
   missing: '상태를 읽지 못했습니다.',
   note: '이 페이지는 30초마다 새로 읽습니다. 시각은 이 기기의 시각입니다.',
   game: '게임으로',
+};
+
+/**
+ * 확률 공개 페이지(odds.html)와 게임 안 확률표 창의 문장: 서버가 공개 페이지를 쓸 때 넣고(engine/server/net/odds.ts), 화면의 창(engine/client/hud/odds.ts)도 같은 것으로 그린다.
+ * {이름}은 값이 들어갈 자리. words는 표·결과의 이름 키 → 글 (강화의 결과)
+ */
+export const koOddsPage = {
+  title: '확률 정보',
+  made: '{at} 기준 (이 기기의 시각으로 {local})',
+  lead: '아래의 확률은 게임 서버가 실제로 뽑을 때 쓰는 표와 같은 값입니다. 표가 바뀌면 버전이 오르고 아래 변경 이력에 남습니다. 예정된 변경은 미리 알립니다.',
+  missing: '확률 정보를 읽지 못했습니다.',
+  none: '공개하는 확률표가 없습니다.',
+  kinds: { capsule: '캡슐형 (뽑기)', enhance: '강화형', combine: '합성형', ceiling: '천장형' } as Record<string, string>,
+  version: '버전 {v}',
+  cost: '1번에 {one} {cur}',
+  costTen: '1번에 {one} · 10번에 {ten} {cur}',
+  /** 재화의 이름 (게임이 ODDS.names의 'cur:재화'로 주지 않았을 때): 첫 재화만 틀이 이름을 안다 */
+  cur: { gold: '골드' } as Record<string, string>,
+  curOther: '재화',
+  limited: '기간·수량 한정',
+  from: '{at}부터',
+  to: '{at}까지',
+  total: '총 {n}개',
+  pityRule: '천장: {r} 등급 이상이 나오지 않은 채 {n}번째 뽑기가 되면, 그 뽑기는 {r} 등급 이상에서만 나옵니다 (아래 천장 단계의 표).',
+  tenRule: '10번 뽑기의 보장: 앞의 아홉에 {r} 등급 이상이 없으면 열째는 {r} 등급 이상에서 나옵니다.',
+  guard: '보호: {item}을(를) 쓰면 실패해도 단계가 내려가지 않습니다 (성공 확률은 같습니다).',
+  base: '평소',
+  pity: '천장 ({n}번째 뽑기, {r} 이상)',
+  ten: '10번 뽑기의 열째 ({r} 이상 보장)',
+  plus: '+{n}에서 강화할 때',
+  roll: '단계 {n}',
+  sure: '반반의 확정이 켜진 때',
+  colOutcome: '결과',
+  colRarity: '등급',
+  colP: '확률',
+  effective: '실효 확률',
+  effectiveNote: '1번 뽑기를 오래 되풀이했을 때 실제로 나오는 비율입니다 (천장과 확정을 넣은 평균).',
+  plans: '예정된 변경',
+  planAt: '{at}부터 적용 (이 기기의 시각으로 {local})',
+  history: '변경 이력',
+  noHistory: '아직 바뀐 적이 없습니다.',
+  colAt: '시각 (UTC)',
+  colTable: '표',
+  colVer: '버전',
+  colWhy: '까닭',
+  colChange: '바뀐 확률 (전 → 후)',
+  whyBoot: '서버 갱신',
+  whyAuto: '내용 변경',
+  whyLive: '운영 설정',
+  whyAdmin: '관리자 확인',
+  gone: '표가 내려갔습니다',
+  first: '처음 공개',
+  operator: '운영자 정보',
+  operatorEmpty: '(운영자 정보와 문의처는 아직 적지 않았습니다.)',
+  foot: '이 페이지는 게임 서버가 씁니다. 확률은 소수 넷째 자리에서 반올림해 보입니다.',
+  words: { oddsEnhanceName: '장비 강화', oddsUp: '성공 (+1)', oddsKeep: '실패 (그대로)', oddsDown: '실패 (-1)', oddsBreak: '파괴', heroRarity0: '일반', heroRarity1: '희귀', heroRarity2: '전설' } as Record<string, string>,
 };

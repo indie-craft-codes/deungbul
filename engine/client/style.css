@@ -893,3 +893,15 @@ body.chatOff .tag .say { display: none !important; }
 }
 /* 사람 카드는 대화 줄에서도 열린다 (터치: 대화창이 오른쪽 위라 상점·퀘스트 창과 겹친다): 그 위에 */
 #pcard { z-index: 7; }
+/* ---------- 확률과 재화의 투명성 ---------- */
+/* 귀한 재화의 확인 창 (hud/confirm.ts): 메뉴·뽑기 결과 창 위에 */
+#spendAsk { z-index: 45; }
+#spendAsk .card { display: flex; flex-direction: column; gap: 8px; width: 360px; }
+#spendAsk p { margin: 0; }
+#spendBtns { display: flex; gap: 8px; }
+#spendBtns button { flex: 1 1 0; padding: 8px; }
+#spendBtns button.gold { background: var(--gold); color: var(--on-gold); border-color: var(--gold); font-weight: 700; }
+#spendBtns button:disabled { opacity: .5; }
+#spendBtns button.no { background: none; color: inherit; border: 1px solid var(--line); font-weight: 400; }
+/* 확률표 창 (hud/odds.ts): 뽑기 창의 확률표와 같은 모양 */
+.oddsT > button { align-self: flex-start; }

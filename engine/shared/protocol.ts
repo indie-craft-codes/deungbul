@@ -7,6 +7,7 @@ import type { RoomLobby } from './defs/rooms';
 import type { TeamBoard } from './defs/teams';
 import type { MaintView, NoticeView } from './defs/live';
 import type { BlockView, ChatCh, FriendView, TalkState } from './defs/talk';
+import type { DrawRow, OddsPublic } from './defs/odds';
 import type { ClientMsgs, ServerMsgs, WorldState as GameWorldState } from './ext';
 import type { MsgArg, MsgKey } from './messages';
 
@@ -211,6 +212,9 @@ export type ClientMsg =
   | { t: 'talk'; a: 'state' }
   | { t: 'talk'; a: 'age'; y?: number; band?: 'u' | 'o' }
   | { t: 'talk'; a: 'prefs'; noWhisper?: boolean; noFriend?: boolean }
+  // ---- 확률과 재화의 투명성 (odds 모듈: engine/server/game/systems/odds.ts) ----
+  /** 확률표: tables 지금의 표와 이력·사전 공지(공개 페이지와 같은 것), mine 내 최근 추첨 기록 */
+  | { t: 'odds'; a: 'tables' | 'mine' }
   | Added<ClientMsgs>;
 
 export type ServerMsg =
@@ -327,4 +331,8 @@ export type ServerMsg =
   | { t: 'friends'; list: FriendView[] }
   /** 내 대화 상태: 제한 모드, 나이를 물어야 하는가, 귓말·친구 요청 받기 (연령을 묻거나 chat·friends 모듈을 고른 게임만) */
   | { t: 'talk'; s: TalkState }
+  // ---- 확률과 재화의 투명성 (odds 모듈) ----
+  /** 확률표와 이력·사전 공지 (물었을 때, 그리고 표의 버전이 바뀌면 모두에게) / 내 최근 추첨 기록 (사람 칸은 비운다) */
+  | { t: 'odds'; a: 'tables'; pub: OddsPublic }
+  | { t: 'odds'; a: 'mine'; rows: DrawRow[] }
   | Added<ServerMsgs>;

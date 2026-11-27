@@ -66,7 +66,11 @@ import { check } from '../harness';
 // ---------- 화면 모듈의 목록: 수집형은 맨 뒤에, 모듈마다 ----------
 {
   const src = fs.readFileSync(path.join(import.meta.dirname, '../../client/modules.ts'), 'utf8');
-  const order = [...src.matchAll(/\{ init: (\w+)(?:, mod: '(\w+)')? \}/g)].map((m) => `${m[1]}${m[2] ? ':' + m[2] : ''}`);
+  const all = [...src.matchAll(/\{ init: (\w+)(?:, mod: '(\w+)')? \}/g)].map((m) => `${m[1]}${m[2] ? ':' + m[2] : ''}`);
+  // 그 뒤의 묶음이 더한 화면 모듈(확률 공개 odds)은 맨 끝에 붙는다: 아래의 차례는 그것을 뺀 목록으로 본다
+  const LATER = ['initOdds:odds'];
+  check(all.slice(-LATER.length).join() === LATER.join(), `뒤의 묶음의 화면 모듈(${LATER.join()})은 목록의 맨 끝에, 자기 모듈을 고른 게임에서만`);
+  const order = all.filter((x) => !LATER.includes(x));
   // 웹 출시의 바탕(설정 창·약관·튜토리얼·손님 진행 보호: 어느 게임에나)은 그 뒤, 그리고 사회와 안전(설정 창의 칸을 더하므로 설정 창 뒤)이 맨 끝에 (고르지 않은 게임의 init 차례가 예전과 같게)
   const WEB = ['initSettings', 'initLegal', 'initTutorial', 'initKeepSafe', 'initSocial'];
   const tail = order.slice(-13, -5).join();
@@ -89,9 +93,11 @@ import { check } from '../harness';
   check(pk.hero === 'starseer' && pk.rarity === 2 && Math.abs(pk.share - 0.5) < 1e-12 && pctText(pk.p) === '1.5%' && pctText(pk.sureP) === '3%' && pk.effective > pk.p && pk.effective < pk.sureP,
     `픽업의 줄: 몫 ${pctText(pk.share)}, 평소 ${pctText(pk.p)}, 확정 ${pctText(pk.sureP)}, 실효 ${pctText(pk.effective)}`);
   check(rateTable(BANNERS.dawn).pickup === null && rateTable(BANNERS.dawn).sure.length === 0, '픽업이 없는 배너는 픽업의 줄과 확정의 표가 없다');
-  // 화면과 서버가 같은 함수를 부른다 (소스에서): 서버의 뽑기와 화면의 셈 모두 pullOdds
+  // 화면과 서버가 같은 함수를 부른다 (소스에서): 서버의 뽑기는 확률표의 단일 원본(bannerTable → pullStep → rollStep: 표의 확률은 pullOdds), 화면의 셈은 pullOdds
   const srv = fs.readFileSync(path.join(import.meta.dirname, '../../server/game/systems/gacha.ts'), 'utf8'), calc = fs.readFileSync(path.join(import.meta.dirname, '../../client/hud/collectcalc.ts'), 'utf8');
-  check(/pickOdds\(odds\.length \? odds : pullOdds\(/.test(srv) && /const odds = pullOdds\(b, floor, sure\)/.test(srv) && /const odds = pullOdds\(b\)/.test(calc) && !/poolOdds\(/.test(calc), '서버의 뽑기와 화면의 확률표가 같은 함수(pullOdds)를 쓴다 (화면은 poolOdds를 따로 부르지 않는다)');
+  const odds = fs.readFileSync(path.join(import.meta.dirname, '../../shared/defs/odds.ts'), 'utf8');
+  check(/const table = bannerTable\(id\)/.test(srv) && /pullStep\(table, floor, sure\), o = step && rollStep\(step, this\.rng\(\)\)/.test(srv) && !/pickOdds\(|pullOdds\(/.test(srv) && /pullOdds\(b, f, sure\)/.test(odds) && /const odds = pullOdds\(b\)/.test(calc) && !/poolOdds\(/.test(calc),
+    '서버의 뽑기는 확률표(bannerTable, 그 확률은 pullOdds)에서만 굴리고 화면의 확률표도 같은 함수(pullOdds)를 쓴다 (화면은 poolOdds를 따로 부르지 않는다)');
 }
 
 // ---------- 열린 배너와 천장 무리 ----------

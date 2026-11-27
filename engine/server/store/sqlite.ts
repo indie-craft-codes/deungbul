@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, SocialStore, Store, WebStore, WorldSave } from './types';
+import type { DrawQuery, OddsStore, OddsVersionRow } from './types';
+import type { DrawRow, OddsHistoryRow, OddsPlanRow, OddsTableDef } from '../../shared/defs/odds';
 
 /**
  * DB 스키마의 이전 목록. PRAGMA user_version이 지금까지 적용한 단계의 수다: 열 때 그 뒤의 단계를 차례로 적용하고 번호를 올린다.
@@ -10,6 +12,8 @@ import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow,
  *   2: 원격 설정(live: 버전 있는 키-값, live_log: 변경 이력, live_meta: 이력 없는 운영 값). 옛 표는 건드리지 않는다
  *   3: 웹 출시의 바탕: 약관 동의(consents), 내 데이터 삭제 요청과 기록(erasures), 화면 오류 묶음(client_errors) (engine/server/net/web.ts)
  *   4: 사회와 안전: 차단(blocks: owner 사람 → target 캐릭터), 친구(friends: 캐릭터 a·b), 대화 설정과 연령(social_prefs: owner 사람) (engine/server/net/social.ts)
+ *   (끝) 확률과 재화의 투명성: 확률표의 버전(odds_tables)·변경 이력(odds_history)·사전 공지(odds_plans), 추첨 기록(draws: owner 사람·char 캐릭터, 표와 버전) (engine/server/game/systems/odds.ts).
+ *        다른 가지와 합칠 때 번호가 바뀔 수 있어 번호를 적지 않는다: 시험은 SCHEMA.length로 본다
  */
 export const SCHEMA: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS players (key TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated INTEGER NOT NULL);
@@ -28,10 +32,16 @@ export const SCHEMA: readonly string[] = [
    CREATE TABLE IF NOT EXISTS friends (a TEXT NOT NULL, b TEXT NOT NULL, state TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (a, b));
    CREATE INDEX IF NOT EXISTS friends_b ON friends (b);
    CREATE TABLE IF NOT EXISTS social_prefs (owner TEXT PRIMARY KEY, data TEXT NOT NULL, at INTEGER NOT NULL);`,
+  `CREATE TABLE IF NOT EXISTS odds_tables (tbl TEXT PRIMARY KEY, ver INTEGER NOT NULL, sig TEXT NOT NULL, data TEXT NOT NULL, at INTEGER NOT NULL);
+   CREATE TABLE IF NOT EXISTS odds_history (n INTEGER PRIMARY KEY AUTOINCREMENT, tbl TEXT NOT NULL, ver INTEGER NOT NULL, at INTEGER NOT NULL, before TEXT, after TEXT, why TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS odds_plans (n INTEGER PRIMARY KEY AUTOINCREMENT, tbl TEXT NOT NULL, at INTEGER NOT NULL, text TEXT NOT NULL, made INTEGER NOT NULL, by TEXT NOT NULL, state TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS draws (n INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, owner TEXT NOT NULL, char TEXT NOT NULL, kind TEXT NOT NULL, tbl TEXT NOT NULL, ver INTEGER NOT NULL, steps TEXT NOT NULL, got TEXT NOT NULL, cost TEXT NOT NULL);
+   CREATE INDEX IF NOT EXISTS draws_owner ON draws (owner, at);
+   CREATE INDEX IF NOT EXISTS draws_at ON draws (at);`,
 ];
 
 /** 파일 하나짜리 저장소. 검증판 규모(수십 명)에 쓴다. */
-export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore {
+export class SqliteStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OddsStore {
   private db: DatabaseSync;
   readonly file: string;
   /** 지금 열린 묶음의 깊이 (transaction의 SAVEPOINT 이름에 쓴다) */
@@ -241,6 +251,44 @@ export class SqliteStore implements Store, EconStore, LiveStore, WebStore, Socia
   setSocialPrefs(owner: string, data: Record<string, unknown>, at: number): void {
     this.db.prepare('INSERT INTO social_prefs (owner, data, at) VALUES (?, ?, ?) ON CONFLICT(owner) DO UPDATE SET data = excluded.data, at = excluded.at').run(owner, JSON.stringify(data), at);
   }
+  // ---- 확률과 재화의 투명성 ----
+  oddsVersions(): OddsVersionRow[] {
+    return this.db.prepare('SELECT tbl, ver, sig, data, at FROM odds_tables ORDER BY tbl').all().map((r) => ({ table: String(r.tbl), ver: Number(r.ver), sig: String(r.sig), data: this.parse<OddsTableDef>(r.data)!, at: Number(r.at) })).filter((r) => r.data !== null);
+  }
+  putOddsVersion(table: string, row: OddsVersionRow | null, h: OddsHistoryRow): void {
+    this.transaction(() => {
+      if (row) this.db.prepare('INSERT INTO odds_tables (tbl, ver, sig, data, at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(tbl) DO UPDATE SET ver = excluded.ver, sig = excluded.sig, data = excluded.data, at = excluded.at').run(table, row.ver, row.sig, JSON.stringify(row.data), row.at);
+      else this.db.prepare('DELETE FROM odds_tables WHERE tbl = ?').run(table);
+      this.db.prepare('INSERT INTO odds_history (tbl, ver, at, before, after, why) VALUES (?, ?, ?, ?, ?, ?)').run(h.table, h.ver, h.at, h.before === null ? null : JSON.stringify(h.before), h.after === null ? null : JSON.stringify(h.after), h.why);
+    });
+  }
+  oddsHistory(table: string | null, limit: number): OddsHistoryRow[] {
+    const rows = table === null ? this.db.prepare('SELECT * FROM odds_history ORDER BY n DESC LIMIT ?').all(limit) : this.db.prepare('SELECT * FROM odds_history WHERE tbl = ? ORDER BY n DESC LIMIT ?').all(table, limit);
+    return rows.map((r) => ({ n: Number(r.n), at: Number(r.at), table: String(r.tbl), ver: Number(r.ver), before: this.parse<OddsTableDef>(r.before), after: this.parse<OddsTableDef>(r.after), why: String(r.why) }));
+  }
+  oddsPlans(): OddsPlanRow[] {
+    return this.db.prepare('SELECT * FROM odds_plans ORDER BY at, n').all().map((r) => ({ n: Number(r.n), table: String(r.tbl), at: Number(r.at), text: this.parse<Record<string, string>>(r.text) ?? {}, made: Number(r.made), by: String(r.by), state: r.state === 'done' || r.state === 'cancel' ? r.state : 'wait' }));
+  }
+  putOddsPlan(r: OddsPlanRow): number {
+    if (r.n !== undefined) { this.db.prepare('UPDATE odds_plans SET tbl = ?, at = ?, text = ?, made = ?, by = ?, state = ? WHERE n = ?').run(r.table, r.at, JSON.stringify(r.text), r.made, r.by, r.state, r.n); return r.n; }
+    return Number(this.db.prepare('INSERT INTO odds_plans (tbl, at, text, made, by, state) VALUES (?, ?, ?, ?, ?, ?)').run(r.table, r.at, JSON.stringify(r.text), r.made, r.by, r.state).lastInsertRowid);
+  }
+  addDraw(r: DrawRow): void {
+    this.db.prepare('INSERT INTO draws (at, owner, char, kind, tbl, ver, steps, got, cost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(r.at, r.owner, r.char, r.kind, r.table, r.ver, JSON.stringify(r.steps), JSON.stringify(r.got), JSON.stringify(r.cost ?? null));
+  }
+  draws(q: DrawQuery): DrawRow[] {
+    const where: string[] = [], args: (string | number)[] = [];
+    if (q.owner !== undefined) { where.push('owner = ?'); args.push(q.owner); }
+    if (q.table !== undefined) { where.push('tbl = ?'); args.push(q.table); }
+    if (q.since !== undefined) { where.push('at >= ?'); args.push(q.since); }
+    const sql = `SELECT * FROM draws${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY n DESC LIMIT ?`;
+    return this.db.prepare(sql).all(...args, Math.max(1, Math.floor(q.limit))).map((r) => {
+      const cost = this.parse<DrawRow['cost'] | null>(r.cost);
+      return { n: Number(r.n), at: Number(r.at), owner: String(r.owner), char: String(r.char), kind: String(r.kind), table: String(r.tbl), ver: Number(r.ver), steps: this.parse<string[]>(r.steps) ?? [], got: this.parse<string[]>(r.got) ?? [], ...(cost ? { cost } : {}) };
+    });
+  }
+  pruneDraws(before: number): number { return Number(this.db.prepare('DELETE FROM draws WHERE at < ?').run(before).changes); }
+  forgetDraws(owner: string): number { return Number(this.db.prepare("UPDATE draws SET owner = '-', char = '-' WHERE owner = ? OR char = ?").run(owner, owner).changes); }
   close(): void { this.db.close(); }
 }
 

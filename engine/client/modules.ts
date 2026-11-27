@@ -34,6 +34,7 @@ import { initLegal } from './hud/legal';
 import { initTutorial } from './hud/tutorial';
 import { initKeepSafe } from './hud/keepsafe';
 import { initSocial } from './hud/social';
+import { initOdds } from './hud/odds';
 
 /** 차례대로 init한다. 상점, 대장간, 직업 고르기가 앞이다: 가르기 전에 main.ts가 직접 부르던 차례(같은 메시지와 같은 주기 안에서 다른 모듈보다 먼저)를 지킨다 */
 const LIST: { init: () => void; mod?: ModuleId }[] = [
@@ -78,6 +79,8 @@ const LIST: { init: () => void; mod?: ModuleId }[] = [
   { init: initKeepSafe },
   // 사회와 안전 (어느 게임에나: 서버 저장 차단, 대화 설정 칸, 연령 창은 AGE를 적은 게임만, 친구 탭은 friends 모듈): 설정 창 뒤에 (설정 칸의 저장된 값을 읽는다)
   { init: initSocial },
+  // 확률과 재화의 투명성 (odds 모듈: 메뉴의 '확률' 탭과 내 추첨 기록). 맨 뒤에 (고르지 않은 게임의 init 차례가 예전과 같게)
+  { init: initOdds, mod: 'odds' },
 ];
 
 export function initModules(): void {
