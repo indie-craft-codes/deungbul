@@ -999,7 +999,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       roomWaiting: (seated, size, cpuIn, min = size, startIn = 0) =>
         `Waiting for players… (${seated}/${size})${min < size ? ` Can start with ${min}.` : ''}${startIn > 0 && seated >= min ? ` Starts with those here in ${startIn}s.` : ''}${cpuIn > 0 ? ` The computer sits in after ${cpuIn}s.` : ''}`,
       roomTheirTurn: (name) => `${name}'s turn`,
-      roomWhy: (why) => ({ resign: 'Ended by resignation.', left: 'A player disconnected and did not return.', rounds: 'All rounds were used.', time: 'Time is up.' } as Record<string, string>)[why] ?? '',
+      roomWhy: (why) => ({ resign: 'Ended by resignation.', left: 'A player disconnected and did not return.', rounds: 'All rounds were used.', time: 'Time is up.', afk: 'Removed for being idle.' } as Record<string, string>)[why] ?? '',
       roomStartNow: (n) => `Start now (${n})`,
       roomCpuN: (n) => `Computer ${n}`,
       roomRankTitle: (rank, tied) => `${tied ? 'Tied for ' : ''}${ordinal(rank)}`,

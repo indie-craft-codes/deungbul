@@ -40,6 +40,8 @@ interface RoomLook {
   /** 규칙 옵션의 이름과 값의 글 (RoomDef.options). 빈 문자열이면 fmt.roomOptName·roomOptValue */
   optName?: (k: string) => string;
   optValue?: (k: string, v: string | number) => string;
+  /** 판에 앉지 않았을 때 대기실 창을 보일 때 (들판이 있는 게임: 판을 두는 자리 곁에서만). 없으면 늘 (묶음 8) */
+  lobbyWhen?: () => boolean;
 }
 let look: RoomLook = {};
 /** 대기실 목록의 한 쪽에 보이는 줄 수 */
@@ -320,7 +322,7 @@ export function initRooms(): void {
   function render(): void {
     const loc = L(), r = room, watching = !!r?.watch;
     // 대기실 창: 판에 앉지 않았거나 사람을 기다리는 동안 (구경꾼은 막대만)
-    ui.lobby.hidden = !!r && (r.st !== 'wait' || watching);
+    ui.lobby.hidden = (!!r && (r.st !== 'wait' || watching)) || (!r && !!look.lobbyWhen && !look.lobbyWhen());
     ui.idle.hidden = !!r; ui.wait.hidden = !(r && r.st === 'wait' && !watching);
     const d = chosen();
     ui.cpu.hidden = ui.waitCpu.hidden = !(d ? d.cpu : lobby.cpu);

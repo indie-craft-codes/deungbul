@@ -18,9 +18,11 @@ import { BONFIRE } from './bonfire';
 
 
 // ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
-// 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다. 캐릭터 정의(chars)와 변신(morph), 대화 채널(chat: 귓말·근처·파티)과 친구(friends)를 쓴다
+// 거래소·길드는 쓰지 않고(예전에는 메뉴에서 감추기만 했다) 던전이 없다. 캐릭터 정의(chars)와 변신(morph), 대화 채널(chat: 귓말·근처·파티)과 친구(friends)를 쓴다.
+// 경쟁(묶음 8)의 증명: 판(rooms)의 '별 겨루기'(server/duel.ts)에 랭크·큐·봇·리플레이·이탈 제재, 순위표(boards: 전투력·레이팅)
+import type { CompeteRules } from '@engine/shared/defs/compete';
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support', 'rooms', 'boards', 'ranked'];
 export const GUEST_NAME = 'Camper';
 
 // ---------- 맵: 지역 하나 ----------
@@ -143,3 +145,20 @@ export const QUICK_CHAT: readonly string[] = [...BASIC_QUICK_CHAT];
 // 연령: 처음 들어온 사람에게 태어난 해를 묻고, 만 14세 미만으로 보이면(생일을 모르니 한 살 적게 센다) 제한 모드 (자유 대화·귓말·친구 요청 받기가 꺼진다).
 // 이 예제는 거래소가 없어 막을 명령이 없다 (거래소를 쓰는 게임은 restrict: ['market'])
 export const AGE: AgeRules = { limit: 14, ask: 'year', restrict: [] };
+
+// ---------- 경쟁 (묶음 8: engine/shared/defs/compete.ts). 수치는 임시값 (docs/making-a-game.md 31절, 사용자 결정 목록) ----------
+/** 별 겨루기의 레이팅: 배치 3판(예제라 짧게), RD 250 아래면 등급이 보인다. 등급 다섯, 달마다 시즌(25% 당김), 시즌 최고 등급의 골드 보상, 큐 범위 ±75에서 초마다 +5(최대 ±400), 봇 1300, 이탈 경고 → 5·15·60·240분 */
+export const COMPETE: CompeteRules = {
+  rating: { placement: 3, showRd: 250, idleDays: 7, perDay: 1 },
+  tiers: [
+    { id: 'bronze', name: 'tierBronze', min: 0 },
+    { id: 'silver', name: 'tierSilver', min: 1450 },
+    { id: 'gold', name: 'tierGold', min: 1550 },
+    { id: 'platinum', name: 'tierPlatinum', min: 1650 },
+    { id: 'diamond', name: 'tierDiamond', min: 1800 },
+  ],
+  season: { period: 'month', pull: 0.25, rdTo: 150, rewards: { silver: { gold: 100 }, gold: { gold: 200 }, platinum: { gold: 400 }, diamond: { gold: 800 } } },
+  queue: { range: 75, grow: 5, maxRange: 400, botR: 1300 },
+  leave: { afkTurns: 2, steps: [0, 5, 15, 60, 240], decayH: 24 },
+  replayDays: 7,
+};

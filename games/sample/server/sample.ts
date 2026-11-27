@@ -4,6 +4,7 @@ import { MAP as aliased } from '@engine/shared/world';
 import { MAP } from '../shared/content';
 import { Bonfire } from './bonfire';
 import { installChars } from './chars';
+import { installDuel } from './duel';
 
 // 틀이 별칭 @game으로 읽은 내용이 이 게임의 것인가. tsx는 --tsconfig를 주지 않으면 뿌리의 tsconfig.json을 읽어 다른 게임의 내용으로 조용히 뜬다
 if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키지 않습니다. tsx --tsconfig games/sample/tsconfig.json 으로 실행하세요 (npm run start:sample)');
@@ -23,4 +24,6 @@ export function installSample(g: Game): void {
   g.ready.push(() => { const daily = g.daily; g.on('fed', (p, n) => daily.add(p, 'feed', n)); });
   // 캐릭터 정의 넷과 변신 (./chars.ts)
   installChars(g);
+  // 별 겨루기: 랭크 판 (./duel.ts, 경쟁 묶음 8의 증명)
+  installDuel(g);
 }

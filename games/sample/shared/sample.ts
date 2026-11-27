@@ -9,7 +9,7 @@ declare module '@engine/shared/ext' {
     bonfireLit: [name: string];
   }
   /** 화면 → 서버: 모닥불에 장작을 n개 넣는다 */
-  interface ClientMsgs { feed: { n: number } }
+  interface ClientMsgs { feed: { n: number }; /** 별 겨루기 (server/duel.ts): 솔방울 n개(1~3)를 줍는다 */ duel: { n: number } }
   /** 모두가 함께 보는 상태: 모닥불의 온기 */
   interface WorldState { bonfire: { heat: number } }
 }

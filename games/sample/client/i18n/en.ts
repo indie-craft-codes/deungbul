@@ -61,6 +61,11 @@ export const enGame: GameLocale = {
     feedKey: 'Feed the bonfire',
     // Terms and privacy (texts that LEGAL in shared/content points to. Examples only)
     legalTermsText: 'Terms of Service (example)\n\n1. This game is an example for the framework. Progress may be reset without notice.\n2. Offensive names and chat may be restricted.\n3. Do not play with automation programs.',
+    // Star duel (client/duel.ts, competition pack 8)
+    duelName: 'Pine duel',
+    duelInfo: 'A ranked match by the stumps: take pinecones in turn',
+    roomLobbyInfo: 'Sit at the stumps and take 1–3 pinecones in turn. Whoever takes the last one wins. Ranked finds an opponent with a similar rating; if nobody comes, a bot sits in.',
+    tierBronze: 'Bronze', tierSilver: 'Silver', tierGold: 'Gold', tierPlatinum: 'Platinum', tierDiamond: 'Diamond',
     legalPrivacyText: 'Privacy Policy (example)\n\nWhat we collect: a hash of a random token in this browser (save key), your character name and progress, your IP address (only for connection limits and bans, not stored), screen errors (with addresses and tokens removed).\nWhy: saving your progress, preventing abuse, fixing errors.\nYour rights: in Settings > My data you can download your data or request deletion. Deletion runs 7 days after the request.',
   },
   fmt: {
@@ -68,6 +73,12 @@ export const enGame: GameLocale = {
     logs: (have, fed) => `Firewood ${have} · ${fed} fed so far`,
     logsMini: (have) => `Firewood ${have}`,
     potions: (n) => `Stew ${n}`,
+    duelNote: (pile, got, secret) => `Pinecones left ${pile} · taken ${got.join(' : ')} · my secret ${secret}`,
+    duelPad: (pile, secret, mine) => `${mine ? 'Your turn' : "Opponent's turn"} · ${pile} left (take exactly ${secret} for a bonus one)`,
+    duelTake: (n) => `Take ${n}`,
+    duelLeft: (n) => `${n} pinecones left`,
+    duelSeat: (name, got, last, secret) => `${name} · taken ${got}${last ? ` (just ${last})` : ''} · secret ${secret}`,
+    roomWhy: (why) => ({ last: 'Took the last pinecone.', resign: 'Ended by resignation.', left: 'A player disconnected and did not return.', afk: 'Removed for being idle.', time: 'Time is up.' } as Record<string, string>)[why] ?? '',
   },
   msg: {
     fed: (a) => `You fed ${a[0]} firewood to the bonfire. Warmth ${a[1]}`,

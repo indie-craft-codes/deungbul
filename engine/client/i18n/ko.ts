@@ -1072,7 +1072,7 @@ export const koBase = (n: ContentNames) => {
         `사람을 기다리는 중… (${seated}/${size})${min < size ? ` ${min}명부터 시작할 수 있습니다.` : ''}${startIn > 0 && seated >= min ? ` ${startIn}초 뒤에 모인 만큼으로 시작합니다.` : ''}${cpuIn > 0 ? ` ${cpuIn}초 뒤에는 컴퓨터가 앉습니다.` : ''}`,
       roomTheirTurn: (name: string) => `${name}의 차례`,
       /** 판이 끝난 까닭 (게임이 finish에 준 것은 게임의 언어 파일이 덮어써 문장으로) */
-      roomWhy: (why: string) => ({ resign: '기권으로 끝났습니다.', left: '연결이 끊긴 채 돌아오지 않았습니다.', rounds: '바퀴를 다 썼습니다.', time: '시간이 다 됐습니다.' } as Record<string, string>)[why] ?? '',
+      roomWhy: (why: string) => ({ resign: '기권으로 끝났습니다.', left: '연결이 끊긴 채 돌아오지 않았습니다.', rounds: '바퀴를 다 썼습니다.', time: '시간이 다 됐습니다.', afk: '잠수로 빠졌습니다.' } as Record<string, string>)[why] ?? '',
       /** 자리 수가 범위인 판의 '지금 시작' 단추 (앉은 사람 수) */
       roomStartNow: (n: number) => `지금 시작 (${n}명)`,
       /** 컴퓨터가 둘 이상인 판의 컴퓨터 이름 (컴퓨터 가운데 몇째: 1부터). 게임은 RoomDef.cpuName이나 setRoomLook의 seatName으로 바꾼다 */

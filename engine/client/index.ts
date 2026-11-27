@@ -39,6 +39,9 @@ export { myHeroGear } from './hud/herogrow';
 export { myStage } from './hud/stagebar';
 export { stageRows, stagesDone, starGap, type StageRow } from './hud/collectcalc';
 export { myRoom, myRoomTurn, onRoomChange, roomLeftMs, roomSeatName, roomSend, setRoomLook } from './hud/rooms';
+// 경쟁 (묶음 8): 리플레이 재생기(게임의 그리기), 순위표·등급의 이름
+export { openReplay, setReplayLook, type ReplayLook } from './hud/replay';
+export { boardName, tierName } from './hud/compete';
 export { hudSlow } from './hud/me';
 export { charDefs, charPortrait, myMorph, onChars } from './hud/morph';
 export { myMode, myModeSide, onModeChange, onModeSide, openModeHome, setModeHome, switchMode } from './hud/modes';

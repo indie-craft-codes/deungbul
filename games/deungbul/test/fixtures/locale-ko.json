@@ -132,6 +132,55 @@
   "1 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다.",
   "2 님의 대화를 차단했습니다. 내 화면에서만 보이지 않습니다."
  ],
+ "fmt.boardMine": [
+  "f70f72e41fe5b758",
+  "내 순위 undefined위 (undefined명 중) · undefined",
+  "내 순위 0위 (undefined명 중) · undefined",
+  "내 순위 1위 (undefined명 중) · undefined",
+  "내 순위 2위 (undefined명 중) · undefined"
+ ],
+ "fmt.boardNum": [
+  "78bf499616f7e464",
+  "(던짐) TypeError",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.boardPeriod": [
+  "9ffa9fa1e0a65df3",
+  "이번 시즌",
+  "이번 시즌 · 초기화까지 1분",
+  "이번 시즌 · 초기화까지 21분",
+  "이번 시즌 · 초기화까지 NaN분"
+ ],
+ "fmt.boardPrev": [
+  "7af5c13a34184dc6",
+  "지난 기간: undefined",
+  "지난 기간: 0",
+  "지난 기간: 1",
+  "지난 기간: 2"
+ ],
+ "fmt.boardRatingOf": [
+  "4101f31e3d2c92eb",
+  "레이팅 · undefined",
+  "레이팅 · 0",
+  "레이팅 · 1",
+  "레이팅 · 2"
+ ],
+ "fmt.boardRatingV": [
+  "4b8d4903240717c5",
+  "NaN",
+  "0",
+  "1",
+  "2"
+ ],
+ "fmt.boardStage": [
+  "263004ba9870f09b",
+  "undefined-undefined",
+  "0-undefined",
+  "1-undefined",
+  "2-undefined"
+ ],
  "fmt.btlSpeed": [
   "12111541eec5079a",
   "×undefined",
@@ -1607,6 +1656,20 @@
   "1 / undefined",
   "2 / undefined"
  ],
+ "fmt.queueBand": [
+  "01a6fe86d1288584",
+  "랭크 매칭 찾는 중 · undefined · NaN:NaN · 예상 NaN:NaN · 범위 ±undefined",
+  "랭크 매칭 찾는 중 · 0 · NaN:NaN · 예상 NaN:NaN · 범위 ±undefined",
+  "랭크 매칭 찾는 중 · 1 · NaN:NaN · 예상 NaN:NaN · 범위 ±undefined",
+  "랭크 매칭 찾는 중 · 2 · NaN:NaN · 예상 NaN:NaN · 범위 ±undefined"
+ ],
+ "fmt.queueBannedLeft": [
+  "69dfc5731674b414",
+  "이탈 제재: undefined분 동안 랭크 대전에 설 수 없습니다",
+  "이탈 제재: 0분 동안 랭크 대전에 설 수 없습니다",
+  "이탈 제재: 1분 동안 랭크 대전에 설 수 없습니다",
+  "이탈 제재: 2분 동안 랭크 대전에 설 수 없습니다"
+ ],
  "fmt.raidActive": [
   "3e2075c0c29ae0e2",
   "첫불 마을 습격 · 남은 적 undefined · undefined",
@@ -1627,6 +1690,41 @@
   "첫불 마을에 안개가 몰려옵니다 · 0초 뒤",
   "첫불 마을에 안개가 몰려옵니다 · 1초 뒤",
   "첫불 마을에 안개가 몰려옵니다 · 2초 뒤"
+ ],
+ "fmt.rankedBest": [
+  "a8456dfc6dc68415",
+  "시즌 최고 undefined",
+  "시즌 최고 0",
+  "시즌 최고 1",
+  "시즌 최고 2"
+ ],
+ "fmt.rankedDelta": [
+  "8de4a2918a59d764",
+  "(던짐) TypeError",
+  "레이팅 0 (undefined)",
+  "레이팅 1 (undefined)",
+  "레이팅 2 (undefined)"
+ ],
+ "fmt.rankedPlacement": [
+  "1d51c829371a85df",
+  "배치 경기 undefined/undefined",
+  "배치 경기 0/undefined",
+  "배치 경기 1/undefined",
+  "배치 경기 2/undefined"
+ ],
+ "fmt.rankedSeasonEnd": [
+  "e294706f8e64ba32",
+  "이번 시즌 · 끝까지 NaN분",
+  "시즌 1 · 끝까지 NaN분",
+  "시즌 2 · 끝까지 NaN분",
+  "시즌 5 · 끝까지 NaN분"
+ ],
+ "fmt.rankedWL": [
+  "f9e9566d6f2d3310",
+  "undefined승 undefined패",
+  "0승 undefined패",
+  "1승 undefined패",
+  "2승 undefined패"
  ],
  "fmt.rarAtMost": [
   "6e3cdd1054fcbc15",
@@ -1664,6 +1762,27 @@
   "재련 2 / undefined번 · 이번 값 NaN골드, 장비 가루 NaN. 다시 뽑을 옵션을 두 번 누르세요 (종류와 값이 함께 바뀝니다)"
  ],
  "fmt.reforgeValueOnly": "이 장비는 옵션 종류가 모두 차 있어 값만 다시 뽑힙니다.",
+ "fmt.replayAt": [
+  "ac63b0456ba56b66",
+  "undefined / undefined",
+  "0 / undefined",
+  "1 / undefined",
+  "2 / undefined"
+ ],
+ "fmt.replayResult": [
+  "7deb0fbc50cc0dec",
+  "비김",
+  "1 승리",
+  "2 승리",
+  "5 승리"
+ ],
+ "fmt.replaySub": [
+  "f7707cf9400f1ecd",
+  "undefined · Invalid Date",
+  "0 · Invalid Date",
+  "1 · Invalid Date",
+  "2 · Invalid Date"
+ ],
  "fmt.resAuto": [
   "dd65f82ea0f73968",
   "자동 진행: undefined초 뒤 undefined",
@@ -1718,6 +1837,13 @@
   "골드 1",
   "골드 2",
   "골드 5"
+ ],
+ "fmt.roomBotName": [
+  "b6c93bd17cdd3137",
+  "봇 undefined (봇)",
+  "1 (봇)",
+  "2 (봇)",
+  "5 (봇)"
  ],
  "fmt.roomClock": [
   "c3644b71b79ffa81",
@@ -2494,6 +2620,13 @@
   "운영자가 회수했습니다: 불씨 1",
   "운영자가 회수했습니다: 불씨 3"
  ],
+ "msg.afkOut": [
+  "a552bea74ab70298",
+  "undefined 님이 잠수로 판에서 빠졌습니다.",
+  "0 님이 잠수로 판에서 빠졌습니다.",
+  "1 님이 잠수로 판에서 빠졌습니다.",
+  "2 님이 잠수로 판에서 빠졌습니다."
+ ],
  "msg.alreadyBest": "이미 같거나 더 좋은 장비를 갖추고 있습니다.",
  "msg.autoBagFull": "장비 가방이 가득 차 자동 사냥을 멈췄습니다.",
  "msg.autoDied": "쓰러져서 자동 사냥을 끝냈습니다.",
@@ -3203,6 +3336,14 @@
   "1 처치. 경험치 +1, 불씨 +1, 골드 +1",
   "2 처치. 경험치 +3, 불씨 +4, 골드 +5"
  ],
+ "msg.leavePenalty": [
+  "f9d98a573f94f841",
+  "랭크 판을 떠나 undefined분 동안 랭크 대전에 설 수 없습니다.",
+  "랭크 판을 떠나 0분 동안 랭크 대전에 설 수 없습니다.",
+  "랭크 판을 떠나 1분 동안 랭크 대전에 설 수 없습니다.",
+  "랭크 판을 떠나 2분 동안 랭크 대전에 설 수 없습니다."
+ ],
+ "msg.leaveWarn": "랭크 판을 떠났습니다: 경고입니다. 다시 떠나면 랭크 대전이 잠시 막힙니다.",
  "msg.left": [
   "7e1d302f3473e938",
   "undefined 님이 나갔습니다.",
@@ -3447,6 +3588,22 @@
   "퀘스트 단계 완료. 경험치 +1, 불씨 +1",
   "퀘스트 단계 완료. 경험치 +2, 불씨 +3"
  ],
+ "msg.queueBanned": [
+  "5293c3d68cccc343",
+  "이탈 제재로 undefined분 동안 랭크 대전에 설 수 없습니다.",
+  "이탈 제재로 0분 동안 랭크 대전에 설 수 없습니다.",
+  "이탈 제재로 1분 동안 랭크 대전에 설 수 없습니다.",
+  "이탈 제재로 2분 동안 랭크 대전에 설 수 없습니다."
+ ],
+ "msg.queueFound": [
+  "ed88ff15968714f8",
+  "상대를 찾았습니다!",
+  "상대를 찾았습니다! (봇 1)",
+  "상대를 찾았습니다! (봇 3)",
+  "상대를 찾았습니다! (봇 1234567)"
+ ],
+ "msg.queueOff": "랭크 매칭을 그만두었습니다.",
+ "msg.queueOn": "랭크 매칭을 찾습니다.",
  "msg.raidAbandoned": [
   "ec59c393d309c237",
   "undefined채널을 지키는 사람이 없어, 그곳의 적이 등탑을 치고 안개로 돌아갔습니다.",
@@ -3496,6 +3653,30 @@
   "습격을 막아 냈습니다. 마을 등탑 밝기 +1",
   "습격을 막아 냈습니다. 마을 등탑 밝기 +2"
  ],
+ "msg.rankedPlaced": [
+  "62d50b11e252e7f0",
+  "배치 경기를 마쳤습니다: 등급 없음 (레이팅 undefined)",
+  "배치 경기를 마쳤습니다: 등급 없음 (레이팅 0)",
+  "배치 경기를 마쳤습니다: 등급 없음 (레이팅 1)",
+  "배치 경기를 마쳤습니다: 등급 없음 (레이팅 3)"
+ ],
+ "msg.rankedSeason": [
+  "f17a1140db553eef",
+  "레이팅 시즌 undefined이 시작했습니다. 레이팅이 기준 쪽으로 조금 당겨졌습니다.",
+  "레이팅 시즌 0이 시작했습니다. 레이팅이 기준 쪽으로 조금 당겨졌습니다.",
+  "레이팅 시즌 1이 시작했습니다. 레이팅이 기준 쪽으로 조금 당겨졌습니다.",
+  "레이팅 시즌 2이 시작했습니다. 레이팅이 기준 쪽으로 조금 당겨졌습니다."
+ ],
+ "msg.rankedTier": [
+  "a30c220d6e1c5d6c",
+  "등급이 내려갔습니다: ",
+  "등급이 올랐습니다: "
+ ],
+ "msg.rankedVoid": [
+  "6b1579c432cdb063",
+  "모두 끊겨 이 판은 레이팅에 들지 않습니다.",
+  "누군가 첫 수 전에 떠나 이 판은 레이팅에 들지 않습니다."
+ ],
  "msg.reforgeMax": [
   "b1c37f67f20aaaaf",
   "이 장비는 더 재련할 수 없습니다 (undefined번까지).",
@@ -3519,6 +3700,7 @@
   "2 님이 이름을 3으로 바꿨습니다."
  ],
  "msg.replaced": "다른 곳에서 접속해 연결을 끊습니다.",
+ "msg.replayNone": "그 리플레이는 볼 수 없습니다 (보관 기간이 지났습니다).",
  "msg.reportWait": "같은 사람은 잠시 뒤에 다시 신고할 수 있습니다.",
  "msg.reported": [
   "84ce968e787cb193",
@@ -4069,6 +4251,11 @@
  "ui.block": "차단",
  "ui.blockHead": "차단한 사람",
  "ui.blockNone": "차단한 사람이 없습니다. 차단하면 그 사람의 대화·귓말·친구 요청·초대가 오지 않습니다.",
+ "ui.boardEmpty": "아직 순위가 없습니다.",
+ "ui.boardLoading": "불러오는 중…",
+ "ui.boardNotIn": "아직 이 순위표에 오르지 않았습니다.",
+ "ui.boardPower": "전투력",
+ "ui.boardRating": "레이팅",
  "ui.btlAuto": "자동",
  "ui.btlHome": "홈으로",
  "ui.btlPauseNote": "전투가 멈췄습니다. 홈으로 가면 전투는 뒤에서 이어지고, 포기하면 이 판을 끝냅니다.",
@@ -4510,7 +4697,12 @@
  "ui.questGoBtn": "가기",
  "ui.questGoal": "퀘스트 목적지",
  "ui.questNeedSparks": "바칠 불씨가 없습니다. 몬스터를 잡아 모으세요.",
+ "ui.queueCancel": "취소",
  "ui.rankEmpty": "아직 순위가 없습니다.",
+ "ui.rankedMine": "내 등급",
+ "ui.rankedNoTier": "등급 없음",
+ "ui.rankedUnsure": "등급 숨김 (오래 쉬었습니다: 한 판 두면 다시 보입니다)",
+ "ui.rankedVoidNote": "이 판은 레이팅에 들지 않았습니다.",
  "ui.reconnect": "다시 접속",
  "ui.reconnecting": "연결이 끊어져 다시 접속하는 중입니다…",
  "ui.reforgeBtn": "재련",
@@ -4519,6 +4711,14 @@
  "ui.renameLabel": "새 이름",
  "ui.renameSubmit": "변경",
  "ui.renameTitle": "눌러서 이름 바꾸기",
+ "ui.replayFirst": "처음으로",
+ "ui.replayNext": "다음 칸",
+ "ui.replayPause": "멈춤",
+ "ui.replayPlay": "재생",
+ "ui.replayPrev": "앞 칸",
+ "ui.replaySeek": "재생 위치",
+ "ui.replaySpeed": "배속",
+ "ui.replayTitle": "리플레이",
  "ui.report": "신고",
  "ui.reportConfirm": "한 번 더 누르면 신고",
  "ui.resAgain": "다시",
@@ -4532,6 +4732,7 @@
  "ui.roomAgainWaitNote": "다른 사람이 다시 하기를 누르면 시작합니다.",
  "ui.roomApply": "적용",
  "ui.roomAway": "끊김",
+ "ui.roomBot": "봇",
  "ui.roomCancel": "그만두기",
  "ui.roomClose": "닫기",
  "ui.roomCode": "방 코드",
@@ -4571,10 +4772,14 @@
  "ui.roomPrivPublic": "공개",
  "ui.roomPrivacy": "공개",
  "ui.roomQuick": "빠른 대국",
+ "ui.roomRanked": "랭크 대전",
+ "ui.roomRankedTag": "랭크",
  "ui.roomReady": "준비",
  "ui.roomReadyTag": "준비됨",
  "ui.roomRealtime": "모두 함께 두는 중",
  "ui.roomRegroup": "같은 무리로 다음 판",
+ "ui.roomReplay": "다시 보기",
+ "ui.roomRequeue": "다시 큐",
  "ui.roomResign": "기권",
  "ui.roomResignSure": "한 번 더 누르면 기권",
  "ui.roomRules": "규칙",
@@ -4721,6 +4926,7 @@
  "ui.synNone": "같은 진영의 영웅을 함께 넣으면 시너지가 켜집니다.",
  "ui.tabAchieve": "업적",
  "ui.tabAutoSet": "자동 사냥",
+ "ui.tabBoards": "순위표",
  "ui.tabBuild": "성장",
  "ui.tabCodex": "도감",
  "ui.tabDaily": "일일",

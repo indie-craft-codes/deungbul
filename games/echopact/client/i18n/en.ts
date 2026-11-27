@@ -55,6 +55,8 @@ export const enNames: ContentNames = {
 
 export const enGame: GameLocale = {
   ui: {
+    // Leaderboards (competition pack 8: server/boards.ts)
+    boardTower: 'Spire best stage',
     // Loading tips (U2: the engine's setLoadingTips)
     loadTip1: 'Collect resonance shards to call echoes at the Echo Well. Stages and the Vale both give shards.',
     loadTip2: 'Stuck on a stage? Level up your echoes or change your squad.',

@@ -102,7 +102,7 @@ export const MODULES: readonly ModuleId[] = [];
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support', 'rooms', 'boards', 'ranked'];
 ```
 
 모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`, `chars`, `morph`, `chat`, `friends`, `odds`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
@@ -235,7 +235,7 @@ if (MAP !== aliased) throw new Error('별칭 @game이 games/sample을 가리키�
 
 ```ts games/sample/shared/content/index.ts
 import type { ModuleId } from '@engine/shared/modules';
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support', 'rooms', 'boards', 'ranked'];
 export const GUEST_NAME = 'Camper';
 ```
 
@@ -455,10 +455,11 @@ npm run start:sample          # http://localhost:3002
 // 차례가 중요하다: (1) 언어 묶음을 등록하고 (2) 이 게임의 창을 붙인 뒤에 (3) 틀을 시작시킨다. 틀은 시작하면서 화면의 글자를 채운다
 setLocales(LOCALES);
 mountBonfire();
+mountDuel();
 startClient({
   look,
   // 이 게임의 모듈: 적은 차례대로 init되고, 틀의 덧붙는 모듈(상점, 가방, 메뉴 …)보다 먼저다
-  modules: [initBonfire, initScene, initCharStands, initTutorial],
+  modules: [initBonfire, initScene, initCharStands, initTutorial, initDuel],
 });
 ```
 
@@ -689,7 +690,7 @@ declare module '@engine/shared/ext' {
     bonfireLit: [name: string];
   }
   /** 화면 → 서버: 모닥불에 장작을 n개 넣는다 */
-  interface ClientMsgs { feed: { n: number } }
+  interface ClientMsgs { feed: { n: number }; /** 별 겨루기 (server/duel.ts): 솔방울 n개(1~3)를 줍는다 */ duel: { n: number } }
   /** 모두가 함께 보는 상태: 모닥불의 온기 */
   interface WorldState { bonfire: { heat: number } }
 }
@@ -718,6 +719,8 @@ export function installSample(g: Game): void {
   g.ready.push(() => { const daily = g.daily; g.on('fed', (p, n) => daily.add(p, 'feed', n)); });
   // 캐릭터 정의 넷과 변신 (./chars.ts)
   installChars(g);
+  // 별 겨루기: 랭크 판 (./duel.ts, 경쟁 묶음 8의 증명)
+  installDuel(g);
 }
 ```
 
@@ -2415,7 +2418,7 @@ setGuestReminder({ afterMin: 20 });
 예제(모닥불 사냥터)는 다 켰다:
 
 ```ts games/sample/shared/content/index.ts
-export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
+export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support', 'rooms', 'boards', 'ranked'];
 ```
 
 ```ts games/sample/shared/content/index.ts
@@ -3285,7 +3288,7 @@ leftRail: () => [railTab('daily', 'mission'), railTab('season', 'season', 'menu.
 - 세 게임 모두 쓴다. 등불지기는 탭 이름·기능 그대로 묶음만(성장: 장비·성장 / 활동: 일일 / 소식: 우편·거래소·길드·순위 / 설정). 예제는 모닥불을 '활동'의 맨 앞으로:
 
 ```ts games/sample/client/bonfire.ts
-setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'rank', 'autoset', 'codex']);
+setMenuTabs(['gear', 'camp', 'morph', 'build', 'mail', 'daily', 'boards', 'autoset', 'codex']);
 // 탭 묶음 (U3): 틀의 기본 묶음에 모닥불을 '활동'의 맨 앞으로
 setMenuGroups(MENU_GROUPS.map((g) => (g.id === 'play' ? { ...g, tabs: ['camp', ...g.tabs] } : g)));
 ```
