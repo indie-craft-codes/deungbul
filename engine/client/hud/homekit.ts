@@ -11,6 +11,7 @@ import { currencyBar, type CurrencyChip, type CurrencyId } from './currency';
 import { bindDot } from './dots';
 import { dropScreen, openScreen } from './screens';
 import { mountPanel } from './shell';
+import { platform } from '../platform';
 
 export interface HomeLead { img?: string; name: string; info?: string; color?: string }
 export interface HomeButton {
@@ -108,7 +109,7 @@ export function makeHome(o: HomeOpts): HomeKit {
     evCard.classList.remove('hk-evin'); void evCard.offsetWidth; evCard.classList.add('hk-evin');
     [...evDots.children].forEach((d, k) => d.classList.toggle('on', k === evAt));
   };
-  const restartEv = () => { clearInterval(evTimer); if (evList.length > 1 && !reduced) evTimer = window.setInterval(() => { if (shown && !document.hidden) showEv(evAt + 1); }, 6000); };
+  const restartEv = () => { clearInterval(evTimer); if (evList.length > 1 && !reduced) evTimer = window.setInterval(() => { if (shown && platform().lifecycle.visible()) showEv(evAt + 1); }, 6000); };
   evCard.addEventListener('click', () => { if (!swiped) evList[evAt]?.onClick?.(); });
   let downX = NaN, swiped = false;
   evCard.addEventListener('pointerdown', (e) => { downX = e.clientX; swiped = false; });

@@ -72,7 +72,7 @@ function measure(): void {
   const bl = zones.get('bl'), br = zones.get('br'), tl = zones.get('tl'), tr = zones.get('tr');
   if (!bl || !br || !tl || !tr) return;
   set('--zbl-w', bl.offsetWidth); set('--zbr-w', br.offsetWidth);
-  set('--zb-h', Math.max(bl.offsetHeight, br.offsetHeight)); set('--ztl-h', tl.offsetHeight); set('--ztr-h', tr.offsetHeight);
+  set('--zb-h', Math.max(bl.offsetHeight, br.offsetHeight)); set('--ztl-h', tl.offsetHeight); set('--ztr-h', tr.offsetHeight); set('--ztr-w', tr.offsetWidth);
 }
 
 function relay(): void {

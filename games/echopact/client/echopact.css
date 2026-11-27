@@ -107,25 +107,13 @@ body.towerLobby .pactSide, body[data-mode="vale"] .pactSide { top: calc(46px + e
 /* 폰: 구역 안의 작은 표시는 줄을 바꿔 다 보인다 */
 #zones .pactSide { white-space: normal; flex-wrap: wrap; border-radius: var(--r-lg); max-width: min(260px, 62vw) !important; }
 
-/* 탑의 싸움: 계약자는 싸우지 않으므로 내 체력·경험치 막대를 감추고, 아래에 편성의 메아리들(이름·체력)과 편성 전투력 */
+/* 탑의 싸움: 계약자는 싸우지 않으므로 내 체력·경험치 막대를 감춘다. 편성의 메아리들은 틀의 전투 화면(hud/battle.ts)의 초상 칸이 보인다 */
 body[data-mode="tower"] #me .bar.hp, body[data-mode="tower"] #me .bar.xp, body[data-mode="tower"] #hpt, body[data-mode="tower"] #buffs { display: none !important; }
 /* 탑에서는 걷지 않는다: 조이스틱을 감춘다 */
 body[data-mode="tower"] #stick { display: none !important; }
-.towerSquadBar { position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 6px; align-items: flex-end; pointer-events: none;
-  max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center; }
-.towerSquadBar[hidden] { display: none; }
-.towerSquadBar .tsq { min-width: 92px; padding: 6px 8px; border-radius: var(--r-md); background: var(--ep-violet-800a); border: 1px solid var(--c-line); color: var(--ep-violet-100); }
-.towerSquadBar .tsq b { display: block; font-size: var(--fs-xs); white-space: nowrap; }
-.towerSquadBar .tsq i { display: block; height: 6px; margin-top: 4px; border-radius: var(--r-sm); background: var(--c-sunk); overflow: hidden; }
-.towerSquadBar .tsq i span { display: block; height: 100%; background: var(--c-hp); transform-origin: left; }
-.towerSquadBar .tsq.down { opacity: .45; }
-.towerSquadBar small { width: 100%; text-align: center; font-size: var(--fs-xs); color: var(--ep-cream); text-shadow: 0 1px 2px var(--c-black); }
-#zones .towerSquadBar { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
-#zones .towerSquadBar .tsq { min-width: 0; }
-#zones .towerSquadBar .tsq b { overflow: hidden; text-overflow: ellipsis; }
-#zones .towerSquadBar small { grid-column: 1 / -1; }
-body[data-mode="tower"] #zones #feed > div:nth-last-child(n+2) { display: none; }
-body[data-lay="landscape"] #zones .towerSquadBar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* 전투 화면(틀의 키트)이 떠 있으면 틀의 단계 막대를 감춘다 (위 띠가 물결·시간·자동·배속을 보인다) */
+body.battleOn #stageBar { display: none !important; }
+body[data-mode="tower"].battleOn #zones #feed > div:nth-last-child(n+2) { display: none; }
 
 /* ---------- 탑: 모험(장·단계 고르기) 페이지 (client/tower.ts). 홈·단계 정보 창·편성 확인·결과 창·전투 화면은 틀의 부품 ---------- */
 .tscreen { position: fixed; inset: 0; z-index: var(--z-page); overflow: auto; overscroll-behavior: contain; pointer-events: auto; color: var(--ep-violet-100);
@@ -156,23 +144,11 @@ body[data-lay="landscape"] #zones .towerSquadBar { grid-template-columns: repeat
 .tadv .tstage.locked b::before { content: '🔒'; font-size: var(--fs-xs); margin-right: 2px; vertical-align: 2px; }
 .tadv .thint { font-size: var(--fs-sm); color: var(--ep-violet-200); text-align: center; }
 .tadv > * { max-width: 760px; margin-left: auto; margin-right: auto; }
-.tbattle { position: fixed; z-index: var(--z-page-over); left: 12px; top: calc(12px + env(safe-area-inset-top, 0px)); }
-.tbattle[hidden] { display: none; }
-.tbattle button { padding: 8px 16px; border-radius: var(--r-pill); font-weight: 800; background: var(--ep-violet-700); color: var(--ep-cream); border: 1px solid var(--ep-violet-300); }
-/* 탑: 전투에서는 단계 막대의 '단계 선택'을 감춘다 (홈 단추가 대신한다) */
+/* 탑: 전투에서는 단계 막대의 '단계 선택'을 감춘다 (전투 화면의 일시정지 창이 홈·포기를 맡는다) */
 body[data-mode="tower"] #stageGoBtn { display: none; }
 body[data-tower="battle"] #me { opacity: .85; }
 /* 폰의 탑: 내 정보·대화 창을 빼서 위를 전투 화면에게 (재화는 홈이 보인다, 대화는 울림골에서) */
 body[data-lay="portrait"][data-mode="tower"] #me, body[data-lay="landscape"][data-mode="tower"] #me, body[data-lay="portrait"][data-mode="tower"] #chat, body[data-lay="landscape"][data-mode="tower"] #chat { display: none !important; }
 #zones #stageBar { width: min(300px, calc(100vw - 24px)); max-width: none; }
-/* 폰 세로의 탑 전투: 위 왼쪽('홈'·단계 막대)을 위 오른쪽 단추 줄(메뉴·울림골 가기) 아래부터 화면 너비로 (서로 겹치지 않게) */
-body[data-lay="portrait"][data-mode="tower"] #zone-tl { top: calc(14px + env(safe-area-inset-top, 0px) + var(--ztr-h, 80px)); right: max(8px, env(safe-area-inset-right, 0px)); }
-body[data-lay="portrait"][data-mode="tower"] #zones #stageBar { width: 100%; }
-body[data-lay="portrait"][data-mode="tower"] #zone-tl > #topmid { align-self: stretch; }
 /* 탑의 메뉴(뽑기·메아리·편성 …)는 큰 창으로, 홈·편성 확인 페이지 위에 */
 body[data-mode="tower"] #menu { width: min(760px, calc(100vw - 16px)); max-width: none; height: calc(var(--app-h, 100vh) - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); z-index: var(--z-menu); }
-/* PC의 탑 전투: '홈' 단추는 내 정보 창 아래(이름 위에 겹쳤다), 편성의 메아리 줄은 흘러가는 알림 위로 */
-@media (min-width: 601px) {
-  body:not([data-lay="landscape"]) .tbattle { top: calc(20px + var(--me-h, 130px) + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); }
-  body:not([data-lay="landscape"]) .towerSquadBar { bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
-}

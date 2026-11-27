@@ -183,6 +183,9 @@ export type ClientMsg =
   | { t: 'stage'; a: 'start' | 'leave' | 'auto' | 'go'; on?: boolean; id?: string }
   /** 단계의 소탕 (STAGE_RULES.sweep): 깬 단계 id를 n번 (1~max) */
   | { t: 'stage'; a: 'sweep'; id: string; n: number }
+  /** 배속(x: 1~STAGE_RULES.speed.max)·일시정지(on) — 단계의 전투 화면 (hud/battle.ts) */
+  | { t: 'stage'; a: 'speed'; x: number }
+  | { t: 'stage'; a: 'pause'; on: boolean }
   /** 던전의 열쇠를 산다 (DungeonDef.key.buy가 있는 던전) */
   | { t: 'dungeonKey'; id: string }
   /** 열쇠 던전의 소탕 (DungeonDef.sweep): 끝낸 적이 있는 던전을 n번, 열쇠 n개 */

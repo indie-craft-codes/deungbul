@@ -75,7 +75,6 @@ export const enGame: GameLocale = {
     codexEchoes: 'Echoes', codexBeasts: 'Beasts of the Vale',
     towerAdventure: 'Adventure',
     towerWatch: 'Watch battle',
-    towerHomeBtn: 'Home',
     towerGo: 'Fight',
     towerPull: 'Summon',
     towerEchoes: 'Echoes',

@@ -26,8 +26,11 @@ export { addMenuTab, closeMenu, MENU_TABS, openMenu, setMenuTabs, type EngineMen
 export { button as menuButton, chips as menuChips, el as menuEl, redraw as redrawMenu, row as menuRow, span as menuSpan } from './hud/menu/parts';
 export { openClasses } from './hud/classes';
 export { myTeam, myTeamScore, onTeamLook, setTeamBoardExtra, teamBoard } from './hud/teams';
-export { myHeroes, mySquad, onGachaResult, setHeroModel, type HeroModelInfo } from './hud/collect';
+export { heroPic, myHeroes, mySquad, onGachaResult, setHeroModel, setHeroPic, type HeroModelInfo } from './hud/collect';
 export { rarityCss, rarityHex, tintRarity } from './hud/rarity';
+export { openBattle, openPause, useBattleScreen, type BattleOpts } from './hud/battle';
+export { openCard, setCardActions } from './hud/cards';
+export { startGachaShow } from './hud/gachashow';
 export { liveBanners, type LiveBanner } from './hud/live';
 export { onIdleBack } from './hud/idleback';
 export { myKeys } from './hud/dungeon';

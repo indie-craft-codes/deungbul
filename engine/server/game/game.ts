@@ -273,6 +273,11 @@ export class Game {
   };
   /** 틱마다 불리는 시스템 처리. 등록한 순서대로 돈다 */
   readonly ticks: ((dt: number) => void)[] = [];
+  /**
+   * 층마다의 시간 배율 (단계의 배속·일시정지: systems/stages.ts가 적는다). 0이면 그 층의 엔티티는 멈추고, 2면 한 틱에 두 번 움직인다.
+   * 적지 않은 층은 1 (비어 있으면 예전과 똑같이 돈다)
+   */
+  readonly layerScale = new Map<number, number>();
   /** 월드와 함께 저장할 것을 가진 시스템들 (WorldSave[name]) */
   /** legacy: 자기 칸이 없는 저장(칸 이름이 생기기 전의 옛 형식)에서 자기 몫을 찾아 돌려준다. 없으면 undefined. 버전 칸이 없는 월드(v0)를 올리는 틀의 이전(./migrate.ts의 WORLD_UP)이 부른다 */
   readonly worldSaves: { name: string; save: () => unknown; load: (raw: unknown) => void; legacy?: (whole: WorldSave) => unknown }[] = [];
@@ -605,13 +610,19 @@ export class Game {
     this.mobsByLayer = null;
     this.nav.budget = NAV_VISITS_PER_TICK; // 길찾기가 한 틱에 쓸 수 있는 양 (engine/shared/nav.ts)
     const fight = this.modules.has('combat'), away = this.modules.has('away');
+    const scaled = this.layerScale.size > 0;
     for (const e of this.ents.values()) {
-      if (e.kind === 'p') {
-        if (e.bot) this.bots.think(e, dt); else if (away) this.away.think(e, dt);
-        if (fight) this.combat.tickPlayer(e, dt); else this.movement.step(e, dt); // 전투가 없으면 걷기만 한다
-      } else if (e.kind === 'm') { if (fight) this.monsters.tick(e, dt); }
-      else this.kinds.get(e.kind)?.tick?.(e, dt); // 게임이 등록한 종류
-      if (fight) this.combat.tickEffects(e, dt); // 강화와 지속 피해의 시간
+      // 층의 시간 배율: 0 멈춤, n 한 틱에 n번 (배속). 배율이 없으면 한 번
+      const n = scaled ? this.layerScale.get(e.layer) ?? 1 : 1;
+      for (let k = 0; k < n; k++) {
+        if (e.kind === 'p') {
+          if (e.bot) this.bots.think(e, dt); else if (away) this.away.think(e, dt);
+          if (fight) this.combat.tickPlayer(e, dt); else this.movement.step(e, dt); // 전투가 없으면 걷기만 한다
+        } else if (e.kind === 'm') { if (fight) this.monsters.tick(e, dt); }
+        else this.kinds.get(e.kind)?.tick?.(e, dt); // 게임이 등록한 종류
+        if (fight) this.combat.tickEffects(e, dt); // 강화와 지속 피해의 시간
+        if (this.ents.get(e.id) !== e) break; // 이 틱에 사라졌다
+      }
     }
     for (const fn of this.ticks) fn(dt);
   }

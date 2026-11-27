@@ -96,7 +96,7 @@ const alertShows = (text: string): boolean => !!alertBox && !alertBox.hidden && 
 export function closeDangerAlert(): void { if (alertBox) alertBox.hidden = true; clearTimeout(alertTimer); }
 /**
  * 위험 알림 (보고 있지 않은 쪽의 위험): 붉은 띠에 글과 바로 가기 단추·닫기. 손으로 닫거나 12초 뒤 사라진다.
- * 폰은 가운데 위의 알림 띠 구역(tc), PC는 화면 가운데 아래. 같은 글이 가운데 알림에 떠 있으면 그것을 거둔다 (한 곳에만)
+ * 구역 밖에 둔다(홈 같은 페이지 위에도 보이게): PC는 화면 가운데 아래, 폰은 화면 가운데. 같은 글이 가운데 알림에 떠 있으면 그것을 거둔다 (한 곳에만)
  */
 export function dangerAlert(text: string, go?: { label: string; onClick: () => void }): void {
   if (!alertBox) {
@@ -105,7 +105,6 @@ export function dangerAlert(text: string, go?: { label: string; onClick: () => v
     alertBox.innerHTML = '<span class="alertText"></span><button type="button" class="alertGo"></button><button type="button" class="alertX btn-ghost" aria-label="×">×</button>';
     alertBox.querySelector('.alertX')!.addEventListener('click', closeDangerAlert);
     $('hud').append(alertBox);
-    for (const fn of alertMount) fn(alertBox);
   }
   alertBox.querySelector('.alertText')!.textContent = text;
   const btn = alertBox.querySelector<HTMLButtonElement>('.alertGo')!;
@@ -117,9 +116,6 @@ export function dangerAlert(text: string, go?: { label: string; onClick: () => v
   clearTimeout(alertTimer);
   alertTimer = window.setTimeout(closeDangerAlert, 12000);
 }
-/** 위험 알림의 요소가 처음 생길 때 (구역 배치가 폰의 자리로 옮긴다) */
-const alertMount: ((el: HTMLElement) => void)[] = [];
-export function onAlertMount(fn: (el: HTMLElement) => void): void { alertMount.push(fn); if (alertBox) fn(alertBox); }
 
 // 언어를 바꾸면 떠 있던 알림이 이전 언어로 남는다: 한 줄 알림과 가운데 알림을 지운다 (대화창의 기록은 남긴다)
 onLangChange(() => { ui.feed.textContent = ''; queue.length = 0; ui.banner.hidden = true; closeDangerAlert(); });

@@ -84,7 +84,6 @@ export const koGame = {
     // 탑의 첫 화면 (client/tower.ts)
     towerAdventure: '모험',
     towerWatch: '전투 보기',
-    towerHomeBtn: '홈',
     towerGrowLv: '메아리 레벨 올리기', towerGrowPull: '울림 샘에서 뽑기', towerGrowSquad: '편성 바꾸기', towerGrowVale: '울림골에서 조각 모으기',
     towerGo: '도전',
     towerPull: '뽑기',

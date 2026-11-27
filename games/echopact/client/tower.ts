@@ -8,7 +8,7 @@
 import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSideMe } from '@engine/shared/defs';
 import {
   $, addSetting, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
-  onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, S, send, setModeHome, stageRows, switchMode, tintRarity, useStageScreens, type HomeKit,
+  onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, switchMode, useStageScreens, type HomeKit,
 } from '@engine/client';
 import { L, onLangChange, t } from '@engine/client/i18n';
 import { heroName, rarityName } from '@engine/client/i18n/ko';
@@ -24,6 +24,8 @@ const fighting = (): boolean => { const r = myStage()?.run; return !!r && r.stat
 /** 다음에 도전할 단계 (열린 것 가운데 아직 깨지 않은 첫째, 다 깼으면 마지막) */
 const nextRow = () => { const rows = stageRows(myStage()); return rows.find((r) => r.open && !r.cleared) ?? rows[rows.length - 1]; };
 let home: HomeKit;
+/** 카드 상세에서 '변신'을 눌러 울림골로 가는 중 (도착하면 변신 탭을 연다) */
+let morphNext = false;
 /** 이벤트 배너의 그림 (그림 파일 없이: 색 두 개(echopact.css의 토큰)와 큰 글자) */
 const EVENT_ART: Record<string, { from: string; to: string; glyph: string }> = {
   echofest: { from: 'var(--ep-fest-a)', to: 'var(--ep-fest-b)', glyph: '♪' },
@@ -41,22 +43,21 @@ function openAdventure(): void {
   $('towerAdv').hidden = false;
   openScreen('towerAdv', { kind: 'page', el: $('towerAdv'), close: () => { $('towerAdv').hidden = true; } });
 }
-/** 전투를 본다 (장면 보기: 들판 HUD는 그대로, 뒤로 가기는 홈으로) */
-function openBattle(): void {
+/** 전투를 본다 (틀의 전투 화면: 위 띠·초상 칸, 뒤로 가기 = 일시정지 창) */
+function watchBattle(): void {
   dropScreen('towerAdv'); $('towerAdv').hidden = true;
-  openScreen('towerBattle', { kind: 'view' });
+  openBattle('towerBattle');
 }
 /** 단계로 출발한다 */
 function go(id: string, auto?: boolean): void {
   if (auto !== undefined) send({ t: 'stage', a: 'auto', on: auto });
   send({ t: 'stage', a: 'go', id });
-  openBattle();
+  watchBattle();
 }
 
 function draw(): void {
   const on = inTower() && !!S.me;
   if (on) document.body.dataset.tower = view; else delete document.body.dataset.tower;
-  $('towerBattle').hidden = !on || view !== 'battle';
   document.body.classList.toggle('towerLobby', on && view !== 'battle');
   if (!on) return;
   home.draw();
@@ -82,7 +83,7 @@ function initHome(): void {
     go: {
       label: () => (fighting() ? t('towerWatch') : L().fmt.towerNext(nextRow()?.id ?? '')),
       sub: () => { const r = myStage()?.run; if (fighting() && r) return L().fmt.towerLive(r.id); const n = nextRow(); return n ? L().fmt.towerRec(n.rec) : ''; },
-      onClick: () => { if (fighting()) { openBattle(); return; } const n = nextRow(); if (n) openCheck(n.id); },
+      onClick: () => { if (fighting()) { watchBattle(); return; } const n = nextRow(); if (n) openCheck(n.id); },
     },
     info: () => `${L().fmt.towerBest(myStage()?.best ?? '')}\n${L().fmt.towerPower(mySquad().power)}`,
     dock: [
@@ -160,34 +161,6 @@ function drawAdventure(): void {
   auto.setAttribute('aria-pressed', String(!!st?.auto));
 }
 
-// ---------- 전투: 편성의 메아리들 (탑에서는 계약자가 싸우지 않는다) ----------
-function drawSquadBar(): void {
-  const bar = $('towerSquadBar');
-  const show = inTower() && !!S.me && view === 'battle' && fighting();
-  bar.hidden = !show;
-  if (!show) return;
-  const heroes = [...S.others.values()].filter((r) => r.kind === 'hero' && !r.gone);
-  const order = mySquad().ids;
-  heroes.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
-  const key = heroes.map((r) => `${r.id}:${Math.round(r.hp)}/${r.maxHp}:${r.dying ? 1 : 0}`).join('|') + L().code + mySquad().power;
-  if (bar.dataset.key === key) return;
-  bar.dataset.key = key;
-  bar.textContent = '';
-  for (const r of heroes) {
-    const c = document.createElement('div');
-    c.className = 'tsq' + (r.hp <= 0 || r.dying ? ' down' : '');
-    const d = knownChar(r.type);
-    if (d) tintRarity(c, d.rarity);
-    const n = document.createElement('b'); n.textContent = heroName(r.type);
-    const hp = document.createElement('i'), fill = document.createElement('span');
-    fill.style.transform = `scaleX(${r.maxHp > 0 ? Math.max(0, Math.min(1, r.hp / r.maxHp)) : 0})`;
-    hp.append(fill); c.append(n, hp);
-    bar.append(c);
-  }
-  const pw = document.createElement('small'); pw.textContent = L().fmt.towerPower(mySquad().power);
-  bar.append(pw);
-}
-
 // ---------- 막힘: 진 단계 (자동 진행은 꺼지고 앞 단계를 되풀이한다: 그 단계를 깨면 풀린다) ----------
 let stuck = '';
 function onStageNews(k: MsgKey, a: MsgArg[]): void {
@@ -239,18 +212,13 @@ export function initTower(): void {
       <div class="tstages" id="towerStages"></div>
       <p class="thint" data-i18n="towerHint"></p>
     </div>
-    <div id="towerBattle" class="tbattle" hidden><button type="button" id="tbHome" data-i18n="towerHomeBtn"></button></div>
     <div id="pactSide" class="pactSide" hidden><span id="pactSideText"></span><button type="button" id="pactSideStop" data-i18n="sideStopTower" hidden></button></div>
-    <div id="towerSquadBar" class="towerSquadBar" hidden></div>
 `);
   initHome();
   // 폰: 작은 표시는 위 왼쪽(내 정보 아래), 위험 알림은 가운데 위의 알림 띠, 편성의 메아리 줄은 아래 가운데 (틀의 구역 배치)
-  placeIn('tl', 'towerBattle', -1);
   placeIn('tl', 'pactSide', 20);
-  placeIn('bc', 'towerSquadBar', 20);
   $('taBack').addEventListener('click', () => homeScreen());
   $('taHome').addEventListener('click', () => homeScreen());
-  $('tbHome').addEventListener('click', () => homeScreen());
   $('towerNext').addEventListener('click', (e) => { const id = (e.currentTarget as HTMLElement).dataset.id; if (id) openCheck(id); });
   $('towerGrow').addEventListener('click', () => openMenu('heroes'));
   $('towerAuto').addEventListener('click', () => send({ t: 'stage', a: 'auto', on: !(myStage()?.auto ?? true) }));
@@ -272,18 +240,23 @@ export function initTower(): void {
       ];
     },
   });
+  // 전투 화면 (틀의 키트): 위 띠(일시정지·물결·시간·자동·배속), 아래 편성의 초상 칸, 일시정지 창의 [홈]
+  useBattleScreen({ shown: () => inTower() && view === 'battle', pic: (id) => heroPic(id), home: () => homeScreen() });
+  // 초상 그림 하나를 카드 목록·상세·뽑기 연출·전투가 함께 쓴다
+  setHeroPic((id) => { const d = knownChar(id); return d ? charPortrait(d, 120, 150) : undefined; });
+  // 카드 상세의 '이 모습으로 변신': 울림골로 가서 변신 탭을 연다 (변신은 들판의 일)
+  setCardActions({ morph: () => { morphNext = true; if (myMode()?.id !== MODE.vale) switchMode(MODE.vale); else openMenu('morph'); } });
   // 탑에 올 때마다 홈이 먼저 (틀의 모드 홈 칸). 울림골로 가면 탑의 화면을 모두 닫는다
   setModeHome(MODE.tower, () => { homeScreen(); home.open(); });
   onScreens(syncView);
   $('pactSideText').addEventListener('click', () => switchMode());
   $('pactSideStop').addEventListener('click', () => send({ t: 'stage', a: 'leave' }));
-  onModeChange((def) => { if (def.id !== MODE.tower) { closeStageResult(); clearScreens(); } draw(); drawSide(); });
+  onModeChange((def) => { if (def.id !== MODE.tower) { closeStageResult(); clearScreens(); } draw(); drawSide(); if (def.id === MODE.vale && morphNext) { morphNext = false; openMenu('morph'); } });
   onModeSide((s) => drawSide(s));
   onMsg('me', (m) => { if (m.k === 'stage' || m.k === 'squad' || m.k === 'heroes' || m.k === 'chars' || m.k === 'event' || m.k === 'season') { if (view !== 'battle') draw(); else home.draw(); } });
   onMsg('sys', (m) => onStageNews(m.k, m.a ?? []));
   onMsg('stat', () => home.draw());
   onSlow(() => {
-    drawSquadBar();
     if (!S.me) { home.close(); $('pactSide').hidden = true; }
   });
   onLangChange(() => { draw(); drawSide(); });

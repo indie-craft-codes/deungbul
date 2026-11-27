@@ -249,6 +249,9 @@ export const CHAPTERS: readonly ChapterDef[] = [
 export const STAGE_RULES: StageRules = {
   arena: ARENA, radius: 9, waveGapS: 1.5, nextS: 3, retryS: 4, timeS: 90, leaderAuto: true, enterOnJoin: false, squadOnly: true,
   offline: { perStageS: 180, maxH: 8, maxStages: 5, need: 1, clearReward: true },
+  // 전투 화면 (묶음 C): ×2 배속은 1-5를 깨면 열린다, 일시정지(전투 중 뒤로 가기)는 10분까지
+  speed: { max: 2, unlock: '1-5' },
+  pause: { maxS: 600 },
 };
 
 // ---------- 사회: 정해진 문장(틀의 여덟. 받는 사람이 자기 언어로 읽는다). 연령은 묻지 않는다 ----------

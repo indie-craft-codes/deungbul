@@ -20,7 +20,7 @@ import { makeHumanoid, setArmor, setBlade } from '../scene/models';
 import { S } from '../state';
 import { setMenuTabs } from './menu';
 import { redraw } from './menu/parts';
-import { addNotices, closeDangerAlert, dangerAlert, onAlertMount, routeNotice } from './notify';
+import { addNotices, closeDangerAlert, dangerAlert, routeNotice } from './notify';
 import type { MsgKey } from '../../shared/messages';
 import { placeIn } from './layout';
 import { mountPanel } from './shell';
@@ -125,8 +125,6 @@ export function initModes(): void {
     dangerAlert(text, { label: L().fmt.modeTo(uiText.get(to.name)), onClick: () => { if (myMode()?.id !== to.id) switchMode(to.id); } });
     return true;
   });
-  // 폰: 위험 알림은 가운데 위의 알림 띠 구역
-  onAlertMount((el) => placeIn('tc', el, 0));
   onModeChange(() => closeDangerAlert());
   // 들판의 대역: 그 사람의 직업·무기·갑옷·겉모습으로 그린 사람 (type = '직업|무기|갑옷', 이름은 그 사람의 이름)
   registerKind('stand', {

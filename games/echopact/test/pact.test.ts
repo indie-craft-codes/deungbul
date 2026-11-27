@@ -243,3 +243,30 @@ const pick = owned.filter((id) => id !== STARTER_ECHO).sort((a, b) => heroDef(b)
 // ---------- 임무의 꼴 ----------
 check(Object.values(DAILIES).filter((d) => 'period' in d && d.period === 'week').length === 2 && ['kill', 'stage', 'pull', 'morph'].every((k) => Object.values(DAILIES).some((d) => d.kind === k)),
   '일일 임무가 들판(사냥)·탑(단계·뽑기)·변신을 고루 세고, 주간 임무가 둘 있다');
+
+// ---------- 전투 화면의 배속·일시정지 (STAGE_RULES.speed·pause: 묶음 C) ----------
+{
+  let t = Date.UTC(2026, 10, 30, 6, 0, 0);
+  const k = new Game({ plugins: [installEchopact], now: () => t });
+  const step = (s: number) => { for (let i = 0; i < s * 20; i++) { k.tick(0.05); t += 50; } };
+  const p = k.players.spawn('배속 시험', false, null, 'ep-speed');
+  k.fire('playerJoined', p); k.command(p, { t: 'class', id: 'warden' }); step(0.3);
+  const me = () => k.personal.find((x) => x.name === 'stage')!.state(p) as { speed?: number; speedMax?: number; paused?: boolean; run: { left: number } | null };
+  k.command(p, { t: 'stage', a: 'go', id: '1-1' }); step(0.5);
+  k.command(p, { t: 'stage', a: 'speed', x: 2 });
+  check(me().speed === 1 && me().speedMax === 1, '×2는 1-5를 깨기 전에는 열리지 않는다 (speedMax 1)');
+  const layer = p.layer, mob = [...k.ents.values()].find((e) => e.kind === 'm' && e.layer === layer && !e.dead)!;
+  k.command(p, { t: 'stage', a: 'pause', on: true });
+  const left0 = me().run!.left, at = { x: mob.x, z: mob.z, hp: mob.hp };
+  step(5);
+  check(me().paused === true && me().run!.left === left0 && k.layerScale.get(layer) === 0 && mob.x === at.x && mob.z === at.z && mob.hp === at.hp,
+    `일시정지: 그 층의 시간·몬스터가 멈춘다 (남은 시간 ${left0} → ${me().run!.left})`);
+  k.command(p, { t: 'stage', a: 'pause', on: false }); step(4);
+  const left1 = me().run!.left;
+  check(!me().paused && !k.layerScale.has(layer) && left0 - left1 >= 3 && left0 - left1 <= 5, `풀면 다시 흐른다 (4초에 ${left0 - left1}초)`);
+  p.stage.best = '1-5';
+  k.command(p, { t: 'stage', a: 'speed', x: 2 }); step(4);
+  const left2 = me().run?.left ?? 0;
+  const saved = k.saves.find((x) => x.name === 'stages')!.save(p) as { speed?: number };
+  check(me().speedMax === 2 && me().speed === 2 && k.layerScale.get(layer) === 2 && left1 - left2 >= 7 && saved.speed === 2, `1-5를 깨면 ×2: 4초에 제한 시간이 ${left1 - left2}초 줄고, 고른 배속이 저장된다`);
+}
