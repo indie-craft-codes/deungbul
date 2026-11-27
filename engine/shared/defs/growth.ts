@@ -234,7 +234,7 @@ export const buildStatDef = (k: BuildStat): { mod: StatMod; per: number } => (BU
  * 거래소: marketSold 팔린 값, marketExpired 기간이 지나 돌아온 물건, marketBought 산 물건(가방에 자리가 없었다), marketBack 내린 물건(가방에 자리가 없었다)
  * 운영: maint 점검 보상 (관리자 명령 maint end의 일괄 우편)
  */
-export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack' | 'maint';
+export type MailKind = 'idle' | 'attend' | 'daily' | 'dungeon' | 'marketSold' | 'marketExpired' | 'marketBought' | 'marketBack' | 'maint' | /** 문의에 답이 왔다 [문의 번호] (support 모듈) */ 'support' | /** 운영 보상 (관리자 명령 mail: 사고 뒤 보상 같은 것) */ 'comp';
 /** 보상. gear와 items는 우편에 붙는 물건이다: 낱개 장비(uid는 받을 때 새로 붙는다)와 아이템 id별 개수 */
 export interface Reward { gold?: number; exp?: number; sparks?: number; gear?: Gear[]; items?: Record<string, number> }
 export interface Mail {

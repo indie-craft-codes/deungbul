@@ -13,7 +13,7 @@ export * from './party';
 export * from './social';
 
 // ---------- 쓸 모듈 (engine/shared/modules.ts) ----------
-// 전통적인 MMORPG: 틀의 모듈을 모두 쓴다
-import { RPG_MODULES } from '@engine/shared/modules';
-export const MODULES = RPG_MODULES;
+// 전통적인 MMORPG: 틀의 RPG 모듈을 모두 쓴다. 그리고 고객지원의 문의·제재 이의(support: 게임의 규칙과 경제는 바꾸지 않는다)
+import { RPG_MODULES, type ModuleId } from '@engine/shared/modules';
+export const MODULES: readonly ModuleId[] = [...RPG_MODULES, 'support'];
 export { MAP } from './map';

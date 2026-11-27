@@ -26,6 +26,7 @@ import type { GameSystems, HooksExt, ModsExt, RulesExt } from './ext';
 import { fieldLayer } from './layers';
 import { checkList, latest, PLAYER_UP, upgrade, WORLD_UP, type Migrations } from './migrate';
 import { blankOf, PARTS, partOwner, type Part, type PartKey } from './parts';
+import { Analytics, type EventProps } from './systems/analytics';
 import { Boss } from './systems/boss';
 import { Away } from './systems/away';
 import { Bag } from './systems/bag';
@@ -344,9 +345,12 @@ export class Game {
    * 서버 없이 도는 게임(시험, 황금 실행)은 아무도 차단하지 않는다
    */
   blocks: (to: Ent, from: Ent) => boolean = () => false;
+  /** [핵심] 분석 사건 (./systems/analytics.ts): 쌓기만 한다. 통신 계층이 가져가 저장한다. 게임의 상태·난수·전송을 바꾸지 않는다 */
+  readonly analytics: Analytics;
 
   constructor(opts: GameOptions = {}) {
     this.now = opts.now ?? Date.now;
+    this.analytics = new Analytics(this);
     // 고른 모듈을 확인한다: 모르는 이름이나 빠진 의존이 있으면 여기서 멈춘다 (engine/shared/modules.ts)
     this.modules = checkModules(opts.modules ?? MODULES, opts.modules ? 'GameOptions.modules' : '내용의 MODULES');
     // 만드는 차례가 곧 등록의 차례(저장 칸, 사건 처리기, 틱)다: 저장의 모양과 난수의 차례가 바뀌지 않게 예전 차례를 지킨다
@@ -435,6 +439,11 @@ export class Game {
   }
   notify(p: Ent, k: MsgKey, ...a: MsgArg[]): void { if (!p.bot) this.notices.push({ id: p.id, k, a }); }
   announce(k: MsgKey, ...a: MsgArg[]): void { this.announces.push({ k, a }); }
+  /**
+   * 분석 사건 한 줄 (./systems/analytics.ts): 이름(영문 소문자·숫자·밑줄), 속성(수·참거짓·짧은 표만: 자유 문장은 빠진다), 누가(사람 또는 저장 키, 없으면 서버의 사건).
+   * 예: g.track('quest_done', { id: 'q3', lv: p.lv }, p). 서버에서만 적힌다
+   */
+  track(name: string, props?: EventProps, who?: Ent | string | null): void { this.analytics.track(name, props, who); }
 
   /**
    * 게임의 엔티티 종류를 등록한다 (KindDef). id는 영문 소문자로 시작하는 16자 이내이고, 'p'(플레이어)와 'm'(몬스터)는 틀의 것이다.

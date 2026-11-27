@@ -55,7 +55,19 @@ const HELP = `쓰는 법: npm run admin -- [게임] <명령> [인자 …]
   words [test 글]               금칙어 개수와 관리자가 더한 낱말 / 그 글이 어떻게 펴지고 가려지는지
   words add|del 낱말…           관리자 금칙어를 더하거나 뺀다 (DB에 남아 다시 켜도 걸린다)
   age 이름 [reset]              그 사람의 연령 답과 제한 모드 / 답을 지워 다시 묻는다 (AGE를 적은 게임)
-  blocks 이름                   그 사람이 차단한 사람 (신고 처리 때 확인)`;
+  blocks 이름                   그 사람이 차단한 사람 (신고 처리 때 확인)
+운영 도구와 고객지원:
+  ui [view|ops|full]           웹 관리 화면의 주소 (이 PC의 브라우저에서 연다. 토큰은 주소의 # 뒤에: 서버로 가지 않는다). 기본 ops
+  stats [daily|retention|funnel 사건,사건,…] [--days n]   분석 사건의 집계 (일별 활성, D1·D7·D30 잔존, 퍼널)
+  ledger [일수] [이름]          장부: 통로 밖의 재화 변화(other·tick)가 누구에게서 났는가와 날짜별 줄
+  suspects [수]                봇·매크로 의심 점수 (보기만 한다)
+  alerts [test]                경보 규칙과 상태 / 웹훅에 시험 알림 (ALERT_WEBHOOK을 준 서버만 보낸다)
+  mail 이름|--all [--days n] [--gold n] [--sparks n] [--exp n] [--item id:n]   운영 보상 우편
+  rollback list 이름 | preview 이름 백업|latest | apply 이름 백업 확인코드 | stash 이름 | undo 이름 보관번호 확인코드
+                               계정 단위 롤백 (자동 백업에서 그 사람만. 미리보기 → 확인 코드 → 실행)
+  tickets [open|answered|closed|all] [수] | ticket 번호 | answer 번호 답글 | tclose 번호 [메모] | treopen 번호   문의 (support 모듈)
+  metrics                      지표 값 (/metrics와 같은 것)
+역할: admin.token(전체), admin-ops.token(운영), admin-view.token(보기 전용). CLI는 전체 토큰을 쓴다. ADMIN_TOKEN_FILE로 다른 토큰을 줄 수 있다`;
 
 const root = path.resolve(import.meta.dirname, '..');
 const argv = process.argv.slice(2);
@@ -75,6 +87,16 @@ const tokenFile = process.env.ADMIN_TOKEN_FILE ?? path.join(path.dirname(path.re
 let token;
 try { token = fs.readFileSync(tokenFile, 'utf8').trim(); }
 catch { fail(`관리자 토큰 파일이 없습니다: ${tokenFile}\n서버가 켜져 있는지, 이 게임(${game})과 저장 파일(DB)이 맞는지 보세요.`); }
+// 웹 관리 화면의 주소: 서버에 묻지 않고 토큰 파일을 읽어 찍는다 (토큰은 # 뒤: 브라우저가 서버로 보내지 않는다)
+if (cmd === 'ui') {
+  const role = ['view', 'ops', 'full'].includes(args[0]) ? args[0] : 'ops';
+  const file = role === 'full' ? tokenFile : path.join(path.dirname(tokenFile), `admin-${role}.token`);
+  let t;
+  try { t = fs.readFileSync(file, 'utf8').trim(); } catch { fail(`토큰 파일이 없습니다: ${file} (서버가 운영 도구가 든 판인지 보세요)`); }
+  console.log(`http://127.0.0.1:${port}/admin/ui#t=${t}
+이 PC의 브라우저에서만 열립니다 (역할: ${role}). 서버를 다시 켜면 토큰이 바뀝니다.`);
+  process.exit(0);
+}
 let by = process.env.ADMIN_BY;
 if (!by) { try { by = os.userInfo().username; } catch { by = 'operator'; } }
 

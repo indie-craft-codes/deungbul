@@ -60,6 +60,8 @@ export interface OpsNow {
   openWire: number;
   backup: { lastAt: number; fails: number } | null;
   compress: boolean;
+  /** 덧붙는 지표 [이름, 값, 설명] (운영 도구: 통로 밖의 재화 변화, 열린 문의 …). /metrics의 끝에 붙고 경보 규칙(./alerts.ts)이 읽는다 */
+  extra?: [string, number, string][];
 }
 
 /** 틱이 이만큼 돌지 않았으면 멈춘 것으로 본다 (틱은 50ms마다) */
@@ -78,6 +80,14 @@ export function health(c: OpsCounters, now: OpsNow): Record<string, unknown> {
 
 /** Prometheus의 텍스트 꼴을 따른 간단한 지표 (이름 값, 한 줄에 하나) */
 export function metricsText(c: OpsCounters, now: OpsNow): string {
+  return metricRows(c, now).map(([k, v, h]) => `# HELP ${k} ${h}\n${k} ${Number.isInteger(v) ? v : v.toFixed(3)}`).join('\n') + '\n';
+}
+/** 지표의 이름 → 값 (경보 규칙이 읽는다: ./alerts.ts) */
+export function metricValues(c: OpsCounters, now: OpsNow): Record<string, number> {
+  return Object.fromEntries(metricRows(c, now).map(([k, v]) => [k, v]));
+}
+/** 지표의 줄들: [이름, 값, 설명] */
+export function metricRows(c: OpsCounters, now: OpsNow): [string, number, string][] {
   const tk = c.tickMs.stat(), mem = process.memoryUsage(), cpu = process.cpuUsage();
   const rows: [string, number, string][] = [
     ['game_up_seconds', Math.round((Date.now() - c.startedAt) / 1000), '켜진 뒤 흐른 시간'],
@@ -97,8 +107,9 @@ export function metricsText(c: OpsCounters, now: OpsNow): string {
     ['game_compress', now.compress ? 1 : 0, 'perMessageDeflate를 켰는가'],
     ['process_cpu_seconds_total', (cpu.user + cpu.system) / 1e6, '프로세스가 쓴 CPU 시간'],
     ['process_memory_rss_bytes', mem.rss, '메모리 (RSS)'],
+    ...(now.extra ?? []),
   ];
-  return rows.map(([k, v, h]) => `# HELP ${k} ${h}\n${k} ${Number.isInteger(v) ? v : v.toFixed(3)}`).join('\n') + '\n';
+  return rows;
 }
 
 /** /healthz와 /metrics를 맡고, 나머지는 next(화면 파일)에 넘기는 처리기 */
