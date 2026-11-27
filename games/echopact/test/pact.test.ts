@@ -23,7 +23,7 @@ import { check } from '@engine/testing';
   check(!cheat.ok && cheat.issues.some((x) => x.code === 'budget'), '일반 등급의 예산(170)을 넘긴 정의는 거절된다 (AI가 만든 정의가 들어올 자리)');
   const skill = validateCharDef({ ...(ECHO_DEFS[0] as object), id: 'wrongskill', skills: ['cleave'] });
   check(!skill.ok && skill.issues[0].code === 'skill', '계약자의 기술(cleave)은 메아리가 고를 수 없다 (CHAR_RULES.skills)');
-  check(!MODULES.includes('herogear') && ['roster', 'gacha', 'squad', 'stages', 'chars', 'morph', 'combat', 'party', 'chat', 'friends'].every((m) => MODULES.includes(m as never)), '모듈: 들판(전투·파티·대화 채널·친구 …) + 수집형 넷 + 캐릭터 정의·변신');
+  check(!MODULES.includes('herogear') && ['roster', 'gacha', 'squad', 'stages', 'chars', 'morph', 'combat', 'party', 'chat', 'friends', 'odds'].every((m) => MODULES.includes(m as never)), '모듈: 들판(전투·파티·대화 채널·친구 …) + 수집형 넷 + 캐릭터 정의·변신');
 }
 
 let clock = Date.UTC(2026, 10, 30, 3, 0, 0);

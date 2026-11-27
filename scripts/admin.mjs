@@ -56,6 +56,16 @@ const HELP = `쓰는 법: npm run admin -- [게임] <명령> [인자 …]
   words add|del 낱말…           관리자 금칙어를 더하거나 뺀다 (DB에 남아 다시 켜도 걸린다)
   age 이름 [reset]              그 사람의 연령 답과 제한 모드 / 답을 지워 다시 묻는다 (AGE를 적은 게임)
   blocks 이름                   그 사람이 차단한 사람 (신고 처리 때 확인)
+확률과 재화의 투명성 (odds 모듈을 고른 게임):
+  odds                         공개하는 확률표와 버전
+  odds show 표                  표 하나의 단계별 확률 (표: enhance, banner:배너 id, 게임이 준 표)
+  odds log [표] [수]             표의 변경 이력 (시각·버전·까닭)
+  odds check                   지금의 표를 견주어 바뀐 표의 버전을 올린다 (서버가 10초마다 한다)
+  odds plan 표 시각 --ko 글 [--en 글]   사전 공지 (공개 페이지에 '언제부터 무엇이 바뀐다'). 바꾸는 일은 그때 set으로
+  odds plans | odds plan cancel|done 번호   사전 공지 목록 / 거두기·끝냄
+  odds publish                 공개 페이지(odds.json·odds.html)를 지금 다시 쓴다
+  draws [이름|키앞] [--table 표] [--n 수] [--since 시각]   추첨 기록 (사람·시각·표와 버전·결과·치른 것)
+  draws stats 표 [--since 시각]   그 표의 단계별로 실제로 나온 비율과 표의 확률
 운영 도구와 고객지원:
   ui [view|ops|full]           웹 관리 화면의 주소 (이 PC의 브라우저에서 연다. 토큰은 주소의 # 뒤에: 서버로 가지 않는다). 기본 ops
   stats [daily|retention|funnel 사건,사건,…] [--days n]   분석 사건의 집계 (일별 활성, D1·D7·D30 잔존, 퍼널)

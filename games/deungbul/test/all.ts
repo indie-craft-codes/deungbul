@@ -6,7 +6,7 @@
 import { failures } from '@engine/testing';
 
 /** 이 게임의 시험 (games/deungbul/test/이름.test.ts) */
-export const GAME = ['framework', 'baseline', 'split', 'shop', 'classes', 'combat', 'craft', 'party', 'keepers', 'quests', 'nav', 'zone2', 'channel', 'ledger', 'harden', 'guide', 'enhance', 'deep', 'zone3', 'server', 'saves'];
+export const GAME = ['framework', 'baseline', 'split', 'shop', 'classes', 'combat', 'craft', 'party', 'keepers', 'quests', 'nav', 'zone2', 'channel', 'ledger', 'harden', 'guide', 'enhance', 'deep', 'zone3', 'server', 'saves', 'odds'];
 
 const only = process.argv.slice(2);
 for (const name of only.length ? only : GAME) {

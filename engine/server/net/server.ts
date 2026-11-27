@@ -14,7 +14,7 @@ import type { Ent } from '../game/entity';
 import { Game, type GameOptions } from '../game/game';
 import { Sanctions, normIp } from '../game/systems/sanctions';
 import { log } from '../log';
-import { MemoryStore, hasEcon, hasLive, type PlayerSave, type Store, type WorldSave } from '../store';
+import { MemoryStore, hasEcon, hasLive, hasOdds, type PlayerSave, type Store, type WorldSave } from '../store';
 import type { Reward } from '../../shared/defs';
 import { startBackups, type BackupOptions } from '../store/backup';
 import { isClean, tidy } from '../text';
@@ -29,6 +29,7 @@ import { guestServerAuth, type ServerAuth } from './auth';
 import { createWeb, type Web } from './web';
 import { startStatus, type StatusOptions } from './status';
 import { createSocial, type Social } from './social';
+import { createOddsWeb } from './odds';
 import { hasOps, type EventRow } from '../store';
 import { startAlerts, type AlertOptions, type Alerts } from './alerts';
 import { metricValues, type OpsNow } from './ops';
@@ -152,6 +153,8 @@ export interface Options {
   auth?: ServerAuth;
   /** 상태 페이지 (./status.ts): 이 폴더에 status.json과 status.html을 쓴다. 주지 않으면 쓰지 않는다 (틀의 runServer는 빌드된 화면의 폴더에 쓴다) */
   status?: StatusOptions | false;
+  /** 확률 공개 (odds 모듈, ./odds.ts): odds.json·odds.html을 쓸 폴더. 주지 않으면 상태 페이지의 폴더, false면 파일을 쓰지 않는다 (주소 /odds.json·/odds.html은 늘 답한다) */
+  odds?: { dir: string } | false;
   /** 분석 사건 (engine/server/game/systems/analytics.ts): 보관 일수(기본 180). false면 적지 않는다. 저장소가 사건을 적지 못하면(OpsStore가 없음) 늘 적지 않는다 */
   analytics?: { keepDays?: number } | false;
   /** 경보 (./alerts.ts): 지표의 임계값 → 웹훅. 웹훅 주소를 주지 않으면 재기만 한다. false면 재지도 않는다 */
@@ -184,6 +187,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
   if (saved) game.importWorld(saved);
   // 원격 설정·공지·점검과 시계의 마지막 경계 (저장소가 적을 수 있을 때만: store/types.ts의 LiveStore). 꺼져 있던 동안 지난 날·주·달의 경계는 여기서 한 번씩 알린다
   if (hasLive(store)) { game.live.attach(store); game.time.attach(store); }
+  // 확률표의 버전·이력·추첨 기록 (odds 모듈): 원격 설정을 적용한 뒤에 붙인다 (적용된 값이 이전 실행의 표와 같으면 버전이 오르지 않는다)
+  if (game.has('odds') && hasOdds(store)) game.odds.attach(store);
   for (let i = 0; i < (opts.bots ?? 0); i++) game.players.spawn('Bot' + (i + 1), true);
 
   const clients = new Set<Client>();
@@ -268,7 +273,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       ],
     };
   };
-  const httpServer = http.createServer(opsHandler(ops, opsNow, (req, res) => { if (!admin?.route(req, res) && !web?.route(req, res)) statics(req, res); }));
+  const httpServer = http.createServer(opsHandler(ops, opsNow, (req, res) => { if (!admin?.route(req, res) && !web?.route(req, res) && !odds?.route(req, res)) statics(req, res); }));
   // 압축은 작은 메시지(이동 한 번)에는 걸지 않는다: 줄어드는 것보다 드는 CPU가 크다. 압축은 libuv의 일꾼 스레드에서 돌아 틱의 스레드는 오히려 덜 쓴다
   // 출처 검사: 목록을 주었을 때만 verifyClient를 단다 (주지 않으면 ws의 기본 그대로: 예전과 같다). 걸린 연결은 손잡기에서 403
   const originCheck = opts.origins?.list?.length ? { verifyClient: (info: { origin: string }) => originAllowed(info.origin || undefined, opts.origins) } : {};
@@ -634,6 +639,8 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
     save: () => { game.saveDirty = true; saveTogether(); },
     social: { exportOf: (key) => social.exportOf(key), erased: (key) => social.erased(key) },
   });
+  // 확률 공개 (./odds.ts): 공개 페이지(파일과 주소)와 관리자 명령 odds·draws (odds 모듈을 고른 게임만)
+  const odds = game.has('odds') ? createOddsWeb(game, store, opts.odds === false ? null : opts.odds?.dir ?? (opts.status ? opts.status.dir : null), () => [...clients].filter((c) => c.ent).map((c) => ({ name: c.ent!.name, key: c.key }))) : null;
   let pruneAt = 0;
   const eraseTimer = setInterval(() => {
     try { web.sweep(); } catch (err) { log.error('[server] 삭제 요청 살피기 실패:', err); }
@@ -703,7 +710,7 @@ export function startServer(port: number, opts: Options = {}): Promise<Running> 
       ...[...away].map(([key, e]) => ({ name: e.name, key, ip: awayIp.get(key) ?? '', ent: e, away: true })),
     ],
     drop: dropBy, broadcast, save: () => { game.saveDirty = true; saveTogether(); },
-    extra: () => ({ ...web.admin, ...social.admin, ...support.admin, ...toolCmds }),
+    extra: () => ({ ...web.admin, ...social.admin, ...support.admin, ...toolCmds, ...(odds?.admin ?? {}) }),
   }, opts.admin);
 
   wss.on('connection', (ws, req) => {

@@ -93,6 +93,7 @@
 | `chat` | 대화 채널: 귓말(이름으로)·근처·파티 채널, 모든 채널을 합친 도배 막기 (18절) | | 대화창의 채널 탭, 사람 카드의 귓말 | |
 | `friends` | 친구: 요청·수락·거절·삭제, 목록(접속·있는 곳·마지막 접속), 상한 (18절) | | 메뉴의 친구 탭, 사람 카드의 친구 요청 | |
 | `support` | 문의·제재 이의: 티켓(열림·답변·닫힘), 관리자의 답(알림·우편), 말 막기·차단의 사유·기간과 이의 신청 (19절) | | 설정 창의 '문의' 칸과 문의 창, 막혔을 때 접속 화면의 사유·이의 | |
+| `odds` | 확률 공개: 확률표의 버전·변경 이력·사전 공지, 게임 밖 공개 페이지(`odds.json`·`odds.html`), 추첨 기록(뽑기·강화·게임의 굴림)과 관리자 조회. 굴림 자체는 모듈과 상관없이 표에서 한다 (20절) | | 메뉴의 확률 탭(확률표·내 추첨 기록) | |
 
 ```ts engine/test/core/shared/content/index.ts
 /** 쓸 모듈: 없다 (핵심만) */
@@ -104,7 +105,7 @@ import type { ModuleId } from '@engine/shared/modules';
 export const MODULES: readonly ModuleId[] = ['economy', 'growth', 'classes', 'combat', 'build', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'rank', 'away', 'chars', 'morph', 'chat', 'friends', 'support'];
 ```
 
-모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`, `chars`, `morph`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
+모든 RPG 모듈을 쓰는 게임은 `export const MODULES = RPG_MODULES;`(등불지기)로 적는다. `RPG_MODULES`에는 `teams`, 수집형의 넷(`COLLECT_MODULES`: `roster`, `gacha`, `squad`, `stages`), `herogear`, `rooms`, `chars`, `morph`, `chat`, `friends`, `odds`가 들지 않는다(그 목록을 쓰는 게임에 저절로 생기지 않게).
 
 **의존으로 딸려 온 모듈의 화면 감추기**: 쓰려는 모듈의 의존 때문에 고른 모듈의 단추가 필요 없으면(예: 던전 → 장비 → 아이템이라 생기는 가방 단추, 서버가 대신 싸우는 게임의 '가까운 대상 공격') 내용에 `export const HUD: HudRules = { hide: ['bag', 'attackNearest'] };`(타입은 `@engine/shared/defs/hud`)를 적는다. 감출 뿐이라 기능과 단축키는 그대로다. 이름의 목록은 13절 '단계 밖'의 표.
 
@@ -2522,3 +2523,95 @@ npm run admin -- rollback stash 이름                되돌리기 전의 상태
 - 의심 점수는 간단한 통계뿐이다(이동 궤적·반응 시간·여러 계정의 같은 주소 같은 것은 없다). 서버를 다시 켜면 비워진다.
 - 분석의 날은 UTC로만 가른다(초기화 시각 `RESET`의 시간대가 아니다). 코호트를 바꾸는 선택(첫 결제, 레벨)은 없다.
 - 경보는 웹훅 하나다. 규칙은 `startServer`의 `alerts.rules`로만 준다(`runServer`는 틀의 기본 규칙. 관리자 명령·환경 변수로 바꾸지 않는다). 메일·문자는 없다.
+
+## 20. 확률과 재화의 투명성: 확률표의 단일 원본, 공개 페이지·변경 이력, 추첨 기록, 재화의 종류, 확인 단계 (`odds` 모듈)
+
+[genre-features.md](genre-features.md) 5.4절의 묶음 4. 법의 배경(확률형 아이템 정보 공개, 손해배상의 입증 책임)은 같은 문서 7절 5번. 넷으로 나뉜다.
+
+| 무엇 | 어디 | 고르지 않으면 |
+|---|---|---|
+| 확률표의 단일 원본과 굴림 | `engine/shared/defs/odds.ts` (모듈과 상관없이 늘): `gacha`의 뽑기와 `gear`의 강화가 이 표에서만 굴린다 | 게임이 표를 주지 않으면 지금의 정의(`BANNERS`, `ENHANCE`)에서 만든 표: 값과 난수의 차례가 예전과 같다(등불지기의 황금 실행이 바이트까지 같다) |
+| 버전·변경 이력·사전 공지·추첨 기록·공개 페이지·확률표 창 | 선택 모듈 `odds` (의존 없음): `engine/server/game/systems/odds.ts`, `engine/server/net/odds.ts`, `engine/client/hud/odds.ts` | 없다 (`RPG_MODULES`에 들지 않는다) |
+| 재화의 종류(유상·무상·이벤트·귀속, 쓰는 차례, 만료) | `CURRENCIES`의 선택 칸 `kinds` + 지갑(`g.wallet`) | 적지 않으면 지갑이 종류를 세지 않는다(저장·장부·줄 위가 예전과 같다) |
+| 귀한 재화의 확인 단계 | `CURRENCIES`의 선택 칸 `confirm` + 화면의 공용 대화상자(`engine/client/hud/confirm.ts`) | 적지 않으면 묻지 않는다 |
+
+### 표의 모양
+
+```ts
+// engine/shared/defs/odds.ts
+interface OddsTableDef {
+  id: string;                    // 'enhance', 'banner:<배너 id>', 게임이 지은 이름 (영문자·숫자·밑줄·쌍점 1~48자)
+  kind: 'capsule' | 'enhance' | 'combine' | 'ceiling';
+  name: string;                  // 이름의 문장 키 (공개 페이지는 ODDS.names로)
+  steps: { key: string; when: OddsWhen[]; outcomes: { id: string; p: number; r?: number }[] }[];
+  pity?: { after: number; step: string; r?: number };   // 천장: after번째는 그 단계의 표
+  ten?: { step: string; r?: number };                   // 10번 뽑기의 보장
+  limited?: { total?: number; from?: number; to?: number }; // 한정 상품: 총수, 기간(UTC ms)
+  guard?: string;                // 강화의 보호 아이템
+  cost?: { cur: string; one: number; ten?: number };
+}
+```
+
+- **단계**: 강화는 강화 단계마다(`+0`, `+1` …, `when: [{ k: 'plus', n }]`), 뽑기는 평소(`base`)·천장의 바닥(`r2`)·10번 보장의 바닥(`r1`)과 반반의 확정이 켜진 때(`base:sure` …). 강화의 결과는 `up`(한 단계 오름)·`keep`·`down`(한 단계 내림)만 쓴다(틀의 장비에는 파괴가 없다).
+- **굴림**: `rollStep(단계, r)` 하나. 결과의 확률을 차례로 더해 `r`(서버 난수, 0 이상 1 미만)보다 커지는 첫 결과. 뽑기의 예전 `pickOdds`, 강화의 예전 `random() < ENHANCE.rate(plus)`와 같은 셈이다(시험이 같은 난수 2만 개로 견준다).
+- **자동 표**: `enhanceTable()`(ENHANCE의 `rate`·`dropFrom`·`charm`에서. 확률이 0인 결과는 넣지 않는다), `bannerTable(id)`(확률은 `pullOdds` 그대로, 실효 확률은 공개용으로만). `allTables(has)`가 공개할 것 모두(게임이 준 표 + 강화 + 배너마다).
+- **검사**: `checkTables(표들)`가 거부 코드로 알린다: `id`, `dup`(겹친 id), `kind`, `empty`, `stepDup`, `outDup`, `neg`(수가 아니거나 0 미만·1 초과), `sum`(한 단계의 합이 100%에서 1e-9보다 벗어남), `pity`(가리키는 단계 없음), `enhanceSteps`(강화 표에 +0 ~ max-1이 다 없음), `enhanceOut`. 게임이 준 표에 문제가 있으면 서버가 켜질 때 멈춘다.
+
+### 내용 칸 `ODDS` (모두 선택)
+
+```ts
+// 시험용 내용 engine/test/collect/shared/content/index.ts에서
+export const ODDS: OddsRules = {
+  tables: [
+    { id: 'chest', kind: 'capsule', name: 'oddsChest', steps: [{ key: 'open', when: [{ k: 'base' }], outcomes: [{ id: 'stardust', p: 0.7 }, { id: 'sweepticket', p: 0.25 }, { id: 'herochoice', p: 0.05 }] }], limited: { total: 100 } },
+  ],
+  keepDays: 30,                       // 추첨 기록 보관(일). 틀의 기본 1825(5년). 0이면 지우지 않는다
+  names: { oddsChest: { ko: '보물 상자', en: 'Treasure chest' }, bannerDawn: { ko: '새벽의 부름', en: 'Call of Dawn' } },
+  operator: { ko: '…', en: '…' },     // 공개 페이지 맨 아래의 운영자 정보(상호·문의처·등급 표시). 없으면 '아직 적지 않았다'
+};
+```
+
+- `tables`에 id `'enhance'`인 표를 주면 장비 강화가 자동 표 대신 그것을 쓴다(단계 +0 ~ `ENHANCE.max`-1이 모두 있어야 한다).
+- `names`: 공개 페이지는 서버가 쓰므로 게임의 언어 파일을 읽지 못한다. 표의 이름 키, 결과 id(영웅 id), 재화(`'cur:sparks'`)의 언어마다의 글을 여기 적는다. 서버 플러그인에서 `g.ready.push(() => { g.odds.names = (lang, key) => … })`로 게임의 언어 파일에서 꺼내 줘도 된다. 캐릭터 정의에서 온 영웅(`label`)과 틀의 기본 등급(`heroRarity0~2`)·강화 결과는 틀이 안다.
+- `hide: { enhance?, banners? }`: 자동 표를 공개하지 않는다(굴림은 그대로 그 표에서).
+
+### `odds` 모듈이 하는 것
+
+- **버전**: 표마다 내용의 서명을 들고 있다가 달라지면 1 올리고 이력(시각 UTC·전·후·까닭)을 남긴다. 살피는 때: 켜진 뒤 첫 틱(까닭 `boot`: 소스가 바뀌었으면 여기서 오른다. 같은 내용이면 다시 켜도 오르지 않는다 — 원격 설정은 적용한 뒤에 견준다), 원격 설정이 바뀔 때(`live:칸 이름 (누가)`), 10초마다(`auto`: 캐릭터 정의가 더해져 뽑기 판이 바뀐 것 같은 변화), 관리자 `odds check`(`admin`), 그리고 **추첨을 적을 때마다 그 추첨이 쓴 표로** — 그래서 기록의 버전이 곧 굴린 표다. 바뀌면 접속한 화면에 새 표(`{ t: 'odds', a: 'tables' }`)를 보내고 공개 파일을 다시 쓴다.
+- **사전 공지**: `odds plan 표 시각 --ko 글 [--en 글]`. 공개 페이지·확률표 창의 '예정된 변경'에 나온다(적용 시각 뒤 7일까지). 바꾸는 일 자체는 그때 원격 설정(`set`)이 한다: 표를 바꿀 칸을 `LIVE_KEYS`에 선언해 둔다(예: `'BANNERS.well.pity.after'`).
+- **추첨 기록**: 뽑기(`gacha`)·강화(`enhance`)·게임의 굴림(`g.odds.roll(p, 표, 단계, { kind, cost })`: 내용이 준 표에서 뽑고 적는다)마다 한 줄: 사람(`owner`: 지금은 저장 키, 계정이 생기면 계정)·캐릭터(`char`)·시각(UTC)·종류·표 id와 버전·쓴 단계들·결과들·치른 것(재화의 종류를 세면 종류마다의 양). SQLite 표 `draws`(스키마의 끝 단계). `keepDays`가 지난 줄은 한 시간마다 지운다.
+- **공개 페이지**: `odds.json`(공개할 모양 + 이름표)과 `odds.html`(스스로 서는 페이지: 바깥의 것을 읽지 않는다, `?lang=ko|en`, 없으면 브라우저 언어). 상태 페이지와 같은 폴더(보통 빌드된 화면의 폴더, `STATUS_DIR`)에 켜질 때·바뀔 때 쓰고(화면을 다시 빌드해 지워지면 30초 안에 다시), 서버는 `GET /odds.json`·`/odds.html`로도 준다(파일이 없어도, `STATIC=0`이어도. 읽기만: 다른 방법은 405, `cache-control: no-store`, `nosniff`). `startServer({ odds: { dir } | false })`로 폴더를 바꾸거나 파일을 끈다. 표마다 종류·버전·값·한정·천장·10번 보장·보호, **단계별 확률**, 실효 확률, 예정된 변경, 변경 이력(단계·결과마다 전 → 후)이 나온다.
+- **확률표 창**: 메뉴의 '확률' 탭(`always`: 게임이 `setMenuTabs`로 탭을 골라도 보인다. 목록에 `'odds'`를 넣으면 그 자리에). 공개 페이지와 같은 것과 '내 추첨 기록'(최근 100건), '게임 밖에서 보기'(바깥 링크를 열 수 있는 플랫폼만).
+- **내 데이터**: 내보내기에 `draws`(내 추첨 기록), 삭제하면 줄은 남기고 사람 칸만 `-`로(입증 자료: 사용자 결정 칸).
+- **관리자 명령**: `odds`(목록), `odds show 표`, `odds log [표] [수]`, `odds check`, `odds plan …`, `odds plans`, `odds plan cancel|done 번호`, `odds publish`, `draws [이름|키앞] [--table 표] [--n 수] [--since 시각]`, `draws stats 표`(단계마다 실제로 나온 비율과 표의 확률).
+
+### 재화의 종류 (`CURRENCIES`의 `kinds`)
+
+```ts
+export const CURRENCIES = {
+  gold: { tradable: true },
+  sparks: { tradable: false, kinds: { spend: ['event', 'free', 'paid'], days: { event: 14 } } }, // 이벤트 → 무상 → 유상의 차례, 이벤트 몫은 14일 뒤 사라짐
+  exp: { tradable: false },
+};
+```
+
+- 엔티티의 칸(`p.sparks`)은 그대로 **합**이고, 지갑이 종류마다의 몫(주머니)을 따로 센다(저장 `ext.purse`). `g.wallet.add(p, cur, n, why, kind?)`: 종류를 주지 않으면 `earn`(없으면 `free`, 그것도 없으면 `spend`의 첫째). `take`는 `spend`의 차례로, 같은 종류 안에서는 먼저 사라질 몫부터 꺼낸다(`g.wallet.lastTake`에 종류마다 꺼낸 양).
+- 장부의 원인에 종류가 붙는다(`cmd:gacha:free`, `quest:event`). 만료된 몫은 `expire:종류`로 빠진다(1분마다 접속 중인 사람, 접속할 때).
+- 주머니의 합이 칸과 다르면(종류를 적기 전의 저장, 지갑 밖의 변화) 칸을 믿는다: 모자라면 `earn`의 종류로 채우고, 남으면 쓰는 차례로 덜어 낸다.
+- 조회: `g.wallet.balance(p, cur)`(종류마다), `g.wallet.lots(p, cur)`(사라지는 때까지). 경험치는 종류를 세지 않는다.
+- **아직 없는 것**: 귀속(`bound`)을 거래소·우편이 막지 않는다(종류만 센다), 화면에 종류별 잔액이 없다, 유상 재화를 넣는 길(결제)이 없다.
+
+### 귀한 재화의 확인 단계 (`CURRENCIES`의 `confirm`)
+
+```ts
+// games/echopact/shared/content/index.ts
+sparks: { tradable: false, confirm: { at: 900, price: null } },   // 한 번에 900 이상 쓰면 두 번 묻는다. 실제 가격 칸은 결제가 생긴 뒤에 채운다
+```
+
+뽑기의 1번·10번 단추가 `confirmSpend(재화, 양, 할 일)`(입구 `@engine/client`)을 거친다: 1단계 '얼마를 씁니다'(+ `price`를 채웠으면 '실제 가격: …') → [계속] → 2단계 '한 번 더 확인합니다' → [쓰기]. 2단계는 단추의 자리를 바꾸고 0.4초 잠가 빠르게 두 번 누른 손가락이 그대로 쓰지 않게 한다. Esc는 그만두기. 적지 않은 재화는 곧바로 한다. 게임의 단추도 같이 감싸면 된다.
+
+### 시험과 예제
+
+- 틀의 시험 `engine/test/collect/odds.test.ts`(시험용 내용 '영웅 들판'에 `odds`를 더해): 거부 코드, 단일 원본(배너 표 = `pullOdds`, 강화 표 = `ENHANCE.rate`, 같은 난수면 예전 셈과 같은 결과), 20만 번 굴림의 분포 = 표(5σ), 서버의 실제 뽑기 3,000번의 분포 = 공개 JSON = 게임 안 표, 추첨 기록의 칸, 원격 설정으로 천장·판을 바꾸면 버전·이력(전 → 후)·화면에 새 표·파일 다시 씀·다음 기록에 새 버전, 사전 공지, 관리자 명령, 내 데이터, SQLite로 다시 켜도 버전이 남고 소스가 바뀌면 `boot`, 보관 기간, 앞 단계까지 올린 DB, 재화의 종류(차례·장부·만료·저장·칸 맞추기·뽑기 기록의 종류), 확인 단계.
+- 등불지기 `games/deungbul/test/odds.test.ts`: 강화의 표가 `ENHANCE`와 같고(+7 ~ +9 하락, 보호 부적), 10만 번 굴림이 맞고, 모듈을 켜면 공개 JSON에 그대로 나온다. **등불지기는 `odds`를 고르지 않았다**(공개 페이지·추첨 기록을 켤지는 사용자 결정).
+- 예제: 메아리 계약(`games/echopact`)이 `odds`를 켰다: 울림 샘·장비 강화의 표, 천장을 원격 설정으로(`BANNERS.well.pity.after`), 울림 조각 900 이상은 확인 단계, 공개 페이지의 이름표(`ODDS.names`). 시험 `games/echopact/test/odds.test.ts`.

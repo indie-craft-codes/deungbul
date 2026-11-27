@@ -1,9 +1,11 @@
 import { anonymize } from './sqlite';
 import type { BlockRow, ClientErrorRow, EconRow, EconStore, EraseRow, FriendRow, LiveLogRow, LiveRow, LiveStore, PlayerSave, ReportSave, SocialStore, Store, WebStore, WorldSave } from './types';
+import type { DrawQuery, OddsStore, OddsVersionRow } from './types';
+import type { DrawRow, OddsHistoryRow, OddsPlanRow } from '../../shared/defs/odds';
 import type { EventRow, OpsStore, StashRow, TicketRow } from './types';
 
 /** 시험용 저장소: 프로세스가 끝나면 사라진다. */
-export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OpsStore {
+export class MemoryStore implements Store, EconStore, LiveStore, WebStore, SocialStore, OddsStore, OpsStore {
   private world: WorldSave | null = null;
   private players = new Map<string, PlayerSave>();
   loadWorld(): WorldSave | null { return this.world && structuredClone(this.world); }
@@ -120,4 +122,28 @@ export class MemoryStore implements Store, EconStore, LiveStore, WebStore, Socia
   addStash(r: Omit<StashRow, 'id'>): number { const id = this.stashList.length + 1; this.stashList.push(structuredClone({ ...r, id })); return id; }
   stashes(key: string, limit: number): StashRow[] { return this.stashList.filter((r) => r.key === key).sort((a, b) => b.id - a.id).slice(0, limit).map((r) => structuredClone(r)); }
   close(): void { /* 할 일 없음 */ }
+  // ---- 확률과 재화의 투명성 ----
+  private oddsVer = new Map<string, OddsVersionRow>();
+  private oddsLog: OddsHistoryRow[] = [];
+  private plans: OddsPlanRow[] = [];
+  private drawRows: DrawRow[] = [];
+  oddsVersions(): OddsVersionRow[] { return [...this.oddsVer.values()].sort((a, b) => (a.table < b.table ? -1 : 1)).map((r) => structuredClone(r)); }
+  putOddsVersion(table: string, row: OddsVersionRow | null, h: OddsHistoryRow): void {
+    if (row) this.oddsVer.set(table, structuredClone(row)); else this.oddsVer.delete(table);
+    this.oddsLog.push({ ...structuredClone(h), n: this.oddsLog.length + 1 });
+  }
+  oddsHistory(table: string | null, limit: number): OddsHistoryRow[] { return this.oddsLog.filter((r) => table === null || r.table === table).slice(-limit).reverse().map((r) => structuredClone(r)); }
+  oddsPlans(): OddsPlanRow[] { return [...this.plans].sort((a, b) => a.at - b.at || (a.n ?? 0) - (b.n ?? 0)).map((r) => structuredClone(r)); }
+  putOddsPlan(r: OddsPlanRow): number {
+    if (r.n !== undefined) { const i = this.plans.findIndex((x) => x.n === r.n); if (i >= 0) this.plans[i] = structuredClone(r); return r.n; }
+    const n = this.plans.length + 1;
+    this.plans.push({ ...structuredClone(r), n });
+    return n;
+  }
+  addDraw(r: DrawRow): void { this.drawRows.push({ ...structuredClone(r), n: this.drawRows.length + 1 }); }
+  draws(q: DrawQuery): DrawRow[] {
+    return this.drawRows.filter((r) => (q.owner === undefined || r.owner === q.owner) && (q.table === undefined || r.table === q.table) && (q.since === undefined || r.at >= q.since)).slice(-Math.max(1, Math.floor(q.limit))).reverse().map((r) => structuredClone(r));
+  }
+  pruneDraws(before: number): number { const n = this.drawRows.length; this.drawRows = this.drawRows.filter((r) => r.at >= before); return n - this.drawRows.length; }
+  forgetDraws(owner: string): number { let n = 0; for (const r of this.drawRows) if (r.owner === owner || r.char === owner) { r.owner = '-'; r.char = '-'; n++; } return n; }
 }

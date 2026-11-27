@@ -1,5 +1,6 @@
 // 저장 계층의 약속. 게임 규칙은 이 인터페이스만 알고, 실제 저장소는 갈아 끼운다.
 // 실시간 상태(체력, 몬스터)는 저장하지 않는다. 재시작을 넘어 남아야 하는 것만 적는다.
+import type { DrawRow, OddsHistoryRow, OddsPlanRow, OddsTableDef } from '../../shared/defs/odds';
 
 /**
  * 캐릭터 저장의 틀의 칸. 핵심의 칸은 v·gv·name·seen·ext·at이고, 나머지는 [ ]의 모듈을 고른 게임만 적는다 (engine/server/game/systems/players.ts의 export). 게임의 시스템은 자기 몫을 ext의 자기 이름 칸에 적는다 (engine/server/game/game.ts의 Saver).
@@ -185,6 +186,33 @@ export interface SocialStore {
 /** 그 저장소가 사회와 안전의 저장도 갖는가 */
 export const hasSocial = (s: Store): s is Store & SocialStore => typeof (s as Partial<SocialStore>).putBlock === 'function';
 
+// ---------- 확률과 재화의 투명성: 확률표의 버전·이력·사전 공지, 추첨 기록 (engine/server/game/systems/odds.ts) ----------
+/** 표 하나의 지금 버전: 표 id, 버전, 내용의 서명, 그 내용, 그 버전이 된 때 */
+export interface OddsVersionRow { table: string; ver: number; sig: string; data: OddsTableDef; at: number }
+/** 추첨 기록을 고르는 조건: 사람(owner), 표, 그 시각 이후, 최근부터 limit줄 */
+export interface DrawQuery { owner?: string; table?: string; since?: number; limit: number }
+/**
+ * 확률 공개의 저장 (틀의 저장소 둘이 갖는다). 이것이 없는 저장소면 버전·이력·추첨 기록은 서버가 켜져 있는 동안만 남는다.
+ * 추첨 기록은 '사업자가 과실 없음을 입증'할 자료다 (docs/genre-features.md 7절 5번): 보관 기간(ODDS.keepDays)이 지난 줄만 지운다
+ */
+export interface OddsStore {
+  oddsVersions(): OddsVersionRow[];
+  /** 표의 새 버전과 이력 한 줄을 한 묶음으로 적는다 (row가 null이면 표가 없어졌다: 지운다) */
+  putOddsVersion(table: string, row: OddsVersionRow | null, h: OddsHistoryRow): void;
+  /** 변경 이력: 최근부터 limit줄 (표를 주면 그 표의 것만) */
+  oddsHistory(table: string | null, limit: number): OddsHistoryRow[];
+  oddsPlans(): OddsPlanRow[];
+  /** 사전 공지를 적는다 (n이 있으면 그 줄을 고친다). 그 줄의 번호 */
+  putOddsPlan(r: OddsPlanRow): number;
+  addDraw(r: DrawRow): void;
+  draws(q: DrawQuery): DrawRow[];
+  /** 그 시각보다 오래된 추첨 기록을 지운다. 지운 수 */
+  pruneDraws(before: number): number;
+  /** 그 사람의 추첨 기록에서 사람을 지운다 (줄은 남는다: 내 데이터 삭제). 고친 수 */
+  forgetDraws(owner: string): number;
+}
+/** 그 저장소가 확률 공개의 저장도 갖는가 */
+export const hasOdds = (s: Store): s is Store & OddsStore => typeof (s as Partial<OddsStore>).addDraw === 'function';
 // ---------- 운영 도구와 고객지원: 분석 사건, 문의, 롤백 보관 (docs/genre-features.md 5.5) ----------
 /**
  * 분석 사건 한 줄 (engine/server/game/systems/analytics.ts의 g.track이 쌓고 통신 계층이 저장 주기에 얹는다).

@@ -17,6 +17,7 @@ import type { LookRules } from '@engine/shared/defs/look';
 import type { MapDef } from '@engine/shared/defs/map';
 import type { MonsterDef, MonsterId } from '@engine/shared/defs/monsters';
 import type { MorphRules } from '@engine/shared/defs/morph';
+import type { OddsRules } from '@engine/shared/defs/odds';
 import { BASIC_QUICK_CHAT, GEAR_BASE, HERO_RULES as BASE_HERO_RULES, liveRange } from '@engine/shared/defaults';
 import type { ModuleId } from '@engine/shared/modules';
 import { ARENA, WELL } from './pact';
@@ -27,10 +28,13 @@ export const MODULES: readonly ModuleId[] = [
   'economy', 'growth', 'classes', 'combat', 'items', 'gear', 'mail', 'daily', 'idle', 'party', 'away', 'chat', 'friends',
   'roster', 'gacha', 'squad', 'stages',
   'chars', 'morph',
+  // 확률과 재화의 투명성: 확률표 창·공개 페이지(odds.html)·추첨 기록 (docs/making-a-game.md 19절)
+  'odds',
 ];
 export const GUEST_NAME = 'Pactbinder';
 /** 두 번째 재화(sparks)는 이 게임의 '울림 조각': 뽑기의 값이다. 들판의 사냥과 단계가 준다 (현금으로 살 길은 없다) */
-export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: false }, sparks: { tradable: false }, exp: { tradable: false } };
+/** 울림 조각을 한 번에 900개(10번 뽑기) 이상 쓰면 두 번 묻는다 (귀한 재화의 확인 단계). 실제 가격 칸은 비워 둔다: 현금으로 살 길이 없다 */
+export const CURRENCIES: Readonly<Record<'gold' | 'sparks' | 'exp', CurrencyDef>> = { gold: { tradable: false }, sparks: { tradable: false, confirm: { at: 900, price: null } }, exp: { tradable: false } };
 
 // ---------- 맵: 울림골 하나 (가운데 울림 샘, 네 귀퉁이에 무리, 북쪽이 단계의 자리) ----------
 // 상인은 처음 자리(0, 2)와 일어나는 자리(샘 앞)에서 조금 떨어진 서쪽에: 들어오자마자 상점 창이 화면을 덮지 않게 (폰)
@@ -219,4 +223,17 @@ export const LIVE_KEYS: LiveKeys = {
   'DAILIES.kill30.n': { client: true, check: liveRange(1, 500, true), note: '일일 사냥 임무의 마릿수' },
   'MORPH_RULES.durationS': { check: liveRange(0, 3600, true), note: '변신이 이어지는 시간(초)' },
   'MORPH_RULES.cooldownS': { check: liveRange(0, 600, true), note: '변신의 재사용 대기(초)' },
+  // 확률표를 바꾸는 칸: 바꾸면 표의 버전이 오르고 공개 페이지의 변경 이력에 남는다 (odds 모듈)
+  'BANNERS.well.pity.after': { check: liveRange(10, 200, true), note: '울림 샘의 천장(번째)' },
+};
+
+// ---------- 확률 공개 (odds 모듈): 자동 표(울림 샘, 장비 강화)만 쓴다. 공개 페이지(서버가 쓴다)의 이름표 ----------
+export const ODDS: OddsRules = {
+  tables: [],
+  keepDays: 1825,
+  names: {
+    bannerWell: { ko: '울림 샘', en: 'Echo Well' },
+    'cur:sparks': { ko: '울림 조각', en: 'Echo Shards' },
+    'cur:gold': { ko: '골드', en: 'Gold' },
+  },
 };

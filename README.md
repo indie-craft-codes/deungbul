@@ -2,7 +2,7 @@
 
 이 저장소는 **다시 쓰는 게임 틀**(`engine/`)과 그 위에 만든 **게임 둘**(`games/`)이다.
 
-- **틀**: 브라우저에서 도는, 여럿이 함께 접속하는 쿼터뷰(비스듬히 내려다보는) 3D 월드 게임의 서버·화면·저장·운영. 서버가 위치와 결과를 정하고(서버 권위), 화면은 하고 싶은 것만 보낸다. **장르와 무관한 핵심**(접속·이동·지도·대화·채널·저장·운영)에 **선택 모듈 27개**(전투, 아이템, 장비, 길드, 던전, 영웅 뽑기, 판, 변신, 대화 채널, 친구 …)를 골라 얹는다. 고르지 않은 모듈은 서버의 명령·저장 칸도 화면의 창·키도 없다.
+- **틀**: 브라우저에서 도는, 여럿이 함께 접속하는 쿼터뷰(비스듬히 내려다보는) 3D 월드 게임의 서버·화면·저장·운영. 서버가 위치와 결과를 정하고(서버 권위), 화면은 하고 싶은 것만 보낸다. **장르와 무관한 핵심**(접속·이동·지도·대화·채널·저장·운영)에 **선택 모듈 29개**(전투, 아이템, 장비, 길드, 던전, 영웅 뽑기, 판, 변신, 대화 채널, 친구, 확률 공개 …)를 골라 얹는다. 고르지 않은 모듈은 서버의 명령·저장 칸도 화면의 창·키도 없다.
 - **게임**: 운영 중인 MMORPG **등불지기**(`games/deungbul`, RPG 모듈 전부)와 새 게임의 출발점인 작은 **예제** "모닥불 사냥터"(`games/sample`).
 
 TypeScript, Node(서버: `ws`, SQLite), three.js(화면), Vite(빌드). 화면 문장은 모두 언어 파일(한국어·영어)을 거친다.
@@ -17,7 +17,7 @@ npm run build && npm start     # 등불지기 빌드본을 한 포트로: http:/
 npm run build:sample && npm run start:sample   # 예제: http://localhost:3002
 npm run games                  # 이 저장소의 게임 목록 (games/ 아래에서 스스로 찾는다)
 
-npm test                       # 모든 시험: 틀의 경계 검사·틀의 시험(fx, core, collect) → 게임마다의 시험. 검사 2393개(2026-11-27)
+npm test                       # 모든 시험: 틀의 경계 검사·틀의 시험(fx, core, collect) → 게임마다의 시험. 검사 2567개(2026-11-27)
 npm run typecheck              # 타입 검사: 틀의 설정 다섯 + 게임마다의 설정, 모두 8개
 npm run build:all              # 모든 게임을 빌드
 npx tsx test/all.ts boundary fx/shop deungbul/quests sample/docs   # 고른 시험만
@@ -59,6 +59,7 @@ npx tsx test/all.ts boundary fx/shop deungbul/quests sample/docs   # 고른 시�
 | | `morph` | 변신: 가진 캐릭터 정의의 겉모습·보정으로 |
 | | `chat` | 대화 채널: 귓말·근처·파티, 채널 탭, 도배 막기 (고르지 않으면 전체와 길드) |
 | | `friends` | 친구: 요청·수락·삭제, 접속 여부와 있는 곳 |
+| | `odds` | 확률 공개: 확률표의 버전·변경 이력·사전 공지, 게임 밖 공개 페이지, 추첨 기록 (굴림은 모듈과 상관없이 확률표에서) |
 
 ## 게임
 
@@ -66,7 +67,7 @@ npx tsx test/all.ts boundary fx/shop deungbul/quests sample/docs   # 고른 시�
 |---|---|---|---|---|
 | 등불지기 `games/deungbul` | 운영 중인 쿼터뷰 로우폴리 MMORPG 검증판(영어 이름 Lampkeeper). 등탑에 불씨를 바치는 서버 공동 목표, 세 구역·던전·필드 보스·습격, 직업 셋, 파티·길드·거래소 | RPG 열여섯 | 3001 | [games/deungbul/README.md](games/deungbul/README.md) (게임 설명, 실행·환경 변수, 파일럿 배포, 도감, 경제 장부), [docs/economy.md](docs/economy.md) |
 | 예제 `games/sample` "모닥불 사냥터" | 같은 틀로 만든 아주 작은 두 번째 게임. 새 게임을 만들 때 베끼는 출발점이고, 문서의 코드 조각이 이 파일들과 같은지 시험이 본다 | RPG 일부 + `chars`·`morph`·`chat`·`friends` | 3002 | 아래 '예제 게임', [docs/making-a-game.md](docs/making-a-game.md) |
-| 예제 `games/echopact` "메아리 계약" | 두 장르를 한 서버·한 캐릭터에: 들판의 MMORPG(사냥·장비·파티)와 수집형(뽑기·편성·단계). 뽑은 캐릭터(정의)가 단계의 동료이자 들판의 변신이 된다 | RPG 일부 + 수집형 넷 + `chars`·`morph`·`chat`·`friends` | 3003 | [docs/proof-echopact.md](docs/proof-echopact.md) |
+| 예제 `games/echopact` "메아리 계약" | 두 장르를 한 서버·한 캐릭터에: 들판의 MMORPG(사냥·장비·파티)와 수집형(뽑기·편성·단계). 뽑은 캐릭터(정의)가 단계의 동료이자 들판의 변신이 된다 | RPG 일부 + 수집형 넷 + `chars`·`morph`·`chat`·`friends`·`odds` | 3003 | [docs/proof-echopact.md](docs/proof-echopact.md) |
 
 2026-11-27에 시제품·증명 게임 일곱(버섯 동굴, 별가루 광산, 돌담 마을, 굴림공, 달무리 원정대, 징검돌 전술, 반딧불 연못)을 지웠다. 코드는 커밋 `7e347c9`에 있다(`git checkout 7e347c9 -- games/<이름>`). 그 게임들이 쓰던 틀의 기능은 그대로이고 틀의 시험(`engine/test/core`, `engine/test/collect`)이 지킨다. 증명 기록은 `docs/proof-*.md`.
 

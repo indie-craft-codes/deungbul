@@ -2,7 +2,9 @@
 // 상점에서 사거나 대장간에서 만든 무기·갑옷은 옵션 없는 기본 장비로 가방에 들어와 바로 낀다.
 // 낀 무기와 갑옷의 바탕은 p.weapon, p.armor에 적어 둔다: 기본 수치(systems/shop.ts)와 겉모습이 그것을 따른다.
 // 수치는 games/deungbul/shared/content/growth.ts에 있다.
-import { ENHANCE, enhanceMax, GEAR, gearLvOf, GEAR_SLOTS, ITEMS, RARITIES, REFORGE, SALVAGE, STAT_IDS, isGearSlot, isItemId, isStat, optValue, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
+// 강화의 성공·하락 확률은 확률표의 단일 원본(engine/shared/defs/odds.ts의 enhanceStep)에서 읽고 그 단계에서 굴린다: 게임이 'enhance' 표를 주지 않으면 ENHANCE에서 만든 표(값이 예전과 같다).
+// odds 모듈을 고른 게임은 강화할 때마다 추첨 기록이 남는다.
+import { ENHANCE, enhanceMax, enhanceStep, enhanceTable, rollStep, GEAR, gearLvOf, GEAR_SLOTS, ITEMS, RARITIES, REFORGE, SALVAGE, STAT_IDS, isGearSlot, isItemId, isStat, optValue, rollOpt, sellPrice, wornTotal, wornMod, modValue, STAT_MODS, type Gear, type GearSlot, type ItemId, type Stat } from '../../../shared/defs';
 import type { Ent } from '../entity';
 import type { Game } from '../game';
 import { WHY } from './wallet';
@@ -209,17 +211,22 @@ export class GearSys {
     if (!it) return;
     if (it.plus >= enhanceMax(it)) { g.notify(p, 'enhanceMax'); return; }
     const cost = ENHANCE.gold(it.plus, it.rar), dust = ENHANCE.dust(it.plus, it.rar), dustId = SALVAGE.item;
-    const risky = it.plus >= ENHANCE.dropFrom;
+    // 이 단계의 확률표 (성공·유지·하락). 하락이 있는 단계는 보호 부적을 쓸 수 있다
+    const step = enhanceStep(it.plus);
+    const risky = it.plus >= ENHANCE.dropFrom || step.outcomes.some((o) => o.id === 'down');
     const charm = useCharm && risky && isItemId(ENHANCE.charm) && (p.items[ENHANCE.charm] ?? 0) > 0 ? ENHANCE.charm : undefined;
     // 가루가 모자라면 골드를 받기 전에 막는다
     if (dust > 0 && (!isItemId(dustId) || (p.items[dustId] ?? 0) < dust)) { g.notify(p, 'noMats'); return; }
     if (!g.wallet.take(p, 'gold', cost, WHY.enhance)) { g.notify(p, 'noGold'); return; }
     if (dust > 0 && isItemId(dustId)) g.bag.takeItem(p, dustId, dust, WHY.enhance);
     if (charm) g.bag.takeItem(p, charm, 1, WHY.enhance);
-    if (this.random() < ENHANCE.rate(it.plus)) { it.plus++; g.notify(p, 'enhanceOk', it.plus); }
-    else if (risky && !charm) { it.plus--; g.notify(p, 'enhanceDown', it.plus); }
+    // 굴림은 표에서: 자동 표면 random() < ENHANCE.rate(plus)와 같은 셈이다 (성공이 첫 결과). 하락이 나왔어도 부적을 썼으면 그대로
+    const got = rollStep(step, this.random())?.id ?? 'keep';
+    if (got === 'up') { it.plus++; g.notify(p, 'enhanceOk', it.plus); }
+    else if (got === 'down' && !charm) { it.plus = Math.max(0, it.plus - 1); g.notify(p, 'enhanceDown', it.plus); }
     else if (charm) g.notify(p, 'enhanceSaved', it.plus);
     else g.notify(p, 'enhanceFail');
+    if (g.has('odds')) g.odds.record(p, 'enhance', enhanceTable(), [step.key], [got !== 'up' && charm ? `${got}:guard` : got], { cur: 'gold', n: cost });
     this.changed(p);
     g.fire('enhanced', p);
   }

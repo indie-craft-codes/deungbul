@@ -22,6 +22,7 @@ import { drawFormation, drawHeroDetail, growthSig, heroDetailShown, initHeroGrow
 import { addMenuTab } from './menu';
 import { button, el, redraw, row, span } from './menu/parts';
 import { addNotices } from './notify';
+import { confirmSpend } from './confirm';
 
 /** 서버가 보낸 내 영웅·뽑기·편성 (개인 상태) */
 let heroes: HeroesMe = {};
@@ -127,7 +128,8 @@ function drawGacha(list: HTMLElement): void {
     if (b.pickup) { const pk = el('gpick'); pk.append(span('gtag', t('gachaPickup')), tinted(span('', heroName(b.pickup.hero)), heroDef(b.pickup.hero)?.rarity ?? 0)); box.append(pk); }
     if (gacha.open && Object.hasOwn(gacha.open, id)) box.append(el('note gleft', loc.fmt.gachaLeft(gacha.open[id])));
     const have = money(b.cur), btns = el('btns');
-    const one = button('', () => send({ t: 'gacha', id, n: 1 }), have < b.one), ten = button('', () => send({ t: 'gacha', id, n: 10 }), have < b.ten);
+    // 귀한 재화(CURRENCIES의 confirm)를 그 양 이상 쓰면 두 번 묻는다 (hud/confirm.ts). 적지 않은 재화는 곧바로 보낸다 (예전과 같다)
+    const one = button('', () => confirmSpend(b.cur, b.one, () => send({ t: 'gacha', id, n: 1 })), have < b.one), ten = button('', () => confirmSpend(b.cur, b.ten, () => send({ t: 'gacha', id, n: 10 })), have < b.ten);
     one.append(t('gachaOne'), document.createElement('small')); one.lastElementChild!.textContent = loc.fmt.gachaCost(b.one, b.cur);
     ten.append(t('gachaTen'), document.createElement('small')); ten.lastElementChild!.textContent = loc.fmt.gachaCost(b.ten, b.cur);
     btns.append(one, ten);

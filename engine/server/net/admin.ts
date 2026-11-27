@@ -99,6 +99,9 @@ export function roleFor(cmd: string, a: readonly string[]): Role {
     case 'age': return a.includes('reset') ? 'full' : 'view';
     case 'alerts': return a[0] === 'test' ? 'ops' : 'view';
     case 'rollback': return a[0] === 'apply' || a[0] === 'undo' ? 'full' : 'view';
+    // 확률 공개 (odds 모듈, net/odds.ts): 표·이력·사전 공지 목록과 추첨 기록은 보기, 사전 공지를 적고 거두는 것·버전 올리기·다시 쓰기는 전체
+    case 'odds': return !a.length || ['list', 'show', 'log', 'plans'].includes(a[0]) ? 'view' : 'full';
+    case 'draws': return 'view';
     default: return 'full';
   }
 }
