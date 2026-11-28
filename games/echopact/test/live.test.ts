@@ -82,6 +82,7 @@ const far = last(p, 'goodsNo')[0];
 g.bag.takeItem(p, 'tonic', 5, 'test');
 p.x = SHOPS[0].x; p.z = SHOPS[0].z;
 g.command(p, { t: 'goods', id: 'wellTonic' });
+g.bag.putItem(p, 'tonic', g.bag.room(p, 'tonic'), 'test'); // 물약을 한도까지 채운다 (한도 99,999)
 g.command(p, { t: 'goods', id: 'wellTonic' });
 check(far === 5 && g.goods.left('wellTonic') === GOODS.wellTonic.stock! - 1 && last(p, 'goodsNo')[0] === 4, `상인 특가는 상인 곁에서만, 서버 수량이 줄고(남은 ${g.goods.left('wellTonic')}), 물약이 가득하면 값을 치르기 전에 막는다`);
 

@@ -146,7 +146,7 @@ export const ITEMS = {
   blade2: { kind: 'weapon', price: 90, damage: 1.25, tier: 2 },
   jerkin: { kind: 'armor', price: 80, guard: 0.88, tier: 1 },
   chain: { kind: 'armor', price: 200, guard: 0.8, tier: 2 },
-  tonic: { kind: 'potion', price: 12, heal: 80 },
+  tonic: { kind: 'potion', price: 12, heal: 80, max: 99999 },
   ...GEAR_ITEMS,
   // 카드의 공통 손질 (HERO_RULES.cards): 메아리 결정(다 키운 메아리의 넘친 조각이 바뀐 것)과 범용 조각(등급마다, 그 등급의 메아리 조각 하나). 결정 상점(GOODS의 shop 'gShopCrystal')에서 바꾼다
   echoCrystal: { kind: 'mat', price: 0, max: 99999 },
