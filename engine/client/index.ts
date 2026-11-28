@@ -54,7 +54,7 @@ export { registerShot, type ShotLook } from './fx';
 // 판(rooms 모듈)의 모양: 화면에서 myRoom()·onRoomChange가 주는 것, 시험에서 개인 상태 room·공유 상태 rooms를 읽을 때
 export type { RoomDefView, RoomLobby, RoomPhase, RoomPrivacy, RoomRow, RoomSeatView, RoomStatsView, RoomTally, RoomView, RoomVoteView } from '../shared/defs/rooms';
 // 웹 출시의 바탕: 설정 창의 게임 칸, 튜토리얼, 손님 진행 보호, 탭 숨김, 재방문 캐시, 오류 알리기, 나중 묶음
-export { addSetting, settingValue, type SettingDef } from './hud/settings';
+export { addSetting, settingValue, useSlimMenuHead, type SettingDef } from './hud/settings';
 export { addTutorial, onTutorial, replayTutorial, tutNow, tutReached, type TutorialCond, type TutorialDef, type TutorialEvent, type TutorialStep } from './hud/tutorial';
 // 묶음 D: 기능의 점진 공개(튜토리얼 키트), 스태미나, 교환 상점, 돌아옴 요약
 export { featureHidden, featureLock, featureOpen, useUnlocks, whenMet, type FeatureDef, type UnlockWhen } from './hud/unlocks';

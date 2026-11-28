@@ -82,8 +82,31 @@ export function slider(label: string, value: number, min: number, max: number, s
   return r;
 }
 
+/**
+ * 메뉴 머리 줄이기 (useSlimMenuHead, 기본 끔): 폰에서 메뉴 머리에 들어가던 채널·언어 선택과 소리 단추를 감추고, 언어·채널은 설정 탭의 맨 위로 옮긴다
+ * (소리는 설정 탭에 이미 있다). 머리에는 '메뉴 · 골드 · 닫기'만 남아 한 줄이 된다
+ */
+let slimHead = false;
+export function useSlimMenuHead(on = true): void { slimHead = on; document.body.classList.toggle('menuSlim', on); }
+/** 원래의 선택 상자(#lang·#channel: 처리기가 붙어 있다)를 비추는 선택 상자: 고르면 원래 것의 값을 바꾸고 change를 보낸다 */
+function mirrorSelect(id: string, label: string): HTMLSelectElement | null {
+  const src = $<HTMLSelectElement>(id);
+  if (!src || src.hidden || !src.options.length) return null;
+  const sel = document.createElement('select');
+  sel.setAttribute('aria-label', label);
+  for (const o of src.options) sel.append(new Option(o.text, o.value, false, o.value === src.value));
+  sel.addEventListener('change', () => { src.value = sel.value; src.dispatchEvent(new Event('change', { bubbles: true })); });
+  return sel;
+}
+
 function drawSettings(list: HTMLElement): void {
   const g = cur.gfx, q = qualityOf(g, cap());
+  if (slimHead) {
+    const lang = mirrorSelect('lang', t('language')), ch = mirrorSelect('channel', t('channel'));
+    if (lang || ch) list.append(el('baghead', t('setGame')));
+    if (lang) list.append(row(t('language'), '', [lang]));
+    if (ch) list.append(row(t('channel'), '', [ch]));
+  }
   // 소리
   list.append(el('baghead', t('setSound')));
   list.append(row(t('setSound'), '', [onOff(soundOn(), setSoundOn)]));

@@ -50,6 +50,7 @@ try {
       await shot(`${String(k++).padStart(2, '0')}-${g}-${tabs[i].replace(/[^\p{L}\p{N}]+/gu, '_').slice(0, 20)}`);
     }
   }
+  if (process.env.EVAL) console.log('EVAL', JSON.stringify(await ev(process.env.EVAL)));
   console.log(errs.length ? '오류:\n' + errs.join('\n') : '콘솔 오류 없음');
   ws.close();
 } finally { chrome.kill(); fs.rmSync(lock, { force: true }); }

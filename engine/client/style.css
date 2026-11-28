@@ -1008,6 +1008,9 @@ body[data-lay="portrait"] #me .row, body[data-lay="landscape"] #me .row { flex-w
 body[data-lay="portrait"] #me .row:has(> #gold) { flex-wrap: nowrap; }
 body[data-lay="portrait"] #me #coin, body[data-lay="landscape"] #me #coin { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 #menuHead #channel, #menuHead #lang { flex: none; max-width: 6.5em; }
+/* 메뉴 머리 줄이기 (settings.ts의 useSlimMenuHead): 채널·언어·소리는 설정 탭에 */
+body.menuSlim #menuHead #channel, body.menuSlim #menuHead #lang, body.menuSlim #menuHead #soundBtn, body.menuSlim #menuHead #mixBtn, body.menuSlim #mix { display: none; }
+body.menuSlim #menuHead { flex-wrap: nowrap; }
 /* 대화: 폰에서는 접혀 시작한다 (마지막 말 한 줄). 누르면 펼치고, '접기'로 다시 접는다 */
 #chatFold { display: none; }
 body[data-lay="portrait"] #chat:not(.fold) #chatFold, body[data-lay="landscape"] #chat:not(.fold) #chatFold { display: block; align-self: flex-end; padding: 2px 10px; font-size: var(--fs-xs); }
@@ -1469,7 +1472,7 @@ body:has(#menu:not([hidden]), #bag:not([hidden]), #wmap:not([hidden])) .btlTop, 
 body.pageOn #menu, body.pageOn #bag, body.pageOn #wmap { z-index: var(--z-menu); }
 /* #hud는 position: fixed라 제 쌓임 맥락을 만든다: 안의 메뉴(53)가 body에 붙은 단계 창(결과·정보 52)보다 아래로 깔리던 것.
    메뉴·가방·지도가 열려 있는 동안만 HUD 전체를 메뉴의 층으로 올린다 (알림 55·확인 60은 여전히 위) */
-body:has(#menu:not([hidden])) #hud, body:has(#bag:not([hidden])) #hud, body:has(#wmap:not([hidden])) #hud { z-index: var(--z-menu); }
+body:has(#menu:not([hidden])) #hud, body:has(#bag:not([hidden])) #hud, body:has(#wmap:not([hidden])) #hud { z-index: calc(var(--z-menu) + 1); } /* 단계 창이 메뉴 층(53)까지 오르는 때가 있어 한 칸 위 (알림 55보다는 아래) */
 /* 게임은 --hk-bg(바탕), --hk-scene-a/-b(대체 배경의 두 색), --hk-glow(대표 뒤의 빛), --hk-accent(진행 단추), --hk-ink(글자), --hk-chip(세로 열의 칸 바탕)으로 색을 준다 */
 .homekit { position: fixed; inset: 0; z-index: var(--z-page); pointer-events: auto; overflow: hidden; overscroll-behavior: contain; color: var(--hk-ink, var(--c-text));
   width: var(--app-w, 100%); height: var(--app-h, 100%); overflow-wrap: normal; word-break: keep-all; isolation: isolate;

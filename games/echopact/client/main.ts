@@ -1,6 +1,6 @@
 // 이 게임의 클라이언트 진입점 (index.html이 이 파일을 읽는다). 게임이 틀을 시작시킨다.
 import { setLocales } from '@engine/client/i18n';
-import { registerArt, setMenuGroups, setMenuTabs, startClient } from '@engine/client';
+import { registerArt, setMenuGroups, setMenuTabs, startClient, useSlimMenuHead } from '@engine/client';
 import { ART } from './artlist';
 import { initEchoes } from './echoes';
 import { LOCALES } from './i18n';
@@ -13,6 +13,7 @@ import './echopact.css';
 setLocales(LOCALES);
 // 그림 자리 (U3): 넣은 그림(초상·로비 배경·배너·아이콘)을 등록한다. 표는 scripts/art-import.mjs가 만든다. 비어 있으면 틀이 대신 그린다 (3D 초상·css 배경·SVG 아이콘)
 registerArt(ART);
+useSlimMenuHead(); // 메뉴 머리는 메뉴·골드·닫기만: 채널·언어·소리는 설정 탭에 (폰에서 머리가 두 줄로 넘치던 것)
 // 메뉴의 탭은 게임마다 다르다 (내용의 MODE_RULES.list의 tabs: 탑은 뽑기·확률·메아리·편성·단계, 울림골은 변신·장비). 서버가 모드를 알려 주기 전의 차례는 탑의 것
 setMenuTabs(['gacha', 'odds', 'heroes', 'squad', 'stages', 'event', 'season', 'daily', 'achieve', 'codex', 'goods', 'mail', 'friends', 'boards', 'autoset']);
 // 열세 탭을 틀의 기본 묶음 다섯으로 (U3 정보 구조): 성장·수집(메아리·편성·뽑기·단계·변신·장비) / 활동(임무·이벤트·시즌·업적·상점) / 소식(우편·친구) / 정보(도감·확률) / 설정
