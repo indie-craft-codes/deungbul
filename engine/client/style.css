@@ -449,6 +449,7 @@ html:lang(en) body { overflow-wrap: break-word; }
 .mrow.gear .acts { max-width: none; }
 /* 어느 칸의 장비인지 알려 주는 작은 표 */
 .mslot { display: inline-block; margin-right: 6px; padding: 0 5px; border: 1px solid var(--c-line); border-radius: var(--r-sm); font-size: var(--fs-xs); font-weight: 400; color: var(--c-text-2); white-space: nowrap; vertical-align: 1px; }
+.mrow.empty { flex-direction: row; align-items: center; text-align: left; padding: 6px 0 6px 7px; }
 .mrow.empty .iname { font-weight: 400; color: var(--c-text-2); }
 /* 옵션 하나는 중간에서 줄이 바뀌지 않는다 */
 .opt { white-space: nowrap; }
