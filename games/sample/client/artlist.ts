@@ -2,6 +2,13 @@
 // 열쇠 → 파일(public/ 아래, 빌드하면 화면과 같은 자리). 표에 없는 그림은 틀이 대신 그린다 (engine/client/art.ts).
 export const ART: Readonly<Record<string, string>> = {
   'appicon': 'art/brand/appicon.png',
+  'bg:build': 'art/bg/build.webp',
+  'bg:classes': 'art/bg/classes.webp',
+  'bg:codex': 'art/bg/codex.webp',
+  'bg:daily': 'art/bg/daily.webp',
+  'bg:gear': 'art/bg/gear.webp',
+  'bg:mail': 'art/bg/mail.webp',
+  'bg:rank': 'art/bg/rank.webp',
   'cur:gold': 'art/cur/gold.webp',
   'enemy:bear': 'art/enemy/bear.webp',
   'enemy:boar': 'art/enemy/boar.webp',
