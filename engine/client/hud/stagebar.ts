@@ -46,7 +46,8 @@ function drawStages(list: HTMLElement): void {
     if (r.ch !== ch) { ch = r.ch; list.append(el('baghead', `${ch + 1}. ${chapterName(ch)}`)); }
     const mark = r.now ? t('stageNow') : r.cleared ? t('stageCleared') : r.open ? '' : t('stageLockedMark');
     const name = `${r.id}${r.boss ? ` · ${t('stageBoss')}` : ''}${mark ? ` · ${mark}` : ''}`;
-    const btns = [button(t('stageGo'), () => send({ t: 'stage', a: 'go', id: r.id }), !r.open, t('whyStageLocked'))];
+    // 잠긴 단계는 줄 이름에 '잠김'이 있다: 줄마다 같은 '앞 단계를 먼저 깨세요' 단추를 되풀이하지 않는다 (단추 없이)
+    const btns = r.open ? [button(t('stageGo'), () => send({ t: 'stage', a: 'go', id: r.id }), false)] : [];
     if (view && r.sweep) btns.push(...sweepButtons(view, (n) => send({ t: 'stage', a: 'sweep', id: r.id, n })));
     list.append(row(name, loc.fmt.stageRec(r.rec, power()), btns, 'srow' + (r.now ? ' now' : '') + (r.open ? '' : ' locked')));
   }
