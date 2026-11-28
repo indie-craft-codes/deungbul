@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { BANNER_TABLE, GACHA_RULES, HERO_RULES, SELECT_TICKETS, pityKey, SQUAD_RULES, heroDef, heroRole, heroTrades, pctText, type Coin, type GachaMe, type HeroesMe, type PullGot, type SquadMe } from '../../shared/defs';
 import { portraitArt } from '../art';
+import { artPic, frameArt } from './artdom';
 import { rarityHex, tintRarity } from './rarity';
 import { onMsg } from '../bus';
 import { registerKind } from '../kinds';
@@ -194,7 +195,14 @@ function drawSquad(list: HTMLElement): void {
     const slots = el('sqslots');
     for (let i = 0; i < size; i++) {
       const id = squad.ids[i], s = el('sqslot' + (id ? ' full' : ''));
-      if (id) { const b = document.createElement('b'); b.textContent = heroName(id); s.append(b, el('', stars(heroes[id]?.[1] ?? 1))); tinted(s, heroDef(id).rarity); }
+      if (id) {
+        const b = document.createElement('b'); b.textContent = heroName(id);
+        // 초상 그림이 등록된 게임(art2)은 칸도 카드처럼: 그림과 등급 테두리 'frame:<등급 id>' (없으면 글자만, 예전 그대로)
+        const pic = portraitArt(id) ? artPic(`portrait:${id}`, 'sqpic') : null;
+        if (pic) { s.classList.add('sqcard'); s.append(pic); }
+        s.append(b, el('', stars(heroes[id]?.[1] ?? 1))); tinted(s, heroDef(id).rarity);
+        if (pic) frameArt(s, heroDef(id).rarity);
+      }
       else s.textContent = t('squadEmpty');
       slots.append(s);
     }

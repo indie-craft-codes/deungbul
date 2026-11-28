@@ -245,7 +245,8 @@ function drawSide(s: Readonly<ModeSideMe> = myModeSide()): void {
 export function initTower(): void {
   // 탑 전투의 유닛을 그림으로 (art2): 메아리는 초상 그림(portrait:<id>, 투명 배경)을, 단계의 적은 enemy:<id>를 쓰고, 그림이 없는 것은 3D 그대로.
   // 울림골의 짐승은 3D 그대로 ('stage': 단계에 나오는 몬스터만). 전투의 바닥·하늘은 그림 bg:battle(장마다 bg:battle-<장 번호>)이 있으면 그것 (틀의 전투 화면 키트)
-  useSprites({ heroes: true, enemies: 'stage' });
+  // 움직이는 시트 'sheet:<id>'(4열×4행)가 있으면 한 장 대신 그것으로. field: 울림골의 사람(직업·변신)과 짐승도 시트가 있으면 시트 빌보드로 (없으면 3D 그대로)
+  useSprites({ heroes: true, enemies: 'stage', field: true });
   setLoadingTips(() => [t('loadTip1'), t('loadTip2'), t('loadTip3')]); // 첫 로딩의 팁 (U2)
   mountPanel('hud', `
     <div id="towerAdv" class="tscreen tadv" hidden>

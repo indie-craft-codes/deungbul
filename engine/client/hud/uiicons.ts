@@ -87,7 +87,8 @@ export function uiIcon(name: string, cls = ''): HTMLElement {
   el.className = cls ? `uic ${cls}` : 'uic';
   el.setAttribute('aria-hidden', 'true');
   const file = fileOf(name);
-  if (file) { const img = document.createElement('img'); img.src = file; img.alt = ''; el.append(img); }
+  // 그림 아이콘은 'uic-art': 그린 그림은 작으면 뭉개져서 css가 그 칸만 키운다 (메뉴 묶음 탭·홈의 독·옆 단추·재화 줄), 잠김은 회색으로
+  if (file) { const img = document.createElement('img'); img.src = file; img.alt = ''; el.append(img); el.classList.add('uic-art'); }
   else if (isIconName(name)) el.innerHTML = iconSvg(name);
   else { el.textContent = name; el.classList.add('uic-text'); }
   return el;

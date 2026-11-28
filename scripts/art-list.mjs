@@ -56,12 +56,12 @@ const rows = needs.filter((n) => n.prio <= prioMax).map((n) => {
   // 앱 아이콘을 게임이 손으로 둔 경우 (등불지기: public/icon-192.png·manifest.webmanifest)
   const ownIcon = n.key === 'appicon' && fs.existsSync(path.join(gameDir, 'client', 'public', 'icon-192.png'));
   const status = have.length ? 'yes' : inSheet(n.key) ? 'sheet' : ownIcon ? 'file' : 'no';
-  const ext = s.ext.includes('.webp') ? '.webp' : s.ext[0];
+  const ext = kind !== 'sheet' && s.ext.includes('.webp') ? '.webp' : s.ext[0];
   const base = n.key.replace(':', '-');
   const file = isBg ? `${base}@portrait${ext} + @landscape` : `${base}${ext}`;
-  return { key: n.key, file, size: sizeText(s.size), alpha: s.alpha, prio: n.prio, status, have, where: s.where, fallback: s.fallback, desc: n.desc };
+  return { key: n.key, file, size: s.size.length ? sizeText(s.size) : kind === 'sheet' ? '4×4 칸 (칸 300~400px)' : '', alpha: s.alpha, prio: n.prio, status, have, where: s.where, fallback: s.fallback, desc: n.desc };
 });
-const ORDER = ['appicon', 'logo', 'splash', 'portrait', 'unit', 'bg', 'banner', 'enemy', 'item', 'cur', 'skill', 'frame', 'fx', 'icon'];
+const ORDER = ['appicon', 'logo', 'splash', 'portrait', 'unit', 'sheet', 'bg', 'banner', 'enemy', 'item', 'cur', 'skill', 'frame', 'fx', 'icon'];
 rows.sort((a, b) => ORDER.indexOf(kindOf(a.key)) - ORDER.indexOf(kindOf(b.key)) || a.prio - b.prio);
 const shown = flags.has('--missing') ? rows.filter((x) => x.status === 'no') : rows;
 

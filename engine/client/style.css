@@ -1830,3 +1830,38 @@ body.replay-on #roomEnd { visibility: hidden; }
 .mrow .what .artPic.rowPic { width: 28px; height: 28px; margin-right: 6px; }
 .buff .artPic.buffPic { width: 16px; height: 16px; margin-right: 3px; vertical-align: -3px; }
 .cardrar.hasPic { background: none; padding: 0; } .cardrar .rarPic { width: 18px; height: 18px; display: block; }
+/* 등급 테두리 그림이 있는 카드 (artfix): 속을 테두리 안쪽으로 들인다 (그림의 장식이 이름·숫자를 덮지 않게). 게임이 --rframe-pad로 바꾼다 */
+:root { --rframe-pad: calc(4% + 10px) calc(4% + 6px) calc(6% + 14px); }
+.hasRframe:is(.cardcell, .gsCard, .stmate, .btlMate, .sqslot) { padding: var(--rframe-pad); }
+.hasRframe .gsFace, .hasRframe .cardface, .hasRframe .btlFace { background: transparent; }
+/* 편성 칸에 초상 그림이 있으면 작은 카드 (그림이 없으면 글자 칸 그대로) */
+.sqslot.sqcard { justify-content: flex-start; gap: 1px; }
+.sqslot .sqpic { width: 100%; max-width: 72px; aspect-ratio: 4 / 5; margin: 0 auto; object-fit: contain; }
+.sqslots:has(.sqcard) { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+/* 전투의 카드 줄 (그림이 있는 게임): 편성의 수만큼 한 줄에 (예전 칸은 100px 칸을 셋까지만 놓아 넷째가 둘째 줄로 내려가 싸움을 가렸다) */
+.btlSquad.art { grid-template-columns: repeat(var(--n, 4), minmax(0, 100px)); }
+@media (orientation: landscape) and (max-height: 480px) {
+  .btlSquad.art { grid-template-columns: repeat(var(--n, 4), minmax(0, 150px)); }
+  .btlMate.hasRframe { padding: 9px 11px 10px; }
+}
+/* 그림 아이콘 'icon:<이름>' (artfix): 그린 그림은 작으면 뭉개진다 — 그림일 때만 칸을 키운다 (SVG 아이콘은 그대로) */
+#menuTabs.groups > button.mgroup .uic.uic-art { width: 30px; height: 30px; }
+.hk-dockic.uic-art { width: 40px; height: 40px; }
+.hk-railic.uic-art { width: 38px; height: 38px; }
+.curchip .uic.uic-art { width: 22px; height: 22px; }
+.hk-profpic .uic.uic-art { width: 100%; height: 100%; }
+@media (orientation: landscape) and (max-height: 480px) {
+  .hk-dockic.uic-art { width: 32px; height: 32px; }
+  .hk-railic.uic-art { width: 30px; height: 30px; }
+  #menuTabs.groups > button.mgroup .uic.uic-art { width: 26px; height: 26px; }
+}
+@media (orientation: landscape) and (min-height: 600px) {
+  .hk-dockic.uic-art { width: 44px; height: 44px; }
+  .hk-railic.uic-art { width: 42px; height: 42px; }
+  #menuTabs.groups > button.mgroup .uic.uic-art { width: 32px; height: 32px; }
+}
+/* 잠긴 단추의 그림 아이콘: 흐린 갈색 덩어리가 되지 않게 회색으로 밝히고(모양이 보이게) 자물쇠를 크게 */
+:is(.hk-dockbtn, .hk-railbtn, #menuTabs button, #menuSub button).locked .uic-art { opacity: 1 !important; }
+:is(.hk-dockbtn, .hk-railbtn, #menuTabs button, #menuSub button).locked .uic-art > img { filter: grayscale(1) brightness(1.35) contrast(.8); opacity: .6; }
+.hk-dockbtn.locked:has(.uic-art), .hk-railbtn.locked:has(.uic-art) { opacity: .85; }
+.hk-dockbtn.locked:has(.hk-dockic.uic-art) .hk-lockic { width: 20px; height: 20px; right: calc(50% - 30px); top: 1px; }

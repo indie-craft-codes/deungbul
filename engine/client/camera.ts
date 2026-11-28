@@ -24,6 +24,13 @@ let aimFn: ((me: { x: number; z: number } | null, now: number) => CameraAim | nu
  */
 export function setCameraAim(fn: ((me: { x: number; z: number } | null, now: number) => CameraAim | null) | null): void { aimFn = fn; }
 
+let kitFn: ((now: number) => CameraAim | null) | null = null;
+/**
+ * 틀의 화면 키트가 비출 곳 (단계 전투를 보는 동안 hud/battle.ts가 유닛 그림의 싸움을 비춘다). 게임의 setCameraAim이 null을 준 프레임에만 쓴다.
+ * 게임은 부르지 않는다 (setCameraAim을 쓴다)
+ */
+export function setKitAim(fn: ((now: number) => CameraAim | null) | null): void { kitFn = fn; }
+
 /**
  * 카메라를 세로축으로 돌린다 (라디안, 0이 틀의 쿼터뷰). 내 진영을 늘 같은 쪽에 두고 싶은 판(턴제·보드)이 자리마다 돌린다: π면 반대편에서 본다.
  * 내려다보는 각도는 그대로다. 방향키·조이스틱의 걷는 방향, 누르기(view.pick), fitZoom이 함께 따른다. 게임이 바꾸지 않으면 0
@@ -50,7 +57,7 @@ export function fitZoom(x0: number, z0: number, x1: number, z1: number, margin =
 /** 이번 프레임에 비출 곳 (main.ts의 frame이 부른다). shake: 화면 흔들림 */
 export function cameraAim(now: number, shake: { x: number; z: number }): { x: number; z: number; dist: number } {
   const me = S.me;
-  const aim = aimFn?.(me ? { x: me.x, z: me.z } : null, now) ?? null;
+  const aim = aimFn?.(me ? { x: me.x, z: me.z } : null, now) ?? kitFn?.(now) ?? null;
   if (aim) {
     const dist = CAMERA.dist * (aim.zoom ?? S.zoom);
     // 폰 세로의 밀린 그리기 범위를 되돌린다: 비추는 곳을 화면의 왼쪽으로 그만큼 옮기면 그 점이 가운데에 그려진다

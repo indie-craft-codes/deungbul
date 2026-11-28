@@ -15,7 +15,9 @@ import { S, newMe, type Me, type Remote } from './state';
 import { kindLook, type KindInfo, type KindLook } from './kinds';
 import { hasModule } from './mods';
 import { makeBox } from './scene/models';
-import { setSpriteYaw, unitSprite } from './scene/sprites';
+import { playerSprite, setSpriteYaw, unitSprite } from './scene/sprites';
+import { encodeLook } from '../shared/defs/look';
+import { knownChars } from '../shared/defs/chardef';
 
 // 유닛 그림(art2)의 좌우 뒤집기는 카메라가 돈 각을 본다
 setSpriteYaw(() => view?.yaw ?? 0);
@@ -125,12 +127,17 @@ const monsterName = (type: string, swarm = false): string => {
   return swarm ? L().fmt.swarmFoe(name) : name;
 };
 
+/** 변신한 사람의 겉모습 글자 → 그 캐릭터 id (시트 그림 'sheet:<캐릭터 id>'를 찾으려고). 모르면 undefined */
+const morphOf = (code: string | undefined): string | undefined => (code ? knownChars().find((d) => encodeLook(d.look) === code)?.id : undefined);
+/** 사람의 모델: 시트 그림(useSprites의 field, 'sheet:<직업 id>'·변신 'sheet:<캐릭터 id>')이 있으면 그것, 아니면 3D 사람형 */
+const personModel = (cls: string, code: string | undefined, make: () => Model): Model => playerSprite(cls, morphOf(code)) ?? make();
+
 // ---------- 만들고 지우기 ----------
 export function spawnMe(id: number, name: string, x: number, z: number): Me {
   const cloth = clothOf({ id, name, me: true, vals: [] });
   const code = earlyLooks.get(id);
   earlyLooks.clear();
-  const model = makeHumanoid(cloth, hasModule('combat'), undefined, undefined, undefined, partsOf(code)); // 전투가 없는 게임의 사람은 아무것도 들지 않는다
+  const model = personModel('', code, () => makeHumanoid(cloth, hasModule('combat'), undefined, undefined, undefined, partsOf(code))); // 전투가 없는 게임의 사람은 아무것도 들지 않는다
   view.scene.add(model.root);
   S.me = newMe(id, name, x, z, model, makeTag(name, 'me', false));
   S.me.cloth = cloth;
@@ -169,7 +176,7 @@ function addRemote(e: EnterInfo): void {
   const cloth = monster ? undefined : clothOf({ id: e.id, name: e.name, me: false, vals: [] });
   // 유닛 그림 (art2: scene/sprites.ts, 게임이 useSprites로 켜고 그림이 있을 때만): 없으면 3D 모델
   const mh = monster && isMonsterId(e.type) ? MONSTERS[e.type].h : 2.5;
-  const model = monster ? unitSprite('m', e.type, mh) ?? makeMonster(e.type) : makeHumanoid(cloth!, gearOf(cls), undefined, cls, undefined, partsOf(e.l));
+  const model = monster ? unitSprite('m', e.type, mh) ?? makeMonster(e.type) : personModel(cls, e.l, () => makeHumanoid(cloth!, gearOf(cls), undefined, cls, undefined, partsOf(e.l)));
   model.root.position.set(e.x, 0, e.z);
   model.root.rotation.y = e.face;
   view.scene.add(model.root);
@@ -212,9 +219,10 @@ export function relabel(): void {
 }
 
 /** 직업이나 옷 색이 바뀌면 모델을 새로 만든다 (검을 든 모습과 활을 든 모습이 다르다). */
-function rebuild(holder: { model: Model; cloth?: number; lookCode?: string }, cloth: number, cls: string): void {
+function rebuild(holder: { model: Model; cloth?: number; lookCode?: string; h?: number }, cloth: number, cls: string): void {
   const old = holder.model.root;
-  const model = makeHumanoid(cloth, gearOf(cls), undefined, cls, undefined, partsOf(holder.lookCode));
+  const model = personModel(cls, holder.lookCode, () => makeHumanoid(cloth, gearOf(cls), undefined, cls, undefined, partsOf(holder.lookCode)));
+  if (holder.h !== undefined) holder.h = model.sprite?.h ?? 2.5; // 이름표의 높이 (시트 그림과 3D가 다르다)
   model.root.position.copy(old.position);
   model.root.rotation.y = old.rotation.y;
   view.scene.remove(old);
@@ -349,7 +357,9 @@ function onEvent(e: Ev, me: Me): void {
       const r = S.others.get(e[1]);
       if (r) {
         // 쓰러지는 클립이 있으면 그것을 다 틀고 잠깐 누워 있다가 사라진다. 없으면 틀의 연출(줄어들기)
-        const clip = cueAnim(r.model, 'die') ? r.model.anim?.length('die') ?? 0 : 0;
+        // 시트 그림(scene/sprites.ts)은 4행의 쓰러짐 프레임을 클립처럼 다 튼다
+        const sheet = r.model.sprite?.sheet;
+        const clip = sheet ? sheet.meta.die.frames / Math.max(1, sheet.meta.die.fps) : cueAnim(r.model, 'die') ? r.model.anim?.length('die') ?? 0 : 0;
         r.dying = clip > 0 ? Math.min(DIE_MAX_S, clip + DIE_REST_S) : DIE_S;
         r.dieS = r.dying;
         puff(r.x, r.h * 0.4, r.z, 12, 0xe8e2d0); burst(r.x, r.z, 2.4, 0xe8e2d0, 0.35);
@@ -510,7 +520,7 @@ function updateRemote(r: Remote, dt: number, now: number): void {
   // 쓰러짐: 틀의 연출은 DIE_S 동안 줄어들기, 쓰러지는 클립이 있으면 누운 채 있다가 마지막 0.25초에 줄어든다
   const shrink = r.dying <= 0 ? 1 : (r.dieS ?? DIE_S) > DIE_S ? Math.min(1, r.dying / 0.25) : Math.max(0.01, r.dying / DIE_S);
   // 모델 파일의 믹서는 멀거나 화면 밖이면 드물게 돌린다 (내 캐릭터 둘레가 기준)
-  if (r.model.sprite) r.model.sprite.die = r.dying > 0 ? shrink : 1; // 그림 판은 줄지 않고 기울며 흐려진다
+  if (r.model.sprite) r.model.sprite.die = r.dying > 0 ? (r.model.sprite.sheet ? r.dying / (r.dieS ?? DIE_S) : shrink) : 1; // 그림 판은 줄지 않고 기울며 흐려진다 (시트는 남은 몫)
   const every = r.model.anim ? mixerEvery(S.me ? Math.hypot(r.x - S.me.x, r.z - S.me.z) : 0, view.project(r.x, r.h * 0.5, r.z) !== null) : 1;
   animate(r.model, r.x + rc.ox, r.z + rc.oz, r.face, r.walking, r.phase, dt, r.swing, Math.max(0.01, shrink) * rc.scale, every);
 }
@@ -522,7 +532,7 @@ export function updateEntities(dt: number, now: number): void {
 
 /** 카메라를 옮긴 뒤에 불러야 이름표가 제자리에 붙는다. */
 export function placeTags(now: number): void {
-  if (S.me) placeTag(S.me.tag, S.me.x, 2.5, S.me.z, now);
+  if (S.me) placeTag(S.me.tag, S.me.x, S.me.model.sprite?.h ?? 2.5, S.me.z, now);
   for (const r of S.others.values()) placeTag(r.tag, r.x, r.h, r.z, now, r.dying <= 0 && !r.gone && r.model.root.visible);
   for (const n of npcs) placeTag(n.tag, n.x, 2.5, n.z, now);
   settleTags();

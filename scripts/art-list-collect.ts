@@ -127,6 +127,13 @@ if (has('daily')) for (const id of Object.keys(C.DAILIES)) add(`icon:daily-${id}
 for (const [id, g] of Object.entries((C as { GOODS?: Record<string, { name: string }> }).GOODS ?? {})) add(`icon:goods-${id}`, 3, `Shop product icon "${ui(g.name)}" (else the first item it gives), transparent background`);
 if (has('combat')) for (const [id, sk] of Object.entries(C.SKILL_DEFS) as [string, { effect: { kind: string } }][]) if (sk.effect.kind === 'buff') add(`icon:buff-${id}`, 3, `Small status-effect icon for "${(names.skills as Record<string, { name: string } | undefined>)[id]?.name ?? id}" (else skill:${id}), transparent background`);
 
+// ---------- 움직이는 스프라이트 시트 (useSprites를 켠 게임): 영웅·적·직업 (변신 캐릭터는 영웅과 같은 id) ----------
+const SHEET_DESC = 'Sprite sheet, 4 columns x 4 rows of equal cells, transparent background, side view facing right, same foot baseline in every cell. Row 1: idle, 4 frames (slow breathing loop). Row 2: walk, 4 frames (loop). Row 3: attack, 4 frames (wind-up, swing, impact, recover). Row 4: hit, stagger, kneel, fallen (death ends lying down). Same character, scale and lighting in every frame, no text, no grid lines';
+if (sprites) {
+  for (const n of [...out]) if (/^(portrait|enemy):/.test(n.key)) add(`sheet:${n.key.split(':')[1]}`, 2, `${n.key.startsWith('enemy') ? 'Monster' : 'Character'} ${n.key.split(':')[1]} (same look as ${n.key}). ${SHEET_DESC}`);
+  if (has('classes')) for (const c of Object.keys(C.CLASSES)) add(`sheet:${c}`, 2, `Player class "${(names.classes as Record<string, { name: string } | undefined>)[c]?.name ?? c}" for the open field (useSprites field). ${SHEET_DESC}`);
+}
+
 // ---------- 화면 아이콘 (SVG가 있다: 바꾸고 싶을 때만) ----------
 for (const n of Object.keys(ICON_PATHS)) add(`icon:${n}`, 3, `UI icon "${n}", simple line/glyph icon, 24px grid, transparent background (SVG preferred)`);
 

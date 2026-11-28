@@ -5,7 +5,7 @@
 //     지면 '강해지는 길'(게임이 고르는 바로 가기: 뽑기·성장·편성). 별 조건이 없는 단계는 별 줄이 없다 (예전처럼)
 // 게임은 useStageScreens(opts)로 켠다: 출발·홈·강해지는 길·초상이 게임의 것. 켜지 않으면 아무것도 붙지 않는다 (예전과 같다).
 // 셋 다 화면 쌓기에 든다: 뒤로 가기가 결과 창 → 편성 확인 → 단계 정보 창 차례로 닫는다.
-import { artPic } from './artdom';
+import { artPic, frameArt } from './artdom';
 import { $ } from '../app';
 import { CHAPTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, allStarsOf, heroDef, stageIndex, stageStars, stageSweepable, type Reward, type StageRef, type StarCond } from '../../shared/defs';
 import { tintRarity } from './rarity';
@@ -174,6 +174,7 @@ function drawCheck(force = false): void {
     const url = opts.heroPic?.(id);
     if (url) { const img = document.createElement('img'); img.src = url; img.alt = ''; c.append(img); }
     c.append(mk('b', '', heroName(id)), mk('small', '', `Lv ${h?.[0] ?? 1} · ${'★'.repeat(h?.[1] ?? 1)}`));
+    if (d) frameArt(c, d.rarity); // 등급 테두리 그림 'frame:<등급 id>' (없으면 css 테두리)
     grid.append(c);
   }
   if (!sq.ids.length) grid.append(mk('div', 'stmate empty', t('sqEmpty')));

@@ -258,6 +258,30 @@ export class View {
     const dir = this.camDir(), d = Math.hypot(dir.x * dist, dir.y * dist - 1, dir.z * dist);
     return (off * 2 * d * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))) / this.height;
   }
+  /**
+   * 점(px, py, pz)이 화면의 (sx, sy)(css px)에 그려지려면 어디를 비춰야 하나 (dist: 비추는 곳에서 카메라까지, 지금의 각도·비율·그리는 범위 그대로).
+   * 비추는 곳을 옮기면 화면의 자리는 거의 1차로 움직인다: 두 방향으로 1m씩 옮겨 본 기울기로 풀고 한 번 더 고친다
+   */
+  aimFor(px: number, py: number, pz: number, dist: number, sx: number, sy: number): { x: number; z: number } {
+    const cam = this.fitCam.copy(this.camera), dir = this.camDir();
+    const at = (ax: number, az: number): [number, number] => {
+      cam.position.set(ax + dir.x * dist, dir.y * dist, az + dir.z * dist);
+      cam.lookAt(ax, 1, az);
+      cam.updateMatrixWorld();
+      const v = this.v.set(px, py, pz).project(cam);
+      return [(v.x * 0.5 + 0.5) * this.width, (-v.y * 0.5 + 0.5) * this.height];
+    };
+    let x = px, z = pz;
+    for (let k = 0; k < 2; k++) {
+      const [x0, y0] = at(x, z), [x1, y1] = at(x + 1, z), [x2, y2] = at(x, z + 1);
+      const a = x1 - x0, b = x2 - x0, c = y1 - y0, d = y2 - y0, det = a * d - b * c;
+      if (!det) break;
+      const ex = sx - x0, ey = sy - y0;
+      x += (d * ex - b * ey) / det; z += (a * ey - c * ex) / det;
+    }
+    return { x, z };
+  }
+
   /** 화면의 오른쪽을 가리키는 땅 위의 방향 (지금 각도) */
   rightDir(): { x: number; z: number } { const d = this.camDir(), l = Math.hypot(d.x, d.z) || 1; return { x: d.z / l, z: -d.x / l }; }
 
