@@ -173,6 +173,7 @@ button.plain:hover { border-color: var(--c-accent); }
 .float { position: absolute; left: 0; top: 0; font-size: var(--fs-xl); font-weight: 800; color: var(--c-white); white-space: nowrap; text-shadow: 0 2px 0 var(--c-sunk-3), 0 0 6px var(--c-sunk-2); }
 .float.crit { color: var(--c-accent); font-size: var(--fs-2xl); }
 .float.hurt { color: var(--c-bad-strong); }
+.float.hurt.ally { font-size: var(--fs-lg); } /* 내 영웅·파티원이 맞은 것: 붉게, 내 캐릭터보다 조금 작게 */
 .float.heal { color: var(--c-good); }
 .float.small { font-size: var(--fs-md); color: var(--c-text); }
 

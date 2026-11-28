@@ -296,7 +296,7 @@ export function tagOf(id: number): Tag | undefined {
 function posOf(id: number): { x: number; z: number; h: number } | null {
   if (S.me && id === S.me.id) return { x: S.me.x, z: S.me.z, h: 2.5 };
   const r = S.others.get(id);
-  return r ? { x: r.x, z: r.z, h: r.h } : null;
+  return r ? { x: r.x + (r.sepX ?? 0), z: r.z + (r.sepZ ?? 0), h: r.h } : null; // 그림 판을 화면에서 벌렸으면 벌린 자리 (spreadSprites)
 }
 
 // ---------- 서버가 보낸 것 반영 ----------
@@ -322,7 +322,10 @@ function onEvent(e: Ev, me: Me): void {
     case 'h': {
       const [, src, dst, dmg, crit] = e;
       const p = posOf(dst);
-      if (p) floatText(dst === me.id ? `-${dmg}` : String(dmg), p.x, p.h, p.z, dst === me.id ? 'hurt' : src === me.id ? (crit ? 'crit' : '') : 'small');
+      // 내 편: 나, 내가 데리고 싸우는 영웅(종류 hero: 탑 전투·편성), 파티원. 내 편이 맞으면 붉게, 내 편이 때리면 크게 (남의 싸움만 작게)
+      const ours = (id: number): boolean => id === me.id || S.others.get(id)?.kind === 'hero' || S.party.some((m) => m.id === id);
+      const oursHurt = dst !== me.id && ours(dst), oursHit = src !== me.id && ours(src) && !ours(dst);
+      if (p) floatText(dst === me.id || oursHurt ? `-${dmg}` : String(dmg), p.x, p.h, p.z, dst === me.id ? 'hurt' : oursHurt ? 'hurt ally' : src === me.id || oursHit ? (crit ? 'crit' : '') : 'small');
       swing(src);
       // 맞은 쪽: 모델 파일의 맞음 클립 (공격 중이면 끊지 않는다). 코드 모델은 하얗게 번쩍이는 것(fx의 recoil)뿐이다
       const dstModel = dst === me.id ? me.model : S.others.get(dst)?.model;
@@ -345,9 +348,9 @@ function onEvent(e: Ev, me: Me): void {
         if (hurt) sfx.hurt(); else if (mine) sfx.hit(crit === 1);
         hit({
           id: dst, x: p.x, z: p.z, h: p.h, fromX: from?.x ?? p.x, fromZ: from?.z ?? p.z + 1,
-          power: hurt ? 1.1 : mine ? (crit ? 1.6 : 1) : 0.55,
-          color: hurt ? 0xff6b5e : crit ? 0xffd24a : look?.hitColor ?? 0xfff3d0,
-          shake: hurt ? 0.28 : mine ? (crit ? 0.22 : 0.07) : 0,
+          power: hurt ? 1.1 : mine ? (crit ? 1.6 : 1) : oursHurt ? 0.95 : oursHit ? (crit ? 1.4 : 0.9) : 0.55,
+          color: hurt || oursHurt ? 0xff6b5e : crit ? 0xffd24a : look?.hitColor ?? 0xfff3d0,
+          shake: hurt ? 0.28 : mine ? (crit ? 0.22 : 0.07) : oursHit && crit ? 0.1 : 0,
           delay: ranged ? ARROW_S : 0,
         });
       }
@@ -528,12 +531,42 @@ function updateRemote(r: Remote, dt: number, now: number): void {
 export function updateEntities(dt: number, now: number): void {
   if (S.me) updateMe(S.me, dt, now);
   for (const r of [...S.others.values()]) updateRemote(r, dt, now);
+  spreadSprites(dt);
+}
+
+/**
+ * 그림 판(scene/sprites.ts) 유닛끼리 한 자리에 겹쳐 서면 누가 누구를 때리는지 보이지 않는다: 화면에서만 서로 밀어 벌린다.
+ * 서버의 자리·사거리·판정은 그대로이고 그림과 이름표만 조금 옮긴다 (몸의 폭 = 그림 폭의 절반쯤, 한 번에 다 옮기지 않고 부드럽게).
+ * 3D 모델(그림 판이 아닌 것)은 건드리지 않는다
+ */
+function spreadSprites(dt: number): void {
+  const us = [...S.others.values()].filter((r) => r.model.sprite && !r.gone && r.dying <= 0 && r.model.root.visible);
+  if (us.length < 2) { for (const r of us) { r.sepX = 0; r.sepZ = 0; } return; }
+  const want = new Map<Remote, [number, number]>(us.map((r) => [r, [0, 0]]));
+  for (let i = 0; i < us.length; i++) for (let j = i + 1; j < us.length; j++) {
+    const a = us[i], b = us[j], min = 0.28 * (a.model.sprite!.w + b.model.sprite!.w);
+    let dx = b.x - a.x, dz = b.z - a.z;
+    const d = Math.hypot(dx, dz);
+    if (d >= min) continue;
+    if (d < 1e-3) { dx = a.id < b.id ? 1 : -1; dz = 0; } else { dx /= d; dz /= d; }
+    // 옆모습 화면이라 좌우(x)로 더 벌린다
+    const push = (min - d) / 2, wa = want.get(a)!, wb = want.get(b)!;
+    const px = (Math.abs(dx) < 0.35 ? Math.sign(dx || 1) * 0.8 : dx) * push, pz = dz * push * 0.5;
+    wa[0] -= px; wa[1] -= pz; wb[0] += px; wb[1] += pz;
+  }
+  const k = Math.min(1, dt * 6);
+  for (const r of us) {
+    const [tx, tz] = want.get(r)!;
+    r.sepX = (r.sepX ?? 0) + (tx - (r.sepX ?? 0)) * k;
+    r.sepZ = (r.sepZ ?? 0) + (tz - (r.sepZ ?? 0)) * k;
+    r.model.root.position.x += r.sepX; r.model.root.position.z += r.sepZ;
+  }
 }
 
 /** 카메라를 옮긴 뒤에 불러야 이름표가 제자리에 붙는다. */
 export function placeTags(now: number): void {
   if (S.me) placeTag(S.me.tag, S.me.x, S.me.model.sprite?.h ?? 2.5, S.me.z, now);
-  for (const r of S.others.values()) placeTag(r.tag, r.x, r.h, r.z, now, r.dying <= 0 && !r.gone && r.model.root.visible);
+  for (const r of S.others.values()) placeTag(r.tag, r.x + (r.sepX ?? 0), r.h, r.z + (r.sepZ ?? 0), now, r.dying <= 0 && !r.gone && r.model.root.visible);
   for (const n of npcs) placeTag(n.tag, n.x, 2.5, n.z, now);
   settleTags();
 }

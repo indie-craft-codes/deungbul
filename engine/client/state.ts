@@ -36,6 +36,8 @@ export interface Remote {
   cloth?: number;
   /** 부품 겉모습의 글자 (EnterInfo.l, 메시지 look: 변신 같은 것). 바뀌면 모델을 새로 만든다 */
   lookCode?: string;
+  /** 그림 판끼리 겹치지 않게 화면에서만 벌린 거리 (entities.ts의 spreadSprites. 서버의 자리는 그대로) */
+  sepX?: number; sepZ?: number;
 }
 
 /** 내 캐릭터. 위치는 먼저 예측하고 서버 값(sx, sz)으로 보정한다 */
