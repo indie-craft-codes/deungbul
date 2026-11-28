@@ -218,7 +218,7 @@ export function initTutorial(): void {
   $('tutNext').addEventListener('click', (e) => { next(); (e.currentTarget as HTMLElement).blur(); });
   $('tutSkip').addEventListener('click', (e) => { askSkip(); (e.currentTarget as HTMLElement).blur(); });
   onSend((m) => hear({ kind: 'cmd', name: m.t }));
-  window.addEventListener('keydown', (e) => { if (!(document.activeElement instanceof HTMLInputElement)) { const a = actionOf(e.key); if (a) hear({ kind: 'key', name: a }); } });
+  window.addEventListener('keydown', (e) => { if (!(document.activeElement instanceof HTMLInputElement)) { const a = actionOf(platform().input.keyName(e)); if (a) hear({ kind: 'key', name: a }); } });
   onSlow(() => {
     if (!S.me) { if (active) $('tut').hidden = true; return; }
     if (active) {

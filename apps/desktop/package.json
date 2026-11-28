@@ -1,0 +1,14 @@
+{
+  "name": "game-desktop",
+  "productName": "Game Desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "데스크톱(Electron) 시제품: 저장소의 게임 화면 빌드(dist-*)를 app:// 로 싣는다 (docs/platforms.md 2단계)",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "45.5.0"
+  }
+}

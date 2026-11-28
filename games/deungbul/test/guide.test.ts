@@ -354,7 +354,7 @@ checkEach(PACKS, langOf, (P, c) => {
   const seen = new Set<string>(), problems: string[] = [];
   const allowed = (rel: string): boolean => rel.startsWith('engine/shared/') || rel.startsWith('games/deungbul/shared/') || rel.startsWith('games/deungbul/client/guide/') || rel.startsWith('games/deungbul/client/i18n/') || /^engine\/client\/i18n\/(ko|en|merge|names|ext|live)\.ts$/.test(rel)
     // 플랫폼 접점(언어·주소·저장소를 읽는 곳): 브라우저 API만 감싸고 3D·통신 코드를 부르지 않는다
-    || /^engine\/client\/platform\/(index|types|web|memory|auth|keyname)\.ts$/.test(rel);
+    || /^engine\/client\/platform\/(index|types|web|memory|auth|keyname|desktop)\.ts$/.test(rel);
   const visit = (file: string): void => {
     const rel = path.relative(root, file).replace(/\\/g, '/');
     if (seen.has(rel)) return;

@@ -3,7 +3,7 @@
 //   node scripts/deploy.mjs flag on|off [게임]   서버를 끄는 깃발(저장 파일 옆의 stop.flag)을 세우거나 치운다
 //   node scripts/deploy.mjs list               저장소의 게임들 (listGames)
 // 칸: port, db(저장 파일의 절대 경로), dir(저장 폴더), stop(깃발의 경로), dist(빌드 결과의 절대 경로), bots, pagesRepo, pagesDir, log(기본 로그)
-// deploy.json: { port, db, dist, bots?, pages?: { repo, dir } }. 경로는 저장소 뿌리에서. pages가 없으면 GitHub Pages에 올리지 않는 게임이다.
+// deploy.json: { port, db, dist, bots?, pages?: { repo, dir }, desktop?: { server?, name? } }. desktop은 데스크톱 앱(apps/desktop/main.cjs)만 읽는다. 경로는 저장소 뿌리에서. pages가 없으면 GitHub Pages에 올리지 않는 게임이다.
 // 서버의 진입점(games/<게임>/server/main.ts)의 기본값과 같아야 한다: 스크립트는 이 값을 PORT·DB로 넘겨 서버를 띄운다.
 import fs from 'node:fs';
 import path from 'node:path';

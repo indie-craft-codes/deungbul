@@ -26,7 +26,9 @@
     "build:sample": "node scripts/game.mjs build sample",
     "dev:sample": "concurrently -n server,client -c yellow,cyan \"node scripts/game.mjs watch sample\" \"node scripts/game.mjs client sample\"",
     "start:sample": "node scripts/game.mjs start sample",
-    "test:sample": "node scripts/game.mjs test sample"
+    "test:sample": "node scripts/game.mjs test sample",
+    "build:desktop": "node scripts/desktop.mjs build",
+    "desktop": "node scripts/desktop.mjs run"
   },
   "dependencies": {
     "three": "^0.187.0",

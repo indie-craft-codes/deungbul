@@ -1,6 +1,6 @@
 # 웹 전용 부분 분리 설계: 데스크톱(Steam)·모바일(앱 스토어) 대비
 
-작성 2026-11-27. 조사·설계 문서다(처음 쓸 때는 저장소 코드를 고치지 않았다). **1단계(브라우저 직접 호출을 접점 뒤로)는 끝났다(2026-11-27, 가지 `feat/plat1`): 4절의 '1단계 결과'와 그 표가 1절의 줄마다 지금 상태다.**
+작성 2026-11-27. 조사·설계 문서다(처음 쓸 때는 저장소 코드를 고치지 않았다). **1단계(브라우저 직접 호출을 접점 뒤로)는 끝났다(2026-11-27, 가지 `feat/plat1`): 4절의 '1단계 결과'와 그 표가 1절의 줄마다 지금 상태다. 2단계(데스크톱 시제품, Electron)도 끝났다(2026-11-28, 가지 `feat/desk2`): 4절의 '2단계 결과'.**
 표시: **[확인]** = 코드나 공식 문서에서 직접 봤다. **[추정]** = 경험·간접 근거로 그렇게 보지만 이 저장소나 기기에서 돌려 보지는 않았다.
 읽은 곳: `C:\gamedev`(engine/, games/deungbul, games/sample, scripts/, docs/genre-features.md 5.2절·6절)와 `$TEMP/dg-work/web2`(가지 `feat/web2`, 읽기만).
 
@@ -12,7 +12,7 @@
 - **추천 래퍼**: 데스크톱은 **Electron**(Chromium을 묶어 세 OS에서 WebGL이 같다. Tauri의 WebView2 위에는 Steam 오버레이가 사실상 뜨지 않는데 Steam 결제 승인이 기본으로 오버레이에서 일어난다. 크기 손해는 Steam 배포에서 작다). 모바일은 **Capacitor 8**(지금의 Vite 빌드를 그대로 싣고, 결제·푸시·로그인·생명주기·Preferences 플러그인이 있다. 웹 감싸기만이면 Apple 4.2에 걸리므로 그 플러그인들이 곧 심사 근거). 근거는 2절.
 - **설계의 줄기**: 클라이언트에 `engine/client/platform/`(web2 작업자가 만들 자리)을 두고 브라우저 API를 직접 부르는 곳을 모두 그 접점으로 돌린다. 기본 구현 `web`은 지금 동작과 같다. 서버는 정적 파일을 끌 수 있게 하고(`staticDir: null`), `Origin` 허용 목록과 **프로토콜 최소 지원 번호(min~max)** 를 둔다.
 - **web2 진행 상황(11-27 08:02 기준, 기록)**: 이 설계를 쓸 때는 `feat/web2` 가지에 커밋이 없었고 `engine/client/platform/` 폴더도 없었다 [확인]. 그래서 아래 설계는 web2가 만들 접점의 **모양을 미리 맞추는 제안**으로 썼다(겹침 방지: 3.1의 '누가 무엇을'). **지금(2026-11-27 저녁)**: web2(묶음 2)가 접점 `engine/client/platform/`을 이 모양으로 만들어 합쳐졌고, 그 위에서 1단계가 끝났다.
-- **단계의 상태 (2026-11-27)**: 1단계 — **끝**(`feat/plat1`, 4절 '1단계 결과'). 2단계 데스크톱 시제품 — **다음**. 3단계 모바일 시제품 — 그 뒤. 4단계 — **사용자 결정 대기**(비용·계약·정책).
+- **단계의 상태 (2026-11-28)**: 1단계 — **끝**(`feat/plat1`, 4절 '1단계 결과'). 2단계 데스크톱 시제품 — **끝**(`feat/desk2`, 4절 '2단계 결과': 서명·Steam·Tauri는 하지 않음). 3단계 모바일 시제품 — **다음**. 4단계 — **사용자 결정 대기**(비용·계약·정책).
 - **설계와 다르게 된 것**: 버전 불일치의 닫힘 코드는 4004가 아니라 **4006**(4004는 묶음 1의 점검이 먼저 썼다). 아래 3.2·4절의 '4004'는 설계 때의 번호다.
 
 ---
@@ -175,7 +175,7 @@
 - **버전 호환**: 앱은 심사(1~3일 [추정]) + 사용자 업데이트 지연 → 3.2-4의 `PROTOCOL_MIN` 호환 기간이 필수.
 - **포털 요약**: CrazyGames — SDK 필수(정식 출시), 광고는 SDK로만·광고 차단기에서도 동작, 외부 로그인 금지, 첫 받기 50MB·전체 250MB [확인]. Poki — Poki SDK 광고만, 외부 링크는 `PokiSDK.openExternalLink`, 외부 요청 기본 차단, 결제 불가 [확인]. 결제·외부 서버를 쓰는 MMO와 Poki는 잘 맞지 않는다 [추정].
 
-**확인하지 못한 것**: 애플 미국 외부 링크 수수료 확정 여부, 구글 미국 외부 링크 수수료 요율, 애플 한국 26%의 2026년 현재 값, Tauri 이슈 #6196 본문, Steam macOS판 공증 의무 원문, IARC·안전 영역 공식 원문, 각 래퍼에서 WebSocket `Origin` 머리말의 정확한 값.
+**확인하지 못한 것**: 애플 미국 외부 링크 수수료 확정 여부, 구글 미국 외부 링크 수수료 요율, 애플 한국 26%의 2026년 현재 값, Tauri 이슈 #6196 본문, Steam macOS판 공증 의무 원문, IARC·안전 영역 공식 원문, Capacitor(iOS·Android)의 WebSocket `Origin` 머리말의 정확한 값(Electron은 2단계에서 확인: `app://<게임>`).
 
 ---
 
@@ -323,7 +323,7 @@ export interface Platform {
 
 1. **정적 파일과 게임 서버 분리** — `runServer`/`startServer` 옵션 `staticDir: string | null`. `null`이면 `serveStatic`을 만들지 않고 404만(관리자·`/healthz`·`/metrics`는 그대로). 배포는 세 가지를 다 지원: (a) 지금처럼 한 몸(웹 시험), (b) 화면은 CDN/GitHub Pages/포털, 서버는 WS 전용, (c) 앱(화면은 앱 안).
 2. **서버 주소 결정 순서(클라이언트 `platform.server()`)** — ① 빌드 때 박은 `VITE_SERVER_URL`(앱 기본값) → ② 원격 설정 파일 `https://<고정 도메인>/server.json`(앱도 읽음: 서버를 옮겨도 앱 업데이트 없이) → ③ 같은 출처(웹 한 몸). 앱의 ②는 **고정 도메인**이어야 하므로 cloudflared **이름 있는 터널** 또는 실제 도메인이 필요(사용자 결정 4단계).
-3. **Origin 검사** — `WebSocketServer({ verifyClient })`로 허용 목록: 웹 도메인들, `capacitor://localhost`(iOS), `https://localhost`(Android Capacitor 기본), Electron의 `app://lampkeeper`(사용자 정의 프로토콜을 쓸 때) [추정: 정확한 Origin 문자열은 2단계 시제품에서 실제 머리말로 확인], 개발용 `http://localhost:*`. **Origin 없음**(네이티브·부하 도구·시험)도 허용하되 설정으로 끌 수 있게. 보안의 본체는 Origin이 아니라 토큰·인증이다(Origin은 남의 웹 페이지가 사용자의 브라우저로 붙는 것만 막는다).
+3. **Origin 검사** — `WebSocketServer({ verifyClient })`로 허용 목록: 웹 도메인들, `capacitor://localhost`(iOS), `https://localhost`(Android Capacitor 기본), Electron의 `app://<게임>`(사용자 정의 프로토콜을 쓸 때) [확인: 2단계 시제품에서 서버가 받은 실제 머리말이 `Origin: app://sample`, `app://echopact`. 표준·보안 체계로 등록한 `app://<호스트>`는 `체계://호스트` 그대로 온다], 개발용 `http://localhost:*`. **Origin 없음**(네이티브·부하 도구·시험)도 허용하되 설정으로 끌 수 있게. 보안의 본체는 Origin이 아니라 토큰·인증이다(Origin은 남의 웹 페이지가 사용자의 브라우저로 붙는 것만 막는다).
 4. **프로토콜 버전 협상과 호환 기간** —
    - `join`에 `v`(클라이언트 프로토콜 번호)와 `app`(플랫폼·앱 빌드 번호)을 싣는다. 서버는 `PROTOCOL_MIN..PROTOCOL`을 받는다.
    - 범위 밖이면 `welcome` 대신 `{ t: 'update', min, store? }`를 보내고 닫는다(새 닫힘 코드 4004). 화면은 `platform.app.requireUpdate(store)`.
@@ -424,7 +424,7 @@ export interface Platform {
 
 셈: 표 42줄 가운데 접점 뒤로 간 것 17줄(이번 13줄 + 묶음 2의 4줄), 일부 4줄, 그대로 21줄(WebView에서 같은 DOM·WebAudio·CSS 16줄, 래퍼·빌드·운영 단계의 것 4줄, 묶음 3의 차단 1줄). 코드 위치로는 이번에 옮긴 곳이 25곳(main.ts 5, i18n 5, 도감 페이지 5, 소리 1, 배율 3, 도감 링크 1, 툴팁 1, 서버 3, 그리고 설계 뒤에 생긴 `hud/ops.ts` 1)이고, 설계의 52곳으로 치면 이번 24곳 + 묶음 2의 4곳 = 약 28곳이다(설계의 52곳을 어떻게 셌는지는 남아 있지 않아 같은 방식으로 다시 센 추정이다).
 
-### 2단계 — 데스크톱 시제품 (비용 0: 서명 없이, Steam 없이) — 상태: 다음
+### 2단계 — 데스크톱 시제품 (비용 0: 서명 없이, Steam 없이) — 상태: 끝 (아래 '2단계 결과')
 
 | 작업 | 크기 | 위험 | 검증 |
 |---|---|---|---|
@@ -435,7 +435,34 @@ export interface Platform {
 | (선택) Tauri로 같은 시제품을 만들어 WebView2 성능 비교 | 중 | 시간 | 같은 장면 FPS 비교 |
 | (선택) `steamworks.js`를 App ID 480(Spacewar 시험용)으로 붙여 오버레이·업적 동작만 확인 | 작음 | 480은 시험용이라 남의 앱 이름으로 뜸 | 오버레이 Shift+Tab, 시험 업적 |
 
-### 3단계 — 모바일 시제품 (로컬 빌드, 스토어 등록 없이) — 상태: 2단계 뒤
+### 2단계 결과 (2026-11-28, 가지 `feat/desk2`): 끝
+
+- **앱**(`apps/desktop/`: `main.cjs` 주 프로세스, `preload.cjs`, 따로 된 `package.json`에 `electron` 45.5.0 하나). 뿌리의 의존성은 그대로라 `npm ci`·`npm test`·웹 빌드는 Electron을 받지 않는다. 명령 `npm run build:desktop -- <게임>`(웹과 같은 화면 빌드 + 처음 한 번 Electron 받기), `npm run desktop -- <게임> [--server=… --lang=… --profile=…]`(`scripts/desktop.mjs`). 쓰는 법은 [making-a-game.md](making-a-game.md) 32절.
+  - 화면: 표준·보안 체계로 등록한 `app://<게임>/` → `deploy.json`의 `dist`(dist-sample·dist-echopact·dist). 폴더 밖 경로 404, MIME 표, HTML에 CSP(스크립트는 앱 안의 것만, 접속은 ws·wss·http·https). **#16·#33(상대 주소의 fetch·소리·모델)이 코드 변경 없이 돈다**.
+  - 보안: `contextIsolation`·`sandbox`·`nodeIntegration: false`·`webviewTag: false`, 탐색은 `app://<게임>/` 안에서만(밖은 막고 http·https면 기본 브라우저로), 새 창은 앱 안 주소만 같은 설정의 창으로, 권한 요청은 전체 화면·클립보드 쓰기만, 기본 메뉴(새로 고침·개발자 도구 단축키) 없음, IPC는 `app://<게임>/` 페이지가 보낸 것만.
+  - `autoplayPolicy: 'no-user-gesture-required'`, 창 크기·자리·최대화·전체 화면을 `window.json`에 기억(화면 밖이면 버림), F11·Alt+Enter 전체 화면, 저장은 사용자 폴더의 `store.json`(게임마다 따로, 기기 토큰은 `safeStorage`로 암호화).
+- **접점**: `engine/client/platform/desktop.ts`(`desktopPlatform`, 다리의 형 `DesktopBridge`). preload가 `window.desktopBridge`를 내놓으면 `platform()`이 고른다. 웹 구현 위에 덮어쓴 칸: storage(시작 때 받은 사본으로 동기 읽기, `storage.durable`), server(앱이 정한 주소), openUrl(상대 주소는 앱 안 창, 바깥은 기본 브라우저), copy, saveFile(저장 창), display.fullscreen, audio.onUnlock(곧바로), app.version·requireUpdate(스토어 주소가 있으면 열기, 없으면 다시 읽기)·param(실행 인자). `join.v`를 싣는다(1단계의 버전 협상).
+- **서버 주소**: 실행 인자 `--server` → `GAME_SERVER` → `deploy.json`의 `desktop.server` → `ws://localhost:<port>`. 서버 쪽 바꿈 없음: Origin 검사는 1단계의 `ORIGINS`에 `app://<게임>`을 적으면 된다(기본은 검사 안 함).
+- **#21 키**: 단축키·이동 키·Enter·Esc·키 재설정·튜토리얼이 `platform().input.keyName(ev)`(ev.code 기준). 한글 입력 상태(`key: 'ㅡ'`/`'Process'`, `code: 'KeyM'`)에서도 메뉴가 열린다(앱에서 확인). 저장된 키 설정은 그대로 맞고, 예전에 한글 상태로 고른 자모(`'ㅏ'`)는 그 자리의 글자(`'k'`)로, `'process'`는 버린다(`legacyKeyName`). 키 표(`keys.ts`)는 그대로.
+- **게임패드**(`engine/client/padcalc.ts` 셈, `pad.ts` 붙이기, 웹에도 같다): 표준 배치로 이동(막대·십자 키)·기술 1~5·대상·물약·자동 사냥·지도·메뉴·집으로·가방. 창이 열려 있으면 U4의 포커스 체계(`hud/a11y.ts`의 `cycleFocus`·`focusRoot`)로 포커스 앞뒤·A 누름·B 닫기(Esc와 같게). 패드의 단추는 기능(bus의 처음 키, `runAction`)에 묶여 키보드의 키 재설정과 상관없다.
+- **확인**: 임시 서버(3015 예제, 3016 메아리 계약, 화면 파일 없이 `staticDir: null`, `ORIGINS=app://<게임>`·출처 없음 거절)에 앱으로 접속.
+  - 예제: 3D 모델·지형이 그려짐(스크린샷), `AudioContext`가 입력 없이 `running`, `<audio>`가 입력 없이 재생, 소리 파일·모델(`model/gltf-binary`)을 app://로 읽음, 화면에서 `require`·`process` 없음, 토큰(32자)이 `store.json`에 `enc:`로, **앱을 껐다 켜도 같은 캐릭터**(같은 이름), 창 크기 1100×700이 다시 켤 때 그대로, F11로 1920×1080 전체 화면과 되돌림, `openUrl('https://…')`와 `window.open('https://…')`가 `shell.openExternal`로(기록으로 확인: 실제 브라우저는 열지 않음), `file:`·`javascript:`는 거절, 복사·파일 저장(저장 창을 정해진 경로로 바꿔) 동작, 가짜 패드로 RT 자동 사냥 켬·끔, Start 메뉴 열림, 십자 키 포커스 이동, B 닫힘.
+  - 메아리 계약: 접속·튜토리얼·로비까지(스크린샷).
+  - 등불지기: 서버 없이 앱만 띄워 도감(`guide.html`)을 `openUrl`의 상대 주소로 열어 앱 안 새 창에 그려짐(새 창에도 같은 CSP·다리, `require` 없음).
+  - 서버가 받은 머리말: `Origin: app://sample`, `app://echopact`(3.2의 [추정] → [확인]).
+  - 웹 회귀: 헤드리스 크롬으로 예제를 열어 콘솔 오류 0. 황금 실행(sim) 7,489,205바이트 `ba83af30d07f` 그대로. 검사 2627 → 2632(`fx/platform` 6절: 가짜 패드의 이동·들판 기능·창 단계, 예전 키 설정 호환, 단축키가 ev.key로 되돌아가지 않음).
+- **하지 않은 것(선택 항목·범위 밖)**: Tauri 비교(러스트 설치가 필요), `steamworks.js`·App ID 480, 코드 서명, 설치 파일(electron-builder는 쓰지 않았다: `--dir`도 하지 않음), 자동 업데이트, 실제 Xbox 패드·Steam Input(패드가 없어 가짜 패드로만).
+- **한계**: 앱은 저장소의 `games/<게임>/deploy.json`과 `dist`를 읽는다(패키징하면 `dist`를 묶고 설정을 앱 안으로 옮겨야 한다). 패드로 다룰 수 없는 것: 3D 화면의 대상 클릭(대신 LB 대상 고르기 + 기술), 글 입력(대화·이름: 화면 자판 없음), 지도의 핀치·끌기, 슬라이더 값 바꾸기(포커스는 가지만 좌우로 값을 바꾸지 않는다). 패드로 고른 단추에는 `focus({ focusVisible: true })`로 테두리를 그린다. 다른 자판 배열(AZERTY 등)은 이제 자리 기준이라 Q 자리가 'q'다(키 이름표는 미국 자판의 글자). 패드로 고른 단추의 포커스 테두리는 창이 포커스를 가졌을 때만 그려진다(브라우저의 규칙).
+
+| 1절 # | 2단계 뒤 상태 |
+|---|---|
+| 1·2 | ✓ 데스크톱은 앱이 정한 주소(`server()`), `server.json`은 읽지 않는다 |
+| 16·33 | ✓ `app://` 사용자 정의 프로토콜(코드 그대로) |
+| 21 | ✓ 단축키 ev.code, 게임패드 |
+| 34 | ✓ 데스크톱은 바깥 브라우저·앱 안 창 |
+| 38 | ◐ `build:desktop`(같은 빌드 + Electron 준비). 대상별 빌드 값(`VITE_TARGET`)은 필요 없었다: 다리의 유무로 고른다 |
+
+### 3단계 — 모바일 시제품 (로컬 빌드, 스토어 등록 없이) — 상태: 다음
 
 | 작업 | 크기 | 위험 | 검증 |
 |---|---|---|---|
