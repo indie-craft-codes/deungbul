@@ -15,7 +15,7 @@ export const GEAR_ITEMS = {
   valecoat: { kind: 'armor', price: 0, guard: 0.92, tier: 1 },
   hornmail: { kind: 'armor', price: 0, guard: 0.85, tier: 2 },
   // 분해하면 나오는 가루: 강화(+5부터)에만 쓴다. 한 장비를 +10까지 올리는 데 수백이 들 수 있어 한도를 넉넉히
-  echodust: { kind: 'mat', price: 0, max: 999 },
+  echodust: { kind: 'mat', price: 0, max: 99999 },
 } as const satisfies Record<string, ItemDef>;
 
 /** 장비 레벨(GEAR.levelOf: 이끼둥이 1, 가시멧돼지 2, 돌뿔소 5)이 4 이상이면 돌뿔의 바탕 */

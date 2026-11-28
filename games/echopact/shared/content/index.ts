@@ -149,10 +149,10 @@ export const ITEMS = {
   tonic: { kind: 'potion', price: 12, heal: 80 },
   ...GEAR_ITEMS,
   // 카드의 공통 손질 (HERO_RULES.cards): 메아리 결정(다 키운 메아리의 넘친 조각이 바뀐 것)과 범용 조각(등급마다, 그 등급의 메아리 조각 하나). 결정 상점(GOODS의 shop 'gShopCrystal')에서 바꾼다
-  echoCrystal: { kind: 'mat', price: 0, max: 9999 },
-  wildCommon: { kind: 'mat', price: 0, max: 999 },
-  wildRare: { kind: 'mat', price: 0, max: 999 },
-  wildLegend: { kind: 'mat', price: 0, max: 999 },
+  echoCrystal: { kind: 'mat', price: 0, max: 99999 },
+  wildCommon: { kind: 'mat', price: 0, max: 99999 },
+  wildRare: { kind: 'mat', price: 0, max: 99999 },
+  wildLegend: { kind: 'mat', price: 0, max: 99999 },
 } as const satisfies Record<string, ItemDef>;
 export const START_WEAPON: ItemId = 'blade1';
 export const SHOP_STOCK: readonly ItemId[] = ['tonic', 'blade2', 'jerkin', 'chain'];

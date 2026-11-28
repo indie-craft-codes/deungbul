@@ -1,7 +1,7 @@
 // 스프라이트 시트 맞추기 (artfix): 'sheet:<id>' 그림(기본 4열 × 4행, 투명 배경, 옆모습 오른쪽 보기)을 받아 칸마다 알파 상자를 재고,
 // 모든 프레임을 같은 기준(발밑 가운데: 칸의 아래에서 3% 위, 가로 가운데)으로 다시 놓은 정규화 시트를 만든다. 프레임마다 투명 여백이 달라도 화면에서 흔들리지 않는다.
 // 화면 쪽은 engine/client/scene/sprites.ts의 SHEET_DEFAULT(base 0.03)가 이 배치를 읽는다. 그림 넣기(art-import.mjs)가 sheet-<id>.png를 받으면 이것을 거친다.
-//   node scripts/art-sheet.mjs <입력.png> <출력.png> [--cols=4] [--rows=4] [--h=320]
+//   node scripts/art-sheet.mjs <입력.png> <출력.png> [--cols=4] [--rows=4] [--h=320] [--keep-haze]  (--keep-haze: 반투명 무채색을 지우지 않는다)
 //   맞춘 PNG는 크다(칸 16개): 화면에 넣을 때는 WebP(품질 90, 알파)로 바꿔 sheet-<id>.webp로 넣어도 된다 (art-import는 WebP를 맞추지 않고 그대로 넣는다)
 //     --h  칸의 높이를 이만큼으로 줄인다 (기본 320px: 폰에서 사람 키 150px 안팎이면 넉넉하다. 더 작은 칸은 늘리지 않는다)
 // 하는 일: 거의 투명한 칸의 색을 지운다(알파 < 12) · 가장자리의 붉은 번짐(크로마 키 자국)을 누른다 · 칸마다 발밑(알파 상자의 아래)과 몸의 가운데(알파 무게 중심)를 재서
@@ -14,10 +14,14 @@ import { decodePng, encodePng, resize } from './png.mjs';
 export const SHEET_BASE = 0.03;
 
 /** 시트 한 장을 맞춘다: img { w, h, data } → { img, cell: [w, h], frames: [{ x0, y0, x1, y1 }] } */
-export function normalizeSheet(src, { cols = 4, rows = 4, h: maxH = 320 } = {}) {
+export function normalizeSheet(src, { cols = 4, rows = 4, h: maxH = 320, haze = true } = {}) {
   const { w: W, h: H } = src, d = new Uint8Array(src.data);
   // 1) 거의 투명한 칸은 색까지 지운다 (밉맵·선형 걸러 보기에서 투명 칸의 색이 가장자리로 번지지 않게)
-  for (let i = 0; i < d.length; i += 4) if (d[i + 3] < 12) { d[i] = d[i + 1] = d[i + 2] = d[i + 3] = 0; }
+  //    그리고 안개 지우기(haze, 기본 켬): 그림 만드는 AI가 '투명'이라며 그려 넣는 회색 바둑판·뿌연 후광은 반투명한 무채색이다 → 지운다 (색이 있는 반투명인 유령의 몸·불꽃은 남는다)
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3], hi = Math.max(d[i], d[i + 1], d[i + 2]), sat = hi - Math.min(d[i], d[i + 1], d[i + 2]);
+    if (a < 12 || (haze && ((a < 235 && sat < 28) || (a < 160 && sat < 70 && hi > 150)))) { d[i] = d[i + 1] = d[i + 2] = d[i + 3] = 0; }
+  }
   // 2) 투명 가까이(2칸 안)의 붉은 번짐을 누른다: 빨강이 초록·파랑보다 훨씬 센 칸만
   const nearClear = (x, y) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H || d[(yy * W + xx) * 4 + 3] < 16) return true; } return false; };
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -67,10 +71,10 @@ export function normalizeSheet(src, { cols = 4, rows = 4, h: maxH = 320 } = {}) 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2), opt = (n) => args.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
   const [inp, outp] = args.filter((a) => !a.startsWith('--'));
-  if (!inp || !outp) { console.error('쓰는 법: node scripts/art-sheet.mjs <입력.png> <출력.png> [--cols=4] [--rows=4] [--h=320]'); process.exit(1); }
+  if (!inp || !outp) { console.error('쓰는 법: node scripts/art-sheet.mjs <입력.png> <출력.png> [--cols=4] [--rows=4] [--h=320] [--keep-haze]'); process.exit(1); }
   const src = decodePng(fs.readFileSync(inp));
   if (!src) { console.error(`${inp}: 이 PNG를 읽지 못했습니다 (8비트·비월 아닌 PNG만)`); process.exit(1); }
-  const r = normalizeSheet(src, { cols: Number(opt('cols') ?? 4), rows: Number(opt('rows') ?? 4), h: Number(opt('h') ?? 320) });
+  const r = normalizeSheet(src, { cols: Number(opt('cols') ?? 4), rows: Number(opt('rows') ?? 4), h: Number(opt('h') ?? 320), haze: !args.includes('--keep-haze') });
   fs.writeFileSync(outp, encodePng(r.img));
   console.log(`${inp} ${src.w}×${src.h} → ${outp} ${r.img.w}×${r.img.h} (칸 ${r.cell[0]}×${r.cell[1]}, 발밑 칸 아래 ${SHEET_BASE * 100}%)`);
   r.frames.forEach((f, i) => { if (f.empty) console.log(`  칸 ${i + 1}: 비었음`); });
