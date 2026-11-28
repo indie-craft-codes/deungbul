@@ -92,6 +92,8 @@ export class Salvage {
     p.unsaved = true;
   }
 
+  /** 가루가 꽉 차 자동 분해를 건너뛴 것을 이미 알린 사람 (tellFull) */
+  private fullTold = new Set<number>();
   /**
    * 방금 떨어진 장비를 자동 분해할 것이면 그 자리에서 가루로 바꾸고 true를 돌려준다 (가방에 넣지 않는다: 가득 차 있어도 된다).
    * 몬스터가 떨어뜨린 장비에만 쓴다 (systems/gear.ts의 처치 사건). 우편, 거래소, 상점, 제작, 던전 완료 보상으로 받은 것은 거치지 않는다.
@@ -101,7 +103,12 @@ export class Salvage {
     const g = this.g, item = this.item();
     if (!item || p.bot || p.autoSalvage < 0 || it.rar > p.autoSalvage || it.rar > this.cfg.autoMaxRar) return false;
     const dust = dustFor(it, this.cfg);
-    if (dust > g.bag.room(p, item)) return false;
+    if (dust > g.bag.room(p, item)) {
+      // 가루가 꽉 찼다: 장비는 가방으로 간다. 알리기로 한 게임이면 자리가 다시 날 때까지 한 번만 알린다
+      if (this.cfg.tellFull && !this.fullTold.has(p.id)) { this.fullTold.add(p.id); g.notify(p, 'autoSalvageFull', g.bag.count(p, item)); }
+      return false;
+    }
+    this.fullTold.delete(p.id);
     // 장부에는 그 원인(사냥)으로 생겼다가 자동 분해로 사라진 장비와, 자동 분해로 생긴 가루로 적힌다
     g.bag.passed(p, it, why, WHY.autoSalvage);
     if (dust > 0) g.bag.putItem(p, item, dust, WHY.autoSalvage);

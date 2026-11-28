@@ -2638,6 +2638,13 @@
   "Health at 1%: auto-hunt stopped and you fell back.",
   "Health at 2%: auto-hunt stopped and you fell back."
  ],
+ "msg.autoSalvageFull": [
+  "72e6c26b3fef408d",
+  "Gear Dust is full (NaN), so auto-salvage paused. Drops go to your bag",
+  "Gear Dust is full (0), so auto-salvage paused. Drops go to your bag",
+  "Gear Dust is full (1), so auto-salvage paused. Drops go to your bag",
+  "Gear Dust is full (2), so auto-salvage paused. Drops go to your bag"
+ ],
  "msg.autoSalvaged": [
   "5b324cb0e8a18622",
   "Auto-salvaged undefined drops. Gear Dust +NaN",

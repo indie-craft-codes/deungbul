@@ -202,7 +202,7 @@ export function initMenu(): void {
   bindDot(ui.btn, 'menu');
   ui.btn.addEventListener('click', (e) => { toggleMenu(); (e.currentTarget as HTMLElement).blur(); });
   // 분해·잠금·가방 넓히기의 안내문을 어디에 띄울지: 한 일의 결과는 흘러가는 알림, 자리를 비운 동안의 장비 소식은 가운데 알림
-  addNotices({ banner: { awayGear: '' }, feed: ['salvaged', 'salvageCant', 'salvageFull', 'gearLocked', 'autoSalvaged', 'bagUpDone', 'bagUpMax'] });
+  addNotices({ banner: { awayGear: '' }, feed: ['salvaged', 'salvageCant', 'salvageFull', 'gearLocked', 'autoSalvaged', 'autoSalvageFull', 'bagUpDone', 'bagUpMax'] });
   // 가방 칸 수와 분해 설정(개인 상태)이 바뀌면 다시 그린다. 값은 가방 창(hud/bag.ts)이 먼저 받아 넣는다
   onMsg('me', (m) => { if (m.k === 'bag' || m.k === 'salvage') renderMenu(true); });
   $('menuClose').addEventListener('click', () => { ui.panel.hidden = true; });

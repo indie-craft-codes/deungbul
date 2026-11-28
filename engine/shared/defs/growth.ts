@@ -194,7 +194,8 @@ export function compareGear(worn: readonly Gear[], cand: Gear): GearCompare {
 
 // ---------- 분해와 가방 넓히기 ----------
 /** 분해의 표 (게임의 SALVAGE). 서버의 시험이 다른 표를 넣어 볼 수 있게 모양을 따로 둔다 */
-export interface SalvageDef { item: string; dust: readonly number[]; perPlus: number; maxBatch: number; autoMaxRar: number; tellS: number }
+/** tellFull: 가루가 한도까지 차서 자동 분해를 건너뛰면 한 번 알린다 (기본 끔: 예전처럼 말없이 가방으로) */
+export interface SalvageDef { item: string; dust: readonly number[]; perPlus: number; maxBatch: number; autoMaxRar: number; tellS: number; tellFull?: boolean }
 /** 이 게임에 분해가 있는가: 등급별 가루의 표가 차 있고, 나오는 아이템이 아이템의 표에 있다 */
 export const salvageOn = (def: SalvageDef = SALVAGE): boolean => def.dust.length > 0 && isItemId(def.item);
 /** 그 장비를 분해하면 나오는 가루: 등급별 양 + 강화 단계 × perPlus (서버의 systems/salvage.ts, 화면, 도감이 함께 쓴다) */

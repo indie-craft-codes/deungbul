@@ -30,7 +30,7 @@ export const ENHANCE = {
 };
 
 /** 분해: 등급(평범한·쓸 만한·희귀한·빛나는)별 울림 가루 + 강화 단계마다 1. 낀 것·잠근 것·상점의 장비는 안 된다(틀). 자동 분해는 희귀한까지 고를 수 있다 */
-export const SALVAGE = { item: 'echodust', dust: [1, 3, 8, 20] as readonly number[], perPlus: 1, maxBatch: 30, autoMaxRar: 2, tellS: 10 };
+export const SALVAGE = { item: 'echodust', dust: [1, 3, 8, 20] as readonly number[], perPlus: 1, maxBatch: 30, autoMaxRar: 2, tellS: 10, tellFull: true };
 
 // ---------- 확률 공개의 이름: 틀이 만드는 몬스터마다 '처치 한 번의 장비' 표(ODDS.drops)의 표·결과 이름 (공개 페이지와 확률 탭) ----------
 const RAR_NAMES: readonly LangText[] = [{ ko: '평범한 장비', en: 'Common gear' }, { ko: '쓸 만한 장비', en: 'Uncommon gear' }, { ko: '희귀한 장비', en: 'Rare gear' }, { ko: '빛나는 장비', en: 'Epic gear' }];

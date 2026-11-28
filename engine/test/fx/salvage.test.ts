@@ -187,6 +187,18 @@ const goldOf = (p: Ent): number => p.gold;
   run(SALVAGE.tellS + 0.2);
   check(!said(p).some((s) => s.startsWith('autoSalvaged')), '더 분해한 것이 없으면 다시 알리지 않는다');
 
+  // 가루가 꽉 차면 자동 분해를 건너뛴다: 알리기로 한 게임(tellFull)이면 자리가 날 때까지 한 번만 알린다
+  (SALVAGE as { tellFull?: boolean }).tellFull = true;
+  const room0 = g.bag.room(p, DUST as ItemId), nf = p.gear.length;
+  g.bag.putItem(p, DUST as ItemId, room0, 'test'); said(p);
+  drop(0); drop(0);
+  const fullTold = said(p).filter((s) => s.startsWith('autoSalvageFull'));
+  check(p.gear.length === nf + 2 && fullTold.length === 1, `가루가 꽉 차면 장비는 가방으로, 알림은 한 번 (${fullTold.join('|')})`);
+  g.bag.takeItem(p, DUST as ItemId, room0, 'test'); drop(0); drop(0); g.bag.putItem(p, DUST as ItemId, g.bag.room(p, DUST as ItemId), 'test'); drop(0);
+  check(said(p).filter((s) => s.startsWith('autoSalvageFull')).length === 1, '자리가 나서 다시 분해하면 다음에 꽉 찰 때 다시 알린다');
+  g.bag.takeItem(p, DUST as ItemId, g.bag.count(p, DUST as ItemId) - (SALVAGE.dust[0] * 5 + SALVAGE.dust[1]), 'test'); run(SALVAGE.tellS + 0.2); said(p); fresh();
+  (SALVAGE as { tellFull?: boolean }).tellFull = false;
+
   // 드롭에만 적용된다: 우편, 거래소, 상점, 제작, 던전 완료 보상으로 받은 것은 분해되지 않는다
   const d1 = dustOf(p), n2 = p.gear.length;
   g.mail.send(p, 'marketBack', ['ring', 1, 0], { gear: [g.gear.roll(1, 0, 'ring')] });

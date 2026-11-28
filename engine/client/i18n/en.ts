@@ -1236,6 +1236,7 @@ export const enBase = (n: ContentNames): EngineLocale => {
       salvageCant: () => 'Some of that gear cannot be salvaged. Equipped, Standard and locked gear cannot be salvaged.',
       salvageFull: (a) => `You cannot hold that much ${itemName(SALVAGE.item)}, so nothing was salvaged. Would give ${num(a[0])}, room for ${num(a[1])}`,
       gearLocked: () => 'That gear is locked. Unlock it to sell, salvage or list it.',
+      autoSalvageFull: (a) => `${itemName(SALVAGE.item)} is full (${num(a[0])}), so auto-salvage paused. Drops go to your bag`,
       autoSalvaged: (a) => `Auto-salvaged ${count(a[0], 'drop')}. ${itemName(SALVAGE.item)} +${num(a[1])}`,
       awayLimit: (a) => `You have used today's ${a[0]} h of away-hunting. Auto-hunt stops when you close the window. It refills at midnight.`,
       awayGear: (a) => ['While you were away:', Number(a[0]) > 0 ? `${count(num(a[0]), 'drop')} left behind because your bag was full.` : '', Number(a[1]) > 0 ? `${count(num(a[1]), 'drop')} auto-salvaged. ${itemName(SALVAGE.item)} +${num(a[2])}` : ''].filter(Boolean).join(' '),
