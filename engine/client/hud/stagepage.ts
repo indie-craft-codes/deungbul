@@ -5,6 +5,7 @@
 //     지면 '강해지는 길'(게임이 고르는 바로 가기: 뽑기·성장·편성). 별 조건이 없는 단계는 별 줄이 없다 (예전처럼)
 // 게임은 useStageScreens(opts)로 켠다: 출발·홈·강해지는 길·초상이 게임의 것. 켜지 않으면 아무것도 붙지 않는다 (예전과 같다).
 // 셋 다 화면 쌓기에 든다: 뒤로 가기가 결과 창 → 편성 확인 → 단계 정보 창 차례로 닫는다.
+import { artPic } from './artdom';
 import { $ } from '../app';
 import { CHAPTERS, STAGE_RULES, STAGE_RULE_VIEW, STAGES, allStarsOf, heroDef, stageIndex, stageStars, stageSweepable, type Reward, type StageRef, type StarCond } from '../../shared/defs';
 import { tintRarity } from './rarity';
@@ -54,11 +55,12 @@ const condText = (c: StarCond): string => (c.k === 'clear' ? t('starClear') : c.
 /** 보상을 칩으로 (재화·경험치·아이템). first면 '처음' 표 */
 function rewardChips(r: Reward, first: boolean): HTMLElement[] {
   const f = L().fmt, out: HTMLElement[] = [];
-  const add = (cls: string, text: string) => { const c = mk('span', `strw ${cls}`, text); if (first) c.append(mk('i', 'strfirst', t('resFirstTag'))); out.push(c); };
-  if (r.sparks) add('cur-second', f.reward(0, 0, r.sparks));
-  if (r.gold) add('cur-gold', f.reward(r.gold, 0, 0));
-  if (r.exp) add('exp', f.reward(0, r.exp, 0));
-  for (const [id, n] of Object.entries(r.items ?? {})) if (n) add('item', `${(L().items as Record<string, { name?: string } | undefined>)[id]?.name ?? id} ×${n}`);
+  // 그림(art2): 'cur:<재화>'·'item:<id>'가 등록되어 있으면 글 앞에 (없으면 글만)
+  const add = (cls: string, text: string, art: string) => { const c = mk('span', `strw ${cls}`, text); const p = artPic(art); if (p) c.prepend(p); if (first) c.append(mk('i', 'strfirst', t('resFirstTag'))); out.push(c); };
+  if (r.sparks) add('cur-second', f.reward(0, 0, r.sparks), 'cur:second');
+  if (r.gold) add('cur-gold', f.reward(r.gold, 0, 0), 'cur:gold');
+  if (r.exp) add('exp', f.reward(0, r.exp, 0), 'cur:exp');
+  for (const [id, n] of Object.entries(r.items ?? {})) if (n) add('item', `${(L().items as Record<string, { name?: string } | undefined>)[id]?.name ?? id} ×${n}`, `item:${id}`);
   return out;
 }
 /** 별 줄: 조건마다 별 하나와 글 (mask의 비트가 켜졌으면 채운 별) */
@@ -77,8 +79,10 @@ function enemyList(s: StageRef): HTMLElement {
   const n = new Map<string, number>();
   for (const w of s.def.waves.flat()) n.set(w.type, (n.get(w.type) ?? 0) + w.n);
   const box = mk('div', 'stfoes'), names = L().monsters as Record<string, string>;
-  for (const [type, k] of n) box.append(mk('span', 'stfoe', L().fmt.enemyN(names[type] ?? type, k)));
-  if (s.def.boss) { const b = mk('span', 'stfoe boss', names[s.def.boss.type] ?? s.def.boss.type); b.prepend(mk('i', '', t('stBoss'))); box.append(b); }
+  // 적의 그림 'enemy:<몬스터 id>' (art2): 있으면 이름 앞에
+  const foe = (cls: string, text: string, type: string): HTMLElement => { const e = mk('span', cls, text); const p = artPic(`enemy:${type}`); if (p) e.prepend(p); return e; };
+  for (const [type, k] of n) box.append(foe('stfoe', L().fmt.enemyN(names[type] ?? type, k), type));
+  if (s.def.boss) { const b = foe('stfoe boss', names[s.def.boss.type] ?? s.def.boss.type, s.def.boss.type); b.prepend(mk('i', '', t('stBoss'))); box.append(b); }
   return box;
 }
 function powerRow(rec: number): HTMLElement {
@@ -188,7 +192,7 @@ export function openCheck(id: string): void {
   checkId = id;
   const box = $('stCheck')!;
   box.hidden = false;
-  openScreen('stCheck', { kind: 'page', el: box, close: () => { box.hidden = true; } });
+  openScreen('stCheck', { kind: 'page', el: box, scene: 'squad', close: () => { box.hidden = true; } });
   drawCheck(true);
 }
 
@@ -234,7 +238,7 @@ function showResult(id: string, win: boolean, first: boolean, mask: number): voi
   box.hidden = false;
   // 보상 연출의 소리 (U2): 깸이면 별·보상 칩이 뒤집히는 동안 '받음', 지면 낮은 소리 (화면 효과음)
   window.setTimeout(() => uiSound(win ? 'ui.reward' : 'ui.fail'), win ? 450 : 0);
-  openScreen('stResult', { kind: 'sheet', el: box, close: () => { box.hidden = true; clearInterval(resTimer); } });
+  openScreen('stResult', { kind: 'sheet', el: box, scene: 'result', close: () => { box.hidden = true; clearInterval(resTimer); } });
   // 자동 진행: 다음 단계가 곧 시작한다 (서버의 nextS). 'n초 뒤'와 멈춤
   clearInterval(resTimer);
   if (win && next && myStage()?.auto) {

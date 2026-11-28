@@ -456,6 +456,8 @@ npm run start:sample          # http://localhost:3002
 ```ts games/sample/client/main.ts
 // 차례가 중요하다: (1) 언어 묶음을 등록하고 (2) 이 게임의 창을 붙인 뒤에 (3) 틀을 시작시킨다. 틀은 시작하면서 화면의 글자를 채운다
 setLocales(LOCALES);
+// 그림 자리 (art2): 넣은 그림을 등록한다. 표는 scripts/art-import.mjs가 만든다. 비어 있으면 틀이 대신 그린다 (지금 그대로). 필요한 칸: node scripts/art-list.mjs sample
+registerArt(ART);
 mountBonfire();
 mountDuel();
 startClient({
@@ -3314,17 +3316,36 @@ setMenuGroups(MENU_GROUPS.map((g) => (g.id === 'play' ? { ...g, tabs: ['camp', .
 - `emptyState(icon, …)`·재화 칩의 `glyph`·홈의 `icon` 칸은 아이콘 이름을 받는다.
 - css만으로 그리는 자리(`::before`)는 마스크로: `--ic-lock`(잠김 띠 `.lockBand`, 잠김 표 `.stLock`, 메아리 계약의 잠긴 단계 칸).
 
-### 그림 자리 (`engine/client/art.ts`)
+### 그림 자리 (`engine/client/art.ts`, art2에서 넓힘)
 
-| 열쇠 | 쓰이는 곳 | 없을 때(대체) |
-|---|---|---|
-| `portrait:<캐릭터 id>` | 카드 격자·카드 상세·뽑기 공개·편성 칸·전투 초상·홈의 대표·대표 고르기 | `charPortrait`(3D 모델을 찍은 그림). 등급 테두리는 그대로 |
-| `bg:<장면>`, `bg:<장면>@portrait`, `bg:<장면>@landscape` | 홈(로비)의 배경 (`makeHome`의 `scene`) | css 그라디언트·무늬 |
-| `banner:<id>` | 홈의 이벤트 배너 카드 (`HomeEvent.id`) | 색 두 개 + 큰 아이콘 + 글 (그림이 있으면 글은 감추고 머리표만) |
-| `icon:<이름>` | 화면 아이콘 (위의 이름) | 코드로 그린 SVG |
+모든 칸은 선택이다. 등록하지 않은 칸은 지금의 대체(SVG·css·3D·글자) 그대로이므로, 몇 장만 넣어도 되고 그림이 하나도 없는 게임(등불지기·예제)은 화면이 한 점도 달라지지 않는다. 화면에 입히는 일은 `engine/client/hud/artdom.ts`(`setScene`·`artPic`·`frameArt`·`initArtDom`).
 
-- `registerArt(table, base?)`: 열쇠 → 파일. 맞지 않는 열쇠는 건너뛰고 콘솔에 알린다. `portraitArt(id)`·`artPick(kind, id, orient?)`·`artUrl(key)`·`onArt(fn)`.
-- `charPortrait(def)`가 먼저 `portrait:<id>`를 보므로, 초상을 쓰는 화면(카드·뽑기·편성·전투·홈)은 고칠 것 없이 그림을 쓴다. `setHeroPic`으로 정한 초상 함수도 등록된 그림이 이긴다.
+| 열쇠 | 쓰이는 곳 | 권장 크기 · 투명 | 없을 때(대체) |
+|---|---|---|---|
+| `portrait:<캐릭터 id>` | 카드 격자·카드 상세·뽑기 공개·편성 칸·전투 초상·홈의 대표·대표 고르기 | 512×512 · 투명 | `charPortrait`(3D 모델을 찍은 그림) |
+| `bg:<장면>` (`@portrait`·`@landscape`) | 큰 화면의 배경: 홈(`makeHome`의 `scene`), 메뉴의 탭(장면 = 탭 id: `gacha`·`heroes`·`squad`·`stages`·`gear` …), 편성 확인 `squad`, 결과 창 `result`, 뽑기 연출 `summon`, 직업 고르기 `classes`, 게임의 화면(`openScreen(id, { el, scene })`: 메아리 계약의 모험 지도 `adventure`). 홈 말고는 글이 읽히게 위아래를 어둡게 덮는다(`--art-dim-a`·`--art-dim-b`) | 1080×1920 · 1920×1080 | css 바탕 |
+| `banner:<id>` | 홈의 이벤트 배너 카드 (`HomeEvent.id`: 이벤트 id, `season`) | 1200×500 | 색 두 개 + 큰 아이콘 + 글 |
+| `icon:<이름>` | 화면 아이콘 (위의 51개) | SVG 24 격자, 또는 128×128 · 투명 | 코드로 그린 SVG |
+| `cur:<재화>` | 재화 줄(홈·페이지)·내 정보 창·단계 보상 칩·우편 (`gold` 첫 재화·`second` 두 번째 재화·`stamina`·`exp`) | 128×128 · 투명 | 그림 시트의 칸(`cur:gold`·`cur:second`) → SVG 아이콘 |
+| `item:<아이템 id>` (`@<손 모양>`) | 가방·상점·대장간·장비·물약 단추·도감·단계 보상·우편. 손 모양(`bow`·`staff` …)을 붙인 것은 그 손의 직업에게만(무기) | 256×256 · 투명 | 그림 시트의 칸 → 글자만 (장신구 칸은 `item:slot-<칸>`) |
+| `skill:<기술 id>` | 들판의 기술 단추 (직업의 기술) | 256×256 | 기술 이름 글자 |
+| `enemy:<몬스터 id>` | 도감의 몬스터 줄·단계 정보와 편성 확인의 적 목록·(유닛 그림을 켠 게임) 전투의 적 | 512×512 · 투명 | 글자만 / 3D 모델 |
+| `unit:<영웅·몬스터 id>` | (유닛 그림을 켠 게임) 전투의 유닛 그림 판. 없으면 영웅은 `portrait:`, 적은 `enemy:` | 512×512 · 투명, 온몸·발이 아래 끝 | 3D 모델 |
+| `bg:battle`, `bg:battle-<장 번호>` (`@portrait`·`@landscape`) | 단계 전투의 바닥·하늘 대신 화면 뒤 그림 (전투 화면 키트 `useBattleScreen`이 전투를 보일 때). 유닛의 그림자는 보이지 않는 바닥이 받는다 | 1080×1920 · 1920×1080 (아래 ⅔가 바닥) | 3D 바닥·하늘 |
+| `icon:goods-<id>`·`icon:ach-<id>`·`icon:daily-<id>`·`icon:mission-<종류>`·`icon:mail-<종류>`·`icon:buff-<기술 id>`·`icon:rarity-<등급 id>` | 메뉴 줄의 이름 앞(상품·업적·임무·이벤트 임무·우편), 내 강화 표시, 카드의 등급 표. 열쇠를 차례로 보고 처음 있는 것(상품은 주는 첫 아이템, 업적은 `icon:mission-<종류>`, 강화는 `skill:<id>`, 우편은 보상의 첫 아이템·재화로도) | 128×128 · 투명 | 글자만 |
+| `frame:<등급 id>` | 카드 격자·뽑기 카드의 등급 테두리 (영웅 등급 id: `common`·`rare`·`legend`) | 400×500 · 투명(가운데) | css 등급 색 테두리 |
+| `fx:orb`, `fx:orb-<등급 id>` | 뽑기 연출의 예고 빛 덩이 (등급의 것을 먼저) | 512×512 · 투명 | css 빛 덩이 |
+| `logo` | 접속(로딩) 화면의 제목 (글자는 낭독기에 남긴다) | 1200×400 · 투명 | 게임 이름 글자 |
+| `splash` (`@portrait`·`@landscape`) | 접속(로딩) 화면의 배경 | 1080×1920 · 1920×1080 | css 바탕 |
+| `appicon` | 원본 한 장(화면에서는 쓰지 않는다): `art-import`가 favicon 32·apple-touch 180·PWA 192/512·maskable 512·OG 1200×630·데스크톱 256과 `manifest.webmanifest`를 만든다 | 1024×1024 PNG | 빈 favicon (등불지기는 손으로 둔 `public/icon-*.png`) |
+
+- `registerArt(table, base?)`: 열쇠 → 파일. 맞지 않는 열쇠는 건너뛰고 콘솔에 알린다. 읽기: `artUrl(key)`·`artPick(kind, id, orient?)`·`portraitArt(id)`·`splashArt(orient?)`·`sheetKeyArt(시트 열쇠, 손?)`·`onArt(fn)`. 입히기: `setScene(el, 장면)`·`artPic(key)`·`frameArt(el, 등급)`.
+- 낱장 그림은 그림 시트(`addIconSheet`)보다 이긴다: `itemIcon`이 먼저 `item:<id>`(손 모양의 것을 먼저)·`cur:<재화>`·`icon:<이름>`(`ui:mail`)을 본다. 그래서 가방·상점·대장간·장비·재화 줄은 고칠 것 없이 그림을 쓴다. 도감·보상·우편은 낱장 그림만 본다(시트는 예전처럼 쓰지 않는다: 등불지기 그대로).
+- 세 게임의 진입점이 모두 `registerArt(ART)`를 부른다(표 `client/artlist.ts`: 등불지기·예제는 비어 있다).
+- 빌드: `node scripts/game.mjs build <게임>`이 끝나면 `scripts/brand-head.mjs`가 빌드의 `art/brand/`에 아이콘이 있을 때만 `index.html`의 머리에 favicon·apple-touch-icon·manifest·`og:image`를 넣는다(있던 icon·manifest 줄은 바꾼다. 개발 서버의 화면에는 넣지 않는다). 없으면 머리를 건드리지 않는다. 데스크톱 앱은 빌드의 `art/brand/icon-256.png`가 있으면 창 아이콘으로 쓴다(`apps/desktop/main.cjs`).
+- 유닛 그림(`engine/client/scene/sprites.ts`): 게임이 `useSprites({ heroes?, enemies?: true | 'stage' | false, scale?, face? })`로 켠다(기본 꺼짐). 켜면 그림이 있는 영웅·적만 3D 모델 대신 늘 카메라를 보는 그림 판이 된다: 발밑이 기준, 발밑에 둥근 그림자(영웅은 등급 고리도), 걸어가는 쪽이 화면 왼쪽이면 좌우 뒤집기(그림은 `face` 쪽을 본다고 친다, 기본 오른쪽), 걸을 때 통통·공격할 때 뛰기·맞으면 하얗게 번쩍(틀의 흔들림 그대로)·쓰러지면 기울며 흐려진다. 이름표·체력 막대·피해 숫자는 그림의 높이(3D 높이 × `scale`, 기본 1.6)에 붙는다. `enemies: 'stage'`(기본)는 단계(장의 물결·우두머리)에 나오는 몬스터만: 들판의 짐승은 3D 그대로. 사람(플레이어·변신 모습)은 아직 3D다.
+- 전투 배경: 전투 화면 키트가 전투를 보이는 동안(`useBattleScreen`의 `shown`) `bg:battle-<지금 장 번호>` → `bg:battle`이 있으면 `view.setBackdrop(주소)`(3D의 땅·나무·건물을 감추고 화면 뒤에 그림을 가득, 안개 끔, 그림자만 받는 바닥). 전투를 떠나면 예전 장면으로. 들판(3D 지형)은 건드리지 않는다.
+- 메아리 계약: `useSprites({ heroes: true, enemies: 'stage' })` — 메아리는 지금의 초상 10장(투명 배경)이 그대로 전투 유닛이 되고, 적은 `enemy:` 그림을 넣으면 바뀐다(지금은 3D).
 
 ```ts games/echopact/client/main.ts
 setLocales(LOCALES);
@@ -3332,32 +3353,34 @@ setLocales(LOCALES);
 registerArt(ART);
 ```
 
-### 그림 넣기
+### 필요한 그림 목록 (`node scripts/art-list.mjs <게임>`)
 
-그림 파일(AI로 만든 것이든 손으로 그린 것이든)을 넣는 길. **이번 작업에서는 그림을 넣지 않았다**(사용자가 원본 화질로 따로 받아 넣는다): 넣기 전에도 위의 대체로 화면이 완성돼 있다.
+그 게임이 실제로 보여 주는 칸을 내용 정의에서 모아 표로 보인다: 영웅(`HEROES`)·전투 유닛(`useSprites`를 켠 게임)·적(`MONSTERS`: 크기·싸우는 법·우두머리·나오는 장)·전투 배경(`bg:battle`, 장마다)·장비 부위(`item:slot-<칸>`)·임무 종류·업적·일일 임무·상품·강화·등급 표·아이템(`ITEMS`, 손 모양마다 이름이 다른 무기는 그 손의 칸도)·재화(`CURRENCIES`·스태미나)·기술(직업의 기술)·등급 테두리와 뽑기 연출(`HERO_RARITIES`, roster·gacha 모듈)·이벤트 배너(`EVENTS`·`SEASON`)·메뉴 탭의 배경(`MODE_RULES`의 탭 또는 틀의 탭)·화면 아이콘·브랜드. 칸마다 파일 이름, 권장 크기, 투명 배경이 필요한가, 지금 상태(있음 = 등록 표, 시트 = 게임의 그림 시트, 파일 = 손으로 둔 앱 아이콘, 없음), 중요도(1 핵심 · 2 권장 · 3 선택: 대체가 이미 괜찮은 것), **그림을 만들 사람에게 줄 짧은 영어 설명**(영어 이름표 `enNames`·`enGame`의 이름·설명에서: 예 `Item icon "Echo Crystal" (mat): Spare shards of maxed echoes …`).
 
-1. 그림을 권장 크기·형식으로 맞춘다(크기를 바꾸는 것은 그림 도구로: 저장소에는 그림을 다시 그리는 의존성이 없다).
+```
+node scripts/art-list.mjs echopact             # 모두
+node scripts/art-list.mjs echopact --missing   # 없는 것만
+node scripts/art-list.mjs echopact --prio=1    # 핵심만 (브랜드·초상·홈 배경)
+node scripts/art-list.mjs echopact --json      # 다른 도구가 읽게
+```
 
-   | 종류 | 파일 이름 | 권장 크기 | 형식·무게 |
-   |---|---|---|---|
-   | 캐릭터 초상 | `portrait-<캐릭터 id>.webp` | 512×512 (정사각형, 캐릭터가 가운데·발끝까지, 배경 투명) | webp(투명), 400KB 아래 |
-   | 로비 배경 (세로) | `bg-<장면>@portrait.webp` | 1080×1920 | webp, 1.5MB 아래 |
-   | 로비 배경 (가로) | `bg-<장면>@landscape.webp` | 1920×1080 | webp, 1.5MB 아래 |
-   | 로비 배경 (하나로) | `bg-<장면>.webp` | 둘 중 하나 (가운데를 잘라 쓴다) | webp |
-   | 이벤트 배너 | `banner-<이벤트 id>.webp` | 1200×500 (글은 그림에 넣지 않는다: 틀이 머리표를 얹는다) | webp, 500KB 아래 |
-   | 화면 아이콘 | `icon-<이름>.svg` | SVG `viewBox="0 0 24 24"`, 선은 `currentColor` | svg (png·webp도 된다) |
+내용에 없는 칸(손으로 쓴 캐릭터 정의의 영웅, 게임의 장면 이름)은 게임이 `games/<게임>/scripts/artneeds.ts`의 `ART_NEEDS()`로 더한다(메아리 계약: 메아리 열과 그 `unit:`, `tower`·`adventure`, 적의 생김새를 설명 뒤에 덧붙이는 `append: true`). 수집은 `scripts/art-list-collect.ts`(tsx가 게임의 별칭으로 읽는다), 칸의 크기·투명 규칙은 `scripts/art-slots.mjs` 하나를 `art-import`와 함께 읽는다.
 
-   `<종류>/<id>.webp`처럼 폴더로 나눠도 된다. 메아리 계약의 캐릭터 id는 `games/echopact/shared/content/`의 캐릭터 정의, 장면은 `tower`, 배너 id는 라이브 콘텐츠의 이벤트 id(`echofest`)와 시즌(`liveBanners()`의 `id`).
-2. 넣는다:
+### 그림 넣기 (원본 → 크기 맞추기 → art-import)
+
+1. **목록**: `node scripts/art-list.mjs <게임> --missing`. 영어 설명을 그대로 ChatGPT 등 그림 도구에 붙여 넣어 원본을 만든다(스타일 말은 게임마다 덧붙인다). 투명이 '예'인 칸은 투명 배경으로 받는다.
+2. **크기 맞추기**: 권장 크기로 자르고 줄여 webp로 저장한다(그림 도구에서: 저장소에는 그림을 다시 그리는 의존성이 없다. 앱 아이콘만 예외로 1024×1024 PNG 한 장을 주면 아래가 줄여 만든다). 파일 이름은 목록의 '파일 이름'(`<종류>-<id>.webp`, `<종류>/<id>.webp`도 된다. 브랜드는 `logo.webp`·`splash@portrait.webp`·`appicon.png`).
+3. **넣기**:
 
    ```
-   node scripts/art-import.mjs echopact <그림 폴더> --dry   # 무엇을 할지만 (크기·무게 경고)
-   node scripts/art-import.mjs echopact <그림 폴더>         # games/echopact/client/public/art/ 로 옮기고 artlist.ts를 쓴다
+   node scripts/art-import.mjs echopact <그림 폴더> --dry   # 무엇을 할지만 (크기·투명·무게 경고)
+   node scripts/art-import.mjs echopact <그림 폴더>         # public/art/ 로 옮기고 client/artlist.ts를 쓴다
    ```
 
-   스크립트는 node 내장만 쓴다: 파일 머리(PNG·WebP)에서 크기를 읽어 권장과 다르면 경고하고(그래도 넣는다), 이름이 맞지 않는 파일은 건너뛴다. 표는 있던 것에 더하고(같은 열쇠는 새 것), `--replace`면 새로 쓴다.
-3. 게임의 진입점이 `registerArt(ART)`를 부르는지(메아리 계약은 이미), 게임의 `vite.config.ts`의 `publicDir`가 `client/public`인지 본다(메아리 계약은 이미). 그리고 `npm run build:all`.
-4. 폰 세로·가로·PC에서 홈·카드 목록·뽑기를 본다. 그림이 없는 캐릭터는 3D 초상 그대로이므로 몇 장만 넣어도 된다.
+   node 내장만 쓴다: 파일 머리(PNG·WebP)에서 크기를 읽어 권장과 다르면 경고하고, 투명이 필요한 칸에 투명이 없으면(WebP의 알파 표시, PNG는 칸을 읽어서) 경고하고, 무거우면 경고한다(그래도 넣는다). 이름이 맞지 않는 파일은 건너뛴다. 표는 있던 것에 더하고(같은 열쇠는 새 것), `--replace`면 새로 쓴다.
+   앱 아이콘(`appicon.png`, 8비트 PNG): `scripts/png.mjs`(zlib만)로 줄여 `public/art/brand/`에 `icon-32`·`icon-180`·`icon-192`·`icon-256`·`icon-512`·`icon-maskable-512`(가운데 80%, 바탕색 위)·`og`(1200×630)와 `manifest.webmanifest`(이름은 `index.html`의 `<title>`)를 쓴다. 바탕색은 `--bg=#rrggbb`, 없으면 `index.html`의 `theme-color`. 크기별 파일을 직접 주려면 `appicon-192.png`·`appicon-maskable.png`·`og.png` …(만든 것보다 이긴다). WebP 앱 아이콘은 읽지 못한다(경고).
+4. 진입점이 `registerArt(ART)`를 부르는지(세 게임 모두), `vite.config.ts`의 `publicDir`가 `client/public`인지(세 게임 모두) 보고 `npm run build:all`.
+5. 폰 세로·가로·PC에서 접속 화면·홈·메뉴 탭·뽑기·카드 목록·편성 확인·들판(기술 단추·가방)을 본다. `node scripts/art-list.mjs <게임> --missing`으로 남은 칸을 본다.
 
 ### 함께 고친 것 (ux-review.md의 U3 항목)
 

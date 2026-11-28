@@ -1,6 +1,7 @@
 // 그림(아이콘): 게임이 그림 한 장에 여러 아이콘을 담은 시트를 등록하면, 틀의 화면이 이름 옆에 그 칸을 그린다. 그림이 없는 것은 지금처럼 글자만 보인다.
 // 시트는 열 × 행의 고른 칸이고, keys는 위 줄 왼쪽부터 읽는 차례의 열쇠다(빈 칸은 null). 투명 배경 PNG·WebP를 권한다: 칸 뒤의 바탕색은 css의 --icon-bg로 게임이 정한다.
 // 그림의 파일은 게임의 public/ 폴더에 둔다(빌드하면 화면과 같은 자리로 간다).
+// 낱장 그림(art2): 게임이 registerArt로 'item:<id>'·'cur:<재화>'·'icon:<이름>'을 등록했으면 시트보다 그 그림이 이긴다 (engine/client/art.ts의 sheetKeyArt).
 //
 // 열쇠                    쓰이는 곳
 //   아이템 id             가방·상점·대장간의 줄, 물약 단추(Q), 메뉴의 장비(무기·갑옷의 바탕 아이템)
@@ -9,6 +10,7 @@
 //   'ui:mail'             메뉴의 우편 줄
 // 무기는 직업의 손 모양(ClassDef.hand)마다 이름이 다르다(검 / 활 / 지팡이): hand를 주고 등록한 그림은 그 손의 직업에게만 보인다.
 import { handOf, type Gear } from '../../shared/defs';
+import { sheetKeyArt } from '../art';
 
 /** 아이콘 하나: 어느 시트의 몇째 칸인가 */
 interface Icon { src: string; cols: number; rows: number; col: number; row: number; filter?: string }
@@ -35,6 +37,8 @@ export const addItemSheet = addIconSheet;
 
 /** 그 열쇠의 그림 (직업 cls에 맞는 것). 손 모양을 정해 등록된 열쇠인데 이 직업의 손 모양 그림이 없으면 없음 */
 function find(key: string, cls: string): Icon | undefined {
+  const art = sheetKeyArt(key, cls ? handOf(cls) : undefined);
+  if (art) return { src: art, cols: 1, rows: 1, col: 0, row: 0 };
   if (HANDED.has(key)) return ICONS.get(`${key}@${handOf(cls)}`) ?? (ICONS.has(key) ? ICONS.get(key) : undefined);
   return ICONS.get(key);
 }
@@ -53,6 +57,7 @@ export function itemIcon(key: string, cls = '', css = ''): HTMLElement | null {
   el.className = css ? `icon ${css}` : 'icon';
   el.setAttribute('aria-hidden', 'true');
   el.style.backgroundImage = `url("${ic.src}")`;
+  if (ic.cols === 1 && ic.rows === 1) { el.classList.add('iconArt'); el.style.backgroundSize = 'contain'; el.style.backgroundPosition = 'center'; return el; }
   el.style.backgroundSize = `${ic.cols * 100}% ${ic.rows * 100}%`;
   el.style.backgroundPosition = `${ic.cols > 1 ? (ic.col / (ic.cols - 1)) * 100 : 0}% ${ic.rows > 1 ? (ic.row / (ic.rows - 1)) * 100 : 0}%`;
   if (ic.filter) el.style.filter = ic.filter;

@@ -63,7 +63,9 @@ export { modeBackLine } from './hud/modes';
 export { menuTab, MENU_GROUPS, setMenuGroups, setTabGate, type MenuGroup, type MenuGroupDef } from './hud/menu';
 // 그림 자리와 화면 아이콘 (U3: art.ts, hud/uiicons.ts)
 export { noticesNow, openNotices } from './hud/ops';
-export { artPick, artUrl, onArt, portraitArt, registerArt, type ArtKind } from './art';
+export { ART_BRAND, ART_KINDS, artKeyOk, artPick, artUrl, hasArt, onArt, portraitArt, registerArt, sheetKeyArt, splashArt, type ArtKind } from './art';
+export { artPic, frameArt, setScene } from './hud/artdom';
+export { spritesOn, unitArt, useSprites, type SpriteOpts } from './scene/sprites';
 export { ICON_PATHS, iconSvg, isIconName, uiIcon, type IconName } from './hud/uiicons';
 export { remindGuestSave, setGuestReminder } from './hud/keepsafe';
 export { enableOfflineCache, isAfk, onReturn } from './lifecycle';

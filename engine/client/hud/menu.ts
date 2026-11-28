@@ -6,6 +6,7 @@
 //   menu/tabs.ts   탭 목록의 셈 (화면 요소를 읽지 않는다: 시험 engine/test/fx/client.test.ts)
 //   menu/parts.ts  탭들이 함께 쓰는 요소 만들기와 다시 그리기(redraw)
 //   menu/gear.ts 장비 · build.ts 성장 · mail.ts 우편 · daily.ts 일일 · market.ts 거래소 · guild.ts 길드 · rank.ts 순위
+import { setScene } from './artdom';
 import { ATTEND, DAILY_IDS } from '../../shared/defs';
 import { $ } from '../app';
 import { setGuildTag } from '../entities';
@@ -165,6 +166,7 @@ function drawMenu(soft: boolean): void {
   const lock = gateOf(on.id);
   if (lock?.why) ui.list.append(lockBand(lock.why)); else on.draw(ui.list);
   ui.list.scrollTop = top;
+  setScene(ui.panel, on.id); // 탭의 배경 그림 'bg:<탭 id>' (art2: 없으면 그대로)
 }
 setRedraw(renderMenu);
 

@@ -11,7 +11,7 @@ import { ALL_MODULES, MODULE_TABLE, type ModuleId } from '../../shared/modules';
 import { BAG_KINDS, bagCells, cellCount } from '../../client/hud/bagcells';
 import { ENGINE_TAB_MODS, groupTabs, MENU_GROUPS, MENU_TABS, tabsForModules, visibleTabs } from '../../client/hud/menu/tabs';
 import { ICON_PATHS } from '../../client/hud/uiicons';
-import { artPick, artUrl, clearArt, portraitArt, registerArt } from '../../client/art';
+import { artKeyOk, artPick, artUrl, clearArt, portraitArt, registerArt, sheetKeyArt, splashArt } from '../../client/art';
 import { engineKeys, keyDiff, keysFor } from '../../client/keys';
 import { check } from '../harness';
 
@@ -78,6 +78,15 @@ import { check } from '../harness';
   check(rej.join() === 'face:x,bg:a@side' && portraitArt('aria') === 'art/portrait/aria.webp' && portraitArt('bran') === undefined && artPick('bg', 'tower', 'portrait') === 'art/bg/tower@portrait.webp'
     && artPick('bg', 'tower', 'landscape') === 'art/bg/tower.webp' && artUrl('banner:fest') === 'https://cdn.example/f.webp' && artPick('banner', 'none') === undefined,
     '그림 자리: 맞지 않는 열쇠는 건너뛰고, 초상·배경(방향)·배너를 찾고, 없으면 undefined (3D 초상·css 배경으로 대신)');
+  // 넓힌 칸 (art2): 재화·아이템(손 모양)·기술·적·등급 테두리·연출·브랜드. 시트의 열쇠(cur:second·slot:·ui:)가 낱장 그림으로 이어진다
+  clearArt();
+  check(sheetKeyArt('cur:gold') === undefined, '그림이 하나도 없으면 시트의 열쇠는 그림을 찾지 않는다 (지금 그대로)');
+  const rej2 = registerArt({ 'cur:gold': 'g.webp', 'cur:second': 's.webp', 'item:blade1': 'b.webp', 'item:blade1@bow': 'bb.webp', 'item:slot-ring': 'r.webp', 'icon:mail': 'm.png', 'skill:cleave': 'k.webp',
+    'enemy:wisp': 'w.webp', 'frame:rare': 'f.webp', 'fx:orb': 'o.webp', logo: 'l.webp', 'splash@landscape': 'sl.webp', splash: 'sp.webp', appicon: 'a.png', 'skill:x@bow': 'no', 'logo:x': 'no', 'splash@side': 'no' }, 'art/');
+  check(rej2.join() === 'skill:x@bow,logo:x,splash@side' && sheetKeyArt('cur:second') === 'art/s.webp' && sheetKeyArt('cur:gold') === 'art/g.webp' && sheetKeyArt('blade1', 'bow') === 'art/bb.webp'
+    && sheetKeyArt('blade1', 'sword') === 'art/b.webp' && sheetKeyArt('slot:ring') === 'art/r.webp' && sheetKeyArt('ui:mail') === 'art/m.png' && sheetKeyArt('tonic') === undefined
+    && artPick('enemy', 'wisp') === 'art/w.webp' && artUrl('frame:rare') === 'art/f.webp' && splashArt('landscape') === 'art/sl.webp' && splashArt('portrait') === 'art/sp.webp' && artKeyOk('bg:gacha@portrait') && !artKeyOk('bg:gacha@bow'),
+    '넓힌 그림 칸: 두 번째 재화는 cur:second, 무기는 손 모양의 것을 먼저, 장신구 칸·우편 아이콘, 적·테두리·접속 화면(방향)을 찾고 맞지 않는 열쇠는 건너뛴다');
   clearArt();
 }
 

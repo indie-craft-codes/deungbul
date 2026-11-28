@@ -9,6 +9,7 @@ import { L, LOCALES, onLangChange, setLang, t } from '../i18n';
 import type { UiKey } from '../i18n/ko';
 import { S } from '../state';
 import { itemIcon } from './icons';
+import { artUrl } from '../art';
 import { connStop, gateKind, type GateKind } from './conn';
 import { showNumber } from './reward';
 
@@ -108,6 +109,16 @@ export function initMe(): void {
   onLangChange(renderTexts);
 }
 
+/** 기술 단추의 그림 'skill:<기술 id>' (art2). 없으면 글자만 (지금 그대로) */
+function skillArt(b: HTMLButtonElement, id: string): void {
+  const url = artUrl(`skill:${id}`);
+  let img = b.querySelector<HTMLImageElement>('img.skArt');
+  b.classList.toggle('hasArt', !!url);
+  if (!url) { img?.remove(); return; }
+  if (!img) { img = document.createElement('img'); img.className = 'skArt'; img.alt = ''; img.setAttribute('aria-hidden', 'true'); b.prepend(img); }
+  if (img.getAttribute('src') !== url) img.src = url;
+}
+
 /** 언어에 따라 달라지는 글자를 다시 쓴다 (처음, 그리고 언어가 바뀔 때). */
 export function renderTexts(): void {
   const loc = L();
@@ -118,6 +129,7 @@ export function renderTexts(): void {
     skillUi[i].name.textContent = text.name;
     skillUi[i].button.title = text.info;
     skillUi[i].button.setAttribute('aria-label', loc.fmt.skillLabel(text.name, text.info, i + 1));
+    skillArt(skillUi[i].button, id);
   });
   hudSlow(performance.now());
 }

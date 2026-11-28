@@ -68,6 +68,58 @@ export class View {
     this.buildNature(world, look.leaf ?? plainLeaf);
     this.moveMark = this.ring(0.45, 0.62, 0xf0bb55);
     this.targetRing = this.ring(0.95, 1.12, 0xff6b5e);
+    // 그림 배경(setBackdrop)이 감출 것: 땅·나무·게임의 건물 (빛과 표시 고리는 남긴다)
+    this.worldObjs = this.scene.children.filter((o) => !(o as THREE.Light).isLight && o !== this.sun.target && o !== this.moveMark && o !== this.targetRing);
+  }
+
+  // ---------- 그림 배경 (art2: 탑 전투처럼 3D 바닥 대신 화면 뒤 그림) ----------
+  private worldObjs: THREE.Object3D[] = [];
+  private backdropUrl = '';
+  private backdropTex: THREE.Texture | null = null;
+  private keptSky: { bg: THREE.Scene['background']; fog: THREE.Scene['fog'] } | null = null;
+  private catcher: THREE.Mesh | null = null;
+  private readonly texCache = new Map<string, THREE.Texture>();
+  /**
+   * 3D의 땅·나무·건물을 감추고 화면 뒤에 그림을 깐다 (화면을 가득 덮도록 자른다). 유닛의 그림자는 보이지 않는 바닥이 받아 은은하게 남는다.
+   * url이 없으면(null) 예전 장면으로 돌린다. 같은 그림을 다시 부르면 아무것도 하지 않는다
+   */
+  setBackdrop(url: string | null): void {
+    const u = url ?? '';
+    if (u === this.backdropUrl) return;
+    this.backdropUrl = u;
+    if (!u) {
+      if (this.keptSky) { this.scene.background = this.keptSky.bg; this.scene.fog = this.keptSky.fog; this.keptSky = null; }
+      for (const o of this.worldObjs) o.visible = true;
+      if (this.catcher) this.catcher.visible = false;
+      this.backdropTex = null;
+      return;
+    }
+    if (!this.keptSky) this.keptSky = { bg: this.scene.background, fog: this.scene.fog };
+    for (const o of this.worldObjs) o.visible = false;
+    if (!this.catcher) {
+      const g = new THREE.PlaneGeometry(600, 600).rotateX(-Math.PI / 2);
+      this.catcher = new THREE.Mesh(g, new THREE.ShadowMaterial({ opacity: 0.32 }));
+      this.catcher.receiveShadow = true;
+      this.scene.add(this.catcher);
+    }
+    this.catcher.visible = true;
+    this.scene.fog = null;
+    let tex = this.texCache.get(u);
+    if (!tex) {
+      tex = new THREE.TextureLoader().load(u, () => this.coverBackdrop());
+      tex.colorSpace = THREE.SRGBColorSpace;
+      this.texCache.set(u, tex);
+    }
+    this.backdropTex = tex;
+    this.scene.background = tex;
+    this.coverBackdrop();
+  }
+  /** 그림 배경을 화면 비율에 맞춰 가운데를 자른다 (css의 cover) */
+  private coverBackdrop(): void {
+    const t = this.backdropTex, img = t?.image as { width?: number; height?: number } | undefined;
+    if (!t || !img?.width || !img.height) return;
+    const ia = img.width / img.height, sa = this.width / Math.max(1, this.height);
+    if (sa > ia) { t.repeat.set(1, ia / sa); t.offset.set(0, (1 - ia / sa) / 2); } else { t.repeat.set(sa / ia, 1); t.offset.set((1 - sa / ia) / 2, 0); }
   }
 
   /** 땅에 눕힌 고리. 이동 표시, 대상 표시, 기술 이펙트에 쓴다. */
@@ -141,8 +193,10 @@ export class View {
   setMood(m: Mood): void {
     this.hemi.intensity = m.hemi;
     this.sun.intensity = m.sun;
-    (this.scene.background as THREE.Color).setHex(m.sky);
-    const fog = this.scene.fog as THREE.Fog;
+    // 그림 배경을 깐 동안에는 하늘·안개를 따로 둔 것에 적는다 (걷으면 돌아온다)
+    const sky = this.keptSky;
+    ((sky ? sky.bg : this.scene.background) as THREE.Color).setHex(m.sky);
+    const fog = (sky ? sky.fog : this.scene.fog) as THREE.Fog;
     fog.color.setHex(m.sky);
     fog.near = m.fogNear;
     fog.far = m.fogFar;
@@ -157,6 +211,7 @@ export class View {
     if (h > w * 1.3 && w < 600) this.camera.setViewOffset(w, h, w * 0.12, 0, w, h);
     else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
+    this.coverBackdrop();
   }
 
   /** 카메라는 각도 고정, 대상만 따라간다. dist: 비추는 곳에서 카메라까지(m). 어디를 얼마나 멀리서 비출지는 camera.ts가 정한다 */

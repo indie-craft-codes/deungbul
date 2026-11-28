@@ -3,6 +3,7 @@
 // 코드 모델을 먼저 세우고, 파일이 다 읽히면 그 모델의 안을 파일의 것으로 바꿔 끼운다 (swapIn). 읽지 못하면 코드 모델이 그대로 남는다. 읽고 복제하는 일은 scene/gltf.ts.
 // 약속: 발이 원점, +Z를 바라본다. 사람형 키는 약 2.1.
 import * as THREE from 'three';
+import { animateSprite } from './sprites';
 import { armorHit, humanoidAsset, monsterAsset, nameList, pickClip, weaponAsset, type AnimState, type HumanoidArmor, type ModelAsset } from '../assets';
 import type { Animator, Instance, Source } from './gltf';
 import type { Look } from '../../shared/defs/look';
@@ -22,6 +23,8 @@ export interface Model {
   fileArmor?: FileArmor;
   /** 몸 전체를 담은 안쪽 묶음 (겉모습의 크기 배율을 받는다: scene/look.ts). 있으면 갑옷 덧대기도 여기에 붙는다. 없으면 root */
   frame?: THREE.Group;
+  /** 그림 판으로 그린 유닛 (scene/sprites.ts: 3D 몸 대신). h는 이름표를 붙일 높이, die는 쓰러짐의 남은 비율(1 = 서 있음) */
+  sprite?: { s: THREE.Sprite; mat: THREE.SpriteMaterial; h: number; w: number; right: boolean; flip: boolean; die?: number };
 }
 /** 파일의 사람에서 갑옷을 칠할 메시들(본래 재질과 칠할 칸)과 덧대기를 붙일 노드(쉬는 자세의 자리를 되돌리는 행렬) */
 interface FileArmor { meshes: { mesh: THREE.Mesh; base: THREE.Material | THREE.Material[]; slots: boolean[] }[]; node?: THREE.Object3D; rest?: THREE.Matrix4 }
@@ -34,6 +37,7 @@ const HIDDEN = new THREE.MeshBasicMaterial({ visible: false });
 export function setFlash(m: Model, on: boolean): void {
   if (!!m.flashing === on) return;
   m.flashing = on;
+  if (m.sprite) return; // 그림 판은 색을 밝혀 번쩍인다 (scene/sprites.ts)
   m.root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh || mesh.material === HIDDEN) return;
@@ -409,6 +413,7 @@ export function cueAnim(m: Model, s: AnimState): boolean { return m.anim?.cue(s)
  * scale은 죽을 때 줄어드는 연출에 쓴다. every는 모델 파일의 믹서를 몇 프레임마다 돌리는가 (멀거나 화면 밖이면 드물게: assets.ts의 mixerEvery)
  */
 export function animate(m: Model, x: number, z: number, face: number, walking: boolean, phase: number, dt: number, swing = 0, scale = 1, every = 1): void {
+  if (m.sprite) { animateSprite(m, x, z, face, walking, phase, swing, scale); return; }
   const r = m.root;
   let d = face - r.rotation.y;
   while (d > Math.PI) d -= Math.PI * 2;

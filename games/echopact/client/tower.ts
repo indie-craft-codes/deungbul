@@ -7,7 +7,7 @@
 // 모드를 오가는 것·메뉴의 탭·감출 틀 요소·들판의 대역은 틀이 맡는다 (engine/client/hud/modes.ts). 문서의 body[data-mode]·[data-tower]로 스타일이 화면을 가른다.
 import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSideMe } from '@engine/shared/defs';
 import {
-  $, charPortrait, closeStageResult, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
+  $, charPortrait, closeStageResult, useSprites, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
   onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, stagesDone, starGap, switchMode, useStageScreens, type HomeKit,
   setLoadingTips, featureLock, featureOpen, tutNow, myMorph, charDefs, noticesNow, openNotices,
 } from '@engine/client';
@@ -46,7 +46,7 @@ function syncView(ids: readonly string[]): void {
 }
 function openAdventure(): void {
   $('towerAdv').hidden = false;
-  openScreen('towerAdv', { kind: 'page', el: $('towerAdv'), close: () => { $('towerAdv').hidden = true; } });
+  openScreen('towerAdv', { kind: 'page', el: $('towerAdv'), scene: 'adventure', close: () => { $('towerAdv').hidden = true; } });
 }
 /** 전투를 본다 (틀의 전투 화면: 위 띠·초상 칸, 뒤로 가기 = 일시정지 창) */
 function watchBattle(): void {
@@ -243,6 +243,9 @@ function drawSide(s: Readonly<ModeSideMe> = myModeSide()): void {
 // 안전장치의 설정 칸(보이지 않을 때의 자동 사냥)은 틀의 자동 사냥 설정 창으로 옮겼다 (묶음 E: engine/client/hud/autoset.ts. 값은 서버에 남는다)
 
 export function initTower(): void {
+  // 탑 전투의 유닛을 그림으로 (art2): 메아리는 초상 그림(portrait:<id>, 투명 배경)을, 단계의 적은 enemy:<id>를 쓰고, 그림이 없는 것은 3D 그대로.
+  // 울림골의 짐승은 3D 그대로 ('stage': 단계에 나오는 몬스터만). 전투의 바닥·하늘은 그림 bg:battle(장마다 bg:battle-<장 번호>)이 있으면 그것 (틀의 전투 화면 키트)
+  useSprites({ heroes: true, enemies: 'stage' });
   setLoadingTips(() => [t('loadTip1'), t('loadTip2'), t('loadTip3')]); // 첫 로딩의 팁 (U2)
   mountPanel('hud', `
     <div id="towerAdv" class="tscreen tadv" hidden>

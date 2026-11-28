@@ -5,6 +5,7 @@ import { $ } from '../app';
 import { onMsg, onSlow } from '../bus';
 import { L, onLangChange, t } from '../i18n';
 import { S } from '../state';
+import { artPic } from './artdom';
 
 const box = $('buffs');
 let shown = '';
@@ -12,12 +13,14 @@ let shown = '';
 function render(): void {
   const now = performance.now(), loc = L();
   for (const [id, until] of S.buffs) if (until <= now) S.buffs.delete(id);
-  const list = [...S.buffs].sort((a, b) => a[1] - b[1]).map(([id, until]) => loc.fmt.buffLeft(isSkillId(id) ? loc.skills[id].name : id, Math.ceil((until - now) / 1000)));
+  const items = [...S.buffs].sort((a, b) => a[1] - b[1]).map(([id, until]) => ({ id, text: loc.fmt.buffLeft(isSkillId(id) ? loc.skills[id].name : id, Math.ceil((until - now) / 1000)) }));
+  const list = items.map((x) => x.text);
   const sig = list.join('|');
   if (sig === shown) return;
   shown = sig;
   box.hidden = list.length === 0;
-  box.replaceChildren(...list.map((text) => { const s = document.createElement('span'); s.className = 'buff'; s.textContent = text; return s; }));
+  // 그림 (art2): 강화마다 'icon:buff-<기술 id>' → 그 기술의 'skill:<id>' (없으면 글만)
+  box.replaceChildren(...items.map(({ id, text }) => { const s = document.createElement('span'); s.className = 'buff'; s.textContent = text; const p = artPic(`icon:buff-${id}`, 'buffPic') ?? artPic(`skill:${id}`, 'buffPic'); if (p) s.prepend(p); return s; }));
   box.title = t('buffs');
 }
 

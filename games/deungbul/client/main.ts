@@ -1,7 +1,8 @@
 // 이 게임(등불지기)의 클라이언트 진입점 (games/deungbul/client/index.html이 이 파일을 읽는다). 게임이 틀을 시작시킨다:
 // 지형의 겉모습(땅과 잎의 색, 건물)과 이 게임의 모듈 목록을 들고 틀의 startClient를 부른다. 틀의 파일은 이 폴더(games/deungbul/)를 import하지 않는다.
 // 이 게임에만 있는 새 화면은 이 폴더 아래에 파일을 만들고 아래 목록에 init 한 줄을 더한다 (어느 게임에나 쓸 기능은 틀의 modules.ts에).
-import { setMenuGroups, startClient } from '@engine/client';
+import { registerArt, setMenuGroups, startClient } from '@engine/client';
+import { ART } from './artlist';
 import { initDeungbul, initResidents } from './deungbul';
 import { initGuideLink } from './hud/guidelink';
 import { initMarks } from './hud/marks';
@@ -16,6 +17,8 @@ import { initScene } from './scene/scene';
 import { buildScenery } from './scene/scenery';
 
 // 이 게임의 창을 틀의 빈 자리에 붙인다 (틀의 index.html에는 틀의 창만 있다). 틀을 시작시키기 전이어야 한다: 모듈들이 init에서 요소를 잡는다
+// 그림 자리 (art2): 넣은 그림을 등록한다. 표는 scripts/art-import.mjs가 만든다. 비어 있으면 틀이 대신 그린다 (지금 그대로). 필요한 칸: node scripts/art-list.mjs deungbul
+registerArt(ART);
 mountMarkup();
 // 메뉴의 탭을 틀의 기본 묶음으로 (U3 정보 구조): 성장(장비·성장) / 활동(일일) / 소식(우편·길드·순위·거래소) / 설정. 탭과 기능은 그대로
 setMenuGroups();

@@ -55,6 +55,8 @@ const child = spawn(process.execPath, [...job, ...rest], { cwd: root, stdio: 'in
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => child.kill(sig));
 child.on('exit', (code, signal) => {
   // 화면을 빌드했으면 크기 예산을 보인다 (scripts/budget.mjs: 묶음별 크기, 8MB·20MB 경고, deploy.json의 offlineCache면 sw.js)
+  // 앱 아이콘을 넣은 게임은 index.html의 머리에 favicon·manifest·og:image (scripts/brand-head.mjs: 넣지 않았으면 그대로)
+  if (cmd === 'build' && code === 0) spawnSync(process.execPath, [path.join(root, 'scripts', 'brand-head.mjs'), game], { cwd: root, stdio: 'inherit' });
   if (cmd === 'build' && code === 0) spawnSync(process.execPath, [path.join(root, 'scripts', 'budget.mjs'), game], { cwd: root, stdio: 'inherit' });
   process.exit(code ?? (signal ? 1 : 0));
 });

@@ -1802,3 +1802,31 @@ a.cbLink { display: inline-flex; align-items: center; gap: 4px; color: var(--c-a
 @media (max-width: 720px) { #queueBand { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 200px); width: calc(100% - 24px); } body.in-queue #rightcol #roomLobby { display: none; } }
 /* 리플레이를 보는 동안 결과 창은 뒤로 (닫으면 그대로 있다) */
 body.replay-on #roomEnd { visibility: hidden; }
+
+/* ---------- 그림 입히기 (art2: hud/artdom.ts). 그림이 등록되지 않은 게임에는 아무것도 붙지 않는다 ---------- */
+/* 큰 화면의 배경 그림 'bg:<장면>': 글이 읽히게 위아래를 어둡게 덮는다 (게임이 --art-dim-a/-b로 바꾼다) */
+:root { --art-dim-a: rgba(8, 10, 16, .55); --art-dim-b: rgba(8, 10, 16, .78); }
+.artBg { background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; background-color: var(--c-black, #000) !important; }
+/* 등급 테두리 'frame:<등급 id>': 칸 위에 얹는다 (css 테두리는 감춘다) */
+:where(.hasRframe) { position: relative; }
+.hasRframe { border-color: transparent !important; }
+.rframe { position: absolute; inset: -2px; pointer-events: none; background: center / 100% 100% no-repeat; border-radius: inherit; }
+/* 접속 화면의 제목 그림 'logo': 글자는 낭독기에만 */
+#gate h1.hasLogo { font-size: 0; line-height: 0; }
+#gate h1 .artLogo { display: block; margin: 0 auto; max-width: min(100%, 360px); max-height: 140px; object-fit: contain; }
+/* 기술 단추의 그림 'skill:<id>' */
+.skill .skArt { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); object-fit: contain; pointer-events: none; opacity: .92; z-index: 0; }
+.skill.hasArt .n { position: relative; z-index: 1; text-shadow: 0 1px 2px var(--c-black, #000); }
+/* 낱장 그림의 아이콘 ('item:'·'cur:'): 시트의 칸 대신 그림 한 장을 칸에 맞춘다 */
+.icon.iconArt { background-color: transparent; box-shadow: none; }
+/* 도감·단계 정보의 적 그림 'enemy:<id>', 보상 칩의 그림 */
+.artPic { display: inline-block; vertical-align: middle; object-fit: contain; }
+.mrow .what .artPic.enemyPic { width: 34px; height: 34px; margin-right: 6px; border-radius: var(--r-sm); }
+.stfoe .artPic, .strw .artPic { width: 20px; height: 20px; margin-right: 4px; vertical-align: -5px; }
+/* 뽑기 연출의 예고 빛 덩이 'fx:orb'·'fx:orb-<등급 id>' */
+.gsOrb.orbArt { background-position: center; background-size: contain; background-repeat: no-repeat; border-radius: 0; }
+.mrow .what .artPic.mailPic { width: 30px; height: 30px; margin-right: 6px; }
+/* 메뉴 줄·강화·등급 표의 작은 그림 (art2: rowArt·buffs·cards) */
+.mrow .what .artPic.rowPic { width: 28px; height: 28px; margin-right: 6px; }
+.buff .artPic.buffPic { width: 16px; height: 16px; margin-right: 3px; vertical-align: -3px; }
+.cardrar.hasPic { background: none; padding: 0; } .cardrar .rarPic { width: 18px; height: 18px; display: block; }

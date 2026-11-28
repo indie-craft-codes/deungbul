@@ -35,6 +35,7 @@ import { platform } from './platform';
 import { initTips } from './hud/tip';
 import { initLayout } from './hud/layout';
 import { initScreens } from './hud/screens';
+import { initArtDom } from './hud/artdom';
 import { initA11y } from './hud/a11y';
 import { connIn, connLosing, connLost, connOpening, initConn } from './hud/conn';
 import { initCmdState } from './hud/cmdstate';
@@ -181,6 +182,7 @@ export function startClient(opts: ClientOptions = {}): void {
   initReward(); // 보상 연출: 레벨 업·받기·새 기능 (hud/reward.ts). 게임과 틀의 모듈이 안내문의 분류를 정한 뒤에
   initLayout(); // 폰 HUD의 구역 배치 (hud/layout.ts): 틀과 게임의 요소가 모두 붙은 뒤에
   initScreens(closeWorldMap); // 화면 쌓기 (hud/screens.ts): 틀의 창을 쌓임에 잇고, 뒤로 가기를 받는다
+  initArtDom(); // 그림 입히기 (hud/artdom.ts): 접속 화면의 logo·splash, 직업 고르기의 배경. 등록한 그림이 없으면 아무것도 바꾸지 않는다
   initA11y(); // 접근성 (hud/a11y.ts): 창의 role·포커스 들이기와 돌려주기, Tab은 창 안에서, Esc는 맨 위 창을 닫는다
   startPreload(); // 게임의 모듈이 에셋을 등록한 뒤에
   initTips(); // 터치에서 title 툴팁을 길게 눌러 본다 (hud/tip.ts)
