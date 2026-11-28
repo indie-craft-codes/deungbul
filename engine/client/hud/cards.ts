@@ -4,7 +4,7 @@
 //   바로 가기(편성에 넣기·빼기, 이 모습으로 변신, 성장 자세히), 좌우 넘기기(‹ ›). 못 누르는 단추는 까닭을 단다 (parts.button의 why).
 // 카드의 공통 손질(HERO_RULES.cards: 합성·잠금·환원·일괄 성장·넘친 조각)을 켠 게임은 hud/cardgrow.ts가 머리·칸·상세에 단추를 더한다.
 // 데이터와 단추의 일은 collect.ts가 넘긴다 (CardData). 게임이 더 할 수 있는 것: setHeroPic(초상 그림), setCardActions({ morph }) (변신 바로 가기).
-import { HERO_RARITIES, HERO_ROLES, HERO_RULES, heroDef, heroRole, heroIds, isSkillId, type Coin, type HeroesMe } from '../../shared/defs';
+import { HERO_RARITIES, HERO_ROLES, HERO_RULES, heroDef, heroRole, heroIds, isSkillId, type Coin, type HeroesMe, rarityDef } from '../../shared/defs';
 import { L, t } from '../i18n';
 import { heroName, rarityName } from '../i18n/ko';
 import { uiText } from '../i18n/names';
@@ -15,6 +15,7 @@ import { button, el, span } from './menu/parts';
 import { openMenu } from './menu';
 import { morphStatsOf } from './morph';
 import { tintRarity } from './rarity';
+import { artPic, frameArt } from './artdom';
 import { closeScreen, openScreen, dropScreen } from './screens';
 import { S } from '../state';
 import { platform } from '../platform';
@@ -96,8 +97,11 @@ export function drawCardList(list: HTMLElement, get: () => CardData, redraw: () 
     if (r.inSquad) face.append(mk('span', 'cardsq', '◆'));
     // 등급은 테두리 색에 더해 글자로도 (색으로만 가르지 않는다: U4). 모서리에 등급 이름의 첫 글자, 낭독기는 등급 이름 전부
     const rn = rarityName(r.rarity), rb = mk('span', 'cardrar', [...rn][0] ?? ''); rb.setAttribute('aria-hidden', 'true');
+    const rpic = artPic(`icon:rarity-${rarityDef(r.rarity).id}`, 'rarPic'); // 등급 표의 그림 (art2: 없으면 글자)
+    if (rpic) { rb.textContent = ''; rb.append(rpic); rb.classList.add('hasPic'); }
     c.append(face, rb, mk('b', 'cardname', heroName(r.id)), mk('small', 'cardmeta', r.owned ? `${stars(r.stars)} Lv${r.lv}` : t('heroNotOwned')));
     c.setAttribute('aria-label', `${heroName(r.id)} · ${rn} · ${r.owned ? `★${r.stars} Lv${r.lv}` : t('heroNotOwned')}`);
+    frameArt(c, r.rarity); // 등급 테두리 그림 'frame:<등급 id>' (art2: 없으면 css 테두리)
     if (r.canStar) c.classList.add('dot');
     cardCell(c, r, d.heroes);
     c.addEventListener('click', () => openCard(r.id));

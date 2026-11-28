@@ -15,6 +15,10 @@ import { S, newMe, type Me, type Remote } from './state';
 import { kindLook, type KindInfo, type KindLook } from './kinds';
 import { hasModule } from './mods';
 import { makeBox } from './scene/models';
+import { setSpriteYaw, unitSprite } from './scene/sprites';
+
+// 유닛 그림(art2)의 좌우 뒤집기는 카메라가 돈 각을 본다
+setSpriteYaw(() => view?.yaw ?? 0);
 import { decodeLook, type Look } from '../shared/defs/look';
 import './scene/look'; // 부품으로 된 사람형을 그리는 법 (models.ts의 defaultHumanoid가 겉모습이 있을 때 부른다)
 
@@ -149,7 +153,7 @@ function addThing(e: EnterInfo): void {
   const tag = makeTag(label, look.hp ? 'thing ally' : 'thing', !!look.hp);
   tag.el.hidden = !look.label;
   S.others.set(e.id, {
-    id: e.id, kind: e.kind, type: e.type, name: e.name, model, tag, h: look.h ?? 1.5,
+    id: e.id, kind: e.kind, type: e.type, name: e.name, model, tag, h: model.sprite?.h ?? look.h ?? 1.5,
     buf: [{ t: performance.now(), x: e.x, z: e.z, face: e.face, moving: false }], x: e.x, z: e.z, face: e.face, walking: false, phase: Math.random() * 6,
     hp: e.hp ?? 0, maxHp: e.maxHp ?? 0, swing: 0, weapon: '', armor: '', cls: '', swarm: false, dying: 0, gone: false, vals: [], look,
   });
@@ -163,7 +167,9 @@ function addRemote(e: EnterInfo): void {
   // 칸은 그 모듈을 고른 게임에만 온다 (protocol.ts의 EnterInfo): 없으면 빈 값
   const cls = e.c ?? '', hp = e.hp ?? 0, maxHp = e.maxHp ?? 0;
   const cloth = monster ? undefined : clothOf({ id: e.id, name: e.name, me: false, vals: [] });
-  const model = monster ? makeMonster(e.type) : makeHumanoid(cloth!, gearOf(cls), undefined, cls, undefined, partsOf(e.l));
+  // 유닛 그림 (art2: scene/sprites.ts, 게임이 useSprites로 켜고 그림이 있을 때만): 없으면 3D 모델
+  const mh = monster && isMonsterId(e.type) ? MONSTERS[e.type].h : 2.5;
+  const model = monster ? unitSprite('m', e.type, mh) ?? makeMonster(e.type) : makeHumanoid(cloth!, gearOf(cls), undefined, cls, undefined, partsOf(e.l));
   model.root.position.set(e.x, 0, e.z);
   model.root.rotation.y = e.face;
   view.scene.add(model.root);
@@ -175,7 +181,7 @@ function addRemote(e: EnterInfo): void {
   setTagHp(tag, hp, maxHp);
   if (!monster) { setBlade(model, e.w ?? ''); setArmor(model, e.a ?? ''); tag.el.classList.toggle('ally', S.party.some((m) => m.id === e.id)); }
   S.others.set(e.id, {
-    id: e.id, kind: e.kind, type: e.type, name, model, tag, h: monster && isMonsterId(e.type) ? MONSTERS[e.type].h : 2.5,
+    id: e.id, kind: e.kind, type: e.type, name, model, tag, h: model.sprite?.h ?? mh,
     buf: [{ t: performance.now(), x: e.x, z: e.z, face: e.face, moving: false }], x: e.x, z: e.z, face: e.face, walking: false, phase: Math.random() * 6,
     hp, maxHp, swing: 0, weapon: e.w ?? '', armor: e.a ?? '', cls, swarm: e.r === 1, dying: 0, gone: false, vals: [], cloth, ...(e.l ? { lookCode: e.l } : {}),
   });
@@ -504,6 +510,7 @@ function updateRemote(r: Remote, dt: number, now: number): void {
   // 쓰러짐: 틀의 연출은 DIE_S 동안 줄어들기, 쓰러지는 클립이 있으면 누운 채 있다가 마지막 0.25초에 줄어든다
   const shrink = r.dying <= 0 ? 1 : (r.dieS ?? DIE_S) > DIE_S ? Math.min(1, r.dying / 0.25) : Math.max(0.01, r.dying / DIE_S);
   // 모델 파일의 믹서는 멀거나 화면 밖이면 드물게 돌린다 (내 캐릭터 둘레가 기준)
+  if (r.model.sprite) r.model.sprite.die = r.dying > 0 ? shrink : 1; // 그림 판은 줄지 않고 기울며 흐려진다
   const every = r.model.anim ? mixerEvery(S.me ? Math.hypot(r.x - S.me.x, r.z - S.me.z) : 0, view.project(r.x, r.h * 0.5, r.z) !== null) : 1;
   animate(r.model, r.x + rc.ox, r.z + rc.oz, r.face, r.walking, r.phase, dt, r.swing, Math.max(0.01, shrink) * rc.scale, every);
 }

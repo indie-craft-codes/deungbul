@@ -1,5 +1,6 @@
 // 메뉴의 일일 탭: 일일 임무의 진행과 출석 연속 일수. 주간·월간 임무(DailyDef.period)가 있는 게임은 기간마다 묶고, 머리에 '초기화까지'를 적는다
 // (다음 초기화 시각은 서버가 meta의 daily.next로 보낸다: 서버의 시계와 초기화 시각 RESET으로 셈한 것).
+import { rowArt } from '../artdom';
 import { DAILY_IDS, PERIODS, dailyDef, dailyPeriod } from '../../../shared/defs';
 import { L, t } from '../../i18n';
 import { S } from '../../state';
@@ -20,7 +21,7 @@ export function drawDaily(): void {
     }
     for (const id of ids) {
       const def = dailyDef(id), done = d.got.includes(id);
-      ui.list.append(row(loc.gear.dailies[id], rewardText(def.r), [done ? doneMark(t('dailyDone')) : el('num', loc.fmt.have(d.prog[id] ?? 0, def.n))], done ? 'done' : ''));
+      ui.list.append(rowArt(row(loc.gear.dailies[id], rewardText(def.r), [done ? doneMark(t('dailyDone')) : el('num', loc.fmt.have(d.prog[id] ?? 0, def.n))], done ? 'done' : ''), `icon:daily-${id}`)); // 그림 (art2: 없으면 글만)
     }
   }
   ui.list.append(el('note', t('dailyNote')));

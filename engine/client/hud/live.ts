@@ -1,6 +1,7 @@
 // 라이브 콘텐츠의 화면 (묶음 6): 메뉴의 '상점'(GOODS)·'이벤트'(event)·'시즌'(season)·'업적'(achieve)·'도감'(codex) 탭, 우편 탭 머리의 쿠폰 칸(coupon),
 // 길 상인 창의 특별 상품(GOODS의 shop 'npc'), 이름표의 칭호. 서버의 짝은 engine/server/game/systems/goods.ts·event.ts·season.ts·achieve.ts·codex.ts·coupon.ts.
 // 사람마다의 상태는 개인 상태(me: goods, event, season, achieve, codex)로 온다. 표(이름·보상·값)는 내용에서 읽는다 (서버와 같은 내용).
+import { rowArt } from './artdom';
 import { SEASON, codexDef, eventDef, eventIds, goodsDef, goodsIds, goodsOpen, achieveDef, achieveIds, isMonsterId, isItemId, type AchieveMe, type CodexMe, type EventMe, type GoodsDef, type GoodsMe, type Reward, type SeasonMe } from '../../shared/defs';
 import { onMsg } from '../bus';
 import { setTitle } from '../entities';
@@ -34,7 +35,8 @@ function goodsRow(id: string, def: GoodsDef): HTMLElement {
   if (left !== undefined) bits.push(loc.fmt.goodsStock(left));
   if (def.to !== undefined) bits.push(loc.fmt.liveLeft(def.to - Date.now()));
   const label = out ? t('goodsSoldOut') : limited ? t('goodsAllBought') : t('goodsBuy');
-  return row(goodsName(id), optsEl(bits), [button(label, () => send({ t: 'goods', id }), out || limited)], out || limited ? 'done' : '');
+  // 그림 (art2): 상품 'icon:goods-<id>' → 주는 첫 아이템 'item:<id>' (없으면 글만)
+  return rowArt(row(goodsName(id), optsEl(bits), [button(label, () => send({ t: 'goods', id }), out || limited)], out || limited ? 'done' : ''), `icon:goods-${id}`, ...Object.keys(def.give.items ?? {}).map((x) => `item:${x}`));
 }
 
 function drawGoods(list: HTMLElement): void {
@@ -69,7 +71,7 @@ function drawEvents(list: HTMLElement): void {
       list.append(el('baghead', t('eventMissions')));
       for (const [mid, m] of ms) {
         const done = ev.got.includes(mid);
-        list.append(row(missionName(ev.id, mid), optsEl([...giveText(m.r ?? {}), m.ev ? loc.fmt.eventEv(m.ev) : '']), [done ? doneMark(t('dailyDone')) : el('num', loc.fmt.have(ev.prog[mid] ?? 0, m.n))], done ? 'done' : ''));
+        list.append(rowArt(row(missionName(ev.id, mid), optsEl([...giveText(m.r ?? {}), m.ev ? loc.fmt.eventEv(m.ev) : '']), [done ? doneMark(t('dailyDone')) : el('num', loc.fmt.have(ev.prog[mid] ?? 0, m.n))], done ? 'done' : ''), `icon:mission-${m.kind}`));
       }
     }
     const shop = goodsIds().filter((id) => goodsDef(id)!.event === ev.id);
@@ -110,7 +112,7 @@ function drawAchieve(list: HTMLElement): void {
     const a = achieveDef(id)!, done = ach.got.includes(id);
     const bits = [...giveText(a.r ?? {}), a.title ? loc.fmt.achieveTitle(titleName(id)) : ''];
     const acts = done ? (a.title && ach.title !== id ? [button(t('titleUse'), () => send({ t: 'title', id }))] : [doneMark(t('dailyDone'))]) : [el('num', loc.fmt.have(Math.min(a.n, ach.c[a.kind] ?? 0), a.n))];
-    list.append(row(achName(id), optsEl(bits), acts, done ? 'done' : ''));
+    list.append(rowArt(row(achName(id), optsEl(bits), acts, done ? 'done' : ''), `icon:ach-${id}`, `icon:mission-${a.kind}`));
   }
 }
 

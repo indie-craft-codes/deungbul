@@ -1190,3 +1190,20 @@ PC(1280×800)와 폰(390×844, 터치, DPR 2), 한국어·영어 넷씩, 두 게
 - **사용자가 정할 것**: 앱 이름·아이콘·저장 폴더 이름(지금 `game-desktop`), 배포용 서버 주소(고정 도메인: 4단계), 패드 배치(A가 기술 1, B가 기술 2·창 닫기), 설치 파일·서명·Steam을 할지(4단계).
 
 남은 것: 패키징(`dist`와 설정을 앱에 묶기), 실제 패드·Steam Input 시험, 패드로 글 입력·3D 대상 클릭·슬라이더, Tauri 비교, Steam 오버레이·업적.
+
+## 그림 칸 넓히기와 필요한 그림 목록 (2026-11-28, 가지 `feat/art2`)
+
+[making-a-game.md](making-a-game.md) 28절 '그림 자리'·'필요한 그림 목록'·'그림 넣기'. 모든 칸은 선택이다: 그림이 없으면 지금의 SVG·css·3D·글자 그대로이고, 그림이 없는 등불지기·예제는 화면이 그대로다.
+
+| 무엇 | 틀의 칸 |
+|---|---|
+| 열쇠 (`engine/client/art.ts`) | 예전 `portrait:`·`bg:`·`banner:`·`icon:`에 더해 `cur:<재화>`·`item:<id>[@손]`·`skill:`·`enemy:`·`unit:`·`frame:<등급>`·`fx:orb[-등급]`, 브랜드 `logo`·`splash[@방향]`·`appicon`, 줄 아이콘 `icon:goods-`·`ach-`·`daily-`·`mission-`·`mail-`·`buff-`·`rarity-`. `sheetKeyArt`: 그림 시트의 열쇠(`cur:second`·`slot:`·`ui:`)를 낱장 그림으로 |
+| 화면에 입히기 (`hud/artdom.ts`) | `setScene(el, 장면)`(배경 + 어둡게 덮기, 방향·그림 바뀜에 다시), `artPic`, `frameArt`, `rowArt`, `initArtDom`(접속 화면 logo·splash, 직업 고르기 `bg:classes`). `openScreen(id, { el, scene })`, 메뉴 탭마다 `bg:<탭 id>`, 편성 확인 `squad`·결과 `result`·뽑기 연출 `summon`, 메아리 계약 모험 `adventure` |
+| 아이콘 자리 | `itemIcon`이 낱장 그림을 먼저(가방·상점·대장간·장비·재화 줄·내 정보), 단계 보상 칩·우편·도감(적·아이템)·기술 단추·강화 표시·상품·임무·업적·카드 등급 표·뽑기 예고 빛 |
+| 유닛 그림 (`scene/sprites.ts`) | `useSprites(opts)`(기본 꺼짐): 영웅 `unit:`→`portrait:`, 적 `unit:`→`enemy:`(기본 단계의 적만)을 빌보드로. 발밑 그림자, 좌우 뒤집기, 걷기·공격·맞음·쓰러짐 연출, 이름표 높이 |
+| 전투 배경 | `View.setBackdrop(url)`(3D 땅·나무·건물을 감추고 화면 뒤 그림, 그림자만 받는 바닥), 전투 화면 키트가 `bg:battle-<장>`→`bg:battle` |
+| 도구 | `scripts/art-list.mjs`(+`art-list-collect.ts`, 게임의 `scripts/artneeds.ts`), `scripts/art-slots.mjs`(칸의 크기·투명 규칙), `scripts/art-import.mjs`(새 칸, 크기·투명·무게 경고, 앱 아이콘 → 크기별 PNG·manifest), `scripts/png.mjs`(zlib만의 PNG 읽기·줄이기·쓰기), `scripts/brand-head.mjs`(빌드 뒤 머리), 데스크톱 창 아이콘(`art/brand/icon-256.png`) |
+
+- **세 게임**: 진입점이 모두 `registerArt(ART)`(등불지기·예제는 빈 표 `client/artlist.ts`). 메아리 계약은 `useSprites({ heroes: true, enemies: 'stage' })`: 지금의 초상 10장이 탑 전투의 유닛이 된다(적은 그림을 넣기 전까지 3D). 경제·콘텐츠 그대로.
+- **확인**: 헤드리스 크롬 GPU(임시 서버 3016)로 메아리 계약의 지금 그림 14장(PC 1920·폰 세로), 가짜 그림(단색 PNG: `cur`·`item`·`skill`·`enemy`·`frame`·`fx`·`bg:gacha`·`bg:summon`·`bg:battle`·`logo`·`splash`·`appicon`)을 넣어 바뀌는 것, 폰 세로의 탑 전투에서 메아리 그림 유닛을 보고 가짜 그림은 지웠다. 스크린샷 `$TEMP/dg-work/art2-shots/`.
+- **남은 것**: 사람(플레이어·변신 모습)의 그림 판, 들판의 하늘 `sky:`, 우편 종류·메뉴 탭 목록의 아이콘을 art-list가 모두 알지는 못함(게임의 탭·우편 종류는 artneeds로), 개발 서버의 머리(favicon)는 빌드에서만, WebP 앱 아이콘은 읽지 못함(PNG로), 유닛 그림은 한 방향 그림의 좌우 뒤집기뿐(걷기·공격 프레임 없음).

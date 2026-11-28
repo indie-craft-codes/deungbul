@@ -7,6 +7,8 @@
 // 창은 화면 쌓기의 sheet('gachaPop'): 뒤로 가기가 닫는다. 게임이 더 할 수 있는 것: onGachaResult(소리·덤 연출).
 import { BANNER_TABLE, HERO_RARITIES, rarityDef, type PullGot } from '../../shared/defs';
 import { stillMotion } from '../motion';
+import { artUrl } from '../art';
+import { frameArt } from './artdom';
 import { gachaSound } from '../sound';
 import { L, t } from '../i18n';
 import { bannerName, heroName, rarityName } from '../i18n/ko';
@@ -54,7 +56,7 @@ function card(g: PullGot, big: boolean): HTMLElement {
   if (!g.dup) c.append(mk('span', 'gsNew', t('gsNew')));
   else c.append(mk('span', 'gsDup', overflowText(g) || L().fmt.gachaDup(g.n))); // 다 키운 카드는 '조각 n → 결정 m' (hud/cardgrow.ts)
   if (g.pity) c.append(mk('span', 'gsPity', t('gachaPityMark')));
-  return c;
+  return frameArt(c, g.r); // 등급 테두리 그림 'frame:<등급 id>' (art2: 없으면 css 테두리)
 }
 
 function draw(): void {
@@ -74,6 +76,9 @@ function draw(): void {
   el.append(head);
   if (s.stage === 'tease') {
     const orb = mk('div', 'gsOrb'); orb.dataset.rar = rarityDef(s.top).id;
+    // 예고 빛 덩이의 그림 (art2): 'fx:orb-<등급 id>', 없으면 'fx:orb', 없으면 css 빛 덩이
+    const orbArt = artUrl(`fx:orb-${rarityDef(s.top).id}`) ?? artUrl('fx:orb');
+    if (orbArt) { orb.classList.add('orbArt'); orb.style.backgroundImage = `url("${orbArt}")`; } // 주소는 요소에 바로 (css 변수의 url은 스타일 파일의 자리를 기준으로 풀린다)
     el.append(orb, mk('p', 'gsHint', t('gsTap')));
   } else if (s.stage === 'reveal') {
     const g = s.got[s.at];
@@ -153,7 +158,7 @@ export function startGachaShow(banner: string, got: readonly PullGot[]): void {
   show = { banner, got, at: 0, stage: 'tease', top: Math.max(...got.map((g) => g.r)), seen: new Set() };
   const el = root();
   el.hidden = false;
-  openScreen('gachaPop', { kind: 'sheet', el, close: () => { clearTimeout(timer); show = null; el.hidden = true; } });
+  openScreen('gachaPop', { kind: 'sheet', el, scene: 'summon', close: () => { clearTimeout(timer); show = null; el.hidden = true; } });
   draw();
   ding(show.top); // 예고: 가장 높은 등급의 소리가 먼저
   // 예고는 잠깐 비추고 저절로 공개로 (누르면 바로)

@@ -10,6 +10,7 @@ import { portraitArt } from '../art';
 import { rarityHex, tintRarity } from './rarity';
 import { onMsg } from '../bus';
 import { registerKind } from '../kinds';
+import { unitSprite } from '../scene/sprites';
 import { L, onLangChange, t } from '../i18n';
 import { bannerName, heroName, rarityName } from '../i18n/ko';
 import { uiText } from '../i18n/names';
@@ -228,7 +229,8 @@ function heroLook(): void {
       // 게임이 영웅의 모델을 정했으면 그것 (setHeroModel), 아니면 틀의 사람형에 영웅 id와 등급을 넘긴다 (setHumanoidBody가 받는다)
       // 캐릭터 정의에서 온 영웅(HeroDef.look)은 그 부품으로 그린다 (engine/shared/defs/chardef.ts의 charHero)
       const parts = d?.look, hl: HumanoidLook = { cloth: parts?.colors.cloth ?? cloth, hand: hand === false ? '' : hand, skin: parts?.colors.skin ?? 0xf0c9a0, hero: e.type, rarity: r, ...(parts ? { look: parts } : {}) };
-      const m = heroModel?.({ id: e.type, rarity: r, look: hl }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, undefined, { hero: e.type, rarity: r }, parts);
+      // 유닛 그림 (art2: useSprites를 켠 게임에 'unit:<id>'·'portrait:<id>'가 있으면 그림 판, 없으면 3D)
+      const m = unitSprite('hero', e.type, 2.1) ?? heroModel?.({ id: e.type, rarity: r, look: hl }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, undefined, { hero: e.type, rarity: r }, parts);
       let mat = rings.get(r);
       if (!mat) rings.set(r, mat = new THREE.MeshBasicMaterial({ color: rarityHex(r), transparent: true, opacity: 0.85 }));
       const ring = new THREE.Mesh(ringGeo, mat);

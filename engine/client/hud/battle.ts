@@ -6,6 +6,8 @@
 // 게임은 useBattleScreen으로 켜고(보일 때·초상 그림·홈), 전투를 볼 때 openBattle(id)로 화면 쌓기에 넣는다. 켜지 않으면 아무것도 붙지 않는다.
 import { STAGE_RULE_VIEW, heroRole, isSkillId, skillDef } from '../../shared/defs';
 import { onSlow } from '../bus';
+import { artPick } from '../art';
+import { view } from '../app';
 import { onCast } from '../entities';
 import { L, onLangChange, t } from '../i18n';
 import { heroName } from '../i18n/ko';
@@ -65,6 +67,9 @@ const disarm = (): void => { if (!ui) return; ui.quit.classList.remove('armed');
 function draw(): void {
   if (!ui || !opts) return;
   const st = myStage(), run = st?.run, on = opts.shown() && !!S.me && fighting();
+  // 전투 배경 그림 (art2): 'bg:battle-<장 번호>'(세로·가로) → 'bg:battle'. 있으면 3D 바닥 대신 화면 뒤 그림, 없거나 전투를 보지 않으면 예전 장면
+  const ch = (run?.id ?? st?.cur ?? '').split('-')[0], land = typeof matchMedia !== 'undefined' && matchMedia('(orientation: landscape)').matches ? 'landscape' : 'portrait';
+  view.setBackdrop(opts.shown() && S.me ? (ch && artPick('bg', `battle-${ch}`, land)) || artPick('bg', 'battle', land) || null : null);
   document.body.classList.toggle('battleOn', on);
   ui.top.hidden = !on; ui.squad.hidden = !on;
   if (!on) { if (!ui.sheet.hidden && !fighting()) closeScreen('btlPause'); return; }

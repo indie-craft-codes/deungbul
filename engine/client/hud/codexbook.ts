@@ -13,6 +13,7 @@ import { addMenuTab, openMenu, renderMenu } from './menu';
 import { button, chips, el, emptyState, row, span } from './menu/parts';
 import { sourceText } from './sources';
 import { uiIcon } from './uiicons';
+import { artPic } from './artdom';
 
 /** 도감의 칸 하나 */
 export interface CodexSection {
@@ -66,6 +67,8 @@ function drawMonsters(list: HTMLElement): void {
     const note = [loc.fmt.cbMonster(m.hp, m.dmg[0], m.dmg[1], m.exp), gold, tags].filter(Boolean).join(' · ');
     const known = seen ? seen.has(id) : null;
     const r = row(loc.monsters[id] ?? id, note, [], 'cbRow' + (m.boss ? ' boss' : ''));
+    const pic = artPic(`enemy:${id}`, 'enemyPic'); // 적의 그림 (art2: 없으면 글만)
+    if (pic) r.querySelector('.iname')?.prepend(pic);
     const mark = seenMark(known);
     if (mark) r.prepend(mark);
     list.append(r);
@@ -81,6 +84,8 @@ function drawItems(list: HTMLElement, gear: boolean): void {
     const n = have(id);
     const note = [itemInfo(id), sourceText(id)].filter(Boolean).join(' · ');
     const r = row(itemName(id, S.me?.cls ?? ''), note, n > 0 ? [span('num', `${t('cbHave')} ${n}`)] : [], 'cbRow');
+    const pic = artPic(`item:${id}`, 'enemyPic'); // 아이템 그림 'item:<id>' (art2: 없으면 글만. 그림 시트는 도감에 쓰지 않던 그대로)
+    if (pic) r.querySelector('.iname')?.prepend(pic);
     const mark = seenMark(seen ? seen.has(id) || n > 0 : null);
     if (mark) r.prepend(mark);
     list.append(r);

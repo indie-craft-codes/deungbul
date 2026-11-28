@@ -9,6 +9,7 @@
 // 게임의 화면도 같다: openScreen(id, { kind, close })으로 넣고, 스스로 닫았으면 dropScreen(id).
 import { $ } from '../app';
 import { platform } from '../platform';
+import { setScene } from './artdom';
 
 export type ScreenKind = 'page' | 'sheet' | 'view';
 export interface ScreenOpts {
@@ -20,6 +21,8 @@ export interface ScreenOpts {
   root?: boolean;
   /** 화면의 요소: 주면 쌓인 차례대로 겹친다(z-index 50부터, 바탕 페이지는 그대로). 페이지는 그 위에 다른 페이지·보기가 있으면 감춘다(class scrUnder) */
   el?: HTMLElement;
+  /** 배경 그림의 장면 이름 (art2): 그림 'bg:<장면>'이 등록되어 있으면 el의 배경으로 (글이 읽히게 어둡게 덮어). 없으면 지금 그대로 */
+  scene?: string;
   /** 뒤로 가기가 이 화면에 왔을 때 먼저 부른다: 참을 돌려주면 닫지 않는다 (전투 중 뒤로 = 일시정지 창: hud/battle.ts) */
   onBack?: () => boolean;
 }
@@ -68,6 +71,7 @@ export function openScreen(id: string, opts: ScreenOpts = {}): void {
   const at = stack.findIndex((e) => e.id === id);
   const old = at >= 0 ? stack.splice(at, 1)[0] : undefined;
   const e: Entry = { id, kind: opts.kind ?? old?.kind ?? 'sheet', close: opts.close ?? old?.close, root: opts.root ?? old?.root ?? false, el: opts.el ?? old?.el, onBack: opts.onBack ?? old?.onBack };
+  if (opts.scene !== undefined) setScene(e.el, opts.scene);
   // 바탕 페이지는 언제나 맨 아래에
   if (e.root) stack.unshift(e); else stack.push(e);
   sync();

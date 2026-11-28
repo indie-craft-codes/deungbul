@@ -100,7 +100,9 @@ async function start(o = {}) {
   const bounds = { width: ws.width > 0 ? Math.max(640, ws.width | 0) : 1280, height: ws.height > 0 ? Math.max(400, ws.height | 0) : 800, ...(fits(ws) ? { x: ws.x, y: ws.y } : {}) };
   const secure = { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true, webviewTag: false, spellcheck: false,
     autoplayPolicy: 'no-user-gesture-required', devTools: !app.isPackaged };
-  const win = new BrowserWindow({ ...bounds, minWidth: 640, minHeight: 400, show: false, backgroundColor: '#0b0d12', title: cfg.title, autoHideMenuBar: true, webPreferences: secure });
+  // 창·작업 표시줄의 아이콘: 게임이 넣은 앱 아이콘(scripts/art-import.mjs의 appicon → 빌드의 art/brand/icon-256.png). 없으면 Electron의 기본
+  const iconFile = ['icon-256.png', 'icon-512.png'].map((f) => path.join(cfg.dist, 'art', 'brand', f)).find((f) => fs.existsSync(f));
+  const win = new BrowserWindow({ ...bounds, minWidth: 640, minHeight: 400, show: false, backgroundColor: '#0b0d12', title: cfg.title, autoHideMenuBar: true, webPreferences: secure, ...(iconFile ? { icon: iconFile } : {}) });
   if (ws.maximized) win.maximize();
   if (ws.fullscreen) win.setFullScreen(true);
   let wsTimer = null;
