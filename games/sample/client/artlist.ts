@@ -1,4 +1,26 @@
 // 이 게임의 그림 등록 표 (scripts/art-import.mjs가 만든다: 손으로 고치지 말고 그림을 넣은 뒤 다시 돌린다).
 // 열쇠 → 파일(public/ 아래, 빌드하면 화면과 같은 자리). 표에 없는 그림은 틀이 대신 그린다 (engine/client/art.ts).
 export const ART: Readonly<Record<string, string>> = {
+  'appicon': 'art/brand/appicon.png',
+  'cur:gold': 'art/cur/gold.webp',
+  'enemy:bear': 'art/enemy/bear.webp',
+  'enemy:boar': 'art/enemy/boar.webp',
+  'enemy:rabbit': 'art/enemy/rabbit.webp',
+  'item:axe1': 'art/item/axe1.webp',
+  'item:axe1@bow': 'art/item/axe1@bow.webp',
+  'item:axe2': 'art/item/axe2.webp',
+  'item:axe2@bow': 'art/item/axe2@bow.webp',
+  'item:coat': 'art/item/coat.webp',
+  'item:log': 'art/item/log.webp',
+  'item:scale': 'art/item/scale.webp',
+  'item:slot-amulet': 'art/item/slot-amulet.webp',
+  'item:slot-charm': 'art/item/slot-charm.webp',
+  'item:slot-ring': 'art/item/slot-ring.webp',
+  'item:slot-weapon': 'art/item/slot-weapon.webp',
+  'item:stew': 'art/item/stew.webp',
+  'skill:aim': 'art/skill/aim.webp',
+  'skill:chop': 'art/skill/chop.webp',
+  'skill:rest': 'art/skill/rest.webp',
+  'skill:snare': 'art/skill/snare.webp',
+  'skill:sweep': 'art/skill/sweep.webp',
 };
