@@ -39,6 +39,10 @@ const extras: SettingDef[] = [];
  */
 export function addSetting(def: SettingDef): void {
   extras.push(def);
+  applyExtra(def);
+}
+/** 저장된 값(없으면 기본값)으로 on을 부른다 */
+function applyExtra(def: SettingDef): void {
   const v = cur.extra[def.id];
   if (def.kind === 'toggle') def.on(typeof v === 'boolean' ? v : def.value);
   else if (def.kind === 'select') def.on(typeof v === 'string' && def.options.some((o) => o.value === v) ? v : def.value);
@@ -186,6 +190,8 @@ function captureKey(ev: KeyboardEvent): void {
 export function initSettings(): void {
   cur = readSettings(platform().storage.get(STORE_KEY), cap());
   apply();
+  // 게임의 모듈은 이것보다 먼저 init되어 저장된 값을 읽기 전에 addSetting을 부른다: 읽은 뒤에 저장된 값으로 한 번 더 (예전에는 껐던 칸이 다시 켤 때까지 기본값이었다)
+  for (const def of extras) if (def.id in cur.extra) applyExtra(def);
   addMenuTab({ id: 'settings', label: () => t('tabSettings'), draw: drawSettings, always: true, sig: () => [cur, uiScale(), soundOn(), uiSoundOn(), uiTapOn(), soundMix(), waitKey, myDataSig(), tutorialSig(), extras.length, socialSig(), supportSig()] });
   window.addEventListener('keydown', captureKey, { capture: true });
   onSoundChange(() => renderMenu());

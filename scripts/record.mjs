@@ -4,6 +4,7 @@
 //     --wait  찍기 전에 페이지가 뜨기를 기다리는 시간 (기본 6000)
 //     --do    찍기 시작한 뒤 ms에 페이지에서 JS를 돌린다 (여러 번 줄 수 있다. ms가 0이면 찍기 직전). 예: --do="0:document.querySelector('button').click()"
 //     --mobile 폰처럼 (터치, 화면 배율 2)
+//     환경 변수 PRE: 페이지의 스크립트보다 먼저 돌릴 JS (예: PRE="localStorage.setItem('settings', '{\"extra\":{\"x\":true}}')")
 // 다른 작업과 같은 브라우저 잠금을 쓴다: $TEMP/dg-work/chrome.lock이 있으면 기다린다 (남의 잠금은 지우지 않는다)
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -54,6 +55,7 @@ try {
   await call('Runtime.enable'); await call('Page.enable');
   const [w, h] = size.split(',').map(Number);
   if (args.includes('--mobile')) { await call('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }); await call('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 }); }
+  if (process.env.PRE) await call('Page.addScriptToEvaluateOnNewDocument', { source: process.env.PRE }); // 페이지보다 먼저 돌릴 JS (예: localStorage에 설정 넣기)
   await call('Page.navigate', { url });
   await sleep(wait);
   const run = async (js) => { const r = await call('Runtime.evaluate', { expression: js, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) logs.push('--do 오류: ' + r.exceptionDetails.text); };

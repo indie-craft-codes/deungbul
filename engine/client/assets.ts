@@ -74,6 +74,10 @@ export interface ModelAsset extends ModelFit {
   fade?: number;
   /** 재질 이름 → 색: 같은 파일을 털빛만 바꿔 여러 몬스터에 쓴다 */
   tint?: Record<string, number>;
+  /** tint한 재질의 그림(텍스처)을 떼고 그 색만 쓴다 (색 견본 아틀라스처럼 그림이 색을 정하는 모델을 다른 색으로) */
+  flat?: boolean;
+  /** tint한 재질이 제 색으로 이만큼 빛난다 (0~1, 유령·불꽃처럼 어두운 곳에서도 보이게) */
+  glow?: number;
 }
 /** 사람 모델 파일 */
 export interface HumanoidAsset extends ModelAsset {

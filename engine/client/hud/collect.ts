@@ -238,7 +238,7 @@ function heroLook(): void {
       // 캐릭터 정의에서 온 영웅(HeroDef.look)은 그 부품으로 그린다 (engine/shared/defs/chardef.ts의 charHero)
       const parts = d?.look, hl: HumanoidLook = { cloth: parts?.colors.cloth ?? cloth, hand: hand === false ? '' : hand, skin: parts?.colors.skin ?? 0xf0c9a0, hero: e.type, rarity: r, ...(parts ? { look: parts } : {}) };
       // 유닛 그림 (art2: useSprites를 켠 게임에 'unit:<id>'·'portrait:<id>'가 있으면 그림 판, 없으면 3D)
-      const m = unitSprite('hero', e.type, 2.1) ?? heroModel?.({ id: e.type, rarity: r, look: hl }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, undefined, { hero: e.type, rarity: r }, parts);
+      const m = unitSprite('hero', e.type, 2.1) ?? heroModel?.({ id: e.type, rarity: r, look: hl }) ?? makeHumanoid(cloth, hand, 0xf0c9a0, `hero:${e.type}`, { hero: e.type, rarity: r }, parts); // 'hero:<id>'로 그 영웅의 사람 모델 파일을 고를 수 있다 (registerHumanoidAsset(파일, 'hero:<id>'))
       let mat = rings.get(r);
       if (!mat) rings.set(r, mat = new THREE.MeshBasicMaterial({ color: rarityHex(r), transparent: true, opacity: 0.85 }));
       const ring = new THREE.Mesh(ringGeo, mat);

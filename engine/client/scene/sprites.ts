@@ -19,6 +19,11 @@ import type { Model } from './models';
 export interface SpriteOpts {
   /** 영웅(수집형의 'hero' 종류)을 그림으로 (기본 true) */
   heroes?: boolean;
+  /**
+   * 이 유닛은 그림 대신 3D로 (참이면 unitSprite가 null: 모델 파일(registerMonsterAsset, 영웅은 registerHumanoidAsset(파일, 'hero:<id>'))이나 코드 모델).
+   * 부를 때마다 묻는다 (설정으로 켜고 끄는 시범에 쓴다: 바뀐 것은 다음에 나타나는 유닛부터). kind는 'hero'·'m'·'p'
+   */
+  skip?: (kind: string, type: string) => boolean;
   /** 적: true 모두, 'stage' 단계(장·물결·우두머리)에 나오는 몬스터만 (들판의 3D 짐승은 그대로), false 없음 (기본 'stage') */
   enemies?: boolean | 'stage';
   /** 그림의 높이 = 3D 모델 높이(종류의 h, 몬스터의 h) × scale (기본 1.6: 초상은 위아래에 여백이 있다) */
@@ -73,7 +78,7 @@ let stageFoes: Set<string> | null = null;
 let stageBosses: Set<string> | null = null;
 
 /** 유닛 그림을 켠다 (게임이 init에서 한 번). 켜지 않으면 아무것도 바뀌지 않는다 */
-export function useSprites(o: SpriteOpts = {}): void { opts = { heroes: true, enemies: 'stage', scale: 1.6, face: 'right', boss: 1.4, battlePx: 150, field: false, ...o }; stageFoes = null; stageBosses = null; }
+export function useSprites(o: SpriteOpts = {}): void { opts = { heroes: true, enemies: 'stage', scale: 1.6, face: 'right', boss: 1.4, battlePx: 150, field: false, skip: () => false, ...o }; stageFoes = null; stageBosses = null; }
 /** 켰는가 */
 export const spritesOn = (): boolean => !!opts;
 
@@ -174,6 +179,7 @@ export function playerSprite(cls: string, morph: string | undefined, h = 2.1): M
 
 /** 그림 판의 모델 (h: 3D 모델의 높이). 켜지 않았거나 그림이 없으면 null. 시트('sheet:<id>')가 있으면 그것이 먼저 */
 export function unitSprite(kind: string, type: string, h: number): Model | null {
+  if (opts?.skip?.(kind, type)) return null;
   const boss = kind === 'm' && bosses().has(type) ? opts?.boss ?? 1 : 1;
   const sheet = unitSheet(kind, type);
   if (sheet) return sheetSprite(type, sheet, h, boss);

@@ -155,20 +155,23 @@ function battleAim(now: number): CameraAim | null {
   if (!ui || ui.top.hidden || px0 <= 0) { cam = null; return null; }
   // 살아 있는 영웅·적 (이 층에는 내 단계의 것만 온다). 그림 판이 하나도 없으면 손대지 않는다
   // 영웅을 먼저 담고, 적은 영웅들의 가운데에서 NEAR m 안의 것만 (새 물결이 먼 둘레에서 나올 때 영웅이 화면 가장자리로 밀려나지 않게)
-  let n = 0, sprites = 0, href = 0, top1 = 0, x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity, hx = 0, hz = 0, hn = 0;
+  let n = 0, sprites = 0, href = 0, mref = 0, top1 = 0, x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity, hx = 0, hz = 0, hn = 0;
   const live = [...S.others.values()].filter((r) => (r.kind === 'hero' || r.kind === 'm') && !r.gone && r.dying <= 0);
   for (const r of live) {
+    // 그림 판이면 그 키, 3D(그림 대신 모델로 그린 유닛: useSprites의 skip)면 엔티티의 키
     const sp = r.model.sprite;
     if (sp) { sprites++; if (r.kind === 'hero' && (!href || sp.h < href)) href = sp.h; }
+    else if (r.kind === 'hero' && (!mref || r.h < mref)) mref = r.h;
     if (r.kind === 'hero') { hx += r.x; hz += r.z; hn++; }
   }
-  if (!sprites) { cam = null; return null; }
+  if (!sprites && !live.length) { cam = null; return null; }
+  if (!href) href = mref; // 그림 판 영웅이 없을 때만 3D 영웅의 키로 (섞여 있으면 그림 판의 키가 기준: 예전과 같은 크기)
   if (hn) { hx /= hn; hz /= hn; }
   for (const r of live) {
     if (hn && r.kind === 'm' && Math.hypot(r.x - hx, r.z - hz) > NEAR) continue;
     n++; top1 = Math.max(top1, r.model.sprite?.h ?? r.h); x0 = Math.min(x0, r.x); x1 = Math.max(x1, r.x); z0 = Math.min(z0, r.z); z1 = Math.max(z1, r.z);
   }
-  if (!href) for (const r of S.others.values()) if (r.model.sprite && !r.gone && (!href || r.model.sprite.h < href)) href = r.model.sprite.h;
+  if (!href) for (const r of S.others.values()) if ((r.kind === 'hero' || r.kind === 'm') && !r.gone) { const uh = r.model.sprite?.h ?? r.h; if (!href || uh < href) href = uh; }
   const W = view.width, H = view.height;
   // 빈 곳: 위 띠의 아래부터 카드 줄의 위까지 (가려진 것이 없으면 화면 전체)
   if (now - band.at > 250) {

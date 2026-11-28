@@ -52,16 +52,24 @@ export const sourceNow = (url: string): Source | null | undefined => loaded.get(
 
 /** 재질 이름과 색마다 하나를 나눠 쓴다 (같은 털빛의 몬스터 여럿이 재질 하나) */
 const tinted = new Map<string, THREE.Material>();
-function paint(root: THREE.Object3D, colors: Record<string, number>): void {
+function paint(root: THREE.Object3D, colors: Record<string, number>, flat = false, glow = 0): void {
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
     const swap = (m: THREE.Material): THREE.Material => {
       const c = colors[m.name];
       if (c === undefined || !(m as THREE.MeshStandardMaterial).color) return m;
-      const key = `${m.uuid}:${c}`;
+      const key = `${m.uuid}:${c}:${flat ? 1 : 0}:${glow}`;
       let t = tinted.get(key);
-      if (!t) { t = m.clone(); (t as THREE.MeshStandardMaterial).color.setHex(c); tinted.set(key, t); }
+      if (!t) {
+        t = m.clone();
+        const sm = t as THREE.MeshStandardMaterial;
+        sm.color.setHex(c);
+        if (flat) sm.map = null;
+        if (glow > 0 && sm.emissive) { sm.emissive.setHex(c); sm.emissiveIntensity = glow; }
+        sm.needsUpdate = true;
+        tinted.set(key, t);
+      }
       return t;
     };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(swap) : swap(mesh.material);
@@ -75,7 +83,7 @@ export interface Instance { object: THREE.Group; model: THREE.Object3D; anim?: A
 export function instantiate(src: Source, asset: ModelAsset, colors: Record<string, number> = {}): Instance {
   const model = copy(src);
   const all = { ...asset.tint, ...colors };
-  if (Object.keys(all).length) paint(model, all);
+  if (Object.keys(all).length) paint(model, all, asset.flat, asset.glow);
   shade(model, asset);
   const object = fitGroup(src.box, asset);
   object.add(model);

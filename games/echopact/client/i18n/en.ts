@@ -130,6 +130,8 @@ export const enGame: GameLocale = {
     tutMorph: 'Take the form of an echo you own from the Morph tab in the menu[[ (M)|]]. The card stats you raised in the tower are your stats while morphed.',
     tutAuto: 'Turn on auto-hunt[[ (R)|]] and go to the tower: your body stays in the vale and keeps hunting.',
     setEchoTags: 'Show name tags',
+    setPilot3d: '3D preview (Brindle, Stray Echo)',
+    setPilot3dNote: 'Draws these two as 3D models from the next battle (downloads about 2.2 MB)',
   },
   fmt: {
     gachaNew: () => 'New echo!',

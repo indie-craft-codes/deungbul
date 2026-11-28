@@ -7,7 +7,7 @@
 // 모드를 오가는 것·메뉴의 탭·감출 틀 요소·들판의 대역은 틀이 맡는다 (engine/client/hud/modes.ts). 문서의 body[data-mode]·[data-tower]로 스타일이 화면을 가른다.
 import { BANNER_TABLE, CHAPTERS, HERO_RARITIES, STAGES, knownChar, type ModeSideMe } from '@engine/shared/defs';
 import {
-  $, charPortrait, closeStageResult, useSprites, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
+  $, addSetting, charPortrait, closeStageResult, registerHumanoidAsset, registerMonsterAsset, useSprites, clearScreens, dropScreen, homeScreen, makeHome, mountPanel, myHeroes, myMode, myModeSide, myStage, mySquad,
   onModeChange, onModeSide, onMsg, onScreens, onSlow, openCheck, openMenu, openScreen, openStageInfo, placeIn, rarityCss, liveBanners, heroPic, openBattle, setCardActions, setHeroPic, useBattleScreen, S, send, setModeHome, stageRows, stagesDone, starGap, switchMode, useStageScreens, type HomeKit,
   setLoadingTips, featureLock, featureOpen, tutNow, myMorph, charDefs, noticesNow, openNotices,
 } from '@engine/client';
@@ -246,7 +246,19 @@ export function initTower(): void {
   // 탑 전투의 유닛을 그림으로 (art2): 메아리는 초상 그림(portrait:<id>, 투명 배경)을, 단계의 적은 enemy:<id>를 쓰고, 그림이 없는 것은 3D 그대로.
   // 울림골의 짐승은 3D 그대로 ('stage': 단계에 나오는 몬스터만). 전투의 바닥·하늘은 그림 bg:battle(장마다 bg:battle-<장 번호>)이 있으면 그것 (틀의 전투 화면 키트)
   // 움직이는 시트 'sheet:<id>'(4열×4행)가 있으면 한 장 대신 그것으로. field: 울림골의 사람(직업·변신)과 짐승도 시트가 있으면 시트 빌보드로 (없으면 3D 그대로)
-  useSprites({ heroes: true, enemies: 'stage', field: true });
+  // 3D 시범 (설정 칸, 기본 끔): 켜면 브린들과 떠도는 울림을 그림 대신 3D 모델로 (Quaternius의 CC0 모델: public/models/LICENSE.txt)
+  let pilot3d = false, pilotReady = false;
+  useSprites({ heroes: true, enemies: 'stage', field: true, skip: (kind, type) => pilot3d && ((kind === 'hero' && type === 'brindle') || (kind === 'm' && type === 'wisp')) });
+  addSetting({
+    id: 'pilot3d', label: () => t('setPilot3d'), note: () => t('setPilot3dNote'), kind: 'toggle', value: false,
+    on: (v) => {
+      pilot3d = v;
+      if (!v || pilotReady) return;
+      pilotReady = true; // 켤 때만 등록한다 (끈 사람은 모델을 받지 않는다)
+      registerHumanoidAsset({ url: './models/warrior.glb', height: 2.7, clips: { idle: 'Idle_Weapon', walk: 'Run_Weapon', attack: 'Sword_Attack', hit: 'RecieveHit', die: 'Death' } }, 'hero:brindle');
+      registerMonsterAsset('wisp', { url: './models/ghost.glb', height: 1.7, tint: { Atlas: 0xd9a8ff }, flat: true, glow: 0.35, clips: { idle: 'Flying_Idle', walk: 'Fast_Flying', attack: 'Headbutt', hit: 'HitReact', die: 'Death' } });
+    },
+  });
   setLoadingTips(() => [t('loadTip1'), t('loadTip2'), t('loadTip3')]); // 첫 로딩의 팁 (U2)
   mountPanel('hud', `
     <div id="towerAdv" class="tscreen tadv" hidden>

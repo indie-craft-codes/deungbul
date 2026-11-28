@@ -1,0 +1,3 @@
+Warrior.glb: "RPG Character Pack" by Quaternius (quaternius.com), CC0 1.0
+ghost.glb: "Ultimate Monsters" by Quaternius (quaternius.com), CC0 1.0
+https://creativecommons.org/publicdomain/zero/1.0/
