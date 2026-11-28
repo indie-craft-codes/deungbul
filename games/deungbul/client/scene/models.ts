@@ -2,7 +2,7 @@
 // 새 몬스터나 장비를 더하면 아래 표에 한 줄을 더한다 (몬스터는 빠뜨리면 컴파일이 실패한다).
 import * as THREE from 'three';
 import type { ItemId, MonsterId } from '../../shared/defs';
-import { $, addIconSheet, addItemSheet, itemIcon, type ArmorLook, type BladeLook, limb, makeBlob, makeHumanoid, mat, type Model, type MonsterBuilder, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco } from '@engine/client';
+import { $, addIconSheet, addItemSheet, itemIcon, type ArmorLook, type BladeLook, limb, makeBlob, makeHumanoid, mat, type Model, type MonsterBuilder, part, registerArmor, registerBlade, registerMonsterModel, setHumanoidDeco, useMotion } from '@engine/client';
 
 const G = {
   wisp: new THREE.IcosahedronGeometry(0.42, 0), halo: new THREE.IcosahedronGeometry(0.7, 0),
@@ -113,6 +113,7 @@ const ARMORS: Partial<Record<ItemId, ArmorLook>> = {
 };
 
 export function initModels(): void {
+  useMotion(); // 코드 모델의 3D 동작: 숨쉬기·걷기·손 모양별 공격·움찔·쓰러짐 (engine/client/scene/motion.ts)
   for (const [type, build] of Object.entries(MONSTER_LOOKS)) registerMonsterModel(type, build);
   for (const [id, look] of Object.entries(BLADES)) registerBlade(id, look);
   for (const [id, look] of Object.entries(ARMORS)) registerArmor(id, look);

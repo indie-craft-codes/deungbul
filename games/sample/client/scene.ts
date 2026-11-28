@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { BONFIRE } from '../shared/content/bonfire';
 import type { MonsterId } from '@engine/shared/defs';
 import { AREAS } from '@engine/shared/world';
-import { defaultHumanoid, limb, type Look, lookGeo, mat, type Model, onFrame, part, registerArmor, registerBlade, registerHand, registerHumanoidAsset, registerLookPart, registerMonsterAsset, registerMonsterModel, registerMusic, registerSound, registerWeaponAsset, S, setHumanoidBody, setMapPaint, setMusicPicker, view } from '@engine/client';
+import { defaultHumanoid, limb, type Look, lookGeo, mat, type Model, onFrame, part, registerArmor, registerBlade, registerHand, registerHumanoidAsset, registerLookPart, registerMonsterAsset, registerMonsterModel, registerMusic, registerSound, registerWeaponAsset, S, setHumanoidBody, setMapPaint, setMusicPicker, useMotion, view } from '@engine/client';
 import { G } from './bonfire';
 
 const dirt = new THREE.Color(0xa98d62), grass = [new THREE.Color(0x8aa35a), new THREE.Color(0x76904e)];
@@ -47,6 +47,7 @@ function beast(type: string): Model {
 }
 
 export function initScene(): void {
+  useMotion(); // 코드 모델의 3D 동작 (engine/client/scene/motion.ts): 모델 파일(곰·멧돼지·야영꾼)은 그대로 클립으로
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
   // 사람 모델: 틀의 사람형(defaultHumanoid)에 털모자를 얹는다. 머리째 바꾸려면 m.head를 지우고 새로 붙인다. 손 모양은 틀이 이미 붙였다.
   // 부품으로 된 겉모습(look.look: 캐릭터 정의·변신)이면 그 부품대로 그리고 털모자는 얹지 않는다 (모자는 겉모습의 칸이다)
