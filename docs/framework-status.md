@@ -1173,3 +1173,20 @@ PC(1280×800)와 폰(390×844, 터치, DPR 2), 한국어·영어 넷씩, 두 게
 - **실제 브라우저**(헤드리스 크롬 GPU, 임시 서버 3015 예제·3016 메아리 계약, 상대 사람은 웹소켓 도구 `peer.mjs`): 예제를 PC 1920×1080 한국어·폰 세로 390×844 영어로 큐 → 띠 → 판(줍기 단추) → 결과(배치 1/3) → 리플레이(재생·4배속) → 다시 큐 → 둘째 판 → 다시 큐 → 봇 판 → 배치 끝(등급·레이팅) → 대기실의 내 등급 → 전적의 [다시 보기] → 순위표(레이팅·전투력), 폰 가로 844×390 한국어로 순위표·큐 띠. 메아리 계약 PC 한국어·폰 영어로 순위표 둘. 스크린샷 `$TEMP/dg-work/comp8-shots/`(`sp-pc1920-ko-*` 17장, `sp-ph-en-*` 17장, `sp-ls-ko-*` 3장, `ep-pc1920-ko-*`·`ep-ph-en-*` 3장씩). 콘솔 오류 0, 접근성 트리의 이름 없는 단추 0(결과 창·리플레이·순위표·큐 띠). 첫 시도에서 고친 것: 판이 하나인 게임에 줍기 단추가 안 뜸(`RoomView.def`가 없다), 큐 띠의 판 이름이 id 그대로, 리플레이가 결과 창 밑에 깔림, 폰에서 큐 띠·줍기 단추가 대기실·판 막대와 겹침, 그루터기 자리가 캐릭터 정의 진열과 겹침. 잠수 판정은 첫 시도(브라우저가 수를 두지 못함)에서 실제로 걸려 '잠수로 빠졌습니다 · 레이팅에 들지 않음 · 경고'가 떴다.
 
 남은 것: 일행으로 큐 서기·팀 판의 큐, 대회, 관전 지연의 랭크 판, 리플레이 공유 링크, 화면에서 시드·입력으로 다시 셈하기(지금은 서버가 적은 프레임), 실시간 판의 잠수, 봇과 시작할 때의 안내문이 '컴퓨터'라고 적힘(자리에는 '(봇)'), 폰 가로에서 큐 띠가 내 정보 창에 조금 겹침.
+
+## 플랫폼 분리 2단계: 데스크톱 시제품 (2026-11-28, 가지 `feat/desk2`)
+
+[platforms.md](platforms.md) 4절 '2단계'. 쓰는 법은 [making-a-game.md](making-a-game.md) 32절, 결과와 한계는 platforms.md 4절 '2단계 결과'. 웹의 기본 동작은 그대로다(다리가 없으면 웹 구현).
+
+| 무엇 | 틀의 칸 |
+|---|---|
+| 데스크톱 앱 | `apps/desktop/`(Electron 45.5.0, 따로 된 `package.json`): `main.cjs`(`app://<게임>/` → `deploy.json`의 `dist`, CSP, 탐색 제한, 바깥 링크 http·https만 기본 브라우저, `autoplayPolicy`, 창 크기·자리·전체 화면 기억, F11·Alt+Enter, 저장 `store.json`·토큰은 `safeStorage`), `preload.cjs`(`window.desktopBridge`: storage·openUrl·copy·saveFile·version·전체 화면·시작 설정). 명령 `npm run build:desktop`·`npm run desktop`(`scripts/desktop.mjs`) |
+| 접점 | `engine/client/platform/desktop.ts`(`desktopPlatform`, `DesktopBridge`): 다리가 있으면 `platform()`이 고른다. 서버 주소는 `--server` → `GAME_SERVER` → `deploy.json`의 `desktop.server` → `ws://localhost:<port>` |
+| 키 | 단축키·이동 키·키 재설정·튜토리얼이 `platform().input.keyName`(ev.code): 한글 입력 상태에서도 먹는다. 예전 키 설정의 한글 자모는 `legacyKeyName`으로 그 자리의 글자 |
+| 게임패드 | `padcalc.ts`(셈)·`pad.ts`(붙이기): 이동·기술 1~5·대상·물약·자동 사냥·지도·메뉴·집·가방, 창에서는 `hud/a11y.ts`의 `cycleFocus`·`focusRoot`로 포커스·누름·닫기. `bus.runAction`(키 재설정을 거치지 않는 기능 부르기) |
+
+- **세 게임**: 코드 바꿈 없음(등불지기 도감의 가져오기 허용 목록에 `platform/desktop.ts` 한 줄). 경제·콘텐츠 그대로, **황금 실행 7,489,205바이트 `ba83af30d07f` 그대로**.
+- **확인**: 검사 2627 → 2632(`fx/platform` 6절). `npm test` 두 번·`TZ=UTC npm test`·`npm run build:all`·타입 검사(설정 10) 통과. 언어 견본 새 키 0. 앱으로 임시 서버(3015 예제·3016 메아리 계약, `ORIGINS=app://<게임>`)에 접속: 모델·소리(입력 없이 재생)·토큰 저장·껐다 켜도 같은 캐릭터·창 크기 기억·F11·바깥 링크는 `shell.openExternal` 기록(실제로 열지 않음)·가짜 패드. 서버가 받은 `Origin: app://sample`. 웹은 헤드리스 크롬으로 예제를 열어 콘솔 오류 0. 스크린샷 `$TEMP/dg-work/desk2-shots/`.
+- **사용자가 정할 것**: 앱 이름·아이콘·저장 폴더 이름(지금 `game-desktop`), 배포용 서버 주소(고정 도메인: 4단계), 패드 배치(A가 기술 1, B가 기술 2·창 닫기), 설치 파일·서명·Steam을 할지(4단계).
+
+남은 것: 패키징(`dist`와 설정을 앱에 묶기), 실제 패드·Steam Input 시험, 패드로 글 입력·3D 대상 클릭·슬라이더, Tauri 비교, Steam 오버레이·업적.

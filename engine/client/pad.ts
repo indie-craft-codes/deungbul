@@ -17,12 +17,12 @@ export const padAxis = (): { x: number; z: number } => move;
 const typingNow = (): boolean => { const a = document.activeElement; return a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement || a instanceof HTMLSelectElement; };
 
 function ui(step: PadUi, root: HTMLElement): void {
-  if (step === 'next' || step === 'prev') { cycleFocus(root, step === 'prev'); return; }
+  if (step === 'next' || step === 'prev') { cycleFocus(root, step === 'prev', true); return; }
   if (step === 'menu') { if (S.me) runAction('m'); return; }
   const a = document.activeElement;
   if (step === 'press') {
     if (a instanceof HTMLElement && a !== document.body && a !== root && root.contains(a)) a.click();
-    else cycleFocus(root, false); // 아직 고른 것이 없다: 첫 단추로
+    else cycleFocus(root, false, true); // 아직 고른 것이 없다: 첫 단추로
     return;
   }
   // 닫기: Esc를 누른 것과 같게 (화면 쌓임의 맨 위를 닫는다. 확인 창·절전 화면은 스스로 받는다)

@@ -84,8 +84,8 @@ export function keepFocus(root: HTMLElement, draw: () => void): void {
 /** 키보드(게임패드)가 머무는 창: 맨 위의 열린 창이나 화면 쌓임의 맨 위. 없으면 null (들판) */
 export const focusRoot = (): HTMLElement | null => active();
 
-/** box 안에서 포커스를 다음(back이면 앞) 것으로 옮긴다: 창의 Tab, 게임패드의 방향 (hud/../pad.ts) */
-export function cycleFocus(box: HTMLElement, back: boolean): void {
+/** box 안에서 포커스를 다음(back이면 앞) 것으로 옮긴다: 창의 Tab, 게임패드의 방향 (../pad.ts. ring: 포커스 테두리를 보이게: 키보드가 아닌 입력이라 브라우저가 스스로 그리지 않는다) */
+export function cycleFocus(box: HTMLElement, back: boolean, ring = false): void {
   // 튜토리얼 카드는 창 밖에 떠 있어도 함께 돈다 (건너뛰기·이름 짓기 단추)
   const tut = ($('tut') as HTMLElement | null);
   const card = tut && shown(tut) && !box.contains(tut) ? focusables(tut) : [];
@@ -95,7 +95,7 @@ export function cycleFocus(box: HTMLElement, back: boolean): void {
   // 처음 들어올 때는 튜토리얼이 가리키는 단추(.tutHi)부터, 이름 짓기 카드면 카드의 입력칸부터 (안내를 따라가는 사람이 바로 닿게)
   const lead = list.find((e) => e.closest('.tutHi')) ?? (tut?.querySelector('input') ? card[0] : undefined) ?? list[0];
   const next = back ? (i <= 0 ? list[list.length - 1] : list[i - 1]) : i < 0 ? lead : i === list.length - 1 ? list[0] : list[i + 1];
-  next.focus();
+  next.focus(ring ? ({ focusVisible: true } as FocusOptions) : undefined);
 }
 
 function onKey(ev: KeyboardEvent): void {

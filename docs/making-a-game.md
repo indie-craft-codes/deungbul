@@ -3555,3 +3555,21 @@ export const COMPETE: CompeteRules = {
 - 문장은 틀의 ko·en에 `ui` 24·`fmt` 18·`msg` 12(새 키 54만: 언어 견본에서 달라진 문장 0). 게임은 등급·순위표·판의 이름과 `fmt.roomWhy`의 까닭을 자기 언어 파일에.
 
 남은 것: 팀 판의 큐(일행 넣기), 대회·관전 지연의 랭크 판, 리플레이 공유 링크, 클라이언트에서 시드·입력으로 다시 셈하기(지금은 서버가 적은 프레임을 본다), 실시간 판의 잠수 판정(지금은 차례 판만).
+
+## 32. 데스크톱으로 내기 (Electron 시제품, 플랫폼 분리 2단계)
+
+게임 코드는 그대로다. 웹과 **같은 화면 빌드**(`deploy.json`의 `dist`)를 데스크톱 앱(`apps/desktop/`, Electron)이 사용자 정의 주소 `app://<게임>/`로 싣는다. 설계와 확인 결과는 [platforms.md](platforms.md) 4절 '2단계 결과'.
+
+```
+npm run build:desktop -- sample          화면을 빌드하고, 처음 한 번 Electron을 받는다 (apps/desktop/node_modules)
+npm run start:sample                      게임 서버 (따로. 앱은 화면만 싣는다)
+npm run desktop -- sample                 앱을 띄운다 (기본 서버 ws://localhost:<deploy.json의 port>)
+npm run desktop -- sample --server=wss://play.example.com --lang=en --profile=./my-profile
+```
+
+- **서버 주소**: 앱의 페이지는 `app://`라 '화면을 준 곳 = 서버'가 아니다. 차례: 실행 인자 `--server` → 환경 변수 `GAME_SERVER` → `deploy.json`의 `desktop.server` → `ws://localhost:<port>`(로컬 개발 서버). `deploy.json`에 `"desktop": { "server": "wss://…", "name": "창 제목" }`을 적을 수 있다(없어도 된다).
+- **서버의 출처 검사**: 앱의 WebSocket `Origin`은 `app://<게임>`이다(실제 머리말로 확인: 예제 `app://sample`). 검사를 켠 서버는 목록에 더한다: `ORIGINS=https://내도메인,app://sample`(4절, 기본은 검사하지 않는다).
+- **화면 코드**: 바꿀 것 없다. 앱의 preload가 `window.desktopBridge`를 내놓으면 `platform()`이 데스크톱 구현(`engine/client/platform/desktop.ts`)을 고른다: 저장은 앱의 사용자 폴더(지워지지 않음, 기기 토큰은 OS 암호화), 바깥 링크는 기본 브라우저(http·https만), 도감·확률 같은 상대 주소는 앱 안의 새 창, 소리는 첫 입력 없이 바로, 전체 화면은 F11·Alt+Enter와 설정 창. 웹 브라우저에서는 다리가 없어 예전 그대로다.
+- **저장 폴더**: 게임마다 따로(`<앱 데이터>/game-desktop/<게임>/`: `store.json` 설정·토큰, `window.json` 창 크기·자리·전체 화면). `--profile=폴더`로 바꾼다.
+- **키보드·게임패드**: 단축키는 자판의 자리(`ev.code`)로 읽어 한글 입력 상태에서도 WASD·단축키가 먹는다(웹도 같다). 게임패드(표준 배치)는 왼쪽 막대·십자 키 이동, A·B·X·Y 기술 1~4, LT 기술 5, LB 대상, RB 물약, RT 자동 사냥, Back 지도, Start 메뉴, 왼쪽 막대 누름 집으로, 오른쪽 막대 누름 가방. 창이 열려 있으면 십자 키·막대로 포커스를 옮기고 A로 누르고 B로 닫는다(`engine/client/padcalc.ts`). 게임이 단 키(`onKey`)도 숫자 '1'~'5'나 위의 키 이름이면 패드로 불린다.
+- **아직 없는 것**: 설치 파일·코드 서명·자동 업데이트·Steam(오버레이·업적·결제)은 4단계(사용자 결정). 앱은 저장소의 `games/<게임>/deploy.json`과 `dist`를 읽으므로 지금은 저장소에서 띄운다(패키징하면 `dist`를 앱에 묶어야 한다).
