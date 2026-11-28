@@ -10,7 +10,7 @@ import { L, t } from './i18n';
 import { titleName } from './i18n/live';
 import { rules } from './rules';
 import { sfx } from './sound';
-import { animate, cueAnim, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
+import { animate, cueAnim, cueLength, makeHumanoid, makeMonster, setArmor, setBlade, setFlash, type Model } from './scene/models';
 import { S, newMe, type Me, type Remote } from './state';
 import { kindLook, type KindInfo, type KindLook } from './kinds';
 import { hasModule } from './mods';
@@ -359,7 +359,7 @@ function onEvent(e: Ev, me: Me): void {
         // 쓰러지는 클립이 있으면 그것을 다 틀고 잠깐 누워 있다가 사라진다. 없으면 틀의 연출(줄어들기)
         // 시트 그림(scene/sprites.ts)은 4행의 쓰러짐 프레임을 클립처럼 다 튼다
         const sheet = r.model.sprite?.sheet;
-        const clip = sheet ? sheet.meta.die.frames / Math.max(1, sheet.meta.die.fps) : cueAnim(r.model, 'die') ? r.model.anim?.length('die') ?? 0 : 0;
+        const clip = sheet ? sheet.meta.die.frames / Math.max(1, sheet.meta.die.fps) : cueAnim(r.model, 'die') ? cueLength(r.model, 'die') : 0;
         r.dying = clip > 0 ? Math.min(DIE_MAX_S, clip + DIE_REST_S) : DIE_S;
         r.dieS = r.dying;
         puff(r.x, r.h * 0.4, r.z, 12, 0xe8e2d0); burst(r.x, r.z, 2.4, 0xe8e2d0, 0.35);

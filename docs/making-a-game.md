@@ -546,10 +546,13 @@ export const look: Look = {
   leaf: (_x, _z, k) => LEAVES[Math.floor(k * LEAVES.length) % LEAVES.length],
 ```
 
+**3D 동작(`useMotion()`)**: 코드로 만든 모델(사람형·네발·덩어리)이 숨쉬기, 걸을 때 오르내리며 기울기, 손 모양마다 다른 공격(검 내려치기, 활 당겨 쏘기, 지팡이 내지르기, 빈손 주먹), 맞으면 움찔, 죽으면 뒤나 옆으로 쓰러지기를 한다. 끄면(기본) 예전처럼 팔다리만 흔들고 죽으면 줄어든다. 신호는 모델 파일과 같은 `cueAnim(m, 'attack' | 'hit' | 'die')`이고, 손 모양을 더한 게임은 `registerSwing(손 모양, 키프레임)`으로 그 공격 동작을 더한다. 모델 파일과 그림 판(시트)은 건드리지 않는다.
+
 모듈의 init에서 등록하는 것: 몬스터 모델, 사람 모델, 손 모양, 무기와 갑옷의 모습, 분위기, 미니맵의 바탕, 모델과 소리 파일(아래 '모델 파일과 애니메이션', '소리 파일과 배경음').
 
 ```ts games/sample/client/scene.ts
 export function initScene(): void {
+  useMotion(); // 코드 모델의 3D 동작 (engine/client/scene/motion.ts): 모델 파일(곰·멧돼지·야영꾼)은 그대로 클립으로
   for (const type of Object.keys(BEASTS)) registerMonsterModel(type, beast);
   // 사람 모델: 틀의 사람형(defaultHumanoid)에 털모자를 얹는다. 머리째 바꾸려면 m.head를 지우고 새로 붙인다. 손 모양은 틀이 이미 붙였다.
   // 부품으로 된 겉모습(look.look: 캐릭터 정의·변신)이면 그 부품대로 그리고 털모자는 얹지 않는다 (모자는 겉모습의 칸이다)

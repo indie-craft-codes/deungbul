@@ -4,6 +4,7 @@
 // 약속: 발이 원점, +Z를 바라본다. 사람형 키는 약 2.1.
 import * as THREE from 'three';
 import { animateSprite } from './sprites';
+import { animateMotion, cueMotion, MOTION_S, motionOn, type Motion } from './motion';
 import { armorHit, humanoidAsset, monsterAsset, nameList, pickClip, weaponAsset, type AnimState, type HumanoidArmor, type ModelAsset } from '../assets';
 import type { Animator, Instance, Source } from './gltf';
 import type { Look } from '../../shared/defs/look';
@@ -26,6 +27,8 @@ export interface Model {
   frame?: THREE.Group;
   /** 그림 판으로 그린 유닛 (scene/sprites.ts: 3D 몸 대신). h는 이름표를 붙일 높이, die는 쓰러짐의 남은 비율(1 = 서 있음) */
   sprite?: { s: THREE.Sprite; mat: THREE.SpriteMaterial; h: number; w: number; right: boolean; flip: boolean; die?: number; sheet?: SheetRun };
+  /** 코드 모델의 3D 동작 시계 (useMotion을 켠 게임만: scene/motion.ts) */
+  mo?: Motion;
 }
 /** 파일의 사람에서 갑옷을 칠할 메시들(본래 재질과 칠할 칸)과 덧대기를 붙일 노드(쉬는 자세의 자리를 되돌리는 행렬) */
 interface FileArmor { meshes: { mesh: THREE.Mesh; base: THREE.Material | THREE.Material[]; slots: boolean[] }[]; node?: THREE.Object3D; rest?: THREE.Matrix4 }
@@ -407,7 +410,16 @@ export function makeMonster(type: string): Model {
 }
 
 /** 한 번 도는 동작(공격, 맞음, 쓰러짐)을 튼다. 그 클립이 없거나 코드 모델이면 false: 틀의 코드 흔들기(swing, 줄어듦)가 그대로 맡는다 */
-export function cueAnim(m: Model, s: AnimState): boolean { return m.anim?.cue(s) ?? false; }
+export function cueAnim(m: Model, s: AnimState): boolean {
+  if (m.anim) return m.anim.cue(s);
+  // 3D 동작을 켠 게임의 코드 모델 (scene/motion.ts): 휘두르기·움찔·쓰러짐을 틀고 쓰러짐이면 true
+  return motionOn() && !m.asset && !m.sprite ? cueMotion(m, s) : false;
+}
+/** cueAnim이 튼 동작의 길이(초): 모델 파일은 클립의 길이, 3D 동작의 코드 모델은 틀의 길이. 없으면 0 */
+export function cueLength(m: Model, s: AnimState): number {
+  if (m.anim) return m.anim.length(s);
+  return m.mo ? (MOTION_S as Partial<Record<AnimState, number>>)[s] ?? 0 : 0;
+}
 
 /**
  * 한 프레임의 동작. phase는 계속 늘어나는 값, swing은 공격 동작의 남은 정도(1에서 0으로).
@@ -415,6 +427,7 @@ export function cueAnim(m: Model, s: AnimState): boolean { return m.anim?.cue(s)
  */
 export function animate(m: Model, x: number, z: number, face: number, walking: boolean, phase: number, dt: number, swing = 0, scale = 1, every = 1): void {
   if (m.sprite) { animateSprite(m, x, z, face, walking, phase, swing, scale); return; }
+  if (motionOn() && !m.asset) { animateMotion(m, x, z, face, walking, phase, dt, scale); return; }
   const r = m.root;
   let d = face - r.rotation.y;
   while (d > Math.PI) d -= Math.PI * 2;
