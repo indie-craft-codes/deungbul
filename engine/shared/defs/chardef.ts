@@ -258,6 +258,8 @@ const KNOWN = new Map<string, CharDef>();
 export function setKnownChars(list: readonly CharDef[]): void { KNOWN.clear(); for (const d of list) KNOWN.set(d.id, d); }
 /** 알고 있는 정의 (없으면 undefined) */
 export const knownChar = (id: string): CharDef | undefined => KNOWN.get(id);
+/** 알고 있는 정의 모두 (변신한 사람의 겉모습 글자로 그 캐릭터를 찾을 때: 화면의 시트 그림) */
+export const knownChars = (): readonly CharDef[] => [...KNOWN.values()];
 /** 이름·소개를 고를 언어 (화면이 언어를 바꿀 때 setCharLang으로 알린다. 서버는 정하지 않는다: 정의의 글 그대로) */
 let charLang = '';
 export function setCharLang(code: string): void { charLang = code; }

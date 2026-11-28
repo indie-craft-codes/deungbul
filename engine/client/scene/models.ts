@@ -7,6 +7,7 @@ import { animateSprite } from './sprites';
 import { armorHit, humanoidAsset, monsterAsset, nameList, pickClip, weaponAsset, type AnimState, type HumanoidArmor, type ModelAsset } from '../assets';
 import type { Animator, Instance, Source } from './gltf';
 import type { Look } from '../../shared/defs/look';
+import type { SheetRun } from './sprites';
 
 export interface Rig { ll: THREE.Group; rl: THREE.Group; la: THREE.Group; ra: THREE.Group }
 /**
@@ -24,7 +25,7 @@ export interface Model {
   /** 몸 전체를 담은 안쪽 묶음 (겉모습의 크기 배율을 받는다: scene/look.ts). 있으면 갑옷 덧대기도 여기에 붙는다. 없으면 root */
   frame?: THREE.Group;
   /** 그림 판으로 그린 유닛 (scene/sprites.ts: 3D 몸 대신). h는 이름표를 붙일 높이, die는 쓰러짐의 남은 비율(1 = 서 있음) */
-  sprite?: { s: THREE.Sprite; mat: THREE.SpriteMaterial; h: number; w: number; right: boolean; flip: boolean; die?: number };
+  sprite?: { s: THREE.Sprite; mat: THREE.SpriteMaterial; h: number; w: number; right: boolean; flip: boolean; die?: number; sheet?: SheetRun };
 }
 /** 파일의 사람에서 갑옷을 칠할 메시들(본래 재질과 칠할 칸)과 덧대기를 붙일 노드(쉬는 자세의 자리를 되돌리는 행렬) */
 interface FileArmor { meshes: { mesh: THREE.Mesh; base: THREE.Material | THREE.Material[]; slots: boolean[] }[]; node?: THREE.Object3D; rest?: THREE.Matrix4 }

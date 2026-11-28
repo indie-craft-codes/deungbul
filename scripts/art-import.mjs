@@ -14,6 +14,8 @@
 //   cur-<재화 id>.webp             'cur:<id>'         128×128 투명      item-<아이템 id>[@<손 모양>].webp      'item:<id>'  256×256 투명
 //   skill-<기술 id>.webp           'skill:<id>'       256×256           enemy-<몬스터 id>.webp                 'enemy:<id>' 512×512 투명
 //   frame-<등급 id>.webp           'frame:<등급>'     400×500 투명      fx-<이름>.webp                         'fx:<이름>'  512×512 투명
+//   sheet-<영웅·몬스터·직업·캐릭터 id>.png 'sheet:<id>'  4열×4행 투명 (대기·걷기·공격·맞음/쓰러짐, 옆모습 오른쪽 보기): PNG면 scripts/art-sheet.mjs로
+//                                  칸마다 발밑 가운데를 맞춘 정규화 시트로 바꿔 넣는다 (프레임마다 여백이 달라도 흔들리지 않게. 입력 파일은 그대로 둔다)
 //   logo.webp                      'logo'             1200×400 투명     splash[@portrait|@landscape].webp      'splash'     1080×1920·1920×1080
 //   appicon.png                    'appicon'          1024×1024 PNG: 아래의 아이콘들을 만든다
 // 받는 확장자: .webp .png (아이콘은 .svg도, 앱 아이콘은 .png만). 크기를 맞추거나 webp로 바꾸지는 않는다: 이미 맞춘 파일을 옮기고 등록만 한다.
@@ -25,6 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { APPICON_OUT, BRAND, ORIENT, SLOTS, sizeOf, sizeText, webpAlpha } from './art-slots.mjs';
 import { decodePng, encodePng, hasTransparency, hexRgb, onCanvas, pngInfo, resize } from './png.mjs';
+import { normalizeSheet } from './art-sheet.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const args = process.argv.slice(2);
@@ -52,7 +55,7 @@ function parse(rel) {
     if (!SLOTS[kind].ext.includes(ext)) return null;
     return { key: `${kind}${orient ? `@${orient}` : ''}`, kind, id: '', orient, ext };
   }
-  const m = /^(portrait|bg|banner|icon|cur|item|skill|enemy|unit|frame|fx)[-/]([\w.-]+?)(?:@([\w-]+))?$/.exec(stem);
+  const m = /^(portrait|bg|banner|icon|cur|item|skill|enemy|unit|sheet|frame|fx)[-/]([\w.-]+?)(?:@([\w-]+))?$/.exec(stem);
   if (!m) return null;
   const [, kind, id, at] = m;
   if (at && !(kind === 'bg' && (at === 'portrait' || at === 'landscape')) && kind !== 'item') return null;
@@ -77,7 +80,14 @@ const found = [], brandFiles = [], skipped = [], warns = [];
 for (const rel of walk(src)) {
   const p = parse(rel);
   if (!p) { skipped.push(rel); continue; }
-  const file = path.join(src, rel), buf = fs.readFileSync(file);
+  const file = path.join(src, rel);
+  let buf = fs.readFileSync(file);
+  // 스프라이트 시트: PNG면 칸마다 발밑 가운데로 맞춘다 (scripts/art-sheet.mjs). WebP는 읽지 못해 그대로 (이미 맞춘 것이어야 한다)
+  if (p.kind === 'sheet') {
+    const img = p.ext === '.png' ? decodePng(buf) : null;
+    if (img) { const r = normalizeSheet(img); buf = encodePng(r.img); console.log(`  시트 ${rel}: ${img.w}×${img.h} → ${r.img.w}×${r.img.h} (칸 ${r.cell[0]}×${r.cell[1]}, 발밑 맞춤)`); }
+    else warns.push(`${rel}: 시트를 맞추지 않고 그대로 넣습니다 (8비트 PNG만 맞춘다: WebP는 node scripts/art-sheet.mjs로 맞춘 PNG를 바꾼 것이어야 칸마다 발밑이 같다)`);
+  }
   if (p.brandFile) {
     const want = APPICON_OUT[p.brandFile], sz = sizeOf(buf);
     if (!sz || sz[0] !== want[0] || sz[1] !== want[1]) warns.push(`${rel}: ${sz ? `${sz[0]}×${sz[1]}` : '크기를 읽지 못함'} (필요 ${want[0]}×${want[1]})`);
@@ -144,7 +154,7 @@ for (const w of warns) console.log(`  경고 ${w}`);
 if (flags.has('--dry')) { console.log('(--dry: 옮기지 않았습니다)'); process.exit(0); }
 
 const pub = path.join(gameDir, 'client', 'public');
-for (const f of found) { const to = path.join(pub, f.out); fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(f.file, to); }
+for (const f of found) { const to = path.join(pub, f.out); fs.mkdirSync(path.dirname(to), { recursive: true }); if (f.kind === 'sheet') fs.writeFileSync(to, f.buf); else fs.copyFileSync(f.file, to); }
 for (const [name, buf] of Object.entries(made)) { const to = path.join(pub, 'art', 'brand', name); fs.mkdirSync(path.dirname(to), { recursive: true }); fs.writeFileSync(to, buf); }
 const keys = Object.keys(table).sort();
 fs.writeFileSync(listFile, `// 이 게임의 그림 등록 표 (scripts/art-import.mjs가 만든다: 손으로 고치지 말고 그림을 넣은 뒤 다시 돌린다).

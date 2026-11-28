@@ -4,9 +4,13 @@
 //   일시정지 창: [계속] [홈] [포기(두 번 누름)]. 전투 중 뒤로 가기(폰 브라우저의 뒤로 포함) = 일시정지 창 (화면 쌓기의 onBack)
 // 서버의 짝: systems/stages.ts의 배속·일시정지 (명령 stage speed·pause, 개인 상태 stage의 speed·speedMax·paused). 규칙이 없는 게임은 그 단추가 없다.
 // 게임은 useBattleScreen으로 켜고(보일 때·초상 그림·홈), 전투를 볼 때 openBattle(id)로 화면 쌓기에 넣는다. 켜지 않으면 아무것도 붙지 않는다.
-import { STAGE_RULE_VIEW, heroRole, isSkillId, skillDef } from '../../shared/defs';
+// 유닛 그림(scene/sprites.ts의 useSprites)으로 싸우는 동안은 카메라도 여기서 정한다 (battleAim): 사람 키가 battlePx쯤 되게 당기고,
+//   싸움의 가운데가 위 띠와 아래 카드 줄 사이(그 사이의 55%)에 오게. 그림 유닛이 하나도 없으면 예전처럼 나를 비춘다.
+import { CAMERA, STAGE_RULE_VIEW, heroRole, isSkillId, skillDef } from '../../shared/defs';
+import { setKitAim, type CameraAim } from '../camera';
+import { spriteBattlePx } from '../scene/sprites';
 import { onSlow } from '../bus';
-import { artPick } from '../art';
+import { artPick, hasArt } from '../art';
 import { view } from '../app';
 import { onCast } from '../entities';
 import { L, onLangChange, t } from '../i18n';
@@ -19,6 +23,7 @@ import { feed } from './notify';
 import { closeScreen, dropScreen, openScreen, screenOpen } from './screens';
 import { myStage } from './stagebar';
 import { tintRarity } from './rarity';
+import { frameArt } from './artdom';
 import { addUnlock } from './reward';
 import { heroDef } from '../../shared/defs';
 import { uiIcon } from './uiicons';
@@ -101,6 +106,9 @@ function drawSquad(): void {
   if (ui.squad.dataset.key !== key) {
     ui.squad.dataset.key = key;
     ui.squad.textContent = '';
+    // 그림이 있는 게임은 카드를 한 줄에 (style.css의 .btlSquad.art)
+    ui.squad.classList.toggle('art', hasArt());
+    if (hasArt()) ui.squad.style.setProperty('--n', String(Math.max(1, heroes.length)));
     for (const r of heroes) {
       const c = mk('div', 'btlMate'); c.dataset.id = String(r.id);
       const d = heroDef(r.type);
@@ -112,6 +120,7 @@ function drawSquad(): void {
       const hp = mk('i', 'btlHp'), fill = mk('span', '');
       hp.append(fill);
       c.append(face, mk('b', '', heroName(r.type)), hp);
+      if (d) frameArt(c, d.rarity); // 등급 테두리 그림 'frame:<등급 id>' (없으면 css 테두리)
       ui.squad.append(c);
     }
   }
@@ -131,6 +140,54 @@ function drawSquad(): void {
     ring.hidden = !cd;
     if (cd && sk) ring.title = L().skills[sk as keyof ReturnType<typeof L>['skills']]?.name ?? sk;
   }
+}
+
+// ---------- 전투의 카메라 (유닛 그림일 때) ----------
+/** 부드럽게 따라가는 값: 싸움의 가운데(x, z), 카메라 거리(d), 마지막 시각 */
+let cam: { x: number; z: number; d: number; t: number } | null = null;
+/** 위 띠의 아래·카드 줄의 위 (css px, 0.25초마다 잰다) */
+let band = { top: 0, bottom: 0, at: -1e9 };
+let fit = { k: 1, at: -1e9 };
+const NEAR = 7;
+const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
+function battleAim(now: number): CameraAim | null {
+  const px0 = spriteBattlePx();
+  if (!ui || ui.top.hidden || px0 <= 0) { cam = null; return null; }
+  // 살아 있는 영웅·적 (이 층에는 내 단계의 것만 온다). 그림 판이 하나도 없으면 손대지 않는다
+  // 영웅을 먼저 담고, 적은 영웅들의 가운데에서 NEAR m 안의 것만 (새 물결이 먼 둘레에서 나올 때 영웅이 화면 가장자리로 밀려나지 않게)
+  let n = 0, sprites = 0, href = 0, top1 = 0, x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity, hx = 0, hz = 0, hn = 0;
+  const live = [...S.others.values()].filter((r) => (r.kind === 'hero' || r.kind === 'm') && !r.gone && r.dying <= 0);
+  for (const r of live) {
+    const sp = r.model.sprite;
+    if (sp) { sprites++; if (r.kind === 'hero' && (!href || sp.h < href)) href = sp.h; }
+    if (r.kind === 'hero') { hx += r.x; hz += r.z; hn++; }
+  }
+  if (!sprites) { cam = null; return null; }
+  if (hn) { hx /= hn; hz /= hn; }
+  for (const r of live) {
+    if (hn && r.kind === 'm' && Math.hypot(r.x - hx, r.z - hz) > NEAR) continue;
+    n++; top1 = Math.max(top1, r.model.sprite?.h ?? r.h); x0 = Math.min(x0, r.x); x1 = Math.max(x1, r.x); z0 = Math.min(z0, r.z); z1 = Math.max(z1, r.z);
+  }
+  if (!href) for (const r of S.others.values()) if (r.model.sprite && !r.gone && (!href || r.model.sprite.h < href)) href = r.model.sprite.h;
+  const W = view.width, H = view.height;
+  // 빈 곳: 위 띠의 아래부터 카드 줄의 위까지 (가려진 것이 없으면 화면 전체)
+  if (now - band.at > 250) {
+    const tb = ui.top.getBoundingClientRect(), sb = ui.squad.hidden ? null : ui.squad.getBoundingClientRect();
+    band = { top: tb.height ? tb.bottom : 0, bottom: sb?.height ? sb.top : H, at: now };
+  }
+  const top = clamp(band.top, 0, H * 0.5), bottom = clamp(band.bottom, top + 80, H), room = bottom - top;
+  // 사람 키(px): 게임의 값 × 화면 높이(844 기준, 0.7~1.35배), 빈 곳의 34%를 넘지 않게. 그 키가 되는 카메라 거리
+  // 가장 큰 유닛(우두머리)도 빈 곳의 80% 안에 들게 (폰 가로처럼 낮은 화면)
+  const px = Math.min(px0 * clamp(H / 844, 0.7, 1.35), room * 0.34, (room * 0.8 * href) / Math.max(href, top1));
+  const tan = Math.tan((view.camera.fov * Math.PI) / 360), D = (H * href) / (2 * tan * px);
+  // 흩어져 있으면(새 물결이 둘레에서 나올 때) 1.3배까지 물러나 다 보이게
+  if (n && now - fit.at > 200) fit = { k: clamp(view.fitZoom(x0 - 1, z0 - 1, x1 + 1, z1 + 1, D, 0.1), 1, 1.3), at: now };
+  const cx = n ? (x0 + x1) / 2 : 0, cz = n ? (z0 + z1) / 2 : 0, d = D * fit.k;
+  const dt = cam ? Math.min(0.25, (now - cam.t) / 1000) : 1, a = 1 - Math.exp(-dt * 3);
+  cam = cam ? { x: cam.x + (cx - cam.x) * a, z: cam.z + (cz - cam.z) * a, d: cam.d + (d - cam.d) * a, t: now } : { x: cx, z: cz, d, t: now };
+  // 싸움의 가운데(가장 큰 유닛 키의 45% 높이)가 빈 곳의 가로 가운데, 세로 55%에 그려지게
+  const at = view.aimFor(cam.x, Math.max(href, top1) * 0.45, cam.z, cam.d, W / 2, top + room * 0.55);
+  return { x: at.x, z: at.z, zoom: cam.d / CAMERA.dist };
 }
 
 /** 전투 화면을 켠다 (게임이 한 번) */
@@ -179,6 +236,7 @@ export function useBattleScreen(o: BattleOpts): void {
     resume(); send({ t: 'stage', a: 'leave' }); o.home();
   });
   onCast((id) => castAt.set(id, performance.now()));
+  setKitAim(battleAim);
   onSlow(draw);
   onLangChange(() => { label(); if (ui) ui.squad.dataset.key = ''; draw(); });
 }

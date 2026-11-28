@@ -10,6 +10,7 @@ export const SLOTS = {
   item: { ext: ['.webp', '.png'], size: [[256, 256]], alpha: true, max: 120_000, where: '가방·상점·대장간·장비·도감·보상·우편', fallback: '시트의 칸 → 글자만' },
   skill: { ext: ['.webp', '.png'], size: [[256, 256]], alpha: false, max: 120_000, where: '들판의 기술 단추', fallback: '기술 이름 글자' },
   unit: { ext: ['.webp', '.png'], size: [[512, 512]], alpha: true, max: 300_000, where: '탑 전투의 유닛 그림 (useSprites: 없으면 영웅은 portrait, 적은 enemy)', fallback: 'portrait·enemy → 3D 모델' },
+  sheet: { ext: ['.png', '.webp'], size: [], alpha: true, max: 3_000_000, where: '움직이는 유닛 (useSprites: 탑 전투의 영웅·적, field를 켜면 들판의 사람·변신·몬스터). 4열×4행: 대기·걷기·공격·맞음/쓰러짐', fallback: 'unit·portrait·enemy 한 장 → 3D 모델' },
   enemy: { ext: ['.webp', '.png'], size: [[512, 512]], alpha: true, max: 300_000, where: '도감의 몬스터 줄·단계 정보의 적 목록·(useSprites) 전투의 적 유닛', fallback: '글자만' },
   frame: { ext: ['.webp', '.png'], size: [[400, 500]], alpha: true, max: 200_000, where: '카드 격자·뽑기 카드의 등급 테두리 (가운데는 투명)', fallback: 'css 등급 색 테두리' },
   fx: { ext: ['.webp', '.png'], size: [[512, 512]], alpha: true, max: 300_000, where: '뽑기 연출의 예고 빛 덩이', fallback: 'css 빛 덩이' },

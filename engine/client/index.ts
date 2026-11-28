@@ -65,7 +65,7 @@ export { menuTab, MENU_GROUPS, setMenuGroups, setTabGate, type MenuGroup, type M
 export { noticesNow, openNotices } from './hud/ops';
 export { ART_BRAND, ART_KINDS, artKeyOk, artPick, artUrl, hasArt, onArt, portraitArt, registerArt, sheetKeyArt, splashArt, type ArtKind } from './art';
 export { artPic, frameArt, setScene } from './hud/artdom';
-export { spritesOn, unitArt, useSprites, type SpriteOpts } from './scene/sprites';
+export { SHEET_DEFAULT, setSheets, sheetOf, spritesOn, unitArt, useSprites, type SheetAnim, type SheetMeta, type SpriteOpts } from './scene/sprites';
 export { ICON_PATHS, iconSvg, isIconName, uiIcon, type IconName } from './hud/uiicons';
 export { remindGuestSave, setGuestReminder } from './hud/keepsafe';
 export { enableOfflineCache, isAfk, onReturn } from './lifecycle';

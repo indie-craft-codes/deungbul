@@ -137,6 +137,7 @@ export const ART: Readonly<Record<string, string>> = {
   'portrait:sorrel': 'art/portrait/sorrel.webp',
   'portrait:tamsin': 'art/portrait/tamsin.webp',
   'portrait:wren': 'art/portrait/wren.webp',
+  'sheet:brindle': 'art/sheet/brindle.webp',
   'skill:bash': 'art/skill/bash.webp',
   'skill:brace': 'art/skill/brace.webp',
   'skill:chant': 'art/skill/chant.webp',

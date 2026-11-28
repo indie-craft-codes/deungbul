@@ -3331,6 +3331,7 @@ setMenuGroups(MENU_GROUPS.map((g) => (g.id === 'play' ? { ...g, tabs: ['camp', .
 | `skill:<기술 id>` | 들판의 기술 단추 (직업의 기술) | 256×256 | 기술 이름 글자 |
 | `enemy:<몬스터 id>` | 도감의 몬스터 줄·단계 정보와 편성 확인의 적 목록·(유닛 그림을 켠 게임) 전투의 적 | 512×512 · 투명 | 글자만 / 3D 모델 |
 | `unit:<영웅·몬스터 id>` | (유닛 그림을 켠 게임) 전투의 유닛 그림 판. 없으면 영웅은 `portrait:`, 적은 `enemy:` | 512×512 · 투명, 온몸·발이 아래 끝 | 3D 모델 |
+| `sheet:<id>` (artfix) | (유닛 그림을 켠 게임) 움직이는 스프라이트 시트. id는 영웅·몬스터·직업·변신 캐릭터 모두 같은 체계. 탑 전투의 영웅·적, `field`를 켠 게임은 들판의 사람(직업, 변신하면 그 캐릭터)·몬스터도 | 4열×4행 · 투명, 옆모습 오른쪽 보기, 발 기준선 같음 (PNG면 `art-import`가 맞춘다) | `unit:`·`portrait:`·`enemy:` 한 장 → 3D 모델 |
 | `bg:battle`, `bg:battle-<장 번호>` (`@portrait`·`@landscape`) | 단계 전투의 바닥·하늘 대신 화면 뒤 그림 (전투 화면 키트 `useBattleScreen`이 전투를 보일 때). 유닛의 그림자는 보이지 않는 바닥이 받는다 | 1080×1920 · 1920×1080 (아래 ⅔가 바닥) | 3D 바닥·하늘 |
 | `icon:goods-<id>`·`icon:ach-<id>`·`icon:daily-<id>`·`icon:mission-<종류>`·`icon:mail-<종류>`·`icon:buff-<기술 id>`·`icon:rarity-<등급 id>` | 메뉴 줄의 이름 앞(상품·업적·임무·이벤트 임무·우편), 내 강화 표시, 카드의 등급 표. 열쇠를 차례로 보고 처음 있는 것(상품은 주는 첫 아이템, 업적은 `icon:mission-<종류>`, 강화는 `skill:<id>`, 우편은 보상의 첫 아이템·재화로도) | 128×128 · 투명 | 글자만 |
 | `frame:<등급 id>` | 카드 격자·뽑기 카드의 등급 테두리 (영웅 등급 id: `common`·`rare`·`legend`) | 400×500 · 투명(가운데) | css 등급 색 테두리 |
@@ -3343,15 +3344,44 @@ setMenuGroups(MENU_GROUPS.map((g) => (g.id === 'play' ? { ...g, tabs: ['camp', .
 - 낱장 그림은 그림 시트(`addIconSheet`)보다 이긴다: `itemIcon`이 먼저 `item:<id>`(손 모양의 것을 먼저)·`cur:<재화>`·`icon:<이름>`(`ui:mail`)을 본다. 그래서 가방·상점·대장간·장비·재화 줄은 고칠 것 없이 그림을 쓴다. 도감·보상·우편은 낱장 그림만 본다(시트는 예전처럼 쓰지 않는다: 등불지기 그대로).
 - 세 게임의 진입점이 모두 `registerArt(ART)`를 부른다(표 `client/artlist.ts`: 등불지기·예제는 비어 있다).
 - 빌드: `node scripts/game.mjs build <게임>`이 끝나면 `scripts/brand-head.mjs`가 빌드의 `art/brand/`에 아이콘이 있을 때만 `index.html`의 머리에 favicon·apple-touch-icon·manifest·`og:image`를 넣는다(있던 icon·manifest 줄은 바꾼다. 개발 서버의 화면에는 넣지 않는다). 없으면 머리를 건드리지 않는다. 데스크톱 앱은 빌드의 `art/brand/icon-256.png`가 있으면 창 아이콘으로 쓴다(`apps/desktop/main.cjs`).
-- 유닛 그림(`engine/client/scene/sprites.ts`): 게임이 `useSprites({ heroes?, enemies?: true | 'stage' | false, scale?, face? })`로 켠다(기본 꺼짐). 켜면 그림이 있는 영웅·적만 3D 모델 대신 늘 카메라를 보는 그림 판이 된다: 발밑이 기준, 발밑에 둥근 그림자(영웅은 등급 고리도), 걸어가는 쪽이 화면 왼쪽이면 좌우 뒤집기(그림은 `face` 쪽을 본다고 친다, 기본 오른쪽), 걸을 때 통통·공격할 때 뛰기·맞으면 하얗게 번쩍(틀의 흔들림 그대로)·쓰러지면 기울며 흐려진다. 이름표·체력 막대·피해 숫자는 그림의 높이(3D 높이 × `scale`, 기본 1.6)에 붙는다. `enemies: 'stage'`(기본)는 단계(장의 물결·우두머리)에 나오는 몬스터만: 들판의 짐승은 3D 그대로. 사람(플레이어·변신 모습)은 아직 3D다.
+- 유닛 그림(`engine/client/scene/sprites.ts`): 게임이 `useSprites({ heroes?, enemies?: true | 'stage' | false, scale?, face?, boss?, battlePx?, field? })`로 켠다(기본 꺼짐). 켜면 그림이 있는 영웅·적만 3D 모델 대신 늘 카메라를 보는 그림 판이 된다: 발밑이 기준, 발밑에 둥근 그림자(영웅은 등급 고리도), 걸어가는 쪽이 화면 왼쪽이면 좌우 뒤집기(그림은 `face` 쪽을 본다고 친다, 기본 오른쪽), 걸을 때 통통·공격할 때 뛰기·맞으면 하얗게 번쩍(틀의 흔들림 그대로)·쓰러지면 기울며 흐려진다. 이름표·체력 막대·피해 숫자는 그림의 높이(3D 높이 × `scale`, 기본 1.6)에 붙는다. `enemies: 'stage'`(기본)는 단계(장의 물결·우두머리)에 나오는 몬스터만: 들판의 짐승은 3D 그대로. 사람(플레이어·변신 모습)은 아직 3D다.
 - 전투 배경: 전투 화면 키트가 전투를 보이는 동안(`useBattleScreen`의 `shown`) `bg:battle-<지금 장 번호>` → `bg:battle`이 있으면 `view.setBackdrop(주소)`(3D의 땅·나무·건물을 감추고 화면 뒤에 그림을 가득, 안개 끔, 그림자만 받는 바닥). 전투를 떠나면 예전 장면으로. 들판(3D 지형)은 건드리지 않는다.
-- 메아리 계약: `useSprites({ heroes: true, enemies: 'stage' })` — 메아리는 지금의 초상 10장(투명 배경)이 그대로 전투 유닛이 되고, 적은 `enemy:` 그림을 넣으면 바뀐다(지금은 3D).
+- 메아리 계약: `useSprites({ heroes: true, enemies: 'stage', field: true })` — 메아리는 지금의 초상 10장(투명 배경)이 그대로 전투 유닛이 되고, 적은 `enemy:` 그림을 넣으면 바뀐다(지금은 3D).
 
 ```ts games/echopact/client/main.ts
 setLocales(LOCALES);
 // 그림 자리 (U3): 넣은 그림(초상·로비 배경·배너·아이콘)을 등록한다. 표는 scripts/art-import.mjs가 만든다. 비어 있으면 틀이 대신 그린다 (3D 초상·css 배경·SVG 아이콘)
 registerArt(ART);
 ```
+
+### 폰에서 본 그림의 손질 (artfix)
+
+메아리 계약에 그림 134장을 넣고 폰(390×844)에서 본 아쉬움을 **틀에서** 고쳤다. 그림이 없는 게임(등불지기·예제)은 화면이 바뀌지 않는다(모두 그림이 있을 때만 붙는다).
+
+- **탑 전투의 카메라** (`hud/battle.ts`의 `battleAim`, `camera.ts`의 `setKitAim`, `scene/view.ts`의 `aimFor`): 그림 유닛(`useSprites`)으로 싸우는 동안 전투 화면 키트가 카메라를 정한다. 사람 키(그림 판의 높이)가 `useSprites({ battlePx })`(기본 150px, 폰 세로 844px 높이 기준, 화면 높이에 따라 0.7~1.35배, 빈 곳의 34%까지)쯤 되게 당기고, 싸움의 가운데(영웅들 + 영웅에게서 7m 안의 적)가 **위 띠의 아래와 아래 카드 줄의 위 사이, 그 사이의 55%** 높이·가로 가운데에 오게 비춘다(두 띠의 자리는 화면에서 잰다: 세로·가로·PC 모두). 흩어져 있으면 1.3배까지 물러난다. 부드럽게 따라간다. 이름표·체력 막대·피해 숫자는 3D의 높이를 따르므로 그대로 따라온다. 게임의 `setCameraAim`이 있으면 그것이 이긴다. 우두머리(`STAGES`의 `boss`) 그림은 `useSprites({ boss })`배(기본 1.4) 크게.
+- **전투의 카드 줄**: 그림이 있는 게임은 편성의 수만큼 한 줄(`.btlSquad.art`, 예전에는 100px 칸 셋까지만 놓아 넷째가 둘째 줄로 내려가 싸움을 가렸다).
+- **그림 아이콘의 크기** (`uiIcon`이 그림이면 `uic-art`): 메뉴 묶음 탭 30px(폰 가로 26·PC 32), 홈의 독 40px(폰 가로 32·PC 44), 옆 세로 열 38px(30·42), 재화 줄 22px, 프로필은 칸 가득. SVG 아이콘은 그대로. **잠김**은 그림을 회색으로 밝혀(`grayscale` + 밝게) 모양이 보이게, 자물쇠를 크게(예전에는 흐림 두 겹으로 갈색 덩어리).
+- **등급 테두리** `frame:<등급>`: 카드 격자·뽑기 결과에 더해 편성 확인(`stmate`)·전투 카드 줄(`btlMate`)·메뉴의 편성 칸(초상 그림이 있으면 작은 카드: 그림 + 테두리)에도. 테두리가 있는 카드는 속을 장식 안쪽으로 들인다(`--rframe-pad`, 게임이 바꾼다).
+- **접속 화면의 배경**: `splashArt(방향)`은 그 방향의 것 → `splash` → 다른 방향의 것(가운데를 잘라 덮는다). 메아리 계약은 가로 그림 한 장뿐이라 세로에서 가운데를 잘라 쓴다.
+- 함께 고친 것: 같은 그림의 텍스처가 이미 읽혀 있으면 유닛 그림을 만들 때 오류가 났다(`Cannot access … before initialization`: 둘째 단계부터 전투 화면이 멈출 수 있었다).
+
+### 움직이는 스프라이트 시트 (`sheet:<id>`, `scene/sprites.ts`)
+
+한 장 그림은 미끄러지듯 움직여 어색하다. 시트가 있으면 그것으로 움직인다(기본 꺼짐: `useSprites`를 켠 게임에 시트가 있을 때만, 없으면 한 장 + 간단 연출 그대로).
+
+- **기본 배치** (`SHEET_DEFAULT`, 시트에 메타가 없으면): 4열 × 4행, 투명 배경, 옆모습 오른쪽 보기, 발 기준선 같음.
+  1행 대기 4프레임(초당 4, 반복) · 2행 걷기 4프레임(걸음에 맞춰) · 3행 공격 4프레임(예비→휘두름→타격→회복: 공격 신호 0.3초 동안, 피해 숫자 무렵이 3째) · 4행 맞음·비틀·무릎·쓰러짐(맞음은 앞 2프레임을 0.2초, 쓰러짐은 4프레임을 틀고 마지막 칸에 멈춘 채 흐려진 뒤 사라진다).
+  차례: 쓰러짐 > 공격 > 맞음 > 걷기 > 대기. 이동 방향이 화면의 왼쪽이면 좌우를 뒤집는다(쿼터뷰라 앞·뒤 행은 메타에 자리만: `front`·`back`).
+- **게임의 덮어쓰기**: `setSheets({ <id>: { cols, rows, idle: { row, frames, fps, loop, start? }, walk, attack, hurt, die, base, scale, face } })`. `base`는 칸의 아래에서 발밑까지의 비율(맞춘 시트 0.03), `scale`은 칸의 높이 = 3D 모델 키 × scale(기본 1.5).
+- **쓰는 곳**: (1) 탑 전투의 영웅·적(`unit:`·`portrait:`·`enemy:`보다 먼저). (2) **들판**: `useSprites({ field: true })`면 사람(직업 `sheet:<직업 id>`, 변신하면 그 캐릭터의 `sheet:<캐릭터 id>`: 겉모습 글자로 찾는다)과 들판 몬스터 `sheet:<몬스터 id>`가 3D 대신 시트 빌보드. 이름표·체력 막대·선택 원·피해 숫자가 따라간다. 메아리 계약은 켰다(`tower.ts`), 등불지기는 켜지 않는다.
+- **맞추기** (`scripts/art-sheet.mjs`, `art-import`가 `sheet-<id>.png`를 받으면 거친다): 칸마다 알파 상자와 무게 중심을 재서 모든 프레임을 같은 기준(발밑 가운데, 칸 아래 3%)으로 다시 놓은 시트를 만든다. 거의 투명한 칸의 색을 지우고 가장자리의 붉은 번짐(크로마 키 자국)을 누른다. 칸 높이는 320px까지 줄인다. 맞춘 PNG는 크므로 WebP(품질 90, 알파)로 바꿔 넣어도 된다(WebP는 맞추지 않고 그대로 넣는다).
+
+  ```
+  node scripts/art-sheet.mjs sheet-brindle.png out/sheet-brindle.png   # 맞추기만
+  node scripts/art-import.mjs echopact <폴더>                          # sheet-<id>.png를 맞춰 넣는다
+  ```
+
+- 메아리 계약: `sheet:brindle`(ChatGPT로 만든 브린들, 1312×1199 → 맞춘 1616×1188, WebP 470KB). 나머지 메아리·적·직업은 `node scripts/art-list.mjs echopact --missing`의 `[sheet]` 칸(중요도 2, 영어 설명에 위 배치).
 
 ### 필요한 그림 목록 (`node scripts/art-list.mjs <게임>`)
 
