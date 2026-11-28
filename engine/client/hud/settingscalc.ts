@@ -1,6 +1,7 @@
 // 설정 창의 셈: 저장한 값 읽기·쓰기, 그래픽 품질의 단계. 화면 요소를 읽지 않는다 (node의 시험이 그대로 읽는다: engine/test/fx/web.test.ts).
 // 값은 이 기기에 둔다 (플랫폼 저장소의 'settings' 칸). 서버 저장은 계정이 생긴 뒤의 일이다 (docs/genre-features.md 5.2).
 // 소리 켜고 끄기·음량은 예전부터 따로 된 칸('sound', 'soundMix')에 있어 그대로 둔다 (sound.ts).
+import { legacyKeyName } from '../platform/keyname';
 
 /** 그래픽: 해의 그림자, 그리기 배율(DPR)의 상한, 그리는 거리(m) */
 export interface Gfx { shadows: boolean; pixelRatio: number; far: number }
@@ -76,7 +77,7 @@ export function readSettings(raw: string | null, cap = 2): Settings {
   if (typeof o !== 'object' || o === null) return d;
   const g = (typeof o.gfx === 'object' && o.gfx !== null ? o.gfx : {}) as Partial<Record<keyof Gfx, unknown>>;
   const keys: Record<string, string> = {};
-  if (typeof o.keys === 'object' && o.keys !== null) for (const [a, k] of Object.entries(o.keys)) if (typeof k === 'string' && /^.{1,12}$/.test(a) && /^.{1,12}$/.test(k)) keys[a.toLowerCase()] = k.toLowerCase();
+  if (typeof o.keys === 'object' && o.keys !== null) for (const [a, k] of Object.entries(o.keys)) if (typeof k === 'string' && /^.{1,12}$/.test(a) && /^.{1,12}$/.test(k)) { const v = legacyKeyName(k.toLowerCase()); if (v) keys[a.toLowerCase()] = v; } // 예전(ev.key) 저장의 한글 자모는 그 자리의 글자로
   return {
     gfx: { shadows: typeof g.shadows === 'boolean' ? g.shadows : d.gfx.shadows, pixelRatio: Math.min(cap, near(g.pixelRatio, PIXEL_STEPS, d.gfx.pixelRatio)), far: near(g.far, FAR_STEPS, d.gfx.far) },
     calm: typeof o.calm === 'boolean' ? o.calm : null,

@@ -69,6 +69,12 @@ export function actionOf(key: string): string | null {
   const k = key.toLowerCase();
   return byNew.get(k) ?? (custom.has(k) ? null : k);
 }
+/** 그 기능(처음 키)을 곧바로 부른다: 키 재설정을 거치지 않는다 (게임패드의 단추는 기능에 묶인다: ./pad.ts). 등록된 것이 있으면 참 */
+export function runAction(action: string): boolean {
+  const a = action.toLowerCase(), fn = engineKeys.get(a) ?? hotkeys.get(a);
+  if (fn) fn();
+  return !!fn;
+}
 /** 그 키에 등록된 것이 있으면 부르고 참을 돌려준다 (틀의 것 먼저) */
 export function runKey(key: string): boolean {
   const a = actionOf(key);

@@ -4,6 +4,7 @@
 //   3. 저장 키 이름이 예전 그대로다 (기존 사용자의 토큰·언어·소리가 이어진다)
 //   4. 프로토콜 호환: protocolFits, 서버의 protocolMin(welcome.min, join.v → update + 4006)
 //   5. 서버의 정적 파일 끄기(staticDir: null)와 Origin 허용 목록
+//   6. 2단계(데스크톱 시제품): 게임패드의 셈(가짜 패드), 단축키의 키 이름(ev.code), 예전 키 설정과의 호환
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -149,4 +150,26 @@ const src = (f: string) => fs.readFileSync(path.join(root, f), 'utf8');
   check(got.join() === 'true,true,false,true', `목록을 주면 그 출처만 받는다 (게임, 개발 서버, 남의 페이지, 출처 없음 → ${got.join()})`);
   await s3.close();
   removeTemp(dir);
+}
+
+// ---------- 6. 2단계: 게임패드의 셈, 키 이름(ev.code)으로 바꾼 단축키, 예전 키 설정 ----------
+{
+  const { padFieldActions, padMove, padUiSteps, PAD } = await import('../../client/padcalc');
+  const { readSettings } = await import('../../client/hud/settingscalc');
+  const { legacyKeyName } = await import('../../client/platform/keyname');
+  // 가짜 패드: 실제 패드 없이 표준 배치의 단추 번호로
+  const pad = (x: number, z: number, ...down: number[]) => ({ x, z, buttons: Array.from({ length: 17 }, (_, i) => down.includes(i)) });
+  const idle = pad(0, 0);
+  const m = padMove(pad(0, 0, PAD.UP, PAD.RIGHT)), m2 = padMove(pad(0.5, -0.2, PAD.DOWN));
+  check(Math.abs(m.x - Math.SQRT1_2) < 1e-9 && Math.abs(m.z + Math.SQRT1_2) < 1e-9 && m2.x === 0.5 && m2.z === -0.2, `이동: 막대가 서 있으면 십자 키(대각선은 길이 1), 막대를 기울이면 막대 (${JSON.stringify(m)}, ${JSON.stringify(m2)})`);
+  const acts = padFieldActions(idle, pad(0, 0, PAD.A, PAD.RB, PAD.RT, PAD.START));
+  check(acts.join() === '1,q,r,m' && padFieldActions(pad(0, 0, PAD.A), pad(0, 0, PAD.A)).length === 0, `들판: 새로 눌린 단추만 기능으로 (A 기술 1, RB 물약, Start 메뉴, RT 자동 사냥 → ${acts.join()}), 누르고 있는 단추는 되풀이하지 않는다`);
+  const ui = [...padUiSteps(idle, pad(0, 0, PAD.DOWN, PAD.A, PAD.B)), ...padUiSteps(idle, pad(0, -0.9)), ...padUiSteps(pad(0, -0.9), pad(0, -0.95))];
+  check(ui.join() === 'press,back,next,prev', `창: 십자 키 아래는 다음, A 누름, B 닫기, 막대는 넘긴 순간 한 번 (${ui.join()})`);
+  // 한글 입력 상태에서 고른 예전 키 설정(ev.key의 'ㅏ')은 그 자리의 글자로, 입력기가 가로챈 'process'는 버린다. 영문 설정은 그대로
+  const s = readSettings(JSON.stringify({ keys: { m: 'ㅏ', b: 'process', q: 'e', tab: 'f' } }));
+  check(JSON.stringify(s.keys) === '{"m":"k","q":"e","tab":"f"}' && legacyKeyName('ㅃ') === 'q' && legacyKeyName('f1') === 'f1', `저장된 키 설정과 호환: 한글 자모는 그 자리의 글자, 영문은 그대로 (${JSON.stringify(s.keys)})`);
+  // 단축키·이동 키·키 재설정·튜토리얼은 키 이름을 platform().input.keyName(ev.code 기준)으로 만든다: ev.key로 되돌아가지 않게
+  const usesKey = ['engine/client/input.ts', 'engine/client/hud/settings.ts', 'engine/client/hud/tutorial.ts'].filter((f) => /ev\.key\b|\(e\.key\)|e\.key\.toLowerCase/.test(src(f).replace(/\/\/.*$/gm, '')));
+  check(usesKey.length === 0, `단축키는 자판의 자리(ev.code)로 이름을 만든다 (ev.key를 쓰는 곳: ${usesKey.join(', ') || '없음'})`);
 }

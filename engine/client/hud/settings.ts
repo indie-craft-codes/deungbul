@@ -149,7 +149,7 @@ function drawSettings(list: HTMLElement): void {
 function captureKey(ev: KeyboardEvent): void {
   if (!waitKey) return;
   ev.preventDefault(); ev.stopImmediatePropagation();
-  const k = ev.key.toLowerCase(), a = waitKey;
+  const k = platform().input.keyName(ev), a = waitKey; // 자판의 자리(ev.code): 한글 입력 상태에서도 'k'
   waitKey = null;
   if (k === 'escape' || RESERVED_KEYS.includes(k) || k.length > 12) { renderMenu(); return; }
   set((s) => {

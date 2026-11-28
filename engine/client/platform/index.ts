@@ -1,19 +1,25 @@
 // 플랫폼 접점의 입구: 지금 쓰는 구현(platform), 갈아 끼우기(setPlatform), 그리고 틀이 접점 위에 얹은 것(광고 구간의 일시정지·음소거, 게임 구간 알림의 중복 거르기, 광고 가능 지점의 사건).
-// 기본은 web(./web.ts): 지금 동작 그대로다. 데스크톱·모바일·포털은 게임의 진입점이 startClient보다 먼저 setPlatform(그 구현)을 부른다.
+// 기본은 web(./web.ts): 지금 동작 그대로다. 데스크톱 앱(apps/desktop)의 preload가 window.desktopBridge를 내놓으면 desktop(./desktop.ts)을 스스로 고른다.
+// 모바일·포털은 게임의 진입점이 startClient보다 먼저 setPlatform(그 구현)을 부른다.
 // node(시험)에서 읽혀도 죽지 않는다: 브라우저가 없으면 처음 부를 때 시험용(memory) 구현을 쓴다.
 import { memoryPlatform } from './memory';
 import type { Feature, Platform } from './types';
 import { webPlatform } from './web';
+import { desktopBridge, desktopPlatform } from './desktop';
 
 export type { Feature, InputKind, KeyLike, LifeEvent, Platform, RawError } from './types';
 export { memoryPlatform, type MemoryPlatform } from './memory';
 export { keyNameOf } from './keyname';
+export { desktopPlatform, type DesktopBridge } from './desktop';
 export { guestAuth, auth, setAuth, type AuthProvider } from './auth';
 
 let current: Platform | null = null;
 /** 지금의 플랫폼 구현 */
 export function platform(): Platform {
-  if (!current) current = typeof window === 'undefined' || typeof document === 'undefined' ? memoryPlatform() : webPlatform();
+  if (!current) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') current = memoryPlatform();
+    else { const b = desktopBridge(); current = b ? desktopPlatform(b) : webPlatform(); } // 데스크톱 앱의 preload가 다리를 내놓았으면 데스크톱 (./desktop.ts)
+  }
   return current;
 }
 /** 플랫폼 구현을 갈아 끼운다 (게임의 진입점이 startClient보다 먼저, 시험) */

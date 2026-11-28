@@ -1,4 +1,4 @@
-// 입력 장치: 마우스, 터치(탭, 핀치), 가상 조이스틱, 키보드. 장치의 신호를 actions의 행동으로 바꾼다.
+// 입력 장치: 마우스, 터치(탭, 핀치), 가상 조이스틱, 키보드, 게임패드(./pad.ts). 장치의 신호를 actions의 행동으로 바꾼다.
 import { bindKey, onFrame, runKey } from './bus';
 import { closeWorldMap, worldMapOpen } from './hud/worldmap';
 import { goToTown } from './actions';
@@ -10,6 +10,8 @@ import { HOME_KEY } from '../shared/defs';
 import { blurChat, focusChat } from './hud/chat';
 import { S } from './state';
 import { toUi } from './uiscale';
+import { initPad, padAxis } from './pad';
+import { platform } from './platform';
 
 const keys = new Set<string>();
 const joy = { x: 0, y: 0 };
@@ -21,7 +23,8 @@ const onControl = (): boolean => { const a = document.activeElement; return a in
 
 /** 지금의 방향 입력. 화면 기준으로 x는 오른쪽, z는 아래쪽이 양수다. */
 export function axis(): { x: number; z: number } {
-  let x = joy.x, z = joy.y;
+  const pad = padAxis();
+  let x = joy.x + pad.x, z = joy.y + pad.z;
   if (!typing()) {
     const has = (...k: string[]) => k.some((v) => keys.has(v));
     x += (has('d', 'arrowright') ? 1 : 0) - (has('a', 'arrowleft') ? 1 : 0);
@@ -83,18 +86,21 @@ function initJoystick(): void {
 }
 
 function initKeyboard(): void {
+  // 키의 이름은 자판의 자리(ev.code)로 만든다 (platform().input.keyName): 한글 입력 상태('ㅈ', 'Process')나 다른 자판 배열에서도 W 자리는 'w'다
+  const name = (ev: KeyboardEvent): string => platform().input.keyName(ev);
   window.addEventListener('keydown', (ev) => {
-    if (typing()) { if (ev.key === 'Escape') (document.activeElement as HTMLElement).blur(); return; }
+    const k = name(ev);
+    if (typing()) { if (k === 'escape') (document.activeElement as HTMLElement).blur(); return; }
     if (!S.me) return;
     // 단추·고르는 상자에 키보드 포커스가 있으면 Enter·Space는 그것을 누른다 (대화 열기·게임의 키가 아니라: U4 키보드로만 하기)
-    if ((ev.key === 'Enter' || ev.key === ' ') && onControl()) return;
-    if (ev.key === 'Enter') { ev.preventDefault(); focusChat(); return; }
-    if (ev.key === 'Escape') { if (worldMapOpen()) closeWorldMap(); else stop(); return; }
+    if ((k === 'enter' || k === ' ') && onControl()) return;
+    if (k === 'enter') { ev.preventDefault(); focusChat(); return; }
+    if (k === 'escape') { if (worldMapOpen()) closeWorldMap(); else stop(); return; }
     // 틀의 모듈이 단 키(bus.bindKey: 숫자·Tab은 전투, Q·B는 아이템, R은 자동 사냥, M·N·H는 핵심)와 게임의 키(bus.onKey)
-    if (runKey(ev.key)) { if (ev.key === 'Tab') ev.preventDefault(); return; }
-    keys.add(ev.key.toLowerCase());
+    if (runKey(k)) { if (k === 'tab') ev.preventDefault(); return; }
+    keys.add(k);
   });
-  window.addEventListener('keyup', (ev) => keys.delete(ev.key.toLowerCase()));
+  window.addEventListener('keyup', (ev) => keys.delete(name(ev)));
   window.addEventListener('blur', () => keys.clear());
 }
 
@@ -105,4 +111,5 @@ export function initInput(): void {
   initPointer(view.renderer.domElement);
   initJoystick();
   initKeyboard();
+  initPad(); // 게임패드 (./pad.ts): 패드가 없으면 아무것도 하지 않는다
 }
